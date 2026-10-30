@@ -3115,6 +3115,53 @@ _REFERENCE_CASES = (
         {"count": "42", "ratio": "3.5", "flag": "true", "narrowed": "42"},
         {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
     ),
+    # ai-dynamo/dynamo#17662: properties with no direct `type` key. The OpenRouter
+    # toolcall-schema-fuzz run against Dynamo 1.5.0/1.6.1 found ~570 of 573 failures
+    # were the XML parser leaving such arguments as strings.
+    (
+        "not_keyword_type_complement",
+        'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string.',
+        {"type": "object", "properties": {
+            "count": {"not": {"type": "string"}},
+            "text": {"not": {"type": "integer"}},
+        }},
+        {"count": "-2500", "text": "42"},
+        {"count": -2500, "text": "42"},
+    ),
+    (
+        "conditional_schema_number_types",
+        'ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number; an integer `if` with a numeric `else` keeps 37 an integer.',
+        {"type": "object", "properties": {
+            "amount": {"if": {"minimum": 0}, "then": {"type": "number", "minimum": 0}, "else": {"type": "number"}},
+            "retries": {"if": {"type": "integer"}, "then": {"minimum": 0}, "else": {"type": "number"}},
+        }},
+        {"amount": "21.5", "retries": "37"},
+        {"amount": 21.5, "retries": 37},
+    ),
+    (
+        "reference_object_recursive_and_composed_types",
+        'ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` all keep their JSON types.',
+        {"type": "object", "$defs": {
+            "Category": {"type": "object", "properties": {
+                "label": {"type": "string"}, "children": {"type": "array"},
+            }},
+            "Node": {"type": "object", "properties": {
+                "label": {"type": "string"},
+                "children": {"type": "array", "items": {"$ref": "#/$defs/Node"}},
+            }},
+        }, "properties": {
+            "category": {"$ref": "#/$defs/Category"},
+            "tree": {"$ref": "#/$defs/Node"},
+            "retries": {"type": ["integer", "null"]},
+            "dry_run": {"allOf": [{"type": "boolean"}, {"description": "flag"}]},
+        }},
+        {"category": '{"label":"Garden Tools","children":[]}',
+         "tree": '{"label":"root","children":[{"label":"leaf","children":[]}]}',
+         "retries": "37", "dry_run": "false"},
+        {"category": {"label": "Garden Tools", "children": []},
+         "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]},
+         "retries": 37, "dry_run": False},
+    ),
 )
 for scenario, description, parameters, raw_arguments, arguments in _REFERENCE_CASES:
     EDGE.append((

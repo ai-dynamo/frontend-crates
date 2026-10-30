@@ -15948,3 +15948,184 @@ cases:
         name: get_weather
         arguments:
           city: Paris
+  conditional_schema_number_types:
+    lifecycle: active
+    scenario: conditional_schema_number_types
+    description: 'ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number; an integer `if` with a numeric `else` keeps 37 an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-conditional_schema_number_types
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="amount" string="false">21.5</｜DSML｜ parameter><｜DSML｜ parameter name="retries" string="false">37</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            amount:
+              if:
+                minimum: 0
+              then:
+                type: number
+                minimum: 0
+              else:
+                type: number
+            retries:
+              if:
+                type: integer
+              then:
+                minimum: 0
+              else:
+                type: number
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="capture_payload">
+      - delta_text: <｜DSML｜ parameter name="amount" string="false">
+      - delta_text: '21.5'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="retries" string="false">
+      - delta_text: '37'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          amount: 21.5
+          retries: 37
+  not_keyword_type_complement:
+    lifecycle: active
+    scenario: not_keyword_type_complement
+    description: 'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-not_keyword_type_complement
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">-2500</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            count:
+              not:
+                type: string
+            text:
+              not:
+                type: integer
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="capture_payload">
+      - delta_text: <｜DSML｜ parameter name="count" string="false">
+      - delta_text: '-2500'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="text" string="true">
+      - delta_text: '42'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: -2500
+          text: '42'
+  reference_object_recursive_and_composed_types:
+    lifecycle: active
+    scenario: reference_object_recursive_and_composed_types
+    description: 'ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` all keep their JSON types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-reference_object_recursive_and_composed_types
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="category" string="false">{"label":"Garden Tools","children":[]}</｜DSML｜ parameter><｜DSML｜ parameter name="tree" string="false">{"label":"root","children":[{"label":"leaf","children":[]}]}</｜DSML｜ parameter><｜DSML｜ parameter name="retries" string="false">37</｜DSML｜ parameter><｜DSML｜ parameter name="dry_run" string="false">false</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Category:
+              type: object
+              properties:
+                label:
+                  type: string
+                children:
+                  type: array
+            Node:
+              type: object
+              properties:
+                label:
+                  type: string
+                children:
+                  type: array
+                  items:
+                    $ref: '#/$defs/Node'
+          properties:
+            category:
+              $ref: '#/$defs/Category'
+            tree:
+              $ref: '#/$defs/Node'
+            retries:
+              type:
+              - integer
+              - 'null'
+            dry_run:
+              allOf:
+              - type: boolean
+              - description: flag
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="capture_payload">
+      - delta_text: <｜DSML｜ parameter name="category" string="false">
+      - delta_text: '{"label":"Garden Tools","children":[]}'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="tree" string="false">
+      - delta_text: '{"label":"root","children":[{"label":"leaf","children":[]}]}'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="retries" string="false">
+      - delta_text: '37'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: <｜DSML｜ parameter name="dry_run" string="false">
+      - delta_text: 'false'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          category:
+            label: Garden Tools
+            children: []
+          tree:
+            label: root
+            children:
+            - label: leaf
+              children: []
+          retries: 37
+          dry_run: false

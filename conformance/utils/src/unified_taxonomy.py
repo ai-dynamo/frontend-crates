@@ -68,6 +68,10 @@ UNIFIED_TAX = {
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     "arg_object_quoted_parameter_close": (7, "27"),
+    # ai-dynamo/dynamo#17662: argument types declared without a direct `type` key.
+    "not_keyword_type_complement": (7, "29"),
+    "conditional_schema_number_types": (7, "30"),
+    "reference_object_recursive_and_composed_types": (7, "31"),
     "arg_array_quoted_parameter_close": (7, "28"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
