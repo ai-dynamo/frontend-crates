@@ -151,6 +151,35 @@ for (const preserve of [false,true]) for (const misaligned of [false,true]) for 
   else assert.equal(result[0].arguments.value,9007199254740992.0);
   assert.deepEqual(result[1].arguments,aligned?(preserve && encoded?'{}':{}):malformed);
 }
+// Recorded assembly must expose data loss even when the stream was valid JSON.
+for (const preserve of [false, true]) {
+  for (const [raw, recorded] of [
+    ['{"city":"Paris","value":1e400}', {}],
+    ['{"city":"Paris","value":-1E+400}', {}],
+    ['{"nested":{"city":"Paris","value":1e400}}', {nested: {}}],
+    ['[1,2]', [1n]],
+    ['{"city":"Paris"}', {city: 'Rome'}],
+    ['{"value":1.5}', {value: 2.5}],
+    ['{"city":"Paris"}', 'wrong'],
+  ]) {
+    const result = assembleStream([[{...event(raw), complete: true}]], [event(recorded)], preserve);
+    assert.deepEqual(result[0].arguments, recorded);
+  }
+}
+for (const [raw, recorded] of [['9007199254740993', '9007199254740992'], ['1e-400', '0'], ['1e400', '1e401']]) {
+  assert.equal(assembleStream([[{...event(raw), complete: true}]], [event(recorded)], true)[0].arguments, recorded);
+}
+for (const [raw, recorded] of [[{city: 'Paris'}, {}], [[1n, 2n], [1n]], [9007199254740993n, 9007199254740992n]]) {
+  if (typeof raw === 'bigint') {
+    assert.equal(assembleStream([[{...event(String(raw)), complete: true}]], [event(recorded)], true)[0].arguments, recorded);
+  } else assert.deepEqual(assembleStream([[{...event(raw), complete: true}]], [event(recorded)], true)[0].arguments, recorded);
+}
+assert.deepEqual(assembleStream([[{...event('{"value":1e400}'), complete: true}]], [event({value: Infinity})], true)[0].arguments, {value: Infinity});
+assert.deepEqual(assembleStream([[{...event('  '), complete: true}]], [event({city: 'Paris'})], true)[0].arguments, {city: 'Paris'});
+for (const preserve of [false, true]) {
+  const result = assembleStream([[{...event('{"value":1.5}'),complete:true},{kind:'tool_call',name:'bad',arguments:'{bad',complete:true}]], [event({value:2.5}),{kind:'tool_call',name:'bad',arguments:{}}],preserve);
+  assert.deepEqual(result.map(call=>call.arguments),[{value:2.5},{}]);
+}
 const metadata=JSON.parse(await readFile(new URL('../viewer-catalog.json',import.meta.url),'utf8')).metadata;
 const numeric=Object.entries(metadata.folds.unified).filter(([,item])=>metadata.folds.variant_groups[item.legacy_label]);
 assert.equal(numeric.length,19);

@@ -412,7 +412,15 @@ fn unified_parser_matches_the_golden_oracle() {
                     .enumerate()
                     .map(|(index, arguments)| (index, arguments.clone()))
                     .collect::<std::collections::BTreeMap<_, _>>();
-                if actual == &expected {
+                if actual.len() == expected.len()
+                    && actual.iter().all(|(index, raw)| {
+                        serde_json::value::RawValue::from_string(raw.clone()).is_ok()
+                            && expected.get(index).is_some_and(|expected| {
+                                common::canonical_argument_json(raw.trim())
+                                    == common::canonical_argument_json(expected.trim())
+                            })
+                    })
+                {
                     continue;
                 }
             }

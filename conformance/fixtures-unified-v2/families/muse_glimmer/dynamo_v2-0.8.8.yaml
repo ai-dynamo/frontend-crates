@@ -1,0 +1,238 @@
+provenance:
+  status: captured
+  origin:
+    git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+    source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+    adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+    job_sha256: 07149d5ed2555093f290c170e3c3002cc6ac7205326ea5a12c7412968c0a9e49
+    crate_version: 0.8.8
+document:
+  mode: unified
+changes:
+  arg_numeric_overflow_siblings_finite:
+    case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+    stimulus:
+      semantic_sha256: c7bcba99b77ce1604723d2d23e00ef55217a9cb09d05c39304d5b26b3f9382e1
+      inline:
+        input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+          <atem:invoke name="echo">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          <atem:parameter name="value">1.5</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+              value:
+                type: number
+            required:
+            - city
+            - value
+        chunks:
+        - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+            <atem:invoke name="echo">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            <atem:parameter name="value">1.5</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+    observation:
+      value:
+        assembled:
+        - arguments: '{"city":"Paris","value":1.5}'
+          kind: tool_call
+          name: echo
+        chunks:
+        - expected:
+          - arguments: '{"city":"Paris","value":1.5}'
+            complete: true
+            kind: tool_call
+            name: echo
+        - expected: []
+  arg_numeric_overflow_siblings_negative:
+    case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+    stimulus:
+      semantic_sha256: 81d5ceb323074860a255cb46ba323f39215658ecad6a8e0a60dae7ab7da2de6f
+      inline:
+        input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+          <atem:invoke name="echo">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          <atem:parameter name="value">-1E+400</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+              value:
+                type: number
+            required:
+            - city
+            - value
+        chunks:
+        - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+            <atem:invoke name="echo">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            <atem:parameter name="value">-1E+400</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+    observation:
+      value:
+        assembled:
+        - arguments: '{}'
+          kind: tool_call
+          name: echo
+        chunks:
+        - expected:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            complete: true
+            kind: tool_call
+            name: echo
+        - expected: []
+  arg_numeric_overflow_siblings_positive:
+    case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+    stimulus:
+      semantic_sha256: d471258024476f545b34c316db4ef457c62245dfefbf6745608010d4b190133c
+      inline:
+        input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+          <atem:invoke name="echo">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          <atem:parameter name="value">1e400</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+              value:
+                type: number
+            required:
+            - city
+            - value
+        chunks:
+        - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+            <atem:invoke name="echo">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            <atem:parameter name="value">1e400</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+    observation:
+      value:
+        assembled:
+        - arguments: '{}'
+          kind: tool_call
+          name: echo
+        chunks:
+        - expected:
+          - arguments: '{"city":"Paris","value":1e400}'
+            complete: true
+            kind: tool_call
+            name: echo
+        - expected: []
+metadata_changes:
+  arg_numeric_overflow_siblings_finite:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+  arg_numeric_overflow_siblings_negative:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+  arg_numeric_overflow_siblings_positive:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+document_overrides:
+  arg_numeric_overflow_siblings_finite:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.8
+      capture_origin:
+        git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+        source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+        adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+        job_sha256: 07149d5ed2555093f290c170e3c3002cc6ac7205326ea5a12c7412968c0a9e49
+        crate_version: 0.8.8
+      inherited_from: null
+  arg_numeric_overflow_siblings_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.8
+      capture_origin:
+        git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+        source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+        adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+        job_sha256: 07149d5ed2555093f290c170e3c3002cc6ac7205326ea5a12c7412968c0a9e49
+        crate_version: 0.8.8
+      inherited_from: null
+  arg_numeric_overflow_siblings_positive:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.8
+      capture_origin:
+        git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+        source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+        adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+        job_sha256: 07149d5ed2555093f290c170e3c3002cc6ac7205326ea5a12c7412968c0a9e49
+        crate_version: 0.8.8
+      inherited_from: null

@@ -30628,3 +30628,282 @@ records:
             strict: false
         semantic_sha256: 5a41329adb0e04fb532b78b83d744e7f3147654d1f0a3cf2e6a21aa9b6082348
 schema_version: 2
+  arg_numeric_overflow_siblings_positive:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      stimulus:
+        semantic_sha256: b1bad7f8b0f976042eec86f6f8a647813e4fe6fc72039cbf7fb45a4d8da97bf0
+        inline:
+          input: '</think><tool_call>
+
+            <function=echo>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            <parameter=value>
+
+            1e400
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: '</think><tool_call>
+
+              <function=echo>
+
+              <parameter=city>
+
+              Paris
+
+              </parameter>
+
+              <parameter=value>
+
+              1e400
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1e400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.9.0
+        capture_origin:
+          crate_version: 0.9.0
+          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
+          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.0.yaml
+  arg_object_quoted_parameter_close:
+  arg_numeric_overflow_siblings_negative:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      stimulus:
+        semantic_sha256: 89ba826e4aca8643a3dec1534e827c402a7d2a6d256d4afb219a04ab3ce0b700
+        inline:
+          input: '</think><tool_call>
+
+            <function=echo>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            <parameter=value>
+
+            -1E+400
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: '</think><tool_call>
+
+              <function=echo>
+
+              <parameter=city>
+
+              Paris
+
+              </parameter>
+
+              <parameter=value>
+
+              -1E+400
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":-1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.9.0
+        capture_origin:
+          crate_version: 0.9.0
+          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
+          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.0.yaml
+  arg_numeric_overflow_siblings_positive:
+  arg_numeric_overflow_siblings_finite:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+      stimulus:
+        semantic_sha256: 5147f68556d593e69e3da9ec4da9d34b737df9955f13772ad63044eea1b856e1
+        inline:
+          input: '</think><tool_call>
+
+            <function=echo>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            <parameter=value>
+
+            1.5
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: '</think><tool_call>
+
+              <function=echo>
+
+              <parameter=city>
+
+              Paris
+
+              </parameter>
+
+              <parameter=value>
+
+              1.5
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1.5}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1.5}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.9.0
+        capture_origin:
+          crate_version: 0.9.0
+          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
+          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.0.yaml
+  arg_numeric_overflow_siblings_negative:

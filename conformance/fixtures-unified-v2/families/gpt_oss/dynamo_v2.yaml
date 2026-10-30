@@ -26253,3 +26253,326 @@ records:
             strict: false
         semantic_sha256: f2751e639d761da4e38f1ab8dbd57d037a97b584136209b73b3358d82cdc346d
 schema_version: 2
+  arg_numeric_overflow_siblings_positive:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      stimulus:
+        semantic_sha256: b4b9b47477f70989c359034c14298b3d4767eb4818f718d82b85fb38337ddd77
+        inline:
+          input: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1e400}<|call|>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1e400}<|call|>
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1e400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: echo
+            - arguments: '{"'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: city
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '":"'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: Paris
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '","'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: value
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '":'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '1'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: e
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '400'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '}'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: ''
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.9.0
+        capture_origin:
+          crate_version: 0.9.0
+          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
+          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.0.yaml
+  arg_object_quoted_parameter_close:
+  arg_numeric_overflow_siblings_negative:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      stimulus:
+        semantic_sha256: c14967933b95ff062527f064cbb052855bb5fa16aad8c862cd4c0c30616a4d5f
+        inline:
+          input: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":-1E+400}<|call|>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":-1E+400}<|call|>
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: echo
+            - arguments: '{"'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: city
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '":"'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: Paris
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '","'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: value
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '":'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '-'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '1'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: E
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: +
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '400'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '}'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: ''
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.9.0
+        capture_origin:
+          crate_version: 0.9.0
+          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
+          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.0.yaml
+  arg_numeric_overflow_siblings_positive:
+  arg_numeric_overflow_siblings_finite:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+      stimulus:
+        semantic_sha256: efaa155c53c223001b591665d8a2bcc8fb483ec44885677ad6bf618f20820567
+        inline:
+          input: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1.5}<|call|>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1.5}<|call|>
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1.5}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: echo
+            - arguments: '{"'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: city
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '":"'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: Paris
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '","'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: value
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '":'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '1'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: .
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '5'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '}'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: ''
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.9.0
+        capture_origin:
+          crate_version: 0.9.0
+          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
+          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.0.yaml
+  arg_numeric_overflow_siblings_negative:

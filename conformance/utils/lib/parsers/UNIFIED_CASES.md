@@ -139,6 +139,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-arg_
 - **`7-nullable_reference_alias_literals`** (`nullable_reference_alias_literals`) Nullable aliases to string `const: "null"` and `enum: ["null"]` retain the schema-valid string null values.
 - **`7-local_schema_id_preserves_type`** (`local_schema_id_preserves_type`) A local `$id` disables unsupported reference traversal without discarding a directly declared integer type.
 - **`7-arg_numeric_nested_exact`** (`arg_numeric_nested_exact`) Nested objects and arrays preserve a large fractional number, an underflow-sized exponent, and positive and negative integers beyond the exact binary64 range.
+- **`7-arg_numeric_overflow_siblings_{finite,positive,negative}`** A finite `1.5` control and signed overflow tokens `1e400` / `-1E+400` accompany `city: "Paris"` in every applicable native grammar. Raw deltas preserve the numeric token; the default typed batch projection may stringify overflow but must retain the city and value fields. Capture reconstruction restores exact numeric text only when the assembled field structure and scalar values survive, so an older assembler returning `{}` remains visible as a failure.
 
 ### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
 - **`8-text_before_tool`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.

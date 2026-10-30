@@ -144,11 +144,37 @@ mod json_comparison_tests {
 
 pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Value {
     match arguments {
-        serde_json::Value::String(raw) => {
-            serde_json::from_str(raw).expect("authored JSON arguments")
-        }
+        serde_json::Value::String(raw) => serde_json::from_str(raw).unwrap_or_else(|_| {
+            serde_json::from_str::<Box<serde_json::value::RawValue>>(raw)
+                .expect("authored JSON arguments");
+            arguments.clone()
+        }),
         value => value.clone(),
     }
+}
+
+#[test]
+fn golden_numeric_overflow_stays_raw_and_malformed_json_is_rejected() {
+    let overflow = serde_json::Value::String(r#"{"city":"Paris","value":1e400}"#.into());
+    let decoded = decoded_golden_arguments(&overflow);
+    let raw = decoded
+        .as_str()
+        .map(str::to_owned)
+        .unwrap_or_else(|| decoded.to_string());
+    assert_eq!(
+        canonical_argument_json(&raw),
+        canonical_argument_json(overflow.as_str().unwrap())
+    );
+    assert_eq!(
+        decoded_golden_arguments(&serde_json::Value::String(r#"{"value":1.5}"#.into())),
+        serde_json::json!({"value":1.5})
+    );
+    assert!(
+        std::panic::catch_unwind(|| {
+            decoded_golden_arguments(&serde_json::Value::String("{broken}".into()))
+        })
+        .is_err()
+    );
 }
 
 pub fn json_to_yaml_value<T: serde::Serialize>(value: &T) -> serde_yaml::Value {
