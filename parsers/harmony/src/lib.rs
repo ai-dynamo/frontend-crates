@@ -42,8 +42,29 @@ fn with_cache_lock_at<T>(cache_dir: &Path, load: impl FnOnce() -> Result<T>) -> 
         .truncate(false)
         .read(true)
         .write(true)
-        .open(&lock_path)
-        .with_context(|| format!("opening Harmony vocabulary lock file {lock_path:?}"))?;
+        .open(&lock_path);
+    let lock_file = match lock_file {
+        Ok(lock_file) => lock_file,
+        Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => {
+            if lock_path.exists() {
+                // Existing read-only caches can still share an already-created lock file.
+                OpenOptions::new()
+                    .read(true)
+                    .open(&lock_path)
+                    .with_context(|| {
+                        format!("opening Harmony vocabulary lock file {lock_path:?}")
+                    })?
+            } else {
+                // Harmony verifies a cached vocabulary before using it; on a read-only cache
+                // directory its cache-miss write will fail without touching shared state.
+                return load();
+            }
+        }
+        Err(error) => {
+            return Err(error)
+                .with_context(|| format!("opening Harmony vocabulary lock file {lock_path:?}"));
+        }
+    };
     lock_file
         .lock()
         .with_context(|| format!("locking Harmony vocabulary cache {cache_dir:?}"))?;
@@ -213,6 +234,45 @@ mod tests {
             "OS did not release the lock after holder termination"
         );
         assert!(cache.join("harmony-vocab.lock").exists());
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn read_only_cache_without_lock_file_can_load_existing_vocabulary() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+        fs::set_permissions(&cache, fs::Permissions::from_mode(0o555))?;
+
+        let result = with_cache_lock_at(&cache, || Ok("loaded"));
+
+        fs::set_permissions(&cache, fs::Permissions::from_mode(0o755))?;
+        assert_eq!(result?, "loaded");
+        assert!(!cache.join("harmony-vocab.lock").exists());
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn read_only_cache_can_lock_an_existing_read_only_lock_file() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+        let lock_path = cache.join("harmony-vocab.lock");
+        fs::write(&lock_path, b"")?;
+        fs::set_permissions(&lock_path, fs::Permissions::from_mode(0o444))?;
+        fs::set_permissions(&cache, fs::Permissions::from_mode(0o555))?;
+
+        let result = with_cache_lock_at(&cache, || Ok("loaded"));
+
+        fs::set_permissions(&cache, fs::Permissions::from_mode(0o755))?;
+        assert_eq!(result?, "loaded");
+        assert!(lock_path.exists());
         Ok(())
     }
 }
