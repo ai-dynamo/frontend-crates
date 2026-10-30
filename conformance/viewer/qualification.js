@@ -669,7 +669,7 @@ async function checkRebaseContracts(tab, reader) {
   }
   const groups = new Map(tab.column_groups.map(group => [group.key, group]));
   const argumentGroups = tab.column_groups.filter(group => group.key.startsWith('unified_g7_'));
-  assert.deepEqual(argumentGroups.map(group => group.span), [5, 4, 12, 6, 10, 17, 14]);
+  assert.deepEqual(argumentGroups.map(group => group.span), [5, 4, 12, 6, 10, 19, 15]);
   const argumentColumns = tab.columns.filter(column => column.group_key.startsWith('unified_g7_'));
   const numericColumns=tab.columns.filter(column=>['7-17','7-19','7-18'].includes(column.label));
   assert.deepEqual(numericColumns.map(column=>column.label),['7-17','7-19','7-18']);
