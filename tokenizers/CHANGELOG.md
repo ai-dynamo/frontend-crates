@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [4.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v4.0.0...dynamo-tokenizers-v4.1.0) - 2026-10-30
+
+### Features
+
+- *(tokenizers)* Cache segmented encodes per segment ([#499](https://github.com/ai-dynamo/frontend-crates/pull/499))
+
 ## [3.1.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v3.1.2...dynamo-tokenizers-v3.1.3) - 2026-10-25
 
 ### Bug fixes
