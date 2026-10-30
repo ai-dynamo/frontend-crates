@@ -6,6 +6,7 @@ mod deepseek_dsml;
 mod glm47;
 mod harmony;
 mod kimi;
+mod minimax_m3;
 mod muse_spark;
 mod qwen3_coder;
 mod templated_tool_calls;
@@ -25,6 +26,7 @@ pub(crate) use deepseek_dsml::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41};
 pub(crate) use glm47::GLM47;
 pub(crate) use harmony::HARMONY;
 pub(crate) use kimi::{KIMI_K2, KIMI_K3};
+pub(crate) use minimax_m3::MINIMAX_M3;
 pub(crate) use muse_spark::MUSE_SPARK;
 pub(crate) use qwen3_coder::QWEN3_CODER;
 
@@ -202,6 +204,7 @@ pub(super) trait ToolCallGrammar: Send + Sync {
             json_schema: schema.clone(),
             style: JsonSchemaStyle::Json,
             any_order: false,
+            max_whitespace_cnt: None,
         })
     }
 
@@ -358,6 +361,7 @@ fn wrap_reasoning_if_needed(
         }));
     }
     if !starts_in_reasoning {
+        // Only the reasoning prefix is optional; keep one copy of the tool schemas.
         elements = vec![Format::Or(OrFormat {
             elements: vec![
                 Format::ConstString(ConstStringFormat {

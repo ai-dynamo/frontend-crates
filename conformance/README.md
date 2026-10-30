@@ -14,6 +14,10 @@ Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Un
 Contributors edit parsers and independently authored inputs/GOLDEN, recapture affected latest Dynamo v2 snapshots, run tests, and generate the latest report. Capture changes use normal PR review. CI executes current native Dynamo v2 cases: differences from GOLDEN produce warnings; differences from recorded YAML fail. Generated publication JSON stays outside Git.
 
 ## Latest captures and retained history
+### Historical back-captures
+
+Back-capture is useful, but not absolutely needed. There is no need to back-capture everything or rerun every historical version when adding a case. Capture the current candidate; use a relevant baseline when needed to demonstrate a before/after change. State which versions actually ran and leave uncaptured results explicitly unmeasured. Preserve existing historical inputs, observations, and provenance; never label current output as an older parser result.
+
 
 The implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Add 77 complete versionless latest files beside the existing captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`, across 12 families, including Muse Spark. Batch and jail variants remain separate implementations. Authored requests and GOLDEN stay in each family's `inputs_and_golden.yaml`.
 

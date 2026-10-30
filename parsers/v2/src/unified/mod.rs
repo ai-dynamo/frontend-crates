@@ -57,11 +57,15 @@ mod guided_cursor;
 pub mod harmony;
 pub mod kimi_k2;
 pub mod kimi_k3;
+pub mod minimax_m3;
 pub mod muse_glimmer;
 pub mod muse_spark;
 pub mod qwen3;
+mod shared_input;
 #[cfg(test)]
 mod streaming_checkpoints;
+
+use crate::tool_calling::json_prefix::JsonPrefixState;
 
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -335,6 +339,13 @@ impl std::fmt::Display for InvalidGuidedPayload {
 
 impl std::error::Error for InvalidGuidedPayload {}
 
+/// An immutable parser-owned checkpoint. Forks omit previously emitted output
+/// and keep independent generated state. Unsupported families/modes fall back
+/// to ordinary initialization instead of pretending to support continuation.
+pub trait UnifiedParserContinuation: Send {
+    fn fork(&self) -> Result<Box<dyn UnifiedParser>>;
+}
+
 /// A parser that owns reasoning + content + tool calls for one stream.
 ///
 /// Streaming-first, like [`crate::ToolParser`]: [`Self::parse_into`] per decoded
@@ -356,6 +367,13 @@ impl std::error::Error for InvalidGuidedPayload {}
 /// unrecognized calls would hide model misbehaviour that the caller needs to see —
 /// but it means "the parser produced a ToolCall" is not "this call is safe to run".
 pub trait UnifiedParser: Send {
+    /// Freeze consumed state once, then fork independent continuations cheaply.
+    /// A finished parser rejects checkpoints. None means the mode is unsupported.
+    /// Unfinished headers and structural state can still determine fork cost.
+    fn continuation(&mut self) -> Result<Option<Box<dyn UnifiedParserContinuation>>> {
+        Ok(None)
+    }
+
     /// Responses opts into message boundaries; existing consumers keep their event stream.
     fn preserve_message_phases(&mut self, _enabled: bool) {}
     /// Report which input representations this parser accepts.
@@ -999,6 +1017,15 @@ pub(crate) enum GuidedPrefilledHeader {
 }
 
 pub(crate) trait NativeUnified {
+    fn checkpoint_native(&mut self) {}
+
+    fn fork_native(&self) -> Result<Option<Self>>
+    where
+        Self: Sized,
+    {
+        Ok(None)
+    }
+
     fn preserve_message_phases(&mut self, _enabled: bool) {}
 
     /// Whether decoding must preserve tokenizer special tokens for this grammar.
@@ -1101,6 +1128,12 @@ pub(crate) trait NativeUnified {
 /// refusal mutates nothing — is stated once instead of per family.
 pub(crate) struct GuidedRouted<N: NativeUnified> {
     native: N,
+    /// Some backends return native calls after reasoning despite a JSON grammar.
+    /// The family supplies the wrapper stripped by the guided reader so the
+    /// existing native scanner can resume, including parallel invocations.
+    native_tool_fallback: Option<&'static str>,
+    native_fallback_active: bool,
+    native_named_call: Option<usize>,
     // Retain the request option when guided decoding rebuilds its parsing state.
     preserve_phases: bool,
     /// Which channel the PROMPT already opened. Held here as well as on the
@@ -1126,6 +1159,9 @@ impl<N: NativeUnified> GuidedRouted<N> {
     pub(crate) fn new(native: N) -> Self {
         Self {
             native,
+            native_tool_fallback: None,
+            native_fallback_active: false,
+            native_named_call: None,
             preserve_phases: false,
             starting_state: UnifiedParserStartingState::None,
             guided: None,
@@ -1139,6 +1175,60 @@ impl<N: NativeUnified> GuidedRouted<N> {
             started: false,
             finished: false,
         }
+    }
+
+    pub(crate) fn with_native_tool_fallback(mut self, wrapper: &'static str) -> Self {
+        self.native_tool_fallback = Some(wrapper);
+        self
+    }
+
+    fn append_native_fallback(
+        &mut self,
+        mut native_output: UnifiedParserOutput,
+        output: &mut UnifiedParserOutput,
+    ) {
+        let named_tool = self
+            .guided
+            .as_ref()
+            .and_then(|guided| guided.named_tool.as_deref());
+        for mut event in native_output.events.drain(..) {
+            if let UnifiedParserEvent::ToolCall(call) = &mut event
+                && let Some(expected) = named_tool
+            {
+                if self.native_named_call.is_none() && call.name.as_deref() == Some(expected) {
+                    self.native_named_call = Some(call.tool_index);
+                }
+                if self.native_named_call != Some(call.tool_index) {
+                    continue;
+                }
+                // Named guided output is exactly one call, indexed from zero,
+                // even if the backend emitted other invocations first.
+                call.tool_index = 0;
+            }
+            output.push_event(event);
+        }
+    }
+
+    fn handoff_native(&mut self, output: &mut UnifiedParserOutput) -> Result<()> {
+        let Some(guided) = self.guided.as_mut().filter(|guided| guided.native_handoff) else {
+            return Ok(());
+        };
+        let input = std::mem::take(&mut guided.input);
+        let starting_state = if guided.reasoning_enabled {
+            UnifiedParserStartingState::None
+        } else {
+            UnifiedParserStartingState::Response
+        };
+        self.native.restore_native_state(starting_state);
+        self.native_fallback_active = true;
+        let mut native_output = UnifiedParserOutput::default();
+        self.native.push_native(
+            self.native_tool_fallback.expect("enabled native fallback"),
+            &mut native_output,
+        )?;
+        self.native.push_native(&input, &mut native_output)?;
+        self.append_native_fallback(native_output, output);
+        Ok(())
     }
 
     fn apply_init(&mut self, init: UnifiedParserInit) -> Result<()> {
@@ -1230,8 +1320,11 @@ impl<N: NativeUnified> GuidedRouted<N> {
         self.guided_token_input = false;
         if let Some(guided) = &mut self.guided {
             guided.preserve_phases = self.preserve_phases;
+            guided.native_tool_fallback = self.native_tool_fallback;
         }
         self.finished = false;
+        self.native_fallback_active = false;
+        self.native_named_call = None;
         Ok(())
     }
 
@@ -1280,7 +1373,52 @@ impl<N: NativeUnified> GuidedRouted<N> {
     }
 }
 
-impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
+struct NativeContinuation<N: NativeUnified> {
+    template: GuidedRouted<N>,
+}
+
+impl<N: NativeUnified + Send + 'static> UnifiedParserContinuation for NativeContinuation<N> {
+    fn fork(&self) -> Result<Box<dyn UnifiedParser>> {
+        self.template
+            .fork_native_routed()?
+            .map(|parser| Box::new(parser) as Box<dyn UnifiedParser>)
+            .ok_or_else(|| anyhow::anyhow!("native continuation is unavailable"))
+    }
+}
+
+impl<N: NativeUnified> GuidedRouted<N> {
+    fn fork_native_routed(&self) -> Result<Option<Self>> {
+        if self.finished {
+            anyhow::bail!("cannot checkpoint a finished unified parser");
+        }
+        if self.guided.is_some() {
+            return Ok(None);
+        }
+        let Some(native) = self.native.fork_native()? else {
+            return Ok(None);
+        };
+        let mut fork = Self::new(native);
+        fork.preserve_phases = self.preserve_phases;
+        fork.starting_state = self.starting_state;
+        fork.started = self.started;
+        Ok(Some(fork))
+    }
+}
+
+impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
+    fn continuation(&mut self) -> Result<Option<Box<dyn UnifiedParserContinuation>>> {
+        if self.finished {
+            anyhow::bail!("cannot checkpoint a finished unified parser");
+        }
+        if self.guided.is_some() {
+            return Ok(None);
+        }
+        self.native.checkpoint_native();
+        Ok(self.fork_native_routed()?.map(|template| {
+            Box::new(NativeContinuation { template }) as Box<dyn UnifiedParserContinuation>
+        }))
+    }
+
     fn preserve_message_phases(&mut self, enabled: bool) {
         self.preserve_phases = enabled;
         self.native.preserve_message_phases(enabled);
@@ -1316,6 +1454,12 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
             anyhow::bail!("cannot push to a finished unified parser");
         }
         self.started = true;
+        if self.native_fallback_active {
+            let mut native_output = UnifiedParserOutput::default();
+            self.native.push_native(delta, &mut native_output)?;
+            self.append_native_fallback(native_output, output);
+            return Ok(());
+        }
         if self.guided.is_none() {
             // Native: straight into the caller's output. An event written here is
             // COMMITTED, so a later error in the same advance cannot retract it.
@@ -1327,7 +1471,8 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
         self.guided
             .as_mut()
             .expect("guided mode was checked above")
-            .push_into(&guided_input, output)
+            .push_into(&guided_input, output)?;
+        self.handoff_native(output)
     }
 
     fn parse_token_ids_into(
@@ -1366,6 +1511,12 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
         self.started = true;
         self.finished = true;
         let mut out = UnifiedParserOutput::default();
+        if self.native_fallback_active {
+            let mut native_output = UnifiedParserOutput::default();
+            self.native.finish_native(&mut native_output)?;
+            self.append_native_fallback(native_output, &mut out);
+            return Ok(out);
+        }
         match self.guided.as_mut() {
             None => self.native.finish_native(&mut out)?,
             Some(guided) => {
@@ -1383,6 +1534,12 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
                     self.native.restore_guided_token_literals(&mut out);
                 }
             }
+        }
+        self.handoff_native(&mut out)?;
+        if self.native_fallback_active {
+            let mut native_output = UnifiedParserOutput::default();
+            self.native.finish_native(&mut native_output)?;
+            self.append_native_fallback(native_output, &mut out);
         }
         Ok(out)
     }
@@ -1414,6 +1571,8 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
         recovered.push_str(&std::mem::take(&mut self.guided_prefill_pending_generated));
         recovered.push_str(&self.native.reset_native());
         self.native.restore_native_state(self.starting_state);
+        self.native_fallback_active = false;
+        self.native_named_call = None;
         self.guided_prefill_pending = self.guided_prefill.is_some() && !self.guided_prefilled_tool;
         self.guided_prefill_pending_input = self
             .guided_prefill_pending
@@ -1430,6 +1589,15 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
     /// correct for every family whose grammar does not name the call; Kimi
     /// is the one family that overrides it.
     fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        if self.native_fallback_active
+            && let Some(native_index) = self.native_named_call
+        {
+            return if tool_index == 0 {
+                self.native.tool_call_id(native_index)
+            } else {
+                None
+            };
+        }
         self.native.tool_call_id(tool_index)
     }
 }
@@ -1559,10 +1727,6 @@ impl GuidedTurnScope {
 }
 
 /// The scan hooks a header-routed reasoning channel supplies to the guided path.
-///
-/// Function pointers rather than a trait object for the same reason [`InvokeScan`]
-/// uses them: these are consulted inside the drain loop on every push, and the set
-/// is fixed at construction, so there is nothing for dynamic dispatch to buy.
 #[derive(Clone, Copy)]
 pub(crate) struct GuidedChannel {
     /// Earliest reasoning OPENER in the haystack: `(offset, bytes to consume)`.
@@ -2004,7 +2168,7 @@ fn guided_prose_invoke_span(
         flush,
         start,
         &grammar.invoke_end,
-        grammar.invoke_boundary_factory,
+        grammar.invoke_boundary_factory.clone(),
     )
 }
 
@@ -2046,6 +2210,8 @@ pub(crate) struct GuidedPrefixContext<'a> {
 }
 
 struct GuidedState {
+    native_tool_fallback: Option<&'static str>,
+    native_handoff: bool,
     prose: ProseControlState,
     preserve_phases: bool,
     // Only explicit message terminators close this; EOF may mean truncation.
@@ -2458,352 +2624,6 @@ struct ResponsePrefillProbe {
     candidate_after_yield: Option<(usize, char)>,
     json: JsonPrefixState,
     scan_steps: usize,
-}
-
-#[derive(Debug, Default)]
-struct JsonPrefixState {
-    frames: Vec<JsonFrame>,
-    string: Option<JsonStringKind>,
-    string_escaped: bool,
-    unicode_digits: u8,
-    primitive: Option<JsonPrimitive>,
-    invalid: bool,
-    complete: bool,
-}
-
-#[derive(Debug)]
-enum JsonFrame {
-    Object(JsonObjectState),
-    Array(JsonArrayState),
-}
-
-#[derive(Debug)]
-enum JsonObjectState {
-    KeyOrEnd,
-    Key,
-    Colon,
-    Value,
-    CommaOrEnd,
-}
-
-#[derive(Debug)]
-enum JsonArrayState {
-    ValueOrEnd,
-    Value,
-    CommaOrEnd,
-}
-
-#[derive(Debug, Clone, Copy)]
-enum JsonStringKind {
-    Key,
-    Value,
-}
-
-#[derive(Debug)]
-enum JsonPrimitive {
-    Literal {
-        expected: &'static [u8],
-        next: usize,
-    },
-    Number(JsonNumberState),
-}
-
-#[derive(Debug)]
-enum JsonNumberState {
-    Sign,
-    IntegerZero,
-    Integer,
-    FractionStart,
-    Fraction,
-    ExponentStart,
-    ExponentSign,
-    Exponent,
-}
-
-fn is_json_whitespace(ch: char) -> bool {
-    matches!(ch, ' ' | '\t' | '\n' | '\r')
-}
-
-impl JsonPrefixState {
-    fn new(opener: char) -> Self {
-        let mut state = Self::default();
-        state.start_container(opener);
-        state
-    }
-
-    fn in_string(&self) -> bool {
-        self.string.is_some()
-    }
-
-    fn start_container(&mut self, opener: char) {
-        match opener {
-            '{' => self
-                .frames
-                .push(JsonFrame::Object(JsonObjectState::KeyOrEnd)),
-            '[' => self
-                .frames
-                .push(JsonFrame::Array(JsonArrayState::ValueOrEnd)),
-            _ => self.invalid = true,
-        }
-    }
-
-    fn consume(&mut self, ch: char) {
-        if self.invalid {
-            return;
-        }
-        if self.complete {
-            if !is_json_whitespace(ch) {
-                self.invalid = true;
-            }
-            return;
-        }
-        if self.string.is_some() {
-            self.consume_string(ch);
-            return;
-        }
-        if self.primitive.is_some() {
-            self.consume_primitive(ch);
-            return;
-        }
-
-        let Some(frame) = self.frames.last() else {
-            self.invalid = true;
-            return;
-        };
-        match frame {
-            JsonFrame::Object(state) => match *state {
-                JsonObjectState::KeyOrEnd => {
-                    if ch == '}' {
-                        self.close_container();
-                    } else if ch == '"' {
-                        self.string = Some(JsonStringKind::Key);
-                    } else if !is_json_whitespace(ch) {
-                        self.invalid = true;
-                    }
-                }
-                JsonObjectState::Key => {
-                    if ch == '"' {
-                        self.string = Some(JsonStringKind::Key);
-                    } else if !is_json_whitespace(ch) {
-                        self.invalid = true;
-                    }
-                }
-                JsonObjectState::Colon => {
-                    if ch == ':' {
-                        self.set_object_state(JsonObjectState::Value);
-                    } else if !is_json_whitespace(ch) {
-                        self.invalid = true;
-                    }
-                }
-                JsonObjectState::Value => self.start_value(ch),
-                JsonObjectState::CommaOrEnd => {
-                    if ch == ',' {
-                        self.set_object_state(JsonObjectState::Key);
-                    } else if ch == '}' {
-                        self.close_container();
-                    } else if !is_json_whitespace(ch) {
-                        self.invalid = true;
-                    }
-                }
-            },
-            JsonFrame::Array(state) => match *state {
-                JsonArrayState::ValueOrEnd => {
-                    if ch == ']' {
-                        self.close_container();
-                    } else {
-                        self.start_value(ch);
-                    }
-                }
-                JsonArrayState::Value => self.start_value(ch),
-                JsonArrayState::CommaOrEnd => {
-                    if ch == ',' {
-                        self.set_array_state(JsonArrayState::Value);
-                    } else if ch == ']' {
-                        self.close_container();
-                    } else if !is_json_whitespace(ch) {
-                        self.invalid = true;
-                    }
-                }
-            },
-        }
-    }
-
-    fn set_object_state(&mut self, state: JsonObjectState) {
-        if let Some(JsonFrame::Object(current)) = self.frames.last_mut() {
-            *current = state;
-        } else {
-            self.invalid = true;
-        }
-    }
-
-    fn set_array_state(&mut self, state: JsonArrayState) {
-        if let Some(JsonFrame::Array(current)) = self.frames.last_mut() {
-            *current = state;
-        } else {
-            self.invalid = true;
-        }
-    }
-
-    fn consume_string(&mut self, ch: char) {
-        if self.unicode_digits > 0 {
-            if ch.is_ascii_hexdigit() {
-                self.unicode_digits -= 1;
-            } else {
-                self.invalid = true;
-            }
-            return;
-        }
-        if self.string_escaped {
-            self.string_escaped = false;
-            if ch == 'u' {
-                self.unicode_digits = 4;
-            } else if !matches!(ch, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't') {
-                self.invalid = true;
-            }
-            return;
-        }
-        if ch == '\\' {
-            self.string_escaped = true;
-        } else if ch == '"' {
-            let Some(kind) = self.string.take() else {
-                self.invalid = true;
-                return;
-            };
-            match kind {
-                JsonStringKind::Key => {
-                    self.set_object_state(JsonObjectState::Colon);
-                }
-                JsonStringKind::Value => self.value_complete(),
-            }
-        } else if ch <= '\u{1f}' {
-            self.invalid = true;
-        }
-    }
-
-    fn consume_primitive(&mut self, ch: char) {
-        let delimiter = is_json_whitespace(ch) || matches!(ch, ',' | '}' | ']');
-        let Some(primitive) = self.primitive.take() else {
-            self.invalid = true;
-            return;
-        };
-        match primitive {
-            JsonPrimitive::Literal { expected, next } => {
-                if next == expected.len() && delimiter {
-                    self.value_complete();
-                    self.consume(ch);
-                } else if next < expected.len()
-                    && ch.is_ascii()
-                    && Some(ch as u8) == expected.get(next).copied()
-                {
-                    self.primitive = Some(JsonPrimitive::Literal {
-                        expected,
-                        next: next + 1,
-                    });
-                } else {
-                    self.invalid = true;
-                }
-            }
-            JsonPrimitive::Number(mut state) => {
-                if delimiter
-                    && matches!(
-                        state,
-                        JsonNumberState::IntegerZero
-                            | JsonNumberState::Integer
-                            | JsonNumberState::Fraction
-                            | JsonNumberState::Exponent
-                    )
-                {
-                    self.value_complete();
-                    self.consume(ch);
-                } else if let Some(next) = Self::next_number_state(&state, ch) {
-                    state = next;
-                    self.primitive = Some(JsonPrimitive::Number(state));
-                } else {
-                    self.invalid = true;
-                }
-            }
-        }
-    }
-
-    fn next_number_state(state: &JsonNumberState, ch: char) -> Option<JsonNumberState> {
-        match state {
-            JsonNumberState::Sign if ch == '0' => Some(JsonNumberState::IntegerZero),
-            JsonNumberState::Sign if ch.is_ascii_digit() => Some(JsonNumberState::Integer),
-            JsonNumberState::IntegerZero if ch == '.' => Some(JsonNumberState::FractionStart),
-            JsonNumberState::IntegerZero if matches!(ch, 'e' | 'E') => {
-                Some(JsonNumberState::ExponentStart)
-            }
-            JsonNumberState::Integer if ch.is_ascii_digit() => Some(JsonNumberState::Integer),
-            JsonNumberState::Integer if ch == '.' => Some(JsonNumberState::FractionStart),
-            JsonNumberState::Integer if matches!(ch, 'e' | 'E') => {
-                Some(JsonNumberState::ExponentStart)
-            }
-            JsonNumberState::FractionStart if ch.is_ascii_digit() => {
-                Some(JsonNumberState::Fraction)
-            }
-            JsonNumberState::Fraction if ch.is_ascii_digit() => Some(JsonNumberState::Fraction),
-            JsonNumberState::Fraction if matches!(ch, 'e' | 'E') => {
-                Some(JsonNumberState::ExponentStart)
-            }
-            JsonNumberState::ExponentStart if matches!(ch, '+' | '-') => {
-                Some(JsonNumberState::ExponentSign)
-            }
-            JsonNumberState::ExponentStart if ch.is_ascii_digit() => {
-                Some(JsonNumberState::Exponent)
-            }
-            JsonNumberState::ExponentSign if ch.is_ascii_digit() => Some(JsonNumberState::Exponent),
-            JsonNumberState::Exponent if ch.is_ascii_digit() => Some(JsonNumberState::Exponent),
-            _ => None,
-        }
-    }
-
-    fn start_value(&mut self, ch: char) {
-        match ch {
-            '{' | '[' => self.start_container(ch),
-            '"' => self.string = Some(JsonStringKind::Value),
-            't' => {
-                self.primitive = Some(JsonPrimitive::Literal {
-                    expected: b"true",
-                    next: 1,
-                })
-            }
-            'f' => {
-                self.primitive = Some(JsonPrimitive::Literal {
-                    expected: b"false",
-                    next: 1,
-                })
-            }
-            'n' => {
-                self.primitive = Some(JsonPrimitive::Literal {
-                    expected: b"null",
-                    next: 1,
-                })
-            }
-            '-' => self.primitive = Some(JsonPrimitive::Number(JsonNumberState::Sign)),
-            '0' => self.primitive = Some(JsonPrimitive::Number(JsonNumberState::IntegerZero)),
-            ch if ch.is_ascii_digit() => {
-                self.primitive = Some(JsonPrimitive::Number(JsonNumberState::Integer))
-            }
-            _ if is_json_whitespace(ch) => {}
-            _ => self.invalid = true,
-        }
-    }
-
-    fn value_complete(&mut self) {
-        let Some(frame) = self.frames.last_mut() else {
-            self.complete = true;
-            return;
-        };
-        match frame {
-            JsonFrame::Object(state) => *state = JsonObjectState::CommaOrEnd,
-            JsonFrame::Array(state) => *state = JsonArrayState::CommaOrEnd,
-        }
-    }
-
-    fn close_container(&mut self) {
-        self.frames.pop();
-        self.value_complete();
-    }
 }
 
 impl ResponsePrefillProbe {
@@ -3405,6 +3225,7 @@ impl GuidedState {
         };
         let invoke_boundary = grammar
             .invoke_boundary_factory
+            .clone()
             .map(InvokeBoundaryFactory::create);
         let guided_prefix = grammar.guided_prefix_factory.map(|factory| factory());
         let reasoning_filter = reasoning
@@ -3412,6 +3233,8 @@ impl GuidedState {
             .map(|create_filter| create_filter());
         Self {
             prose: ProseControlState::default(),
+            native_tool_fallback: None,
+            native_handoff: false,
             preserve_phases: false,
             open_message: false,
             stripped_markup: false,
@@ -3625,6 +3448,9 @@ impl GuidedState {
 
     fn finish(&mut self) -> Result<Vec<UnifiedParserEvent>> {
         let mut output = self.drain(true);
+        if self.native_handoff {
+            return Ok(output);
+        }
         // EOF may resolve a retained native envelope and expose its guided
         // payload for the first time. Apply the same commit rules as push.
         self.emit_incremental(&mut output);
@@ -3661,6 +3487,7 @@ impl GuidedState {
     }
 
     fn reset(&mut self, starting_state: UnifiedParserStartingState) -> String {
+        self.native_handoff = false;
         self.prose.clear();
         let mut recovered = std::mem::take(&mut self.response_prefill_prose);
         recovered.push_str(&std::mem::take(&mut self.json));
@@ -4490,7 +4317,9 @@ impl GuidedState {
             }
             let prefix = boundary_prefix
                 .map(|prefix| match prefix {
-                    GuidedInvokePrefix::NoMatch => GuidedPrefix::NoMatch,
+                    GuidedInvokePrefix::NoMatch | GuidedInvokePrefix::NativeBody => {
+                        GuidedPrefix::NoMatch
+                    }
                     GuidedInvokePrefix::Pending => GuidedPrefix::Pending,
                     GuidedInvokePrefix::Match(_) | GuidedInvokePrefix::Strip(_) => unreachable!(),
                 })
@@ -4500,7 +4329,10 @@ impl GuidedState {
                         .guided_prefix_policy
                         .map(|policy| policy(prefix_context))
                 });
-            if boundary_prefix == Some(GuidedInvokePrefix::NoMatch) {
+            if matches!(
+                boundary_prefix,
+                Some(GuidedInvokePrefix::NoMatch | GuidedInvokePrefix::NativeBody)
+            ) {
                 // A completed native header is not a guided prefix, but its
                 // append-aware native scan can still be waiting for a terminator.
                 // Resetting the shared boundary here made that decision disappear
@@ -4740,6 +4572,53 @@ impl GuidedState {
                     break;
                 }
                 GuidedMode::OutsideReasoning => {
+                    // A complete native header at the payload boundary is
+                    // authoritative format evidence. An unfinished header can
+                    // still introduce guided JSON, so wait for its terminator.
+                    // Handing off before the body preserves argument streaming
+                    // and literal marker ownership. Once JSON starts, or while
+                    // inside reasoning/quoted prose, native-looking strings remain
+                    // data and cannot select this fallback. A turn whose prompt
+                    // already opened visible content keeps the shared contract:
+                    // native markup there is owned by its invocation and stripped,
+                    // and only a following guided payload dispatches.
+                    if let Some(wrapper) = self.native_tool_fallback
+                        && self.reasoning_enabled
+                        && !self.payload_emitted
+                        && !self.content_routed
+                        && self.json.trim().is_empty()
+                        && !self.prose.has_active_quote()
+                    {
+                        let mut start = self.input.len() - self.input.trim_start().len();
+                        if !flush && wrapper.starts_with(&self.input[start..]) {
+                            break;
+                        }
+                        if self.input[start..].starts_with(wrapper) {
+                            start += wrapper.len();
+                            start +=
+                                self.input[start..].len() - self.input[start..].trim_start().len();
+                        }
+                        let input = std::mem::take(&mut self.input);
+                        let prefix = self.invoke_prefix_append(
+                            &input[start..],
+                            start,
+                            GuidedInvokePrefixContext {
+                                outside_reasoning: true,
+                                payload_is_empty: true,
+                                followed_by_competing_marker: false,
+                            },
+                        );
+                        self.input = input;
+                        match prefix {
+                            Some(GuidedInvokePrefix::NativeBody) => {
+                                self.consume_input_prefix(start);
+                                self.native_handoff = true;
+                                break;
+                            }
+                            Some(GuidedInvokePrefix::Pending) if !flush => break,
+                            _ => {}
+                        }
+                    }
                     let native_envelope_owns_payload = self.native_envelope_owns_json_prefix();
                     // PAYLOAD FIRST. Once the run has opened a JSON value we are inside
                     // the payload, and a `<think>` from there on is ARGUMENT DATA, not a
@@ -5391,7 +5270,12 @@ impl GuidedState {
                     {
                         break;
                     }
-                    let owned_len = if self.grammar.has_markup_invoke_start() {
+                    let owned_len = if self.grammar.has_markup_invoke_start()
+                        || self
+                            .invoke_boundary
+                            .as_ref()
+                            .is_some_and(|boundary| boundary.owns_guided_prefix())
+                    {
                         self.invoke_candidate
                             .len
                             .max(self.native_header.holdback_len)
@@ -6775,6 +6659,7 @@ unified_registry! {
     "glm47" => glm47::glm47_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "nemotron_v3" | "nemotron3" => qwen3::nemotron_v3_unified,
+    "minimax_m3" | "minimax-m3" => minimax_m3::minimax_m3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
     "muse_spark" | "muse_spark_open" => muse_spark::muse_spark_unified,
     "beam" => beam::beam_unified,
@@ -6827,7 +6712,30 @@ impl DebugUnifiedParser {
     }
 }
 
+struct DebugContinuation {
+    family: String,
+    inner: Box<dyn UnifiedParserContinuation>,
+}
+
+impl UnifiedParserContinuation for DebugContinuation {
+    fn fork(&self) -> Result<Box<dyn UnifiedParser>> {
+        Ok(Box::new(DebugUnifiedParser {
+            family: self.family.clone(),
+            inner: self.inner.fork()?,
+        }))
+    }
+}
+
 impl UnifiedParser for DebugUnifiedParser {
+    fn continuation(&mut self) -> Result<Option<Box<dyn UnifiedParserContinuation>>> {
+        Ok(self.inner.continuation()?.map(|inner| {
+            Box::new(DebugContinuation {
+                family: self.family.clone(),
+                inner,
+            }) as Box<dyn UnifiedParserContinuation>
+        }))
+    }
+
     fn preserve_message_phases(&mut self, enabled: bool) {
         self.inner.preserve_message_phases(enabled);
     }
@@ -7445,6 +7353,13 @@ mod tests {
                     }
                 }
             }
+        }
+    }
+
+    #[test]
+    fn kimi_guided_response_uses_the_envelope_owner() {
+        for family in ["kimi_k2", "kimi_k3"] {
+            assert_guided_envelope_matrix(family, "", UnifiedParserStartingState::Response, &[]);
         }
     }
 

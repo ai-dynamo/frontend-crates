@@ -1,120 +1,20 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Streaming XML-ish tool-call parser for MiniMax-M3.
-//!
-//! MiniMax-M3 prefixes every tag with the namespace token `]<]minimax[>[` and
-//! names parameters by their TAG (not a `name=` attribute):
-//!   `]<]minimax[>[<tool_call>
-//!    ]<]minimax[>[<invoke name="NAME">
-//!    ]<]minimax[>[<KEY>value]<]minimax[>[</KEY>
-//!    ]<]minimax[>[</invoke>
-//!    ]<]minimax[>[</tool_call>`
-//! plus a bare `]<]minimax[>[<invoke ...>...</invoke>` back-off form when the
-//! outer wrapper is absent.
-//!
-//! The streaming concern (buffering, chunk-split marker safety, normal_text
-//! suppression) is owned by the shared [`scan::WrappedBlockScanner`]; all
-//! three markers begin with the namespace token, so the shared holdback also
-//! retains a split `]<]minimax[>[` run. The per-invoke value typing is
-//! delegated to the v1 batch parser `try_tool_call_parse_minimax_m3` driven by
-//! the same config `dynamo_parsers` uses for batch parsing, so a streamed call
-//! matches exactly what the batch parser produces. Arguments are re-serialized
-//! in source parameter-tag order because the v1 parser builds them from a
-//! `HashMap` whose key order is non-deterministic.
+//! Legacy tool-only projection of the MiniMax M3 unified event stream.
 
-use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
-    reorder_arguments,
-};
-use crate::tool_calling::v1core::{
-    MiniMaxM3ParserConfig, ToolDefinition, try_tool_call_parse_minimax_m3,
-};
+use crate::tool_calling::traits::{Tool, ToolParseResult, ToolParser};
+use crate::unified::{UnifiedParser, UnifiedParserExt, minimax_m3};
 
-use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
-
-/// The namespace token emitted before every M3 tag.
-const NS: &str = "]<]minimax[>[";
-const BLOCK_START: &str = "]<]minimax[>[<tool_call>";
-const BLOCK_END: &str = "]<]minimax[>[</tool_call>";
-/// Bare `<invoke` (no trailing `>`): matches both `<invoke name="...">` and the
-/// malformed nameless `<invoke>` (whose parse yields no call and is dropped).
-const FUNCTION_START: &str = "]<]minimax[>[<invoke";
-const FUNCTION_END: &str = "]<]minimax[>[</invoke>";
-
-fn spec() -> WrappedBlockSpec {
-    WrappedBlockSpec {
-        family: "minimax_m3",
-        block_starts: vec![BLOCK_START.to_string()],
-        block_ends: vec![BLOCK_END.to_string()],
-        invoke_start: FUNCTION_START.to_string(),
-        invoke_end: FUNCTION_END.to_string(),
-        orphan_markers: vec![BLOCK_END.to_string()],
-        // BLOCK_END is held back too: after a bare-invoke recovery latches
-        // suppression, a split closing marker must be retained whole so the
-        // orphan-close path (which clears the latch) can match it.
-        holdback_markers: vec![
-            BLOCK_START.to_string(),
-            FUNCTION_START.to_string(),
-            BLOCK_END.to_string(),
-        ],
-        bare_recovery_latch: BareRecoveryLatch::Set,
-        invoke_latch: InvokeLatch::IfEmitted,
-        drop_invoke_crossing_block_end: false,
-        // Every wrapped family's markers are special tokens today.
-        preserve_special_tokens: true,
-        ..Default::default()
-    }
-}
-
-/// Value-typing hook: wraps one complete invoke run in the M3 `<tool_call>`
-/// block so the v1 parser takes its normal wrapped path, then re-orders the
-/// arguments to source parameter-tag order.
-struct M3Emitter {
-    config: MiniMaxM3ParserConfig,
-    tools: Vec<ToolDefinition>,
-}
-
-impl InvokeEmitter for M3Emitter {
-    fn parse_invoke(
-        &mut self,
-        invoke: &str,
-        tool_index: usize,
-    ) -> anyhow::Result<Option<ToolCallDelta>> {
-        let wrapped = format!("{BLOCK_START}{invoke}{BLOCK_END}");
-        let tools_opt = (!self.tools.is_empty()).then_some(self.tools.as_slice());
-        let (calls, _content) = try_tool_call_parse_minimax_m3(&wrapped, &self.config, tools_opt)?;
-        let Some(call) = calls.into_iter().next() else {
-            return Ok(None);
-        };
-        let arguments =
-            reorder_arguments(&call.function.arguments, &source_parameter_order(invoke));
-        Ok(Some(ToolCallDelta {
-            tool_index,
-            name: Some(call.function.name),
-            arguments,
-            complete: true,
-        }))
-    }
-}
-
-/// Stream parser for MiniMax-M3 tool calls.
+/// MiniMax M3 tool parser backed by the native unified parser.
 pub struct MiniMaxM3ToolStreamParser {
-    scanner: WrappedBlockScanner<M3Emitter>,
+    parser: Box<dyn UnifiedParser>,
 }
 
 impl MiniMaxM3ToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
         Self {
-            scanner: WrappedBlockScanner::new(
-                spec(),
-                M3Emitter {
-                    // Identical to `dynamo_parsers`' batch config so the streamed
-                    // value typing matches the v1 batch parser exactly.
-                    config: MiniMaxM3ParserConfig::default(),
-                    tools: tools.iter().map(ToolDefinition::from).collect(),
-                },
-            ),
+            parser: minimax_m3::minimax_m3_unified(tools),
         }
     }
 }
@@ -128,65 +28,29 @@ impl ToolParser for MiniMaxM3ToolStreamParser {
     }
 
     fn preserve_special_tokens(&self) -> bool {
-        self.scanner.preserve_special_tokens()
+        self.parser.preserve_special_tokens()
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
-        self.scanner.push(chunk)
+        Ok(ToolParseResult::from_deltas(self.parser.push(chunk)?))
     }
 
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
-        self.scanner.finish()
+        Ok(ToolParseResult::from_deltas(self.parser.finish()?.events))
     }
-}
 
-/// TOP-LEVEL parameter tag names in the order they appear in an invoke run.
-///
-/// M3 names parameters by their tag (`]<]minimax[>[<location>value...`), and
-/// values may nest further namespaced tags (arrays/objects — batch cases
-/// 7.d/7.e), so the scan tracks tag depth and records only the depth-0 openers
-/// inside the invoke body; nested tag names never shadow a top-level key.
-fn source_parameter_order(function: &str) -> Vec<String> {
-    let mut names = Vec::new();
-    let mut depth: i32 = 0;
-    let mut cursor = 0;
-    while let Some(rel) = function[cursor..].find(NS) {
-        let tag_start = cursor + rel + NS.len();
-        let rest = &function[tag_start..];
-        let Some(after_lt) = rest.strip_prefix('<') else {
-            cursor = tag_start;
-            continue;
-        };
-        if let Some(closer) = after_lt.strip_prefix('/') {
-            // `</invoke>` closes the run; any other closer pops one level.
-            if !closer.starts_with("invoke") {
-                depth -= 1;
-            }
-            cursor = tag_start + 1;
-            continue;
-        }
-        if after_lt.starts_with("invoke") {
-            cursor = tag_start + 1;
-            continue;
-        }
-        let Some(name_end) = after_lt.find('>') else {
-            break;
-        };
-        let name = after_lt[..name_end].trim();
-        if !name.is_empty() {
-            if depth == 0 {
-                names.push(name.to_string());
-            }
-            depth += 1;
-        }
-        cursor = tag_start + 1 + name_end + 1;
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.parser.tool_call_id(tool_index)
     }
-    names
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const NS: &str = "]<]minimax[>[";
+    const BLOCK_START: &str = "]<]minimax[>[<tool_call>";
+    const BLOCK_END: &str = "]<]minimax[>[</tool_call>";
 
     fn weather_tools() -> Vec<Tool> {
         vec![Tool {
@@ -444,7 +308,10 @@ mod tests {
             ],
         );
         assert_eq!(out.normal_text, "");
-        assert!(out.calls.is_empty());
+        // Argument deltas can arrive before EOF, but truncation never commits
+        // a completed call or leaks the native markup into visible content.
+        assert!(out.calls.iter().all(|call| !call.complete));
+        assert!(out.coalesce_calls().calls.is_empty());
     }
 
     #[test]

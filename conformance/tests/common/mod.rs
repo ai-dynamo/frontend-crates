@@ -475,11 +475,19 @@ mod resolve_snap_dir_tests {
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
 /// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
 /// The committed canonical family YAML is DERIVED from this via render -> explode
-/// -> package. Each test process copies the generated tree to its own immutable
+/// -> package. CI prepares one job-owned `CONFORMANCE_GOLDEN_ROOT` for all readers.
+/// Alternate-source subprocesses regenerate against their changed authored inputs.
+/// Otherwise each test process copies the generated tree to its own immutable
 /// directory while holding the lock, because the generator truncates files before
 /// rewriting them and another test binary may start as soon as the lock is released.
 /// Panics with the fix command if generation fails.
 pub fn ensure_unified_golden() -> PathBuf {
+    if let Some(root) = prepared_unified_golden(
+        std::env::var_os("CONFORMANCE_GOLDEN_ROOT").map(PathBuf::from),
+        std::env::var_os("FRONTEND_CRATES_ROOT").is_some(),
+    ) {
+        return root;
+    }
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let script = manifest.join("utils/src/gen_unified_golden.py");
     let generated = manifest.join("unified/golden_spec");
@@ -509,6 +517,26 @@ pub fn ensure_unified_golden() -> PathBuf {
         );
     }
     isolated
+}
+
+pub(crate) fn prepared_unified_golden(
+    root: Option<PathBuf>,
+    alternate_source: bool,
+) -> Option<PathBuf> {
+    if alternate_source {
+        return None;
+    }
+    root.inspect(|root| {
+        assert!(root.is_dir(), "CONFORMANCE_GOLDEN_ROOT must be a directory");
+        for family in unified_families().values() {
+            let file = root.join(&family.golden_spec);
+            assert!(
+                file.is_file(),
+                "CONFORMANCE_GOLDEN_ROOT is missing {}",
+                file.display()
+            );
+        }
+    })
 }
 
 /// Crate-relative display path for a fixture (for failure messages).

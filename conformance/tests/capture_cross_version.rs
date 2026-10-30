@@ -83,10 +83,20 @@ fn numeric_yaml_chunk_text_uses_input_schedule() {
 }
 
 fn capture_record(
+    family: &str,
     result: Result<Captured, CaptureFailure>,
     init: &common::Init,
 ) -> serde_yaml::Value {
     let mut record = serde_yaml::Mapping::new();
+    record.insert(
+        "parser_path".into(),
+        if native_family_registered(family) {
+            "unified"
+        } else {
+            "split"
+        }
+        .into(),
+    );
     record.insert("init".into(), common::json_to_yaml_value(init));
     match result {
         Ok((rows, assembled)) => {
@@ -265,6 +275,15 @@ fn capture_producer_records_init_and_identity() {
                 .ends_with(doc["capture_provenance"]["source_sha256"].as_str().unwrap())
         );
         let case = &doc["cases"][key];
+        // Authored input/GOLDEN cannot certify which parser route the producer ran.
+        assert_eq!(
+            case["parser_path"],
+            if cfg!(conformance_split_only) {
+                "split"
+            } else {
+                "unified"
+            }
+        );
         assert_eq!(
             case["capture_input"]["input"],
             fixture["cases"][key]["input"]
@@ -309,6 +328,7 @@ fn capture_producer_records_init_and_identity() {
         &std::fs::read_to_string(output.join("not_a_parser/absent.yaml")).unwrap(),
     )
     .unwrap();
+    assert_eq!(missing_doc["cases"]["absent"]["parser_path"], "split");
     assert!(
         missing_doc["cases"]["absent"]["unavailable"]
             .as_str()
@@ -332,6 +352,7 @@ fn capture_failures_are_not_successful_empty_outputs() {
         "split assembled finish",
     ] {
         let record = capture_record(
+            "gemma4",
             capture_step::<Captured, _>(Err("probe failure"), stage),
             &init,
         );
@@ -345,12 +366,12 @@ fn capture_failures_are_not_successful_empty_outputs() {
     let unavailable = split_path_capture_with_parsers("gemma4", "not_a_parser", "text", &tools())
         .map(|(rows, assembled)| (rows.into_iter().map(|_| Vec::new()).collect(), assembled));
     assert!(
-        capture_record(unavailable, &init)["unavailable"]
+        capture_record("not_a_parser", unavailable, &init)["unavailable"]
             .as_str()
             .unwrap()
             .contains("not_a_parser")
     );
-    let empty = capture_record(Ok((Vec::new(), Vec::new())), &init);
+    let empty = capture_record("gemma4", Ok((Vec::new(), Vec::new())), &init);
     assert!(empty["assembled"].as_sequence().unwrap().is_empty());
     assert!(empty.get("error").is_none());
 }
@@ -381,7 +402,11 @@ fn native_parser_errors_reach_capture_records() {
         let mut parser: Box<dyn dynamo_parsers_v2::UnifiedParser> =
             Box::new(FailingParser { on_finish });
         let init = common::Init::default();
-        let record = capture_record(native_capture(&mut parser, &["text".into()], &init), &init);
+        let record = capture_record(
+            "gemma4",
+            native_capture(&mut parser, &["text".into()], &init),
+            &init,
+        );
         assert_eq!(
             record["error"].as_str().unwrap(),
             if on_finish {
@@ -1052,6 +1077,7 @@ fn capture_this_build_against_the_current_corpus() {
                     .and_then(|value| requested_chunks(value, &family, &cid));
                 let schedule = capture::replay_chunks(input, recorded.as_deref());
                 let mut record = capture_record(
+                    &family,
                     capture_case_with_chunks(&family, input, &schedule, &init, &tool_schemas),
                     &init,
                 );
@@ -1248,12 +1274,8 @@ fn capture_family_jobs() {
                     Err(_) => Err(CaptureFailure::Error("registered parser panicked".into())),
                 }
             };
-            let mut record = serde_json::to_value(capture_record(result, &init)).expect("record");
-            record["parser_path"] = json!(if native_family_registered(family) {
-                "unified"
-            } else {
-                "split"
-            });
+            let mut record =
+                serde_json::to_value(capture_record(family, result, &init)).expect("record");
             if let Some(detail) = record
                 .get("unavailable")
                 .and_then(Value::as_str)

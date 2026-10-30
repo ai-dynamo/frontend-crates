@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::tool_calling::arguments::{parsed_json_literal, parsed_json_object};
-
+use crate::tool_calling::kimi_progress::KimiProgress;
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
     JsonStringState, ProseControl, ProseControlState, ProseGrammarSpan, find_first_outside_strings,
@@ -161,11 +161,139 @@ enum Mode {
     Done,
 }
 
-#[derive(Debug)]
 struct ActiveCall {
     name: String,
     id: String,
     return_mode: Mode,
+    progress: KimiProgress,
+    arguments: NativeArguments,
+}
+
+struct NativeArguments {
+    cursor: usize,
+    header: KimiK3HeaderScan,
+    active: Option<NativeArgument>,
+    json_start: Option<usize>,
+    field_count: usize,
+    blocked: bool,
+}
+
+struct NativeArgument {
+    key: String,
+    arg_type: String,
+    start: usize,
+    released: usize,
+    close: ArgumentCloseScan,
+    started: bool,
+}
+
+impl NativeArguments {
+    fn advance_whitespace(text: &str, cursor: &mut usize) {
+        for ch in text[*cursor..].chars() {
+            #[cfg(test)]
+            crate::tool_calling::kimi_progress::count_work(2, ch.len_utf8());
+            if !ch.is_whitespace() {
+                break;
+            }
+            *cursor += ch.len_utf8();
+        }
+    }
+
+    fn new(cursor: usize) -> Self {
+        Self {
+            cursor,
+            header: KimiK3HeaderScan::new(),
+            active: None,
+            json_start: None,
+            field_count: 0,
+            blocked: false,
+        }
+    }
+
+    fn advance(&mut self, text: &str, progress: &mut KimiProgress) -> Option<ToolCallDelta> {
+        if self.blocked {
+            return None;
+        }
+        if let Some(start) = self.json_start.as_mut() {
+            if !progress.published() {
+                Self::advance_whitespace(text, start);
+            }
+            return progress.advance_json(&text[*start..]);
+        }
+        let mut output = String::new();
+        loop {
+            if self.active.is_none() {
+                Self::advance_whitespace(text, &mut self.cursor);
+                let tail = &text[self.cursor..];
+                let (open, json) = if JSON_OPEN.prefix_len(tail).is_some() {
+                    (JSON_OPEN, true)
+                } else if ARG_OPEN.prefix_len(tail).is_some() {
+                    (ARG_OPEN, false)
+                } else {
+                    break;
+                };
+                let open_len = open.prefix_len(tail).expect("matched above");
+                let Some((at, len)) = self.header.advance(&tail[open_len..], false) else {
+                    break;
+                };
+                let Some(attrs) = parse_attrs(&tail[open_len..open_len + at]) else {
+                    self.blocked = true;
+                    break;
+                };
+                self.cursor += open_len + at + len;
+                self.header = KimiK3HeaderScan::new();
+                if json {
+                    Self::advance_whitespace(text, &mut self.cursor);
+                    self.json_start = Some(self.cursor);
+                    return progress.advance_json(&text[self.cursor..]);
+                }
+                let arg_type = attr_value(&attrs, "type").unwrap_or("string").to_string();
+                self.active = Some(NativeArgument {
+                    key: attr_value(&attrs, "key").unwrap_or_default().to_string(),
+                    close: ArgumentCloseScan::new(self.cursor, arg_type != "string"),
+                    arg_type,
+                    start: self.cursor,
+                    released: self.cursor,
+                    started: false,
+                });
+            }
+            let active = self.active.as_mut().expect("initialized above");
+            let confirmed = active.close.advance(text, false);
+            let end = confirmed.map_or_else(|| active.close.payload_end(), |hit| hit.at);
+            if active.arg_type == "string" {
+                if !active.started {
+                    output.push_str(if self.field_count == 0 { "{" } else { "," });
+                    output.push_str(&serde_json::to_string(&active.key).expect("string encoding"));
+                    output.push_str(":\"");
+                    active.started = true;
+                }
+                if end > active.released {
+                    let encoded = encode_argument_value("string", &text[active.released..end]);
+                    output.push_str(&encoded[1..encoded.len() - 1]);
+                    active.released = end;
+                }
+            }
+            let Some(close) = confirmed else {
+                break;
+            };
+            if active.arg_type == "string" {
+                output.push('"');
+            } else {
+                output.push_str(if self.field_count == 0 { "{" } else { "," });
+                output.push_str(&serde_json::to_string(&active.key).expect("string encoding"));
+                output.push(':');
+                output.push_str(&encode_argument_value(
+                    &active.arg_type,
+                    &text[active.start..close.at],
+                ));
+            }
+            self.field_count += 1;
+            self.cursor = close.end();
+            self.active = None;
+            self.header = KimiK3HeaderScan::new();
+        }
+        (!output.is_empty()).then(|| progress.delta(output, false))
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -189,6 +317,8 @@ impl KimiK3HeaderScan {
             self.scanned = 0;
         }
         while self.scanned < text.len() {
+            #[cfg(test)]
+            crate::tool_calling::kimi_progress::count_work(1, 1);
             let suffix = &text[self.scanned..];
             #[cfg(test)]
             {
@@ -564,7 +694,11 @@ impl KimiK3CallBoundary {
             self.body_parse_count += 1;
             self.parsed_body_bytes += body.len();
         }
-        parse_call_body(body)
+        if self.context == CallBoundaryContext::Native {
+            parse_call_body_ordered(body, true)
+        } else {
+            parse_call_body(body)
+        }
     }
 
     fn recovery_body_end(&self, text: &str, header_len: usize, limit: usize) -> Option<usize> {
@@ -690,6 +824,7 @@ impl KimiK3CallBoundary {
                 #[cfg(test)]
                 {
                     self.scanned_bytes += character.len_utf8();
+                    crate::tool_calling::kimi_progress::count_work(1, character.len_utf8());
                 }
                 continue;
             }
@@ -706,6 +841,7 @@ impl KimiK3CallBoundary {
                 #[cfg(test)]
                 {
                     self.scanned_bytes += len;
+                    crate::tool_calling::kimi_progress::count_work(1, len);
                 }
                 continue;
             }
@@ -740,6 +876,7 @@ impl KimiK3CallBoundary {
             #[cfg(test)]
             {
                 self.scanned_bytes += character.len_utf8();
+                crate::tool_calling::kimi_progress::count_work(1, character.len_utf8());
             }
         }
     }
@@ -1411,7 +1548,21 @@ impl KimiK3Native {
                 self.mode = Mode::Tools;
                 true
             }
-            CallBoundary::Pending if !flush => false,
+            CallBoundary::Pending if !flush => {
+                if let Some(call) = self.active_call.as_mut()
+                    && !call.name.is_empty()
+                    && let Some(delta) = call.arguments.advance(&self.buffer, &mut call.progress)
+                {
+                    let index = delta.tool_index;
+                    if self.call_ids.len() <= index {
+                        self.call_ids.resize(index + 1, String::new());
+                        self.call_ids[index] = call.id.clone();
+                        self.next_tool_index += 1;
+                    }
+                    output.push_call(delta);
+                }
+                false
+            }
             CallBoundary::Pending | CallBoundary::Malformed => {
                 tracing::warn!(
                     why = "kimi_k3_incomplete_call",
@@ -1440,7 +1591,7 @@ impl KimiK3Native {
     }
 
     fn finish_call(&mut self, arguments: Option<String>, output: &mut UnifiedParserOutput) {
-        let Some(call) = self.active_call.take() else {
+        let Some(mut call) = self.active_call.take() else {
             self.mode = Mode::Tools;
             return;
         };
@@ -1460,15 +1611,15 @@ impl KimiK3Native {
             return;
         };
 
-        let tool_index = self.next_tool_index;
-        self.next_tool_index += 1;
-        self.call_ids.push(call.id);
-        output.push_call(ToolCallDelta {
-            tool_index,
-            name: Some(call.name),
-            arguments,
-            complete: true,
-        });
+        let tool_index = call.progress.tool_index;
+        if !call.progress.published() {
+            self.next_tool_index += 1;
+            self.call_ids.resize(tool_index + 1, String::new());
+            self.call_ids[tool_index] = call.id;
+        }
+        if let Some(delta) = call.progress.finish_json(&arguments) {
+            output.push_call(delta);
+        }
     }
 
     fn consume_call_open(
@@ -1525,6 +1676,8 @@ impl KimiK3Native {
             .map(str::to_string);
         let id = tool_call_id(&name, index.as_deref());
         self.active_call = Some(ActiveCall {
+            progress: KimiProgress::new(self.next_tool_index, name.clone()),
+            arguments: NativeArguments::new(header_end + sep_len),
             name,
             id,
             return_mode,
@@ -2059,6 +2212,12 @@ fn parse_call_header(text: &str) -> Option<(Vec<(String, String)>, usize)> {
 }
 
 fn parse_call_body(body: &str) -> Option<String> {
+    parse_call_body_ordered(body, false)
+}
+
+fn parse_call_body_ordered(body: &str, preserve_duplicates: bool) -> Option<String> {
+    #[cfg(test)]
+    crate::tool_calling::kimi_progress::count_work(2, body.len());
     let trimmed = body.trim();
     if trimmed.is_empty() {
         return Some("{}".to_string());
@@ -2080,7 +2239,11 @@ fn parse_call_body(body: &str) -> Option<String> {
         }
         let raw = &trimmed[value_start..value_end];
         parsed_json_object(raw)?;
-        return Some(compact_json(raw));
+        return Some(if preserve_duplicates {
+            raw.trim().to_string()
+        } else {
+            compact_json(raw)
+        });
     }
 
     let mut fields = Vec::<(String, String)>::new();
@@ -2098,12 +2261,29 @@ fn parse_call_body(body: &str) -> Option<String> {
         let value_start = header_end + sep_len;
         let key = attr_value(&attrs, "key").unwrap_or_default().to_string();
         let arg_type = attr_value(&attrs, "type").unwrap_or("string");
-        let (close_at, close_len) = structural_argument_close(&trimmed[value_start..])?;
+        let tail = &trimmed[value_start..];
+        let close = ArgumentCloseScan::new(0, arg_type != "string")
+            .advance(tail, true)
+            .or_else(|| {
+                // EOF recovery retains malformed typed JSON as a string; it cannot
+                // authorize provisional fragments while a quoted value is still open.
+                if arg_type == "string" {
+                    return None;
+                }
+                let close = ArgumentCloseScan::new(0, false).advance(tail, true)?;
+                tracing::warn!(
+                    why = "kimi_k3_unterminated_typed_json",
+                    recovered_bytes = close.at,
+                    "recovering malformed typed JSON at the argument boundary"
+                );
+                Some(close)
+            })?;
+        let (close_at, close_len) = (close.at, close.len);
         let value_end = value_start + close_at;
         let field_end = value_end + close_len;
         let value = encode_argument_value(arg_type, &trimmed[value_start..value_end]);
         count_argument_field_lookup();
-        if let Some(position) = field_positions.get(&key).copied() {
+        if !preserve_duplicates && let Some(position) = field_positions.get(&key).copied() {
             fields[position].1 = value;
         } else {
             field_positions.insert(key.clone(), fields.len());
@@ -2125,94 +2305,144 @@ fn parse_call_body(body: &str) -> Option<String> {
     Some(output)
 }
 
-fn structural_argument_close(value_and_rest: &str) -> Option<(usize, usize)> {
-    #[derive(Clone, Copy)]
-    enum NextArgument {
-        None,
-        AfterClose(TokenHit),
-        Header(TokenHit, HeaderPhase),
-    }
+#[derive(Clone, Copy)]
+enum NextArgument {
+    None,
+    AfterClose(TokenHit),
+    Header(TokenHit, HeaderPhase),
+}
 
-    #[derive(Clone, Copy)]
-    enum HeaderPhase {
-        Whitespace,
-        Key,
-        Quote,
-        Value,
-    }
+#[derive(Clone, Copy)]
+enum HeaderPhase {
+    Whitespace,
+    Key,
+    Quote,
+    Value,
+}
 
-    let mut next_argument = NextArgument::None;
-    let mut cursor = 0;
-    while cursor < value_and_rest.len() {
-        let suffix = &value_and_rest[cursor..];
-        if let Some(close_len) = argument_close_len(suffix) {
-            count_argument_scan(close_len);
-            next_argument = NextArgument::AfterClose(TokenHit {
-                at: cursor,
-                len: close_len,
-            });
-            cursor += close_len;
-            continue;
+struct ArgumentCloseScan {
+    cursor: usize,
+    next_argument: NextArgument,
+    json_value: bool,
+    quoted: JsonStringState,
+}
+
+impl ArgumentCloseScan {
+    fn new(cursor: usize, json_value: bool) -> Self {
+        Self {
+            cursor,
+            next_argument: NextArgument::None,
+            json_value,
+            quoted: JsonStringState::default(),
         }
+    }
 
-        match next_argument {
-            NextArgument::AfterClose(close) => {
-                let ch = suffix.chars().next()?;
-                if ch.is_whitespace() {
-                    count_argument_scan(ch.len_utf8());
-                    cursor += ch.len_utf8();
-                    continue;
-                }
-                if let Some(open_len) = ARG_OPEN.prefix_len(suffix) {
-                    count_argument_scan(open_len);
-                    cursor += open_len;
-                    next_argument = NextArgument::Header(close, HeaderPhase::Whitespace);
-                    continue;
-                }
-                next_argument = NextArgument::None;
-            }
-            NextArgument::Header(close, phase) => {
-                if let Some(sep_len) = SEP_MARKER.prefix_len(suffix) {
-                    count_argument_scan(sep_len);
-                    if matches!(phase, HeaderPhase::Whitespace) {
-                        return Some((close.at, close.len));
-                    }
-                    next_argument = NextArgument::None;
-                    cursor += sep_len;
-                    continue;
-                }
+    fn payload_end(&self) -> usize {
+        match self.next_argument {
+            NextArgument::None => self.cursor,
+            NextArgument::AfterClose(close) | NextArgument::Header(close, _) => close.at,
+        }
+    }
 
-                let ch = suffix.chars().next()?;
-                let next_phase = match phase {
-                    HeaderPhase::Whitespace if ch.is_whitespace() => HeaderPhase::Whitespace,
-                    HeaderPhase::Whitespace if ch.is_alphanumeric() || ch == '_' => {
-                        HeaderPhase::Key
-                    }
-                    HeaderPhase::Key if ch.is_alphanumeric() || ch == '_' => HeaderPhase::Key,
-                    HeaderPhase::Key if ch == '=' => HeaderPhase::Quote,
-                    HeaderPhase::Quote if ch == '"' => HeaderPhase::Value,
-                    HeaderPhase::Value if ch == '"' => HeaderPhase::Whitespace,
-                    HeaderPhase::Value => HeaderPhase::Value,
-                    HeaderPhase::Whitespace | HeaderPhase::Key | HeaderPhase::Quote => {
-                        next_argument = NextArgument::None;
-                        continue;
-                    }
-                };
+    // NativeArguments and final normalization must agree before fragments commit.
+    // A non-string argument owns quoted JSON markers; raw strings use XTML framing.
+    fn advance(&mut self, text: &str, flush: bool) -> Option<TokenHit> {
+        while self.cursor < text.len() {
+            let suffix = &text[self.cursor..];
+            let ch = suffix.chars().next()?;
+            if matches!(self.next_argument, NextArgument::None)
+                && self.json_value
+                && self.quoted.advance(ch)
+            {
                 count_argument_scan(ch.len_utf8());
-                cursor += ch.len_utf8();
-                next_argument = NextArgument::Header(close, next_phase);
+                self.cursor += ch.len_utf8();
                 continue;
             }
-            NextArgument::None => {}
-        }
+            if !flush
+                && ARG_CLOSE
+                    .variants()
+                    .any(|marker| suffix.len() < marker.len() && marker.starts_with(suffix))
+            {
+                break;
+            }
+            if let Some(close_len) = argument_close_len(suffix) {
+                count_argument_scan(close_len);
+                self.next_argument = NextArgument::AfterClose(TokenHit {
+                    at: self.cursor,
+                    len: close_len,
+                });
+                self.cursor += close_len;
+                continue;
+            }
 
-        let ch = suffix.chars().next()?;
-        count_argument_scan(ch.len_utf8());
-        cursor += ch.len_utf8();
-    }
-    match next_argument {
-        NextArgument::AfterClose(close) => Some((close.at, close.len)),
-        NextArgument::None | NextArgument::Header(_, _) => None,
+            match self.next_argument {
+                NextArgument::AfterClose(close) => {
+                    if ch.is_whitespace() {
+                        count_argument_scan(ch.len_utf8());
+                        self.cursor += ch.len_utf8();
+                        continue;
+                    }
+                    if let Some(open_len) = ARG_OPEN.prefix_len(suffix) {
+                        count_argument_scan(open_len);
+                        self.cursor += open_len;
+                        self.next_argument = NextArgument::Header(close, HeaderPhase::Whitespace);
+                        continue;
+                    }
+                    if !flush
+                        && ALL_MARKERS
+                            .iter()
+                            .flat_map(|marker| marker.variants())
+                            .any(|marker| marker.starts_with(suffix) || suffix.starts_with(marker))
+                    {
+                        break;
+                    }
+                    self.next_argument = NextArgument::None;
+                }
+                NextArgument::Header(close, phase) => {
+                    if let Some(sep_len) = SEP_MARKER.prefix_len(suffix) {
+                        count_argument_scan(sep_len);
+                        if matches!(phase, HeaderPhase::Whitespace) {
+                            return Some(close);
+                        }
+                        self.next_argument = NextArgument::None;
+                        self.cursor += sep_len;
+                        continue;
+                    }
+                    if SEP_MARKER
+                        .variants()
+                        .any(|marker| marker.starts_with(suffix))
+                    {
+                        break;
+                    }
+                    let next_phase = match phase {
+                        HeaderPhase::Whitespace if ch.is_whitespace() => HeaderPhase::Whitespace,
+                        HeaderPhase::Whitespace if ch.is_alphanumeric() || ch == '_' => {
+                            HeaderPhase::Key
+                        }
+                        HeaderPhase::Key if ch.is_alphanumeric() || ch == '_' => HeaderPhase::Key,
+                        HeaderPhase::Key if ch == '=' => HeaderPhase::Quote,
+                        HeaderPhase::Quote if ch == '"' => HeaderPhase::Value,
+                        HeaderPhase::Value if ch == '"' => HeaderPhase::Whitespace,
+                        HeaderPhase::Value => HeaderPhase::Value,
+                        HeaderPhase::Whitespace | HeaderPhase::Key | HeaderPhase::Quote => {
+                            self.next_argument = NextArgument::None;
+                            continue;
+                        }
+                    };
+                    count_argument_scan(ch.len_utf8());
+                    self.cursor += ch.len_utf8();
+                    self.next_argument = NextArgument::Header(close, next_phase);
+                    continue;
+                }
+                NextArgument::None => {}
+            }
+            count_argument_scan(ch.len_utf8());
+            self.cursor += ch.len_utf8();
+        }
+        match self.next_argument {
+            NextArgument::AfterClose(close) if flush => Some(close),
+            _ => None,
+        }
     }
 }
 
@@ -2245,6 +2475,8 @@ std::thread_local! {
 }
 
 fn count_argument_scan(bytes: usize) {
+    #[cfg(test)]
+    crate::tool_calling::kimi_progress::count_work(2, bytes);
     #[cfg(test)]
     ARGUMENT_SCAN_BYTES.with(|scanned| scanned.set(scanned.get() + bytes));
     #[cfg(not(test))]
@@ -2695,17 +2927,24 @@ mod tests {
                 events.extend(parser.push(&input[split..]).unwrap());
                 events.extend(parser.finish().unwrap().events);
                 assert_eq!(
-                    events,
-                    vec![crate::UnifiedParserEvent::ToolCall(ToolCallDelta {
-                        tool_index: 0,
-                        name: Some("good".into()),
-                        arguments: r#"{"x":7}"#.into(),
-                        complete: true,
-                    })],
+                    assemble(&events),
+                    vec![UnifiedEvent::ToolCall {
+                        name: "good".into(),
+                        arguments: serde_json::json!({"x":7}),
+                    }],
                     "raw JSON {raw:?}, split at byte {split}"
                 );
-                assert_eq!(parser.tool_call_id(0), Some("good:1"));
-                assert_eq!(parser.tool_call_id(1), None);
+                let completed: Vec<_> = events
+                    .iter()
+                    .filter_map(|event| match event {
+                        crate::UnifiedParserEvent::ToolCall(delta) if delta.complete => Some(delta),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(completed.len(), 1);
+                let index = completed[0].tool_index;
+                assert_eq!(parser.tool_call_id(index), Some("good:1"));
+                assert_eq!(parser.tool_call_id(index + 1), None);
             }
         }
     }
@@ -3419,7 +3658,9 @@ mod tests {
                     ..UnifiedParserInit::default()
                 };
                 parser.initialize_request(init.clone()).unwrap();
-                assert!(parser.push(&partial).unwrap().is_empty());
+                let partial_events = parser.push(&partial).unwrap();
+                assert!(assemble(&partial_events).is_empty());
+                assert!(partial_events.iter().all(|event| !matches!(event, crate::UnifiedParserEvent::ToolCall(delta) if delta.complete)));
                 if finish {
                     if guided {
                         assert!(parser.finish().is_err());
@@ -3595,18 +3836,25 @@ mod tests {
         assert!(parser.push(&header).unwrap().is_empty());
         assert_eq!(parser.tool_call_id(0), None);
         let body = arg("value", "string", "Zürich");
-        assert!(parser.push(&body).unwrap().is_empty());
-        assert!(parser.push(CALL_CLOSE.canonical).unwrap().is_empty());
-        assert_eq!(
-            parser.push(TOOLS_CLOSE.canonical).unwrap(),
-            vec![crate::UnifiedParserEvent::ToolCall(ToolCallDelta {
-                tool_index: 0,
-                name: Some("echo".into()),
-                arguments: r#"{"value":"Zürich"}"#.into(),
-                complete: true,
-            })]
-        );
+        let mut events = parser.push(&body).unwrap();
         assert_eq!(parser.tool_call_id(0), Some("echo:0"));
+        assert!(events.iter().all(
+            |event| !matches!(event, crate::UnifiedParserEvent::ToolCall(delta) if delta.complete)
+        ));
+        assert!(parser.push(CALL_CLOSE.canonical).unwrap().is_empty());
+        let closed = parser.push(TOOLS_CLOSE.canonical).unwrap();
+        assert_eq!(closed.len(), 1);
+        assert!(
+            matches!(&closed[0], crate::UnifiedParserEvent::ToolCall(delta) if delta.complete && delta.name.is_none())
+        );
+        events.extend(closed);
+        assert_eq!(
+            assemble(&events),
+            vec![UnifiedEvent::ToolCall {
+                name: "echo".into(),
+                arguments: serde_json::json!({"value":"Zürich"}),
+            }]
+        );
     }
 
     #[test]

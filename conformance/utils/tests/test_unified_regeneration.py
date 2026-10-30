@@ -29,6 +29,38 @@ from explode_unified_fixtures import _split_only_cases
 from conformance.utils.tests.test_unified_history import _change, _write_capture, _write_family
 
 
+def test_golden_output_directory_keeps_default_bytes(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("FRONTEND_CRATES_ROOT", str(ROOT))
+    monkeypatch.setattr(golden, "__file__", str(tmp_path / "conformance/utils/src/gen_unified_golden.py"))
+    default = tmp_path / "conformance/unified/golden_spec"
+    custom = tmp_path / "prepared-golden"
+
+    golden.main([])
+    default_messages = capsys.readouterr().out.splitlines()
+    golden.main(["--output", str(custom)])
+    custom_messages = capsys.readouterr().out.splitlines()
+
+    expected = {golden.FAM_FILE[family] for family in golden.FAMILIES}
+    assert {path.name for path in default.iterdir()} == expected
+    assert {path.name for path in custom.iterdir()} == expected
+    assert {name: (default / name).read_bytes() for name in expected} == {
+        name: (custom / name).read_bytes() for name in expected
+    }
+    assert len(default_messages) == len(custom_messages) == len(expected)
+    for family, default_message, custom_message in zip(golden.FAMILIES, default_messages, custom_messages):
+        suffix = f"({len(golden.build_cases(family))} cases)"
+        assert default_message.endswith(suffix)
+        assert custom_message.endswith(suffix)
+
+
+def test_golden_output_directory_rejects_a_file(tmp_path):
+    output = tmp_path / "output"
+    output.write_text("keep existing file")
+    with pytest.raises(FileExistsError):
+        golden.main(["--output", str(output)])
+    assert output.read_text() == "keep existing file"
+
+
 def _catalog_root(tmp_path, monkeypatch):
     conformance = tmp_path / "conformance"
     store = conformance / "fixtures-unified-v2"

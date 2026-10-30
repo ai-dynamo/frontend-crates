@@ -93,6 +93,7 @@ pub(crate) struct SequenceFormat {
 pub(crate) enum JsonSchemaStyle {
     Json,
     QwenXml,
+    MinimaxM3Xml,
     DeepseekXml,
     #[serde(rename = "deepseek_v4_1_xml")]
     DeepseekV41Xml,
@@ -106,6 +107,8 @@ pub(crate) struct JsonSchemaFormat {
     pub style: JsonSchemaStyle,
     #[serde(skip_serializing_if = "is_false")]
     pub any_order: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_whitespace_cnt: Option<usize>,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -184,6 +187,7 @@ pub(super) fn import_native(
                 native::JsonSchemaStyle::DeepseekXml => JsonSchemaStyle::DeepseekXml,
             },
             any_order,
+            max_whitespace_cnt: None,
         }),
         native::Format::AnyTokens(f) => Format::AnyTokens(f),
         native::Format::AnyText(f) => Format::AnyText(AnyTextFormat {

@@ -77,7 +77,7 @@ The `v1`/`v2` directory names are transitional; when the merge happens the survi
 
 ## Ownership
 
-Contributors edit parsers and authored inputs/GOLDEN, run [current qualification](../conformance/README.md#current-parser-tests-and-qualification), and [generate the latest report](../conformance/README.md#generate-the-latest-or-history-report). Refresh `conformance/CONFORMANCE_v2.html` and inspect it over HTTP; leave regenerated HTML unstaged unless explicitly requested. Leave recorded YAML and history unchanged; administrators own those updates under the [capture plan](CONFORMANCE-LATEST-PLAN.md).
+Contributors edit parsers and authored inputs/GOLDEN, run [current qualification](../conformance/README.md#current-parser-tests-and-qualification), and [generate the latest report](../conformance/README.md#generate-the-latest-or-history-report). Refresh `conformance/CONFORMANCE_v2.html` and inspect it over HTTP; leave regenerated HTML unstaged unless explicitly requested. Recapture affected latest snapshots through the [capture plan](CONFORMANCE-LATEST-PLAN.md). Historical backfills and corrections use normal PR review and preserve request bindings and producer provenance.
 
 ## Version Pins
 

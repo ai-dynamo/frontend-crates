@@ -536,12 +536,20 @@ impl ReasoningParser for BasicReasoningParser {
                     if self.stream_reasoning {
                         let ol_end = overlap(&current_text, &self.think_end_token);
                         let ol_tool = max_marker_overlap(&current_text, &self.tool_start_tokens);
-                        let ol = ol_end.max(ol_tool);
+                        // Until the start tag is stripped, a partial one at the end
+                        // (e.g. "\n<thi") may still complete into the tag.
+                        let ol_start = if self.stripped_think_start {
+                            0
+                        } else {
+                            overlap(&current_text, &self.think_start_token)
+                        };
+                        let ol = ol_end.max(ol_tool).max(ol_start);
                         // A one-byte think-marker overlap remains too ambiguous
                         // (notably a lone `<` before ordinary tool XML), but a
                         // configured tool marker must be preserved from its
                         // first byte or the downstream parser can never recover it.
                         if ol_end >= 2
+                            || ol_start >= 2
                             || ol_tool >= 1
                             || (self.buffer_single_char_marker_prefix && ol == 1)
                         {
@@ -1063,6 +1071,35 @@ mod tests {
         assert_eq!(tokens, ("\nreason".to_string(), "answer".to_string()));
         assert_eq!(run(&["\n<think>reason</think>answer"]), tokens);
         assert_eq!(run(&["\n<think>rea", "son</think>answer"]), tokens);
+    }
+
+    #[test]
+    fn test_force_reasoning_streaming_holds_back_partial_think_after_prefix() {
+        let run = |chunks: &[&str]| {
+            let mut parser = BasicReasoningParser::new(
+                "<think>".to_string(),
+                "</think>".to_string(),
+                true,
+                true,
+            );
+            let (mut reasoning, mut normal) = (String::new(), String::new());
+            for chunk in chunks {
+                let r = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                reasoning += &r.reasoning_text;
+                normal += &r.normal_text;
+            }
+            let r = parser.finish_reasoning_stream();
+            (reasoning + &r.reasoning_text, normal + &r.normal_text)
+        };
+        assert_eq!(
+            run(&["\n<thi", "nk>reason</think>answer"]),
+            ("\nreason".to_string(), "answer".to_string())
+        );
+        assert_eq!(
+            run(&["\n<thi", "s is reasoning</think>answer"]),
+            ("\n<this is reasoning".to_string(), "answer".to_string())
+        );
+        assert_eq!(run(&["\n<thi"]), ("\n<thi".to_string(), String::new()));
     }
 
     #[test]

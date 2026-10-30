@@ -140,6 +140,18 @@ UNIFIED_TAX = {
     "kimi_k3_malformed_call_then_valid": ("kimi", "6"),
     "kimi_k3_raw_json_eof": ("kimi", "7"),
     "kimi_k3_guided_native_wrapper": ("kimi", "8"),
+    "kimi_native_k2_count_content_chunk7": ("kimi", "9"),
+    "kimi_native_k2_count_content_chunk1024": ("kimi", "10"),
+    "kimi_native_k3_typed_count_content_chunk7": ("kimi", "11"),
+    "kimi_native_k3_typed_count_content_chunk1024": ("kimi", "12"),
+    "kimi_native_k3_json_count_content_chunk7": ("kimi", "13"),
+    "kimi_native_k3_json_count_content_chunk1024": ("kimi", "14"),
+    "kimi_native_trailing_syntax_whitespace": ("kimi", "15"),
+    "kimi_native_valid_object_trailing_garbage": ("kimi", "16"),
+    "kimi_native_incompatible_string_recovery": ("kimi", "17"),
+    "kimi_native_incremental_interfield_whitespace": ("kimi", "18"),
+    "kimi_native_rejected_next_header_progress": ("kimi", "19"),
+    "kimi_k3_typed_json_marker_payload": ("kimi", "20"),
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),
@@ -156,6 +168,8 @@ UNIFIED_TAX = {
     "guided_json_wrapped_in_tool_markup": (32, "3"),
     "guided_json_orphan_tool_close_before_payload": (32, "4"),
     "guided_json_native_markup_only": (32, "5"),
+    "guided_native_after_prefilled_reasoning_required": ("minimax_m3", "1"),
+    "guided_native_after_prefilled_reasoning_named": ("minimax_m3", "2"),
     # Generated crossings (`_guided_product` in gen_unified_golden.py): payload
     # shape x surrounding grammar. The 31-12 through 31-20 rows are the quadrant that had ZERO
     # cases — markup present AND no call recoverable — where both the P2 recovery

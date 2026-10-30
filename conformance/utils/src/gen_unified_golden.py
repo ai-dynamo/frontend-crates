@@ -16,6 +16,7 @@ render -> explode -> package, exactly like every other conformance fixture shard
 
 Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
+import argparse
 from functools import cache
 import json
 from copy import deepcopy
@@ -100,6 +101,7 @@ GUIDED_FAMILIES = {f for f in FAMILIES if _MANIFEST[f].get("guided_tool_output",
 
 GRAMMAR_NOTE = {
     "beam": "Beam channel grammar (NOT Harmony): reasoning `<|start|>assistant<|channel|>analysis<|message|>...<|end|>`, visible `<|start|>assistant<|channel|>final<|message|>...<|return|>`, tool `<|start|>assistant to=NAME<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"KEY\">\\nVALUE\\n</rfl:parameter><|call|>` (a call dispatches only once `<|call|>`/`<|end|>` arrives; analysis closes only on `<|end|>`; one LF is stripped at each value edge).",
+    "minimax_m3": "reasoning `<mm:think>...</mm:think>`; namespace `]<]minimax[>[` before tool_call, invoke, and recursively named parameter tags.",
     "deepseek_v41": "prompt-prefilled reasoning ends at `</think>`; `<｜DSML｜ calls>` contains V4.1 invoke and parameter tags and ends the turn.",
     "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
@@ -307,6 +309,9 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     if fam == "gemma4":
         native_values = {key: value for key, value in arguments.items()}
         return f"<|tool_call>call:{name}{_gemma_value(native_values)}<tool_call|>"
+    if fam == "minimax_m3":
+        params = "".join(f"]<]minimax[>[<{key}>{value}]<]minimax[>[</{key}>" for key, value in raw.items())
+        return f']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="{name}">{params}]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
     if fam == "qwen3":
         params = "\n".join(
             f"<parameter={key}>\n{value}\n</parameter>" for key, value in raw.items()
@@ -569,6 +574,8 @@ def control_tokens(fam):
 
     Returns `(reason_open, reason_close, tool_open, tool_close)`.
     """
+    if fam == "minimax_m3":
+        return "<mm:think>", "</mm:think>", "]<]minimax[>[<tool_call>", "]<]minimax[>[</tool_call>"
     if fam == "gpt_oss":
         return ("<|start|>assistant<|channel|>analysis<|message|>",
                 "<|end|>", "<|call|>", "<|call|>")
@@ -622,6 +629,7 @@ def guided_named_invoke_prefix(fam):
     return {
         # Beam routes on the recipient in the message header, before the channel marker.
         "beam": "<|start|>assistant to=get_weather",
+        "minimax_m3": ']<]minimax[>[<invoke name="get_weather"',
         "deepseek_v4": '<｜DSML｜invoke name="get_weather"',
         "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
         "gemma4": "call:get_weather",
@@ -768,12 +776,12 @@ CLEAN = [
      "Arbitrary visible prose AFTER the tool call (the point is it could be ANY content, so it must survive). Policy P1 (best-effort recovery) — trailing model text is preserved, not suppressed.",
      ["P1"], [("tool", "get_weather", "city", "Paris"),
               ("text", "The forecast shows clear skies for the rest of the week.")],
-     {"gemma4": M, "qwen3": M, "muse_glimmer": V_MUSE, "gpt_oss": M,
+     {"gemma4": M, "qwen3": M, "minimax_m3": M, "muse_glimmer": V_MUSE, "gpt_oss": M,
     "muse_spark": V_MUSE_SPARK,
       "beam": VLLM_UNCAPTURABLE["beam"],
       "kimi_k3": M,
       "kimi_k2": D("LOSS", "kimi config stays in a tool state and SUPPRESSES trailing text -> arbitrary content dropped; violates best-effort recovery (preserve visible prose, conformance/README.md:142)")},
-     {"gemma4": M, "qwen3": M,
+     {"gemma4": M, "qwen3": M, "minimax_m3": M,
       "beam": {"verdict": "match", "note": "the call ends at its own `<|call|>`; the following `final` message is ordinary content"},
       "muse_glimmer": {"verdict": "match", "note": "the tool channel closes at its own `<|eom|>`, so the following `to=user` message is ordinary content"},
       "kimi_k3": {"verdict": "match", "note": "K3 response framing preserves visible prose after the tools channel"},
@@ -863,6 +871,7 @@ _MIXED_CONTROL_STRINGS = {
             # Every Beam channel terminator, plus a header opener; only the parameter
             # closer is structural inside a value, so all of them stay data.
             "beam": "<|call|> <|end|> <|return|> <|start|>",
+            "minimax_m3": "]<]minimax[>[<tool_call> ]<]minimax[>[</tool_call> ]<]minimax[>[</invoke>",
         }.items()
     },
 }
@@ -2182,7 +2191,7 @@ for _shape, _body in (
         _prefix, _visible = _guided_response_markup(_family, "self")
         _native_json_inputs[_family] = (
             _prefix.removesuffix(GUIDED_ONE_CALL)
-            + r_tool_arguments(_family, "f", {"x": json.loads(_body)}, 0)
+            + r_tool_arguments(_family, "f", {"x": json.loads(_body)}, 0, {"x": _body} if _family == "minimax_m3" else None)
             + GUIDED_ONE_CALL,
             GUIDED_UNSUPPORTED, M, _visible,
         )
@@ -2472,7 +2481,9 @@ EDGE += [
      {"finish_reason": "stop"},
      guided_surroundings(
          lambda fam: r_tool(fam, "get_weather", "city", "Paris", 0),
-         "native markup is stripped as one control-only turn, independent of chunking")),
+         "native markup is stripped as one control-only turn, independent of chunking",
+         lambda fam: ([{"kind":"tool_call","name":"get_weather","arguments":{"city":"Paris"}}]
+                      if fam == "minimax_m3" else []))),
 
     # Missing reasoning terminator CROSSED with a guided wrapper. `31-7`
     # (`guided_json_wrapped_in_tool_markup`) already pins a wrapper around the payload
@@ -2494,6 +2505,22 @@ EDGE += [
          "unterminated thought ends at the wrapper; the wrapped payload still dispatches")),
 ]
 
+
+# M3 alone opts into native recovery after JSON guidance. Keep the live M3
+# regression in this conversion; existing families retain their authored corpus.
+for _named in [False, True]:
+    _reason = [{"kind":"reasoning","text":"Check."}]
+    EDGE.append((
+        "guided_native_after_prefilled_reasoning_" + ("named" if _named else "required"),
+        "M3 emits a native call after closing prompt-prefilled reasoning despite JSON guidance. The parser recovers the call and emits the reasoning exactly once.",
+        ["I6", "I7"], _reason + [{"kind":"tool_call","name":"get_weather","arguments":{"city":"Paris"}}],
+        {"starting_state":"Reasoning", "tool_output_mode":"GuidedJson", "named_tool":"get_weather" if _named else None},
+        {"finish_reason":"stop"},
+        OnlyFamilies({"minimax_m3": (
+            "Check.</mm:think>" + r_tool("minimax_m3", "get_weather", "city", "Paris", 0),
+            D("UNSUPPORTED", "vLLM base case does not use GuidedJson"), M,
+        )}),
+    ))
 
 # A control marker in a response that the prompt already opened is text, not structure.
 # Muse exercises this through its unframed recipient headers; marker-pair families use
@@ -2732,6 +2759,105 @@ DEEPSEEK_V41_REDUNDANT_SCENARIOS = {
     "prefilled_reasoning_then_text_then_tool": "interstitial_text",
     "prefilled_reasoning_then_text": "reason_then_content",
 }
+
+KIMI_PROGRESS_FORMS = {
+    "k2": ("kimi_k2", '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"', '"}', '<|tool_call_end|>', '<|tool_calls_section_end|>'),
+    "k3_typed": ("kimi_k3", '<|open|>tools<|sep|><|open|>call tool="write_file" index="1"<|sep|><|open|>argument key="count" type="number"<|sep|>7<|close|>argument<|sep|><|open|>argument key="content" type="string"<|sep|>', '<|close|>argument<|sep|>', '<|close|>call<|sep|>', '<|close|>tools<|sep|>'),
+    "k3_json": ("kimi_k3", '<|open|>tools<|sep|><|open|>call tool="write_file" index="1"<|sep|><|open|>json type="object"<|sep|>{"count":7,"content":"', '"}<|close|>json<|sep|>', '<|close|>call<|sep|>', '<|close|>tools<|sep|>'),
+}
+WRITE_FILE_TOOLS = [{"name": "write_file", "parameters": {
+    "type": "object", "properties": {"count": {"type": "integer"}, "content": {"type": "string"}},
+    "required": ["count", "content"],
+}}]
+for form, (family, prefix, value_close, call_close, section_close) in KIMI_PROGRESS_FORMS.items():
+    for chunk_size in (7, 1024):
+        stages = [prefix + "q" * 3072, "q" * 1024, value_close, call_close, section_close]
+        chunks = [stage[offset:offset + chunk_size] for stage in stages
+                  for offset in range(0, len(stage), chunk_size)]
+        EDGE.append((
+            f"kimi_native_{form}_count_content_chunk{chunk_size}",
+            f"Native Kimi {form} count-before-content call with {chunk_size}-byte delivery. Pause after 3072 q characters, after 1024 more, and after value, call, and section closure. Release stable identity and numeric count before closure; completion requires the native call boundary. Other families cannot express this Kimi native envelope and ID grammar.",
+            ["I3", "I5", "I7"],
+            [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": "q" * 4096}}],
+            {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "stop", "input_chunks": {family: chunks}},
+            OnlyFamilies({family: ("".join(stages), D("UNSUPPORTED", "Native paused delivery is measured by Dynamo captures."), M)}),
+            WRITE_FILE_TOOLS,
+        ))
+
+
+for scenario, description, payload, arguments in (
+    ("kimi_native_trailing_syntax_whitespace", "Malformed K2 JSON ends after an argument colon and syntax whitespace. One-character native delivery must match buffered malformed recovery and must not retract released bytes. The existing Unified assembler warns and projects malformed completed arguments to an empty object.", '{"count":7,"content": \t\n', {}),
+    ("kimi_native_valid_object_trailing_garbage", "Valid K2 JSON is followed by garbage before the native call closer. One-character native delivery must retain only the valid object and must not append the garbage.", '{"count":7,"content":"q"} trailing', {"count": 7, "content": "q"}),
+):
+    native = '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>' + payload + '<|tool_call_end|><|tool_calls_section_end|>'
+    EDGE.append((
+        scenario, description, ["I3", "I5", "I7"],
+        [{"kind": "tool_call", "name": "write_file", "arguments": arguments}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "input_chunks": {"kimi_k2": list(native)}},
+        OnlyFamilies({"kimi_k2": (native, D("UNSUPPORTED", "Native K2 malformed recovery is measured by Dynamo captures."), M)}),
+        WRITE_FILE_TOOLS,
+    ))
+
+
+KIMI_UNTERMINATED_NATIVE = '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"x":"abc <|tool_call_end|><|tool_calls_section_end|>'
+EDGE.append((
+    "kimi_native_incompatible_string_recovery",
+    "An unterminated K2 JSON string ends with whitespace before native closers. Hold unresolved closers and trailing whitespace during one-character delivery so EOF recovery preserves the buffered malformed fallback without retracting arguments or leaking markers. The Unified assembler projects the recovered malformed arguments to an empty object.",
+    ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {}}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "input_chunks": {"kimi_k2": list(KIMI_UNTERMINATED_NATIVE)}},
+    OnlyFamilies({"kimi_k2": (KIMI_UNTERMINATED_NATIVE, D("UNSUPPORTED", "Native K2 recovery is measured by Dynamo captures."), M)}),
+    [{"name": "write_file", "parameters": {"type": "object", "properties": {"x": {"type": "string"}}}}],
+))
+
+
+KIMI_TYPED_SPACED = KIMI_PROGRESS_FORMS["k3_typed"][1].replace(
+    '<|close|>argument<|sep|><|open|>argument',
+    '<|close|>argument<|sep|>' + " " * 4096 + '<|open|>argument',
+) + "q" + "".join(KIMI_PROGRESS_FORMS["k3_typed"][2:])
+EDGE.append((
+    "kimi_native_incremental_interfield_whitespace",
+    "A valid native typed K3 call has 4096 spaces between count and content fields. Seven-character delivery must retain unresolved lookahead and scan each whitespace byte once while preserving numeric count and the completed call.",
+    ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": "q"}}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "input_chunks": {"kimi_k3": [KIMI_TYPED_SPACED[offset:offset + 7] for offset in range(0, len(KIMI_TYPED_SPACED), 7)]}},
+    OnlyFamilies({"kimi_k3": (KIMI_TYPED_SPACED, D("UNSUPPORTED", "Native typed K3 is measured by Dynamo captures."), M)}),
+    WRITE_FILE_TOOLS,
+))
+
+
+KIMI_REJECTED_HEADER_CONTENT = "head<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>" + "q" * 3072
+KIMI_REJECTED_HEADER_STAGES = [KIMI_PROGRESS_FORMS["k3_typed"][1] + KIMI_REJECTED_HEADER_CONTENT, *KIMI_PROGRESS_FORMS["k3_typed"][2:]]
+EDGE.append((
+    "kimi_native_rejected_next_header_progress",
+    "A native typed K3 string includes a literal argument closer followed by a complete invalid next header and 3072 q characters. Seven-character delivery must reject that header as syntax and resume literal string progress before the real value closer.",
+    ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": KIMI_REJECTED_HEADER_CONTENT}}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "input_chunks": {"kimi_k3": [stage[offset:offset + 7] for stage in KIMI_REJECTED_HEADER_STAGES for offset in range(0, len(stage), 7)]}},
+    OnlyFamilies({"kimi_k3": ("".join(KIMI_REJECTED_HEADER_STAGES), D("UNSUPPORTED", "Native typed K3 is measured by Dynamo captures."), M)}),
+    WRITE_FILE_TOOLS,
+))
+
+
+KIMI_QUOTED_BOUNDARY_ARGUMENTS = {
+    "x": {"inner": '<|close|>argument<|sep|><|open|>argument<|sep|>'}, "y": "OK",
+}
+KIMI_QUOTED_BOUNDARY_INPUT = r_tool_arguments("kimi_k3", "inspect", KIMI_QUOTED_BOUNDARY_ARGUMENTS, 0)
+EDGE.append((
+    "kimi_k3_typed_json_marker_payload",
+    "Native K3 with no prefilled state: a typed object field contains a quoted argument close and next-header marker, followed by a string field. One-character delivery must preserve the nested JSON and complete one call. Other families lack K3's typed XTML argument-boundary grammar; shared marker-in-string cases cover their native envelopes.",
+    ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "inspect", "arguments": KIMI_QUOTED_BOUNDARY_ARGUMENTS}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": list(KIMI_QUOTED_BOUNDARY_INPUT)}},
+    OnlyFamilies({"kimi_k3": (KIMI_QUOTED_BOUNDARY_INPUT, D("UNSUPPORTED", "Native typed K3 is measured by Dynamo captures."), M)}),
+    [{"name": "inspect", "parameters": {"type": "object", "properties": {
+        "x": {"type": "object", "properties": {"inner": {"type": "string"}}, "required": ["inner"]},
+        "y": {"type": "string"},
+    }, "required": ["x", "y"]}}],
+))
+
 
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
@@ -3158,6 +3284,7 @@ _NATIVE_QUOTED_CONTROL = {
     "muse_glimmer": "<|start|>assistant to=get_weather<|message|>",
     "beam": "<|start|>assistant to=get_weather<|channel|>",
     "qwen3": "<tool_call>",
+    "minimax_m3": "]<]minimax[>[<tool_call>",
 }
 
 _NATIVE_QUOTED_CONTROL["muse_spark"] = _NATIVE_QUOTED_CONTROL["muse_glimmer"]
@@ -3579,6 +3706,42 @@ EDGE.append((
 ))
 
 
+# Native M3 spellings for shared edge scenarios. These are authored alongside
+# the shared event oracle; no peer parser output is used to construct them.
+_M3_WEATHER = r_tool("minimax_m3", "get_weather", "city", "Paris", 0)
+_M3_TRUNCATED = ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+_M3_LITERAL_REASON = r_reason("minimax_m3", "reconsider")
+_M3_REASON_ARGUMENT = r_tool("minimax_m3", "log", "note", _M3_LITERAL_REASON, 0)
+_M3_NESTED_REASON = "<mm:think>I should check. " + _M3_WEATHER + " now answer</mm:think>"
+_M3_LITERAL_MARKER = "git log ]<]minimax[>[</tool_call> --oneline"
+_M3_MIXED_MARKERS = ' <mm:think>quoted</mm:think> ]<]minimax[>[<tool_call> ]<]minimax[>[</tool_call> ]<]minimax[>[</invoke> &amp; "x"\\\n '
+_M3_EDGE_INPUTS = {
+    "truncated_tool_eof": (r_reason("minimax_m3", "ok") + _M3_TRUNCATED,),
+    "reason_unterminated": ("<mm:think>thinking but stream ends",),
+    "arg_marker_in_string": (r_tool("minimax_m3", "run", "cmd", _M3_LITERAL_MARKER, 0), _M3_LITERAL_MARKER),
+    "orphan_close_after_prose": ("I will check that. ]<]minimax[>[</tool_call>",),
+    "empty_args": (r_tool_arguments("minimax_m3", "get_weather", {}, 0),),
+    "tool_no_close": (_M3_WEATHER.removesuffix("]<]minimax[>[</tool_call>"),),
+    "reason_markup_in_arg": (_M3_REASON_ARGUMENT, _M3_LITERAL_REASON),
+    "tool_in_reason": (_M3_NESTED_REASON,),
+    "reason_markup_in_arg_with_text": ("Logging now: " + _M3_REASON_ARGUMENT + " done.", _M3_LITERAL_REASON),
+    "tool_in_reason_with_text": ("Sure. " + _M3_NESTED_REASON + " Here you go.",),
+    "two_adjacent_reason_spans": (r_reason("minimax_m3", "first") + r_reason("minimax_m3", "\nsecond") + "done",),
+    "prefilled_reasoning_with_tool": ("checking weather</mm:think>" + _M3_WEATHER,),
+    "prefilled_reasoning_then_text_then_tool": ("weighing options</mm:think>Here's what I found: " + _M3_WEATHER,),
+    "prefilled_reasoning_then_text": ("no tool needed</mm:think>The answer is 42.",),
+    "prefilled_reasoning_redundant_opener": (r_reason("minimax_m3", "checking weather") + r_tool("minimax_m3", "get_weather", "city", "London", 0),),
+    "prefilled_reasoning_truncated": ("analyzing data</mm:think>" + _M3_TRUNCATED,),
+    "prefilled_response_reasoning_markers_literal": (r_reason("minimax_m3", "literal") + " then a call" + _M3_WEATHER, r_reason("minimax_m3", "literal") + " then a call"),
+    "deepseek_v41_mixed_control_text_in_string": (r_tool("minimax_m3", "f", "x", _M3_MIXED_MARKERS, 0), _M3_MIXED_MARKERS),
+}
+for _scenario in EDGE:
+    _per_family = _scenario[-2] if len(_scenario) == 8 else _scenario[-1]
+    if _scenario[0] in _M3_EDGE_INPUTS:
+        _input, *_rest = _M3_EDGE_INPUTS[_scenario[0]]
+        _per_family["minimax_m3"] = (_input, M, M, *_rest)
+
+
 DEFAULT_REASONING_CASES = [
     ("default_reasoning_without_opener", "The family starts in reasoning without an opener; the closer switches to visible Unicode content.",
      ["P5", "I5"], [{"kind": "reasoning", "text": "Check Montréal."}, {"kind": "text", "text": "雪"}],
@@ -3722,7 +3885,7 @@ def _native_review_variants(scenario):
         for family in TEMPLATE_FAMILIES:
             if family == "gpt_oss":
                 continue
-            value = "2" if family in {"beam", "qwen3", "glm47"} else 2
+            value = "2" if family in {"beam", "qwen3", "glm47", "minimax_m3"} else 2
             golden = [{"kind": "tool_call", "name": "run", "arguments": {}},
                       {"kind": "tool_call", "name": "not_offered", "arguments": {"x": value}}]
             variants[family] = (r_tool_arguments(family, "run", {}, 0)
@@ -4048,6 +4211,12 @@ def _build_cases(fam):
             "finish_reason": "stop",
         }
     cases.update(_build_edge_cases(fam, EDGE))
+    if fam == "minimax_m3":
+        cases[f"UNIFIED.guided_json_native_markup_only.{fam}"]["description"] = (
+            "M3 emits a complete native tool call despite JSON guidance. The parser "
+            "recovers the call at every stream split without leaking argument bodies "
+            "as visible text (`I6`)."
+        )
     if fam in ("gemma4", "deepseek_v41"):
         case = cases[f"UNIFIED.malformed_json_then_two_valid_calls.{fam}"]
         case["expect"]["dynamo_current"] = case["expect"]["dynamo"]
@@ -4392,13 +4561,14 @@ def emit_yaml(fam):
     return "\n".join(lines) + "\n"
 
 
-def main():
-    root = os.path.join(os.path.dirname(__file__), "..", "..", "unified", "golden_spec")
-    root = os.path.abspath(root)
-    os.makedirs(root, exist_ok=True)
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[2] / "unified/golden_spec")
+    root = parser.parse_args(argv).output.resolve()
+    root.mkdir(parents=True, exist_ok=True)
     for fam in FAMILIES:
-        out = os.path.join(root, FAM_FILE[fam])
-        with open(out, "w") as fh:
+        out = root / FAM_FILE[fam]
+        with out.open("w", encoding="utf-8") as fh:
             fh.write(emit_yaml(fam))
         print(f"wrote {out} ({len(build_cases(fam))} cases)")
 

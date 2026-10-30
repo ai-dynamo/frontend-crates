@@ -124,6 +124,8 @@ def _construct_mapping(loader: StrictLoader, node, deep=False):
 
 
 StrictLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping)
+# serde_yaml emits a plain '=' string; explicit tags still fail in compose_node.
+StrictLoader.add_constructor("tag:yaml.org,2002:value", SafeConstructor.construct_yaml_str)
 
 
 def load_yaml(path: Path) -> dict:
@@ -3079,8 +3081,8 @@ def _preserve_historical_stimulus(
 ) -> None:
     raise ValueError(
         f"Authored input {family_name}/{case_id} differs from the recorded request. "
-        "Run latest parser tests with the updated input; ask a repository administrator "
-        "to update the affected latest capture when a new measurement is needed."
+        "Run latest parser tests with the updated input; recapture the affected latest snapshot "
+        "when a new measurement is needed."
     )
 
 

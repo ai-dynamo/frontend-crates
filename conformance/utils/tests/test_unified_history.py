@@ -14,6 +14,7 @@ import pytest
 import yaml
 import viewer_catalog
 import unified_history
+
 import unified_archives
 import migrate_capture_sources
 import publish_current_capture
@@ -24,6 +25,15 @@ from viewer_codec import encode_typed
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+
+def test_rust_equals_scalar_is_text_without_allowing_explicit_tags(tmp_path):
+    path = tmp_path / "capture.yaml"
+    for scalar in ("=", "'='"):
+        path.write_text(f"delta_text: {scalar}\n")
+        assert unified_history.load_yaml(path) == {"delta_text": "="}
+    path.write_text("delta_text: !!str =\n")
+    with pytest.raises(ValueError, match="YAML tags are not allowed"):
+        unified_history.load_yaml(path)
 
 @pytest.mark.parametrize("case_count", [1, 8])
 @pytest.mark.parametrize("derived", [False, True])
@@ -1777,7 +1787,7 @@ def test_history_request_rewrite_directs_contributors_to_latest_tests(tmp_path):
     document["cases"]["UNIFIED.1-1"]["input"] = "changed request"
     input_path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Run latest parser tests.*repository administrator"):
+    with pytest.raises(ValueError, match="Run latest parser tests.*recapture the affected latest snapshot"):
         unified_history.sync_current_corpus(root, loose, complete_snapshot=True)
 
 

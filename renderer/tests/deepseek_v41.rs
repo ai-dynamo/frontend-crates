@@ -22,6 +22,7 @@ fn public_encoder_rejects_invalid_effort_before_normalization() {
 struct Request {
     request: dynamo_protocols::types::CreateChatCompletionRequest,
     args: Option<std::collections::HashMap<String, Value>>,
+    add_generation_prompt: bool,
 }
 
 struct RawRequest {
@@ -49,7 +50,7 @@ impl dynamo_renderer::OAIChatLikeRequest for Request {
         self.request.reasoning_effort()
     }
     fn should_add_generation_prompt(&self) -> bool {
-        true
+        self.add_generation_prompt
     }
     fn chat_template_args(&self) -> Option<&std::collections::HashMap<String, Value>> {
         self.args.as_ref()
@@ -83,7 +84,9 @@ fn render(fields: Value) -> anyhow::Result<String> {
         .or_else(|| request.get("chat_template_kwargs"))
         .map(|value| serde_json::from_value(value.clone()))
         .transpose()?;
+    let add_generation_prompt = request["add_generation_prompt"].as_bool().unwrap_or(true);
     let request = Request {
+        add_generation_prompt,
         request: serde_json::from_value(request)?,
         args,
     };
@@ -286,8 +289,8 @@ fn absent_and_empty_tools_have_identical_prompts() {
 }
 
 #[test]
-fn fixed_generation_header_is_not_advertised_as_configurable() {
-    assert!(!DeepSeekV41Formatter.supports_add_generation_prompt());
+fn generation_header_is_advertised_as_configurable() {
+    assert!(DeepSeekV41Formatter.supports_add_generation_prompt());
 }
 
 #[test]
@@ -608,4 +611,47 @@ fn media_order_defaults_to_arrival_order_without_tools() {
         tools: None,
     };
     assert!(DeepSeekV41Formatter.media_message_order(&raw).is_none());
+}
+
+#[test]
+fn generation_prompt_flag_preserves_history_and_assistant_eos() {
+    for thinking in [false, true] {
+        for messages in [
+            json!([{"role":"user", "content":"Hello"}]),
+            json!([{"role":"user", "content":"First"},
+                   {"role":"assistant", "content":"Reply"},
+                   {"role":"user", "content":"Again"}]),
+            json!([{"role":"user", "content":"First"},
+                   {"role":"system", "content":"Reminder"}]),
+            json!([{"role":"user", "content":"First"},
+                   {"role":"assistant", "content":null, "tool_calls":[
+                       {"id":"c", "type":"function", "function":{"name":"f", "arguments":"{}"}}]},
+                   {"role":"tool", "tool_call_id":"c", "content":"Result"}]),
+            json!([{"role":"user", "content":"First"},
+                   {"role":"assistant", "content":"Prefix"}]),
+        ] {
+            let enabled = render(json!({"messages":messages,
+                "chat_template_kwargs":{"thinking":thinking}}))
+            .unwrap();
+            let disabled = render(json!({"messages":messages, "add_generation_prompt":false,
+                "chat_template_kwargs":{"thinking":thinking}}))
+            .unwrap();
+            let expected = if messages.as_array().unwrap().last().unwrap()["role"] == "assistant" {
+                assert!(enabled.ends_with("<｜end▁of▁sentence｜>"));
+                enabled.as_str()
+            } else {
+                enabled
+                    .strip_suffix(if thinking {
+                        "<｜Assistant｜><think>"
+                    } else {
+                        "<｜Assistant｜></think>"
+                    })
+                    .unwrap()
+            };
+            assert_eq!(
+                disabled, expected,
+                "messages={messages}, thinking={thinking}"
+            );
+        }
+    }
 }
