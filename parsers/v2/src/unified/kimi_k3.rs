@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::tool_calling::arguments::{parsed_json_literal, parsed_json_object};
+use crate::tool_calling::json_prefix::JsonPrefixState;
 use crate::tool_calling::kimi_progress::KimiProgress;
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
@@ -97,6 +98,7 @@ const RESPONSE_MARKERS: &[Marker] = &[
 ];
 const TOOLS_MARKERS: &[Marker] = &[
     CALL_OPEN,
+    RESPONSE_OPEN,
     TOOLS_CLOSE,
     MESSAGE_CLOSE,
     Marker::single(END_OF_MSG),
@@ -210,7 +212,12 @@ impl NativeArguments {
         }
     }
 
-    fn advance(&mut self, text: &str, progress: &mut KimiProgress) -> Option<ToolCallDelta> {
+    fn advance(
+        &mut self,
+        text: &str,
+        payload_end: usize,
+        progress: &mut KimiProgress,
+    ) -> Option<ToolCallDelta> {
         if self.blocked {
             return None;
         }
@@ -218,7 +225,7 @@ impl NativeArguments {
             if !progress.published() {
                 Self::advance_whitespace(text, start);
             }
-            return progress.advance_json(&text[*start..]);
+            return Self::advance_json(&text[*start..payload_end.max(*start)], progress);
         }
         let mut output = String::new();
         loop {
@@ -245,7 +252,10 @@ impl NativeArguments {
                 if json {
                     Self::advance_whitespace(text, &mut self.cursor);
                     self.json_start = Some(self.cursor);
-                    return progress.advance_json(&text[self.cursor..]);
+                    return Self::advance_json(
+                        &text[self.cursor..payload_end.max(self.cursor)],
+                        progress,
+                    );
                 }
                 let arg_type = attr_value(&attrs, "type").unwrap_or("string").to_string();
                 self.active = Some(NativeArgument {
@@ -293,6 +303,14 @@ impl NativeArguments {
             self.header = KimiK3HeaderScan::new();
         }
         (!output.is_empty()).then(|| progress.delta(output, false))
+    }
+
+    fn advance_json(payload: &str, progress: &mut KimiProgress) -> Option<ToolCallDelta> {
+        let markers: Vec<_> = SCANNER_MARKERS
+            .iter()
+            .flat_map(|(_, marker)| marker.variants())
+            .collect();
+        progress.advance_json_with_markers(payload, &markers, false)
     }
 }
 
@@ -387,6 +405,7 @@ struct KimiK3CallBoundary {
     arg_closes: Vec<TokenHit>,
     json_closes: Vec<TokenHit>,
     outer_closes: Vec<TokenHit>,
+    response_open: Option<(TokenHit, Option<usize>)>,
     completed_arguments: Option<String>,
     guided_prefix: GuidedBareCallPrefix,
     #[cfg(test)]
@@ -425,6 +444,7 @@ impl KimiK3CallBoundary {
             arg_closes: Vec::new(),
             json_closes: Vec::new(),
             outer_closes: Vec::new(),
+            response_open: None,
             completed_arguments: None,
             guided_prefix: GuidedBareCallPrefix::default(),
             #[cfg(test)]
@@ -443,15 +463,20 @@ impl KimiK3CallBoundary {
     }
 
     fn advance(&mut self, text: &str, flush: bool) -> CallBoundary {
-        self.scan_appended(text, flush, false);
+        self.scan_appended(text, flush, None);
         let reconsider_unterminated_json =
             flush && self.json_argument.is_some() && !self.literal_json_argument;
         if reconsider_unterminated_json {
             // An unterminated JSON string can hide the structural close and the
-            // next call. At EOF, reuse this tracker with JSON string ownership
-            // disabled so only a structurally complete later call can resync.
+            // next call. At EOF, reopen only the unresolved JSON string;
+            // earlier delimiter-settled strings still own their literal markers.
+            let unfinished_string = if self.body_kind == CallBodyKind::RawJson {
+                self.raw_json_unfinished_string(text)
+            } else {
+                Some(self.header_len.unwrap_or(0))
+            };
             self.reset_progress();
-            self.scan_appended(text, true, true);
+            self.scan_appended(text, true, unfinished_string);
         }
         if flush && self.literal_json_argument && self.json_argument.is_some() {
             // Invalid JSON in a quoted native passage is still outer string data.
@@ -459,7 +484,7 @@ impl KimiK3CallBoundary {
             // literal envelope without letting that quote swallow outer syntax.
             self.reset_progress();
             self.ignore_literal_json = true;
-            self.scan_appended(text, true, false);
+            self.scan_appended(text, true, None);
         }
         let Some(header_len) = self.header_len else {
             return if flush {
@@ -474,6 +499,10 @@ impl KimiK3CallBoundary {
             && let Some(consumed) = self.guided_malformed_envelope_end(text, header_len)
         {
             return CallBoundary::SkipMalformed { consumed };
+        }
+
+        if let Some(boundary) = self.response_boundary(text, header_len, flush) {
+            return boundary;
         }
 
         // A channel fence settles balanced candidates without waiting for EOF.
@@ -524,7 +553,10 @@ impl KimiK3CallBoundary {
                 }
             }
             if let Some(body_end) = self.recovery_body_end(text, header_len, next_call) {
-                return self.recover_at(text, header_len, body_end);
+                let recovered = self.recover_at(text, header_len, body_end);
+                if recovered != CallBoundary::Malformed {
+                    return recovered;
+                }
             }
             if let Some(call_close) = call_closes
                 .iter()
@@ -548,7 +580,9 @@ impl KimiK3CallBoundary {
             return CallBoundary::Pending;
         }
 
-        if let Some((call_close, arguments)) = self.structural_call_close(text, header_len, flush) {
+        if let Some((call_close, arguments)) =
+            self.structural_call_close(text, header_len, flush, text.len())
+        {
             self.completed_arguments = Some(arguments);
             return CallBoundary::Complete {
                 body_end: call_close.at,
@@ -571,6 +605,7 @@ impl KimiK3CallBoundary {
                         at: outer.end(),
                         len: 0,
                     },
+                    None,
                 )
             })
             .map_or(text.len(), |outer| outer.at);
@@ -585,16 +620,128 @@ impl KimiK3CallBoundary {
         CallBoundary::Malformed
     }
 
+    fn response_boundary(
+        &mut self,
+        text: &str,
+        header_len: usize,
+        flush: bool,
+    ) -> Option<CallBoundary> {
+        let (response, string_owner) = self.response_open?;
+        if self
+            .complete_call_opens
+            .iter()
+            .chain(&self.literal_call_opens)
+            .any(|at| *at > header_len && *at < response.at)
+        {
+            return None;
+        }
+        if let Some(outer) = self
+            .outer_closes
+            .first()
+            .copied()
+            .filter(|outer| outer.at < response.at)
+            && let Some((call_close, arguments)) =
+                self.structural_call_close(text, header_len, flush, outer.at)
+        {
+            self.completed_arguments = Some(arguments);
+            return Some(CallBoundary::Complete {
+                body_end: call_close.at,
+                consumed: call_close.end(),
+            });
+        }
+        if string_owner.is_some() && !flush {
+            return Some(CallBoundary::Pending);
+        }
+        // A later close of the same typed value makes this response literal.
+        if self.body_kind == CallBodyKind::Arguments
+            && self.outer_boundary_is_typed_data(
+                text,
+                header_len,
+                TokenHit {
+                    at: response.end(),
+                    len: 0,
+                },
+                Some(response),
+            )
+        {
+            return None;
+        }
+        if let Some((call_close, arguments)) =
+            self.structural_call_close(text, header_len, flush, response.at)
+        {
+            self.completed_arguments = Some(arguments);
+            return Some(CallBoundary::Complete {
+                body_end: call_close.at,
+                consumed: call_close.end(),
+            });
+        }
+        if let Some(body_end) = self.recovery_body_end(text, header_len, response.at) {
+            let recovered = self.recover_at(text, header_len, body_end);
+            if recovered != CallBoundary::Malformed {
+                return Some(recovered);
+            }
+        }
+        (self.body_kind != CallBodyKind::Arguments).then_some(CallBoundary::SkipMalformed {
+            consumed: response.at,
+        })
+    }
+
+    fn raw_json_unfinished_string(&self, text: &str) -> Option<usize> {
+        let header = self.header_len?;
+        let body = &text[header..];
+        let start = header + body.len() - body.trim_start().len();
+        let (_, len) = parse_tag_header(&text[start..], JSON_OPEN)?;
+        let payload = start + len;
+        let mut syntax = JsonPrefixState::default();
+        let mut started = false;
+        let mut string_start = None;
+        let mut ambiguous = None;
+        for (at, ch) in text[payload..].char_indices() {
+            if !started {
+                if ch.is_whitespace() {
+                    continue;
+                }
+                syntax = JsonPrefixState::new(ch);
+                started = true;
+                continue;
+            }
+            let inside = syntax.in_string();
+            if inside
+                && ch == '<'
+                && ambiguous.is_none()
+                && scanner_marker_at(&text[payload + at..]).is_some()
+            {
+                ambiguous = string_start;
+            }
+            syntax.consume(ch);
+            if syntax.invalid {
+                return ambiguous.or(string_start);
+            }
+            if !inside && syntax.in_string() {
+                string_start = Some(payload + at);
+            }
+            if !syntax.in_string() && matches!(ch, ',' | ':' | '}' | ']') {
+                ambiguous = None;
+                string_start = None;
+            }
+            if syntax.complete {
+                return None;
+            }
+        }
+        ambiguous.or(string_start)
+    }
+
     fn structural_call_close(
         &mut self,
         text: &str,
         header_len: usize,
         flush: bool,
+        limit: usize,
     ) -> Option<(TokenHit, String)> {
         let call_closes: Vec<_> = self
             .call_closes
             .iter()
-            .filter(|close| !close.literal || flush)
+            .filter(|close| close.hit.end() <= limit && (!close.literal || flush))
             .map(|close| close.hit)
             .collect();
         for call_close in call_closes.into_iter().rev() {
@@ -602,14 +749,15 @@ impl KimiK3CallBoundary {
                 .outer_closes
                 .iter()
                 .copied()
-                .find(|outer| outer.at >= call_close.end())
+                .find(|outer| outer.at >= call_close.end() && outer.at <= limit)
                 .is_some()
+                || limit < text.len()
                 || self.context == CallBoundaryContext::Guided
                     && guided_payload_starts(&text[call_close.end()..]);
             if !boundary && (!flush || !text[call_close.end()..].trim().is_empty()) {
                 continue;
             }
-            let typed_data = self.outer_boundary_is_typed_data(text, header_len, call_close);
+            let typed_data = self.outer_boundary_is_typed_data(text, header_len, call_close, None);
             let arguments = (!typed_data)
                 .then(|| self.parse_body(&text[header_len..call_close.at]))
                 .flatten();
@@ -625,11 +773,13 @@ impl KimiK3CallBoundary {
         text: &str,
         header_len: usize,
         call_close: TokenHit,
+        response: Option<TokenHit>,
     ) -> bool {
         let Some((outer, arg_close, real_arg_open)) = self
             .outer_closes
             .iter()
             .copied()
+            .chain(response)
             .filter(|outer| outer.at >= header_len && outer.at < call_close.at)
             .find_map(|outer| {
                 let arg_close = self
@@ -723,6 +873,7 @@ impl KimiK3CallBoundary {
                             text,
                             header_len,
                             TokenHit { at: limit, len: 0 },
+                            None,
                         )
                 })
                 .map(TokenHit::end),
@@ -732,7 +883,8 @@ impl KimiK3CallBoundary {
                 .copied()
                 .rev()
                 .find(|close| close.end() <= limit && text[close.end()..limit].trim().is_empty())
-                .map(TokenHit::end),
+                .map(TokenHit::end)
+                .or(Some(limit)),
             CallBodyKind::Unknown | CallBodyKind::Malformed => None,
         }?;
         (candidate <= limit && text[candidate..limit].trim().is_empty()).then_some(candidate)
@@ -807,13 +959,14 @@ impl KimiK3CallBoundary {
         self.completed_arguments.take()
     }
 
-    fn scan_appended(&mut self, text: &str, flush: bool, ignore_json_strings: bool) {
+    fn scan_appended(&mut self, text: &str, flush: bool, ignore_json_from: Option<usize>) {
         if text.len() < self.scanned {
             self.reset_progress();
         }
         while self.scanned < text.len() {
             let suffix = &text[self.scanned..];
             let character = suffix.chars().next().expect("non-empty scanner suffix");
+            let ignore_json_strings = ignore_json_from.is_some_and(|at| self.scanned >= at);
             if self
                 .json_argument
                 .as_mut()
@@ -897,6 +1050,13 @@ impl KimiK3CallBoundary {
         hit: TokenHit,
         ignore_json_strings: bool,
     ) {
+        if kind == ScannerToken::ArgumentClose
+            && self.response_open.is_some_and(|(_, owner)| {
+                owner.is_some() && owner == self.arg_opens.last().map(|open| open.at)
+            })
+        {
+            self.response_open = None;
+        }
         if kind == ScannerToken::ArgumentClose
             && self.provisional_string_close
             && matches!(self.return_channel, Mode::Response | Mode::Reasoning)
@@ -1046,6 +1206,15 @@ impl KimiK3CallBoundary {
             ScannerToken::ToolsClose | ScannerToken::MessageClose | ScannerToken::EndOfMessage => {
                 self.outer_closes.push(hit)
             }
+            ScannerToken::ResponseOpen if !self.string_argument || self.argument_close_pending => {
+                if self.response_open.is_none() {
+                    let owner = (self.string_argument || self.provisional_string_close)
+                        .then(|| self.arg_opens.last().map(|open| open.at))
+                        .flatten();
+                    self.response_open = Some((hit, owner));
+                }
+            }
+            ScannerToken::ResponseOpen => {}
             ScannerToken::ThinkClose if self.return_channel == Mode::Reasoning => {
                 self.outer_closes.push(hit)
             }
@@ -1101,6 +1270,7 @@ enum ScannerToken {
     MessageClose,
     ThinkClose,
     ResponseClose,
+    ResponseOpen,
     EndOfMessage,
     Sep,
 }
@@ -1116,6 +1286,7 @@ const SCANNER_MARKERS: &[(ScannerToken, Marker)] = &[
     (ScannerToken::MessageClose, MESSAGE_CLOSE),
     (ScannerToken::ThinkClose, THINK_CLOSE),
     (ScannerToken::ResponseClose, RESPONSE_CLOSE),
+    (ScannerToken::ResponseOpen, RESPONSE_OPEN),
     (ScannerToken::EndOfMessage, Marker::single(END_OF_MSG)),
     (ScannerToken::Sep, SEP_MARKER),
 ];
@@ -1488,6 +1659,12 @@ impl KimiK3Native {
     }
 
     fn drain_tools(&mut self, flush: bool, output: &mut UnifiedParserOutput) -> bool {
+        if self.consume(RESPONSE_OPEN) {
+            self.tools_open.clear();
+            self.tools_return_mode = None;
+            self.mode = Mode::Response;
+            return true;
+        }
         if self.consume_call_open(Mode::Tools, flush, output) {
             if self.active_call.is_some() {
                 self.mode = Mode::Call;
@@ -1539,7 +1716,7 @@ impl KimiK3Native {
                 tracing::warn!(
                     why = "kimi_k3_malformed_call_body",
                     skipped_bytes = consumed,
-                    "dropping malformed Kimi K3 call before guided JSON"
+                    "dropping malformed Kimi K3 call before the next channel"
                 );
                 self.buffer.drain(..consumed);
                 self.active_call = None;
@@ -1551,7 +1728,23 @@ impl KimiK3Native {
             CallBoundary::Pending if !flush => {
                 if let Some(call) = self.active_call.as_mut()
                     && !call.name.is_empty()
-                    && let Some(delta) = call.arguments.advance(&self.buffer, &mut call.progress)
+                    && let Some(delta) = call.arguments.advance(
+                        &self.buffer,
+                        self.call_boundary
+                            .json_closes
+                            .iter()
+                            .chain(&self.call_boundary.outer_closes)
+                            .chain(
+                                self.call_boundary
+                                    .response_open
+                                    .as_ref()
+                                    .map(|(hit, _)| hit),
+                            )
+                            .map(|hit| hit.at)
+                            .min()
+                            .unwrap_or(self.call_boundary.scanned),
+                        &mut call.progress,
+                    )
                 {
                     let index = delta.tool_index;
                     if self.call_ids.len() <= index {
@@ -2226,19 +2419,27 @@ fn parse_call_body_ordered(body: &str, preserve_duplicates: bool) -> Option<Stri
     if let Some(open_len) = JSON_OPEN.prefix_len(trimmed) {
         let (sep_at, sep_len) = SEP_MARKER.find(&trimmed[open_len..])?;
         let value_start = open_len + sep_at + sep_len;
-        let (close_at, close_len) = find_first_outside_strings(
+        let close = find_first_outside_strings(
             &trimmed[value_start..],
             [
                 JSON_CLOSE.canonical,
                 JSON_CLOSE.spaced.expect("paired marker"),
             ],
-        )?;
+        );
+        let (close_at, close_len) = close.unwrap_or((trimmed.len() - value_start, 0));
         let value_end = value_start + close_at;
         if !trimmed[value_end + close_len..].trim().is_empty() {
             return None;
         }
         let raw = &trimmed[value_start..value_end];
         parsed_json_object(raw)?;
+        if close.is_none() {
+            tracing::warn!(
+                why = "kimi_k3_recovered_missing_json_close",
+                recovered_bytes = raw.len(),
+                "recovering complete Kimi K3 JSON without its channel close"
+            );
+        }
         return Some(if preserve_duplicates {
             raw.trim().to_string()
         } else {
@@ -2592,6 +2793,393 @@ mod tests {
     };
 
     const SEP: &str = "<|sep|>";
+
+    // Capture records can pin deltas, but cannot assert scanner work or retained ownership.
+    #[test]
+    fn literal_response_markers_do_not_accumulate_channel_candidates() {
+        let header = "<|open|>call tool=\"lookup\" index=\"1\"<|sep|>";
+        let body = format!("{header}<|open|>argument key=\"q\" type=\"string\"{SEP}");
+        let wire = format!(
+            "{body}{}",
+            format!(
+                "{}{}literal{}tail",
+                ARG_CLOSE.canonical, RESPONSE_OPEN.canonical, RESPONSE_CLOSE.canonical
+            )
+            .repeat(256)
+        );
+        let mut boundary = KimiK3CallBoundary::new(CallBoundaryContext::Native);
+        boundary.begin(header.len(), Mode::Idle);
+        for end in 1..=wire.len() {
+            assert_eq!(boundary.advance(&wire[..end], false), CallBoundary::Pending);
+            assert!(
+                boundary
+                    .response_open
+                    .is_none_or(|(_, owner)| owner.is_some())
+            );
+        }
+        assert_eq!(boundary.scanned_bytes, wire.len());
+    }
+
+    #[test]
+    fn response_recovers_complete_json_without_outer_closes() {
+        let input = format!(
+            "{}{}{}{{\"q\":\"unfinished\"}}{}{}recovered{}",
+            TOOLS_OPEN.canonical,
+            "<|open|>call tool=\"lookup\" index=\"1\"<|sep|>",
+            "<|open|>json type=\"object\"<|sep|>",
+            JSON_CLOSE.canonical,
+            RESPONSE_OPEN.canonical,
+            RESPONSE_CLOSE.canonical,
+        );
+        assert_native_fragmentations(
+            &input,
+            &[
+                UnifiedEvent::ToolCall {
+                    name: "lookup".into(),
+                    arguments: serde_json::json!({"q":"unfinished"}),
+                },
+                UnifiedEvent::Text {
+                    text: "recovered".into(),
+                },
+            ],
+        );
+    }
+
+    #[test]
+    fn response_survives_unterminated_json_string() {
+        let input = format!(
+            "{}{}{}{{\"q\":\"abc{}{}{}{}Answer{}",
+            TOOLS_OPEN.canonical,
+            "<|open|>call tool=\"lookup\" index=\"1\"<|sep|>",
+            "<|open|>json type=\"object\"<|sep|>",
+            JSON_CLOSE.canonical,
+            CALL_CLOSE.canonical,
+            TOOLS_CLOSE.canonical,
+            RESPONSE_OPEN.canonical,
+            RESPONSE_CLOSE.canonical,
+        );
+        assert_native_fragmentations(
+            &input,
+            &[UnifiedEvent::Text {
+                text: "Answer".into(),
+            }],
+        );
+    }
+
+    #[test]
+    fn response_recovery_preserves_modes_spacing_and_following_calls() {
+        for (body, expected_arguments) in [
+            (
+                arg("q", "string", "Café"),
+                Some(serde_json::json!({"q":"Café"})),
+            ),
+            (
+                arg("q", "object", "{\"city\":\"東京\"}"),
+                Some(serde_json::json!({"q":{"city":"東京"}})),
+            ),
+            (
+                format!(
+                    "<|open|>json type=\"object\"{SEP}{{\"q\":\"Café\"}}{}",
+                    JSON_CLOSE.canonical
+                ),
+                Some(serde_json::json!({"q":"Café"})),
+            ),
+            (
+                format!("<|open|>json type=\"object\"{SEP}{{\"q\":\"abc"),
+                None,
+            ),
+            (
+                format!(
+                    "<|open|>json type=\"object\"{SEP}not-json{}",
+                    JSON_CLOSE.canonical
+                ),
+                None,
+            ),
+        ] {
+            for spaced in [false, true] {
+                let wire = format!(
+                    "{}<|open|>call tool=\"lookup\" index=\"1\"{SEP}{body}{}réponse{}{}{}",
+                    TOOLS_OPEN.canonical,
+                    RESPONSE_OPEN.canonical,
+                    RESPONSE_CLOSE.canonical,
+                    call("next", "2", &arg("n", "number", "7")),
+                    MESSAGE_CLOSE.canonical,
+                );
+                let wire = if spaced {
+                    wire.replace("<|open|>", "<|open|> ")
+                        .replace("<|close|>", "<|close|> ")
+                        .replace(SEP, " <|sep|>")
+                } else {
+                    wire
+                };
+                let mut expected = Vec::new();
+                if let Some(arguments) = expected_arguments.clone() {
+                    expected.push(UnifiedEvent::ToolCall {
+                        name: "lookup".into(),
+                        arguments,
+                    });
+                }
+                expected.extend([
+                    UnifiedEvent::Text {
+                        text: "réponse".into(),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "next".into(),
+                        arguments: serde_json::json!({"n":7}),
+                    },
+                ]);
+                for state in [
+                    UnifiedParserStartingState::None,
+                    UnifiedParserStartingState::Reasoning,
+                    UnifiedParserStartingState::Response,
+                ] {
+                    assert_native_fragmentations_from_state(&wire, state, &expected);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn response_markers_remain_literal_in_complete_arguments() {
+        let literal = format!(
+            "α{}quoted{}ω",
+            RESPONSE_OPEN.canonical, RESPONSE_CLOSE.canonical
+        );
+        for (body, arguments) in [
+            (
+                arg("q", "string", &literal),
+                serde_json::json!({"q":literal}),
+            ),
+            (
+                arg(
+                    "q",
+                    "object",
+                    &serde_json::to_string(&serde_json::json!({"nested":literal})).unwrap(),
+                ),
+                serde_json::json!({"q":{"nested":literal}}),
+            ),
+            (
+                format!(
+                    "<|open|>json type=\"object\"{SEP}{}{}",
+                    serde_json::json!({"q":literal}),
+                    JSON_CLOSE.canonical
+                ),
+                serde_json::json!({"q":literal}),
+            ),
+        ] {
+            assert_native_fragmentations(
+                &call("lookup", "1", &body),
+                &[UnifiedEvent::ToolCall {
+                    name: "lookup".into(),
+                    arguments,
+                }],
+            );
+        }
+        let literal = format!(
+            "before{}{}literal{}after",
+            ARG_CLOSE.canonical, RESPONSE_OPEN.canonical, RESPONSE_CLOSE.canonical,
+        );
+        assert_native_fragmentations(
+            &call("lookup", "1", &arg("q", "string", &literal)),
+            &[UnifiedEvent::ToolCall {
+                name: "lookup".into(),
+                arguments: serde_json::json!({"q":literal}),
+            }],
+        );
+        let raw = format!(
+            "<|open|>json type=\"object\"{SEP}{}",
+            serde_json::json!({"q":literal})
+        );
+        assert_native_fragmentations(
+            &call("lookup", "1", &raw),
+            &[UnifiedEvent::ToolCall {
+                name: "lookup".into(),
+                arguments: serde_json::json!({"q":literal}),
+            }],
+        );
+    }
+
+    #[test]
+    fn closed_calls_before_response_are_not_recovery_prefixes() {
+        for body in [
+            arg("q", "string", "Café"),
+            format!(
+                "<|open|>json type=\"object\"{SEP}{{\"q\":\"Café\"}}{}",
+                JSON_CLOSE.canonical
+            ),
+        ] {
+            let wire = format!(
+                "{}{}Answer{}",
+                call("lookup", "1", &body),
+                RESPONSE_OPEN.canonical,
+                RESPONSE_CLOSE.canonical
+            );
+            assert_native_fragmentations(
+                &wire,
+                &[
+                    UnifiedEvent::ToolCall {
+                        name: "lookup".into(),
+                        arguments: serde_json::json!({"q":"Café"}),
+                    },
+                    UnifiedEvent::Text {
+                        text: "Answer".into(),
+                    },
+                ],
+            );
+            let wire = format!(
+                "{}{}{}{}Answer{}",
+                TOOLS_OPEN.canonical,
+                call("lookup", "1", &body),
+                TOOLS_CLOSE.canonical,
+                RESPONSE_OPEN.canonical,
+                RESPONSE_CLOSE.canonical
+            );
+            let mut parser = crate::create_unified_parser_for_family("kimi_k3", &[]).unwrap();
+            let events = parser.push(&wire).unwrap();
+            assert_eq!(
+                assemble(&events),
+                vec![
+                    UnifiedEvent::ToolCall {
+                        name: "lookup".into(),
+                        arguments: serde_json::json!({"q":"Café"})
+                    },
+                    UnifiedEvent::Text {
+                        text: "Answer".into()
+                    },
+                ]
+            );
+        }
+    }
+
+    #[test]
+    fn settled_json_marker_strings_release_later_field_progress() {
+        use crate::unified::UnifiedParserEvent;
+        let mut parser = crate::create_unified_parser_for_family("kimi_k3", &[]).unwrap();
+        let header = format!(
+            "<|open|>call tool=\"lookup\" index=\"1\"{SEP}<|open|>json type=\"object\"{SEP}"
+        );
+        let mut events = parser.push(&format!("{header}{{\"q\":\"foo")).unwrap();
+        let middle = format!("{}bar\",\"content\":\"", RESPONSE_OPEN.canonical);
+        events.extend(parser.push(&middle).unwrap());
+        let long = "x".repeat(4096);
+        let progress = parser.push(&long).unwrap();
+        assert!(!progress.is_empty());
+        assert!(
+            progress.iter().all(
+                |event| matches!(event, UnifiedParserEvent::ToolCall(delta) if !delta.complete)
+            )
+        );
+        events.extend(progress);
+        events.extend(
+            parser
+                .push(&format!(
+                    "\"}}{}{}",
+                    JSON_CLOSE.canonical, CALL_CLOSE.canonical
+                ))
+                .unwrap(),
+        );
+        events.extend(parser.finish().unwrap().events);
+        assert_eq!(
+            assemble(&events),
+            vec![UnifiedEvent::ToolCall {
+                name: "lookup".into(),
+                arguments: serde_json::json!({"q":format!("foo{}bar",RESPONSE_OPEN.canonical),"content":long}),
+            }]
+        );
+    }
+
+    #[test]
+    fn raw_json_progress_holds_ambiguous_markers_and_resumes_without_rewriting() {
+        use crate::unified::UnifiedParserEvent;
+
+        let header = format!(
+            "{}<|open|>call tool=\"lookup\" index=\"1\"{SEP}<|open|>json type=\"object\"{SEP}",
+            TOOLS_OPEN.canonical
+        );
+        for valid in [false, true] {
+            let mut parser = crate::create_unified_parser_for_family("kimi_k3", &[]).unwrap();
+            parser
+                .initialize_request(UnifiedParserInit::default())
+                .unwrap();
+            let mut events = parser.push(&format!("{header}{{\"q\":\"abc")).unwrap();
+            assert_eq!(
+                events
+                    .iter()
+                    .filter_map(|event| match event {
+                        UnifiedParserEvent::ToolCall(delta) => Some(delta.arguments.as_str()),
+                        _ => None,
+                    })
+                    .collect::<String>(),
+                "{\"q\":\"abc"
+            );
+            let ambiguous = format!(
+                "{}{}{}{}Answer{}",
+                JSON_CLOSE.canonical,
+                CALL_CLOSE.canonical,
+                TOOLS_CLOSE.canonical,
+                RESPONSE_OPEN.canonical,
+                RESPONSE_CLOSE.canonical
+            );
+            for ch in ambiguous.chars() {
+                assert!(parser.push(&ch.to_string()).unwrap().is_empty());
+            }
+            if valid {
+                events.extend(
+                    parser
+                        .push(&format!(
+                            "尾\"}}{}{}{}",
+                            JSON_CLOSE.canonical, CALL_CLOSE.canonical, TOOLS_CLOSE.canonical
+                        ))
+                        .unwrap(),
+                );
+            }
+            events.extend(parser.finish().unwrap().events);
+            let deltas: Vec<_> = events
+                .iter()
+                .filter_map(|event| match event {
+                    UnifiedParserEvent::ToolCall(delta) => Some(delta),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                deltas.iter().filter(|delta| delta.name.is_some()).count(),
+                1
+            );
+            assert!(deltas.iter().all(|delta| delta.tool_index == 0));
+            assert_eq!(
+                deltas.iter().filter(|delta| delta.complete).count(),
+                usize::from(valid)
+            );
+            assert_eq!(parser.tool_call_id(0), Some("lookup:0"));
+            let expected = if valid {
+                vec![UnifiedEvent::ToolCall {
+                    name: "lookup".into(),
+                    arguments: serde_json::json!({"q":format!("abc{ambiguous}尾")}),
+                }]
+            } else {
+                vec![UnifiedEvent::Text {
+                    text: "Answer".into(),
+                }]
+            };
+            assert_eq!(assemble(&events), expected);
+            parser.reset();
+            parser
+                .initialize_request(UnifiedParserInit::default())
+                .unwrap();
+            let mut reused = parser
+                .push(&call("next", "1", &arg("n", "number", "7")))
+                .unwrap();
+            reused.extend(parser.finish().unwrap().events);
+            assert_eq!(
+                assemble(&reused),
+                vec![UnifiedEvent::ToolCall {
+                    name: "next".into(),
+                    arguments: serde_json::json!({"n":7})
+                }]
+            );
+            assert_eq!(parser.tool_call_id(0), Some("next:0"));
+        }
+    }
 
     fn arg(key: &str, arg_type: &str, value: &str) -> String {
         format!("{OPEN}argument key=\"{key}\" type=\"{arg_type}\"{SEP}{value}{CLOSE}argument{SEP}")

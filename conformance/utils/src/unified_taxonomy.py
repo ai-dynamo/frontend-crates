@@ -152,6 +152,10 @@ UNIFIED_TAX = {
     "kimi_native_incremental_interfield_whitespace": ("kimi", "18"),
     "kimi_native_rejected_next_header_progress": ("kimi", "19"),
     "kimi_k3_typed_json_marker_payload": ("kimi", "20"),
+    "kimi_k3_typed_response_marker_payload": ("kimi", "21"),
+    "kimi_k3_json_missing_close_literal_response": ("kimi", "22"),
+    "kimi_k3_json_marker_then_long_field": ("kimi", "23"),
+    "kimi_k3_typed_response_then_call": ("kimi", "24"),
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),

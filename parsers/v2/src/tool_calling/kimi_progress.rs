@@ -54,10 +54,6 @@ impl KimiProgress {
         }
     }
 
-    pub(crate) fn advance_json(&mut self, payload: &str) -> Option<ToolCallDelta> {
-        self.advance_json_with_markers(payload, &[], false)
-    }
-
     pub(crate) fn advance_json_with_markers(
         &mut self,
         payload: &str,
@@ -103,7 +99,11 @@ impl KimiProgress {
                 if self.syntax.invalid {
                     break;
                 }
-                if self.syntax.complete {
+                if self.syntax.complete
+                    || (!trim_unfinished_string_tail
+                        && !self.syntax.in_string()
+                        && matches!(ch, ',' | ':' | '}' | ']'))
+                {
                     self.pending_marker = None;
                 }
                 self.lexed = start + at + ch.len_utf8();

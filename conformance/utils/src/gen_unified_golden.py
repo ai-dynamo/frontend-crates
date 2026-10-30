@@ -2859,6 +2859,40 @@ EDGE.append((
 ))
 
 
+K3_RESPONSE_LITERAL = k3_close("argument") + r_text("kimi_k3", "literal") + "after"
+K3_MARKER_PROGRESS_ARGUMENTS = {"q": r_text("kimi_k3", "literal"), "content": "x" * 4096}
+K3_RESPONSE_CASES = [
+    ("kimi_k3_typed_response_marker_payload",
+     "Native K3 typed string contains an apparent argument close and a framed response before its real argument close. The response stays literal argument data.",
+     r_tool_arguments("kimi_k3", "lookup", {"q": K3_RESPONSE_LITERAL}, 0),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": K3_RESPONSE_LITERAL}}]),
+    ("kimi_k3_json_missing_close_literal_response",
+     "Native K3 raw JSON contains a closed quoted response marker, but its JSON-channel close is missing. Recover the complete object without exposing the quoted response as text.",
+     k3_tools(k3_call("lookup", 1, k3_json(json.dumps({"q": r_text("kimi_k3", "literal")})).removesuffix(k3_close("json")))),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": r_text("kimi_k3", "literal")}}]),
+    ("kimi_k3_json_marker_then_long_field",
+     "Native K3 raw JSON has a literal response marker in the first field followed by a long second field. Settled marker ownership must allow second-field progress before native call closure.",
+     k3_tools(k3_call("lookup", 1, k3_json(json.dumps(K3_MARKER_PROGRESS_ARGUMENTS)))),
+     [{"kind": "tool_call", "name": "lookup", "arguments": K3_MARKER_PROGRESS_ARGUMENTS}]),
+    ("kimi_k3_typed_response_then_call",
+     "Native K3 has a closed typed value with missing call/tools closes, then a response and another valid call. The later call must not lend its argument close to the first call.",
+     k3_tools(k3_call("lookup", 1, k3_argument("q", "string", "first"), close=False), close=False)
+     + r_text("kimi_k3", "recovered") + r_tool_arguments("kimi_k3", "next", {"n": 7}, 1),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}},
+      {"kind": "text", "text": "recovered"}, {"kind": "tool_call", "name": "next", "arguments": {"n": 7}}]),
+]
+for scenario, description, native, golden in K3_RESPONSE_CASES:
+    EDGE.append((
+        scenario, description, ["I3", "I5", "I7"], golden,
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": [native[offset:offset + 64] for offset in range(0, len(native), 64)]}},
+        OnlyFamilies({"kimi_k3": (native, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}),
+        [{"name": "lookup", "parameters": {"type": "object", "properties": {
+            "q": {"type": "string"}, "content": {"type": "string"}}, "required": ["q"]}},
+         {"name": "next", "parameters": {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}}],
+    ))
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
@@ -3933,10 +3967,8 @@ def _native_review_variants(scenario):
             else:
                 native_input = r_tool(family, "lookup", "q", "unfinished", 0).removesuffix(control_tokens(family)[3])
             golden = ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
-                      if family == "muse_glimmer" else []) + [{"kind": "text", "text": "recovered"}]
-            dynamo = (D("LOSS", "An unclosed tool call swallows the later response; retain the visible-answer oracle.")
-                      if family == "kimi_k3" else M)
-            variants[family] = (native_input + r_text(family, "recovered"), golden, dynamo)
+                      if family in {"muse_glimmer", "kimi_k3"} else []) + [{"kind": "text", "text": "recovered"}]
+            variants[family] = (native_input + r_text(family, "recovered"), golden, M)
         return variants
     if scenario == "gpt_oss_interrupted_reasoning_then_response":
         golden = [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}]
@@ -3962,7 +3994,7 @@ def _native_review_variants(scenario):
             ),
             "kimi_k3": (
                 k3_raw_tool("lookup", '{"q":"abc') + r_text("kimi_k3", "Answer"),
-                golden, D("LOSS", "An unterminated raw JSON string swallows the later response; retain the visible-answer oracle."),
+                golden, M,
             ),
         }
     if scenario == "gpt_oss_quoted_message_header_literal":
