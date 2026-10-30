@@ -826,18 +826,63 @@ fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
         })
     );
 
-    for builder in [&GLM47, &DEEPSEEK_DSML, &HARMONY, &KIMI_K2, &KIMI_K3] {
-        let text = build(
+    // Builders that embed a JSON schema must carry the renamed definition and
+    // its reference; Kimi K3 resolves the reference into a typed XTML argument.
+    let canonical_ref = json!("#/$defs/registry_Model_v1_name");
+    for builder in [&GLM47, &DEEPSEEK_DSML, &HARMONY, &KIMI_K2] {
+        let tag = build(
             builder,
             StructuralTagToolChoice::Required,
             &tools,
             None,
             StructuralTagSchemaMode::Auto,
             false,
-        )
-        .to_string();
-        assert!(!text.contains("registry~1Model"), "{text}");
+        );
+        let schemas = embedded_json_schemas(&tag);
+        assert!(!schemas.is_empty(), "no json_schema in {tag}");
+        for schema in schemas {
+            assert_eq!(
+                schema["$defs"]["registry_Model_v1_name"],
+                json!({"type": "string"}),
+                "{tag}"
+            );
+            assert_eq!(
+                schema["properties"]["model_name"]["$ref"], canonical_ref,
+                "{tag}"
+            );
+        }
+        assert!(!tag.to_string().contains("registry~1Model"), "{tag}");
     }
+    let k3 = build(
+        &KIMI_K3,
+        StructuralTagToolChoice::Required,
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    )
+    .to_string();
+    assert!(k3.contains(r#"key=\"model_name\" type=\"string\""#), "{k3}");
+    assert!(!k3.contains("registry~1Model"), "{k3}");
+}
+
+/// Every `json_schema` value embedded anywhere in a structural tag.
+fn embedded_json_schemas(tag: &Value) -> Vec<&Value> {
+    let mut found = Vec::new();
+    let mut stack = vec![tag];
+    while let Some(node) = stack.pop() {
+        match node {
+            Value::Object(map) => {
+                if let Some(schema) = map.get("json_schema") {
+                    found.push(schema);
+                }
+                stack.extend(map.values());
+            }
+            Value::Array(items) => stack.extend(items),
+            _ => {}
+        }
+    }
+    found
 }
 
 #[test]

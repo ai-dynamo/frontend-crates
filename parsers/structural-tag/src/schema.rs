@@ -21,7 +21,10 @@
 //! The transform is all-or-nothing: the schema is analysed in full before
 //! anything is rewritten, a definition is renamed only when every reference
 //! that resolves to it today can be rewritten, and a schema too large or too
-//! deep to analyse completely is returned exactly as written.
+//! deep to analyse completely is returned exactly as written. Only
+//! schema-valued keyword positions are read: an object inside `const`, `enum`,
+//! `default` or `examples` is argument data and is never touched, and a
+//! property named `$ref` or `$defs` is a name, not a keyword.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -76,41 +79,108 @@ impl Survey {
         Some(survey)
     }
 
-    fn walk(&mut self, node: &Value, path: &mut Path, budget: &mut usize) -> Option<()> {
+    /// Visit one schema. Only schema-valued keyword positions are entered;
+    /// instance data (`const`, `enum`, `default`, `examples`, unknown keywords)
+    /// is never read as a schema.
+    fn walk(&mut self, schema: &Value, path: &mut Path, budget: &mut usize) -> Option<()> {
         if path.len() > MAX_DEPTH {
             return None;
         }
         *budget = budget.checked_sub(1)?;
-        match node {
-            Value::Object(map) => {
-                if let Some(Value::String(reference)) = map.get("$ref") {
-                    self.refs
-                        .push((reference.clone(), decode_local_ref(reference)));
-                }
-                for (key, child) in map {
-                    if DEFINITION_KEYS.contains(&key.as_str())
-                        && let Some(definitions) = child.as_object()
-                    {
-                        let mut container = path.clone();
-                        container.push(key.clone());
-                        self.containers
-                            .push((container, definitions.keys().cloned().collect()));
-                    }
+        let Value::Object(map) = schema else {
+            return Some(());
+        };
+        if let Some(Value::String(reference)) = map.get("$ref") {
+            self.refs
+                .push((reference.clone(), decode_local_ref(reference)));
+        }
+        for (key, child) in map {
+            match keyword_kind(key, child) {
+                KeywordKind::Instance => {}
+                KeywordKind::Schema => {
                     path.push(key.clone());
                     self.walk(child, path, budget)?;
                     path.pop();
                 }
-            }
-            Value::Array(items) => {
-                for (index, item) in items.iter().enumerate() {
-                    path.push(index.to_string());
-                    self.walk(item, path, budget)?;
+                KeywordKind::SchemaList => {
+                    let Some(items) = child.as_array() else {
+                        continue;
+                    };
+                    path.push(key.clone());
+                    for (index, item) in items.iter().enumerate() {
+                        path.push(index.to_string());
+                        self.walk(item, path, budget)?;
+                        path.pop();
+                    }
+                    path.pop();
+                }
+                KeywordKind::SchemaMap => {
+                    let Some(entries) = child.as_object() else {
+                        continue;
+                    };
+                    path.push(key.clone());
+                    if DEFINITION_KEYS.contains(&key.as_str()) {
+                        self.containers
+                            .push((path.clone(), entries.keys().cloned().collect()));
+                    }
+                    for (name, entry) in entries {
+                        path.push(name.clone());
+                        self.walk(entry, path, budget)?;
+                        path.pop();
+                    }
                     path.pop();
                 }
             }
-            _ => {}
         }
         Some(())
+    }
+}
+
+/// How a keyword's value relates to the schema that holds it.
+#[derive(Clone, Copy)]
+enum KeywordKind {
+    /// Instance data or an annotation: never a schema (`const`, `enum`,
+    /// `default`, `examples`, `$ref` itself, unknown keywords).
+    Instance,
+    /// One subschema.
+    Schema,
+    /// An array of subschemas.
+    SchemaList,
+    /// Names mapped to subschemas; the names are data, not keywords.
+    SchemaMap,
+}
+
+/// Classify a keyword per JSON Schema (draft 2020-12 plus the draft-04/07
+/// spellings tool schemas still use). Unknown keywords are annotations.
+fn keyword_kind(key: &str, value: &Value) -> KeywordKind {
+    match key {
+        "properties" | "patternProperties" | "$defs" | "definitions" | "dependentSchemas" => {
+            KeywordKind::SchemaMap
+        }
+        // Draft-07 `dependencies` mixes schemas with property-name arrays; only
+        // its object entries are schemas, which `walk` already requires.
+        "dependencies" => KeywordKind::SchemaMap,
+        "allOf" | "anyOf" | "oneOf" | "prefixItems" => KeywordKind::SchemaList,
+        // Draft-04/07 tuple form of `items` is a list; otherwise one schema.
+        "items" => {
+            if value.is_array() {
+                KeywordKind::SchemaList
+            } else {
+                KeywordKind::Schema
+            }
+        }
+        "additionalProperties"
+        | "additionalItems"
+        | "unevaluatedProperties"
+        | "unevaluatedItems"
+        | "contains"
+        | "propertyNames"
+        | "not"
+        | "if"
+        | "then"
+        | "else"
+        | "contentSchema" => KeywordKind::Schema,
+        _ => KeywordKind::Instance,
     }
 }
 
@@ -206,24 +276,35 @@ impl Plan {
         }
     }
 
-    fn rewrite_refs(&self, node: &mut Value, containers: &[Path]) {
-        match node {
-            Value::Object(map) => {
-                if let Some(Value::String(reference)) = map.get_mut("$ref")
-                    && let Some(canonical) = self.canonical_ref(reference, containers)
-                {
-                    *reference = canonical;
+    /// Mirror of [`Survey::walk`]: the same keyword positions, mutably.
+    fn rewrite_refs(&self, schema: &mut Value, containers: &[Path]) {
+        let Value::Object(map) = schema else {
+            return;
+        };
+        if let Some(Value::String(reference)) = map.get_mut("$ref")
+            && let Some(canonical) = self.canonical_ref(reference, containers)
+        {
+            *reference = canonical;
+        }
+        for (key, child) in map.iter_mut() {
+            match keyword_kind(key, child) {
+                KeywordKind::Instance => {}
+                KeywordKind::Schema => self.rewrite_refs(child, containers),
+                KeywordKind::SchemaList => {
+                    if let Some(items) = child.as_array_mut() {
+                        for item in items {
+                            self.rewrite_refs(item, containers);
+                        }
+                    }
                 }
-                for child in map.values_mut() {
-                    self.rewrite_refs(child, containers);
+                KeywordKind::SchemaMap => {
+                    if let Some(entries) = child.as_object_mut() {
+                        for entry in entries.values_mut() {
+                            self.rewrite_refs(entry, containers);
+                        }
+                    }
                 }
             }
-            Value::Array(items) => {
-                for item in items {
-                    self.rewrite_refs(item, containers);
-                }
-            }
-            _ => {}
         }
     }
 
@@ -585,13 +666,124 @@ mod tests {
 
     #[test]
     fn a_schema_too_large_to_analyse_is_returned_unchanged() {
+        let branches: Vec<Value> = (0..MAX_NODES).map(|_| json!({"type": "integer"})).collect();
         let schema = json!({
             "$defs": {"a b": {"type": "integer"}},
             "properties": {
-                "big": {"enum": (0..MAX_NODES as u64).collect::<Vec<_>>()},
+                "big": {"anyOf": branches},
                 "z": {"$ref": "#/$defs/a b"}
             }
         });
         assert_eq!(canonicalize_local_refs(schema.clone()), schema);
+    }
+
+    #[test]
+    fn instance_valued_keywords_are_argument_data_not_schemas() {
+        // Objects under `const`, `enum`, `default` and `examples` are values the
+        // model must produce; a `$defs` or `$ref` spelled inside them is data.
+        let schema = json!({
+            "type": "object",
+            "$defs": {"a b": {"type": "integer"}},
+            "properties": {
+                "p": {"const": {"$defs": {"a b": 1}, "$ref": "#/$defs/a%20b"}},
+                "q": {"enum": [{"$ref": "#/$defs/a~1b"}, {"$defs": {"x/y": true}}]},
+                "r": {"type": "object", "default": {"$defs": {"q/r": {}}}},
+                "s": {"examples": [{"$ref": "#/%24defs/a%20b"}]},
+                "t": {"$ref": "#/$defs/a%20b"}
+            }
+        });
+        let mut expected = schema.clone();
+        expected["$defs"] = json!({"a_b": {"type": "integer"}});
+        expected["properties"]["t"] = json!({"$ref": "#/$defs/a_b"});
+        assert_eq!(canonicalize_local_refs(schema), expected);
+    }
+
+    #[test]
+    fn a_literal_reference_inside_instance_data_does_not_pin_a_definition() {
+        // The `const` object spells `#/$defs/a b` but is not a reference, so the
+        // definition is still renamed for the real reference.
+        let schema = json!({
+            "$defs": {"a b": {"type": "integer"}},
+            "properties": {
+                "p": {"const": {"$ref": "#/$defs/a b"}},
+                "t": {"$ref": "#/$defs/a b"}
+            }
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "$defs": {"a_b": {"type": "integer"}},
+                "properties": {
+                    "p": {"const": {"$ref": "#/$defs/a b"}},
+                    "t": {"$ref": "#/$defs/a_b"}
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn property_names_that_spell_keywords_are_names() {
+        // `properties.$ref` and `properties.$defs` are argument names: the first
+        // is not a reference, the second is not a definition container, so the
+        // non-identifier property under it is not renamed. A reference into it
+        // is still decoded to the literal spelling.
+        let schema = json!({
+            "type": "object",
+            "$defs": {"x y": {"type": "boolean"}},
+            "properties": {
+                "$ref": {"type": "string"},
+                "$defs": {
+                    "type": "object",
+                    "properties": {"a b": {"type": "integer"}}
+                },
+                "copy": {"$ref": "#/properties/%24defs/properties/a%20b"},
+                "flag": {"$ref": "#/$defs/x%20y"}
+            }
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "type": "object",
+                "$defs": {"x_y": {"type": "boolean"}},
+                "properties": {
+                    "$ref": {"type": "string"},
+                    "$defs": {
+                        "type": "object",
+                        "properties": {"a b": {"type": "integer"}}
+                    },
+                    "copy": {"$ref": "#/properties/$defs/properties/a b"},
+                    "flag": {"$ref": "#/$defs/x_y"}
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn every_schema_valued_keyword_position_is_canonicalized() {
+        let reference = json!({"$ref": "#/$defs/a%20b"});
+        let schema = json!({
+            "$defs": {"a b": {"type": "integer"}},
+            "properties": {"p": reference},
+            "patternProperties": {"^x": reference},
+            "additionalProperties": reference,
+            "items": [reference],
+            "prefixItems": [reference],
+            "contains": reference,
+            "propertyNames": reference,
+            "not": reference,
+            "if": reference, "then": reference, "else": reference,
+            "allOf": [reference], "anyOf": [reference], "oneOf": [reference],
+            "dependentSchemas": {"p": reference},
+            "dependencies": {"p": reference, "q": ["p"]},
+            "unevaluatedProperties": reference,
+            "unevaluatedItems": reference,
+            "contentSchema": reference
+        });
+        let canonical = canonicalize_local_refs(schema);
+        assert_eq!(canonical["$defs"], json!({"a_b": {"type": "integer"}}));
+        let text = canonical.to_string();
+        assert!(!text.contains("a%20b"), "{text}");
+        assert_eq!(text.matches("#/$defs/a_b").count(), 19, "{text}");
+        assert_eq!(canonical["dependencies"]["q"], json!(["p"]));
     }
 }
