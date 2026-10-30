@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { selectedCaptureOutcome } from './model.js';
-import { comparisonView, captureCounts, isProblemOutcome, statusLabels, verticalDefault } from './comparison.js';
+import { compileSearch, comparisonView, captureCounts, isProblemOutcome, statusLabels, verticalDefault } from './comparison.js';
 import { captureSegmentHtml } from './presentation.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
   cmp: { golden: {sig: 1}, d: {sig: status === 'diverge' || status === 'documented' ? 2 : 1,
@@ -16,6 +16,47 @@ const columns = leaves.map(c => ({sub: c.sub, label: c.sub, desc: 'case ' + c.su
 const tab = {rows: [{family: 'family', model_label: 'Model', cells: Object.fromEntries(leaves.map(c => [c.sub, c]))}], columns,
   column_groups: [{key: 'core', label: 'Core'}]};
 const state = {groups: new Set(['core']), search: '', focus: 'all'};
+test('search expressions support precedence, groups, phrases and whitespace shorthand', () => {
+  for (const [query, fields, expected] of [
+    ['', [], true],
+    ['deepseek AND (call OR blah)', ['DeepSeek', 'tool call'], true],
+    ['deepseek AND (call OR blah)', ['llama', 'tool call'], false],
+    ['deepseek AND (call OR blah)', ['deepseek', 'reasoning'], false],
+    ['deepseek OR llama AND call', ['deepseek'], true],
+    ['deepseek OR llama AND call', ['llama'], false],
+    ['(deepseek OR llama) AND call', ['deepseek'], false],
+    ['deepseek and ((call or blah))', ['DeepSeek', 'blah'], true],
+    ['deep seek', ['deepseek'], true],
+    ['deep seek', ['deep seek'], true],
+    ['deep seek', ['deep', 'seek'], false],
+    ['deep seek AND call', ['deepseek', 'call'], true],
+    ['deep seek AND call', ['deepseek'], false],
+    ['"deep seek"', ['deepseek'], false],
+    ['"deep seek"', ['DEEP SEEK'], true],
+    ['"AND"', ['and'], true],
+    ['"call (tool)"', ['call (tool)'], true],
+    ['"say \\"hi\\""', ['say "hi"'], true],
+    ['[a].*', ['[a].*'], true],
+    ['[a].*', ['anything'], false],
+  ]) assert.equal(compileSearch(query)(fields), expected, query);
+  for (const query of ['"', '"unterminated', '""', '()', '(call', 'call)', 'AND call', 'call OR', 'call AND OR blah', 'call (blah)', '"call" blah']) {
+    assert.throws(() => compileSearch(query), SyntaxError, query);
+  }
+});
+test('boolean filters count only matching underlying cases across model and case fields', () => {
+  const a = cell('a', 'pass', {tooltip: {description: 'single call'}});
+  const b = cell('b', 'leak', {tooltip: {description: 'reasoning'}});
+  const folded = {...tab, columns: [{sub: 'fold', label: 'group', case_id: 'folded_id', desc: 'Union alternatives', group_key: 'core'}, {sub: 'a', group_key: 'core'}],
+    rows: [{family: 'deepseek', cells: {fold: {variants: [a,b]}, a}}, {family: 'llama', cells: {fold: {variants: [a,b]}, a}}]};
+  const view = comparisonView(folded, {...state, search: 'deep seek AND (call OR nowhere)'});
+  assert.deepEqual(view.rows.map(row => row.family), ['deepseek']);
+  assert.equal(captureCounts(view, 'd').total, 1);
+  assert.equal(captureCounts(view, 'd').pass, 1);
+  assert.equal(captureCounts(view, 'd').leak, 0);
+  for (const query of ['"union alternatives"', 'folded_id']) {
+    assert.equal(captureCounts(comparisonView(folded, {...state, search: query}), 'd').total, 4, query);
+  }
+});
 test('Capture boxes stay empty and keep accessible outcome labels', () => {
   for (const status of Object.keys(statusLabels)) {
     const segment = captureSegmentHtml(status, 'capture');
