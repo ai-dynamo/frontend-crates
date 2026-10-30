@@ -13,22 +13,27 @@
 //!
 //! [`canonicalize_local_refs`] rewrites the schema into the spelling the
 //! converter resolves: every local `$ref` is decoded to literal segments, and a
-//! `$defs` / `definitions` entry whose name is not a plain identifier is renamed
-//! to one (references follow). Definition names never reach the generated
-//! arguments, so the rename is invisible to the model and the caller. A schema
-//! that is already plain comes back unchanged.
+//! `$defs` / `definitions` entry (at the root or in any subschema) whose name is
+//! not a plain identifier is renamed to one, with its references following.
+//! Definition names never reach the generated arguments, so the rename is
+//! invisible to the model and the caller.
+//!
+//! The transform is all-or-nothing: the schema is analysed in full before
+//! anything is rewritten, a definition is renamed only when every reference
+//! that resolves to it today can be rewritten, and a schema too large or too
+//! deep to analyse completely is returned exactly as written.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
-use serde_json::{Map, Value};
+use serde_json::Value;
 
-/// Keys that hold reusable definitions at the schema root.
+/// Keys that hold reusable definitions, at the root or inside a subschema.
 const DEFINITION_KEYS: [&str; 2] = ["$defs", "definitions"];
 
-/// Nesting beyond this is left as written (a grammar backend bounds it too).
+/// Deeper schemas are returned as written (a grammar backend bounds them too).
 const MAX_DEPTH: usize = 64;
 
-/// Total nodes visited before the walk stops rewriting.
+/// Larger schemas (by node count) are returned as written.
 const MAX_NODES: usize = 1 << 16;
 
 /// Rewrite local `$ref` targets into the literal spelling grammar backends
@@ -36,18 +41,255 @@ const MAX_NODES: usize = 1 << 16;
 ///
 /// Non-local references (`http://…`, `other.json#/…`), references with an
 /// invalid percent escape or a stray `~`, and references whose decoded segment
-/// still contains a `/` outside a renamed definition are left exactly as written.
+/// still contains a `/` outside a renamed definition are left exactly as written,
+/// and a definition such a reference resolves to by literal lookup keeps its
+/// name. A schema the bounded analysis cannot finish is returned unchanged.
 pub fn canonicalize_local_refs(mut schema: Value) -> Value {
-    let Some(root) = schema.as_object() else {
+    if !schema.is_object() {
+        return schema;
+    }
+    let Some(plan) = Plan::analyze(&schema) else {
         return schema;
     };
-    let renames = plan_definition_renames(root);
-    let mut budget = MAX_NODES;
-    rewrite_refs(&mut schema, &renames, 0, &mut budget);
-    if let Some(root) = schema.as_object_mut() {
-        apply_definition_renames(root, &renames);
-    }
+    plan.apply(&mut schema);
     schema
+}
+
+/// A pointer path from the root, one decoded key or array index per segment.
+type Path = Vec<String>;
+
+/// Every `$ref` site and definition container in the schema.
+#[derive(Default)]
+struct Survey {
+    /// `(path to the definitions map, its keys)`.
+    containers: Vec<(Path, Vec<String>)>,
+    /// `(raw text, decoded local segments)` for every string `$ref`.
+    refs: Vec<(String, Option<Path>)>,
+}
+
+impl Survey {
+    /// `None` when the schema exceeds the depth or node budget.
+    fn collect(schema: &Value) -> Option<Self> {
+        let mut survey = Self::default();
+        let mut budget = MAX_NODES;
+        survey.walk(schema, &mut Vec::new(), &mut budget)?;
+        Some(survey)
+    }
+
+    fn walk(&mut self, node: &Value, path: &mut Path, budget: &mut usize) -> Option<()> {
+        if path.len() > MAX_DEPTH {
+            return None;
+        }
+        *budget = budget.checked_sub(1)?;
+        match node {
+            Value::Object(map) => {
+                if let Some(Value::String(reference)) = map.get("$ref") {
+                    self.refs
+                        .push((reference.clone(), decode_local_ref(reference)));
+                }
+                for (key, child) in map {
+                    if DEFINITION_KEYS.contains(&key.as_str())
+                        && let Some(definitions) = child.as_object()
+                    {
+                        let mut container = path.clone();
+                        container.push(key.clone());
+                        self.containers
+                            .push((container, definitions.keys().cloned().collect()));
+                    }
+                    path.push(key.clone());
+                    self.walk(child, path, budget)?;
+                    path.pop();
+                }
+            }
+            Value::Array(items) => {
+                for (index, item) in items.iter().enumerate() {
+                    path.push(index.to_string());
+                    self.walk(item, path, budget)?;
+                    path.pop();
+                }
+            }
+            _ => {}
+        }
+        Some(())
+    }
+}
+
+/// Definition renames, keyed by container path and original name.
+type Renames = BTreeMap<(Path, String), String>;
+
+/// What to change, decided before anything is touched.
+struct Plan {
+    renames: Renames,
+}
+
+impl Plan {
+    fn analyze(schema: &Value) -> Option<Self> {
+        let survey = Survey::collect(schema)?;
+
+        // Start from every definition that cannot be referenced literally, then
+        // withdraw a rename while some reference that resolves to that definition
+        // today cannot be rewritten (an invalid escape, or a decoded `/` outside a
+        // renamed key). Each round only removes candidates, so this terminates.
+        let mut candidates: BTreeSet<(Path, String)> = survey
+            .containers
+            .iter()
+            .flat_map(|(path, keys)| {
+                keys.iter()
+                    .filter(|key| !is_plain_identifier(key))
+                    .map(|key| (path.clone(), key.clone()))
+            })
+            .collect();
+        loop {
+            let pinned: Vec<(Path, String)> = survey
+                .refs
+                .iter()
+                .filter(|(raw, decoded)| {
+                    !rewritable(decoded.as_deref(), &survey.containers, &candidates) && raw != "#"
+                })
+                .filter_map(|(raw, _)| literal_target(raw, &survey.containers))
+                .filter(|target| candidates.contains(target))
+                .collect();
+            if pinned.is_empty() {
+                break;
+            }
+            for target in pinned {
+                candidates.remove(&target);
+            }
+        }
+
+        let mut renames = Renames::new();
+        for (path, keys) in &survey.containers {
+            let mut taken: BTreeSet<String> = keys.iter().cloned().collect();
+            for key in keys {
+                if !candidates.contains(&(path.clone(), key.clone())) {
+                    continue;
+                }
+                let base: String = key
+                    .chars()
+                    .map(|c| if is_plain_char(c) { c } else { '_' })
+                    .collect();
+                let mut candidate = base.clone();
+                let mut suffix = 2;
+                while taken.contains(&candidate) {
+                    candidate = format!("{base}_{suffix}");
+                    suffix += 1;
+                }
+                taken.insert(candidate.clone());
+                renames.insert((path.clone(), key.clone()), candidate);
+            }
+        }
+        Some(Self { renames })
+    }
+
+    fn apply(&self, schema: &mut Value) {
+        let containers: Vec<Path> = self
+            .renames
+            .keys()
+            .map(|(path, _)| path.clone())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        self.rewrite_refs(schema, &containers);
+        for path in &containers {
+            let Some(Value::Object(definitions)) = node_at_mut(schema, path) else {
+                continue;
+            };
+            let entries = std::mem::take(definitions);
+            for (name, definition) in entries {
+                let name = self
+                    .renames
+                    .get(&(path.clone(), name.clone()))
+                    .cloned()
+                    .unwrap_or(name);
+                definitions.insert(name, definition);
+            }
+        }
+    }
+
+    fn rewrite_refs(&self, node: &mut Value, containers: &[Path]) {
+        match node {
+            Value::Object(map) => {
+                if let Some(Value::String(reference)) = map.get_mut("$ref")
+                    && let Some(canonical) = self.canonical_ref(reference, containers)
+                {
+                    *reference = canonical;
+                }
+                for child in map.values_mut() {
+                    self.rewrite_refs(child, containers);
+                }
+            }
+            Value::Array(items) => {
+                for item in items {
+                    self.rewrite_refs(item, containers);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// The literal-segment spelling of a local reference, or `None` when it is
+    /// not local, cannot be decoded, would still hold a `/`, or would not change.
+    fn canonical_ref(&self, reference: &str, containers: &[Path]) -> Option<String> {
+        let mut segments = decode_local_ref(reference)?;
+        for path in containers {
+            if segments.len() > path.len()
+                && segments[..path.len()] == path[..]
+                && let Some(renamed) = self
+                    .renames
+                    .get(&(path.clone(), segments[path.len()].clone()))
+            {
+                segments[path.len()] = renamed.clone();
+            }
+        }
+        if segments.iter().any(|segment| segment.contains('/')) {
+            return None;
+        }
+        let canonical = format!("#/{}", segments.join("/"));
+        (canonical != reference).then_some(canonical)
+    }
+}
+
+/// Whether a reference will be rewritten once `candidates` are renamed: it
+/// decodes, and every decoded `/` sits in a key position that is being renamed.
+fn rewritable(
+    decoded: Option<&[String]>,
+    containers: &[(Path, Vec<String>)],
+    candidates: &BTreeSet<(Path, String)>,
+) -> bool {
+    let Some(segments) = decoded else {
+        return false;
+    };
+    segments.iter().enumerate().all(|(index, segment)| {
+        !segment.contains('/')
+            || containers.iter().any(|(path, _)| {
+                path.len() == index
+                    && segments[..index] == path[..]
+                    && candidates.contains(&(path.clone(), segment.clone()))
+            })
+    })
+}
+
+/// The definition a reference left as written resolves to by literal segment
+/// lookup, if any.
+fn literal_target(raw: &str, containers: &[(Path, Vec<String>)]) -> Option<(Path, String)> {
+    let segments: Vec<&str> = raw.strip_prefix("#/")?.split('/').collect();
+    containers.iter().find_map(|(path, keys)| {
+        (segments.len() > path.len()
+            && segments[..path.len()]
+                .iter()
+                .zip(path)
+                .all(|(segment, step)| *segment == step.as_str())
+            && keys.iter().any(|key| key == segments[path.len()]))
+        .then(|| (path.clone(), segments[path.len()].to_string()))
+    })
+}
+
+fn node_at_mut<'a>(root: &'a mut Value, path: &[String]) -> Option<&'a mut Value> {
+    path.iter().try_fold(root, |node, segment| match node {
+        Value::Object(map) => map.get_mut(segment),
+        Value::Array(items) => items.get_mut(segment.parse::<usize>().ok()?),
+        _ => None,
+    })
 }
 
 /// A definition name a grammar backend resolves verbatim and a URI fragment
@@ -60,102 +302,14 @@ fn is_plain_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')
 }
 
-/// `(definition container, original name) -> plain replacement`.
-type Renames = BTreeMap<(&'static str, String), String>;
-
-fn plan_definition_renames(root: &Map<String, Value>) -> Renames {
-    let mut renames = Renames::new();
-    for container in DEFINITION_KEYS {
-        let Some(definitions) = root.get(container).and_then(Value::as_object) else {
-            continue;
-        };
-        let mut taken: HashSet<String> = definitions.keys().cloned().collect();
-        for name in definitions.keys().filter(|name| !is_plain_identifier(name)) {
-            let base: String = name
-                .chars()
-                .map(|c| if is_plain_char(c) { c } else { '_' })
-                .collect();
-            let mut candidate = base.clone();
-            let mut suffix = 2;
-            while taken.contains(&candidate) {
-                candidate = format!("{base}_{suffix}");
-                suffix += 1;
-            }
-            taken.insert(candidate.clone());
-            renames.insert((container, name.clone()), candidate);
-        }
-    }
-    renames
-}
-
-fn apply_definition_renames(root: &mut Map<String, Value>, renames: &Renames) {
-    for container in DEFINITION_KEYS {
-        if !renames.keys().any(|(key, _)| *key == container) {
-            continue;
-        }
-        let Some(Value::Object(definitions)) = root.get_mut(container) else {
-            continue;
-        };
-        let entries = std::mem::take(definitions);
-        for (name, definition) in entries {
-            let name = renames
-                .get(&(container, name.clone()))
-                .cloned()
-                .unwrap_or(name);
-            definitions.insert(name, definition);
-        }
-    }
-}
-
-fn rewrite_refs(node: &mut Value, renames: &Renames, depth: usize, budget: &mut usize) {
-    if depth > MAX_DEPTH || *budget == 0 {
-        return;
-    }
-    *budget -= 1;
-    match node {
-        Value::Object(map) => {
-            if let Some(Value::String(reference)) = map.get_mut("$ref")
-                && let Some(canonical) = canonical_local_ref(reference, renames)
-            {
-                *reference = canonical;
-            }
-            for child in map.values_mut() {
-                rewrite_refs(child, renames, depth + 1, budget);
-            }
-        }
-        Value::Array(items) => {
-            for item in items {
-                rewrite_refs(item, renames, depth + 1, budget);
-            }
-        }
-        _ => {}
-    }
-}
-
-/// The literal-segment spelling of a local reference, or `None` when the
-/// reference is not local, cannot be decoded, or would not change.
-fn canonical_local_ref(reference: &str, renames: &Renames) -> Option<String> {
+/// The decoded segments of a local reference (`#/a/b`), or `None` when the
+/// reference is not local or holds an invalid escape.
+fn decode_local_ref(reference: &str) -> Option<Path> {
     let fragment = reference.strip_prefix('#')?;
     // URI percent-decoding precedes JSON Pointer's `~0`/`~1` decoding.
     let pointer = percent_decode(fragment)?;
     let path = pointer.strip_prefix('/')?;
-    let mut segments = path
-        .split('/')
-        .map(unescape_pointer_segment)
-        .collect::<Option<Vec<_>>>()?;
-    if let [container, name, ..] = segments.as_mut_slice()
-        && let Some(container) = DEFINITION_KEYS.iter().find(|key| *key == container)
-        && let Some(renamed) = renames.get(&(container, name.clone()))
-    {
-        *name = renamed.clone();
-    }
-    // A decoded `/` outside a renamed definition cannot be spelled literally;
-    // keep the author's text rather than emit a pointer that means something else.
-    if segments.iter().any(|segment| segment.contains('/')) {
-        return None;
-    }
-    let canonical = format!("#/{}", segments.join("/"));
-    (canonical != reference).then_some(canonical)
+    path.split('/').map(unescape_pointer_segment).collect()
 }
 
 /// Decode `%XX` escapes; `None` on a malformed escape or invalid UTF-8.
@@ -274,11 +428,75 @@ mod tests {
     }
 
     #[test]
-    fn invalid_escapes_and_non_local_references_are_left_alone() {
+    fn nested_definition_containers_are_renamed_with_their_full_path() {
+        // JSON Schema allows `$defs` inside a subschema; the rename is keyed by the
+        // container's pointer path, not only the root.
         let schema = json!({
-            "$defs": {"Bad%ZZ": {"type": "string"}, "Ok": {"type": "string"}},
+            "type": "object",
+            "properties": {
+                "outer": {
+                    "type": "object",
+                    "$defs": {"a/b": {"type": "integer"}, "Plain": {"type": "string"}},
+                    "properties": {
+                        "n": {"$ref": "#/properties/outer/$defs/a~1b"},
+                        "s": {"$ref": "#/properties/outer/$defs/Plain"}
+                    }
+                },
+                "list": {"anyOf": [{"definitions": {"x y": {"type": "boolean"}}}]},
+                "flag": {"$ref": "#/properties/list/anyOf/0/definitions/x%20y"}
+            }
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "type": "object",
+                "properties": {
+                    "outer": {
+                        "type": "object",
+                        "$defs": {"a_b": {"type": "integer"}, "Plain": {"type": "string"}},
+                        "properties": {
+                            "n": {"$ref": "#/properties/outer/$defs/a_b"},
+                            "s": {"$ref": "#/properties/outer/$defs/Plain"}
+                        }
+                    },
+                    "list": {"anyOf": [{"definitions": {"x_y": {"type": "boolean"}}}]},
+                    "flag": {"$ref": "#/properties/list/anyOf/0/definitions/x_y"}
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn a_definition_keeps_its_name_while_an_unrewritable_reference_resolves_to_it() {
+        // `#/$defs/Bad%ZZ` cannot be decoded, but XGrammar resolves it by literal
+        // lookup today; renaming its target would make it dangle. The sibling with
+        // only decodable references is still renamed.
+        let schema = json!({
+            "$defs": {"Bad%ZZ": {"type": "string"}, "x y": {"type": "integer"}},
             "properties": {
                 "a": {"$ref": "#/$defs/Bad%ZZ"},
+                "b": {"$ref": "#/$defs/x%20y"},
+                "c": {"$ref": "#/$defs/x y"}
+            }
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "$defs": {"Bad%ZZ": {"type": "string"}, "x_y": {"type": "integer"}},
+                "properties": {
+                    "a": {"$ref": "#/$defs/Bad%ZZ"},
+                    "b": {"$ref": "#/$defs/x_y"},
+                    "c": {"$ref": "#/$defs/x_y"}
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn non_local_and_malformed_references_are_left_alone() {
+        let schema = json!({
+            "$defs": {"Ok": {"type": "string"}},
+            "properties": {
                 "b": {"$ref": "#/$defs/Ok~"},
                 "c": {"$ref": "https://example.com/schema.json#/$defs/Remote%20X"},
                 "d": {"$ref": "other.json#/x"},
@@ -286,13 +504,7 @@ mod tests {
                 "f": {"$ref": 7}
             }
         });
-        let canonical = canonicalize_local_refs(schema.clone());
-        assert_eq!(canonical["properties"], schema["properties"]);
-        // The unreferencable key is still renamed; nothing points at it any more.
-        assert_eq!(
-            canonical["$defs"],
-            json!({"Bad_ZZ": {"type": "string"}, "Ok": {"type": "string"}})
-        );
+        assert_eq!(canonicalize_local_refs(schema.clone()), schema);
     }
 
     #[test]
@@ -360,13 +572,26 @@ mod tests {
     }
 
     #[test]
-    fn deep_nesting_terminates() {
-        let mut schema = json!({"$ref": "#/$defs/x%20y"});
+    fn a_schema_too_deep_to_analyse_is_returned_unchanged() {
+        // The reference sits beyond the depth bound; renaming its target while
+        // leaving it as written would break a schema XGrammar resolves today.
+        let mut deep = json!({"$ref": "#/$defs/a b"});
         for _ in 0..(MAX_DEPTH + 40) {
-            schema = json!({"items": schema});
+            deep = json!({"items": deep});
         }
-        let root = json!({"$defs": {"x y": {"type": "integer"}}, "properties": {"deep": schema}});
-        let canonical = canonicalize_local_refs(root);
-        assert_eq!(canonical["$defs"], json!({"x_y": {"type": "integer"}}));
+        let schema = json!({"$defs": {"a b": {"type": "integer"}}, "properties": {"deep": deep}});
+        assert_eq!(canonicalize_local_refs(schema.clone()), schema);
+    }
+
+    #[test]
+    fn a_schema_too_large_to_analyse_is_returned_unchanged() {
+        let schema = json!({
+            "$defs": {"a b": {"type": "integer"}},
+            "properties": {
+                "big": {"enum": (0..MAX_NODES as u64).collect::<Vec<_>>()},
+                "z": {"$ref": "#/$defs/a b"}
+            }
+        });
+        assert_eq!(canonicalize_local_refs(schema.clone()), schema);
     }
 }

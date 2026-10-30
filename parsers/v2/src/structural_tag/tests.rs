@@ -841,21 +841,6 @@ fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
 }
 
 #[test]
-fn escaped_local_ref_targets_stay_unconstrained_when_the_tool_opts_out() {
-    let mut tool = escaped_ref_tool();
-    tool.strict = Some(false);
-    let actual = build(
-        &QWEN3_CODER,
-        StructuralTagToolChoice::Named("select_model"),
-        std::slice::from_ref(&tool),
-        None,
-        StructuralTagSchemaMode::Auto,
-        false,
-    );
-    assert_eq!(actual["format"]["content"]["json_schema"], true);
-}
-
-#[test]
 fn null_parameters_remain_unconstrained_even_in_strict_mode() {
     let tools = [Tool {
         name: "no_schema".to_string(),

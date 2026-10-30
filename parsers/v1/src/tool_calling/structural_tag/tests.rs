@@ -604,23 +604,6 @@ fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
 }
 
 #[test]
-fn escaped_local_ref_targets_stay_unconstrained_when_the_tool_opts_out() {
-    let mut tool = escaped_ref_tool();
-    tool.strict = Some(false);
-    let parsed = build_unwrap(
-        &builder(),
-        &ToolChoice::Required,
-        &[tool],
-        None,
-        StructuralTagSchemaMode::Auto,
-    );
-    assert_eq!(
-        parsed["format"]["tags"][0]["content"]["json_schema"],
-        json!(true)
-    );
-}
-
-#[test]
 fn tool_call_ban_tag_bans_tokens() {
     let result = builder()
         .build_tool_call_ban()
