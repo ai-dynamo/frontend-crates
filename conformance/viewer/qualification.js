@@ -681,8 +681,8 @@ async function checkRebaseContracts(tab, reader) {
     assert.equal(cell.variants.length,{'7-17':9,'7-19':3,'7-18':7}[column.label]);
     assert.equal(cell.status==='na',column.label==='7-19'&&!catalog.metadata.folds.numeric_applicability['7-14.string'].includes(row.family));
   }
-  assert.equal(argumentColumns.length, 68);
-  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: 68 }, (_, index) => index + 1));
+  assert.equal(argumentColumns.length, 71);
+  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: 71 }, (_, index) => index + 1));
   for (const row of tab.rows.filter(row => !row.section)) {
     for (const [scenario, cell] of leafCells(row)) {
       if (!['arg_object_quoted_parameter_close', 'arg_array_quoted_parameter_close'].includes(scenario)
