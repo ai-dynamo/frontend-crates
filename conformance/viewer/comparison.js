@@ -14,7 +14,7 @@ const problemOutcomes = new Set(['documented', 'diverge', 'error', 'leak']);
 export const isProblemOutcome = outcome => problemOutcomes.has(outcome);
 
 export function compileSearch(query = '') {
-  const tokens = query.match(/"(?:\\.|[^"\\])*"|[()]|[^\s()"]+|"/g) || [];
+  const tokens = query.match(/model:|"(?:\\.|[^"\\])*"|[()]|[^\s()"]+|"/gi) || [];
   let position = 0;
   const peek = () => tokens[position]?.toUpperCase();
   const term = () => {
@@ -25,19 +25,23 @@ export function compileSearch(query = '') {
       position++;
       return match;
     }
+    const modelOnly = peek() === 'MODEL:';
+    if (modelOnly) position++;
+    const fieldsFor = fields => modelOnly ? fields.models : fields.all;
     const token = tokens[position];
+    if (modelOnly && (!token || ['AND', 'OR', '(', ')', 'MODEL:'].includes(peek()))) throw new SyntaxError('Enter a model name after model:.');
     if (!token || ['AND', 'OR', ')'].includes(peek())) throw new SyntaxError('Enter a term after the operator or opening parenthesis.');
     if (token === '"') throw new SyntaxError('Close the quoted phrase.');
     position++;
     if (token.startsWith('"')) {
       const phrase = text(token.slice(1, -1).replace(/\\(["\\])/g, '$1'));
       if (!phrase) throw new SyntaxError('Enter text inside the quotes.');
-      return fields => fields.some(field => field.includes(phrase));
+      return fields => fieldsFor(fields).some(field => field.includes(phrase));
     }
     const words = [token];
-    while (position < tokens.length && !['AND', 'OR', '(', ')'].includes(peek()) && !tokens[position].startsWith('"')) words.push(tokens[position++]);
+    while (position < tokens.length && !['AND', 'OR', '(', ')', 'MODEL:'].includes(peek()) && !tokens[position].startsWith('"')) words.push(tokens[position++]);
     const phrase = text(words.join(' ')), compact = text(words.join(''));
-    return fields => fields.some(field => field.includes(phrase) || field.includes(compact));
+    return fields => fieldsFor(fields).some(field => field.includes(phrase) || field.includes(compact));
   };
   const expression = operator => {
     const next = operator === 'OR' ? () => expression('AND') : term;
@@ -48,18 +52,19 @@ export function compileSearch(query = '') {
   if (!tokens.length) return () => true;
   const match = expression('OR');
   if (position < tokens.length) throw new SyntaxError('Separate terms or groups with AND or OR.');
-  return fields => match(fields.map(text));
+  return (fields, models = []) => match({all: fields.map(text), models: models.map(text)});
 }
 
 export function comparisonView(tab, state, matches = compileSearch(state.search)) {
+  const groupLabels = new Map(tab.column_groups.map(group => [group.key, group.label]));
   const entries = [];
   const seen = new Set();
   for (const row of tab.rows) {
     for (const column of tab.columns) {
       if (!state.groups.has(column.group_key)) continue;
       const selected = leavesOf(row.cells[column.sub]).filter(leaf => isApplicableCell(leaf)
-        && matches([row.family, row.model_label, column.label, column.case_id, column.desc,
-          leaf.sub, leaf.case_id, leaf.tooltip?.description]));
+        && matches([row.family, row.model_label, groupLabels.get(column.group_key), column.label, column.case_id, column.desc,
+          leaf.sub, leaf.case_id, leaf.tooltip?.description], [row.family, row.model_label]));
       if (selected.length) entries.push({row, column, leaves: selected, countedLeaves: selected.filter(leaf => {
         const key = JSON.stringify([row.family, leaf.sub || leaf.case_id]);
         if (seen.has(key)) return false;
@@ -97,7 +102,7 @@ export function mountComparison(panel, controller) {
     + '<div class="focus-control"><span class="control-label">Focus</span><div class="segmented"><button type="button" data-focus="all">All</button>'
     + '<button type="button" data-focus="disagreements">Disagreements</button><button type="button" data-focus="problems">Problems</button></div></div>'
     + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"'
-    + ' title=\'Use AND, OR, quotes and parentheses: deepseek AND (call OR "tool use"). deep seek matches deepseek or "deep seek".\''
+    + ' title=\'Use model:beam for model names only. Combine with AND, OR, quotes and parentheses: model:deepseek AND (call OR "tool use"). deep seek matches deepseek or "deep seek".\''
     + ' aria-describedby="' + panel.id + '-search-error"><span class="comparison-search-error" id="' + panel.id + '-search-error" role="status" hidden></span></div>'
     + '<p class="comparison-notice" role="status" hidden></p><div class="comparison-matrix-scroll"></div>'
     + '<div class="comparison-legend" aria-label="Outcome colors"></div>';

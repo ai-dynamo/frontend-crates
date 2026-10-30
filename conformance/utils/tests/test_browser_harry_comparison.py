@@ -26,6 +26,7 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         driver.get(f"http://127.0.0.1:{server.server_port}/")
         _ready(driver, "tab-unified", reference=False)
         before = counts(driver)
+        families = driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)")
         folded = driver.execute_script("""
             const model=window.__conformanceModel;
             const column=model.columns.find(column=>column.desc&&model.rows.some(row=>row.cells[column.sub]?.variants));
@@ -38,9 +39,23 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
             field.send_keys(value or Keys.BACKSPACE)
             return field
 
+        search("TC Trun")
+        assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == families
+        assert 0 < counts(driver)["dynamo"]["total"] < before["dynamo"]["total"]
+        search('model:beam AND "TC Trun"')
+        assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == ["beam"]
+        assert counts(driver)["dynamo"]["total"] > 0
+        search("beam")
+        unscoped = counts(driver)
+        search("model:beam")
+        assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == ["beam"]
+        assert 0 < counts(driver)["dynamo"]["total"] < unscoped["dynamo"]["total"]
+        search('model:"beam" AND call')
+        assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == ["beam"]
+        assert counts(driver)["dynamo"]["total"] > 0
         search('"dotted_name_minimal"')
         family = driver.execute_script("return window.__conformanceComparison.view.rows[0].family")
-        query = f'{family} AND ("dotted_name_minimal" OR __missing_case__)'
+        query = f'model:{family} AND ("dotted_name_minimal" OR __missing_case__)'
         field = search(query)
         after = counts(driver)
         assert 0 < after["dynamo"]["total"] < before["dynamo"]["total"]
