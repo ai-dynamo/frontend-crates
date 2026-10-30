@@ -666,8 +666,7 @@ def test_recovery_popup_has_contiguous_variant_blocks(driver, viewer_url, transp
     saved_url = driver.current_url
     try:
         _navigate(driver, f"{viewer_url}?tab=tab-unified&view=details&transpose={int(transposed)}")
-        table = 'table[data-transpose-table]' if transposed else 'table[data-parity-table]'
-        header = driver.find_element(By.CSS_SELECTOR, f'#tab-unified {table} th:has(a[aria-label="UNIFIED.5-tool_no_close"])')
+        header = driver.find_element(By.CSS_SELECTOR, '#tab-unified .matrix-case-heading[aria-label="UNIFIED.5-tool_no_close"]')
         tip = _open_schema_popup(driver, header)
         groups = _script(driver, """
             return [...arguments[0].querySelectorAll('.ttip-grammar tbody')].map(group => ({
