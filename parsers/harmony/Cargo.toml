@@ -8,6 +8,7 @@ description = "Shared Harmony vocabulary initialization for Dynamo parsers"
 [dependencies]
 anyhow.workspace = true
 openai-harmony.workspace = true
+sha2 = "0.10"
 
 [dev-dependencies]
 tempfile.workspace = true
