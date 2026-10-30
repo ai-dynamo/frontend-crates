@@ -137,8 +137,11 @@ markers:
     pairs: [["<tool_call>", "</tool_call>"]]
     singletons: ["]<]minimax[>["]
     leak: ["<invoke", "</invoke"]
+  # v11+ `[TOOL_CALLS]NAME[ARGS]{json}` repeats per call and never closes, so its
+  # tokens are singletons. `[/TOOL_CALLS]` appears only in the legacy corpus.
   mistral:
-    pairs: [["[TOOL_CALLS]", "[/TOOL_CALLS]"]]
+    pairs: [["[THINK]", "[/THINK]"]]
+    singletons: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]", "[/TOOL_CALLS]"]
   muse_glimmer:
     pairs: [["<atem:function_calls>", "</atem:function_calls>"]]
     # Channel framing around every routed message; the reasoning stage forwards
@@ -275,6 +278,16 @@ unified:
     tool_parser: kimi_k3
     golden_spec: kimi_k3.yaml
     leak_markers: ["<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"]
+  mistral:
+    registry: mistral
+    native: true
+    # Guided tool output needs a call terminator this grammar does not have, so the
+    # unified parser refuses that request mode.
+    guided_tool_output: false
+    reasoning_parser: mistral
+    tool_parser: mistral
+    golden_spec: mistral.yaml
+    leak_markers: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]", "[THINK]", "[/THINK]"]
   muse_glimmer:
     capture_pipelines:
       sglang_python: ["muse", "muse"]
@@ -391,6 +404,7 @@ unified_display:
     kimi_k2: 'Single Family Test: Kimi K2-specific tests'
     qwen3: 'Single Family Test: Qwen3-specific tests'
     kimi: 'Single Family Test: Kimi K3 XTML'
+    mistral: 'Single Family Test: Mistral calls without an end marker'
     muse: 'Single Family Test: Muse-specific'
     dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
   group_overrides:

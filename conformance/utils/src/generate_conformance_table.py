@@ -2201,7 +2201,7 @@ def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = Non
                     events.append({"kind": k, "text": dl.get("text") or ""})
             elif k == "tool_call":
                 name, args = dl.get("name"), dl.get("arguments")
-                if name:  # a name delta opens a new call
+                if name is not None:  # a name delta opens a new call, an empty name included
                     events.append({
                         "kind": "tool_call",
                         "name": name,

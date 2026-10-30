@@ -373,6 +373,10 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
         }
     }
 
+    fn raw_tools(&self) -> Option<Value> {
+        self.tools.as_ref().map(Value::from_serialize)
+    }
+
     fn tool_choice(&self) -> Option<Value> {
         if self.tool_choice.is_none() {
             None

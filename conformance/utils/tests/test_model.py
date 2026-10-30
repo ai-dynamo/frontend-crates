@@ -1339,7 +1339,7 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
         "glm_ref_json_looking_strings",
         "glm_ref_scalar_types",
     )
-    peer_families = {"deepseek_v4", "deepseek_v41", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
+    peer_families = {"deepseek_v4", "deepseek_v41", "gemma4", "kimi_k2", "kimi_k3", "mistral", "muse_glimmer", "qwen3"}
     for row in tab["rows"]:
         family = row["family"]
         for scenario in scenarios:
@@ -1396,7 +1396,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     assert blocks["golden"]["events"] == blocks["dynamo"]["events"] == events
     assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "green"
     families = {"deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
-                "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
+                "kimi_k2", "kimi_k3", "mistral", "muse_glimmer", "qwen3"}
     rows = {other["family"]: other for other in unified["rows"] if other.get("family")}
     assert rows.keys() == families
     for family, other in rows.items():

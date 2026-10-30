@@ -57,6 +57,8 @@ from unified_taxonomy import (  # noqa: E402
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
 NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES)
+# Native families that also accept guided tool output (Mistral refuses it).
+GUIDED_NATIVE_FAMILIES = tuple(family for family in NATIVE_FAMILIES if family in G.GUIDED_FAMILIES)
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -121,7 +123,7 @@ def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
 
 
 def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
-    for family in NATIVE_FAMILIES:
+    for family in GUIDED_NATIVE_FAMILIES:
         prefix = invoke_header_prefix(family)
         if family == "glm47":
             # GLM's outer marker is itself the invoke opener, so there is no
@@ -519,7 +521,10 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
             })
-        assert set(response_cases) == response_scenarios | extra
+        assert set(response_cases) == {
+            scenario for scenario in response_scenarios | extra
+            if family in G.scenario_families(scenario)
+        }
         native_scenarios = {
             "native_quoted_control_in_response",
             "native_single_quoted_word_control",
@@ -836,6 +841,7 @@ def test_unified_case_counts_match_the_generator():
             "glm47": 117,
             "kimi_k2": 117,
             "kimi_k3": 124,
+            "mistral": 61,
             "muse_glimmer": 126,
             "qwen3": 122,
         }.get(fam)
@@ -843,14 +849,14 @@ def test_unified_case_counts_match_the_generator():
             assert per_family[fam] == 159
         else:
             assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 974 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
+    assert sum(per_family.values()) == 1035 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 158 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 169 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1123,6 +1129,7 @@ def _family_value(scenario, family):
             "glm47": "</tool_call>",
             "kimi_k2": "<|tool_call_end|>",
             "kimi_k3": "<|close|>call<|sep|>",
+            "mistral": "[TOOL_CALLS]",
             "muse_glimmer": "</atem:function_calls>",
             "qwen3": "</tool_call>",
         }[family]
@@ -1257,6 +1264,22 @@ def _native_input_calls(family, raw):
                 return calls
             cursor = outer_end + len("</tool_call>")
 
+    if family == "mistral":
+        # A call is `[TOOL_CALLS]NAME[CALL_ID]ID[ARGS]{json}` with optional `[CALL_ID]`
+        # and `[ARGS]`; a missing or unparseable body is `{}`.
+        header = re.compile(r"\[TOOL_CALLS\]([^\[{]*)(?:\[CALL_ID\][^\[{]*)?(?:\[ARGS\])?\s*")
+        decoder = json.JSONDecoder()
+        calls = []
+        cursor = 0
+        while match := header.search(raw, cursor):
+            cursor = match.end()
+            try:
+                arguments, cursor = decoder.raw_decode(raw, match.end())
+            except json.JSONDecodeError:
+                arguments = {}
+            calls.append({"kind": "tool_call", "name": match[1].strip(), "arguments": arguments})
+        return calls
+
     headers = {
         "deepseek_v4": r'<｜DSML｜invoke name="([^"]+)">',
         "deepseek_v41": r'<｜DSML｜ invoke name="([^"]+)">',
@@ -1387,6 +1410,7 @@ def _assert_malformed_recovery(family, case):
         "deepseek_v4": '<｜DSML｜invoke name="echo">',
         "deepseek_v41": '<｜DSML｜ invoke name="echo">',
         "gemma4": "<|tool_call>call:echo{",
+        "mistral": "[TOOL_CALLS]echo[ARGS]",
         "muse_glimmer": "<|start|>assistant to=echo<|message|>",
     }
     at = raw.index(openers[family])
@@ -1401,11 +1425,12 @@ def _assert_malformed_recovery(family, case):
         "deepseek_v41": "</｜DSML｜ parameter></｜DSML｜ invoke>",
         "gemma4": "}}<tool_call|>", "muse_glimmer": "</atem:invoke>",
     }
-    assert closers[family] in prefix
+    # Mistral has no call closer: the next `[TOOL_CALLS]` bounds the body.
+    assert family == "mistral" or closers[family] in prefix
     echoes = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
     assert _native_input_calls(family, suffix) == echoes
     bad = []
-    if family == "kimi_k2":
+    if family in {"kimi_k2", "mistral"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
     elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
@@ -1589,7 +1614,7 @@ def test_all_scenarios_preserve_cross_family_input_and_output_contracts():
     _assert_cross_family_contract({family: build_cases(family) for family in NATIVE_FAMILIES})
 
 
-@pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family != "muse_glimmer"])
+@pytest.mark.parametrize("family", [family for family in GUIDED_NATIVE_FAMILIES if family != "muse_glimmer"])
 def test_cross_family_contract_rejects_prose_only_recipient_case(family):
     corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     _assert_cross_family_contract(corpus)
@@ -1640,6 +1665,8 @@ def test_cross_family_contract_rejects_single_family_mutations(family, mutation)
     elif mutation == "input_value":
         case["input"] = case["input"].replace("Paris", "Rome")
     elif mutation == "guided_array_value":
+        if family not in GUIDED_NATIVE_FAMILIES:
+            pytest.skip(f"{family} has no guided cases")
         case = corpus[family][f"UNIFIED.guided_json_array_argument.{family}"]
         calls = json.loads(case["input"])
         calls[0]["arguments"]["values"][-1] += 1

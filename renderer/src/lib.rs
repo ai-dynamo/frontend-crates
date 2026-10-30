@@ -37,6 +37,7 @@ pub use dynamo_tokenizers;
 pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
+pub mod mistral;
 mod python;
 mod template;
 
@@ -262,6 +263,13 @@ pub trait OAIChatLikeRequest {
     fn tools(&self) -> Option<Value> {
         None
     }
+    /// Tools exactly as the client sent them, before the schema backfill that
+    /// [`Self::tools`] may apply for Jinja templates. Native renderers that
+    /// reproduce a reference encoder use this; `None` when the request type
+    /// does not keep them apart.
+    fn raw_tools(&self) -> Option<Value> {
+        None
+    }
     fn tool_choice(&self) -> Option<Value> {
         None
     }
@@ -325,6 +333,14 @@ pub trait OAIPromptFormatter: Send + Sync + 'static {
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         self.render(req).map(RenderedPrompt::text)
+    }
+
+    /// Whether this formatter leaves a final assistant turn open by itself
+    /// when [`OAIChatLikeRequest::should_add_generation_prompt`] is false.
+    /// Callers must then skip their marker-and-truncate emulation of
+    /// `continue_final_message`.
+    fn renders_continuation_natively(&self) -> bool {
+        false
     }
 }
 

@@ -55,6 +55,7 @@ pub mod glm47;
 mod guided_cursor;
 pub mod kimi_k2;
 pub mod kimi_k3;
+pub mod mistral;
 pub mod muse_glimmer;
 pub mod qwen3;
 #[cfg(test)]
@@ -929,31 +930,33 @@ impl<N: NativeUnified> GuidedRouted<N> {
         // half-configured, and a caller that caught the error and retried in a
         // supported mode was building on mutated state. A failed initialize must be a
         // no-op.
-        let guided_reasoning = match tool_output_mode {
+        let guided = match tool_output_mode {
             UnifiedToolOutputMode::Native => None,
-            UnifiedToolOutputMode::GuidedJson { .. } => match reasoning {
-                Some(reasoning) => Some(reasoning),
-                None => anyhow::bail!("guided tool output needs a reasoning-aware parser"),
-            },
+            UnifiedToolOutputMode::GuidedJson { named_tool } => {
+                let Some(reasoning) = reasoning else {
+                    anyhow::bail!("guided tool output needs a reasoning-aware parser");
+                };
+                // The guided reader strips native invokes up to their terminator; an
+                // empty one matches everywhere and never advances.
+                let grammar = self.native.guided_grammar();
+                if grammar.invoke_end.is_empty() {
+                    anyhow::bail!("guided tool output needs a grammar with a call terminator");
+                }
+                Some((reasoning, grammar, named_tool))
+            }
         };
 
         self.starting_state = starting_state;
         self.native.apply_native_init(starting_state);
-        self.guided = match (tool_output_mode, guided_reasoning) {
-            (UnifiedToolOutputMode::Native, _) => None,
-            (UnifiedToolOutputMode::GuidedJson { named_tool }, Some(reasoning)) => {
-                Some(Box::new(GuidedState::new(
-                    reasoning,
-                    self.native.guided_grammar(),
-                    named_tool,
-                    starting_state,
-                    invalid_guided_payload,
-                )))
-            }
-            (UnifiedToolOutputMode::GuidedJson { .. }, None) => {
-                unreachable!("guided mode without a reasoning channel bails before any mutation")
-            }
-        };
+        self.guided = guided.map(|(reasoning, grammar, named_tool)| {
+            Box::new(GuidedState::new(
+                reasoning,
+                grammar,
+                named_tool,
+                starting_state,
+                invalid_guided_payload,
+            ))
+        });
         self.finished = false;
         Ok(())
     }
@@ -5548,6 +5551,7 @@ unified_registry! {
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
     "kimi_k2"               => kimi_k2::kimi_k2_unified,
     "kimi_k3" | "kimi-k3"   => kimi_k3::kimi_k3_unified,
+    "mistral" => mistral::mistral_unified,
 }
 
 /// Stderr instrumentation for the unified path under `DYNAMO_PARSERS_DEBUG`.
