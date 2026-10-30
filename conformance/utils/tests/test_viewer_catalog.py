@@ -40,14 +40,27 @@ def test_history_keeps_inputs_for_families_absent_from_latest(tmp_path, monkeypa
 
     current = authored("gemma4", "current")
     retained = [authored("gemma4", "historical"), authored("hermes", "historical")]
+    historical_inputs = {"gemma4": {"active_cases": ["old"]}, "hermes": {"active_cases": ["tool_only"]}}
+    snapshot = {"version": unified_history._capture_release_sort_key("1.0.0"),
+                "runtime_version": "1.0.0", "fragment": "historical", "capture": {},
+                "record_count": 1, "active_cases_complete": True, "code_values": [None],
+                "has_results": True, "native": False, "route_recorded": True}
     monkeypatch.setattr(viewer_catalog, "_native_catalog_document_index",
-                        lambda *args, **kwargs: ([], {}, {"snapshots": {}}))
+                        lambda *args, **kwargs: ([], {}, {"snapshots": {("hermes", "dynamo_v1"): [snapshot]},
+                                                          "families": historical_inputs}))
     monkeypatch.setattr(viewer_catalog, "_unified_records", lambda *args, **kwargs: deepcopy(retained))
     unified = [current]
-    datasets = viewer_catalog._history_dataset_sources(tmp_path, unified, {"snapshots": {}}, {})
+    current_inputs = {"active_cases": ["current"]}
+    metadata = {"snapshots": {}, "families": {"gemma4": current_inputs}}
+    datasets = viewer_catalog._history_dataset_sources(tmp_path, unified, metadata, {})
     assert {resource["family"] for resource in unified} == {"gemma4", "hermes"}
     assert next(resource for resource in unified if resource["family"] == "gemma4") == current
     historical = next(resource for resource in unified if resource["family"] == "hermes")
     assert historical["dataset_root"] == "history"
     assert historical["dataset"] == "retained"
     assert datasets[0]["resources"][0]["sha256"] == "historical"
+    assert metadata["families"] == {"gemma4": current_inputs, "hermes": historical_inputs["hermes"]}
+    candidate = {"mode": "unified", "implementation": "dynamo_v1", "version": "1.0.0"}
+    viewer_catalog._index_snapshot_families([candidate], metadata)
+    assert "hermes" in candidate["capture_families"]
+    assert candidate["has_captured_results"]
