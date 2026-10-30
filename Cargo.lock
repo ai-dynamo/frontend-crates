@@ -1197,6 +1197,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dynamo-harmony"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "openai-harmony",
+ "tempfile",
+]
+
+[[package]]
 name = "dynamo-multimodal"
 version = "0.2.4"
 dependencies = [
@@ -1224,6 +1233,7 @@ dependencies = [
  "aho-corasick",
  "anyhow",
  "async-stream",
+ "dynamo-harmony",
  "dynamo-protocols",
  "dynamo-structural-tag",
  "futures",
@@ -1246,6 +1256,7 @@ name = "dynamo-parsers-v2"
 version = "0.9.4"
 dependencies = [
  "anyhow",
+ "dynamo-harmony",
  "dynamo-structural-tag",
  "openai-harmony",
  "percent-encoding",

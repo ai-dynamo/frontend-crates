@@ -4,8 +4,9 @@
 use super::super::ToolDefinition;
 use super::config::JsonParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use dynamo_harmony::harmony_gpt_oss_encoding;
+use openai_harmony::HarmonyEncoding;
 use openai_harmony::chat::{Content, Role};
-use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
 use regex::{Captures, Regex};
 use serde_json::Value;
 use std::sync::OnceLock;
@@ -304,21 +305,10 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
     (out, residual.trim().to_string())
 }
 
-static GLOBAL_HARMONY_GPTOSS_ENCODING: tokio::sync::OnceCell<
-    Result<HarmonyEncoding, anyhow::Error>,
-> = tokio::sync::OnceCell::const_new();
-
 pub async fn get_harmony_encoding() -> &'static Result<HarmonyEncoding, anyhow::Error> {
-    GLOBAL_HARMONY_GPTOSS_ENCODING
-        .get_or_init(|| async {
-            tokio::task::spawn_blocking(|| {
-                load_harmony_encoding(HarmonyEncodingName::HarmonyGptOss)
-            })
-            .await
-            .map_err(anyhow::Error::msg)
-            .flatten()
-        })
+    tokio::task::spawn_blocking(harmony_gpt_oss_encoding)
         .await
+        .unwrap_or_else(|_| harmony_gpt_oss_encoding())
 }
 
 /// Parse tool calls from a complete Harmony Format text chunk using direct token parsing.
