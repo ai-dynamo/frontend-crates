@@ -5,7 +5,9 @@ use serde_json::{Value, json};
 
 use crate::{Tool, UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family};
 
-use super::builders::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41, GLM47, HARMONY, QWEN3_CODER};
+use super::builders::{
+    DEEPSEEK_DSML, DEEPSEEK_DSML_V41, GLM47, HARMONY, KIMI_K2, KIMI_K3, QWEN3_CODER,
+};
 use super::test_support::{build, build_context, tools};
 use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
@@ -785,6 +787,72 @@ fn strict_schema_mode_enforces_non_strict_tool_schema() {
         actual["format"]["content"]["json_schema"],
         tools[0].parameters
     );
+}
+
+/// ai-dynamo/dynamo#17661: a JSON-pointer-escaped `$ref` target reaches the
+/// grammar backend in the literal spelling it resolves, on every builder.
+fn escaped_ref_tool() -> Tool {
+    Tool {
+        name: "select_model".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object",
+            "properties": {"model_name": {"$ref": "#/$defs/registry~1Model~0v1%20name"}},
+            "$defs": {"registry/Model~v1 name": {"type": "string"}},
+            "required": ["model_name"],
+        }),
+        strict: Some(true),
+    }
+}
+
+#[test]
+fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
+    let tools = [escaped_ref_tool()];
+    let actual = build(
+        &QWEN3_CODER,
+        StructuralTagToolChoice::Named("select_model"),
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    );
+    assert_eq!(
+        actual["format"]["content"]["json_schema"],
+        json!({
+            "type": "object",
+            "properties": {"model_name": {"$ref": "#/$defs/registry_Model_v1_name"}},
+            "$defs": {"registry_Model_v1_name": {"type": "string"}},
+            "required": ["model_name"],
+        })
+    );
+
+    for builder in [&GLM47, &DEEPSEEK_DSML, &HARMONY, &KIMI_K2, &KIMI_K3] {
+        let text = build(
+            builder,
+            StructuralTagToolChoice::Required,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+            false,
+        )
+        .to_string();
+        assert!(!text.contains("registry~1Model"), "{text}");
+    }
+}
+
+#[test]
+fn escaped_local_ref_targets_stay_unconstrained_when_the_tool_opts_out() {
+    let mut tool = escaped_ref_tool();
+    tool.strict = Some(false);
+    let actual = build(
+        &QWEN3_CODER,
+        StructuralTagToolChoice::Named("select_model"),
+        std::slice::from_ref(&tool),
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    );
+    assert_eq!(actual["format"]["content"]["json_schema"], true);
 }
 
 #[test]

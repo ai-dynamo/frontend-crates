@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use dynamo_structural_tag::schema::canonicalize_local_refs;
 use serde_json::{Value, json};
 
 use crate::Tool;
@@ -108,9 +109,13 @@ pub(crate) fn uses_declared_tool_schema(tool: &Tool, schema_mode: StructuralTagS
     enforce_schema && !tool.parameters.is_null()
 }
 
+/// A declared schema reaches the grammar backend with its local `$ref` targets
+/// in the literal spelling the backend resolves ([`canonicalize_local_refs`]);
+/// an escaped target such as `#/$defs/registry~1Model~0v1%20name` otherwise
+/// fails to compile and the request is rejected (ai-dynamo/dynamo#17661).
 pub(crate) fn resolve_tool_schema(tool: &Tool, schema_mode: StructuralTagSchemaMode) -> Value {
     if uses_declared_tool_schema(tool, schema_mode) {
-        tool.parameters.clone()
+        canonicalize_local_refs(tool.parameters.clone())
     } else {
         // xgrammar uses `true` for syntactically valid, schema-unconstrained JSON.
         json!(true)

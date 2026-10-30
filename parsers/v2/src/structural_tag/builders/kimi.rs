@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use super::{StructuralTagBuilder, ToolCallGrammar, triggered_calls_format};
 use crate::structural_tag::policy::{
-    ResolvedToolCallingPolicy, ToolCallingMode, uses_declared_tool_schema,
+    ResolvedToolCallingPolicy, ToolCallingMode, resolve_tool_schema,
 };
 use crate::structural_tag::wire::{self, Format, OrFormat};
 
@@ -19,17 +19,18 @@ fn with_tools<T>(
     policy: &ResolvedToolCallingPolicy<'_>,
     build: impl FnOnce(&[Tool<'_>]) -> T,
 ) -> T {
-    let relaxed = Value::Bool(true);
+    let schemas: Vec<Value> = policy
+        .tools
+        .iter()
+        .map(|tool| resolve_tool_schema(tool, policy.schema_mode))
+        .collect();
     let tools: Vec<_> = policy
         .tools
         .iter()
-        .map(|tool| Tool {
+        .zip(&schemas)
+        .map(|(tool, parameters)| Tool {
             name: &tool.name,
-            parameters: if uses_declared_tool_schema(tool, policy.schema_mode) {
-                &tool.parameters
-            } else {
-                &relaxed
-            },
+            parameters,
         })
         .collect();
     build(&tools)
