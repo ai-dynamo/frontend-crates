@@ -793,6 +793,47 @@ fn schema_type_match(
         (Some(left), Some(right)) => Some(left && right),
         (left, right) => left.or(right),
     };
+    // enum/const-derived type hint: a parameter declared only by its allowed values
+    // (`{"enum": [1, 2, 4]}`, `{"const": true}`, pydantic Literal / zod literal unions)
+    // admits the JSON types of those values. Integral numbers count as integer and number.
+    let value_matches = |value: &Value| -> bool {
+        match value {
+            Value::Null => expected == "null",
+            Value::Bool(_) => expected == "boolean",
+            Value::Number(n) => {
+                expected == "number"
+                    || (expected == "integer" && n.as_f64().is_some_and(|f| f.fract() == 0.0))
+            }
+            Value::String(_) => expected == "string",
+            Value::Array(_) => expected == "array",
+            Value::Object(_) => expected == "object",
+        }
+    };
+    let literal_hint = match (
+        schema.get("enum").and_then(Value::as_array),
+        schema.get("const"),
+    ) {
+        (Some(values), _) if !values.is_empty() => {
+            // Mixed enums keep their string fallback. A string hint must match
+            // raw text so it cannot shadow another union branch.
+            if expected == "string" {
+                values
+                    .iter()
+                    .any(|value| value.as_str() == Some(raw))
+                    .then_some(true)
+            } else {
+                values.iter().try_fold(false, |matched, value| {
+                    (!value.is_string()).then(|| matched || value_matches(value))
+                })
+            }
+        }
+        (_, Some(value)) => Some(value_matches(value)),
+        _ => None,
+    };
+    hint = match (hint, literal_hint) {
+        (Some(left), Some(right)) => Some(left && right),
+        (left, right) => left.or(right),
+    };
     for keyword in ["anyOf", "oneOf", "allOf"] {
         let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
             continue;
@@ -2404,5 +2445,71 @@ mod tests {
                 serde_json::from_str(&calls[0].function.arguments).unwrap();
             assert_eq!(args["city"], expected, "{label}");
         }
+    }
+}
+
+#[cfg(test)]
+mod enum_const_type_hint {
+    use super::*;
+    fn run(parameter: Value, raw: &str) -> Value {
+        let tools = vec![ToolDefinition {
+            name: "probe".into(),
+            parameters: Some(
+                serde_json::json!({"type":"object","properties":{"value": parameter}}),
+            ),
+            strict: None,
+        }];
+        let wire = format!(
+            "<tool_call>probe<arg_key>value</arg_key><arg_value>{raw}</arg_value></tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_glm47(&wire, &Glm47ParserConfig::default(), Some(&tools)).unwrap();
+        let arguments: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        arguments["value"].clone()
+    }
+    #[test]
+    fn enum_and_const_without_type_are_typed_from_their_members() {
+        assert_eq!(
+            run(serde_json::json!({"enum":[1,2,4,8]}), "2"),
+            serde_json::json!(2)
+        );
+        assert_eq!(
+            run(serde_json::json!({"const":3}), "3"),
+            serde_json::json!(3)
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":[1.5,2.5,3.5]}), "2.5"),
+            serde_json::json!(2.5)
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":[true,false]}), "true"),
+            serde_json::json!(true)
+        );
+        assert_eq!(
+            run(
+                serde_json::json!({"anyOf":[{"enum":[1,2,4]},{"type":"null"}]}),
+                "4"
+            ),
+            serde_json::json!(4)
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":["{\"x\":1}"]}), "{\"x\":1}"),
+            serde_json::json!("{\"x\":1}")
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":[1,"a"]}), "1"),
+            serde_json::json!("1")
+        );
+    }
+
+    #[test]
+    fn string_enums_do_not_override_other_union_branches() {
+        assert_eq!(
+            run(
+                serde_json::json!({"anyOf":[{"enum":["auto"]},{"type":"integer"}]}),
+                "42"
+            ),
+            serde_json::json!(42)
+        );
     }
 }
