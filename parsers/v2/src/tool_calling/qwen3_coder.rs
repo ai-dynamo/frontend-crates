@@ -57,6 +57,9 @@ fn spec() -> WrappedBlockSpec {
         invoke_boundary_factory: Some(InvokeBoundaryFactory::NativeOnly(|| {
             Box::new(QwenInvokeBoundary::default())
         })),
+        // The template always wraps a call in `<tool_call>`; a bare
+        // `<function=NAME>` inside an open thought is narration.
+        narrated_invoke_header_end: Some('>'),
     }
 }
 
@@ -123,6 +126,11 @@ impl InvokeBoundary for QwenInvokeBoundary {
     }
     fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
         None
+    }
+    /// Everything from the scan cursor on is still unclassified: a parameter
+    /// header without its `>`, or a split `</parameter>` / `</function>`.
+    fn unclassified_tail(&self, candidate: &str) -> usize {
+        candidate.len().saturating_sub(self.cursor)
     }
     fn reset(&mut self) {
         *self = Self::default();

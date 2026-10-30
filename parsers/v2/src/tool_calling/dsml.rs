@@ -50,6 +50,7 @@ pub(crate) fn deepseek_v4_scanner(both_dialects: bool) -> WrappedBlockScanner<Ds
         drop_invoke_crossing_block_end: false,
         invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(dsml_invoke_boundary)),
         preserve_special_tokens: true,
+        narrated_invoke_header_end: None,
     };
     if both_dialects {
         spec.block_starts.push(deepseek_v41::BLOCK_START.into());
