@@ -115,7 +115,7 @@ mod tests {
 
     /// Same malformed shape, but at true EOF with no `<|tool_calls_section_end|>`
     /// ever arriving -- the second (valid) call must still recover via the
-    /// same best-effort EOF path `UNIFIED.5-2` already covers, not get lost
+    /// same best-effort EOF path `UNIFIED.5-tool_no_close` already covers, not get lost
     /// because the first invoke's bytes were merged into its span.
     #[test]
     fn bare_close_before_argument_begin_still_recovers_the_second_call_at_finish() {
@@ -169,13 +169,9 @@ mod tests {
             let mut parser = kimi_k2_unified(&tools());
             let mut emitted = parser.push(&input[..split]).unwrap();
             emitted.extend(parser.push(&input[split..]).unwrap());
-            let calls: Vec<_> = emitted
-                .iter()
-                .filter_map(|event| match event {
-                    UnifiedParserEvent::ToolCall(call) => Some(call),
-                    _ => None,
-                })
-                .collect();
+            let merged =
+                crate::tool_calling::traits::ToolParseResult::from_deltas(emitted).coalesce_calls();
+            let calls = &merged.calls;
             assert_eq!(
                 calls.len(),
                 1,
@@ -286,7 +282,7 @@ mod tests {
             .collect()
     }
 
-    /// `UNIFIED.5-2` (`tool_no_close`): the JSON argument body is complete but
+    /// `UNIFIED.5-tool_no_close` (`tool_no_close`): the JSON argument body is complete but
     /// `<|tool_call_end|>` never streams before EOF. Best-effort recovery
     /// (policy P2 sibling) must still emit the call at `finish`, identically
     /// for a single push and for every chunk-split point -- not just recover
@@ -321,7 +317,7 @@ mod tests {
         assert_eq!(got, vec![], "truncated body must still drop, got {got:?}");
     }
 
-    /// `UNIFIED.7-2` (`arg_marker_in_string`): a `<|tool_call_end|>`-looking
+    /// `UNIFIED.7-arg_marker_in_string` (`arg_marker_in_string`): a `<|tool_call_end|>`-looking
     /// byte sequence sits INSIDE the quoted JSON string argument. Invariant
     /// I7 -- it is data, preserved byte-exact, never mistaken for the real
     /// closer -- identically for a single push and every chunk-split point,
@@ -341,7 +337,7 @@ mod tests {
         }
     }
 
-    /// `UNIFIED.7-2` (`arg_marker_in_string`) with ordinary whitespace between
+    /// `UNIFIED.7-arg_marker_in_string` (`arg_marker_in_string`) with ordinary whitespace between
     /// the JSON body and the real `<|tool_call_end|>`. The byte-exact override
     /// in `parse_section_block` (v1core) used to require the closer to
     /// immediately abut the JSON (`starts_with`, no whitespace tolerance),
@@ -366,7 +362,7 @@ mod tests {
         }
     }
 
-    /// The corpus case `UNIFIED.11-2`: a thought, a call, a second thought, an
+    /// The corpus case `UNIFIED.11-reason_after_tool`: a thought, a call, a second thought, an
     /// answer. This is the ordering the split path cannot represent — it hoists
     /// both thoughts to the front and fuses them.
     #[test]
@@ -610,7 +606,7 @@ mod tests {
                         let calls: Vec<_> = events
                             .iter()
                             .filter_map(|event| match event {
-                                UnifiedParserEvent::ToolCall(call) => Some(call),
+                                UnifiedParserEvent::ToolCall(call) if call.complete => Some(call),
                                 _ => None,
                             })
                             .collect();

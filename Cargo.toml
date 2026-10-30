@@ -2,10 +2,13 @@
 resolver = "3"
 members = [
     "protocols",
+    "decisions",
     "parsers/v1",
+    "parsers/structural-tag",
     "renderer",
     "tokenizers",
     "conformance",
+    "conformance/publisher",
     "multimodal",
     "parsers/v2",
     "parsers/v2-py",
@@ -19,6 +22,7 @@ homepage = "https://github.com/ai-dynamo/frontend-crates"
 repository = "https://github.com/ai-dynamo/frontend-crates.git"
 
 [workspace.dependencies]
+dynamo-structural-tag = { path = "parsers/structural-tag", version = "0.1.0" }
 aho-corasick = "1"
 anyhow = "1"
 async-openai = { version = "0.42", default-features = false }
@@ -36,15 +40,17 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers/v1", version = "10.0.2" }
-dynamo-protocols = { path = "protocols", version = "8.1.0" }
-dynamo-renderer = { path = "renderer", version = "8.0.1" }
-dynamo-tokenizers = { path = "tokenizers", version = "3.1.0" }
+dynamo-parsers = { path = "parsers/v1", version = "10.2.3" }
+dynamo-protocols = { path = "protocols", version = "8.5.0" }
+dynamo-decisions = { path = "decisions", version = "0.1.1" }
+dynamo-renderer = { path = "renderer", version = "9.0.1" }
+dynamo-tokenizers = { path = "tokenizers", version = "4.0.0" }
 either = { version = "1.13", features = ["serde"] }
-fastokens = "0.3.1"
+fastokens = "0.3.4"
 futures = "0.3"
 gif = "0.14"
 hf-hub = { version = "1.0", default-features = false, features = ["rustls-tls"] }
+indexmap = { version = "2", features = ["serde"] }
 # The image formats the Python (PIL) path commonly accepts. JPEG goes through
 # libjpeg-turbo (Pillow's own backend) so decoded pixels match it byte for byte.
 image = { version = "0.25", default-features = false, features = [
@@ -53,12 +59,15 @@ image = { version = "0.25", default-features = false, features = [
     "gif",
     "bmp",
 ] }
+ipnet = "2"
+matroska-demuxer = "0.8"
 minijinja = { version = "2.24.0" }
 minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
 num-traits = "0.2"
 openai-harmony = "0.0.8"
 percent-encoding = "2.3"
+png = "0.18"
 pyo3 = { version = "0.22", features = ["extension-module"] }
 rayon = "1"
 regex = "1"
@@ -66,6 +75,7 @@ rstest = "0.25"
 rustc-hash = "1.1"
 ruff-python-ast = { package = "rustpython-ruff_python_ast", version = "0.15.8" }
 ruff-python-parser = { package = "rustpython-ruff_python_parser", version = "0.15.8" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 serde = "1"
 serde_json = "1"
 strum = "0.27"
@@ -74,7 +84,7 @@ thiserror = "2.0.17"
 tiktoken-rs = { version = "0.9", default-features = false }
 tokio = "1.48"
 tokio-test = "0.4.4"
-tokenizers = { version = "0.21.4", default-features = false }
+tokenizers = { version = "0.23.2", default-features = false }
 tracing = "0.1"
 # Built from source; SIMD is used when nasm is present and never changes output.
 turbojpeg = { version = "1.5", default-features = false, features = ["cmake"] }
@@ -82,3 +92,24 @@ tracing-subscriber = "0.3"
 url = "2.5"
 uuid = "1.18.1"
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+# Optimize the hot test code while retaining default debug and overflow checks.
+# Parser sweeps repeatedly compile config-specific regexes.
+[profile.test.package.regex]
+opt-level = 3
+
+[profile.test.package.regex-automata]
+opt-level = 3
+
+[profile.test.package.regex-syntax]
+opt-level = 3
+
+# Level 2 avoids sharing unoptimized generic code from other crates.
+[profile.test.package.dynamo-parsers-v2]
+opt-level = 2
+
+[profile.test.package.openai-harmony]
+opt-level = 2
+
+[profile.test.package.tiktoken-rs]
+opt-level = 2

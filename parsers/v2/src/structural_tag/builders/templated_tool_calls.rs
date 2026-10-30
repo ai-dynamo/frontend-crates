@@ -162,6 +162,7 @@ impl TemplatedToolCallFormat {
                 json_schema,
                 style: self.arguments_style,
                 any_order: tool_arguments_any_order,
+                max_whitespace_cnt: None,
             })
         };
 
@@ -172,7 +173,7 @@ impl TemplatedToolCallFormat {
         }
     }
 
-    fn tool_tags(
+    pub(super) fn tool_tags(
         &self,
         policy: &ResolvedToolCallingPolicy<'_>,
         tool_arguments_any_order: bool,
@@ -332,7 +333,7 @@ mod tests {
         assert_eq!(calls["type"], "triggered_tags");
         assert_eq!(calls["at_least_one"], true);
         assert_eq!(calls["stop_after_first"], false);
-        assert_eq!(calls["triggers"], json!(["<tool_call>\n<function="]));
+        assert_eq!(calls["triggers"], json!(["<tool_call>"]));
         assert_eq!(
             calls["tags"][0]["begin"],
             "<tool_call>\n<function=add_numbers>\n"
@@ -392,7 +393,7 @@ mod tests {
                 "type": "structural_tag",
                 "format": {
                     "type": "triggered_tags",
-                    "triggers": ["<tool_call>\n<function="],
+                    "triggers": ["<tool_call>"],
                     "tags": [
                         {
                             "type": "tag",

@@ -37,6 +37,9 @@ families:
   # vLLM's muse_glimmer parsers exist only in PR #51655 (unmerged); until a release
   # carries them, `check.sh vllm` cannot capture this family.
   muse_glimmer:   {vllm_python: muse_glimmer,   vllm_rust: null,         sglang_python: muse,        dynamo_v2: muse_glimmer, preferred_input: text}
+  # Muse Spark inherits the ATEM grammar but reserves `commentary` as visible text.
+  # vLLM capture coverage is pending.
+  muse_spark:     {vllm_python: musespark1x,    vllm_rust: null,         sglang_python: muse,        dynamo_v2: muse_spark,   preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   phi4:           {vllm_python: phi4_mini_json, vllm_rust: phi4_mini_json, sglang_python: null,      dynamo_v2: null,        preferred_input: text}
@@ -95,6 +98,12 @@ markers:
   deepseek_v4:
     pairs: [["<｜DSML｜tool_calls>", "</｜DSML｜tool_calls>"]]
     leak: ["<｜DSML｜", "</｜DSML｜"]
+  beam:
+    # A tool call is `<|start|>assistant to=NAME<|channel|>analysis <|constrain|>xml<|message|>`
+    # ... `<|call|>`; `<rfl:parameter name="K">` ... `</rfl:parameter>` delimits a value.
+    pairs: [["<|start|>assistant to=", "<|call|>"], ["<rfl:parameter", "</rfl:parameter>"]]
+    singletons: ["<|start|>", "<|channel|>", "<|message|>", "<|end|>", "<|return|>"]
+    leak: ["<|start|>", "<|channel|>", "<|message|>", "<|call|>", "<rfl:parameter", "</rfl:parameter"]
   gemma4:
     pairs: [["<|tool_call>", "<tool_call|>"]]
     # `<|"|>` ... `<|"|>` quotes a raw string value; `__gemma_quote` is the pair id the
@@ -149,6 +158,11 @@ markers:
     # (`I7`) — same shape as qwen3_coder's `<parameter=K>`.
     opaque: ["atem:parameter"]
     leak: ["<atem:invoke", "</atem:invoke", "<atem:parameter", "</atem:parameter"]
+  muse_spark:
+    pairs: [["<atem:function_calls>", "</atem:function_calls>"]]
+    singletons: ["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"]
+    opaque: ["atem:parameter"]
+    leak: ["<atem:invoke", "</atem:invoke", "<atem:parameter", "</atem:parameter"]
   nemotron_deci:
     pairs: [["<TOOLCALL>", "</TOOLCALL>"]]
   nemotron_nano:
@@ -191,6 +205,8 @@ markers:
 # `MARKER_FAMILY` in unified_taxonomy.py.
 #
 # Columns:
+#   capture_pipelines implementation -> [reasoning, tool] historical producer names
+#   vllm_tokenizer_markers ordered synthetic vocabulary for the peer capture adapter
 #   registry          key into `families:` / `markers:` above (defaults to the row name)
 #   native            true = has a native UnifiedParser; false = driven through the SPLIT path
 #   reasoning_parser  v1 reasoning parser used by the SPLIT path
@@ -202,49 +218,119 @@ markers:
 #                     `<tool_call>` cannot be spotted generically. Families whose markers
 #                     already contain `<|`/`|>` (kimi) need nothing here.
 unified:
-  deepseek_v41:
+  beam:
+    # SGLang registers no Beam detectors; the harness reports the pair as unavailable.
+    capture_pipelines:
+      sglang_python: ["beam", "beam"]
+    registry: beam
     native: true
+    reasoning_parser: beam
+    tool_parser: beam
+    golden_spec: beam.yaml
+    leak_markers: ["<|start|>", "<|channel|>", "<|message|>", "<|call|>", "<rfl:parameter", "</rfl:parameter"]
+  deepseek_v41:
+    capture_pipelines:
+      vllm_python: ["deepseek_v4", "deepseek_v4"]
+      sglang_python: ["deepseek-v41", "deepseekv41"]
+      dynamo_v1: ["deepseek_v4", "deepseek_v4"]
+    vllm_tokenizer_markers: &deepseek_peer_tokens ["<think>", "</think>", "<｜DSML｜tool_calls>", "</｜DSML｜tool_calls>", "<｜DSML｜invoke>", "</｜DSML｜invoke>", "</｜DSML｜parameter>"]
+    native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     reasoning_parser: deepseek_v41
     tool_parser: deepseek_v41
     golden_spec: deepseek_v41.yaml
     leak_markers: ["<｜DSML｜", "</｜DSML｜"]
   deepseek_v4:
+    capture_pipelines:
+      vllm_python: ["deepseek_v4", "deepseek_v4"]
+      sglang_python: ["deepseek-v4", "deepseekv4"]
+      dynamo_v1: ["deepseek_v4", "deepseek_v4"]
+    vllm_tokenizer_markers: *deepseek_peer_tokens
     registry: deepseek_v4
     native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     reasoning_parser: deepseek_v4
     tool_parser: deepseek_v4
     golden_spec: deepseek_v4.yaml
     leak_markers: ["<｜DSML｜", "</｜DSML｜"]
   gemma4:
+    capture_pipelines:
+      vllm_python: ["gemma4", "gemma4"]
+      sglang_python: ["gemma4", "gemma4"]
+      dynamo_v1: ["gemma4", "gemma4"]
+    vllm_tokenizer_markers: ["<|channel>", "<channel|>", "<|tool_call>", "<tool_call|>", "<|turn>", "<|tool_response>"]
     registry: gemma4
     native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     reasoning_parser: gemma4
     tool_parser: gemma4
     golden_spec: gemma4.yaml
     leak_markers: ["thought\n"]
   glm47:
+    capture_pipelines:
+      vllm_python: ["glm47", "glm47"]
+      sglang_python: ["glm45", "glm47"]
+      dynamo_v1: ["glm45", "glm47"]
+    vllm_tokenizer_markers: ["<think>", "</think>", "<tool_call>", "</tool_call>", "<arg_key>", "</arg_key>", "<arg_value>", "</arg_value>"]
     registry: glm47
     native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     reasoning_parser: nemotron_deci
     tool_parser: glm47
     golden_spec: glm47.yaml
     leak_markers: ["<tool_call>", "</tool_call>", "<arg_key>", "</arg_key>", "<arg_value>", "</arg_value>"]
   kimi_k2:
+    capture_pipelines:
+      vllm_python: ["kimi_k2", "kimi_k2"]
+      sglang_python: ["kimi_k2", "kimi_k2"]
+      dynamo_v1: ["kimi_k25", "kimi_k2"]
+    vllm_tokenizer_markers: ["<think>", "</think>", "<|tool_calls_section_begin|>", "<|tool_calls_section_end|>", "<|tool_call_begin|>", "<|tool_call_end|>", "<|tool_call_argument_begin|>"]
     registry: kimi_k2
     native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     reasoning_parser: kimi_k25
     tool_parser: kimi_k2
     golden_spec: kimi.yaml
     leak_markers: []
   kimi_k3:
+    capture_pipelines:
+      vllm_python: ["kimi_k3", "kimi_k3"]
+      sglang_python: ["kimi_k3", "kimi_k3"]
+      dynamo_v1: ["kimi_k3", "kimi_k3"]
+    vllm_tokenizer_markers: ["<|open|>think<|sep|>", "<|close|>think<|sep|>", "<|open|>response<|sep|>", "<|close|>response<|sep|>", "<|close|>message<|sep|>"]
     registry: kimi_k3
     native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     reasoning_parser: kimi_k3
     tool_parser: kimi_k3
     golden_spec: kimi_k3.yaml
     leak_markers: ["<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"]
-  muse_glimmer:
+  minimax_m3:
+    capture_pipelines:
+      vllm_python: ["minimax_m3", "minimax_m3"]
+      sglang_python: ["minimax-m3", "minimax-m3"]
+      dynamo_v1: ["minimax_m3", "minimax_m3"]
+    vllm_tokenizer_markers: ["<mm:think>", "</mm:think>", "]<]minimax[>["]
+    registry: minimax_m3
     native: true
+    reasoning_grammar: minimax_m3
+    reasoning_parser: minimax_m3
+    tool_parser: minimax_m3
+    golden_spec: minimax_m3.yaml
+    leak_markers: ["]<]minimax[>["]
+  muse_glimmer:
+    capture_pipelines:
+      sglang_python: ["muse", "muse"]
+      dynamo_v1_jail: ["muse", "muse"]
+    native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     # Prefilled channels ARE supported: `initialize_request` opens the stream in the
     # channel the prompt already opened, which is a two-line change for this grammar.
     #
@@ -266,10 +352,369 @@ unified:
     tool_parser: muse_glimmer
     golden_spec: muse_glimmer.yaml
     leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
+  gpt_oss:
+    capture_pipelines:
+      dynamo_v1: ["gpt_oss", "harmony"]
+    registry: harmony
+    native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
+    guided_tool_output: true
+    reasoning_parser: gpt_oss
+    tool_parser: harmony
+    golden_spec: gpt_oss.yaml
+    leak_markers: []
+  muse_spark:
+    capture_pipelines:
+      sglang_python: ["muse", "muse"]
+    native: true
+    guided_tool_output: true
+    # The legacy split names are retained only for old cross-version harnesses;
+    # current builds always construct the native Muse Spark unified parser.
+    reasoning_parser: muse_glimmer
+    tool_parser: muse_spark
+    golden_spec: muse_spark.yaml
+    leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
   qwen3:
+    capture_pipelines: &qwen_unified_pipelines
+      vllm_python: ["qwen3", "qwen3_coder"]
+      sglang_python: ["qwen3", "qwen3_coder"]
+      dynamo_v1: ["qwen3", "qwen3_coder"]
+    vllm_tokenizer_markers: &qwen_unified_tokens ["<think>", "</think>", "<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
     registry: qwen3_coder
     native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
     reasoning_parser: qwen3
     tool_parser: qwen3_coder
     golden_spec: qwen3.yaml
-    leak_markers: ["<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
+    leak_markers: &qwen_unified_leaks ["<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
+  nemotron_v3:
+    grammar: qwen3
+    default_reasoning: true
+    capture_pipelines:
+      vllm_python: ["nemotron_v3", "qwen3_coder"]
+      sglang_python: ["nemotron_3", "qwen3_coder"]
+      dynamo_v1: ["nemotron_v3", "qwen3_coder"]
+    vllm_tokenizer_markers: *qwen_unified_tokens
+    registry: qwen3_coder
+    native: true
+    # Retained native capture qualified before the next family release.
+    unrouted_native_capture: "0.7.28"
+    reasoning_parser: nemotron_v3
+    tool_parser: qwen3_coder
+    golden_spec: nemotron_v3.yaml
+    leak_markers: *qwen_unified_leaks
+
+  deepseek_v3:
+    registry: deepseek_v3
+    native: false
+    scenario_profile: native
+    reasoning_parser: deepseek_v3
+    tool_parser: deepseek_v3
+    golden_spec: deepseek_v3.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - deepseek_v3
+      - deepseek_v3
+    reasoning_grammar: think
+  deepseek_v3_1:
+    registry: deepseek_v3_1
+    native: false
+    scenario_profile: native
+    reasoning_parser: deepseek_v3_1
+    tool_parser: deepseek_v3_1
+    golden_spec: deepseek_v3_1.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - deepseek_v3_1
+      - deepseek_v3_1
+    reasoning_grammar: think
+  deepseek_v3_2:
+    registry: deepseek_v3_2
+    native: false
+    scenario_profile: native
+    reasoning_parser: deepseek_v3_2
+    tool_parser: deepseek_v3_2
+    golden_spec: deepseek_v3_2.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - deepseek_v3_2
+      - deepseek_v3_2
+    reasoning_grammar: think
+  hermes:
+    registry: hermes
+    native: false
+    scenario_profile: native
+    reasoning_parser: basic
+    tool_parser: hermes
+    golden_spec: hermes.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - basic
+      - hermes
+    reasoning_grammar: think
+  inkling:
+    registry: inkling
+    native: false
+    scenario_profile: native
+    reasoning_parser: inkling
+    tool_parser: inkling
+    golden_spec: inkling.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - inkling
+      - inkling
+    reasoning_grammar: inkling
+  jamba:
+    registry: jamba
+    native: false
+    scenario_profile: native
+    reasoning_parser: basic
+    tool_parser: jamba
+    golden_spec: jamba.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - basic
+      - jamba
+    reasoning_grammar: none
+  llama3_json:
+    registry: llama3_json
+    native: false
+    scenario_profile: native
+    reasoning_parser: basic
+    tool_parser: llama3_json
+    golden_spec: llama3_json.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - basic
+      - llama3_json
+    reasoning_grammar: none
+  minimax_m2:
+    registry: minimax_m2
+    native: false
+    scenario_profile: native
+    reasoning_parser: minimax_m2
+    tool_parser: minimax_m2
+    golden_spec: minimax_m2.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - minimax_m2
+      - minimax_m2
+    reasoning_grammar: think
+  mistral:
+    registry: mistral
+    native: false
+    scenario_profile: native
+    reasoning_parser: mistral
+    tool_parser: mistral
+    golden_spec: mistral.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - mistral
+      - mistral
+    reasoning_grammar: mistral
+  nemotron_deci:
+    registry: nemotron_deci
+    native: false
+    scenario_profile: native
+    reasoning_parser: nemotron_deci
+    tool_parser: nemotron_deci
+    golden_spec: nemotron_deci.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - nemotron_deci
+      - nemotron_deci
+    reasoning_grammar: think
+  nemotron_nano:
+    registry: nemotron_nano
+    native: false
+    scenario_profile: native
+    reasoning_parser: nemotron_nano
+    tool_parser: nemotron_nano
+    golden_spec: nemotron_nano.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - nemotron_nano
+      - nemotron_nano
+    reasoning_grammar: think
+  phi4:
+    registry: phi4
+    native: false
+    scenario_profile: native
+    reasoning_parser: basic
+    tool_parser: phi4
+    golden_spec: phi4.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - basic
+      - phi4
+    reasoning_grammar: none
+  pythonic:
+    registry: pythonic
+    native: false
+    scenario_profile: native
+    reasoning_parser: basic
+    tool_parser: pythonic
+    golden_spec: pythonic.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - basic
+      - pythonic
+    reasoning_grammar: none
+  qwen25:
+    registry: qwen25
+    native: false
+    scenario_profile: native
+    reasoning_parser: qwen3
+    tool_parser: qwen25
+    golden_spec: qwen25.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - qwen3
+      - qwen25
+    reasoning_grammar: think
+  harmony_text:
+    registry: harmony_text
+    native: false
+    scenario_profile: native
+    reasoning_parser: gpt_oss
+    tool_parser: harmony
+    golden_spec: harmony_text.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - gpt_oss
+      - harmony
+    reasoning_grammar: harmony
+
+  harmony:
+    registry: harmony
+    native: false
+    scenario_profile: native
+    reasoning_grammar: harmony
+    reasoning_parser: gpt_oss
+    tool_parser: harmony
+    golden_spec: harmony.yaml
+    leak_markers: []
+    capture_pipelines:
+      dynamo_v1:
+      - gpt_oss
+      - harmony
+  qwen3_coder:
+    registry: qwen3_coder
+    native: true
+    scenario_profile: native
+    reasoning_grammar: think
+    reasoning_parser: qwen3
+    tool_parser: qwen3_coder
+    golden_spec: qwen3_coder.yaml
+    leak_markers: []
+    vllm_tokenizer_markers: *qwen_unified_tokens
+    capture_pipelines: *qwen_unified_pipelines
+
+# Report identities for recorded peer pipelines. `impl` groups the comparison slots.
+unified_peer_sources:
+  vllm_python:
+    impl: vllm
+    label: "vLLM Python {version} (batch, Combined)"
+    stream: false
+    legacy_key: vllm
+  vllm_rust:
+    impl: vllm
+    label: "vLLM Rust {version} (stream, Combined & Unified)"
+    stream: true
+    legacy_key: vllm_rust
+  sglang_python:
+    impl: sglang
+    label: "SGLang Python {version} (stream, reasoning + tool detectors)"
+    stream: true
+    legacy_key: null
+
+# Historical batch capture identities and release-source limitations.
+unified_batch:
+  dynamo_v1:
+    source: dynamo_v1
+    source_blockers:
+      9.2.13: &missing_dynamo_release "Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404."
+  dynamo_v1_jail:
+    source: dynamo_v1
+    source_blockers:
+      9.2.13: *missing_dynamo_release
+  vllm_python_batch: {source: vllm_python}
+  sglang_python_batch: {source: sglang_python}
+
+# Reader-facing grouping and comparison defaults; capture identities remain in code.
+unified_display:
+  comparison_defaults: [dynamo, null, null]
+  comparison_slot_engines: [dynamo, sglang, vllm]
+  comparison_languages: [python, rust]
+  group_labels:
+    v1_split: V1 parser cases
+    1: TC Single call
+    2: TC Multiple calls
+    3: TC No call
+    4: TC Malformed envelope
+    5: TC Truncation / recovery
+    6: TC Empty body
+    7: TC Argument fidelity
+    8: TC Content position
+    10: Reasoning span
+    11: Reasoning ↔ tool interleaving
+    12: Adversarial nesting (reasoning + tool)
+    30: Guided Decoding — baseline and argument fidelity
+    31: Guided Decoding — invalid JSON or call structure
+    32: Guided Decoding — tool markup around the payload
+    33: Guided Decoding — invalid payload plus tool markup
+    34: Guided Decoding — reasoning boundaries
+    35: Guided Decoding — markers in visible answers
+    36: Guided Decoding — response schemas after reasoning
+    40: Prefilled Reasoning
+    41: Prefilled Reasoning — malformed
+    50: Prefilled Response
+    51: Prefilled Response — malformed
+    deepseek_v4: 'Single Family Test: DeepSeek V4-specific tests'
+    gemma: 'Single Family Test: Gemma 4 guided call-prefix boundaries'
+    glm5: 'Single Family Test: GLM argument handling'
+    deepseek: 'Single Family Test: DeepSeek V4.1 DSML invocation bodies'
+    deepseek_v41: 'Single Family Test: DeepSeek V4.1-specific tests'
+    kimi_k2: 'Single Family Test: Kimi K2-specific tests'
+    qwen3: 'Family-specific tests: Qwen3 and Nemotron v3 XML'
+    nemotron_v3: 'Single Family Test: Nemotron v3 default reasoning'
+    kimi: 'Single Family Test: Kimi K3 XTML'
+    minimax_m3: 'Single Family Test: MiniMax M3 native recovery'
+    muse: 'Single Family Test: Muse-specific'
+    muse_spark: 'Single Family Test: Muse Spark message phases'
+    gpt_oss: 'Single Family Test: GPT-OSS Harmony'
+    beam: 'Single Family Test: Beam-specific'
+    dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
+  group_overrides:
+    default_reasoning_without_opener: nemotron_v3
+    default_reasoning_tool_without_closer: nemotron_v3
+    kimi_native_k2_count_content_chunk7: kimi_k2
+    kimi_native_k2_count_content_chunk1024: kimi_k2
+    kimi_native_trailing_syntax_whitespace: kimi_k2
+    kimi_native_valid_object_trailing_garbage: kimi_k2
+    kimi_native_incompatible_string_recovery: kimi_k2
+    xml_custom_type_double_quoted_object: qwen3
+    xml_custom_type_single_quoted_object: qwen3
+    guided_response_rejected_header_quote_ownership: deepseek_v4
+  prefixes:
+    kimi: [kimi_k3, kimi_k3]
+    deepseek: [deepseek_v41, ds41]
+    deepseek_v4: [deepseek_v4, ds4]
+    deepseek_v41: [deepseek_v41, ds41]

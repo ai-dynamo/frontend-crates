@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.5.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.4.2...dynamo-protocols-v8.5.0) - 2026-10-29
+
+### Features
+
+- *(protocols)* Add session.chat_completion_options.update realtime event ([#498](https://github.com/ai-dynamo/frontend-crates/pull/498))
+
+## [8.4.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.4.1...dynamo-protocols-v8.4.2) - 2026-10-28
+
+### Bug fixes
+
+- *(protocols)* Accept null reasoning summaries on input ([#497](https://github.com/ai-dynamo/frontend-crates/pull/497))
+
+## [8.4.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.4.0...dynamo-protocols-v8.4.1) - 2026-10-27
+
+### Bug fixes
+
+- Preserve numeric tool arguments across parsers ([#339](https://github.com/ai-dynamo/frontend-crates/pull/339))
+
+## [8.4.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.3.0...dynamo-protocols-v8.4.0) - 2026-10-26
+
+### Features
+
+- *(protocols)* Add partial OpenAI and engine validation contracts ([#453](https://github.com/ai-dynamo/frontend-crates/pull/453))
+
+## [8.3.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.2.0...dynamo-protocols-v8.3.0) - 2026-10-23
+
+### Features
+
+- Add Muse Spark Open parsers and Chat/Responses tool support ([#450](https://github.com/ai-dynamo/frontend-crates/pull/450))
+
+## [8.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.1.0...dynamo-protocols-v8.2.0) - 2026-10-14
+
+### Features
+
+- *(protocols)* Add decision API wire contracts ([#362](https://github.com/ai-dynamo/frontend-crates/pull/362))
+
 ## [8.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.0.0...dynamo-protocols-v8.1.0) - 2026-10-09
 
 ### Features

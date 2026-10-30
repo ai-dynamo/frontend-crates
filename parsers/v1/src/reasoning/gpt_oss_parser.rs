@@ -18,6 +18,7 @@ use std::sync::OnceLock;
 static GLOBAL_HARMONY_GPTOSS_ENCODING: OnceLock<Result<HarmonyEncoding, anyhow::Error>> =
     OnceLock::new();
 static HARMONY_CALL_TOKEN_IDS: OnceLock<Vec<u32>> = OnceLock::new();
+static HARMONY_START_TOKEN_ID: OnceLock<Option<u32>> = OnceLock::new();
 static HARMONY_ANALYSIS_BLOCK_REGEX: OnceLock<Regex> = OnceLock::new();
 const HARMONY_CALL_MARKER: &str = "<|call|>";
 const HARMONY_SPECIAL_TOKENS: &[&str] = &[
@@ -47,6 +48,9 @@ fn get_harmony_encoding() -> &'static Result<HarmonyEncoding, anyhow::Error> {
 
 pub struct GptOssReasoningParser {
     parser: StreamableParser,
+    start_token_id: u32,
+    // Recovery persists across chunks until `<|start|>`.
+    resynchronizing: bool,
     pending_text: String,
     pending_tool_call_text: String,
     emitted_reasoning_text: bool,
@@ -88,8 +92,11 @@ impl GptOssReasoningParser {
                 return Err(anyhow::anyhow!("Failed to load Harmony encoding: {e}"));
             }
         };
+        let start_token_id = harmony_start_token_id()?;
         Ok(Self {
             parser,
+            start_token_id,
+            resynchronizing: false,
             pending_text: String::new(),
             pending_tool_call_text: String::new(),
             emitted_reasoning_text: false,
@@ -107,6 +114,18 @@ fn encode_text_to_tokens(text: &str) -> anyhow::Result<Vec<u32>> {
         .as_ref()
         .map_err(|e| anyhow::anyhow!("Failed to get harmony encoding: {e}"))?;
     Ok(enc.tokenizer().encode_with_special_tokens(text))
+}
+
+fn harmony_start_token_id() -> anyhow::Result<u32> {
+    HARMONY_START_TOKEN_ID
+        .get_or_init(|| {
+            let tokens = encode_text_to_tokens("<|start|>").ok()?;
+            match tokens.as_slice() {
+                [id] => Some(*id),
+                _ => None,
+            }
+        })
+        .ok_or_else(|| anyhow::anyhow!("Harmony start marker must encode to one token"))
 }
 
 fn harmony_call_token_ids() -> Option<&'static [u32]> {
@@ -457,8 +476,14 @@ impl ReasoningParser for GptOssReasoningParser {
         // must not reconstruct again (it would pick the wrong `<|channel|>` token
         // because the cumulative buffer by then includes post-`<|call|>` tokens).
         let mut call_reconstructed_in_loop = false;
+        // Raw fallback must not re-emit skipped tokens after recovery.
+        let mut allow_raw_tool_handoff = !self.resynchronizing;
 
         for (i, token_id) in token_ids.iter().enumerate() {
+            // Wait for a message boundary before trusting channel or recipient.
+            if self.resynchronizing && *token_id != self.start_token_id {
+                continue;
+            }
             tracing::debug!(
                 "Processing streaming token {} of {}: {}",
                 i + 1,
@@ -468,9 +493,29 @@ impl ReasoningParser for GptOssReasoningParser {
             let previous_channel = parser.current_channel();
             let previous_recipient = parser.current_recipient();
             if let Err(e) = parser.process(*token_id) {
-                tracing::warn!("Harmony parse error for token_id {token_id}: {e}");
-                return ParserResult::default();
+                tracing::warn!(
+                    token_id,
+                    error = %e,
+                    "Harmony parse error, resynchronizing at the next start token"
+                );
+                allow_raw_tool_handoff = false;
+                self.resynchronizing = true;
+                self.pending_tool_call_text.clear();
+                self.last_directed_channel = None;
+                self.last_directed_recipient = None;
+                if let Ok(enc) = get_harmony_encoding() {
+                    match StreamableParser::new(enc.clone(), None) {
+                        Ok(replacement) => *parser = replacement,
+                        Err(error) => tracing::warn!(
+                            error = %error,
+                            "Failed to reset Harmony parser for resynchronization"
+                        ),
+                    }
+                }
+                // Preserve parsed deltas and scan the remaining tokens.
+                continue;
             }
+            self.resynchronizing = false;
             let current_channel = parser.current_channel();
             let current_recipient = parser.current_recipient();
 
@@ -576,11 +621,12 @@ impl ReasoningParser for GptOssReasoningParser {
             }
         }
 
-        let has_call_marker =
-            input_contains_call_marker(text, token_ids, caller_supplied_token_ids);
-        let raw_input_text = if has_call_marker
-            || !self.pending_tool_call_text.is_empty()
-            || starts_directed_harmony_tool_call(text)
+        let has_call_marker = allow_raw_tool_handoff
+            && input_contains_call_marker(text, token_ids, caller_supplied_token_ids);
+        let raw_input_text = if allow_raw_tool_handoff
+            && (has_call_marker
+                || !self.pending_tool_call_text.is_empty()
+                || starts_directed_harmony_tool_call(text))
         {
             Some(raw_input_text_for_tool_parser(
                 text,
@@ -696,6 +742,105 @@ impl ReasoningParser for GptOssReasoningParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn collect_stream<'a>(chunks: impl IntoIterator<Item = &'a str>) -> ParserResult {
+        let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+        let mut output = ParserResult::default();
+        for chunk in chunks {
+            let delta = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+            output.normal_text.push_str(&delta.normal_text);
+            output.reasoning_text.push_str(&delta.reasoning_text);
+        }
+        let delta = parser.finish_reasoning_stream();
+        output.normal_text.push_str(&delta.normal_text);
+        output.reasoning_text.push_str(&delta.reasoning_text);
+        output
+    }
+
+    #[test]
+    fn test_gpt_oss_streaming_error_preserves_already_parsed_deltas() {
+        let input = "<|channel|>analysis<|message|>thought<|end|><|start|>assistant<|channel|>final<|message|>answer<|return|><|return|>unframed tail";
+        let output = collect_stream([input]);
+        assert_eq!(output.reasoning_text, "thought");
+        assert_eq!(output.normal_text, "answer");
+    }
+
+    #[test]
+    fn test_gpt_oss_streaming_error_resynchronizes_at_every_text_split() {
+        let input = "<|channel|>analysis<|message|>thought<|end|><|return|>unframed<|call|><|start|>assistant<|channel|>final<|message|>answer<|return|>assistant<|start|>assistant<|channel|>final<|message|>again<|return|>";
+        for split in 0..=input.len() {
+            let output = collect_stream([&input[..split], &input[split..]]);
+            assert_eq!(output.reasoning_text, "thought", "split {split}");
+            assert_eq!(output.normal_text, "answer\nagain", "split {split}");
+        }
+    }
+
+    #[test]
+    fn test_gpt_oss_streaming_error_resynchronizes_at_every_token_chunk_size() {
+        let input = "<|channel|>analysis<|message|>thought<|end|><|return|>unframed<|call|><|start|>assistant<|channel|>final<|message|>答え🌍<|return|><|return|><|start|>assistant<|channel|>final<|message|>again<|return|>";
+        let tokens = encode_text_to_tokens(input).expect("Failed to encode input");
+        for size in 1..=tokens.len() {
+            let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+            let mut output = ParserResult::default();
+            for chunk in tokens.chunks(size) {
+                let delta = parser.parse_reasoning_streaming_incremental("", chunk);
+                output.normal_text.push_str(&delta.normal_text);
+                output.reasoning_text.push_str(&delta.reasoning_text);
+            }
+            assert_eq!(output.reasoning_text, "thought", "chunk size {size}");
+            assert_eq!(output.normal_text, "答え🌍\nagain", "chunk size {size}");
+        }
+    }
+
+    #[test]
+    fn test_gpt_oss_streaming_error_before_first_text_recovers_without_separator() {
+        let input = "<|channel|>final<|message|><|return|><|return|>unframed<|start|>assistant<|channel|>final<|message|>answer<|return|>";
+        let output = collect_stream([input]);
+        assert_eq!(output.normal_text, "answer");
+        assert_eq!(output.reasoning_text, "");
+    }
+
+    #[test]
+    fn test_gpt_oss_streaming_error_preserves_completed_call_and_drops_unframed_call() {
+        let call = "<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"city\":\"SF\"}<|call|>";
+        let input = format!(
+            "{call}<|return|><|channel|>commentary to=functions.bad<|message|>{{}}<|call|><|start|>assistant<|channel|>final<|message|>done<|return|>"
+        );
+        for split in 0..=input.len() {
+            let output = collect_stream([&input[..split], &input[split..]]);
+            assert_eq!(output.normal_text, format!("{call}done"), "split {split}");
+            assert_eq!(output.reasoning_text, "", "split {split}");
+        }
+    }
+
+    #[test]
+    fn test_gpt_oss_streaming_error_recovers_directed_call_then_reasoning() {
+        let call = "<|channel|>analysis to=functions.search code<|message|>{\"q\":\"x\"}<|call|>";
+        let input = format!(
+            "<|channel|>final<|message|><|return|><|return|><|start|>assistant{call}<|start|>assistant<|channel|>analysis<|message|>thought<|end|><|start|>assistant<|channel|>final<|message|>done<|return|>"
+        );
+        for split in 0..=input.len() {
+            let output = collect_stream([&input[..split], &input[split..]]);
+            assert_eq!(output.normal_text, format!("{call}done"), "split {split}");
+            assert_eq!(output.reasoning_text, "thought", "split {split}");
+        }
+    }
+
+    #[test]
+    fn test_gpt_oss_streaming_error_does_not_recover_unframed_tokens_at_eof() {
+        let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+        let output = parser.parse_reasoning_streaming_incremental(
+            "<|channel|>analysis<|message|>thought<|end|><|return|>unframed<|sta",
+            &[],
+        );
+        assert_eq!(output.reasoning_text, "thought");
+        assert_eq!(output.normal_text, "");
+        for _ in 0..2 {
+            let output = parser.finish_reasoning_stream();
+            assert_eq!(output.normal_text, "");
+            assert_eq!(output.reasoning_text, "");
+        }
+    }
 
     #[test] // REASONING.batch.2.c, TOOLCALLING.harmony.1
     fn test_gpt_oss_reasoning_parser() {

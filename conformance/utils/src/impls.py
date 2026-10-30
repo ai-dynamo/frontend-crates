@@ -8,14 +8,35 @@ re-declaring parallel tables that drift — the vLLM Rust stream parser vs a
 (nonexistent) vLLM Rust batch parser, `vllm` vs `vllm_python`, missing-parser-option
 class of bug.
 
-Consumers (`generate_conformance_table.py`, `build_stream_fixtures.py`,
-`validate.py`, `tests/test_stream_on_batch.py`) all `import impls`. The generator
-runs from the staged `tests/parity/` layout, so `_common.sh build_stage_conformance`
-copies this file next to it; the other tools run from `conformance/utils/` directly.
+Capture, validation, metadata indexing, and implementation-identity tests all
+import this module directly.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+
+
+def parser_families_path() -> Path:
+    """The registry lives at src/parser_families.yaml in the repo; the render stage
+    copies this module flat into tests/parity/ and the registry to <stage>/src/.
+
+    Public because every consumer of the registry has to resolve BOTH layouts, and a
+    second copy of this walk is a second thing to get wrong -- `unified_taxonomy` did
+    exactly that and broke the render, which only runs from the stage."""
+    here = Path(__file__).resolve()
+    for cand in (
+        here.parent / "parser_families.yaml",
+        here.parents[2] / "src" / "parser_families.yaml",
+    ):
+        if cand.is_file():
+            return cand
+    raise FileNotFoundError(f"parser_families.yaml not found relative to {here}")
+
+
+_REGISTRY = yaml.safe_load(parser_families_path().read_text())
 
 
 @dataclass(frozen=True)
@@ -78,3 +99,49 @@ FIXTURE_IMPL_ALIASES: dict[str, str] = {
 # structured `error: {kind, message}` block, which the renderer renders as `✗`
 # directly; a plain-string `error` stays a declared expected-error (`!`).
 PARSER_NOT_CAPTURED = "parser not captured"
+
+
+# Adapter-backed batch rows require final fields; preserved legacy rows retain their recorded contract.
+_BATCH_POLICY = _REGISTRY["unified_batch"]
+UNIFIED_PEER_SOURCES = _REGISTRY["unified_peer_sources"]
+UNIFIED_BATCH_IMPLS = tuple(_BATCH_POLICY)
+BATCH_SOURCE_IMPL = {key: value["source"] for key, value in _BATCH_POLICY.items()}
+BATCH_SOURCE_BLOCKERS = {
+    (key, version): detail
+    for key, value in _BATCH_POLICY.items()
+    for version, detail in value.get("source_blockers", {}).items()
+}
+UNIFIED_DISPLAY = _REGISTRY["unified_display"]
+UNIFIED_COMPARISON_DEFAULTS = tuple(UNIFIED_DISPLAY["comparison_defaults"])
+UNIFIED_COMPARISON_SLOT_ENGINES = tuple(UNIFIED_DISPLAY["comparison_slot_engines"])
+UNIFIED_MARKER_FAMILIES = {
+    family: row["registry"] for family, row in _REGISTRY["unified"].items()
+    if row.get("registry") and row["registry"] != family
+}
+
+
+def unified_grammar_family(family: str) -> str:
+    return _REGISTRY["unified"].get(family, {}).get("grammar", family)
+
+
+def _unified_pipelines(implementation: str) -> dict[str, tuple[str, str]]:
+    return {family: tuple(row["capture_pipelines"][implementation])
+            for family, row in _REGISTRY["unified"].items()
+            if implementation in row.get("capture_pipelines", {})}
+
+
+VLLM_UNIFIED_PIPELINES = _unified_pipelines("vllm_python")
+SGLANG_UNIFIED_PIPELINES = _unified_pipelines("sglang_python")
+DYNAMO_UNIFIED_PIPELINES = _unified_pipelines("dynamo_v1")
+DYNAMO_JAIL_UNIFIED_PIPELINES = {**DYNAMO_UNIFIED_PIPELINES, **_unified_pipelines("dynamo_v1_jail")}
+VLLM_TOKENIZER_MARKERS = {family: row["vllm_tokenizer_markers"]
+                          for family, row in _REGISTRY["unified"].items()
+                          if "vllm_tokenizer_markers" in row}
+
+def batch_capture_label(implementation: str, version: str) -> str:
+    source = next(spec for spec in IMPL_SPECS if spec.key == BATCH_SOURCE_IMPL[implementation])
+    mode = "batch + jail-buffer" if implementation == "dynamo_v1_jail" else "batch"
+    label = (f"{source.display} {version} ({mode})" if source.engine == "dynamo"
+             else f"{source.display} {version} · {mode}")
+    return label + (" (source unavailable)" if (implementation, version) in BATCH_SOURCE_BLOCKERS else "")
+VLLM_RUST_UNAVAILABLE = "vLLM Rust source not available; set VLLM_RUST_SOURCE and run the Rust capture probe."

@@ -102,8 +102,7 @@ where
 pub struct CreateCompletionRequest {
     pub model: String,
     /// Text or token prompt; omitted input uses an empty prompt for embeds-only requests.
-    #[serde(default)]
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::Prompt))]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::Prompt, required = false))]
     pub prompt: Prompt,
     /// Base64-encoded PyTorch tensor containing pre-computed embeddings.
     /// At least one of prompt or prompt_embeds is required.

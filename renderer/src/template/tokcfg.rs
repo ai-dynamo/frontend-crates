@@ -7,10 +7,16 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Local};
 use either::Either;
-use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter, value::Kwargs};
+use std::borrow::Cow;
+
+use minijinja::value::{Kwargs, StringInput, from_args};
+use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
 use serde::{Deserialize, Serialize};
 
-use crate::python::{PyFloats, PyJsonFormatter, python_float_repr};
+use crate::python::{
+    PyFloats, PyJsonFormatter, is_python_space, python_float_repr, python_split_whitespace,
+    python_splitlines,
+};
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -144,6 +150,81 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
     }
 }
 
+/// minijinja-contrib's pycompat string methods, with Python's whitespace where
+/// Rust's differs: `strip`, `lstrip`, `rstrip` and `split()` also treat U+001C..U+001F
+/// as whitespace, `isspace` is false for `""`, and `splitlines` ends lines at every
+/// Python line break. HF renders templates through Python, so `m.content.strip()` must
+/// strip what Python strips.
+pub fn python_methods(
+    state: &State,
+    value: &Value,
+    method: &str,
+    args: &[Value],
+) -> Result<Value, Error> {
+    if let Some(s) = value.as_str() {
+        match method {
+            "strip" | "lstrip" | "rstrip" => {
+                let (chars,): (Option<&str>,) = from_args(args)?;
+                if chars.is_none() {
+                    let trimmed = match method {
+                        "strip" => s.trim_matches(is_python_space),
+                        "lstrip" => s.trim_start_matches(is_python_space),
+                        _ => s.trim_end_matches(is_python_space),
+                    };
+                    return Ok(StringInput::new(state, value)?.preserve_safety(trimmed.to_owned()));
+                }
+            }
+            "split" => {
+                let (sep, maxsplit): (Option<&str>, Option<i64>) = from_args(args)?;
+                if sep.is_none() {
+                    let maxsplit = maxsplit.and_then(|n| usize::try_from(n).ok());
+                    return Ok(python_split_whitespace(s, maxsplit)
+                        .into_iter()
+                        .map(|part| {
+                            if value.is_safe() {
+                                Value::from_safe_string(part.to_owned())
+                            } else {
+                                Value::from(part)
+                            }
+                        })
+                        .collect());
+                }
+            }
+            "splitlines" => {
+                let (keepends,): (Option<bool>,) = from_args(args)?;
+                return Ok(python_splitlines(s, keepends.unwrap_or(false))
+                    .into_iter()
+                    .map(|part| {
+                        if value.is_safe() {
+                            Value::from_safe_string(part.to_owned())
+                        } else {
+                            Value::from(part)
+                        }
+                    })
+                    .collect());
+            }
+            "isspace" => {
+                let () = from_args(args)?;
+                return Ok(Value::from(!s.is_empty() && s.chars().all(is_python_space)));
+            }
+            _ => {}
+        }
+    }
+    minijinja_contrib::pycompat::unknown_method_callback(state, value, method, args)
+}
+
+/// Jinja2's `trim` filter, `str.strip(chars)`, with Python's whitespace by default;
+/// see [`python_methods`].
+pub fn python_trim(value: StringInput<'_>, chars: Option<Cow<'_, str>>) -> Value {
+    match chars {
+        Some(chars) => minijinja::filters::trim(value, Some(chars)),
+        None => {
+            let trimmed = value.as_str().trim_matches(is_python_space).to_owned();
+            value.preserve_safety(trimmed)
+        }
+    }
+}
+
 /// Mirrors HF transformers' `tojson` filter, not stock Jinja2's. Transformers
 /// overrides Jinja's HTML-safe `tojson` with plain
 /// `json.dumps(x, ensure_ascii=False)` in its chat-template environment, and
@@ -152,6 +233,9 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
 /// (`'`, `<`, `>`, `&` stay literal). serde_json leaves non-ASCII unescaped by
 /// default, matching `ensure_ascii=False`.
 pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
+    let value = crate::python::template_json(value).map_err(|err| {
+        Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
+    })?;
     let mut buf = Vec::new();
     let result = if let Ok(indent) = kwargs.get("indent") {
         // Python `json.dumps(indent=n)` separators are `(",", ": ")` with the
@@ -191,7 +275,7 @@ pub fn fromjson(value: Value) -> Result<Value, Error> {
     let parsed: serde_json::Value = serde_json::from_str(text).map_err(|err| {
         Error::new(ErrorKind::InvalidOperation, "cannot parse JSON").with_source(err)
     })?;
-    Ok(Value::from_serialize(&parsed))
+    Ok(crate::python::template_value(&parsed))
 }
 
 pub fn strftime_now(format_str: &str) -> Result<Value, Error> {
@@ -224,7 +308,7 @@ mod fromjson_tests {
     #[test]
     fn passes_through_non_string() {
         // Already-decoded values must survive a defensive `| fromjson`.
-        let already = Value::from_serialize(serde_json::json!({"a": 1}));
+        let already = crate::python::template_value(&serde_json::json!({"a": 1}));
         let out = fromjson(already).unwrap();
         assert_eq!(out.get_attr("a").unwrap().to_string(), "1");
     }

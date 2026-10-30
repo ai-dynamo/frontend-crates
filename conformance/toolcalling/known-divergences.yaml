@@ -5,9 +5,9 @@
 # (v1 = dynamo-parsers batch+jail, frozen and slated for removal; v2 =
 # dynamo-parsers-v2 streaming, the ultimate implementation).
 #
-# Applied at RENDER time (generate_conformance_table reads this via
-# FRONTEND_CRATES_ROOT), never written into the recorded capture YAMLs — so the
-# notes survive every capture re-record. The popup shows each note as a muted
+# Indexed by the catalog and applied by browser/Node models, never written into
+# recorded capture YAMLs, so the notes survive every capture re-record.
+# The popup shows each note as a muted
 # `explanation:` annotation on that candidate's column, and the cell loses its
 # `?` research-needed suffix.
 #
@@ -250,6 +250,22 @@ minimax_m3:
     stream_vs_batch: *svb-recovery
   TOOLCALLING.batch.5.g:
     stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.7.b:
+    stream_vs_batch: >-
+      FIXME (v1 defect): v1 XML-decodes entity text in a string value. The MiniMax M3 template renders values literally; v2 preserves &quot; and &amp; as model text, matching the vLLM capture.
+  TOOLCALLING.batch.7.p.const_entity_allof:
+    stream_vs_batch: &svb-m3-literal-entity >-
+      FIXME (v1 defect): v1 XML-decodes the string constant "&lt;" into "<". v2 preserves the exact literal required by the const schema.
+  TOOLCALLING.batch.7.p.const_entity_bare:
+    stream_vs_batch: *svb-m3-literal-entity
+  TOOLCALLING.batch.7.p.const_entity_ref:
+    stream_vs_batch: *svb-m3-literal-entity
+  TOOLCALLING.batch.7.p.const_entity_typed:
+    stream_vs_batch: *svb-m3-literal-entity
+  TOOLCALLING.batch.7.t.intersection_anyOf:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.t.intersection_oneOf:
+    stream_vs_batch: *svb-constrained-integer
   TOOLCALLING.batch.8.b:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.c:

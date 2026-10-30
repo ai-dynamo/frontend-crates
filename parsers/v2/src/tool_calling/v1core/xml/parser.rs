@@ -12,11 +12,11 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
-use super::glm47_parser::{has_unsupported_schema_ref_scope, resolve_local_schema_ref};
-use super::parsed_value::{
-    ParsedValue, coerce_integer_literal, is_integer_literal, raw_number_literal,
-};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use crate::tool_calling::arguments::{
+    ParsedValue, coerce_integral_number, has_unsupported_schema_ref_scope,
+    normalize_decimal_spelling, parsed_json_literal, raw_number_literal, resolve_local_schema_ref,
+};
 
 /// Build a `<start>name>(body)<end>` regex pattern. When `strict` is false,
 /// missing `<end>` falls back to end-of-block so truncated input still parses
@@ -466,6 +466,7 @@ fn get_arguments_config(
 struct SchemaCoercion {
     direct_type: Option<String>,
     allowed_types: HashSet<SchemaType>,
+    has_type_constraints: bool,
 }
 
 impl SchemaCoercion {
@@ -474,9 +475,11 @@ impl SchemaCoercion {
             .get("type")
             .and_then(Value::as_str)
             .map(str::to_lowercase);
+        let (allowed_types, has_type_constraints) = collect_allowed_types(root, schema, remaining);
         Self {
             direct_type,
-            allowed_types: collect_allowed_types(root, schema, remaining),
+            allowed_types,
+            has_type_constraints,
         }
     }
 
@@ -616,6 +619,15 @@ fn convert_prepared_param_value(
                 param_schema.is_some_and(|schema| schema.allowed_types.contains(&category))
             })
         })
+        // Keep explicit custom types on the legacy literal-eval path when
+        // there are no recognized constraints to resolve instead.
+        .or_else(|| {
+            param_schema
+                .filter(|schema| !schema.has_type_constraints)
+                .and_then(|schema| schema.direct_type.as_ref())
+                .filter(|name| categorize_type(name).is_none())
+                .cloned()
+        })
         // References and allOf can leave a single effective boolean type without
         // a direct local `type`. Preserve the legacy malformed-boolean fallback
         // (`yes` -> false) for that constrained case.
@@ -664,11 +676,8 @@ fn convert_prepared_param_value(
             || t.starts_with("short")
             || t.starts_with("unsigned") =>
         {
-            // Preserve large integers as JSON numbers. `coerce_integer_literal`
-            // parses to i64 when it fits and falls back to a raw numeric literal
-            // (via `serde_json::value::RawValue`) for values outside i64 range,
-            // so a 21-digit argument stays a JSON number instead of a string.
-            match coerce_integer_literal(param_value.trim()) {
+            // Preserve integral decimal and exponent tokens without expanding large exponents.
+            match coerce_integral_number(param_value.trim()) {
                 Some(coerced) => coerced,
                 None => {
                     tracing::warn!(
@@ -714,6 +723,15 @@ fn convert_prepared_param_value(
             || t.starts_with("dict")
             || t.starts_with("list") =>
         {
+            let expected = if t == "object" || t.starts_with("dict") {
+                SchemaType::Object
+            } else {
+                SchemaType::Array
+            };
+            if let Some(value) = raw_json_container(&param_value, Some(expected)) {
+                return value;
+            }
+
             // Try JSON parsing first (standard JSON with double quotes).
             if let Ok(json_val) = serde_json::from_str::<Value>(&param_value) {
                 return json_val.into();
@@ -728,7 +746,7 @@ fn convert_prepared_param_value(
 
             // Try `ast.literal_eval` equivalent (handles Python-style single quotes, etc.).
             if let Ok(json_val) = try_literal_eval(&param_value) {
-                return json_val.into();
+                return json_val;
             }
 
             tracing::warn!(
@@ -743,9 +761,12 @@ fn convert_prepared_param_value(
         // Unknown/custom types: Attempt best-effort parsing via `literal_eval`.
         // This allows for flexible type names while still trying to parse structured data
         _ => {
+            if let Some(value) = raw_json_container(&param_value, None) {
+                return value;
+            }
             // Unknown type, try `literal_eval`.
             if let Ok(json_val) = try_literal_eval(&param_value) {
-                return json_val.into();
+                return json_val;
             }
 
             tracing::warn!(
@@ -807,18 +828,23 @@ fn collect_allowed_types(
     root: &Value,
     schema: &Value,
     remaining: &mut usize,
-) -> HashSet<SchemaType> {
+) -> (HashSet<SchemaType>, bool) {
     let mut active_refs = HashSet::new();
-    collect_type_constraints(
-        root,
-        schema,
-        0,
-        remaining,
-        &mut active_refs,
-        false,
-        !has_unsupported_schema_ref_scope(root),
-    )
-    .unwrap_or_default()
+    let mut context = TypeConstraintContext {
+        inherited_nullable: false,
+        refs_allowed: !has_unsupported_schema_ref_scope(root),
+        has_type_constraints: false,
+    };
+    let allowed_types =
+        collect_type_constraints(root, schema, 0, remaining, &mut active_refs, &mut context)
+            .unwrap_or_default();
+    (allowed_types, context.has_type_constraints)
+}
+
+struct TypeConstraintContext {
+    inherited_nullable: bool,
+    refs_allowed: bool,
+    has_type_constraints: bool,
 }
 
 // None is an absent type constraint, not an empty intersection.
@@ -828,24 +854,25 @@ fn collect_type_constraints(
     depth: usize,
     remaining: &mut usize,
     active_refs: &mut HashSet<String>,
-    inherited_nullable: bool,
-    refs_allowed: bool,
+    context: &mut TypeConstraintContext,
 ) -> Option<HashSet<SchemaType>> {
     *remaining = remaining.checked_sub(1)?;
     if depth >= 16 || !schema.is_object() {
         return None;
     }
-    let refs_allowed = refs_allowed && !has_unsupported_schema_ref_scope(schema);
+    let refs_allowed = context.refs_allowed && !has_unsupported_schema_ref_scope(schema);
     let mut out = HashSet::new();
     if let Some(ty) = schema.get("type") {
         if let Some(name) = ty.as_str() {
             if let Some(cat) = categorize_type(name) {
                 out.insert(cat);
+                context.has_type_constraints = true;
             }
         } else if let Some(arr) = ty.as_array() {
             for item in arr.iter().filter_map(Value::as_str) {
                 if let Some(cat) = categorize_type(item) {
                     out.insert(cat);
+                    context.has_type_constraints = true;
                 }
             }
         }
@@ -856,35 +883,47 @@ fn collect_type_constraints(
     let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
     // On a $ref sibling, nullable extends the target's type alternatives; it is
     // not a separate `null` constraint to intersect with the referenced type.
-    if (inherited_nullable && !out.is_empty())
+    if (context.inherited_nullable && !out.is_empty())
         || (nullable && (schema.get("$ref").is_none() || schema.get("type").is_some()))
     {
         out.insert(SchemaType::Null);
+        context.has_type_constraints = true;
     }
     let mut constraints = Vec::new();
     if !out.is_empty() {
         constraints.push(out);
     }
     if let Some(value) = schema.get("const") {
+        context.has_type_constraints = true;
         constraints.push(literal_type_constraints(value));
     }
     if let Some(values) = schema.get("enum").and_then(Value::as_array) {
+        context.has_type_constraints = true;
         constraints.push(values.iter().flat_map(literal_type_constraints).collect());
+    }
+    if schema.get("$ref").is_some() {
+        context.has_type_constraints = true;
     }
     if refs_allowed
         && let Some(reference) = schema.get("$ref").and_then(Value::as_str)
         && active_refs.insert(reference.to_string())
     {
         if let Some(target) = resolve_local_schema_ref(reference, root)
-            && let Some(target_types) = collect_type_constraints(
-                root,
-                target,
-                depth + 1,
-                remaining,
-                active_refs,
-                inherited_nullable || nullable,
-                refs_allowed,
-            )
+            && let Some(target_types) = {
+                let mut target_context = TypeConstraintContext {
+                    inherited_nullable: context.inherited_nullable || nullable,
+                    refs_allowed,
+                    has_type_constraints: false,
+                };
+                collect_type_constraints(
+                    root,
+                    target,
+                    depth + 1,
+                    remaining,
+                    active_refs,
+                    &mut target_context,
+                )
+            }
         {
             constraints.push(target_types);
         }
@@ -892,15 +931,20 @@ fn collect_type_constraints(
     }
     for key in ["anyOf", "oneOf"] {
         if let Some(options) = schema.get(key).and_then(Value::as_array) {
+            context.has_type_constraints = true;
             let branches = options.iter().map(|option| {
+                let mut option_context = TypeConstraintContext {
+                    inherited_nullable: context.inherited_nullable,
+                    refs_allowed,
+                    has_type_constraints: false,
+                };
                 collect_type_constraints(
                     root,
                     option,
                     depth + 1,
                     remaining,
                     active_refs,
-                    inherited_nullable,
-                    refs_allowed,
+                    &mut option_context,
                 )
             });
             if let Some(alternatives) = branches.collect::<Option<Vec<_>>>() {
@@ -909,17 +953,24 @@ fn collect_type_constraints(
         }
     }
     if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
-        constraints.extend(branches.iter().filter_map(|branch| {
-            collect_type_constraints(
+        context.has_type_constraints = true;
+        for branch in branches {
+            let mut branch_context = TypeConstraintContext {
+                inherited_nullable: context.inherited_nullable,
+                refs_allowed,
+                has_type_constraints: false,
+            };
+            if let Some(types) = collect_type_constraints(
                 root,
                 branch,
                 depth + 1,
                 remaining,
                 active_refs,
-                inherited_nullable,
-                refs_allowed,
-            )
-        }));
+                &mut branch_context,
+            ) {
+                constraints.push(types);
+            }
+        }
     }
     constraints.into_iter().reduce(|mut left, right| {
         left.retain(|ty| right.contains(ty));
@@ -955,8 +1006,24 @@ fn value_category(v: &Value) -> SchemaType {
     }
 }
 
-fn value_matches(v: &Value, allowed: &HashSet<SchemaType>) -> bool {
-    let cat = value_category(v);
+fn value_matches(v: &ParsedValue, allowed: &HashSet<SchemaType>) -> bool {
+    let cat = match v {
+        ParsedValue::Json(value) => value_category(value),
+        ParsedValue::RawNumber(raw) => {
+            if coerce_integral_number(raw.get()).is_some() {
+                SchemaType::Integer
+            } else {
+                SchemaType::Number
+            }
+        }
+        ParsedValue::RawJson(raw) => match raw.get().as_bytes().first() {
+            Some(b'{') => SchemaType::Object,
+            Some(b'[') => SchemaType::Array,
+            _ => return false,
+        },
+        ParsedValue::Array(_) => SchemaType::Array,
+        ParsedValue::Object(_) => SchemaType::Object,
+    };
     // An integer literal also satisfies a `number` constraint.
     allowed.contains(&cat) || (cat == SchemaType::Integer && allowed.contains(&SchemaType::Number))
 }
@@ -970,57 +1037,9 @@ fn coerce_number_value(value: &str) -> Option<ParsedValue> {
     {
         return Some(number);
     }
-    // Preserve the historical acceptance of non-JSON spellings such as +1 or .5.
-    value
-        .parse::<f64>()
-        .ok()
-        .and_then(serde_json::Number::from_f64)
-        .map(|number| Value::Number(number).into())
-}
-
-// JSON Schema integers include decimal/exponent spellings with no fractional part.
-// Work on digits so large integers and near-integers are never rounded through f64.
-fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
-    if is_integer_literal(value) {
-        return coerce_integer_literal(value);
-    }
-    let raw = raw_number_literal(value)?;
-    let unsigned = value.strip_prefix('-').unwrap_or(value);
-    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
-        Some((mantissa, exponent)) => (mantissa, exponent.parse::<i64>().ok()?),
-        None => (unsigned, 0),
-    };
-    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
-    if whole.is_empty()
-        || !whole
-            .bytes()
-            .chain(fraction.bytes())
-            .all(|b| b.is_ascii_digit())
-    {
-        return None;
-    }
-    let digits = format!("{whole}{fraction}");
-    let significant = digits.trim_start_matches('0').trim_end_matches('0');
-    if significant.is_empty() {
-        return Some(Value::Number(0.into()).into());
-    }
-    let trailing = digits.len() - digits.trim_end_matches('0').len();
-    let zeros = exponent
-        .checked_sub(i64::try_from(fraction.len()).ok()?)?
-        .checked_add(i64::try_from(trailing).ok()?)?;
-    if zeros < 0 {
-        return None;
-    }
-    // Keep very large numbers in their original exact JSON spelling rather than
-    // allocating an exponent-sized string. Twenty digits cover i64/u64 values.
-    if zeros > 20 || significant.len() > 20 - zeros as usize {
-        return Some(raw);
-    }
-    let sign = if value.starts_with('-') { "-" } else { "" };
-    coerce_integer_literal(&format!(
-        "{sign}{significant}{}",
-        "0".repeat(zeros as usize)
-    ))
+    // Preserve accepted Python-like spellings by normalizing digits, never by
+    // converting through f64.
+    normalize_decimal_spelling(value)
 }
 
 /// Coerce a raw XML value to one of the types a union schema allows. Tries
@@ -1031,15 +1050,15 @@ fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
 fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue {
     // `null` is already handled by the caller before schema lookup.
     if allowed.contains(&SchemaType::Object) || allowed.contains(&SchemaType::Array) {
-        if let Ok(json_val) = serde_json::from_str::<Value>(value)
-            && value_matches(&json_val, allowed)
+        if let Some(value) = raw_json_container(value, None)
+            && value_matches_category(&value, allowed)
         {
-            return json_val.into();
+            return value;
         }
         if let Ok(json_val) = try_literal_eval(value)
             && value_matches(&json_val, allowed)
         {
-            return json_val.into();
+            return json_val;
         }
     }
 
@@ -1065,11 +1084,37 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
     Value::String(value.to_string()).into()
 }
 
+fn raw_json_container(value: &str, expected: Option<SchemaType>) -> Option<ParsedValue> {
+    let trimmed = value.trim();
+    let category = match trimmed.as_bytes().first()? {
+        b'{' => SchemaType::Object,
+        b'[' => SchemaType::Array,
+        _ => return None,
+    };
+    if expected.is_some_and(|expected| expected != category) {
+        return None;
+    }
+    parsed_json_literal(trimmed)
+}
+
+fn value_matches_category(value: &ParsedValue, allowed: &HashSet<SchemaType>) -> bool {
+    match value {
+        ParsedValue::RawJson(raw) => match raw.get().as_bytes().first() {
+            Some(b'{') => allowed.contains(&SchemaType::Object),
+            Some(b'[') => allowed.contains(&SchemaType::Array),
+            _ => false,
+        },
+        ParsedValue::Object(_) => allowed.contains(&SchemaType::Object),
+        ParsedValue::Array(_) => allowed.contains(&SchemaType::Array),
+        _ => false,
+    }
+}
+
 /// Try to parse a value similar to Python's ast.literal_eval.
 /// This is a simplified version that handles common cases.
-fn try_literal_eval(s: &str) -> Result<Value, ()> {
+fn try_literal_eval(s: &str) -> Result<ParsedValue, ()> {
     // First try standard JSON
-    if let Ok(val) = serde_json::from_str::<Value>(s) {
+    if let Some(val) = parsed_json_literal(s) {
         return Ok(val);
     }
 
@@ -1079,7 +1124,7 @@ fn try_literal_eval(s: &str) -> Result<Value, ()> {
     // must NOT become `{"message": "true story"}`).
     let normalized = normalize_python_literal(s);
 
-    serde_json::from_str::<Value>(&normalized).map_err(|_| ())
+    parsed_json_literal(&normalized).ok_or(())
 }
 
 /// Convert a Python-style literal into a JSON-ish string: swap single-quote
@@ -1260,6 +1305,29 @@ mod coderabbit_fix_tests {
         assert_eq!(ser(&pv), r#"{"message":"True story"}"#);
         // The previously-wrong "true story" must NOT appear.
         assert!(!ser(&pv).contains("true story"));
+    }
+
+    #[test]
+    fn python_literal_rejects_excessive_nesting() {
+        for (open, close) in [("[", "]"), ("{'item':", "}"), ("[{'item':", "}]")] {
+            let input = format!("{}None{}", open.repeat(3000), close.repeat(3000));
+            assert!(try_literal_eval(&input).is_err());
+        }
+    }
+
+    #[test]
+    fn python_literal_nested_numbers_preserve_exact_tokens() {
+        let cfg = one_param("x", json!({"type": "object"}));
+        let pv = convert_param_value(
+            "{'amount':9007199254740992.5,'tiny':1e-400,'values':[9007199254740992.5,1e-400]}",
+            "x",
+            &cfg,
+            "f",
+        );
+        assert_eq!(
+            ser(&pv),
+            r#"{"amount":9007199254740992.5,"tiny":1e-400,"values":[9007199254740992.5,1e-400]}"#
+        );
     }
 
     // Finding 3: union schemas coerce only to an allowed alternative.

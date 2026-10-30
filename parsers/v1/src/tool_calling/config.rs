@@ -182,6 +182,13 @@ impl XmlParserConfig {
     }
 }
 
+/// Separator the DeepSeek V3.2/V4 encoders insert between assistant content and
+/// the DSML tool-call block. It is template framing, not content: the reference
+/// parser consumes it with the block, and re-rendering a message whose content
+/// still ends with it doubles it, so the re-rendered history no longer matches
+/// the generated tokens.
+pub(crate) const DSML_BLOCK_SEPARATOR: &str = "\n\n";
+
 /// Configuration for DSML-style tool call parser (DeepSeek V3.2+)
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DsmlParserConfig {
@@ -217,6 +224,16 @@ impl Default for DsmlParserConfig {
             parameter_end: "</｜DSML｜parameter>".to_string(),
             allow_eof_recovery: false,
         }
+    }
+}
+
+impl DsmlParserConfig {
+    pub(crate) fn tool_separator(&self) -> Option<&'static str> {
+        (matches!(
+            self.block_start.as_str(),
+            "<｜DSML｜function_calls>" | "<｜DSML｜tool_calls>"
+        ) && self.invoke_start_prefix == "<｜DSML｜invoke name=")
+            .then_some(DSML_BLOCK_SEPARATOR)
     }
 }
 
@@ -456,10 +473,16 @@ impl ParserConfig {
             ParserConfig::Pythonic => vec![],
             ParserConfig::Typescript => vec![],
             ParserConfig::Dsml(config) => {
-                vec![
+                let mut tokens = vec![
                     config.block_start.clone(),
                     config.invoke_start_prefix.clone(),
-                ]
+                ];
+                if let Some(separator) = config.tool_separator() {
+                    // Hold the encoder's separator with either wrapped or recovered calls.
+                    tokens.insert(0, format!("{separator}{}", config.invoke_start_prefix));
+                    tokens.insert(0, format!("{separator}{}", config.block_start));
+                }
+                tokens
             }
             ParserConfig::Glm47(config) => vec![config.tool_call_start.clone()],
             ParserConfig::KimiK2(config) => {

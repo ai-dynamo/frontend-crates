@@ -7,7 +7,9 @@
 //! `DeepSeekV4ToolStreamParser` remains for compatibility, but it projects the
 //! native UnifiedParser's ordered events instead of maintaining another parser.
 
-use serde_json::{Map, Value};
+use serde_json::Value;
+
+use crate::tool_calling::arguments::{ParsedObject, ParsedValue, parsed_json_literal};
 
 use crate::tool_calling::scan::{
     BareRecoveryLatch, GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary,
@@ -19,6 +21,7 @@ use crate::unified::{
 };
 
 pub(crate) const BLOCK_START: &str = "<｜DSML｜tool_calls>";
+pub(crate) const BLOCK_SEPARATOR: &str = "\n\n";
 pub(crate) const BLOCK_END: &str = "</｜DSML｜tool_calls>";
 pub(crate) const INVOKE_START_PREFIX: &str = "<｜DSML｜invoke name=\"";
 pub(crate) const INVOKE_END: &str = "</｜DSML｜invoke>";
@@ -67,7 +70,13 @@ pub(crate) fn deepseek_v4_scanner(both_dialects: bool) -> WrappedBlockScanner<Ds
             deepseek_v41::PARAMETER_END.into(),
         ]);
     }
+    let invoke_prefixes: &[&str] = if both_dialects {
+        &[INVOKE_START_PREFIX, deepseek_v41::INVOKE_START]
+    } else {
+        &[INVOKE_START_PREFIX]
+    };
     WrappedBlockScanner::new(spec, DsmlEmitter)
+        .with_tool_separator(BLOCK_SEPARATOR, invoke_prefixes)
 }
 
 pub(crate) struct DsmlEmitter;
@@ -407,13 +416,18 @@ impl InvokeEmitter for DsmlEmitter {
         let Some(body) = invoke[header_len..].strip_suffix(INVOKE_END) else {
             return Ok(None);
         };
-        let arguments = serde_json::to_string(&parse_parameters(body)?)?;
+        let arguments = parse_parameters(body)?.json_text()?;
         Ok(Some(ToolCallDelta {
             tool_index,
             name: Some(name),
             arguments,
             complete: true,
         }))
+    }
+
+    fn defer_parse_error(&self, invoke: &str, error: &anyhow::Error) -> bool {
+        invoke.starts_with(deepseek_v41::INVOKE_START)
+            && deepseek_v41::DeepSeekV41.defer_parse_error(invoke, error)
     }
 
     fn parse_invoke_deltas(
@@ -501,8 +515,8 @@ fn parse_invoke_header(s: &str) -> Option<(String, usize)> {
     Some((name, header_len))
 }
 
-fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
-    let mut params = Map::new();
+fn parse_parameters(body: &str) -> anyhow::Result<ParsedValue> {
+    let mut params = ParsedObject::new();
     let mut cursor = 0;
     while let Some(rel_start) = body[cursor..].find(PARAMETER_PREFIX) {
         let start = cursor + rel_start + PARAMETER_PREFIX.len();
@@ -525,20 +539,22 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
         };
         let raw_value = &body[value_start..value_start + value_end_rel];
         let value = if attrs.contains(r#"string="true""#) {
-            Value::String(raw_value.to_string())
+            ParsedValue::from(Value::String(raw_value.to_string()))
         } else {
             let raw_value = raw_value.trim();
-            serde_json::from_str(raw_value).unwrap_or_else(|_| Value::String(raw_value.to_string()))
+            parsed_json_literal(raw_value)
+                .unwrap_or_else(|| ParsedValue::from(Value::String(raw_value.to_string())))
         };
         params.insert(name.to_string(), value);
         cursor = value_start + value_end_rel + PARAMETER_END.len();
     }
     if params.is_empty()
-        && let Ok(Value::Object(object)) = serde_json::from_str::<Value>(body.trim())
+        && body.trim().starts_with('{')
+        && let Some(object) = parsed_json_literal(body.trim())
     {
-        return Ok(object.into_iter().collect());
+        return Ok(object);
     }
-    Ok(params)
+    Ok(ParsedValue::Object(params))
 }
 
 #[cfg(test)]
@@ -613,6 +629,25 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn nested_native_numbers_and_explicit_strings_keep_their_exact_json_shape() {
+        let value = parse_parameters(concat!(
+            "<｜DSML｜parameter name=\"nested\">",
+            r#"{"fraction":9007199254740992.5,"tiny":1e-400,"large":9007199254740993}"#,
+            "</｜DSML｜parameter>",
+            "<｜DSML｜parameter name=\"label\" string=\"true\">9007199254740993.0</｜DSML｜parameter>"
+        ))
+        .expect("parameters parse");
+
+        assert_eq!(
+            value.json_text().expect("arguments serialize"),
+            serde_json::to_string(&serde_json::from_str::<Value>(
+                r#"{"nested":{"fraction":"FRACTION","tiny":"TINY","large":"LARGE"},"label":"9007199254740993.0"}"#,
+            ).unwrap()).unwrap().replace("\"FRACTION\"", "9007199254740992.5")
+                .replace("\"TINY\"", "1e-400").replace("\"LARGE\"", "9007199254740993")
+        );
     }
 
     #[test]

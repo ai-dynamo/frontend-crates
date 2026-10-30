@@ -34,6 +34,7 @@ use std::sync::Arc;
 /// `dynamo_renderer::dynamo_tokenizers::*` without adding a second dependency.
 pub use dynamo_tokenizers;
 
+pub mod beam;
 pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
@@ -251,6 +252,12 @@ impl std::error::Error for PromptRenderError {}
 pub trait OAIChatLikeRequest {
     fn model(&self) -> String;
     fn messages(&self) -> Value;
+    /// Preserve Responses replay metadata that typed Chat messages cannot express.
+    /// Typed messages remain available for media collection.
+    fn template_messages_json_override(&self) -> Option<serde_json::Value> {
+        None
+    }
+
     /// Optional fast path for rendering without calling [`Self::messages`].
     ///
     /// Returning `Some` requires the same serialized messages, including all
@@ -260,6 +267,11 @@ pub trait OAIChatLikeRequest {
         None
     }
     fn tools(&self) -> Option<Value> {
+        None
+    }
+    /// Namespace/deferred tool definitions retained by a Responses adapter.
+    /// The formatter uses these only when its selected template supports them.
+    fn template_tools(&self) -> Option<Value> {
         None
     }
     fn tool_choice(&self) -> Option<Value> {
@@ -304,16 +316,25 @@ pub trait OAIChatLikeRequest {
 /// Native renderers and normalization work on JSON, so avoid a MiniJinja
 /// round trip when the request exposes its typed messages.
 pub(crate) fn messages_to_json(req: &dyn OAIChatLikeRequest) -> Result<serde_json::Value> {
+    // Apply replay metadata before the typed fast path can discard it.
+    if let Some(messages) = req.template_messages_json_override() {
+        return Ok(messages);
+    }
     if let Some(messages) = req.typed_messages() {
-        serde_json::to_value(messages)
+        // Custom API calls must become function calls even on this fast path.
+        dynamo_protocols::types::chat_messages_for_function_template(messages)
     } else {
-        serde_json::to_value(req.messages())
+        crate::python::template_json(req.messages())
     }
     .context("Failed to convert messages to JSON")
 }
 
 pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn supports_add_generation_prompt(&self) -> bool;
+    /// Older/native formatters keep flattened tools unless they opt into this shape.
+    fn supports_native_tools(&self, _request: &dyn OAIChatLikeRequest) -> bool {
+        false
+    }
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String>;
 
     /// Source message indices in rendered media order; `None` preserves arrival order.
@@ -523,3 +544,5 @@ mod rendered_prompt_tests {
         RenderedPrompt::segmented_with_pending(vec![RenderedSegment::new("a", false)], 2);
     }
 }
+
+pub mod response_tools;

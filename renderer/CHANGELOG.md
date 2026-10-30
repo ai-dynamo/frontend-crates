@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v9.0.0...dynamo-renderer-v9.0.1) - 2026-10-29
+
+### Bug fixes
+
+- *(renderer)* Honor DeepSeek V4.1 generation prompt flag ([#508](https://github.com/ai-dynamo/frontend-crates/pull/508))
+
+## [8.2.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.2.0...dynamo-renderer-v8.2.1) - 2026-10-27
+
+### Bug fixes
+
+- Preserve numeric tool arguments across parsers ([#339](https://github.com/ai-dynamo/frontend-crates/pull/339))
+
+## [8.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.1.0...dynamo-renderer-v8.2.0) - 2026-10-23
+
+### Features
+
+- Add Muse Spark Open parsers and Chat/Responses tool support ([#450](https://github.com/ai-dynamo/frontend-crates/pull/450))
+
+## [8.1.0] - 2026-10-13
+
+### Added
+
+- `beam::builtin_tools_view`: the render-only view of a Beam request's `tools` and
+  `chat_template_args` that resolves `builtin_tools` names against the declared tools
+  (legacy declaration objects stand for their name and are rendered when undeclared), so
+  the 1.0 template declares them in its system block.
+## [8.0.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.0.2...dynamo-renderer-v8.0.3) - 2026-10-15
+
+### Bug fixes
+
+- *(renderer)* Honor MiniMax disabled thinking ([#327](https://github.com/ai-dynamo/frontend-crates/pull/327))
+
+## [8.0.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.0.1...dynamo-renderer-v8.0.2) - 2026-10-14
+
+### Bug fixes
+
+- *(renderer)* Strip and split with Python's whitespace in HF templates ([#395](https://github.com/ai-dynamo/frontend-crates/pull/395))
+
 ## [8.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.0.0...dynamo-renderer-v8.0.1) - 2026-10-09
 
 ### Bug fixes

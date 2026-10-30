@@ -51,7 +51,6 @@ imports!(
     FunctionType,
     ImageDetail,
     TopLogprobs,
-    FunctionObject,
     ChatCompletionRequestMessageContentPartText,
     ChatCompletionRequestMessageContentPartAudio,
     ChatCompletionRequestSystemMessageContent,

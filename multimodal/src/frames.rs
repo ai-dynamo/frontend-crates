@@ -19,12 +19,16 @@ use crate::{MmError, Result};
 /// Timing that travels with a set of frames.
 #[derive(Clone, Debug)]
 pub struct VideoTiming {
-    /// Presentation time of each frame in seconds from the start of the video,
-    /// one per frame, non-decreasing.
+    /// Presentation time of each frame in seconds, one per frame,
+    /// non-decreasing. These are player times: the first shown frame of the
+    /// source is at `source_start`.
     pub timestamps: Vec<f64>,
     /// Frame rate of the source video.
     pub source_fps: f64,
-    /// Duration of the source video in seconds.
+    /// Player time of the source's first shown frame, in seconds: 0 unless the
+    /// video starts after a delay.
+    pub source_start: f64,
+    /// Duration of the source video in seconds, from `source_start`.
     pub source_duration: f64,
 }
 
@@ -46,11 +50,12 @@ impl VideoFrames {
     /// Validate and wrap decoded frames.
     ///
     /// Errors if the buffer is not exactly one frame of `height * width * 3`
-    /// bytes per timestamp, if a side is zero, if a timestamp is not finite and
-    /// non-negative or decreases, if one lies more than a frame period past
-    /// `source_duration` (container durations are rounded, so a small overshoot
-    /// is allowed), or if `source_fps` or `source_duration` is not positive and
-    /// finite.
+    /// bytes per timestamp, if a side is zero, if a timestamp is not finite,
+    /// lies before `source_start` or decreases, if one lies more than a frame
+    /// period past `source_start + source_duration` (container durations are
+    /// rounded, so a small overshoot is allowed), if `source_start` is not
+    /// finite and non-negative, or if `source_fps` or `source_duration` is not
+    /// positive and finite.
     pub fn new(width: usize, height: usize, rgb: Vec<u8>, timing: VideoTiming) -> Result<Self> {
         if width == 0 || height == 0 {
             return Err(MmError::invalid_input("video frames have an empty side"));
@@ -58,6 +63,7 @@ impl VideoFrames {
         let VideoTiming {
             timestamps,
             source_fps,
+            source_start,
             source_duration,
         } = &timing;
         if timestamps.is_empty() {
@@ -80,8 +86,13 @@ impl VideoFrames {
                 "source_fps and source_duration must be positive and finite",
             ));
         }
-        let latest = source_duration + 1.0 / source_fps;
-        let mut previous = 0.0;
+        if !(source_start.is_finite() && *source_start >= 0.0) {
+            return Err(MmError::invalid_input(
+                "source_start must be finite and non-negative",
+            ));
+        }
+        let latest = source_start + source_duration + 1.0 / source_fps;
+        let mut previous = *source_start;
         for &t in timestamps {
             if !t.is_finite() || t < previous || t > latest {
                 return Err(MmError::invalid_input(format!(
@@ -118,6 +129,11 @@ impl VideoFrames {
 
     pub fn source_fps(&self) -> f64 {
         self.timing.source_fps
+    }
+
+    /// Player time of the source's first shown frame, in seconds.
+    pub fn source_start(&self) -> f64 {
+        self.timing.source_start
     }
 
     pub fn source_duration(&self) -> f64 {
@@ -211,6 +227,7 @@ mod tests {
         VideoTiming {
             timestamps,
             source_fps: 30.0,
+            source_start: 0.0,
             source_duration: duration,
         }
     }
@@ -315,6 +332,7 @@ mod tests {
         let bad = |fps: f64, dur: f64| VideoTiming {
             timestamps: vec![0.0],
             source_fps: fps,
+            source_start: 0.0,
             source_duration: dur,
         };
         assert!(VideoFrames::new(2, 2, vec![0; 12], bad(0.0, 1.0)).is_err());
@@ -330,6 +348,21 @@ mod tests {
         // One frame period (1/30 s) of overshoot is allowed, not 100 s.
         assert!(two(0.0, 1.03).is_ok());
         assert!(two(0.0, 100.0).is_err());
+        // A video that starts after a delay: its times run from the delay to
+        // the delay plus the duration.
+        let delayed = |a: f64, b: f64, start: f64| {
+            let timing = VideoTiming {
+                source_start: start,
+                ..timing(vec![a, b], 1.0)
+            };
+            VideoFrames::new(1, 1, vec![0; 6], timing)
+        };
+        assert!(delayed(1.5, 2.5, 1.5).is_ok());
+        assert!(delayed(1.0, 2.0, 1.5).is_err(), "before the start");
+        assert!(delayed(1.5, 2.6, 1.5).is_err(), "past start + duration");
+        for start in [-1.0, f64::NAN, f64::INFINITY] {
+            assert!(delayed(1.5, 2.0, start).is_err(), "start {start}");
+        }
     }
 
     #[test]

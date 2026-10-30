@@ -258,6 +258,7 @@ pub fn encode_messages(
         thinking_mode,
         drop_thinking,
         reasoning_effort,
+        true,
     )
 }
 
@@ -266,6 +267,7 @@ fn encode_owned_messages(
     thinking_mode: ThinkingMode,
     drop_thinking: bool,
     reasoning_effort: u8,
+    add_generation_prompt: bool,
 ) -> Result<String> {
     ensure!(
         (1..=100).contains(&reasoning_effort),
@@ -284,7 +286,10 @@ fn encode_owned_messages(
         thinking_mode,
         true,
         drop_thinking,
-        Encoding::V41(reasoning_effort),
+        Encoding::V41 {
+            effort: reasoning_effort,
+            add_generation_prompt,
+        },
     )
 }
 
@@ -295,7 +300,7 @@ pub struct DeepSeekV41Formatter;
 
 impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
     fn supports_add_generation_prompt(&self) -> bool {
-        false
+        true
     }
 
     fn media_message_order(&self, request: &dyn crate::OAIChatLikeRequest) -> Option<Vec<usize>> {
@@ -404,6 +409,12 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                 messages[0]["response_format"] = response_format;
             }
         }
-        encode_owned_messages(messages, thinking_mode, drop_thinking, budget)
+        encode_owned_messages(
+            messages,
+            thinking_mode,
+            drop_thinking,
+            budget,
+            req.should_add_generation_prompt(),
+        )
     }
 }

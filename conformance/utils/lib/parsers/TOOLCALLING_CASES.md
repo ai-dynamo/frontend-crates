@@ -1,5 +1,13 @@
 # Tool-Call Parser Corner Cases
 
+A case or rendered column that is applicable to only one parser family must NEVER appear in a generic section. Put it in a named family-specific section, including after variant aggregation. Before classifying a case as family-specific, inspect every registered family and add native inputs and independent expected outputs wherever the behavior applies. Missing captures do not make an applicable family inapplicable; retain them as missing evidence. Preserve published case IDs when changing display placement.
+
+Nested-tag probes `7.j`, `7.m`, `7.n`, `7-6`, `7-7`, `7-8`, and `7-10` appear under `Single Family Test: MiniMax M3` when present. They test type coercion or whitespace between recursive markup children, which other registered grammars do not emit. Local-reference and literal-entity probes remain generic where other families can express their inputs; absent applicable captures remain missing evidence.
+
+Inkling's consumed generation-primer header (`11.c`) appears under `Single Family Test: Inkling`; other registered grammars do not use this primer mode. Header-name precedence (`11.a`) remains generic because both Inkling and Muse can express an outer routing name that conflicts with the embedded invocation name. The streaming mixed-DSML-dialect probe `51.b` appears under `Single Family Test: DeepSeek V4`; only that native adapter accepts both dialects in the same stream. Shared reasoning projection `51.a` remains generic.
+
+`TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence and historical tests; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 
@@ -335,18 +343,18 @@ splits along four type-handling axes:
   literals above `f64`'s exact integer range must preserve the original
   value rather than round through float parsing.
 
-Null coercion probes remain in the capture archive and are displayed only in Unified (`UNIFIED.7-4` and `UNIFIED.7-5`). The legacy batch and stream matrices omit those columns.
+Null coercion probes remain in the capture archive and are displayed only in Unified (`UNIFIED.7-arg_json_null` and `UNIFIED.7-arg_string_null`). The legacy batch and stream matrices omit those columns.
 
 The optional nested-union cases below exercise request tool schemas against native MiniMax M3 input (PR #270). They have matching legacy-stream cases with the same numeric suffixes.
 
-- **`TOOLCALLING.batch.7-6`** Nested members retain declared types through a unique object branch in `anyOf` or `oneOf`. Pagination fields remain integers and flags remain booleans. A child allowing string or object preserves scalar text as a string; a nullable object accepts bare `null`, and a typed object field preserves nested content.
-- **`TOOLCALLING.batch.7-7`** Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
-- **`TOOLCALLING.batch.7-8`** Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
+- **`TOOLCALLING.batch.7-6`** Single Family Test (MiniMax M3): Nested members retain declared types through a unique object branch in `anyOf` or `oneOf`. Pagination fields remain integers and flags remain booleans. A child allowing string or object preserves scalar text as a string; a nullable object accepts bare `null`, and a typed object field preserves nested content.
+- **`TOOLCALLING.batch.7-7`** Single Family Test (MiniMax M3): Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
+- **`TOOLCALLING.batch.7-8`** Single Family Test (MiniMax M3): Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
 
 The local-reference cases below use constructed native MiniMax M3 inputs (PR #273), with matching legacy-stream cases. GLM adds batch and Unified probes for PR #271 under `7-9`, `7-11`, `7-12`, and `7-13`; those request schemas retain unresolved refs so the parser must consult the tool parameters root.
 
 - **`TOOLCALLING.batch.7-9`** A parameter references an object definition through `$ref`; JSON text becomes an object rather than a string.
-- **`TOOLCALLING.batch.7-10`** Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
+- **`TOOLCALLING.batch.7-10`** Single Family Test (MiniMax M3): Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
 - **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type. GLM also covers UTF-8 with a literal `+`, and encoded `~1` / `~0` escapes for definition names containing `/` and `~`.
 - **`TOOLCALLING.batch.7-12`** GLM referenced strings preserve JSON-looking object text, array text, and quoted text, including the literal quote characters. An inline string field with the same object-looking bytes is a control.
 - **`TOOLCALLING.batch.7-13`** GLM references to integer, number, and boolean definitions retain those scalar types. A sibling integer constraint narrows a referenced string-or-integer definition, so bare `42` becomes an integer.
@@ -389,6 +397,8 @@ shape is being exercised so divergences land on a precise row.
 - **`TOOLCALLING.batch.8.d`** Narration **between** multiple tool calls —
   text → call → text → call → text. Tests that inter-call text is
   preserved (not just leading/trailing).
+
+- **`TOOLCALLING.batch.8.f`** through **`TOOLCALLING.batch.8.l`** DSML content-to-call separator (DeepSeek V3.2 and V4). The encoder renders a tool turn as `content + "\n\n" + calls`; exactly that separator is framing, so `normal_text` excludes it while any other whitespace stays content. `.f` one separator after prose, `.g` four newlines keep two, `.h` no separator, `.i` empty content, `.j` and `.k` the same for a bare invocation, `.l` whitespace-only content. Inputs use the encoder's call layout; authored by `utils/src/gen_dsml_framing_cases.py`. Single Family Test scope: the separator exists only in the DeepSeek templates.
 
 All four sub-cases share the same parser contract — `tool_calls` extracted,
 `normal_text` preserved by position. `.a`/`.b`/`.c` are single-call shapes
@@ -724,12 +734,10 @@ truncation recovery).
 
 ## Customer-incident regression tests
 
-When a test exists because a specific customer ticket / PR / GH
-issue uncovered a bug, include that reference inline in the
-`#[test]` comment:
+New regression tests use the applicable `UNIFIED.*` case ID and may retain the originating issue or PR reference. Archived tests keep their original `TOOLCALLING.*` tags.
 
 ```rust
-#[test] // TOOLCALLING.batch.5 (PR #8208)
+#[test] // UNIFIED.5-tool_no_close (PR #8208)
 fn test_parse_malformed_no_section_end() { ... }
 ```
 
@@ -749,32 +757,9 @@ parenthetical names the originating incident. No separate
 | `TOOLCALLING.xml.{1,2}` | XML-family only | Entity decoding + schema-aware coercion |
 | `TOOLCALLING.harmony.{1,2}` | Harmony only | Channel routing + envelope variants |
 
-## Adding a new tool-call parser: what you must include
+## Adding a new tool-call parser
 
-Minimum viable set:
-
-1. `TOOLCALLING.batch.{1, 2, 3}` — baseline correctness.
-2. `TOOLCALLING.batch.4` (or explicit `N/A`) — handle or refuse malformed
-   input.
-3. `TOOLCALLING.batch.5` — pin behavior when the outer fence is missing.
-   Silent drop is a regression waiting to happen.
-4. `TOOLCALLING.batch.{6, 7}` — empty and complex args.
-5. `TOOLCALLING.stream.{1, 2, 3, 4}` — streaming. Essentially
-   non-negotiable for any parser that sits behind a streaming
-   frontend.
-6. `TOOLCALLING.batch.8` — interleaved text.
-7. `TOOLCALLING.batch.9.{a,b,c}`, `TOOLCALLING.batch.10`, and
-   `TOOLCALLING.batch.13.{a,c}` — empty / blank / empty-container inputs,
-   duplicate calls, and unknown tool names.
-8. Format variants where applicable (`TOOLCALLING.fmt.{1..5}`): cover
-   any that the parser's grammar permits. Mark `N/A` for those that
-   don't apply. JSON-family parsers (Mistral, Llama 3 JSON, Hermes)
-   should specifically pin `TOOLCALLING.fmt.5` (argument-shape: native
-   ID / field-order / arguments-vs-parameters alias).
-9. Family-specific categories where applicable: `TOOLCALLING.xml.{1, 2}`
-   for XML grammars, `TOOLCALLING.harmony.{1, 2}` for Harmony.
-
-For reasoning parsers, see `REASONING_CASES.md`.
+Author new coverage in `UNIFIED_CASES.md` and `gen_unified_golden.py`. Cover single and multiple calls, text preservation, malformed and truncated inputs, empty and typed arguments, reasoning boundaries, and grammar-specific forms. Run each applicable request against the frozen Dynamo version inventory. The taxonomy above documents retained historical tests; it is not the active authoring workflow.
 
 ## Shared schema conformance probes
 
