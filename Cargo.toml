@@ -44,7 +44,7 @@ dynamo-parsers = { path = "parsers/v1", version = "10.2.3" }
 dynamo-protocols = { path = "protocols", version = "9.1.0" }
 dynamo-decisions = { path = "decisions", version = "0.1.1" }
 dynamo-renderer = { path = "renderer", version = "9.0.2" }
-dynamo-tokenizers = { path = "tokenizers", version = "4.1.0" }
+dynamo-tokenizers = { path = "tokenizers", version = "4.1.1" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.4"
 futures = "0.3"
