@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 use dynamo_parsers::tool_calling::jail::{
-    Annotated, JailedStream, apply_tool_calling_jail, apply_tool_calling_jail_with_guided_streaming,
+    Annotated, JailedStream, apply_tool_calling_jail,
+    apply_tool_calling_jail_with_guided_streaming, apply_tool_calling_jail_with_reasoning_parser,
 };
 use dynamo_protocols::types::{
     ChatChoiceStream, ChatCompletionStreamResponseDelta, ChatCompletionToolChoiceOption,
@@ -3139,6 +3140,683 @@ mod tests {
         assert_eq!(reconstruct_content(&results), "\nSearch started.");
         let final_choice = results[2].data.as_ref().unwrap().choices.first().unwrap();
         assert_eq!(final_choice.finish_reason, Some(FinishReason::ToolCalls));
+    }
+
+    // Nemotron frames each qwen3_coder call with a newline on both sides.
+    const NEMOTRON_DIGIT_CALL: &str = "<tool_call>\n<function=enter_digit>\n<parameter=digit>\n1\n</parameter>\n</function>\n</tool_call>";
+
+    /// The parser pair Nemotron V3 is served with, which holds blank content (#406).
+    async fn apply_nemotron(
+        chunks: Vec<Annotated<CreateChatCompletionStreamResponse>>,
+    ) -> Vec<Annotated<CreateChatCompletionStreamResponse>> {
+        JailedStream::builder()
+            .tool_call_parser("qwen3_coder")
+            .reasoning_parser("nemotron_v3")
+            .build()
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await
+    }
+
+    fn finish_reasons(
+        results: &[Annotated<CreateChatCompletionStreamResponse>],
+    ) -> Vec<FinishReason> {
+        results
+            .iter()
+            .filter_map(|result| result.data.as_ref())
+            .flat_map(|data| data.choices.iter())
+            .filter_map(|choice| choice.finish_reason)
+            .collect()
+    }
+
+    fn digit_calls(results: &[Annotated<CreateChatCompletionStreamResponse>]) -> usize {
+        results
+            .iter()
+            .filter(|result| has_tool_call(result))
+            .count()
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_tool_only_turn_drops_framing_newlines() {
+        let results = apply_nemotron(vec![
+            create_mock_response_chunk("\n".to_string(), 0),
+            create_mock_response_chunk(
+                "<tool_call>\n<function=enter_digit>\n<parameter=digit>\n".to_string(),
+                0,
+            ),
+            create_mock_response_chunk("1\n</parameter>\n</function>\n</tool_call>".to_string(), 0),
+            create_mock_response_chunk("\n".to_string(), 0),
+            create_final_response_chunk(0),
+        ])
+        .await;
+
+        assert_eq!(reconstruct_content(&results), "");
+        assert_eq!(digit_calls(&results), 1);
+        let call = results.iter().find(|result| has_tool_call(result)).unwrap();
+        assert_tool_call(call, "enter_digit", json!({"digit": "1"}));
+        assert_eq!(finish_reasons(&results), [FinishReason::ToolCalls]);
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_tool_only_turn_drops_newlines_at_every_split() {
+        let turn = format!("\n{NEMOTRON_DIGIT_CALL}\n");
+        for split in (1..turn.len()).filter(|&split| turn.is_char_boundary(split)) {
+            let results = apply_nemotron(vec![
+                create_mock_response_chunk(turn[..split].to_string(), 0),
+                create_mock_response_chunk(turn[split..].to_string(), 0),
+                create_final_response_chunk(0),
+            ])
+            .await;
+
+            assert_eq!(reconstruct_content(&results), "", "split: {split}");
+            assert_eq!(digit_calls(&results), 1, "split: {split}");
+            assert_eq!(
+                finish_reasons(&results),
+                [FinishReason::ToolCalls],
+                "split: {split}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_held_whitespace_returns_before_visible_text() {
+        let results = apply_nemotron(vec![
+            create_mock_response_chunk("\n\n".to_string(), 0),
+            create_mock_response_chunk("Pressing it now.\n\n".to_string(), 0),
+            create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+            create_final_response_chunk(0),
+        ])
+        .await;
+
+        assert_eq!(reconstruct_content(&results), "\n\nPressing it now.\n\n");
+        assert_eq!(digit_calls(&results), 1);
+        assert_eq!(finish_reasons(&results), [FinishReason::ToolCalls]);
+    }
+
+    // DSML parsers own their call framing (#405). The parser consumes one "\n\n"
+    // separator; the rest is content and must survive. The hold never applies.
+    const DSML_RUN_CALL: &str = "<｜DSML｜tool_calls><｜DSML｜invoke name=\"run\"><｜DSML｜parameter name=\"value\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>";
+
+    #[tokio::test]
+    async fn test_dsml_content_whitespace_is_kept() {
+        let turn = format!("\n\n\n\n{DSML_RUN_CALL}");
+        let mut deliveries: Vec<Vec<Annotated<CreateChatCompletionStreamResponse>>> = vec![
+            vec![
+                create_mock_response_chunk(turn.clone(), 0),
+                create_final_response_chunk(0),
+            ],
+            vec![with_finish_reason(
+                create_mock_response_chunk(turn.clone(), 0),
+                FinishReason::Stop,
+            )],
+        ];
+        for split in (1..turn.len()).filter(|&split| turn.is_char_boundary(split)) {
+            deliveries.push(vec![
+                create_mock_response_chunk(turn[..split].to_string(), 0),
+                create_mock_response_chunk(turn[split..].to_string(), 0),
+                create_final_response_chunk(0),
+            ]);
+            deliveries.push(vec![
+                create_mock_response_chunk(turn[..split].to_string(), 0),
+                with_finish_reason(
+                    create_mock_response_chunk(turn[split..].to_string(), 0),
+                    FinishReason::Stop,
+                ),
+            ]);
+        }
+        for (case, chunks) in deliveries.into_iter().enumerate() {
+            let results: Vec<_> = JailedStream::builder()
+                .tool_call_parser("deepseek_v4")
+                .build()
+                .apply_with_finish_reason(stream::iter(chunks))
+                .collect()
+                .await;
+            assert_eq!(reconstruct_content(&results), "\n\n", "case {case}");
+            assert_eq!(digit_calls(&results), 1, "case {case}");
+            assert_eq!(
+                finish_reasons(&results),
+                [FinishReason::ToolCalls],
+                "case {case}"
+            );
+        }
+    }
+
+    // Only the Nemotron V3 pair holds whitespace. qwen3_coder with any other
+    // reasoning parser, or none, and other tool parsers keep the framing as before.
+    #[tokio::test]
+    async fn test_blank_hold_is_scoped_to_the_nemotron_parser_pair() {
+        let qwen3_coder_turn = format!("\n{NEMOTRON_DIGIT_CALL}\n");
+        let hermes_turn = "\n<tool_call>{\"name\": \"enter_digit\", \"arguments\": {\"digit\": \"1\"}}</tool_call>\n";
+        let cases: [(&str, Option<&str>, &str); 5] = [
+            ("qwen3_coder", None, &qwen3_coder_turn),
+            ("qwen3_coder", Some("qwen3"), &qwen3_coder_turn),
+            ("qwen3_coder", Some("deepseek_r1"), &qwen3_coder_turn),
+            ("nemotron_nano", Some("nemotron_v3"), &qwen3_coder_turn),
+            ("hermes", Some("nemotron_v3"), hermes_turn),
+        ];
+        for (tool_parser, reasoning_parser, turn) in cases {
+            let mut builder = JailedStream::builder().tool_call_parser(tool_parser);
+            if let Some(reasoning_parser) = reasoning_parser {
+                builder = builder.reasoning_parser(reasoning_parser);
+            }
+            let results: Vec<_> = builder
+                .build()
+                .apply_with_finish_reason(stream::iter(vec![
+                    create_mock_response_chunk(turn.to_string(), 0),
+                    create_final_response_chunk(0),
+                ]))
+                .collect()
+                .await;
+            let case = format!("{tool_parser} + {reasoning_parser:?}");
+            assert_eq!(reconstruct_content(&results), "\n\n", "{case}");
+            assert_eq!(digit_calls(&results), 1, "{case}");
+        }
+
+        for reasoning_parser in ["nemotron_v3", "nemotron3", "Nemotron_V3"] {
+            let results: Vec<_> = JailedStream::builder()
+                .tool_call_parser("qwen3_coder")
+                .reasoning_parser(reasoning_parser)
+                .build()
+                .apply_with_finish_reason(stream::iter(vec![
+                    create_mock_response_chunk(qwen3_coder_turn.clone(), 0),
+                    create_final_response_chunk(0),
+                ]))
+                .collect()
+                .await;
+            assert_eq!(reconstruct_content(&results), "", "{reasoning_parser}");
+            assert_eq!(digit_calls(&results), 1, "{reasoning_parser}");
+        }
+    }
+
+    // Review finding: the Nemotron change must not touch any other parser's chunk
+    // sequence. After a Kimi K3 call, a terminal prefix of the orphan suffix is held
+    // by `hold_terminal_suffix`, which leaves an empty delta that main emits.
+    // Content-level checks cannot see that chunk, so pin the sequence itself.
+    #[tokio::test]
+    async fn test_kimi_k3_held_suffix_keeps_main_chunk_sequence() {
+        const K3_CALL: &str = concat!(
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"kvv_walle_case\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"value\" type=\"object\"<|sep|>{}",
+            "<|close|>argument<|sep|>",
+            "<|close|>call<|sep|>",
+            "<|close|>tools<|sep|>"
+        );
+        // Engines send `role` only on the first delta, and logprobs only on request.
+        let bare = |mut chunk: Annotated<CreateChatCompletionStreamResponse>| {
+            let choice = &mut chunk.data.as_mut().unwrap().choices[0];
+            choice.delta.role = None;
+            choice.logprobs = None;
+            chunk
+        };
+        for reasoning_parser in [None, Some("nemotron_v3")] {
+            let mut builder = JailedStream::builder().tool_call_parser("kimi_k3");
+            if let Some(reasoning_parser) = reasoning_parser {
+                builder = builder.reasoning_parser(reasoning_parser);
+            }
+            let results: Vec<_> = builder
+                .build()
+                .apply_with_finish_reason(stream::iter(vec![
+                    bare(create_mock_response_chunk(K3_CALL.to_string(), 0)),
+                    bare(with_finish_reason(
+                        create_mock_response_chunk("message".to_string(), 0),
+                        FinishReason::Stop,
+                    )),
+                ]))
+                .collect()
+                .await;
+            let choices: Vec<_> = results
+                .iter()
+                .flat_map(|result| &result.data.as_ref().unwrap().choices)
+                .collect();
+            assert_eq!(choices.len(), 3, "{reasoning_parser:?}");
+            assert!(
+                choices[0].delta.tool_calls.is_some(),
+                "{reasoning_parser:?}"
+            );
+            assert!(
+                choices[1].delta.content.is_none()
+                    && choices[1].delta.tool_calls.is_none()
+                    && choices[1].finish_reason.is_none(),
+                "{reasoning_parser:?}: the empty delta survives"
+            );
+            assert_eq!(
+                reconstruct_content(&results),
+                "message",
+                "{reasoning_parser:?}"
+            );
+            assert_eq!(choices[2].finish_reason, Some(FinishReason::ToolCalls));
+        }
+    }
+
+    // A reasoning parser outside the Nemotron pair leaves the whole chunk sequence
+    // (deltas, roles, logprobs, finishes) as it is without one, not just the text.
+    #[tokio::test]
+    async fn test_non_nemotron_pairs_keep_the_chunk_sequence() {
+        let qwen3_coder_turn = format!("\n{NEMOTRON_DIGIT_CALL}\n");
+        let hermes_turn = "\n<tool_call>{\"name\": \"enter_digit\", \"arguments\": {\"digit\": \"1\"}}</tool_call>\n";
+        let cases: [(&str, &str, &str); 4] = [
+            ("qwen3_coder", "qwen3", &qwen3_coder_turn),
+            ("qwen3_coder", "deepseek_r1", &qwen3_coder_turn),
+            ("nemotron_nano", "nemotron_v3", &qwen3_coder_turn),
+            ("hermes", "nemotron_v3", hermes_turn),
+        ];
+        // Role on the first delta only, as engines send it; logprobs on every chunk.
+        let chunks = |turn: &str| {
+            let (head, tail) = turn.split_at(1);
+            let mut middle = create_mock_response_chunk(tail[..tail.len() - 1].to_string(), 0);
+            middle.data.as_mut().unwrap().choices[0].delta.role = None;
+            let mut last = with_finish_reason(
+                create_mock_response_chunk("\n".to_string(), 0),
+                FinishReason::Stop,
+            );
+            last.data.as_mut().unwrap().choices[0].delta.role = None;
+            vec![
+                create_mock_response_chunk(head.to_string(), 0),
+                middle,
+                last,
+            ]
+        };
+        let normalized = |results: Vec<Annotated<CreateChatCompletionStreamResponse>>| {
+            let mut value = serde_json::to_value(
+                results
+                    .into_iter()
+                    .map(|result| result.data)
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap();
+            for chunk in value.as_array_mut().unwrap() {
+                for choice in chunk["choices"].as_array_mut().unwrap() {
+                    for call in choice["delta"]["tool_calls"]
+                        .as_array_mut()
+                        .into_iter()
+                        .flatten()
+                    {
+                        call["id"] = serde_json::Value::Null;
+                    }
+                }
+            }
+            value
+        };
+        for (tool_parser, reasoning_parser, turn) in cases {
+            let plain: Vec<_> = JailedStream::builder()
+                .tool_call_parser(tool_parser)
+                .build()
+                .apply_with_finish_reason(stream::iter(chunks(turn)))
+                .collect()
+                .await;
+            let named: Vec<_> = JailedStream::builder()
+                .tool_call_parser(tool_parser)
+                .reasoning_parser(reasoning_parser)
+                .build()
+                .apply_with_finish_reason(stream::iter(chunks(turn)))
+                .collect()
+                .await;
+            assert_eq!(digit_calls(&plain), 1, "{tool_parser} + {reasoning_parser}");
+            assert_eq!(
+                normalized(plain),
+                normalized(named),
+                "{tool_parser} + {reasoning_parser}"
+            );
+        }
+    }
+
+    // The public entry points: only the one told the reasoning parser applies the
+    // Nemotron rule; `apply_tool_calling_jail` keeps its output for every caller.
+    #[tokio::test]
+    async fn test_reasoning_parser_entry_point_applies_the_nemotron_rule() {
+        let chunks = || {
+            stream::iter(vec![
+                create_mock_response_chunk("\n".to_string(), 0),
+                create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+                create_mock_response_chunk("\n".to_string(), 0),
+                create_final_response_chunk(0),
+            ])
+        };
+        let plain: Vec<_> =
+            apply_tool_calling_jail(Some("qwen3_coder".into()), None, None, false, chunks())
+                .collect()
+                .await;
+        assert_eq!(reconstruct_content(&plain), "\n\n");
+        assert_eq!(digit_calls(&plain), 1);
+
+        for guided_streaming in [false, true] {
+            let nemotron: Vec<_> = apply_tool_calling_jail_with_reasoning_parser(
+                Some("qwen3_coder".into()),
+                Some("nemotron_v3".into()),
+                None,
+                None,
+                false,
+                guided_streaming,
+                chunks(),
+            )
+            .collect()
+            .await;
+            assert_eq!(reconstruct_content(&nemotron), "", "{guided_streaming}");
+            assert_eq!(digit_calls(&nemotron), 1, "{guided_streaming}");
+            assert_eq!(finish_reasons(&nemotron), [FinishReason::ToolCalls]);
+        }
+    }
+
+    // Review finding: only a successful finish (`stop`, rewritten to `tool_calls`)
+    // drops held whitespace. Truncation and filtering release it unchanged.
+    #[tokio::test]
+    async fn test_held_whitespace_is_released_on_length_and_content_filter() {
+        let truncated_second = "<tool_call>\n<function=enter_digit>\n<parameter=digit>\n2";
+        for finish in [FinishReason::Length, FinishReason::ContentFilter] {
+            let contentless = apply_nemotron(vec![
+                create_mock_response_chunk("\n".to_string(), 0),
+                create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+                create_mock_response_chunk("\n".to_string(), 0),
+                with_finish_reason(create_final_response_chunk(0), finish),
+            ])
+            .await;
+            assert_eq!(reconstruct_content(&contentless), "\n\n", "{finish:?}");
+            assert_eq!(digit_calls(&contentless), 1, "{finish:?}");
+            assert_eq!(finish_reasons(&contentless), [finish], "{finish:?}");
+
+            // The terminal filter still drops whitespace after a call in the
+            // terminal chunk itself, as before; the held leading newline returns.
+            let inline = apply_nemotron(vec![
+                create_mock_response_chunk("\n".to_string(), 0),
+                create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+                with_finish_reason(create_mock_response_chunk("\n".to_string(), 0), finish),
+            ])
+            .await;
+            assert_eq!(reconstruct_content(&inline), "\n", "{finish:?}");
+            assert_eq!(finish_reasons(&inline), [finish], "{finish:?}");
+
+            let second_truncated = apply_nemotron(vec![
+                create_mock_response_chunk("\n".to_string(), 0),
+                create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+                create_mock_response_chunk("\n".to_string(), 0),
+                create_mock_response_chunk(truncated_second.to_string(), 0),
+                with_finish_reason(create_final_response_chunk(0), finish),
+            ])
+            .await;
+            assert!(
+                reconstruct_content(&second_truncated).starts_with("\n\n"),
+                "{finish:?}: {:?}",
+                reconstruct_content(&second_truncated)
+            );
+            assert_eq!(finish_reasons(&second_truncated), [finish], "{finish:?}");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_whitespace_without_tool_call_is_released_on_any_finish() {
+        for finish in [FinishReason::Stop, FinishReason::Length] {
+            let results = apply_nemotron(vec![
+                create_mock_response_chunk("\n".to_string(), 0),
+                with_finish_reason(create_final_response_chunk(0), finish),
+            ])
+            .await;
+
+            assert_eq!(reconstruct_content(&results), "\n", "finish: {finish:?}");
+            assert_eq!(finish_reasons(&results), [finish], "finish: {finish:?}");
+        }
+
+        // Without a finish reason, held whitespace is released at end of stream.
+        let results = apply_nemotron(vec![create_mock_response_chunk("\n".to_string(), 0)]).await;
+        assert_eq!(reconstruct_content(&results), "\n");
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_held_whitespace_preserves_response_metadata() {
+        for annotation in [
+            "usage",
+            "id",
+            "event",
+            "comment",
+            "error",
+            "service_tier",
+            "system_fingerprint",
+        ] {
+            let mut blank = create_mock_response_chunk("\n".to_string(), 0);
+            blank.data.as_mut().unwrap().choices[0].delta.role = None;
+            blank.data.as_mut().unwrap().system_fingerprint = None;
+            match annotation {
+                "usage" => {
+                    blank.data.as_mut().unwrap().usage = Some(CompletionUsage {
+                        prompt_tokens: 11,
+                        completion_tokens: 3,
+                        total_tokens: 14,
+                        prompt_tokens_details: None,
+                        completion_tokens_details: None,
+                    });
+                }
+                "id" => blank.id = Some("blank-frame".to_string()),
+                "event" => blank.event = Some("message".to_string()),
+                "comment" => blank.comment = Some(vec!["keepalive".to_string()]),
+                "error" => blank.error = Some("upstream error".to_string()),
+                "service_tier" => {
+                    blank.data.as_mut().unwrap().service_tier =
+                        Some(serde_json::from_value(serde_json::json!("default")).unwrap())
+                }
+                "system_fingerprint" => {
+                    blank.data.as_mut().unwrap().system_fingerprint =
+                        Some("fingerprint".to_string())
+                }
+                _ => unreachable!(),
+            }
+            let mut expected = blank.clone();
+            expected.data.as_mut().unwrap().choices[0].delta.content = None;
+            let results = apply_nemotron(vec![
+                blank,
+                create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+                create_final_response_chunk(0),
+            ])
+            .await;
+
+            assert_eq!(reconstruct_content(&results), "", "{annotation}");
+            assert_eq!(digit_calls(&results), 1, "{annotation}");
+            assert_eq!(
+                serde_json::to_value(&results[0]).unwrap(),
+                serde_json::to_value(expected).unwrap(),
+                "{annotation}",
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_held_metadata_after_call_does_not_finish_the_turn() {
+        for finish in [
+            FinishReason::Length,
+            FinishReason::ContentFilter,
+            FinishReason::Stop,
+        ] {
+            let mut blank = create_mock_response_chunk("\n".to_string(), 0);
+            blank.data.as_mut().unwrap().choices[0].delta.role = None;
+            blank.event = Some("message".to_string());
+            let results = apply_nemotron(vec![
+                create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+                blank,
+                create_mock_response_chunk("Done.".to_string(), 0),
+                with_finish_reason(create_final_response_chunk(0), finish),
+            ])
+            .await;
+
+            assert_eq!(reconstruct_content(&results), "\nDone.");
+            let expected_finish = if finish == FinishReason::Stop {
+                FinishReason::ToolCalls
+            } else {
+                finish
+            };
+            assert_eq!(finish_reasons(&results), [expected_finish]);
+            let metadata = results
+                .iter()
+                .find(|result| result.event.as_deref() == Some("message"))
+                .unwrap();
+            let choices = &metadata.data.as_ref().unwrap().choices;
+            assert_eq!(choices.len(), 1);
+            assert_eq!(choices[0].index, 0);
+            assert_eq!(choices[0].finish_reason, None);
+            assert_eq!(choices[0].delta.content, None);
+            let terminal_position = results
+                .iter()
+                .position(|result| {
+                    result.data.as_ref().is_some_and(|data| {
+                        data.choices
+                            .iter()
+                            .any(|choice| choice.finish_reason.is_some())
+                    })
+                })
+                .unwrap();
+            let prose_position = results
+                .iter()
+                .position(|result| {
+                    result.data.as_ref().is_some_and(|data| {
+                        data.choices
+                            .iter()
+                            .any(|choice| choice.delta.content.is_some())
+                    })
+                })
+                .unwrap();
+            assert!(terminal_position > prose_position);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_dropped_whitespace_keeps_its_logprobs() {
+        let token = |text: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: text.to_string(),
+            logprob: -0.5,
+            token_id: None,
+            bytes: Some(text.as_bytes().to_vec()),
+            top_logprobs: Vec::new(),
+        };
+        let with_logprobs = |mut chunk: Annotated<CreateChatCompletionStreamResponse>,
+                             tokens: Vec<&str>| {
+            let choice = &mut chunk.data.as_mut().unwrap().choices[0];
+            choice.logprobs = Some(dynamo_protocols::types::ChatChoiceLogprobs {
+                content: Some(tokens.into_iter().map(token).collect()),
+                refusal: None,
+            });
+            chunk
+        };
+        let results = apply_nemotron(vec![
+            with_logprobs(create_mock_response_chunk("\n".to_string(), 0), vec!["\n"]),
+            with_logprobs(
+                create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+                vec![NEMOTRON_DIGIT_CALL],
+            ),
+            with_logprobs(create_mock_response_chunk("\n".to_string(), 0), vec!["\n"]),
+            create_final_response_chunk(0),
+        ])
+        .await;
+
+        assert_eq!(reconstruct_content(&results), "");
+        let tokens: Vec<_> = results
+            .iter()
+            .filter_map(|result| result.data.as_ref())
+            .flat_map(|data| data.choices.iter())
+            .filter_map(|choice| choice.logprobs.as_ref()?.content.as_ref())
+            .flatten()
+            .map(|entry| entry.token.as_str())
+            .collect();
+        assert_eq!(tokens, ["\n", NEMOTRON_DIGIT_CALL, "\n"]);
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_blank_content_hold_is_choice_local() {
+        let results = apply_nemotron(vec![
+            create_multi_choice_chunk(vec![("\n".to_string(), 0), ("\n".to_string(), 1)]),
+            create_multi_choice_chunk(vec![
+                (NEMOTRON_DIGIT_CALL.to_string(), 0),
+                ("plain response".to_string(), 1),
+            ]),
+            create_multi_choice_finish_chunk(vec![0, 1]),
+        ])
+        .await;
+
+        let content = |index| {
+            results
+                .iter()
+                .filter_map(|result| result.data.as_ref())
+                .flat_map(|data| data.choices.iter())
+                .filter(|choice| choice.index == index)
+                .filter_map(|choice| choice.delta.content.as_ref())
+                .map(extract_text)
+                .collect::<String>()
+        };
+        assert_eq!(content(0), "");
+        assert_eq!(content(1), "\nplain response");
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_held_whitespace_does_not_strand_reasoning() {
+        // A mid-stream chunk: reasoning tail plus a newline, no role.
+        let mut thinking = create_mock_response_chunk("\n".to_string(), 0);
+        let delta = &mut thinking.data.as_mut().unwrap().choices[0].delta;
+        delta.role = None;
+        delta.reasoning_content = Some("plan".to_string());
+        let results = apply_nemotron(vec![
+            create_mock_response_chunk(String::new(), 0),
+            thinking,
+            create_final_response_chunk(0),
+        ])
+        .await;
+
+        let reasoning: String = results
+            .iter()
+            .filter_map(|result| result.data.as_ref())
+            .flat_map(|data| data.choices.iter())
+            .filter_map(|choice| choice.delta.reasoning_content.as_deref())
+            .collect();
+        assert_eq!(reasoning, "plan");
+        assert_eq!(reconstruct_content(&results), "\n");
+        assert_eq!(finish_reasons(&results), [FinishReason::Stop]);
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_whitespace_hold_releases_at_its_limit() {
+        let results = apply_nemotron(vec![
+            create_mock_response_chunk(" ".repeat(4096), 0),
+            create_mock_response_chunk(" ".to_string(), 0),
+            create_mock_response_chunk(NEMOTRON_DIGIT_CALL.to_string(), 0),
+            create_final_response_chunk(0),
+        ])
+        .await;
+
+        assert_eq!(reconstruct_content(&results), " ".repeat(4097));
+        assert_eq!(digit_calls(&results), 1);
+        assert_eq!(finish_reasons(&results), [FinishReason::ToolCalls]);
+    }
+
+    #[tokio::test]
+    async fn test_nemotron_finish_while_jailed_settles_held_whitespace() {
+        // Truncated inside the call: unchanged from before, the newline survives.
+        let results = apply_nemotron(vec![
+            create_mock_response_chunk("\n".to_string(), 0),
+            with_finish_reason(
+                create_mock_response_chunk(
+                    "<tool_call>\n<function=enter_digit>\n<parameter=digit>\n".to_string(),
+                    0,
+                ),
+                FinishReason::Length,
+            ),
+        ])
+        .await;
+        assert_eq!(reconstruct_content(&results), "\n");
+        assert_eq!(digit_calls(&results), 0);
+        assert_eq!(finish_reasons(&results), [FinishReason::Length]);
+
+        // A call recovered at end of stream still drops the framing newline.
+        let results = apply_nemotron(vec![
+            create_mock_response_chunk("\n".to_string(), 0),
+            with_finish_reason(
+                create_mock_response_chunk(
+                    "<tool_call>\n<function=enter_digit>\n<parameter=digit>\n1\n</parameter>\n</function>"
+                        .to_string(),
+                    0,
+                ),
+                FinishReason::Stop,
+            ),
+        ])
+        .await;
+        assert_eq!(reconstruct_content(&results), "");
+        assert_eq!(digit_calls(&results), 1);
+        assert_eq!(finish_reasons(&results), [FinishReason::ToolCalls]);
     }
 
     #[tokio::test]

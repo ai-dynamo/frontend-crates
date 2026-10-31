@@ -3804,6 +3804,73 @@ DEFAULT_REASONING_CASES = [
 ]
 
 
+# Issue #406: whitespace-only text in a Nemotron V3 turn that calls tools and shows no
+# visible text is call framing (P8). Nemotron frames each Qwen3-Coder call with a
+# newline on both sides, and its chat template renders assistant content as
+# `content | trim`, so dropping that whitespace re-renders the same prompt tokens.
+# Only `nemotron_v3` gets the rule: a template that renders content verbatim would
+# lose prefix-cache reuse at that turn, so every other family keeps its output, and
+# the case golden is that unchanged output. Nemotron inherits Qwen3's rows (input
+# bytes unchanged), and `INHERITED_GOLDEN` gives it its own golden.
+# Any turn with visible text keeps every whitespace byte, and whitespace with no
+# call is visible content, for every family.
+# Inputs render each whitespace run as the family's own visible-text segment.
+# Excluded: DeepSeek V4/V4.1 own their call framing (the `dsml-*` cases above keep
+# non-separator whitespace as content). GPT-OSS renders each run as a `final` message.
+_BLANK_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+_BLANK_FAMILIES = [f for f in TEMPLATE_FAMILIES if f not in ("deepseek_v4", "deepseek_v41")]
+_BLANK_CALL = ("tool", "get_weather", "city", "Paris")
+_BLANK_SECOND_CALL = ("tool", "get_weather", "city", "Tokyo")
+BLANK_FRAMING = [
+    ("blank_framing_tool_only",
+     "A tool-only turn frames its call with a newline on each side, as Nemotron emits it. The tag-aligned schedule delivers each newline in its own chunk. Nemotron V3 emits no text; every other family keeps the newlines.",
+     ["P8", "I5"], [("text", "\n"), _BLANK_CALL, ("text", "\n")],
+     [_BLANK_CALL], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_framing_between_calls_single_chunk",
+     "Two calls framed by newlines before, between, and after them, delivered in one push. Nemotron V3 emits no text; every other family keeps the newlines.",
+     ["P8", "I6"], [("text", "\n"), _BLANK_CALL, ("text", "\n\n"), _BLANK_SECOND_CALL, ("text", "\n")],
+     [_BLANK_CALL, _BLANK_SECOND_CALL], {"finish_reason": "stop", "single_chunk": True}, _BLANK_FAMILIES),
+    ("blank_framing_with_prose",
+     "Visible prose before the call: the turn has visible text, so every whitespace byte, including the newline after the call, is kept by every family.",
+     ["P8", "I1"], [("text", "Pressing it now.\n\n"), _BLANK_CALL, ("text", "\n")],
+     [("text", "Pressing it now.\n\n"), _BLANK_CALL, ("text", "\n")], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_framing_after_reasoning",
+     "Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive. Nemotron V3 emits no framing text; every other family keeps it.",
+     ["P8", "I2"], [("reason", "Check weather."), ("text", "\n\n"), _BLANK_CALL, ("text", "\n")],
+     [("reason", "Check weather."), _BLANK_CALL], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_framing_prose_after_call",
+     "Framing newline, a call, then visible prose: the turn has visible text, so every whitespace byte is kept. Nemotron V3 holds the leading newline and releases it in front of the prose, so its text follows the call; every other family keeps it before the call.",
+     ["P8", "I1"], [("text", "\n"), _BLANK_CALL, ("text", "\nDone.")],
+     [_BLANK_CALL, ("text", "\n\nDone.")], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_output_without_call",
+     "Whitespace-only output with no call is visible content and is kept unchanged by every family.",
+     ["P8", "I1"], [("text", "\n\n")],
+     [("text", "\n\n")], {"finish_reason": "stop"}, TEMPLATE_FAMILIES),
+]
+# A family that inherits a grammar copies that grammar's built cases (`build_cases`),
+# so a behavior that differs only in the inheriting family's parser is declared here:
+# (scenario, family) -> that family's golden. Keep it to measured, scoped rules.
+INHERITED_GOLDEN = {}
+for _scenario, _description, _policy, _segments, _nemotron_golden, _stream, _families in BLANK_FRAMING:
+    EDGE.append((
+        _scenario, _description, _policy, golden_of(_segments), _BLANK_INIT, _stream,
+        OnlyFamilies({f: (render_input(f, _segments), M, M) for f in _families}),
+    ))
+    if golden_of(_nemotron_golden) != golden_of(_segments):
+        INHERITED_GOLDEN[(_scenario, "nemotron_v3")] = golden_of(_nemotron_golden)
+
+# A framing newline before a call that never completes: no completed call, so the
+# whitespace is visible content for every family, Nemotron V3 included. Scoped to
+# the Qwen3 grammar (Nemotron inherits it): Qwen3 is the negative control and
+# Nemotron the family whose rule must not fire.
+EDGE.append((
+    "blank_framing_incomplete_call",
+    "A framing newline, then a call cut off mid-parameter at EOF. The call never completes, so the newline is kept as text and the partial call is dropped, for Nemotron V3 as for Qwen3.",
+    ["P8", "P2"], golden_of([("text", "\n")]), _BLANK_INIT, {"finish_reason": "stop"},
+    OnlyFamilies({"qwen3": ("\n<tool_call>\n<function=get_weather>\n<parameter=city>\nPar", M, M)}),
+))
+
+
 # Inherited grammars expose their authored rows to applicability and schema consumers too.
 for _spec in EDGE:
     _policy = _edge_case_family_policy(_spec)
@@ -4220,6 +4287,8 @@ def build_cases(fam):
             if fam not in scenario_families(scenario):
                 continue
             case = json.loads(json.dumps(original))
+            if (scenario, fam) in INHERITED_GOLDEN:
+                case["golden"] = json.loads(json.dumps(INHERITED_GOLDEN[(scenario, fam)]))
             # Shared Qwen scenarios begin outside reasoning; Ultra's empty thought
             # closes that default channel without disabling later reasoning markers.
             if (case.get("init") or {}).get("starting_state", "None") == "None":
@@ -4593,9 +4662,15 @@ def emit_yaml(fam):
         # was measuring a different input than the one authored. `2` is the content
         # indentation relative to this mapping node. Chomping follows the authored
         # newline suffix so truncated payloads can retain their final newline.
-        chomping = "+" if c["input"].endswith("\n\n") else "" if c["input"].endswith("\n") else "-"
+        text = c["input"]
+        # Clip chomping discards all-empty blocks. Keep their newlines explicitly,
+        # and do not emit split()'s final sentinel as an extra physical line.
+        chomping = "+" if text.endswith("\n\n") or text == "\n" else "" if text.endswith("\n") else "-"
         lines.append(f"    input: |2{chomping}")
-        for ln in c["input"].split("\n"):
+        input_lines = text.split("\n")
+        if text.endswith("\n"):
+            input_lines.pop()
+        for ln in input_lines:
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")

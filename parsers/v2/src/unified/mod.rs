@@ -49,6 +49,7 @@
 //! divergence is stated at the item.
 
 pub mod beam;
+mod blank_tool_turn;
 pub mod deepseek_v4;
 pub mod deepseek_v41;
 pub mod gemma4;
@@ -6587,9 +6588,10 @@ macro_rules! unified_registry {
         /// Create the unified parser for a family.
         ///
         /// A vendor registration wins over the built-in of the same name — see
-        /// [`register_unified_parser`]. Both branches return the parser directly:
-        /// there is no unified debug wrapper (the only `DebugToolParser` wraps the
-        /// separate tool-only trait). Selection is observable through the
+        /// [`register_unified_parser`]. For Nemotron V3, both branches apply the
+        /// tool-only-turn whitespace rule (issue #406): whitespace-only text is dropped
+        /// from a turn that calls tools and shows no visible text. Other families are
+        /// returned unwrapped. Selection is observable through the
         /// `tracing::debug!` event emitted here, and it reports vendor and built-in
         /// on the same terms.
         pub fn create_unified_parser_for_family(
@@ -6598,7 +6600,9 @@ macro_rules! unified_registry {
         ) -> Result<Box<dyn UnifiedParser>> {
             if let Some(factory) = vendor_factory(family) {
                 let key = canonical_unified_family(family).unwrap_or(family);
-                let parser = factory(tools)?;
+                // A vendor parser for Nemotron V3 gets the same tool-only-turn rule as
+                // the built-in it may shadow, so routing never decides the answer.
+                let parser = blank_tool_turn::wrap(key, factory(tools)?);
                 tracing::debug!(
                     target: "dynamo_parsers_v2",
                     family = key,
@@ -6631,6 +6635,10 @@ macro_rules! unified_registry {
             // arm per family plus an `unreachable!` that existed only because the compiler
             // cannot see that the `bail!` above already returned.
             let canonical = canonical_unified_family(family).unwrap_or(family);
+            // Applied here rather than in the scanner: whether whitespace is call
+            // framing depends on the rest of the turn. Only Nemotron V3 is wrapped;
+            // see `blank_tool_turn` for why.
+            let parser = blank_tool_turn::wrap(canonical, parser);
 
             // Parser construction happens per request, so keep the selection signal
             // at debug level. Operators can enable the target when diagnosing routing

@@ -976,7 +976,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 253 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
+    assert len(UNIFIED_TAX) == 260 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -2330,14 +2330,22 @@ def _assert_cross_family_contract(corpus):
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
     assert set(by_scenario) == set(NATIVE_UNIFIED_TAX)
     _assert_generic_cases_span_families(by_scenario)
+    assert all(family in by_scenario.get(scenario, {}) for scenario, family in G.INHERITED_GOLDEN), "INHERITED_GOLDEN names a case that does not exist"
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         # Beam authors its own golden where its grammar changes the outcome (its parameter
         # tags are plain text outside a routed header; its reasoning markers are special
         # tokens), so it stands outside the shared contract for those scenarios only.
+        # A family-scoped parser rule declares its own golden in `INHERITED_GOLDEN`
+        # (Nemotron V3's tool-only-turn whitespace, issue #406); that cell is checked
+        # against the declaration instead of the shared contract.
+        for family in families:
+            if (scenario, family) in G.INHERITED_GOLDEN:
+                assert families[family][0] == G.INHERITED_GOLDEN[(scenario, family)], (scenario, family, "inherited golden")
         contracts = [
             (family, contract) for family, contract in families.items()
             if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS | BEAM_NUMERIC_STRING_SCENARIOS)
+            and (scenario, family) not in G.INHERITED_GOLDEN
         ]
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:
