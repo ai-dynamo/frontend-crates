@@ -84,6 +84,10 @@ _SCHEMA_SECTION = {
 
 def argument_section(scenario: str) -> str:
     scenario = scenario.removesuffix("_pr424")
+    if scenario == "kimi_k3_typed_argument_values":
+        return "declared"
+    if scenario == "kimi_k3_typed_json_marker_payload":
+        return "text"
     if scenario.startswith("xml_"):
         return "declared"
     if scenario.startswith("arg_numeric_"):
@@ -136,6 +140,12 @@ def schema_tools(case: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def schema_description(case: dict[str, Any]) -> str:
+    if case["name"] == "xml_custom_type_double_quoted_object":
+        return (
+            f"Native XML compatibility: {case['raw']} under type custom "
+            f"must produce {json.dumps(case['value'])}. The raw parameter body "
+            "contains a double-quoted JSON object; custom is intentionally outside JSON Schema."
+        )
     if case["name"].startswith("xml_"):
         return (
             f"Native XML compatibility: {case['raw']} under type {case['schema']['type']} "

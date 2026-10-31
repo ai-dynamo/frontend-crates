@@ -1,0 +1,963 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    sglang_python: 0.5.21
+document:
+  mode: unified
+records:
+  native_quoted_control_in_reasoning:
+    value:
+      case_key: native_quoted_control_in_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: f969091db9c5d6a03f4d1725c8182a380d3ed062ec797d273e1a52b6072fd0c6
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation.
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: The literal "]
+          - expected:
+            - kind: reasoning
+              text: <]minimax[>
+          - expected:
+            - kind: reasoning
+              text: '['
+          - expected:
+            - kind: reasoning
+              text: <tool_call>
+          - expected:
+            - kind: reasoning
+              text: '" marker is part of the explanation.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 543d331c555be2db08d4d4a4182fe7a4150c66ab4910494932b2dde9df1edf6c
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+          chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal `
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "` header is part of the explanation.'
+          chunks:
+          - expected:
+            - kind: text
+              text: The literal `
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"` header is part of the explanation.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  native_single_quote_contraction_reasoning:
+    value:
+      case_key: native_single_quote_contraction_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: d273e87ab478d3b8da15020945a146c3c07d1030fac9a81b36cdd1bcc99f541a
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal 'doesn't ]<]minimax[>[<tool_call> marker' stays quoted.
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: The literal 'doesn't ]
+          - expected:
+            - kind: reasoning
+              text: <]minimax[>
+          - expected:
+            - kind: reasoning
+              text: '['
+          - expected:
+            - kind: reasoning
+              text: <tool_call>
+          - expected:
+            - kind: reasoning
+              text: ' marker'' stays quoted.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: e33413aa3749f755662ca1aaceb5ec9d30f120c84cb7f46e4506ea1098a3e45f
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''doesn''t '
+          chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''doesn''t '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: b0b910ff77ea112990d5cc47dc50756613cb752578c2f48cb091d48ef3cb8fd6
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''example '
+          chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''example '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: b0af57df118d379db2b65b3fbd88525d516b548b9f6a07ebe5c4e9d39a1e96e8
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: He said "maybe
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: bb5cf0541028a843873efa0fd101119258f31de1c40eec14d74acc28e76d1864
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: London
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: checking weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"London'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: efa524e5766b641da14414232f884164d8a406286124b20f383ffbfac2a9b2b3
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: no tool needed
+          - kind: text
+            text: The answer is 42.
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: no tool needed
+          - expected: []
+          - expected:
+            - kind: text
+              text: The answer is 42.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 02b8af9752051d19ccc2d0a76c059989f339b77b67c8e735d15453911fd5b8d3
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: weighing options
+          - kind: text
+            text: 'Here''s what I found: '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: weighing options
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'Here''s what I found: '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: 8061f261c0e7b55a61c9017d66d6224d36704686d5983f04961e89296312fec9
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: analyzing data
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Par'
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: analyzing data
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Par'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: eb63ddc993a71227a9b1e7367d63239c35c30d22aac65dfb16b3c9780a410f3a
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: checking weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 994a5cc49e2775f3609782ea14e61aa289b7c9904d3e7300dc7405038c6ac7bf
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <mm:think>literal</mm:think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: <mm:think>
+          - expected:
+            - kind: text
+              text: literal
+          - expected:
+            - kind: text
+              text: </mm:think>
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          parser: SGLang Python 0.5.21 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+    suppress_inherited_from: true
+  structured_response_after_reasoning:
+    value:
+      case_key: structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 7b361f978f698926ba4758a4da14cb9d4a42f9da61e6ba97cacc9b8c251fab4e
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Parser-only peer capture does not execute structural-tag generation constraints.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.21
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: 6e79a5f4a75e111b7657ee06a524065072a85dd09d89b768295a11cd915d0c16
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.14.yaml
+    suppress_inherited_from: true

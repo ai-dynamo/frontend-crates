@@ -124,12 +124,14 @@ def test_glm_uses_the_registered_reasoning_detector_name():
 
 def test_all_authored_families_have_explicit_detector_pairs():
     module = _load(_Released)
-    # GPT-OSS uses Harmony framing; this split-detector adapter has no registered pair.
-    assert "gpt_oss" not in module.FAMILY_PARSERS
-    assert set(module.FAMILY_PARSERS) | {"gpt_oss"} == UNIFIED_FAMILIES
+    assert set(module.FAMILY_PARSERS) == UNIFIED_FAMILIES
+    assert module.FAMILY_PARSERS["gpt_oss"] == ("gpt-oss", "gpt-oss")
     assert module.FAMILY_PARSERS["nemotron_v3"] == ("nemotron_3", "qwen3_coder")
     with mock.patch.object(module, "version", return_value="0.5.16"):
         assert module._registration_unavailable({"family": "deepseek_v4"}) is None
+        gpt_code, gpt_detail = module._registration_unavailable({"family": "gpt_oss"})
+        assert gpt_code == "peer_detector_unavailable"
+        assert "gpt-oss" in gpt_detail
         code, detail = module._registration_unavailable({"family": "deepseek_v41"})
     assert code == "peer_detector_unavailable"
     assert "deepseek-v41" in detail and "deepseekv41" in detail
@@ -253,3 +255,48 @@ def test_parser_error_retains_prior_ordered_rows_and_traceback():
     assert result["error"] == "ValueError: second chunk failure"
     assert "ValueError: second chunk failure" in result["error_traceback"]
     assert "chunks" not in result
+
+
+@pytest.mark.parametrize("family, expected", [("nemotron_v3", True), ("qwen3", False), ("kimi_k2", False)])
+def test_streaming_resolves_authored_family_default_without_changing_chunks(family, expected):
+    seen = []
+
+    class RecordingReasoner(_Released):
+        def __init__(self, model_type=None, stream_reasoning=True, force_reasoning=None, request=None):
+            seen.append(force_reasoning)
+
+    module = _load(RecordingReasoner)
+    chunks = ["Check Montréal.", "</think>", "雪"]
+    before = list(chunks)
+    module._stream_chunks(family, chunks, terminal_step=True, tools=[])
+    assert seen == [expected]
+    assert chunks == before
+
+
+@pytest.mark.parametrize("state, expected", [("Reasoning", True), ("Response", None)])
+def test_native_initialization_routes_public_reasoner_without_changing_chunks(state, expected):
+    seen = []
+
+    class RecordingReasoner(_Released):
+        def __init__(self, model_type=None, stream_reasoning=True, force_reasoning=None, request=None):
+            seen.append(force_reasoning)
+
+    module = _load(RecordingReasoner)
+    chunks = ["checking", "</think>", "done"]
+    before = list(chunks)
+    module._stream_chunks("qwen3", chunks, terminal_step=True, tools=[], init={
+        "starting_state": state, "tool_output_mode": "Native", "named_tool": None,
+    })
+    assert seen == ([] if expected is None else [expected])
+    assert chunks == before
+
+
+@pytest.mark.parametrize("init", [
+    {"starting_state": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": None},
+    {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": "get_weather"},
+    {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None, "structural_tag": {}},
+])
+def test_native_initialization_guard_rejects_other_request_contracts(init):
+    module = _load(_Released)
+    code, detail = module._registration_unavailable({"family": "qwen3", "init": init})
+    assert code == "peer_request_unsupported"

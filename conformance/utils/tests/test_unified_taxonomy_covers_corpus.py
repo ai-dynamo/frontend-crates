@@ -33,7 +33,10 @@ if str(SRC) not in sys.path:
 
 from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS
 from conformance.utils.tests.schema_oracle import _local_reference, matches_schema
-from conformance.utils.tests.fixture_test_support import assert_unique_behaviour, semantic_key
+from conformance.utils.tests.fixture_test_support import (
+    assert_unique_behaviour, semantic_key, GPT58_NATIVE_REQUEST_DIGESTS, assert_gpt58_native_contract,
+    assert_native_response_counterparts,
+)
 
 import pytest  # noqa: E402
 import yaml  # noqa: E402
@@ -567,6 +570,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
         "guided_json_native_parameter_string_before_payload",
         "guided_json_noncall_before_native_array_before_payload",
         "guided_response_native_wrapper_whitespace_before_prose",
+        "prefilled_response_guided_pending_invoke_header",
+        "gemma4_guided_response_extra_body_opener",
     }
     for family in NATIVE_FAMILIES:
         cases = build_cases(family)
@@ -588,12 +593,18 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             })
         if family == "kimi_k3":
             extra.update({"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"})
-        if family == "deepseek_v4":
+        if family in {"beam", "gpt_oss", "muse_glimmer", "muse_spark"}:
+            extra.add("kimi_k3_direct_typed_response_recovery")
+        if family in {"beam", "gpt_oss", "kimi_k3"}:
+            extra.update({"muse_quoted_reserved_eom_argument", "muse_quoted_reserved_eot_argument", "muse_quoted_reserved_start_argument"})
+        if family in {"beam", "gpt_oss"}:
+            extra.add("guided_json_quoted_bare_tool_header_in_answer")
+        if family in {"deepseek_v4", "deepseek_v41", "kimi_k3", "minimax_m3"}:
+            extra.add("prefilled_response_guided_closer_inside_invoke_quote")
+        if G.invoke_header_prefix(family).endswith('="'):
             extra.add("guided_response_rejected_header_quote_ownership")
-        if family == "deepseek_v41":
-            extra.add("prefilled_response_guided_pending_invoke_header")
-        if family == "gemma4":
-            extra.add("gemma4_guided_response_extra_body_opener")
+        if family in {"muse_glimmer", "muse_spark"}:
+            extra.update({"guided_json_quoted_bare_header_after_payload_pr424", "guided_json_quoted_bare_header_in_answer_pr424"})
         if G.unified_grammar_family(family) == "qwen3":
             extra.update({
                 "guided_json_native_parameter_object_before_payload",
@@ -619,22 +630,23 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             "guided_response_quoted_control_braces_required",
         }
         for scenario, case in response_cases.items():
+            if (scenario, family) in _GUIDED_HEADER_CONTRACTS:
+                _assert_guided_header_case(family, scenario, case)
+                continue
             if scenario.startswith("muse_quoted_reserved_"):
-                marker = {
-                    "muse_quoted_reserved_eom_argument": "<|eom|>",
-                    "muse_quoted_reserved_eot_argument": "<|eot|>",
-                    "muse_quoted_reserved_start_argument": "<|start|>",
-                }[scenario]
+                marker = _family_value(scenario, family)[2:-2]
             elif family == "gpt_oss" and scenario == "prefilled_response_reasoning_markers_literal":
                 marker = "<think>"
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
             elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
-                marker = '<|open|>call tool="lookup"'
-            elif scenario == "guided_response_rejected_header_quote_ownership":
-                marker = '<｜DSML｜invoke'
-            elif scenario == "gemma4_guided_response_extra_body_opener":
-                marker = "call:get_weather{"
+                marker = {
+                    "kimi_k3": '<|open|>call tool="lookup"',
+                    "beam": "<|start|>assistant to=lookup",
+                    "gpt_oss": "<|start|>assistant<|channel|>commentary to=functions.lookup",
+                    "muse_glimmer": '<atem:invoke name="lookup">',
+                    "muse_spark": '<atem:invoke name="lookup">',
+                }[family]
             elif scenario == "guided_response_native_wrapper_whitespace_before_prose":
                 if family in {"muse_glimmer", "muse_spark"}:
                     marker = "<atem:invoke"
@@ -705,7 +717,7 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
 def test_scenario_families_matches_declared_scope():
     scoped = {
         "guided_json_quoted_bare_header_in_answer": set(G.GUIDED_FAMILIES),
-        "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer", "muse_spark"},
+        "guided_json_quoted_bare_tool_header_in_answer": {"beam", "gpt_oss", "muse_glimmer", "muse_spark"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
         "arg_json_null_ref": set(G._TEMPLATE_FAMILIES),
@@ -976,7 +988,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 260 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 2
+    assert len(UNIFIED_TAX) == 260 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 5
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -994,6 +1006,116 @@ def _assert_documented_deepseek_counts(text):
 def test_documented_deepseek_counts_match_generated_applicability():
     text = (UTILS / "lib/parsers/UNIFIED_CASES.md").read_text()
     _assert_documented_deepseek_counts(text)
+
+
+def _assert_reference_chain_coverage(corpus):
+    scenario = "glm47_reference_type_intersection"
+    reference = corpus["glm47"][f"UNIFIED.{scenario}.glm47"]
+    expected = [{"kind": "tool_call", "name": "capture_payload",
+                 "arguments": {"payload": '{"x":1}', "count": 42}}]
+    assert taxonomy.display_section(scenario)[0] == "unified_g7_reference"
+    for family in NATIVE_FAMILIES:
+        case_id = f"UNIFIED.{scenario}.{family}"
+        assert case_id in corpus[family], (family, "missing applicable reference-chain request")
+        case = corpus[family][case_id]
+        assert case["tools"] == reference["tools"]
+        assert case["golden"] == expected
+        _assert_input_carries_events(family, scenario, case)
+
+
+def test_reference_chain_coverage_uses_each_native_grammar():
+    _assert_reference_chain_coverage({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+def test_reference_chain_coverage_rejects_an_omitted_supported_family():
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    del corpus["beam"]["UNIFIED.glm47_reference_type_intersection.beam"]
+    with pytest.raises(AssertionError, match="missing applicable reference-chain"):
+        _assert_reference_chain_coverage(corpus)
+
+
+def _assert_embedded_parameterless_call_coverage(corpus):
+    scenario = "glm47_parameterless_call_shape_inside_argument"
+    reference = corpus["glm47"][f"UNIFIED.{scenario}.glm47"]
+    assert reference["tools"] == G.unified_tools(), "original offered schema changed"
+    assert taxonomy.display_section(scenario)[0] == "unified_g12"
+    for family in NATIVE_FAMILIES:
+        key = f"UNIFIED.{scenario}.{family}"
+        assert key in corpus[family], (family, "missing applicable embedded-call request")
+        case = corpus[family][key]
+        assert case["init"] == reference["init"]
+        assert case["tools"] == reference["tools"]
+        assert len(case["golden"]) == 1
+        event = case["golden"][0]
+        assert event["kind"] == "tool_call" and event["name"] == "run"
+        assert set(event["arguments"]) == {"cmd"}
+        value = event["arguments"]["cmd"]
+        assert value == _family_value(scenario, family), (family, "incidental payload changed")
+        assert isinstance(value, str) and value.startswith("before ") and value.endswith(" after")
+        assert "get_weather" in value
+        _assert_input_carries_events(family, scenario, case)
+        assert _native_input_calls(family, case["input"], case["tools"]) == case["golden"], (family, "nested argument became an extra call")
+
+
+def test_embedded_parameterless_call_coverage_preserves_the_offered_schema():
+    _assert_embedded_parameterless_call_coverage({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+def test_embedded_parameterless_call_coverage_rejects_a_missing_family():
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    del corpus["beam"]["UNIFIED.glm47_parameterless_call_shape_inside_argument.beam"]
+    with pytest.raises(AssertionError, match="missing applicable embedded-call"):
+        _assert_embedded_parameterless_call_coverage(corpus)
+
+
+def test_embedded_parameterless_call_coverage_rejects_incidental_payload_drift():
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    case = corpus["beam"]["UNIFIED.glm47_parameterless_call_shape_inside_argument.beam"]
+    case["input"] = case["input"].replace("before ", "before changed ")
+    case["golden"][0]["arguments"]["cmd"] = case["golden"][0]["arguments"]["cmd"].replace("before ", "before changed ")
+    with pytest.raises(AssertionError):
+        _assert_embedded_parameterless_call_coverage(corpus)
+
+
+def test_embedded_parameterless_call_coverage_rejects_coordinated_schema_loss():
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    for family in NATIVE_FAMILIES:
+        corpus[family][f"UNIFIED.glm47_parameterless_call_shape_inside_argument.{family}"]["tools"] = []
+    with pytest.raises(AssertionError, match="original offered schema changed"):
+        _assert_embedded_parameterless_call_coverage(corpus)
+
+
+@pytest.mark.parametrize("family", ["beam", "gpt_oss", "kimi_k3"])
+@pytest.mark.parametrize("boundary", ["eom", "eot", "start"])
+def test_quoted_message_boundaries_remain_native_argument_data(family, boundary):
+    scenario = f"muse_quoted_reserved_{boundary}_argument"
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    original = build_cases("muse_glimmer")[f"UNIFIED.{scenario}.muse_glimmer"]
+    assert case["init"] == original["init"] == {
+        "starting_state": "Response", "tool_output_mode": "Native", "named_tool": None,
+    }
+    assert case["tools"] == original["tools"]
+    assert case["golden"] == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": _family_value(scenario, family)}}]
+    assert taxonomy.display_section(scenario)[0] == "unified_g12"
+    _assert_input_carries_events(family, scenario, case)
+
+
+@pytest.mark.parametrize("parent", ["reason_markup_in_arg", "reason_markup_in_arg_with_text"])
+def test_consistent_marker_prose_preserves_the_historical_request(parent):
+    path = UTILS.parent / "fixtures-unified-v2/families/gpt_oss/inputs_and_golden.yaml"
+    records = yaml.safe_load(path.read_text())["cases"]
+    old = records[parent]
+    active = records[parent + "_consistent"]
+    assert old["lifecycle"] == "retired" and old["historical_ids"]
+    assert active["lifecycle"] == "active"
+    assert old["request"]["input"].count("secret") == 1
+    assert active["request"]["input"].count("reconsider") == 1
+    assert active["request"]["input"].replace("reconsider", "secret") == old["request"]["input"]
+    original_event = next(event for event in old["golden"]["assembled"] if event["kind"] == "tool_call")
+    active_event = next(event for event in active["golden"]["assembled"] if event["kind"] == "tool_call")
+    assert active_event["arguments"]["note"].replace("reconsider", "secret") == original_event["arguments"]["note"]
+    assert taxonomy.coverage_case(parent + "_consistent") == parent
+    assert f"UNIFIED.{parent}.gpt_oss" not in build_cases("gpt_oss")
 
 
 @pytest.mark.parametrize("pattern", [r"current corpus emits \d+", r"The \d+ omitted cases"])
@@ -1312,6 +1434,28 @@ def test_retained_capture_coverage_rejects_one_missing_case():
 
 def _family_value(scenario, family):
     family = G.unified_grammar_family(family)
+    if scenario == "kimi_k3_json_marker_then_long_field":
+        if family == "kimi_k3":
+            return "<|open|>response<|sep|>literal<|close|>response<|sep|>"
+        if family in {"muse_glimmer", "muse_spark"}:
+            return "<|start|>assistant to=user<|message|>literal<|eom|>"
+        assert family in {"beam", "gpt_oss"}, (scenario, family)
+        return "<|start|>assistant<|channel|>final<|message|>literal<|return|>"
+    if scenario == "kimi_k3_typed_json_marker_payload":
+        return G.NATIVE_ARGUMENT_BOUNDARIES[family]
+    if scenario == "glm47_parameterless_call_shape_inside_argument":
+        return "before " + control_tokens(family)[3] + G.r_tool_arguments(family, "get_weather", {}, 0) + " after"
+    if scenario.startswith("muse_quoted_reserved_"):
+        boundary = scenario.removeprefix("muse_quoted_reserved_").removesuffix("_argument")
+        message_markers = {"eom": "<|eom|>", "eot": "<|eot|>", "start": "<|start|>"}
+        if family in {"beam", "gpt_oss"}:
+            message_markers.update(eom="<|end|>", eot="<|return|>")
+        elif family == "kimi_k3":
+            message_markers.update(
+                eom="<|close|>message<|sep|>", eot="<|end_of_msg|>",
+                start='<|open|>message role="assistant"<|sep|>',
+            )
+        return f'a"{message_markers[boundary]}"b'
     if scenario == "guided_json_noncall_before_native_array_before_payload":
         return "{}" + _family_value("guided_json_native_parameter_array_before_payload", family)
     reason_open, reason_close, _, _ = control_tokens(family)
@@ -1387,6 +1531,9 @@ def _family_value(scenario, family):
         return reason_close
     if scenario == "gpt_oss_control_marker_inside_argument_string":
         return {
+            'beam': '<|start|><|channel|><|message|><|end|><|return|><|constrain|><rfl:parameter name="q"></rfl:parameter><|call|><rfl:parameter</rfl:parameter',
+            'muse_glimmer': '<|start|><|message|><|eom|><atem:function_calls><atem:invoke name="lookup"><atem:parameter name="q"></atem:parameter></atem:invoke></atem:function_calls><atem:invoke<atem:parameter',
+            'muse_spark': '<|start|><|message|><|eom|><atem:function_calls><atem:invoke name="lookup"><atem:parameter name="q"></atem:parameter></atem:invoke></atem:function_calls><atem:invoke<atem:parameter',
             "deepseek_v4": '<think></think><｜DSML｜tool_calls><｜DSML｜invoke name="lookup"><｜DSML｜parameter name="q" string="true"></｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜</｜DSML｜',
             "deepseek_v41": '<think></think><｜DSML｜ calls><｜DSML｜ invoke name="lookup"><｜DSML｜ parameter name="q" string="true"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜</｜DSML｜',
             "gpt_oss": "<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>",
@@ -1395,12 +1542,14 @@ def _family_value(scenario, family):
         }[family]
     if scenario == "gpt_oss_quoted_message_header_literal":
         return {
+            "beam": '<|call|><|start|>assistant<|channel|>final<|message|>literal<|return|>',
             "gpt_oss": "<|call|><|start|>assistant<|channel|>final<|message|>literal<|return|>",
             "muse_glimmer": "<|eom|><|start|>assistant to=user<|message|>literal<|eom|>",
             "muse_spark": "<|eom|><|start|>assistant to=user<|message|>literal<|eom|>",
             "kimi_k3": "<|close|>call<|sep|><|open|>response<|sep|>literal<|close|>response<|sep|>",
         }[family]
     quoted = {
+        "prefilled_response_guided_closer_inside_invoke_quote": "self",
         "guided_json_quoted_bare_header_in_answer": "self",
         "guided_json_quoted_bare_tool_header_in_answer": "get_weather",
         "guided_json_quoted_bare_header_after_payload": "self",
@@ -1450,6 +1599,9 @@ def _logical_events(scenario, family, events):
             for key, value in event.get("arguments", {}).items():
                 if value == family_value:
                     event["arguments"][key] = "FAMILY_MARKER_VALUE"
+                    matches += 1
+                elif isinstance(value, dict) and value.get("inner") == family_value:
+                    event["arguments"][key]["inner"] = "FAMILY_MARKER_VALUE"
                     matches += 1
         assert matches == 1, (scenario, family, "wrong marker role or payload", events)
     return out
@@ -1595,17 +1747,65 @@ def _m3_input_calls(raw, tools, *, exact_numbers=False):
     return calls
 
 
-def _atem_parameter_end(raw, value_start):
+def _argument_value_end(raw, value_start, closer, *, json_owned=True, parameters=None, key=None):
     # Independently decode a JSON value before looking for its XML closer;
     # otherwise this fixture validator repeats the parser's quoted-closer bug.
     minimum = value_start
     at = value_start + len(raw[value_start:]) - len(raw[value_start:].lstrip())
-    if raw[at:at + 1] in {"{", "[", '"'}:
+    if json_owned and raw[at:at + 1] in {"{", "[", '"'}:
         try:
-            _, minimum = json.JSONDecoder().raw_decode(raw, at)
+            value, minimum = json.JSONDecoder().raw_decode(raw, at)
         except json.JSONDecodeError:
             pass
-    return raw.find("</atem:parameter>", minimum)
+        else:
+            if parameters is not None:
+                schema = _fixture_property_schema(parameters, key)
+                if (schema.get("type") == "custom"
+                        or not matches_schema(value, schema, parameters)
+                        or matches_schema(raw[at:minimum], schema, parameters)):
+                    minimum = value_start
+    return raw.find(closer, minimum)
+
+
+def _k3_owned_call(raw, start, call_header):
+    """Find the outer close and its literal nested call spans independently."""
+    markers = re.compile(
+        rf'(?P<call>{call_header})|(?P<close><\|close\|>\s*call\s*<\|sep\|>)'
+        r'|(?P<argument><\|open\|>\s*argument key="[^"]+" type="(?P<kind>[^"]+)"\s*<\|sep\|>)'
+        r'|(?P<argument_close><\|close\|>\s*argument\s*<\|sep\|>)'
+        r'|(?P<json><\|open\|>\s*json\b[^<]*<\|sep\|>)',
+    )
+    decoder = json.JSONDecoder()
+    nested_arguments = []
+    literal_calls = []
+    cursor = start
+    while marker := markers.search(raw, cursor):
+        cursor = marker.end()
+        if marker["argument"] is not None and nested_arguments:
+            nested_arguments[-1][1] += 1
+        if marker["json"] is not None or (marker["argument"] is not None and marker["kind"] != "string"):
+            value_start = cursor + len(raw[cursor:]) - len(raw[cursor:].lstrip())
+            try:
+                _, cursor = decoder.raw_decode(raw, value_start)
+            except json.JSONDecodeError:
+                pass
+        elif marker["call"] is not None:
+            nested_arguments.append([marker.start(), 0])
+        elif marker["argument_close"] is not None and nested_arguments:
+            if nested_arguments[-1][1]:
+                nested_arguments[-1][1] -= 1
+            else:
+                # An unclosed literal call header cannot borrow the outer
+                # argument's real close and turn its call close into recovery.
+                literal_calls.extend((at, marker.start()) for at, _ in nested_arguments)
+                nested_arguments.clear()
+        elif marker["close"] is not None:
+            if nested_arguments:
+                at, _ = nested_arguments.pop()
+                literal_calls.append((at, cursor))
+            else:
+                return cursor, literal_calls
+    return None, []
 
 
 def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
@@ -1628,6 +1828,7 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
             if header is None:
                 return calls
             name = header[1]
+            parameters = next((tool.get("parameters", {}) for tool in tools if tool["name"] == name), {})
             at = cursor + header.end()
             arguments = {}
             while raw.startswith("<arg_key>", at):
@@ -1639,7 +1840,7 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                     family, "missing argument value", raw,
                 )
                 value_start += len("<arg_value>")
-                value_end = raw.find("</arg_value>", value_start)
+                value_end = _argument_value_end(raw, value_start, "</arg_value>", parameters=parameters, key=key)
                 if value_end < 0:
                     break
                 arguments[key] = raw[value_start:value_end]
@@ -1662,17 +1863,33 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
         # The reference tag rule: a value runs to the FIRST `</rfl:parameter>`, so an
         # embedded header is value data. Parameters are read in sequence after the
         # header; anything else (a terminator, a new header, EOF) ends the body.
-        parameter = re.compile(r'\s*<rfl:parameter name="([^"]+)">(.*?)</rfl:parameter>', re.S)
+        parameter = re.compile(r'\s*<rfl:parameter name="([^"]+)">', re.S)
         calls = []
+        owned_until = 0
         for match in header.finditer(raw):
+            if match.start() < owned_until:
+                continue
             at = match.end()
             arguments = {}
             while True:
                 item = parameter.match(raw, at)
                 if item is None:
                     break
-                arguments[item[1]] = item[2].removeprefix("\n").removesuffix("\n")
-                at = item.end()
+                start = item.end()
+                # Native raw slots use newline framing when present; compact
+                # legacy slots retain their first-closer rule even for JSON-looking text.
+                framed_close = raw.find("\n</rfl:parameter>", start + 1) if raw.startswith("\n", start) else -1
+                follow = raw.find('\n<rfl:parameter name="', start + 1)
+                if follow >= 0 and (framed_close < 0 or follow < framed_close):
+                    arguments[item[1]] = raw[start:follow + 1].removeprefix("\n").removesuffix("\n")
+                    at = follow + 1
+                    continue
+                end = framed_close + 1 if framed_close >= 0 else raw.find("</rfl:parameter>", start)
+                if end < 0:
+                    break
+                arguments[item[1]] = raw[item.end():end].removeprefix("\n").removesuffix("\n")
+                at = end + len("</rfl:parameter>")
+            owned_until = at
             calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
         return calls
 
@@ -1709,13 +1926,24 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
             calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
         return calls
 
+    if family == "gemma4":
+        calls = []
+        owned_until = 0
+        for header in re.finditer(r'call:([\w.-]+)\{', raw):
+            if header.start() < owned_until:
+                continue
+            # Parse the complete value before looking for another call header;
+            # a quoted argument may contain both a closer and a complete call.
+            arguments, owned_until = _parse_gemma_value(raw, header.end() - 1, exact_numbers=exact_numbers)
+            calls.append({"kind": "tool_call", "name": header[1], "arguments": arguments})
+        return calls
+
     headers = {
         "deepseek_v4": r'<｜DSML｜invoke name="([^"]+)">',
         "deepseek_v41": r'<｜DSML｜ invoke name="([^"]+)">',
         "qwen3": r'<function=([^>]+)>',
         "muse_glimmer": r'<atem:invoke name="([^"]+)">',
         "muse_spark": r'<atem:invoke name="([^"]+)">',
-        "gemma4": r'call:([\w.-]+)\{',
         "kimi_k2": r'<\|tool_call_begin\|>(?:functions\.)?([\w.-]+):\d+<\|tool_call_argument_begin\|>',
         "kimi_k3": r'<\|open\|>\s*call tool="([^"]+)" index="\d+"\s*<\|sep\|>',
     }
@@ -1752,20 +1980,106 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                 parameter = parameter_pattern.search(raw, body_cursor)
                 if parameter and (body_end < 0 or parameter.start() < body_end):
                     key, is_string, value = parameter.groups()
+                    end = _argument_value_end(raw, parameter.start(3), f"</｜DSML｜{gap}parameter>", json_owned=is_string == "false")
+                    assert end >= 0
+                    value = raw[parameter.start(3):end]
                     arguments[key] = value if is_string == "true" else json.loads(
                         value, parse_float=Decimal if exact_numbers else float
                     )
-                    body_cursor = parameter.end()
+                    body_cursor = end + len(f"</｜DSML｜{gap}parameter>")
                     continue
                 cursor = len(raw) if body_end < 0 else body_end + len(invocation_end)
                 break
             calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
         return calls
 
+    k3_parameter = re.compile(
+        r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+        r'<\|close\|>\s*argument\s*<\|sep\|>'
+        r'(?=\s*(?:<\|open\|>\s*argument key="[^"]+" type="[^"]+"\s*<\|sep\|>|<\|close\|>\s*(?:call|tools)\s*<\|sep\|>|$))', re.S,
+    )
+    k3_response_parameter = re.compile(
+        r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+        r'<\|close\|>\s*argument\s*<\|sep\|>(?=\s*<\|open\|>\s*response\s*<\|sep\|>)',
+        re.S,
+    )
+    qwen_parameter = re.compile(r'<parameter=([^>]+)>')
     found = list(re.finditer(headers[family], raw))
     calls = []
+    owned_until = 0
     for index, match in enumerate(found):
+        if match.start() < owned_until:
+            continue
         body = raw[match.end():found[index + 1].start() if index + 1 < len(found) else len(raw)]
+        parameters = next((tool.get("parameters", {}) for tool in tools if tool["name"] == match[1]), {})
+        k3_arguments = []
+        if family in {"qwen3", "kimi_k3"}:
+            parameter_pattern = qwen_parameter if family == "qwen3" else k3_parameter
+            closer = r'</function>' if family == "qwen3" else r'<\|close\|>\s*call\s*<\|sep\|>'
+            tail = raw[match.end():]
+            cursor = 0
+            owned_call_end, literal_calls = _k3_owned_call(raw, match.end(), headers[family]) if family == "kimi_k3" else (None, [])
+            parameter_source = tail
+            if literal_calls:
+                # Ignore nested syntax only while locating the owning field's
+                # close. Argument values below always slice the original input.
+                locator = list(tail)
+                for start, end in literal_calls:
+                    locator[start - match.end():end - match.end()] = [" "] * (end - start)
+                parameter_source = "".join(locator)
+            json_header = re.match(r'\s*<\|open\|>\s*json\b[^<]*<\|sep\|>\s*', tail) if family == "kimi_k3" else None
+            if json_header is not None:
+                decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
+                try:
+                    _, end = decoder.raw_decode(tail, json_header.end())
+                except json.JSONDecodeError:
+                    pass
+                else:
+                    body = tail[:end]
+                    owned_until = match.end() + end
+                    cursor = end
+            while True:
+                if json_header is not None and owned_until > match.end():
+                    break
+                close = re.search(closer, tail[cursor:])
+                parameter = parameter_pattern.search(parameter_source, cursor)
+                next_header = re.search(headers[family], tail[cursor:])
+                if family == "kimi_k3" and owned_call_end is None:
+                    recovered = k3_response_parameter.search(tail, cursor)
+                    if parameter is None:
+                        parameter = recovered
+                    elif next_header is not None:
+                        next_start = cursor + next_header.start()
+                        # A later call cannot lend its field close to a completed
+                        # argument followed by response recovery. Complete outer
+                        # envelopes keep response and nested headers as payload.
+                        if (parameter.start() < next_start < parameter.end()
+                                and recovered is not None
+                                and recovered.start() == parameter.start()
+                                and recovered.end() <= next_start):
+                            parameter = recovered
+                if (next_header is not None
+                        and (parameter is None or cursor + next_header.start() < parameter.start())
+                        and (close is None or next_header.start() < close.start())):
+                    end = cursor + next_header.start()
+                    body = tail[:end]
+                    owned_until = match.end() + end
+                    break
+                if parameter is None or (close is not None and cursor + close.start() < parameter.start()):
+                    end = cursor + close.start() if close is not None else len(tail)
+                    body = tail[:end]
+                    owned_until = match.end() + (cursor + close.end() if close is not None else len(tail))
+                    break
+                if family == "qwen3":
+                    end = _argument_value_end(tail, parameter.end(), "</parameter>", parameters=parameters, key=parameter[1])
+                    if end < 0:
+                        body = tail
+                        owned_until = len(raw)
+                        break
+                    cursor = end + len("</parameter>")
+                else:
+                    k3_arguments.append((parameter[1], parameter[2], tail[parameter.start(3):parameter.end(3)]))
+                    cursor = parameter.end()
         # Muse parameters own nested invocation-shaped text. The independent
         # fixture projection must not clip an outer argument at an inner header.
         if family in {"muse_glimmer", "muse_spark"}:
@@ -1774,11 +2088,20 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
             while True:
                 close = tail.find("</atem:invoke>", cursor)
                 parameter = re.search(r'<atem:parameter name="[^"]+">', tail[cursor:])
+                next_header = re.search(headers[family], tail[cursor:])
+                if (next_header is not None
+                        and (parameter is None or next_header.start() < parameter.start())
+                        and (close < 0 or cursor + next_header.start() < close)):
+                    end = cursor + next_header.start()
+                    body = tail[:end]
+                    owned_until = match.end() + end
+                    break
                 if parameter is None or (close >= 0 and close < cursor + parameter.end()):
                     body = tail[:close] if close >= 0 else tail
+                    owned_until = match.end() + (close + len("</atem:invoke>") if close >= 0 else len(tail))
                     break
                 value_start = cursor + parameter.end()
-                end = _atem_parameter_end(tail, value_start)
+                end = _argument_value_end(tail, value_start, "</atem:parameter>")
                 if end < 0:
                     body = tail
                     break
@@ -1786,14 +2109,19 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
         arguments = {}
         if G.unified_grammar_family(family) == "qwen3":
             # The generator frames values with one newline; payload whitespace is data.
-            arguments = {key: value.removeprefix("\n").removesuffix("\n")
-                         for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
+            cursor = 0
+            while parameter := qwen_parameter.search(body, cursor):
+                end = _argument_value_end(body, parameter.end(), "</parameter>", parameters=parameters, key=parameter[1])
+                if end < 0:
+                    break
+                arguments[parameter[1]] = body[parameter.end():end].removeprefix("\n").removesuffix("\n")
+                cursor = end + len("</parameter>")
         elif family in {"muse_glimmer", "muse_spark"}:
             cursor = 0
             while parameter := re.search(r'<atem:parameter name="([^"]+)">', body[cursor:]):
                 key = parameter[1]
                 value_start = cursor + parameter.end()
-                end = _atem_parameter_end(body, value_start)
+                end = _argument_value_end(body, value_start, "</atem:parameter>")
                 if end < 0:
                     break
                 value = body[value_start:end]
@@ -1804,35 +2132,104 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                     )
                 except json.JSONDecodeError:
                     arguments[key] = value
-        elif family == "gemma4":
-            arguments, _ = _parse_gemma_value("{" + body, exact_numbers=exact_numbers)
         elif family == "kimi_k2":
-            start = len(body) - len(body.lstrip(" \t\r\n"))
+            start = match.end() + len(raw[match.end():]) - len(raw[match.end():].lstrip(" \t\r\n"))
             decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
             try:
-                arguments, _ = decoder.raw_decode(body, start)
+                arguments, owned_until = decoder.raw_decode(raw, start)
             except json.JSONDecodeError:
                 # Kimi K2 preserves a named malformed JSON call as empty arguments.
                 arguments = {}
         else:
-            pattern = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
-                       r'<\|close\|>\s*argument\s*<\|sep\|>'
-                       r'(?=\s*(?:<\|open\|>\s*argument key="[^"]+" type="[^"]+"\s*<\|sep\|>|<\|close\|>\s*(?:call|tools)\s*<\|sep\|>|$))')
-            for key, kind, value in re.findall(pattern, body, re.S):
+            for key, kind, value in k3_arguments:
                 arguments[key] = value if kind == "string" else json.loads(
                     value, parse_float=Decimal if exact_numbers else float
                 )
-            if not arguments and not re.search(r'<\|close\|>\s*call\s*<\|sep\|>', body):
-                response_terminated = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
-                                       r'<\|close\|>\s*argument\s*<\|sep\|>(?=\s*<\|open\|>\s*response\s*<\|sep\|>)')
-                for key, kind, value in re.findall(response_terminated, body, re.S):
-                    arguments[key] = value if kind == "string" else json.loads(value)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
                 values = _json_values(body, exact_numbers=exact_numbers)
                 if values:
                     arguments = values[0]
         calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
     return calls
+
+
+@pytest.mark.parametrize("scenario", [
+    "kimi_k3_typed_response_marker_payload",
+    "kimi_k3_json_missing_close_literal_response",
+    "kimi_k3_json_marker_then_long_field",
+    "kimi_k3_typed_response_then_call",
+    "kimi_k3_typed_response_argument_literal",
+    "kimi_k3_direct_typed_response_recovery",
+    "kimi_k3_direct_json_response_recovery",
+    "kimi_k3_typed_json_marker_payload",
+    "glm47_parameterless_call_shape_inside_argument",
+    "arg_marker_in_string",
+])
+def test_kimi_k3_fixture_projection_preserves_response_argument_ownership(scenario):
+    case = build_cases("kimi_k3")[f"UNIFIED.{scenario}.kimi_k3"]
+    expected = [event for event in case["golden"] if event["kind"] == "tool_call"]
+    assert _native_input_calls("kimi_k3", case["input"], case["tools"]) == expected
+
+
+@pytest.mark.parametrize("family", ["muse_glimmer", "muse_spark"])
+@pytest.mark.parametrize("scenario", [
+    "kimi_k3_typed_response_then_call", "glm47_parameterless_call_shape_inside_argument",
+])
+def test_muse_fixture_projection_preserves_field_and_recovery_call_ownership(family, scenario):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    if scenario == "kimi_k3_typed_response_then_call":
+        # Closed fields remain input evidence even when Muse drops an invoke
+        # without its required close. Projection does not decide dispatch.
+        expected = [
+            {"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}},
+            {"kind": "tool_call", "name": "next", "arguments": {"n": 7}},
+        ]
+    else:
+        expected = case["golden"]
+    assert _native_input_calls(family, case["input"], case["tools"]) == expected
+
+
+@pytest.mark.parametrize("nested_close", ["", "<|close|>call<|sep|>"])
+@pytest.mark.parametrize("nested_body", ["", '<|open|>argument key="n" type="integer"<|sep|>7<|close|>argument<|sep|>'])
+def test_kimi_k3_fixture_projection_keeps_response_and_nested_call_inside_owned_string(nested_close, nested_body):
+    payload = (
+        'before<|close|>argument<|sep|><|open|>response<|sep|>literal<|close|>response<|sep|>'
+        '<|open|>call tool="fake" index="9"<|sep|>' + nested_body + nested_close + 'after'
+    )
+    raw = (
+        '<|open|>call tool="lookup" index="1"<|sep|>'
+        '<|open|>argument key="q" type="string"<|sep|>' + payload
+        + '<|close|>argument<|sep|><|close|>call<|sep|>'
+    )
+    assert _native_input_calls("kimi_k3", raw) == [
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": payload}},
+    ]
+
+
+def test_kimi_k3_fixture_projection_preserves_exact_numbers_before_response_recovery():
+    value = "0.12345678901234567890123456789"
+    raw = (
+        '<|open|>call tool="lookup" index="1"<|sep|>'
+        '<|open|>argument key="q" type="string"<|sep|>first<|close|>argument<|sep|>'
+        '<|open|>argument key="n" type="number"<|sep|>' + value
+        + '<|close|>argument<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>'
+        '<|open|>tools<|sep|><|open|>call tool="next" index="2"<|sep|>'
+        '<|open|>argument key="n" type="integer"<|sep|>7<|close|>argument<|sep|>'
+        '<|close|>call<|sep|><|close|>tools<|sep|>'
+    )
+    assert _native_input_calls("kimi_k3", raw, exact_numbers=True) == [
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "first", "n": Decimal(value)}},
+        {"kind": "tool_call", "name": "next", "arguments": {"n": 7}},
+    ]
+
+
+@pytest.mark.parametrize("value", ["first", "7"])
+def test_kimi_k3_fixture_projection_detects_payload_changes_around_response_recovery(value):
+    scenario = "kimi_k3_typed_response_then_call"
+    case = deepcopy(build_cases("kimi_k3")[f"UNIFIED.{scenario}.kimi_k3"])
+    case["input"] = case["input"].replace(value, "changed" if value == "first" else "8", 1)
+    with pytest.raises(AssertionError, match="input call differs from golden"):
+        _assert_input_carries_events("kimi_k3", scenario, case)
 
 
 @pytest.mark.parametrize("header", [
@@ -1846,6 +2243,27 @@ def test_harmony_fixture_projection_keeps_header_and_boundary_variants(header, e
     assert _native_input_calls("gpt_oss", raw) == [
         {"kind": "tool_call", "name": "lookup", "arguments": {"q": "x"}}
     ]
+
+
+@pytest.mark.parametrize("framed", [False, True])
+def test_beam_fixture_projection_keeps_raw_slot_framing(framed):
+    value = '"a</rfl:parameter>b"'
+    body = f"\n{value}\n" if framed else value
+    raw = ('<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|>'
+           + '<rfl:parameter name="city">' + body + '</rfl:parameter><|call|>')
+    assert _native_input_calls("beam", raw) == [{
+        "kind": "tool_call", "name": "get_weather", "arguments": {"city": value if framed else '"a'},
+    }]
+
+
+@pytest.mark.parametrize("family,gap", [("deepseek_v4", ""), ("deepseek_v41", " ")])
+def test_dsml_raw_string_field_does_not_acquire_json_ownership(family, gap):
+    closer = f"</｜DSML｜{gap}parameter>"
+    raw = (f'<｜DSML｜{gap}invoke name="get_weather"><｜DSML｜{gap}parameter name="city" string="true">'
+           + '"a' + closer + 'b"' + closer + f'</｜DSML｜{gap}invoke>')
+    assert _native_input_calls(family, raw) == [{
+        "kind": "tool_call", "name": "get_weather", "arguments": {"city": '"a'},
+    }]
 
 
 def test_harmony_fixture_projection_keeps_plaintext_and_quoted_headers_as_data():
@@ -1971,14 +2389,30 @@ _GUIDED_NATIVE_RECOVERY_SCENARIOS = (
     "guided_json_native_markup_only",
     "guided_native_after_prefilled_reasoning_required",
     "guided_native_after_prefilled_reasoning_named",
+    "kimi_k3_guided_native_wrapper",
 )
 
 
 def _assert_guided_native_recovery(family, scenario, case):
-    """Pin the native stimulus and the deliberate M3-only recovery contract."""
-    assert family == "minimax_m3"
+    """Pin the native stimulus and the deliberate fallback policy difference."""
     assert scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS
+    if scenario == "kimi_k3_guided_native_wrapper":
+        assert case["init"] == {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None}
+        assert case["tools"] == G.unified_tools()
+        prefix = G.default_response_prefix(family)
+        assert case["input"] == prefix + G.r_tool(family, "ignored", "quoted", "literal", 0) + G.GUIDED_ONE_CALL, (family, scenario, "native-recovery wrapper")
+        assert _native_input_calls(family, case["input"], case["tools"]) == [
+            {"kind": "tool_call", "name": "ignored", "arguments": {"quoted": "literal"}},
+        ]
+        expected = ([{"kind": "tool_call", "name": "ignored", "arguments": {"quoted": "literal"}},
+                     {"kind": "text", "text": G.GUIDED_ONE_CALL}]
+                    if family == "minimax_m3" else
+                    [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}])
+        assert case["golden"] == expected, (family, scenario, "native-recovery output contract")
+        assert case["finish_reason"] == "stop"
+        return []
     prefilled = scenario != "guided_json_native_markup_only"
+    assert family == "minimax_m3" or prefilled
     named = scenario == "guided_native_after_prefilled_reasoning_named"
     call = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
     reasoning = [{"kind": "reasoning", "text": "Check."}] if prefilled else []
@@ -1995,21 +2429,66 @@ def _assert_guided_native_recovery(family, scenario, case):
     assert _native_input_calls(family, case["input"]) == [call], (
         family, scenario, "native-recovery input contract",
     )
-    expected = reasoning + [call]
+    expected = reasoning + ([call] if family == "minimax_m3" else [])
     assert case["golden"] == expected, (family, scenario, "native-recovery output contract")
     assert case["finish_reason"] == "stop", (family, scenario, "native-recovery backend finish")
     return reasoning
 
 
+@pytest.mark.parametrize("scenario", _GUIDED_NATIVE_RECOVERY_SCENARIOS[1:])
+def test_guided_prefilled_native_controls_cover_all_native_families(scenario):
+    assert set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES) == set(NATIVE_FAMILIES)
+    for family in NATIVE_FAMILIES:
+        _assert_guided_native_recovery(family, scenario, build_cases(family)[f"UNIFIED.{scenario}.{family}"])
+    changed = build_cases("qwen3")[f"UNIFIED.{scenario}.qwen3"]
+    changed["golden"].append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+    with pytest.raises(AssertionError, match="native-recovery output contract"):
+        _assert_guided_native_recovery("qwen3", scenario, changed)
+
+
+@pytest.mark.parametrize("scenario", _GUIDED_NATIVE_RECOVERY_SCENARIOS[1:])
+def test_guided_prefilled_native_controls_reject_unjustified_m3_only_scope(scenario, monkeypatch):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    for family, cases in corpus.items():
+        if family != "minimax_m3":
+            del cases[f"UNIFIED.{scenario}.{family}"]
+    original = G.scenario_families
+    monkeypatch.setattr(G, "scenario_families", lambda name: frozenset({"minimax_m3"}) if name == scenario else original(name))
+    with pytest.raises(AssertionError, match="single-family generic cases"):
+        _assert_cross_family_contract(corpus)
+
+
+def test_prompt_consumed_assistant_header_has_native_sibling_coverage():
+    scenario = "gpt_oss_implicit_recipient_first_header"
+    assert G.scenario_families(scenario) == {"beam", "gpt_oss", "muse_glimmer", "muse_spark"}
+    assert taxonomy.display_tax(scenario)[0] == 1
+    for family in G.scenario_families(scenario):
+        case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+        assert case["input"].startswith(" to=")
+        assert case["tools"] == []
+        assert case["golden"] == [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "x"}}]
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
+    source_family = family
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
     if scenario.startswith("kimi_native_"):
-        _assert_kimi_native_golden(scenario, case)
+        _assert_kimi_native_golden(source_family, scenario, case)
+        return
+    if (scenario, source_family) in _MUSE_NATIVE_CONTRACTS:
+        _assert_muse_native_case(source_family, scenario, case)
+        return
     raw = case["input"]
+    if scenario == "gpt_oss_implicit_recipient_first_header":
+        assert family in {"beam", "gpt_oss", "muse_glimmer", "muse_spark"}
+        assert raw.startswith(" to=")
+        # The prompt owns the assistant prefix; restore that known context only
+        # for the independent wire decoder, never for the executed request.
+        raw = "<|start|>assistant" + raw
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
         if (case["init"]["tool_output_mode"] == "Native"
@@ -2032,8 +2511,11 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                     if G.unified_grammar_family(family) not in {"qwen3", "glm47", "beam", "minimax_m3"} or not isinstance(value, str):
                         continue
                     if scenario in {probe["name"] for probe in XML_COMPATIBILITY_CASES} and schema == {"type": "custom"}:
-                        assert family == "qwen3"
-                        candidate["arguments"][key] = ast.literal_eval(value.strip())
+                        assert family == "qwen3" or (
+                            family == "glm47" and scenario == "xml_custom_type_double_quoted_object")
+                        candidate["arguments"][key] = (
+                            ast.literal_eval(value.strip()) if family == "qwen3"
+                            else json.loads(value, parse_float=Decimal))
                         continue
                     if value == "null" and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
@@ -2119,6 +2601,10 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             assert re.search(r"<\|channel\|>(?:analysis|redacted)<\|message\|>", raw), (
                 family, scenario, "missing Harmony reasoning channel",
             )
+        elif family == "beam" and scenario == "structured_response_after_reasoning":
+            assert raw.startswith(control_tokens(family)[0].removeprefix("<|start|>assistant")), (
+                family, scenario, "missing generated Beam reasoning channel",
+            )
         else:
             assert control_tokens(family)[0] in raw, (family, scenario, "missing reasoning opener")
     if reasons and any(event["kind"] != "reasoning" for event in case["golden"]):
@@ -2129,6 +2615,7 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             "deepseek_v4_guided_reasoning_opener_inside_native_body",
             "kimi_k3_elided_think_close_to_response",
             "gpt_oss_interrupted_reasoning_then_response",
+            "interrupted_reasoning_then_response",
         }
         if scenario.removesuffix("_pr424") not in unclosed:
             assert control_tokens(family)[1] in raw, (family, scenario, "missing reasoning closer")
@@ -2161,21 +2648,429 @@ def _assert_generic_cases_span_families(scenarios):
     )
 
 
+
+# These exact contracts were authored before generator expansion and checked
+# against the frozen public API. They include source controls, not measured
+# outputs as oracles. Hashing the typed object pins input bytes, chunks, schemas,
+# initialization, finish and GOLDEN without a second native grammar renderer.
+# Source ownership: DS4.1 paired thoughts close only at </think>; Beam analysis
+# closes at <|end|>; Qwen and Glimmer native invoke closes are not thought closes.
+# Spark filters unmatched ATEM closers. GLM/M3/K2/Gemma native body suppression
+# and K3 malformed-body recovery retain their distinct output contracts.
+_GUIDED_HEADER_CONTRACTS = {
+    ('deepseek_v41_json_invocation_body', 'deepseek_v4'): 'e70a32b9e8a688a3767cd1bf6588aead65e6e106b13dd4094963a6392c659302',
+    ('deepseek_v41_json_invocation_body', 'deepseek_v41'): 'f2bcb6900c7e63dcb86b71f30ac77523e785518ab82dff36b61ff65a7838f36e',
+    ('deepseek_v41_json_invocation_body', 'gpt_oss'): 'ef1462dedc0cb07027ee2e7a20c9e770611f5700ddad0e6ae153e387f760ea74',
+    ('deepseek_v41_json_invocation_body', 'kimi_k2'): '02b3c073c54cb94f19c8805eb4873923e9dc810424b163ef12298891ad726c7e',
+    ('deepseek_v41_json_invocation_body', 'kimi_k3'): 'ea2e6ee973c2d0382b817896d5756b074841eb1c85c22a5bb98e8c1b783aef1e',
+    ('kimi_k3_malformed_call_then_valid', 'beam'): '339407e1cb4dd3e3ff08858edcb8df6a8df5139bf6d9c96bd4804ce24962aa2d',
+    ('kimi_k3_malformed_call_then_valid', 'deepseek_v4'): 'e6fb82fb7098aadeea52d0005b9e3232b8e289db2a558a1382204501f68288a8',
+    ('kimi_k3_malformed_call_then_valid', 'deepseek_v41'): 'c341e455714683c42f65ae57979aa688cf614bf5396d81c49e34072cc4513ab6',
+    ('kimi_k3_malformed_call_then_valid', 'gemma4'): '05d7352d34ebd6f17d6fa5ad7ec331803b826b5f5ab41091bd269e4d645b998f',
+    ('kimi_k3_malformed_call_then_valid', 'gpt_oss'): 'd2b523b148915825b7f5bf27b7503c3dd57dcdb8fe4c98466de03ef199e54dab',
+    ('kimi_k3_malformed_call_then_valid', 'kimi_k2'): '1116fa10eba6e4c2d5980a78067fff0c4d87097d7d4ded0b4a928220290fbaea',
+    ('kimi_k3_malformed_call_then_valid', 'kimi_k3'): '37fd4fd46fc844b091d4b613714aa065d118f32056d9e96b78ac61006f7a2bce',
+    ('kimi_k3_malformed_call_then_valid', 'minimax_m3'): '9b90f4bfb970cf7aed40a42087e4ea614cda04b36afdb2a4b859e4a17f2deec9',
+    ('kimi_k3_malformed_call_then_valid', 'muse_glimmer'): '445c5f2df28559eea96a7500c91a8935a6083247c06e97f0ec127ab9c43abbcf',
+    ('kimi_k3_malformed_call_then_valid', 'muse_spark'): '445c5f2df28559eea96a7500c91a8935a6083247c06e97f0ec127ab9c43abbcf',
+    ('kimi_k3_malformed_call_then_valid', 'nemotron_v3'): '87875d58b7077bb87ffb8fc57ae597f3bd06f5b69d41bfc04f1734415e382c79',
+    ('kimi_k3_malformed_call_then_valid', 'qwen3'): '55284d49f86242bd832eac172e98b8d3c509b9c5d44217e966748e2c641219ed',
+    ('gpt_oss_channel_header_variants', 'beam'): '032f4f8695998f54b39d223742df3f983a5edaa24860b3576d95a33e62725928',
+    ('gpt_oss_channel_header_variants', 'gpt_oss'): '267b1f4c0627db20319ce84572654b1cbb39617d9da107ed20d07b81c53dc43c',
+    ('guided_json_quoted_bare_tool_header_in_answer', 'beam'): 'bc2cd592fd4ebc5432462809a90d8761628d058a6ecc1a7a2766b0170fa7d69c',
+    ('guided_json_quoted_bare_tool_header_in_answer', 'gpt_oss'): '3facc58a85310e9d07aa9c0950b8cbc8bd058d7da6269d49f66d09cc11ec9b39',
+    ('guided_json_quoted_bare_tool_header_in_answer', 'muse_glimmer'): 'e40560e521651d02411f27f90f607f6272c842fc633f6ed28f49d284f12620ff',
+    ('guided_json_quoted_bare_tool_header_in_answer', 'muse_spark'): 'e40560e521651d02411f27f90f607f6272c842fc633f6ed28f49d284f12620ff',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'beam'): '3f2f6c5051de7c32b358374ffddece841b237b0ea8d80f3fb911efb033fe7864',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'deepseek_v4'): 'ef11a943597a6c5ada1ff1a8386fb3bbabaa5218ec896bd9a9a2f0b3ad67e0d7',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'deepseek_v41'): '16508337f2a531edbee2fbddade49c44ebaa2be6293f2ab545b75591b8ea0ae8',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'gemma4'): 'faa51868cb5e03cdc10075b8ffb84ff74bcf9ceaf3881ff96dfd969ad28badee',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'glm47'): 'ad921cade87dc33f1d026e1f38ed9957a6af472cb279522dec1058ed9b3a0a04',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'gpt_oss'): '105c0d668bc8eed483fc4aeccca1e4ea73cecd32bd2fb010cbd158fdbe79e624',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'kimi_k2'): '0ee281e87bb7ed55ab7e58045dd7086f1cbc2d97667cd00147ca387c0840c37b',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'kimi_k3'): '6af14aee61f9a2bc7d8584de5faa9e84e5e9ea91041ca02bcbd88a022705d0c9',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'minimax_m3'): '010a33adcae9797d44e9b1d9aeebfc6694b534c5281faf438434487afce3ac61',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'muse_glimmer'): '8435f2fb179186d286fa8b9a434675629ad43a352b3c633230f0382d46549f46',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'muse_spark'): '77191de682ced7c81f000b137326dce911c7fcfd7e1afc532078db5275dfa1e3',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'nemotron_v3'): '9b0f1ebca5d41e98a1515b5c4f533565c467afdecf57f6de791ee877e607c04c',
+    ('qwen3_guided_non_ascii_header_in_closed_reasoning', 'qwen3'): 'f0643a0be36345d9fa4d4104a331a9af9b3dc0166e5438b4a32113e3ee58f636',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'beam'): '08f423d284fd39592675efe8c9271313949d6cdb6c664efb0ef440412bc5a789',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'deepseek_v4'): '5e416e1eef41793961a8ec5dc800482270a66764b3aee99af8ce33cc43863daa',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'deepseek_v41'): '378d5f6bb5d87579ffda106ac906c97f566c1585b1ef50fae3e02fc19f6c6e2a',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'gemma4'): 'ad509ecdfe21a434f669e5a6d74cb19713a5e531d2bd9ed762e2b327f654c404',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'glm47'): '2b191ea1f4334dedf3fcca96be956d3435c6530fe747b8e52d8663b465b9b682',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'gpt_oss'): 'e998137bb77ea4f4352dce6947869eb67641a85951bb7664f7430c6f35cc2a10',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'kimi_k2'): 'b16d7fe7d9babec7d70e970334eb01900ff14420cef9037beb65963bbceccefc',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'kimi_k3'): '99cee06b1f920b52792c3960b5d8265d536db802a6b929639b327423bcc8a3a1',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'minimax_m3'): 'f6c3b0d4006f991a567a45e165d62871fe663ff909d5b3b34c7942b71ee658b0',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'muse_glimmer'): 'bb025c58a22f4f539846846b3c5b17d046c1f39657c805ebb1935d4a014056de',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'muse_spark'): 'bb025c58a22f4f539846846b3c5b17d046c1f39657c805ebb1935d4a014056de',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'nemotron_v3'): '2807139322bc39f4fd3546196dda5d26003c7751871d7a0cbc4d2fae93ee6f32',
+    ('qwen3_guided_non_ascii_header_in_truncated_reasoning', 'qwen3'): 'bb0617470b571dae9ada0b20f331b405c907aad0b7d53e6a5d202693256049b9',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'beam'): '8406c855adeb9c921f8632d1fba100c71e425ee5aa4a926493dd5630a8dc664c',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'deepseek_v4'): '0364e5803ee0b04dda97ed81e7ba037f528daa938112be0a938f86daa9c4947c',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'deepseek_v41'): '6cedfcd697cdd2435a4bf67378718834f5ce9d8e5bdbc7196819c2e09d6bb819',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'gemma4'): 'da284342b735af89a152c06fd5d6ba117b389dd926f6ac77074d8c33848dcf19',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'glm47'): 'ae3e25e6f6e466e44b9d37d6e683f97dd60b22c33d1e1deca4e3ce4f87ae3e8c',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'gpt_oss'): '53a41d09d3e91400686f15bd21d9d07d09eae3c9efa368febb96818c8a754581',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'kimi_k2'): 'd71859336314c6ce07736b10aa9e9b9fffb9a0d0920a339907c44e892add2ed8',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'kimi_k3'): '91df8b22eb40bb2520ae2903a5aad8988dc6cb9b06f9e3d59f04a8eb329f5635',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'minimax_m3'): '8fa1010e7ee80a1d87ccca87c063647b26c1d0f802d86eb27740dbc897f41c02',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'muse_glimmer'): '6d7e8b03cd27c04f4cc3205e541cee1da6f1e48db008b200c8ad3fbb9b0146fa',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'muse_spark'): '5af08ffb68765e96de92e4750a232afb785a4b0b6e2abeaccecfe39731f61a47',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'nemotron_v3'): '783d52f460abe41207e22c54a99ef8a771d4c71933523a6e876cb949256a7d34',
+    ('qwen3_guided_reasoning_opener_inside_native_header', 'qwen3'): '2e22c07ce4e4a6c0784cca7767e293451bcd2bd79dc73a78a0a98421ab40677b',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'beam'): '665ab61ff5149c17bc7c9933391639c631f34c452b19cb3e1271364b722fd905',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'deepseek_v4'): '4f419464e02cb63c945bccc5874e806d6aac4bb7b03ee97141ef965cd5e4d9d7',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'deepseek_v41'): 'a6814bd8b6177493aab3376e0a45cbb3d2cd5832670fe5ee083b5a1772f2c216',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'gemma4'): 'c4004f361fd729a51bc11683714df5bd63671794c10ba00e236ab66c2b332332',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'glm47'): '637b84aec76d836183f7e94ad65efae22451b1999c05dbb5b7b8db9abe8f35e4',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'gpt_oss'): 'd0806b8c0609dc979792a6144959804e161381c9e8332fbc9aafc3900646def0',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'kimi_k2'): 'c9e242478cd9c9313f5d2759ca94ded4b3ad160aa82b8e7ef1f32f0c3ceb3d69',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'kimi_k3'): '9ce7d26143f9841293c7f177f3671af04d5e20189244b9fdb0ebb30cb6900d6f',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'minimax_m3'): '97a4f0c3a7ebbf43dadc395bd6cd5079e464073cc27cc2ede781dda1b058bfce',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'muse_glimmer'): 'ae42698e2eb30a96b9f23cc7089d5a88f14caf1b513a574bd2760fddc166c935',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'muse_spark'): '737a4a66204e4e353378b62d0fc4d696b5f59b174692d00c0d7f65f164efa6c6',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'nemotron_v3'): 'a4e2be8ec4fa3fcbea2da3c354c80726fcaab1ef655587adcc82466ec7a464a7',
+    ('deepseek_v4_guided_reasoning_opener_inside_native_body', 'qwen3'): 'a4e2be8ec4fa3fcbea2da3c354c80726fcaab1ef655587adcc82466ec7a464a7',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'beam'): '305276eed19a8522986af0be0d41eee1ceb732b3e54fc9732642fe2568512f70',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'deepseek_v4'): '4654cedc69859562abb631c60e49014cb05253788c42ea026f9a393f91022661',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'deepseek_v41'): 'afdaf3f5d1c558982c9a6ae48ba39ded8c26d9d934dda3d6bbb2ffc6328b2a6f',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'gemma4'): 'eb3f8c653f5031d7f45d405f29dcca19a5bf20e49db97322f88e1bcf8e802125',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'glm47'): 'ae14a85e41345e88823a5b9e54218828cb06b07fb66b36a219b5dba58a9af227',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'gpt_oss'): '6b1dbeaaadf0e888b59589221e9354733ea5748c252f8c2d99530e0085357cf5',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'kimi_k2'): 'fc9bd7f704a8090d10a5b743da82a7b180f82655f6476ed25b8d7f746f58047e',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'kimi_k3'): '14fdf0591e9d01e042939b132f1400d73ec8d269ea8aff4a1904e18139b8617e',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'minimax_m3'): '37c2c798d4569b28d8501ce349b0e822ef3a2eaa4996dbc0ce1a0eb507147e4e',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'muse_glimmer'): '9213b7c5becd333c01c394404bb22d34c7c088e9b0e0cc99ac80aad3389b6cf8',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'muse_spark'): '9213b7c5becd333c01c394404bb22d34c7c088e9b0e0cc99ac80aad3389b6cf8',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'nemotron_v3'): '2e1fffdec10f775fdcabdfa86a7fffd771db02b08bc5e0726735a98ee40a09c0',
+    ('gemma4_guided_reasoning_opener_after_call_prefix', 'qwen3'): '2e1fffdec10f775fdcabdfa86a7fffd771db02b08bc5e0726735a98ee40a09c0',
+    ('gemma4_guided_response_extra_body_opener', 'beam'): '7630bd3f534b3ca90c2a27bdc2137abd8163d5e0c4e36ec2e5c032c4c952c779',
+    ('gemma4_guided_response_extra_body_opener', 'deepseek_v4'): '797fd6322473c36dc0e66a0011dbd05c6e1ab5204fe4a4f72c68dd898dcc1e0d',
+    ('gemma4_guided_response_extra_body_opener', 'deepseek_v41'): '5d6e106381e888a85c03f5b4ec9daefeb5ab08153131b55572cab70e5bec6dc1',
+    ('gemma4_guided_response_extra_body_opener', 'gemma4'): 'c059da4695e650138d5920354e6c7757856906a223c2bc112f734271dc353934',
+    ('gemma4_guided_response_extra_body_opener', 'glm47'): 'd07d8e07b6a9d0668e41d6abc370ea7804f1e0e176946e62085a38d68843b55d',
+    ('gemma4_guided_response_extra_body_opener', 'gpt_oss'): 'f1ecf984b79f9f00e1adda7e7aca72c371375e213145b994cec2540c928d81ee',
+    ('gemma4_guided_response_extra_body_opener', 'kimi_k2'): '4162c432c3f4c1cdefd149985d7a51ed4eb60d9e0a6f17e186b00eb27bed0163',
+    ('gemma4_guided_response_extra_body_opener', 'kimi_k3'): '5459c223674e693bce57da05298049b01b86f452b62ee36fd7f1f04412555c54',
+    ('gemma4_guided_response_extra_body_opener', 'minimax_m3'): '4523c0d2c5cc91501de08a5a11f2553ef2a2d46228bc35fa24d895473752060d',
+    ('gemma4_guided_response_extra_body_opener', 'muse_glimmer'): '96d512ae30ae104722da4fe1367d1cb641e5153b52052fc102f9d16f8c802d8d',
+    ('gemma4_guided_response_extra_body_opener', 'muse_spark'): '96d512ae30ae104722da4fe1367d1cb641e5153b52052fc102f9d16f8c802d8d',
+    ('gemma4_guided_response_extra_body_opener', 'nemotron_v3'): '29e01910d9bdaddd3c10d5f51fbe8336734ac25b400cbb452accec798d3c9010',
+    ('gemma4_guided_response_extra_body_opener', 'qwen3'): '29e01910d9bdaddd3c10d5f51fbe8336734ac25b400cbb452accec798d3c9010',
+    ('guided_json_quoted_bare_header_after_payload_pr424', 'gpt_oss'): 'b1eeafa3681a897de3a8a07fe7b853919edd773a33534b42fd6cef8ed73157eb',
+    ('guided_json_quoted_bare_header_after_payload_pr424', 'muse_glimmer'): '0132c15e4ec64aa21abb7e87e842c9d57e57d3045a943a5e936ae09d6e209a9f',
+    ('guided_json_quoted_bare_header_after_payload_pr424', 'muse_spark'): '0132c15e4ec64aa21abb7e87e842c9d57e57d3045a943a5e936ae09d6e209a9f',
+    ('guided_json_quoted_bare_header_in_answer_pr424', 'gpt_oss'): '8e132b80d42b5d9a43efada5065a35703571eb1b4b295f3b2bf40d3fb59fa83a',
+    ('guided_json_quoted_bare_header_in_answer_pr424', 'muse_glimmer'): 'd178e6166c15f90267b98be1e7fab781dc32fedd1d3d711b2da778d3f2f77076',
+    ('guided_json_quoted_bare_header_in_answer_pr424', 'muse_spark'): 'd178e6166c15f90267b98be1e7fab781dc32fedd1d3d711b2da778d3f2f77076',
+    ('guided_response_rejected_header_quote_ownership', 'deepseek_v4'): 'aad8755c282d3020618d908af2738dda7947c1e3fc121bbd17335d348a49bfdb',
+    ('guided_response_rejected_header_quote_ownership', 'deepseek_v41'): '73759729650e439bce4b6e233cd71d1a5434e4d1fe3fbddedc9bf6b190146a49',
+    ('guided_response_rejected_header_quote_ownership', 'kimi_k3'): '315a83be03ba450d0000b0ea2057b88a1c3955919f860677ebb66ca7be89e24a',
+    ('guided_response_rejected_header_quote_ownership', 'minimax_m3'): '1d7e5a118dbc3086334a6cd5c02f83cc54de333d274527bbf8f356c3577b16f9',
+    ('guided_response_rejected_header_quote_ownership', 'muse_glimmer'): 'afbcf0fc1841ddc8e317d53fd977addb47d7b7b789d18e1af4901a0c4df09606',
+    ('guided_response_rejected_header_quote_ownership', 'muse_spark'): 'afbcf0fc1841ddc8e317d53fd977addb47d7b7b789d18e1af4901a0c4df09606',
+    ('prefilled_response_guided_pending_invoke_header', 'beam'): 'fead872eabfb55339a1669a09a34f5fea4dc78d6bb3e34242adae8a67b9d7b05',
+    ('prefilled_response_guided_pending_invoke_header', 'deepseek_v4'): '8830a850102fc5a8a3cae4d00ec119cf227da74cf7cec85914157336f1374991',
+    ('prefilled_response_guided_pending_invoke_header', 'deepseek_v41'): '565207975e0d4dc983108ec6a678ea3f0c4bee8fd8e4ab5e5342b12477fcff8b',
+    ('prefilled_response_guided_pending_invoke_header', 'gemma4'): '117383ce66c963c0cec4e375dca0ad8e27c17aa2339aa7e67daaba7a20be018f',
+    ('prefilled_response_guided_pending_invoke_header', 'glm47'): '16015c08d3cd6fdbc300d4c61ca438fe8b7b1c1d19c80c49b71a0f985f1ae29b',
+    ('prefilled_response_guided_pending_invoke_header', 'gpt_oss'): '5c0aeed9feb2cc010f9db542b41446bdc5f07dae3cbf0c0aee74d37c221afe59',
+    ('prefilled_response_guided_pending_invoke_header', 'kimi_k2'): '524e8e4ee42a8df26bde2d83023cc9035ac5e6fe763732af2e985163b9942320',
+    ('prefilled_response_guided_pending_invoke_header', 'kimi_k3'): '5b406e2b0946fb888e5dfcffa617a2bdca587481ceb62a8fcf97361a4ccf8a26',
+    ('prefilled_response_guided_pending_invoke_header', 'minimax_m3'): 'e0e45522d68bef562dfdc0c98a62b0ec09d12f9816cd8910fcfb6e5851249aea',
+    ('prefilled_response_guided_pending_invoke_header', 'muse_glimmer'): '7106260daf172c4a3612096b68395c092507bf1f821eb2ca1961c8c95b2d64d4',
+    ('prefilled_response_guided_pending_invoke_header', 'muse_spark'): '7106260daf172c4a3612096b68395c092507bf1f821eb2ca1961c8c95b2d64d4',
+    ('prefilled_response_guided_pending_invoke_header', 'nemotron_v3'): '6d54e87dbce89158033fb9e7e6fb4a1ebcc9260dcfb3e5d2e37b516cd522ddf2',
+    ('prefilled_response_guided_pending_invoke_header', 'qwen3'): '6d54e87dbce89158033fb9e7e6fb4a1ebcc9260dcfb3e5d2e37b516cd522ddf2',
+    ('muse_glimmer_guided_message_end_inside_native_header', 'beam'): 'd4adeec9f2407da6e6e1b14d90523ac298741a3dc62f4c57caf2057d82b5792b',
+    ('muse_glimmer_guided_message_end_inside_native_header', 'gpt_oss'): '2ecbb95c15734192ca9cb409f032f073850d30a1525841ca41000404790ef6b1',
+    ('muse_glimmer_guided_message_end_inside_native_header', 'kimi_k3'): 'c85257f184f28ca1fd49909a92474aec641eb27ccec4d64faf1cceea0ef9365c',
+    ('muse_glimmer_guided_message_end_inside_native_header', 'muse_glimmer'): '1757c0006b0daab4d0bad93f240b84ea9ebda239399b409097095b6c25ddcd46',
+    ('muse_glimmer_guided_message_end_inside_native_header', 'muse_spark'): '1757c0006b0daab4d0bad93f240b84ea9ebda239399b409097095b6c25ddcd46',
+}
+
+
+def _guided_header_scopes():
+    all_families = set(NATIVE_FAMILIES)
+    # This is a syntactic quote owned by a tool-name attribute. Unquoted tool
+    # names and quoted parameter names cannot substitute for that owner.
+    quoted_names = {family for family in all_families
+                    if G.invoke_header_prefix(family).endswith('="')}
+    assert quoted_names == {"deepseek_v4", "deepseek_v41", "minimax_m3", "kimi_k3", "muse_glimmer", "muse_spark"}
+    # The retained child adds a full native role/message frame. Other families'
+    # complete native paired/channel forms already exercise its semantic parent.
+    framed = {family for family in all_families
+              if _family_value("guided_json_quoted_bare_header_in_answer", family)
+              != "I mean " + G.r_reason(family, "self literal")}
+    assert framed == {"gpt_oss", "muse_glimmer", "muse_spark"}
+    # Recipient-first messages exist in Beam/Harmony and ATEM; an invocation
+    # name/argument in a paired-thought grammar cannot stand in for that owner.
+    recipients = {family for family in all_families
+                  if "to=" in G.r_tool_arguments(family, "sentinel", {}, 0).split("<|message|>", 1)[0]}
+    assert recipients == {"beam", "gpt_oss", "muse_glimmer", "muse_spark"}
+    channels = {family for family in all_families
+                if "<|channel|>" in G.r_reason(family, "check")
+                and "<|channel|>final" in G.r_text(family, "found")}
+    assert channels == {"beam", "gpt_oss"}
+    # These public native bodies encode JSON strings directly; XML parameter
+    # projection and Gemma value syntax do not test that same body owner.
+    raw_json_bodies = {"deepseek_v4", "deepseek_v41", "gpt_oss", "kimi_k2", "kimi_k3"}
+    # GLM's unquoted name has no header/body delimiter before arg_key. Plain
+    # not-an-argument therefore extends its name instead of entering this body.
+    body_headers = {family for family in all_families
+                    if G._keyless_native_body(family, "bad")[0].endswith((">", "{"))}
+    assert body_headers == all_families - {"glm47"}
+    return {
+        "deepseek_v41_json_invocation_body": raw_json_bodies,
+        "kimi_k3_malformed_call_then_valid": body_headers,
+        "qwen3_guided_non_ascii_header_in_truncated_reasoning": all_families,
+        "qwen3_guided_non_ascii_header_in_closed_reasoning": all_families,
+        "qwen3_guided_reasoning_opener_inside_native_header": all_families,
+        "guided_json_quoted_bare_tool_header_in_answer": recipients,
+        "gpt_oss_channel_header_variants": channels,
+        "muse_glimmer_guided_message_end_inside_native_header": {
+            "beam", "gpt_oss", "kimi_k3", "muse_glimmer", "muse_spark"},
+        "prefilled_response_guided_pending_invoke_header": all_families,
+        "gemma4_guided_reasoning_opener_after_call_prefix": all_families,
+        "gemma4_guided_response_extra_body_opener": all_families,
+        "deepseek_v4_guided_reasoning_opener_inside_native_body": all_families,
+        "guided_response_rejected_header_quote_ownership": quoted_names,
+        "guided_json_quoted_bare_header_after_payload_pr424": framed,
+        "guided_json_quoted_bare_header_in_answer_pr424": framed,
+    }
+
+
+def _assert_guided_header_case(family, scenario, case):
+    request = {
+        "input": case["input"], "init": case["init"],
+        "finish_reason": case["finish_reason"],
+        "tools": case.get("tools", G.unified_tools()),
+        "chunks": [{"delta_text": chunk} for chunk in case.get("input_chunks", [case["input"]])],
+        "golden": case["golden"],
+    }
+    digest = hashlib.sha256(json.dumps(request, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+    assert digest == _GUIDED_HEADER_CONTRACTS[(scenario, family)], (family, scenario, "authored native header contract")
+
+
+def _assert_guided_header_contracts(corpus):
+    for scenario, expected in _guided_header_scopes().items():
+        assert set(G.scenario_families(scenario)) == expected, (scenario, "native applicability")
+        present = {family for family, cases in corpus.items()
+                   if f"UNIFIED.{scenario}.{family}" in cases}
+        assert present == expected, (scenario, "missing native counterpart", expected - present)
+        for family in expected:
+            _assert_guided_header_case(family, scenario, corpus[family][f"UNIFIED.{scenario}.{family}"])
+        if scenario.endswith("_pr424"):
+            parent = scenario.removesuffix("_pr424")
+            assert taxonomy.case_fold(scenario)[0] == parent
+            for family in expected:
+                assert f"UNIFIED.{parent}.{family}" in corpus[family], (family, scenario, "missing folded parent")
+
+
+def test_guided_header_native_scopes_and_exact_source_contracts():
+    _assert_guided_header_contracts({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+@pytest.mark.parametrize("message_header,mutation", [
+    *[(False, mutation) for mutation in ("omitted", "exclusion", "input_payload", "golden_payload", "folded_child")],
+    *[(True, mutation) for mutation in ("omitted", "exclusion", "input_payload", "golden_payload")],
+])
+def test_guided_header_contract_rejects_omissions_exclusions_and_payload_drift(monkeypatch, mutation, message_header):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    scenario = ("guided_json_quoted_bare_header_after_payload_pr424" if mutation == "folded_child"
+                else "prefilled_response_guided_pending_invoke_header")
+    family = "muse_glimmer" if mutation == "folded_child" else "qwen3"
+    if message_header:
+        scenario = "muse_glimmer_guided_message_end_inside_native_header"
+        family = "beam"
+    key = f"UNIFIED.{scenario}.{family}"
+    if mutation == "input_payload":
+        case = corpus[family][key]
+        case["input"] = (case["input"].replace('"name":"f"', '"name":"g"') if message_header
+                         else case["input"].replace("Paris", "Rome"))
+        case["input_chunks"] = list(case["input"])
+    elif mutation == "golden_payload":
+        if message_header:
+            corpus[family][key]["golden"][-1]["name"] = "g"
+        else:
+            corpus[family][key]["golden"][-1]["arguments"]["city"] = "Rome"
+    else:
+        corpus[family].pop(key)
+        if mutation == "folded_child":
+            assert f"UNIFIED.{scenario.removesuffix('_pr424')}.{family}" in corpus[family]
+        if mutation == "exclusion":
+            original = G.scenario_families
+            monkeypatch.setattr(G, "scenario_families", lambda value: (
+                original(value) - {family} if value == scenario else original(value)))
+    with pytest.raises(AssertionError):
+        _assert_guided_header_contracts(corpus)
+
+
+
+@pytest.mark.parametrize("scenario", [
+    "qwen3_guided_non_ascii_header_in_truncated_reasoning",
+    "qwen3_guided_non_ascii_header_in_closed_reasoning",
+    "qwen3_guided_reasoning_opener_inside_native_header",
+    "guided_json_quoted_bare_tool_header_in_answer",
+    "gpt_oss_channel_header_variants",
+])
+@pytest.mark.parametrize("mutation", ["omitted", "exclusion", "native_bytes", "golden"])
+def test_native_unicode_header_contract_rejects_missing_scope_and_literal_changes(monkeypatch, scenario, mutation):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    family = "glm47" if scenario == "qwen3_guided_reasoning_opener_inside_native_header" else "beam"
+    key = f"UNIFIED.{scenario}.{family}"
+    if mutation == "native_bytes":
+        case = corpus[family][key]
+        before, after = (("é", "e") if "non_ascii" in scenario else
+                         ("get_weather", "get_time") if scenario == "guided_json_quoted_bare_tool_header_in_answer" else
+                         ("weather", "forecast") if scenario == "gpt_oss_channel_header_variants" else
+                         ("<tool_call>", "<tool>") )
+        assert before in case["input"]
+        case["input"] = case["input"].replace(before, after)
+        case["input_chunks"] = list(case["input"])
+    elif mutation == "golden":
+        corpus[family][key]["golden"] = []
+    else:
+        corpus[family].pop(key)
+        if mutation == "exclusion":
+            original = G.scenario_families
+            monkeypatch.setattr(G, "scenario_families", lambda value: (
+                original(value) - {family} if value == scenario else original(value)))
+    with pytest.raises(AssertionError):
+        _assert_guided_header_contracts(corpus)
+
+
+@pytest.mark.parametrize("producer_failure", ["character_marker_leak", "whole_reasoning_drop"])
+def test_glm_unfinished_header_oracle_rejects_adopting_measured_parser_failures(producer_failure):
+    scenario = "qwen3_guided_reasoning_opener_inside_native_header"
+    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+    expected = [{"kind": "reasoning", "text": "x"}, {"kind": "tool_call", "name": "f", "arguments": {}}]
+    assert case["golden"] == expected
+    if producer_failure == "character_marker_leak":
+        case["golden"].insert(0, {"kind": "text", "text": "<tool_call>"})
+    else:
+        case["golden"].pop(0)
+    with pytest.raises(AssertionError):
+        _assert_guided_header_case("glm47", scenario, case)
+
+
+
+@pytest.mark.parametrize("scenario", ["deepseek_v41_json_invocation_body", "kimi_k3_malformed_call_then_valid"])
+@pytest.mark.parametrize("mutation", ["omitted", "exclusion", "input", "golden", "schema"])
+def test_native_json_body_and_restart_contract_rejects_coordinated_drift(monkeypatch, scenario, mutation):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    family = "kimi_k2"
+    key = f"UNIFIED.{scenario}.{family}"
+    if mutation == "input":
+        case = corpus[family][key]
+        old, new = (("café", "cafe") if scenario == "deepseek_v41_json_invocation_body" else ("not-an-argument", "not-argument"))
+        assert old in case["input"]
+        case["input"] = case["input"].replace(old, new)
+        case["input_chunks"] = list(case["input"])
+    elif mutation == "golden":
+        corpus[family][key]["golden"] = []
+    elif mutation == "schema":
+        corpus[family][key]["tools"] = []
+    else:
+        corpus[family].pop(key)
+        if mutation == "exclusion":
+            original = G.scenario_families
+            monkeypatch.setattr(G, "scenario_families", lambda value: (
+                original(value) - {family} if value == scenario else original(value)))
+    with pytest.raises(AssertionError):
+        _assert_guided_header_contracts(corpus)
+
+
+@pytest.mark.parametrize("family", ["deepseek_v4", "deepseek_v41", "minimax_m3", "qwen3", "nemotron_v3", "muse_glimmer", "muse_spark"])
+def test_native_unclosed_body_recovery_preserves_its_source_policy(family):
+    scenario = "kimi_k3_malformed_call_then_valid"
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_guided_header_case(family, scenario, case)
+    if family == "deepseek_v41":
+        assert case["golden"] == []
+        assert case["expect"]["dynamo"]["class"] == "ERROR"
+    case["golden"] = [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}]
+    with pytest.raises(AssertionError):
+        _assert_guided_header_case(family, scenario, case)
+
+
+def test_kimi_restart_oracle_does_not_adopt_the_measured_lost_call():
+    scenario = "kimi_k3_malformed_call_then_valid"
+    case = build_cases("kimi_k2")[f"UNIFIED.{scenario}.kimi_k2"]
+    assert case["golden"] == [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}]
+    assert case["expect"]["dynamo"]["class"] == "LOSS"
+    case["golden"] = []
+    with pytest.raises(AssertionError):
+        _assert_guided_header_case("kimi_k2", scenario, case)
+
+
+def test_shared_guided_header_cases_use_generic_display_groups_without_renumbering():
+    groups = {
+        "deepseek_v41_json_invocation_body": 7,
+        "kimi_k3_malformed_call_then_valid": 4,
+        "qwen3_guided_non_ascii_header_in_truncated_reasoning": 34,
+        "qwen3_guided_non_ascii_header_in_closed_reasoning": 34,
+        "qwen3_guided_reasoning_opener_inside_native_header": 34,
+        "guided_json_quoted_bare_tool_header_in_answer": 35,
+        "gpt_oss_channel_header_variants": 11,
+        "muse_glimmer_guided_message_end_inside_native_header": 32,
+        "prefilled_response_guided_pending_invoke_header": 35,
+        "gemma4_guided_reasoning_opener_after_call_prefix": 34,
+        "gemma4_guided_response_extra_body_opener": 35,
+        "deepseek_v4_guided_reasoning_opener_inside_native_body": 34,
+        "guided_response_rejected_header_quote_ownership": 35,
+    }
+    for scenario, group in groups.items():
+        assert taxonomy.display_tax(scenario)[0] == group, (scenario, taxonomy.display_tax(scenario), group)
+    assert taxonomy.numbered_id("muse_glimmer_guided_message_end_inside_native_header") == "UNIFIED.muse-glimmer_guided_message_end_inside_native_header"
+    assert taxonomy.numbered_id("prefilled_response_guided_pending_invoke_header") == "UNIFIED.deepseek_v41-prefilled_response_guided_pending_invoke_header"
+    assert taxonomy.numbered_id("gemma4_guided_reasoning_opener_after_call_prefix") == "UNIFIED.gemma-guided_reasoning_opener_after_call_prefix"
+    assert taxonomy.numbered_id("gemma4_guided_response_extra_body_opener") == "UNIFIED.gemma-guided_response_extra_body_opener"
+    assert taxonomy.numbered_id("deepseek_v4_guided_reasoning_opener_inside_native_body") == "UNIFIED.deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body"
+
+
+def _assert_quoted_tool_recipient_boundary(family, case):
+    # Validate the semantic boundary before scope/digest checks so replacing a
+    # recipient with ordinary reasoning prose still fails at its owning invariant.
+    headers = {
+        "beam": "to=get_weather" + control_tokens("beam")[2].split("NAMEX", 1)[1],
+        "gpt_oss": "to=functions.get_weather<|channel|>commentary <|constrain|>json<|message|>",
+        "muse_glimmer": "to=get_weather<|message|>",
+        "muse_spark": "to=get_weather<|message|>",
+    }
+    assert family in headers and headers[family] in case["input"], (family, "guided_json_quoted_bare_tool_header_in_answer", "missing tool-recipient boundary")
+
+
 def _assert_cross_family_contract(corpus):
+    assert_native_response_counterparts(corpus, G, taxonomy)
+    _assert_m3_nested_marker_contract(corpus)
+    _assert_muse_native_scopes(corpus)
+    _assert_kimi_native_scopes(corpus)
+    for family, cases in corpus.items():
+        key = f"UNIFIED.guided_json_quoted_bare_tool_header_in_answer.{family}"
+        if key in cases:
+            _assert_quoted_tool_recipient_boundary(family, cases[key])
+    _assert_guided_header_contracts(corpus)
+    _assert_gpt58_native_contracts(corpus)
     by_scenario = defaultdict(dict)
     clean = {row[0]: row[3] for row in CLEAN}
     prefills = {name for name, segments in clean.items() if segments[0][0] == "reason"} | {"reason_unterminated"}
     for family in NATIVE_FAMILIES:
         for cid, case in corpus[family].items():
             scenario = _scenario_of(cid, family)
-            if family == "minimax_m3" and scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS:
+            if (scenario, family) in _GUIDED_HEADER_CONTRACTS:
+                # Exact source-authored inputs and source-policy outputs were
+                # validated above before normalizing these grammar differences.
+                by_scenario[scenario][family] = (None, None, None, None, [])
+                continue
+            if scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS and (family == "minimax_m3" or scenario != "guided_json_native_markup_only"):
                 _assert_guided_native_recovery(family, scenario, case)
             _assert_input_carries_events(family, scenario, case)
             if scenario == "guided_json_quoted_bare_tool_header_in_answer":
                 # A tool name inside a thought is prose, not a recipient header.
-                assert family in {"muse_glimmer", "muse_spark"} and "to=get_weather<|message|>" in case["input"], (
-                    family, scenario, "missing tool-recipient boundary",
-                )
+                _assert_quoted_tool_recipient_boundary(family, case)
             init = dict(case["init"])
             if family == "deepseek_v41" and scenario in prefills:
                 assert init == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
@@ -2183,6 +3078,23 @@ def _assert_cross_family_contract(corpus):
                 init["starting_state"] = "None"
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
                       else _logical_events(scenario, family, case["golden"]))
+            if (scenario, family) in _MUSE_NATIVE_CONTRACTS:
+                # Source-qualified native EOF policies and literal marker values
+                # were checked before comparing the shared ownership semantics.
+                events = []
+            if scenario.startswith("kimi_native_"):
+                # Exact independent requests and family-specific recovery/marker
+                # oracles were checked before comparing the shared semantics.
+                events = []
+            if scenario in {"kimi_k3_typed_response_then_call", "kimi_k3_direct_typed_response_recovery"}:
+                # K3 recovers a complete value without its outer wrapper close;
+                # these four native grammars require their call/invoke terminator.
+                following = [{"kind": "text", "text": "recovered"}]
+                if scenario == "kimi_k3_typed_response_then_call":
+                    following.append({"kind": "tool_call", "name": "next", "arguments": {"n": 7}})
+                assert events == ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}}]
+                                  if family == "kimi_k3" else []) + following, (family, scenario, "native recovery policy")
+                events = following
             if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
                 raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "minimax_m3"} else 2
                 assert case["tools"] == []
@@ -2208,7 +3120,7 @@ def _assert_cross_family_contract(corpus):
                 # Compare the schema and invalid payloads after checking each
                 # native envelope; Harmony generates headers, others prefill.
                 assert case["tools"] == []
-                assert init["starting_state"] == ("None" if family == "gpt_oss" else "Reasoning")
+                assert init["starting_state"] == ("None" if family in {"beam", "gpt_oss"} else "Reasoning")
                 response = events[1]["text"]
                 if G.unified_grammar_family(family) == "qwen3":
                     assert response.startswith("\n\n")
@@ -2243,7 +3155,9 @@ def _assert_cross_family_contract(corpus):
             if family == "minimax_m3" and scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS:
                 # Exact input/output assertions above precede normalization of
                 # this documented exception; unrelated guided cases stay strict.
-                events = [event for event in events if event["kind"] != "tool_call"]
+                events = ([{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+                          if scenario == "kimi_k3_guided_native_wrapper" else
+                          [event for event in events if event["kind"] != "tool_call"])
             if scenario in {"schema_integer_const_ambiguous", "schema_object_const_union", "schema_type_array_string_integer"}:
                 probe = next(probe for probe in CONFORMANCE_CASES if scenario == f"schema_{probe['name']}")
                 expected_events = [{"kind": "tool_call", "name": "schema_probe", "arguments": schema_arguments(family, probe)}]
@@ -2289,16 +3203,7 @@ def _assert_cross_family_contract(corpus):
             if init["tool_output_mode"] == "GuidedJson":
                 # Complete native argument bodies are input even when guided mode
                 # suppresses them. Goldens alone cannot detect a changed stress value.
-                if scenario == "gemma4_guided_response_extra_body_opener":
-                    assert family == "gemma4"
-                    assert init["starting_state"] == "Response"
-                    assert case["input"] == "é call:get_weather{" + G.GUIDED_ONE_CALL
-                    assert events == [
-                        {"kind": "text", "text": "é "},
-                        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
-                    ]
-                else:
-                    suppressed = [call for call in _native_input_calls(family, case["input"]) if call["arguments"]]
+                suppressed = [call for call in _native_input_calls(family, case["input"]) if call["arguments"]]
                 if scenario in {"guided_json_reasoning_markers_inside_native_parameter", "guided_json_reasoning_markers_inside_native_parameter_pr424"}:
                     if family == "beam":
                         # Beam has no bare native invocation: without its routed header the
@@ -2328,8 +3233,8 @@ def _assert_cross_family_contract(corpus):
                         if isinstance(call["arguments"]["x"], str):
                             call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
-    assert set(by_scenario) == set(NATIVE_UNIFIED_TAX)
     _assert_generic_cases_span_families(by_scenario)
+    assert set(by_scenario) == set(NATIVE_UNIFIED_TAX)
     assert all(family in by_scenario.get(scenario, {}) for scenario, family in G.INHERITED_GOLDEN), "INHERITED_GOLDEN names a case that does not exist"
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
@@ -2367,7 +3272,9 @@ def test_cross_family_contract_rejects_nemotron_only_generic_reasoning(scenario,
     corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     for family, cases in corpus.items():
         if family != "nemotron_v3":
-            del cases[f"UNIFIED.{scenario}.{family}"]
+            for case_id in list(cases):
+                if taxonomy.coverage_case(_scenario_of(case_id, family)) == scenario:
+                    del cases[case_id]
     scenario_families = G.scenario_families
     monkeypatch.setattr(
         G, "scenario_families",
@@ -2600,7 +3507,11 @@ def test_kimi_display_sections_match_their_applicable_family():
         assert labels[scenario]["compact_prefix"] == family, scenario
     for scenario in UNIFIED_TAX:
         if scenario.startswith("kimi_native_"):
-            assert taxonomy.display_tax(scenario)[0] in {"kimi", "kimi_k2"}, scenario
+            expected = ("kimi" if scenario.startswith(("kimi_native_k3_typed_", "kimi_native_k3_json_"))
+                        else 7 if "_count_content_chunk" in scenario or scenario.endswith("interfield_whitespace")
+                        else 12 if scenario.endswith("rejected_next_header_progress") else 5)
+            assert taxonomy.display_tax(scenario)[0] == expected, scenario
+            assert taxonomy.numbered_id(scenario) == "UNIFIED.kimi-" + scenario
 
 
 def test_display_ranks_follow_descriptions_without_changing_capture_ids():
@@ -2623,11 +3534,11 @@ def test_display_ranks_follow_descriptions_without_changing_capture_ids():
     for members in compact_prefixes.values():
         assert [labels[s]["display_number"] for s in members] == list(range(1, len(members) + 1))
     v4 = labels["guided_response_rejected_header_quote_ownership"]
-    assert v4["label"] == "deepseek_v4-guided_response_rejected_header_quote_ownership"
-    assert v4["compact_prefix"] == "ds4"
+    assert v4["label"] == "35-guided_response_rejected_header_quote_ownership"
+    assert v4["compact_prefix"] == "35"
     v41 = labels["deepseek_v41_json_invocation_body"]
-    assert v41["label"] == "deepseek_v41-json_invocation_body"
-    assert v41["compact_prefix"] == "ds41"
+    assert v41["label"] == "7-json_invocation_body"
+    assert v41["compact_prefix"] == "7"
     assert identities == {scenario: numbered_id(scenario) for scenario in scenarios}
 
 
@@ -2649,9 +3560,9 @@ def test_gpt_oss_variants_use_shared_parents_or_explicit_header_grammar(scenario
 
 
 @pytest.mark.parametrize(("scenario", "parent", "families"), [
-    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3"}),
-    ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
-    ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
+    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3", "deepseek_v4", "deepseek_v41"}),
+    ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"beam", "gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
+    ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"beam", "gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
 ])
 def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, parent, families):
     assert G.scenario_families(scenario) == families
@@ -2664,7 +3575,11 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
         assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
         if parent == "tool_no_close":
             assert case["golden"] == [{"kind": "text", "text": "Answer"}]
-            if family in {"muse_glimmer", "muse_spark"}:
+            if family == "beam":
+                assert '<rfl:parameter name="q">\nabc<|call|>' in case["input"]
+                assert "</rfl:parameter>" not in case["input"]
+                assert "final<|message|>Answer<|return|>" in case["input"]
+            elif family in {"muse_glimmer", "muse_spark"}:
                 assert '<atem:parameter name="q">abc<|eom|>' in case["input"]
                 assert "</atem:parameter>" not in case["input"]
             else:
@@ -2674,7 +3589,10 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
         else:
             event = case["golden"][0]
             assert event["name"] == ("get_weather" if parent == "tool_only" else "lookup")
-            assert matches_schema(event["arguments"], case["tools"][0]["parameters"])
+            if family == "beam":
+                assert_gpt58_native_contract(family, scenario, case)
+            else:
+                assert matches_schema(event["arguments"], case["tools"][0]["parameters"])
             if parent == "tool_only":
                 assert ' \n\t{"city":' in case["input"]
                 assert event["arguments"] == {"city": "Paris"}
@@ -2682,8 +3600,9 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
                 payload = event["arguments"]["q"]
                 assert payload in case["input"]
                 assert "literal" in payload
-                assert ("assistant to=user<|message|>" if family in {"muse_glimmer", "muse_spark"}
-                        else '<|open|>response<|sep|>') in payload
+                header = ("assistant to=user<|message|>" if family in {"muse_glimmer", "muse_spark"}
+                          else "final<|message|>" if family == "beam" else '<|open|>response<|sep|>')
+                assert header in payload
 
 
 def test_display_policy_has_no_dangling_groups_or_scenarios():
@@ -2717,12 +3636,64 @@ def test_single_call_variants_keep_the_shared_weather_example():
     for family in G.UNIFIED_FAMILIES:
         cases = build_cases(family)
         assert cases[f"UNIFIED.tool_only.{family}"]["golden"] == expected, family
-        variant = cases.get(f"UNIFIED.tool_body_whitespace.{family}")
+        variant = (cases[f"UNIFIED.tool_body_whitespace.{family}"]
+                   if family in {"gpt_oss", "kimi_k2", "kimi_k3"} else None)
         if variant is None:
             continue
         assert variant["golden"] == expected, family
         assert ' \n\t{"city":' in variant["input"], family
         assert taxonomy.case_fold("tool_body_whitespace")[0] == "tool_only"
+
+
+def _assert_interrupted_response_examples(corpus):
+    scenario = "interrupted_reasoning_then_response"
+    # A response opener supplies the missing boundary; paired think tags with
+    # bare visible text cannot express this request without adding a closer.
+    applicable = {family for family in NATIVE_FAMILIES
+                  if G.r_text(family, "sentinel") != "sentinel"}
+    assert applicable == {"beam", "gpt_oss", "kimi_k3", "muse_glimmer", "muse_spark"}
+    assert G.scenario_families(scenario) == applicable
+    present = {family for family, cases in corpus.items()
+               if f"UNIFIED.{scenario}.{family}" in cases}
+    assert present == applicable
+    for family in applicable:
+        case = corpus[family][f"UNIFIED.{scenario}.{family}"]
+        parent = corpus[family][f"UNIFIED.reason_then_content.{family}"]
+        assert case["golden"] == parent["golden"]
+        assert case["input"] == (
+            G.r_reason(family, "let me think").removesuffix(control_tokens(family)[1])
+            + G.r_text(family, "The answer is 42.")
+        )
+
+
+def test_interrupted_response_examples_have_native_applicability_and_parent_payloads():
+    _assert_interrupted_response_examples({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+@pytest.mark.parametrize("mutation", ["omitted", "exclusion", "payload"])
+def test_interrupted_response_contract_rejects_coordinated_omission_and_payload_drift(monkeypatch, mutation):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    scenario = "interrupted_reasoning_then_response"
+    case_id = f"UNIFIED.{scenario}.kimi_k3"
+    if mutation == "payload":
+        corpus["kimi_k3"][case_id]["golden"][0]["text"] = "checking"
+    else:
+        corpus["kimi_k3"].pop(case_id)
+        if mutation == "exclusion":
+            original = G.scenario_families
+            monkeypatch.setattr(G, "scenario_families", lambda value: (
+                original(value) - {"kimi_k3"} if value == scenario else original(value)))
+    with pytest.raises(AssertionError):
+        _assert_interrupted_response_examples(corpus)
+
+
+def test_dotted_names_include_the_registered_minimax_native_grammar():
+    for scenario in G.DOTTED_NAME_SCENARIOS:
+        case = build_cases("minimax_m3")[f"UNIFIED.{scenario}.minimax_m3"]
+        assert case["golden"] == build_cases("qwen3")[f"UNIFIED.{scenario}.qwen3"]["golden"]
+        for event in case["golden"]:
+            assert event["name"] in case["input"]
+            assert event["name"] in {tool["name"] for tool in case["tools"]}
 
 
 @pytest.mark.parametrize("family", ["gpt_oss", "kimi_k2", "kimi_k3"])
@@ -2761,22 +3732,153 @@ def test_retired_harmony_eof_case_keeps_its_history_and_shared_contract():
     assert "UNIFIED.gpt_oss_truncated_tool_at_eof_is_dropped.gpt_oss" not in G.build_cases("gpt_oss")
 
 
-def _assert_kimi_native_golden(scenario: str, case: dict) -> None:
-    if scenario == "kimi_native_incompatible_string_recovery":
-        expected = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
-    else:
-        if "count_content_chunk" in scenario:
-            arguments = {"count": 7, "content": "q" * 4096}
-        elif scenario == "kimi_native_trailing_syntax_whitespace":
-            arguments = {}
-        elif scenario in {"kimi_native_valid_object_trailing_garbage", "kimi_native_incremental_interfield_whitespace"}:
-            arguments = {"count": 7, "content": "q"}
-        else:
-            assert scenario == "kimi_native_rejected_next_header_progress"
-            arguments = {"count": 7, "content": 'head<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>' + "q" * 3072}
-        expected = [{"kind": "tool_call", "name": "write_file", "arguments": arguments}]
-    assert case["golden"] == expected, (scenario, "native Kimi golden differs from authored contract")
+_KIMI_NATIVE_REQUEST_DIGESTS = {
+    ('kimi_native_incompatible_string_recovery', 'deepseek_v4'): 'd1ef0e7a9a6ea568f8016ed2f35153f82916f958ef5dded172487698a09d0a62',
+    ('kimi_native_incompatible_string_recovery', 'deepseek_v41'): 'b80ac979024c3c8dacd0e3c9b382ec1179ffd36ee0a9309ae5ebc103a78791a0',
+    ('kimi_native_incompatible_string_recovery', 'gemma4'): 'b5aa7543cfa5a0e48c906fff9bdebbc8b74196c12168fc06d2f8ce56324e347e',
+    ('kimi_native_incompatible_string_recovery', 'gpt_oss'): 'e0f9e0531e45783242a54008bc9f1b6fe760fa787fb367912bee9e6a01c01465',
+    ('kimi_native_incompatible_string_recovery', 'kimi_k2'): 'fb048e83aace703f910134c3db55ce3e35596e5c3c38e73ddb8d22133a91f6f4',
+    ('kimi_native_incompatible_string_recovery', 'kimi_k3'): '7444b6e31b39c6b81749672ad50b0bc71c3353faa2075157e041feb4dbc0a4c9',
+    ('kimi_native_incremental_interfield_whitespace', 'beam'): '16e1997983919314d3aaf43b1883b2babb2dc74025abe3349950bca70cdc34b4',
+    ('kimi_native_incremental_interfield_whitespace', 'deepseek_v4'): 'bce33da43d1f781fb41d7b615c9c762029ff47ea5106ac7ce7e914975397eb42',
+    ('kimi_native_incremental_interfield_whitespace', 'deepseek_v41'): '03412b8d6d9f53684515861f8e412e752e4e018e7110d6b380f1e1d470040d43',
+    ('kimi_native_incremental_interfield_whitespace', 'gemma4'): '528458fc5961b3dbe7d6bdcd369912a4f955b055682f72f73c3207d6c8f0b881',
+    ('kimi_native_incremental_interfield_whitespace', 'glm47'): '6530678bf6bd4652c3939e9db94c127eddc3730d594431b1aabce67294817a50',
+    ('kimi_native_incremental_interfield_whitespace', 'gpt_oss'): 'c11847f9c9259818871b05099819b44575219c6eaeb48ef7203e61d02320a586',
+    ('kimi_native_incremental_interfield_whitespace', 'kimi_k2'): '23ae2018e8f3d886b601f749c8bfc5a24f4be892a4b04a3d6d462089a7f19e55',
+    ('kimi_native_incremental_interfield_whitespace', 'kimi_k3'): '99e02e143faee7b227bed46b6353385271c0d95836ea5cd8d997be73dfe03462',
+    ('kimi_native_incremental_interfield_whitespace', 'minimax_m3'): '531ed08167bcca4e725c47c158a81c35213d744d1482a1797fd9ef064ecdbe6f',
+    ('kimi_native_incremental_interfield_whitespace', 'muse_glimmer'): '4526857ed7db5b59e4f65c734d457995249fcdb072e730f10b8d9f0fa9920ea6',
+    ('kimi_native_incremental_interfield_whitespace', 'muse_spark'): '4526857ed7db5b59e4f65c734d457995249fcdb072e730f10b8d9f0fa9920ea6',
+    ('kimi_native_incremental_interfield_whitespace', 'nemotron_v3'): '5fa580bc6af1164bf88767f00f358a0d38db278781b016838f721a4ed5b32fa6',
+    ('kimi_native_incremental_interfield_whitespace', 'qwen3'): '32f938ea493484aa4a7e4ef0f4fd484ccf513a74f33bd34770c340405ee5d8f0',
+    ('kimi_native_k2_count_content_chunk1024', 'beam'): '3c7d66e2cf7760d7d42acc21cddd6b39b9082b26565289b58af5ffa377cbd3d1',
+    ('kimi_native_k2_count_content_chunk1024', 'deepseek_v4'): '9ba76a50b2afc16f3907d54fb1dfef12f84a60e3756b7724ea43d8c272312297',
+    ('kimi_native_k2_count_content_chunk1024', 'deepseek_v41'): 'ce7d6b086365f06708942b320ea3dd27dd3223108ce09c7b08b5111138141861',
+    ('kimi_native_k2_count_content_chunk1024', 'gemma4'): '2b99650589d9aa61f209fbb5487957d920246d1e670b72b929dd523c0e68f0ef',
+    ('kimi_native_k2_count_content_chunk1024', 'glm47'): 'c59839bef14ea1b29b6cb77d15944cacb3c0ee0157e619f48ba2d6afbd5e7f2e',
+    ('kimi_native_k2_count_content_chunk1024', 'gpt_oss'): 'b0f6a64afea18ca9ed3769c945637cac5d2c017706003f0db5f281e29e97d3f6',
+    ('kimi_native_k2_count_content_chunk1024', 'kimi_k2'): 'f629f6ecb8ed8ddef512e079acacfffd57ee7bf86180f13ee1fe09d46c2dec87',
+    ('kimi_native_k2_count_content_chunk1024', 'kimi_k3'): 'c242650467aacd2c4f094547204fca86021b24f15c6c95ea99192f16c274da2b',
+    ('kimi_native_k2_count_content_chunk1024', 'minimax_m3'): 'e7a212aedeac5d1352d0169b723925aa7ecfe2142eb68dfa795bbbfe6e0534bc',
+    ('kimi_native_k2_count_content_chunk1024', 'muse_glimmer'): 'a6caff65710f7b3614424b8948b00eaf534fe68798b9a1d4b2582edf8945dad5',
+    ('kimi_native_k2_count_content_chunk1024', 'muse_spark'): 'a6caff65710f7b3614424b8948b00eaf534fe68798b9a1d4b2582edf8945dad5',
+    ('kimi_native_k2_count_content_chunk1024', 'nemotron_v3'): '77d7452902311f94f1fd3535157f54d73ad7a29fb73e39b3f1edd8281228877d',
+    ('kimi_native_k2_count_content_chunk1024', 'qwen3'): 'bf596ea1cc863811d03c31bc260ab82afe515bb8c70871d5861bb6dafd5e94a3',
+    ('kimi_native_k2_count_content_chunk7', 'beam'): 'c83e9fa6488f624e0b069aa76cfb1631d20dc7b59668e8e382a9259a037a3c15',
+    ('kimi_native_k2_count_content_chunk7', 'deepseek_v4'): 'a1a1eea2478a573becd17979489aff6c371bd76714cb859abb14d284cb366a78',
+    ('kimi_native_k2_count_content_chunk7', 'deepseek_v41'): '76ee84720b69dbb075008f5c7bfad6d56782ce2a0cabf6d838902a4d9896a0b1',
+    ('kimi_native_k2_count_content_chunk7', 'gemma4'): '56bb9e569638da2310a2d54c22afc140dd4cfd2bcc5a8206593562d68644cf14',
+    ('kimi_native_k2_count_content_chunk7', 'glm47'): '7112ec689a5c0967a13f32de44a28c677a1ac167b7199da0a404ce7eab9398f2',
+    ('kimi_native_k2_count_content_chunk7', 'gpt_oss'): 'bdfd7f661e804f6d280a853ff07795afbb357eb294ea61db8dd7bf733d479d10',
+    ('kimi_native_k2_count_content_chunk7', 'kimi_k2'): '453b8f61e572f4861549176b3644474615adc19a64ca4325c255def06958ffda',
+    ('kimi_native_k2_count_content_chunk7', 'kimi_k3'): 'bd377305b85e0c1388359555d1222fbd80415776117f98831ae2b5399677823e',
+    ('kimi_native_k2_count_content_chunk7', 'minimax_m3'): '50daed6bb0c51372b021ec05459b776034ee0761d382bd4b346a1b25b9ef5af1',
+    ('kimi_native_k2_count_content_chunk7', 'muse_glimmer'): '7d277c1c0a6acb08945430f43a9b6c07ef07c77217773ca82d0c2c16cc6b7d37',
+    ('kimi_native_k2_count_content_chunk7', 'muse_spark'): '7d277c1c0a6acb08945430f43a9b6c07ef07c77217773ca82d0c2c16cc6b7d37',
+    ('kimi_native_k2_count_content_chunk7', 'nemotron_v3'): '67b0e9e1256a4b6a413f5f05d8acd207cbf167b218845641418f2cd01625be58',
+    ('kimi_native_k2_count_content_chunk7', 'qwen3'): '0eea1ab6e09c9b615ef35d8c179f02176cd1bdc61cf852900b24a26a6ffd7a7c',
+    ('kimi_native_k3_json_count_content_chunk1024', 'kimi_k3'): 'e7c859585b979ed51d95220b450fca346f6b409cb66e0ad1e684fd749428af04',
+    ('kimi_native_k3_json_count_content_chunk7', 'kimi_k3'): '5bfd5c03c6c6b2c5f70ea64cf52680589d557dec63ed0e12dae7617c997347c4',
+    ('kimi_native_k3_typed_count_content_chunk1024', 'kimi_k3'): '9f5ea2549536714006dc2d407675bb691c689fec016291a39abb48c3c21f2722',
+    ('kimi_native_k3_typed_count_content_chunk7', 'kimi_k3'): 'c97da62bbe306731e6218d8095f0471b205fbb664cf75841ee093f21d636d687',
+    ('kimi_native_rejected_next_header_progress', 'beam'): '3aeb8e3dfaec75097c515dd64e54aca1639103e1dbd615fbfe8f9cf784d11130',
+    ('kimi_native_rejected_next_header_progress', 'kimi_k3'): 'edba52e4319f2ec80c17d9a4f6823cb0e583d47654a932fe7dc622c8a0a53494',
+    ('kimi_native_trailing_syntax_whitespace', 'deepseek_v4'): '06e0e8688c6d398c26e7036df1b55c972b2e8b507a25fc2ab2163cb9843108f1',
+    ('kimi_native_trailing_syntax_whitespace', 'deepseek_v41'): '0fd0fe2cd454b3aaf939f00b1a6b85ce244f3102d519b741a66bdd3fe1d648f7',
+    ('kimi_native_trailing_syntax_whitespace', 'gemma4'): '43f743be26dee6c06c45058ed0a4f22fa9fb69fe211a2395378a8b65f9f82dd8',
+    ('kimi_native_trailing_syntax_whitespace', 'gpt_oss'): '59aba168cc91d5d92b7b56639e02e008ce2143b475ec3f174a8fbc771482de2b',
+    ('kimi_native_trailing_syntax_whitespace', 'kimi_k2'): '1002833b55e0a8330d11409f118b35f9b34c9ecb4250130383ce9296d5716d1c',
+    ('kimi_native_trailing_syntax_whitespace', 'kimi_k3'): 'cd96ba55e815d9fefb2ff30c924a53b0086ea2c69c455a2b96acf5248d698612',
+    ('kimi_native_valid_object_trailing_garbage', 'deepseek_v4'): '8d3bce6fe53366a7c43ee2980fcef7d2a3a2e02b771aa749568c35b86a251af7',
+    ('kimi_native_valid_object_trailing_garbage', 'deepseek_v41'): 'ffe7ca494f09604c56d75cf0ec0c103549e078a4c51038c241c9c2ec7b9639b0',
+    ('kimi_native_valid_object_trailing_garbage', 'gemma4'): 'b63d5ff27dee21d7a757342f3da105f6902d3dd6eb058b368129ca226aadc290',
+    ('kimi_native_valid_object_trailing_garbage', 'gpt_oss'): '10137e1dfd0a66e4ff222d3d211f596b77de93401eb8329fdc577b5de54cd622',
+    ('kimi_native_valid_object_trailing_garbage', 'kimi_k2'): '816b4ca4842a7b3c3fa2a0f0ac031c0f886113580d9a74f8dd5e49b18dbfaebd',
+    ('kimi_native_valid_object_trailing_garbage', 'kimi_k3'): 'dba37f2bf499646e3d456c0caaa7e434c24c1a58c0c9c8d9595fe499131aa106',
+}
 
+
+def _kimi_native_scope(scenario):
+    if scenario.startswith(("kimi_native_k3_typed_", "kimi_native_k3_json_")):
+        return {"kimi_k3"}
+    if "_count_content_chunk" in scenario or scenario.endswith("interfield_whitespace"):
+        return set(NATIVE_FAMILIES)
+    if scenario.endswith("rejected_next_header_progress"):
+        return {"beam", "kimi_k3"}
+    assert scenario in {
+        "kimi_native_trailing_syntax_whitespace", "kimi_native_valid_object_trailing_garbage",
+        "kimi_native_incompatible_string_recovery",
+    }
+    return {"kimi_k2", "kimi_k3", "gpt_oss", "deepseek_v4", "deepseek_v41", "gemma4"}
+
+
+def _assert_kimi_native_scopes(corpus):
+    for scenario in UNIFIED_TAX:
+        if not scenario.startswith("kimi_native_"):
+            continue
+        expected = _kimi_native_scope(scenario)
+        assert set(G.scenario_families(scenario)) == expected, (scenario, "independent native applicability")
+        present = {family for family, cases in corpus.items() if f"UNIFIED.{scenario}.{family}" in cases}
+        assert present == expected, (scenario, "missing applicable native child", expected - present)
+        assert taxonomy.case_fold(scenario) is None, (scenario, "native delivery identities must remain explicit")
+        for family in expected:
+            _assert_kimi_native_golden(family, scenario, corpus[family][f"UNIFIED.{scenario}.{family}"])
+
+
+def _assert_kimi_native_golden(family: str, scenario: str, case: dict) -> None:
+    request = {"input": case["input"], "init": case["init"], "tools": case["tools"],
+               "finish_reason": case["finish_reason"],
+               "chunks": [{"delta_text": chunk} for chunk in case["input_chunks"]]}
+    digest = hashlib.sha256(json.dumps(request, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+    assert digest == _KIMI_NATIVE_REQUEST_DIGESTS[(scenario, family)], (family, scenario, "independent native request contract")
+    grammar = G.unified_grammar_family(family)
+    if "_count_content_chunk" in scenario:
+        arguments = {"count": 7, "content": "q" * 4096}
+    elif scenario.endswith("interfield_whitespace"):
+        arguments = {"count": 7, "content": "q"}
+    elif scenario.endswith("rejected_next_header_progress"):
+        marker = ("</rfl:parameter> <rfl:parameter gibberish>" if grammar == "beam" else
+                  "<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>")
+        arguments = {"count": 7, "content": "head" + marker + "q" * 3072}
+    elif scenario.endswith("valid_object_trailing_garbage") and grammar == "kimi_k2":
+        arguments = {"count": 7, "content": "q"}
+    elif grammar == "kimi_k2" or (grammar == "deepseek_v4" and not scenario.endswith("incompatible_string_recovery")):
+        arguments = {}
+    else:
+        assert grammar in {"gpt_oss", "kimi_k3", "deepseek_v4", "deepseek_v41", "gemma4"}
+        assert case["golden"] == [], (family, scenario, "strict native malformed-call policy")
+        return
+    assert case["golden"] == [{"kind": "tool_call", "name": "write_file", "arguments": arguments}], (
+        family, scenario, "native Kimi golden differs from independent contract")
+
+
+def test_kimi_native_scopes_have_independent_positive_evidence():
+    _assert_kimi_native_scopes({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+@pytest.mark.parametrize("mutation", ["omitted", "exclusion", "input_payload", "golden_payload", "folded_child"])
+def test_kimi_native_contract_rejects_omissions_exclusions_and_payload_drift(monkeypatch, mutation):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    scenario = "kimi_native_k2_count_content_chunk7"
+    family = "qwen3"
+    key = f"UNIFIED.{scenario}.{family}"
+    if mutation == "input_payload":
+        corpus[family][key]["input"] = corpus[family][key]["input"].replace("q" * 4096, "x" * 4096)
+    elif mutation == "golden_payload":
+        corpus[family][key]["golden"][0]["arguments"]["count"] = 8
+    else:
+        del corpus[family][key]
+        if mutation == "exclusion":
+            original = G.scenario_families
+            monkeypatch.setattr(G, "scenario_families", lambda name: original(name) - {family} if name == scenario else original(name))
+        elif mutation == "folded_child":
+            parent = "kimi_native_k2_count_content_chunk1024"
+            assert f"UNIFIED.{parent}.{family}" in corpus[family]
+            original_fold = taxonomy.case_fold
+            monkeypatch.setattr(taxonomy, "case_fold", lambda name: (parent, "delivery") if name == scenario else original_fold(name))
+    with pytest.raises(AssertionError):
+        _assert_kimi_native_scopes(corpus)
 
 @pytest.mark.parametrize("family,scenario", [
     (family, name) for name in UNIFIED_TAX if name.startswith("kimi_native_")
@@ -2797,3 +3899,261 @@ def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
         case["golden"] = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
     with pytest.raises(AssertionError):
         _assert_input_carries_events(family, scenario, case)
+
+
+@pytest.mark.parametrize("form", ["typed", "json"])
+@pytest.mark.parametrize("cadence", [7, 1024])
+def test_k3_native_representation_axes_stay_distinct_only_in_k3(form, cadence):
+    scenario = f"kimi_native_k3_{form}_count_content_chunk{cadence}"
+    assert G.scenario_families(scenario) == {"kimi_k3"}
+    shared = f"kimi_native_k2_count_content_chunk{cadence}"
+    assert set(G.scenario_families(shared)) == set(NATIVE_FAMILIES)
+    for family in NATIVE_FAMILIES:
+        case = build_cases(family)[f"UNIFIED.{shared}.{family}"]
+        _assert_kimi_native_golden(family, shared, case)
+        if family != "kimi_k3":
+            assert f"UNIFIED.{scenario}.{family}" not in build_cases(family)
+
+
+
+def _assert_gpt58_native_contracts(corpus):
+    scopes = {
+        "gpt_oss_control_marker_inside_argument_string": {"beam", "deepseek_v4", "deepseek_v41", "gpt_oss", "kimi_k2", "kimi_k3", "muse_glimmer", "muse_spark"},
+        "gpt_oss_quoted_message_header_literal": {"beam", "gpt_oss", "kimi_k3", "muse_glimmer", "muse_spark"},
+        "gpt_oss_quoted_truncated_tool_then_final": {"beam", "gpt_oss", "kimi_k3", "muse_glimmer", "muse_spark"},
+    }
+    for scenario, expected in scopes.items():
+        assert set(G.scenario_families(scenario)) == expected, (scenario, "independently justified native applicability")
+        present = {family for family, cases in corpus.items() if f"UNIFIED.{scenario}.{family}" in cases}
+        assert present == expected, (scenario, "missing applicable folded child", expected - present)
+    for scenario, family in GPT58_NATIVE_REQUEST_DIGESTS:
+        case = corpus[family][f"UNIFIED.{scenario}.{family}"]
+        assert_gpt58_native_contract(family, scenario, case)
+        parent = "tool_no_close" if scenario == "gpt_oss_quoted_truncated_tool_then_final" else "arg_marker_in_string"
+        assert taxonomy.case_fold(scenario)[0] == parent
+        assert f"UNIFIED.{parent}.{family}" in corpus[family], (family, scenario, "missing folded parent")
+
+
+def test_gpt58_native_marker_and_header_omissions_have_independent_contracts():
+    _assert_gpt58_native_contracts({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+@pytest.mark.parametrize("scenario,family", sorted(GPT58_NATIVE_REQUEST_DIGESTS))
+@pytest.mark.parametrize("mutation", ["omitted", "exclusion", "input_payload", "golden_payload", "folded_child"])
+def test_gpt58_native_contracts_reject_omissions_exclusions_and_payload_drift(monkeypatch, scenario, family, mutation):
+    corpus = {f: build_cases(f) for f in NATIVE_FAMILIES}
+    key = f"UNIFIED.{scenario}.{family}"
+    case = corpus[family][key]
+    if mutation == "input_payload":
+        case["input"] += "incidental prose"
+    elif mutation == "golden_payload":
+        case["golden"].append({"kind": "text", "text": "incidental prose"})
+    else:
+        del corpus[family][key]
+        if mutation == "exclusion":
+            original = G.scenario_families
+            monkeypatch.setattr(G, "scenario_families", lambda name: original(name) - {family} if name == scenario else original(name))
+        elif mutation == "folded_child":
+            parent = taxonomy.case_fold(scenario)[0]
+            assert f"UNIFIED.{parent}.{family}" in corpus[family]
+    with pytest.raises(AssertionError):
+        _assert_gpt58_native_contracts(corpus)
+
+
+@pytest.mark.parametrize("family", ["muse_glimmer", "muse_spark"])
+def test_gpt58_muse_native_json_scalar_keeps_parameter_closers_literal(family):
+    scenario = "gpt_oss_control_marker_inside_argument_string"
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    assert_gpt58_native_contract(family, scenario, case)
+    assert _native_input_calls(family, case["input"], []) == case["golden"]
+    value = _family_value(scenario, family)
+    assert "</atem:parameter>" in value
+    assert json.dumps(value) in case["input"]
+
+
+_MUSE_NATIVE_CONTRACTS = {
+    ('muse_opaque_declared_invoke', 'beam'): '96851d54a62d9ed66be652e2dd58571ad873e70ff88eb08bd173f6cba961269e',
+    ('muse_opaque_declared_invoke', 'deepseek_v4'): 'f3654a5848e2a791bc9ecb006bc30d496907c67fa66199e14077f393472b510f',
+    ('muse_opaque_declared_invoke', 'deepseek_v41'): '0633ddc299de20efbc80a86269b1a4582a65cf28e9092a7d5e276b631d38e8ef',
+    ('muse_opaque_declared_invoke', 'glm47'): '17c0833963ff0f58fef9bfda5aec731ade8817af908348fd7f7faf4e95e04c2d',
+    ('muse_opaque_declared_invoke', 'gpt_oss'): 'd715e727867de0277d5e49585808852a288af81e5ad2d8124be02bdc7627aa6a',
+    ('muse_opaque_declared_invoke', 'kimi_k2'): 'ac52c60f1a9ef8ca5a7c6bc34aa6d9da038b79351b5c5f3b844c8b9873102854',
+    ('muse_opaque_declared_invoke', 'kimi_k3'): '7407a8654816a585f6f85839e2f107e39a5070e4250b86d156391b1a4e0fe405',
+    ('muse_opaque_declared_invoke', 'minimax_m3'): '20f6d71b536c25c46974e1d1a978384d463ab6adfa1e27516cad38d4c5e7967c',
+    ('muse_opaque_declared_invoke', 'muse_glimmer'): '2c127aa844bdff11a0e8f3acee47584a9a39638f5dee71ea8a455a1c64665808',
+    ('muse_opaque_declared_invoke', 'muse_spark'): '2c127aa844bdff11a0e8f3acee47584a9a39638f5dee71ea8a455a1c64665808',
+    ('muse_opaque_declared_invoke', 'nemotron_v3'): 'd4d553c7346854470314475e3506100435cbf185f82fa3fcc496ef1c6559cc1f',
+    ('muse_opaque_declared_invoke', 'qwen3'): '60e14d81d8db60b0541c99fbe571756bcda764349bb5286ebf5ae57d6cf827b1',
+    ('muse_opaque_undeclared_invoke', 'beam'): '2bc05791b1333beebc637734beda160e9149c2cb82701ac28b1f7f8dc727100e',
+    ('muse_opaque_undeclared_invoke', 'deepseek_v4'): '5ba1fdfce10541e66f8c951d2c581a363582236bed098d3bdd170aa7793045df',
+    ('muse_opaque_undeclared_invoke', 'deepseek_v41'): 'b7d3f093b83166c3b89bc91e3b8694f4c8424f9c33ada4cb87446d3205e19efb',
+    ('muse_opaque_undeclared_invoke', 'glm47'): '29d70036e3872f39307e6fcf52c2dbcd0df9cf38cf4e8b4a1d3ad01f0b74c1f0',
+    ('muse_opaque_undeclared_invoke', 'gpt_oss'): '429643a388cdde2372fe6a853e982d4ccd3301fd6a57f55be0cc0511760f00d2',
+    ('muse_opaque_undeclared_invoke', 'kimi_k2'): 'e5759450ff9d4d2f9d45abc0df81bf7c6bb427021120b7dfbd5757bf626b2a96',
+    ('muse_opaque_undeclared_invoke', 'kimi_k3'): '801d4e1154614ba9a5374a58948e8e1b4c4c4aac71e451b89b9e40a573a1c47a',
+    ('muse_opaque_undeclared_invoke', 'minimax_m3'): '7f5f30d845de9df342e70c1f34233353558fec4becb45e5b48cb322d54836824',
+    ('muse_opaque_undeclared_invoke', 'muse_glimmer'): '4be03037eecf0c48e572a3d485a81eca5754c15b937bc039eecfc7300f07518d',
+    ('muse_opaque_undeclared_invoke', 'muse_spark'): '4be03037eecf0c48e572a3d485a81eca5754c15b937bc039eecfc7300f07518d',
+    ('muse_opaque_undeclared_invoke', 'nemotron_v3'): '81916f693fa23cfe1cf4a3dc8afb96ec079fa2b7a629760f175490bdf824f3b5',
+    ('muse_opaque_undeclared_invoke', 'qwen3'): '016095abef86c16301ccf634fe07f0c41039f13df8e1b82efb8282ea361634eb',
+    ('muse_recovery_second_parameter', 'beam'): 'd6ff8c6990fcbe6be8ecee9d39c3bfc2fb52f8a0008f375089e766a0e77df2bc',
+    ('muse_recovery_second_parameter', 'deepseek_v4'): '57e85959ed8347538f3f32aefec5066db5ee82357b2b1309532fe51b68e0e2ef',
+    ('muse_recovery_second_parameter', 'deepseek_v41'): '72bf833e7b8bd00e678e80a017f5a1f9aef991c47fa749e8f3e951b367a60e2c',
+    ('muse_recovery_second_parameter', 'glm47'): '346b9503e0add7ffad3530e3158069185329f50666cd3a313a67b9106fb28c94',
+    ('muse_recovery_second_parameter', 'gpt_oss'): 'c5ffe3faa0e17db8cda4f322f87854f80a57d037d57da2f448247c07606e95a9',
+    ('muse_recovery_second_parameter', 'kimi_k2'): '9a730b4bbd85b71154f80929d53c31dae04c0613f68dfeb3a042c2078e96b1e1',
+    ('muse_recovery_second_parameter', 'kimi_k3'): '2f0492cfec8d757ad845b21f14e2dfce9247bd19d4d9d31e347618ae407e3685',
+    ('muse_recovery_second_parameter', 'muse_glimmer'): '6c19ad62908ef40301b2a95a4d38aec46b26e528d32724ebe3ba0f2108e9938a',
+    ('muse_recovery_second_parameter', 'muse_spark'): '6c19ad62908ef40301b2a95a4d38aec46b26e528d32724ebe3ba0f2108e9938a',
+    ('muse_recovery_second_parameter', 'nemotron_v3'): '0de45f2659c72de72da4c7ef675d7120bca00af880a513e14e140518d037534f',
+    ('muse_recovery_second_parameter', 'qwen3'): '77572f0b3f8cb2c8e461cfabef6b31e95579d8b5877b53c75f771f669774fd4c',
+    ('muse_unterminated_parameter_then_call', 'muse_glimmer'): 'dc3d4055362b37907ae3e7b27b76220fa5c7fd44ab38753792c4cf523b4f6274',
+    ('muse_unterminated_parameter_then_call', 'muse_spark'): 'dc3d4055362b37907ae3e7b27b76220fa5c7fd44ab38753792c4cf523b4f6274',
+    ('muse_unterminated_parameter_then_empty_call', 'beam'): '3c0738ef369a4a8aad46e9cee3498bd1993ebbaa56c2042dda86bbcf6cefeb9a',
+    ('muse_unterminated_parameter_then_empty_call', 'deepseek_v4'): '83421799b98b4a420cc61fade96d909de6581bfa9a80930172461e53935692d0',
+    ('muse_unterminated_parameter_then_empty_call', 'deepseek_v41'): '46bbeeb5560caf336419b8563b1843759dab493710abf922e11e351d3a45706d',
+    ('muse_unterminated_parameter_then_empty_call', 'gemma4'): '565a48283e953196d1d7d18827e181a908a415f52066aa9ad930ac5e4f333e92',
+    ('muse_unterminated_parameter_then_empty_call', 'glm47'): 'd208189e20447671b7cfbedb6c30fd77ab5b20c4f54e7132c65d12948f1a3a86',
+    ('muse_unterminated_parameter_then_empty_call', 'gpt_oss'): '9f189fbb98dc61c6cab75b694de3d40fbd8dc53d3e4b8301a95e994fcc894489',
+    ('muse_unterminated_parameter_then_empty_call', 'kimi_k2'): '60c7b1735c6c672ff5db933cbe138ae5e20eac68a807883aa6df197c514731e3',
+    ('muse_unterminated_parameter_then_empty_call', 'kimi_k3'): '53fb539318c55838615a8bd77b03adb4f909e4d5cc7bcd747ad35fab6536b069',
+    ('muse_unterminated_parameter_then_empty_call', 'minimax_m3'): '24af3d0d6abdcf88097ffc49d79f77f50f44c963c8fe0007c64abbc10a04aab2',
+    ('muse_unterminated_parameter_then_empty_call', 'muse_glimmer'): '78a76812c2a5487511c17281d7d2718760407dd04504bef5a09e675869c1e90d',
+    ('muse_unterminated_parameter_then_empty_call', 'muse_spark'): '78a76812c2a5487511c17281d7d2718760407dd04504bef5a09e675869c1e90d',
+    ('muse_unterminated_parameter_then_empty_call', 'nemotron_v3'): '9b2f0eada5e20c54231bdb227f27b7a678b469459782be51a28b3e265abb10d3',
+    ('muse_unterminated_parameter_then_empty_call', 'qwen3'): 'd5ef059a8abdb7c00051c1b59d2abccb2d0c3b16bb17f54418a5e9ba943d3555',
+    ('muse_unterminated_reasoning_guided', 'beam'): 'bf0c6ee36f6847aa798afb31e123e222d53dd44f8768c82fc2803adcd631e224',
+    ('muse_unterminated_reasoning_guided', 'deepseek_v4'): '67347c3c7fce4a2034d7bd816fc24d2f22f8af02636cbfab3f220db149f06f79',
+    ('muse_unterminated_reasoning_guided', 'deepseek_v41'): '093d5515ccddb8362ab82e02cad92f8e774fc91ee38643e879c6cf65c800d4c3',
+    ('muse_unterminated_reasoning_guided', 'gemma4'): 'f251a7e891c9921d8aa709893210cd1857e68db6012009f2ad0c7326529fa660',
+    ('muse_unterminated_reasoning_guided', 'glm47'): '4a8ada03a9e9bf8e82643db6c7d0b3b720780e8655cab35490b429165b823f3d',
+    ('muse_unterminated_reasoning_guided', 'gpt_oss'): '7839327129cd7ca4fbfc536d4e18aceacc7d5654f03e6468a2f7cb68ad21771a',
+    ('muse_unterminated_reasoning_guided', 'kimi_k2'): 'a967829398fccfac47e98c19d6dc2a01bcb58b0416b619e735cf65cbc3b1477f',
+    ('muse_unterminated_reasoning_guided', 'kimi_k3'): 'c50aca7e4c54cb63d7f524e7fd81c28c3831c569696d8c02a74c62def838eefa',
+    ('muse_unterminated_reasoning_guided', 'minimax_m3'): 'eb1dcc372cb85293a0a7c7ae87dd16b8f4a65cdb38013da7bd1e9399bba403bc',
+    ('muse_unterminated_reasoning_guided', 'muse_glimmer'): '8ecccd2be10b1bff3de9cb6686c3f13204793135dcfac34774d93437d49316c1',
+    ('muse_unterminated_reasoning_guided', 'muse_spark'): '8ecccd2be10b1bff3de9cb6686c3f13204793135dcfac34774d93437d49316c1',
+    ('muse_unterminated_reasoning_guided', 'nemotron_v3'): '37f03498d86c33fa5036c450bbc887a81f3cbfe7912635f86993105b9bb0875f',
+    ('muse_unterminated_reasoning_guided', 'qwen3'): 'a786cd9249410f23ae88e92238e91dd9d6bf90f548cb722f5d3ceba3da7652ca',
+    ('muse_unterminated_reasoning_native', 'gemma4'): '9383cd55d5f58f4b1a952eb9b28c7171bd06e52f17b06ad279313f23ec50f445',
+    ('muse_unterminated_reasoning_native', 'muse_glimmer'): 'ee2d156ab503f92c3cacd39e023e3d2af6831e021a9f6b075c3fe4cd24105d79',
+    ('muse_unterminated_reasoning_native', 'muse_spark'): 'ee2d156ab503f92c3cacd39e023e3d2af6831e021a9f6b075c3fe4cd24105d79',
+}
+
+
+def _muse_native_scope(scenario):
+    if scenario in {"muse_opaque_declared_invoke", "muse_opaque_undeclared_invoke"}:
+        return set(NATIVE_FAMILIES) - {"gemma4"}
+    if scenario == "muse_recovery_second_parameter":
+        return set(NATIVE_FAMILIES) - {"gemma4", "minimax_m3"}
+    if scenario == "muse_unterminated_parameter_then_call":
+        return {"muse_glimmer", "muse_spark"}
+    if scenario == "muse_unterminated_parameter_then_empty_call":
+        return set(NATIVE_FAMILIES)
+    if scenario == "muse_unterminated_reasoning_native":
+        return {"muse_glimmer", "muse_spark", "gemma4"}
+    assert scenario == "muse_unterminated_reasoning_guided"
+    return set(NATIVE_FAMILIES)
+
+
+def _assert_muse_native_case(family, scenario, case):
+    request = {"input": case["input"], "init": case["init"], "tools": case["tools"],
+               "finish_reason": case["finish_reason"],
+               "chunks": [{"delta_text": chunk} for chunk in case.get("input_chunks", [case["input"]])]}
+    contract = {**_without_synthetic_finish_step(request), "golden": case["golden"]}
+    digest = hashlib.sha256(json.dumps(contract, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+    assert digest == _MUSE_NATIVE_CONTRACTS[(scenario, family)], (family, scenario, "independent native Muse contract")
+    assert case["tools"] == G.unified_tools(), (family, scenario, "original seven-tool request")
+
+
+def _assert_muse_native_scopes(corpus):
+    for scenario in {scenario for scenario, _family in _MUSE_NATIVE_CONTRACTS}:
+        expected = _muse_native_scope(scenario)
+        assert set(G.scenario_families(scenario)) == expected, (scenario, "independent native Muse scope")
+        present = {family for family, cases in corpus.items() if f"UNIFIED.{scenario}.{family}" in cases}
+        assert present == expected, (scenario, "missing applicable native Muse child", expected - present)
+        assert taxonomy.case_fold(scenario) is None, (scenario, "published native identities remain explicit")
+        for family in expected:
+            _assert_muse_native_case(family, scenario, corpus[family][f"UNIFIED.{scenario}.{family}"])
+
+
+def test_muse_native_scopes_and_independent_contracts():
+    _assert_muse_native_scopes({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+@pytest.mark.parametrize("mutation", ["omitted", "exclusion", "input_payload", "golden_payload", "folded_child", "unsupported", "alias_duplicate"])
+def test_muse_native_contract_rejects_scope_and_payload_mutations(monkeypatch, mutation):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    scenario = "muse_opaque_declared_invoke"
+    family = "qwen3"
+    key = f"UNIFIED.{scenario}.{family}"
+    original_scope = G.scenario_families
+    if mutation == "input_payload":
+        corpus[family][key]["input"] = corpus[family][key]["input"].replace("doc: ", "incidental: ")
+        corpus[family][key]["input_chunks"] = list(corpus[family][key]["input"])
+    elif mutation == "golden_payload":
+        corpus[family][key]["golden"][0]["arguments"]["x"] = "changed"
+    elif mutation in {"unsupported", "alias_duplicate"}:
+        family = "gemma4" if mutation == "unsupported" else "qwen3"
+        target = scenario if mutation == "unsupported" else "muse_unterminated_parameter_then_call"
+        corpus[family][f"UNIFIED.{target}.{family}"] = deepcopy(corpus["qwen3"][key])
+        monkeypatch.setattr(G, "scenario_families", lambda name: original_scope(name) | {family} if name == target else original_scope(name))
+    else:
+        del corpus[family][key]
+        if mutation == "exclusion":
+            monkeypatch.setattr(G, "scenario_families", lambda name: original_scope(name) - {family} if name == scenario else original_scope(name))
+        elif mutation == "folded_child":
+            assert f"UNIFIED.muse_opaque_undeclared_invoke.{family}" in corpus[family]
+            original_fold = taxonomy.case_fold
+            monkeypatch.setattr(taxonomy, "case_fold", lambda name: ("muse_opaque_undeclared_invoke", "declared") if name == scenario else original_fold(name))
+    with pytest.raises(AssertionError):
+        _assert_muse_native_scopes(corpus)
+
+
+def test_shared_muse_cases_have_generic_display_groups_without_changing_ids():
+    groups = {"muse_opaque_declared_invoke": 12, "muse_opaque_undeclared_invoke": 12,
+              "muse_recovery_second_parameter": 12, "muse_unterminated_parameter_then_empty_call": 5,
+              "muse_unterminated_reasoning_native": 12, "muse_unterminated_reasoning_guided": 34}
+    for scenario, group in groups.items():
+        assert taxonomy.display_tax(scenario)[0] == group
+        assert numbered_id(scenario) == "UNIFIED.muse-" + scenario.removeprefix("muse_")
+
+
+
+def _assert_m3_nested_marker_contract(corpus):
+    scenario = "kimi_k3_typed_json_marker_payload"
+    # The original inspect schema declares x.inner as string. M3's native
+    # nested tags therefore preserve sibling closing/opening tags as data.
+    assert set(G.scenario_families(scenario)) == set(NATIVE_FAMILIES)
+    for family in NATIVE_FAMILIES:
+        assert f"UNIFIED.{scenario}.{family}" in corpus[family], (family, scenario, "missing applicable nested marker child")
+    case = corpus["minimax_m3"][f"UNIFIED.{scenario}.minimax_m3"]
+    request = {"input": case["input"], "init": case["init"], "tools": case["tools"],
+               "finish_reason": case["finish_reason"],
+               "chunks": [{"delta_text": c} for c in case.get("input_chunks", [case["input"]])]}
+    contract = {**_without_synthetic_finish_step(request), "golden": case["golden"]}
+    digest = hashlib.sha256(json.dumps(contract, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+    assert digest == '91c638e2a236bd4f852772de9e333d977d3e575c15eeffcef541bc47c9082013', "independent M3 nested marker contract"
+
+
+def test_m3_nested_marker_contract_and_scope():
+    _assert_m3_nested_marker_contract({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+@pytest.mark.parametrize("mutation", ["omitted", "exclusion", "input_payload", "golden_payload"])
+def test_m3_nested_marker_contract_rejects_mutations(monkeypatch, mutation):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    scenario = "kimi_k3_typed_json_marker_payload"
+    key = f"UNIFIED.{scenario}.minimax_m3"
+    if mutation in {"omitted", "exclusion"}:
+        del corpus["minimax_m3"][key]
+        if mutation == "exclusion":
+            original = G.scenario_families
+            monkeypatch.setattr(G, "scenario_families", lambda name: original(name) - {"minimax_m3"} if name == scenario else original(name))
+    elif mutation == "input_payload":
+        corpus["minimax_m3"][key]["input"] += "incidental"
+        corpus["minimax_m3"][key]["input_chunks"] = list(corpus["minimax_m3"][key]["input"])
+    else:
+        corpus["minimax_m3"][key]["golden"][0]["arguments"]["x"]["inner"] = "changed"
+    with pytest.raises(AssertionError):
+        _assert_m3_nested_marker_contract(corpus)

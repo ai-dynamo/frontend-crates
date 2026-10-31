@@ -81,10 +81,6 @@ changes:
         - expected:
           - kind: text
             text: 'call:[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
-    case_key: UNIFIED.30.m
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
   guided_json_narrated_prefix_inside_reasoning:
     observation:
       value:
@@ -102,10 +98,6 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-    case_key: UNIFIED.31-22
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
   guided_json_native_markup_only:
     observation:
       value:
@@ -125,10 +117,6 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"Paris"}'
-    case_key: UNIFIED.31-23
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
   guided_json_schema_error_nameless_element_bare_opener:
     observation:
       value:
@@ -139,10 +127,6 @@ changes:
         - expected:
           - kind: text
             text: 'call:[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
-    case_key: UNIFIED.31-20
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
   guided_json_schema_error_not_a_call_bare_opener:
     observation:
       value:
@@ -153,10 +137,6 @@ changes:
         - expected:
           - kind: text
             text: 'call:{"unexpected": "shape"}'
-    case_key: UNIFIED.31-17
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
   guided_json_stray_prefix_before_reasoning:
     observation:
       value:
@@ -179,10 +159,6 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-    case_key: UNIFIED.31-21
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
   guided_json_syntax_error_bare_opener:
     observation:
       value:
@@ -193,10 +169,24 @@ changes:
         - expected:
           - kind: text
             text: 'call:[{"name": "get_weather", "arguments": {"city": '
-    case_key: UNIFIED.31-14
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
+  kimi_k3_malformed_call_then_valid:
+    absent: true
+  kimi_native_incompatible_string_recovery:
+    absent: true
+  kimi_native_incremental_interfield_whitespace:
+    absent: true
+  kimi_native_k2_count_content_chunk1024:
+    absent: true
+  kimi_native_k2_count_content_chunk7:
+    absent: true
+  kimi_native_trailing_syntax_whitespace:
+    absent: true
+  kimi_native_valid_object_trailing_garbage:
+    absent: true
+  muse_unterminated_parameter_then_empty_call:
+    absent: true
+  muse_unterminated_reasoning_native:
+    absent: true
   qwen_string_null:
     case_key: UNIFIED.7-4
     observation:
@@ -229,14 +219,56 @@ changes:
         - expected:
           - kind: text
             text: done
-    case_key: UNIFIED.10.e
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
 metadata_changes:
   arg_json_null_anyof:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -278,9 +310,100 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_json_null_const:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - const: null
+                  - type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -322,9 +445,99 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - const: null
+                  - type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_json_null_nullable:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  nullable: true
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -365,9 +578,99 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  nullable: true
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_json_null_oneof:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  oneOf:
+                  - type: string
+                  - type: 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -409,6 +712,51 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  oneOf:
+                  - type: string
+                  - type: 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_marker_in_string:
     verified_recapture:
       result:
@@ -515,6 +863,58 @@ metadata_changes:
         - expected: []
         - expected: []
         - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"null"}'
@@ -549,9 +949,114 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_string_null_const:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - const: 'null'
+                  - type: integer
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -601,9 +1106,117 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - const: 'null'
+                  - type: integer
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_string_null_enum:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  enum:
+                  - 'null'
+                  - null
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -654,9 +1267,118 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  enum:
+                  - 'null'
+                  - null
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_string_null_sibling_anyof:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -707,9 +1429,120 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_string_null_sibling_oneof:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  type:
+                  - string
+                  - 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -762,9 +1595,119 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  type:
+                  - string
+                  - 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_string_null_union:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: integer
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -814,9 +1757,117 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: integer
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_string_null_untyped_branch:
     verified_recapture:
       result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - minLength: 1
+                  - type: 'null'
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: tool_call
           name: get_weather
@@ -867,6 +1918,60 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"null"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: 'null'
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:<|"|>null<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  anyOf:
+                  - minLength: 1
+                  - type: 'null'
+                  type: string
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   arg_unicode:
     verified_recapture:
       result:
@@ -1228,6 +2333,186 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_request_not_retained
+  glm47_parameterless_call_shape_inside_argument:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+      version: 0.26.0
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"cmd":"before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after"}'
+            kind: tool_call
+            name: run
+        capture_input:
+          chunks:
+          - delta_text: <|tool_
+          - delta_text: call>ca
+          - delta_text: ll:run{
+          - delta_text: cmd:<|"
+          - delta_text: '|>befor'
+          - delta_text: e <tool
+          - delta_text: _call|>
+          - delta_text: <|tool_
+          - delta_text: call>ca
+          - delta_text: ll:get_
+          - delta_text: weather
+          - delta_text: '{}<tool'
+          - delta_text: _call|>
+          - delta_text: ' after<'
+          - delta_text: '|"|>}<t'
+          - delta_text: ool_cal
+          - delta_text: l|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:run{cmd:<|"|>before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+  glm47_reference_type_intersection:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+      version: 0.26.0
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload: '{"x":1}'
+            count: 42
+        chunks:
+        - expected:
+          - arguments: '{"payload":"{\"x\":1}","count":42}'
+            kind: tool_call
+            name: capture_payload
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>call:capture_payload{payload:<|"|>{"x":1}<|"|>,count:42}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:capture_payload{payload:<|"|>{"x":1}<|"|>,count:42}<tool_call|>
+          tools:
+          - name: capture_payload
+            parameters:
+              $defs:
+                Count:
+                  type: integer
+                Text:
+                  type: string
+                TextAlias:
+                  $ref: '#/$defs/Text'
+              properties:
+                count:
+                  $ref: '#/$defs/Count'
+                  minimum: 1
+                payload:
+                  $ref: '#/$defs/TextAlias'
+                  allOf:
+                  - type: string
+              required:
+              - payload
+              - count
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   glm_ref_encoded_targets:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -3789,6 +5074,160 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_request_not_retained
+  guided_native_after_prefilled_reasoning_named:
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+      version: 0.26.0
+    verified_recapture:
+      result:
+        unavailable: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+        capture_input:
+          chunks:
+          - delta_text: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: get_weather
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+          input: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        capture_stimulus:
+          unavailable:
+            code: vllm_rust_guided_json_unsupported
+            detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+  guided_native_after_prefilled_reasoning_required:
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+      version: 0.26.0
+    verified_recapture:
+      result:
+        unavailable: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+        capture_input:
+          chunks:
+          - delta_text: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+          input: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        capture_stimulus:
+          unavailable:
+            code: vllm_rust_guided_json_unsupported
+            detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   guided_quoted_reasoning_closer_named:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -3923,6 +5362,235 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_request_not_retained
+  kimi_k3_guided_native_wrapper:
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+      version: 0.26.0
+    verified_recapture:
+      result:
+        unavailable: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+        capture_input:
+          chunks:
+          - delta_text: '<|tool_call>call:ignored{quoted:<|"|>literal<|"|>}<tool_call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: GuidedJson
+          input: '<|tool_call>call:ignored{quoted:<|"|>literal<|"|>}<tool_call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        capture_stimulus:
+          unavailable:
+            code: vllm_rust_guided_json_unsupported
+            detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+  kimi_k3_typed_argument_values:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+      version: 0.26.0
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: echo ok
+            count: 2
+            force: true
+            options:
+              cwd: /tmp
+            tags:
+            - a
+            - b
+            note: null
+        chunks:
+        - expected:
+          - arguments: '{"cmd":"echo ok","count":2,"force":true,"options":{"cwd":"/tmp"},"tags":["a","b"],"note":null}'
+            kind: tool_call
+            name: run
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>call:run{cmd:<|"|>echo ok<|"|>,count:2,force:true,options:{cwd:<|"|>/tmp<|"|>},tags:[<|"|>a<|"|>,<|"|>b<|"|>],note:null}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:run{cmd:<|"|>echo ok<|"|>,count:2,force:true,options:{cwd:<|"|>/tmp<|"|>},tags:[<|"|>a<|"|>,<|"|>b<|"|>],note:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+  kimi_k3_typed_json_marker_payload:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+      version: 0.26.0
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            x:
+              inner: '},y:'
+            y: OK
+        chunks:
+        - expected:
+          - arguments: '{"x":{"inner":"},y:"},"y":"OK"}'
+            kind: tool_call
+            name: inspect
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>call:inspect{x:{inner:<|"|>},y:<|"|>},y:<|"|>OK<|"|>}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:inspect{x:{inner:<|"|>},y:<|"|>},y:<|"|>OK<|"|>}<tool_call|>
+          tools:
+          - name: inspect
+            parameters:
+              properties:
+                x:
+                  properties:
+                    inner:
+                      type: string
+                  required:
+                  - inner
+                  type: object
+                y:
+                  type: string
+              required:
+              - x
+              - y
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   local_schema_id_preserves_type:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -4854,6 +6522,52 @@ metadata_changes:
         - expected: []
         - expected: []
         - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type:
+                  - string
+                  - 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":null}'
@@ -4886,6 +6600,51 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_adapter_unsupported
+    - result:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":null}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>
+          - delta_text: call:get_weather{city:null}
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{city:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type:
+                  - string
+                  - 'null'
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+        git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+        implementation: vllm_rust
+        job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+        results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+        source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+        version: 0.26.0
+      resolution: fresh_execution
   reason_after_tool:
     verified_recapture:
       result:
@@ -8570,6 +10329,18 @@ document_overrides:
         vllm_rust: 0.26.0
       capture_origin: null
       inherited_from: null
+  glm47_parameterless_call_shape_inside_argument:
+    capture_provenance:
+      captured_with:
+        vllm_rust: 0.26.0
+      capture_origin: null
+      inherited_from: null
+  glm47_reference_type_intersection:
+    capture_provenance:
+      captured_with:
+        vllm_rust: 0.26.0
+      capture_origin: null
+      inherited_from: null
   glm_ref_encoded_targets:
     capture_provenance:
       captured_with:
@@ -8594,6 +10365,18 @@ document_overrides:
         vllm_rust: 0.26.0
       capture_origin: null
       inherited_from: null
+  guided_native_after_prefilled_reasoning_named:
+    capture_provenance:
+      captured_with:
+        vllm_rust: 0.26.0
+      capture_origin: null
+      inherited_from: null
+  guided_native_after_prefilled_reasoning_required:
+    capture_provenance:
+      captured_with:
+        vllm_rust: 0.26.0
+      capture_origin: null
+      inherited_from: null
   guided_quoted_reasoning_closer_named:
     capture_provenance:
       captured_with:
@@ -8613,6 +10396,24 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        vllm_rust: 0.26.0
+      capture_origin: null
+      inherited_from: null
+  kimi_k3_guided_native_wrapper:
+    capture_provenance:
+      captured_with:
+        vllm_rust: 0.26.0
+      capture_origin: null
+      inherited_from: null
+  kimi_k3_typed_argument_values:
+    capture_provenance:
+      captured_with:
+        vllm_rust: 0.26.0
+      capture_origin: null
+      inherited_from: null
+  kimi_k3_typed_json_marker_payload:
     capture_provenance:
       captured_with:
         vllm_rust: 0.26.0

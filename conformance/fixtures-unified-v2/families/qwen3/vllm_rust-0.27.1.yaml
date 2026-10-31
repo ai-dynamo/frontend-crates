@@ -1,0 +1,290 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    vllm_rust: 0.27.1
+document:
+  mode: unified
+records:
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 16b96b5e7e55d3c91d8a89585d6fe816904a3652c26191ee2c3a8e96143ce361
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete Qwen Coder tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e6fea6307fa824fbb27b60ab064fbfcc09cc23eab65e7309e159701d78b96f11
+            results_sha256: 4207a48acee30d2acd677f65575ca263c24c38d32a772d32fc7f0567eabc63f9
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.27.1.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 01a1a649e65789c9799e32c8aaf04a3c9424179fb6590700fa28042e04b43dfa
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"\\\" marker is part of the explanation.<tool_call>\\n<function=get_weather>\\n<paramete\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e6fea6307fa824fbb27b60ab064fbfcc09cc23eab65e7309e159701d78b96f11
+            results_sha256: 4207a48acee30d2acd677f65575ca263c24c38d32a772d32fc7f0567eabc63f9
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.27.1.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 86f450d735df777c06ffedf101b8114ce1020d9c4b8b2838366581ab87370fb6
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete Qwen Coder tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal `
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e6fea6307fa824fbb27b60ab064fbfcc09cc23eab65e7309e159701d78b96f11
+            results_sha256: 4207a48acee30d2acd677f65575ca263c24c38d32a772d32fc7f0567eabc63f9
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.27.1.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: 7373efc5089a145deed48da5bdd5db9ed31aff4081263066bfab7e804cff0022
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete Qwen Coder tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''doesn''t '
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e6fea6307fa824fbb27b60ab064fbfcc09cc23eab65e7309e159701d78b96f11
+            results_sha256: 4207a48acee30d2acd677f65575ca263c24c38d32a772d32fc7f0567eabc63f9
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.27.1.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: f3155d7b41c6e17e2d7255aef81ca5625a8f81a6334756236720d4f28ee84b35
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete Qwen Coder tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''example '
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e6fea6307fa824fbb27b60ab064fbfcc09cc23eab65e7309e159701d78b96f11
+            results_sha256: 4207a48acee30d2acd677f65575ca263c24c38d32a772d32fc7f0567eabc63f9
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.27.1.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 920fda132599b6c72d0f776b2f21d8b7879ed204ac1f1a97cb565ae4526ae8a8
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: He said "maybe
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e6fea6307fa824fbb27b60ab064fbfcc09cc23eab65e7309e159701d78b96f11
+            results_sha256: 4207a48acee30d2acd677f65575ca263c24c38d32a772d32fc7f0567eabc63f9
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.27.1.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: b050398c038d346d482cc355b4207785b2c1b1ab620149e7f2702fc72f7a37e6
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <think>literal</think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e6fea6307fa824fbb27b60ab064fbfcc09cc23eab65e7309e159701d78b96f11
+            results_sha256: 4207a48acee30d2acd677f65575ca263c24c38d32a772d32fc7f0567eabc63f9
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.27.1.yaml

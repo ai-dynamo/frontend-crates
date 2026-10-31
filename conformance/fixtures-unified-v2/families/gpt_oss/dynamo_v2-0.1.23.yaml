@@ -1,0 +1,200 @@
+schema_version: 2
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.1.23
+    source_sha256: 2f35a9ce29cd072db8313dfc7315c8e1c979442515f20887311d82b54939ebff
+    adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+    job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+    git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+document:
+  mode: unified
+records:
+  kimi_k3_json_marker_then_long_field:
+    value:
+      case_key: kimi_k3_json_marker_then_long_field
+      stimulus:
+        ref: current
+        semantic_sha256: 113eb284f442478af66ff5875fd95931d5d733973039b10bf685d9361fe6c877
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.1.23
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.1.23
+            git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+            source_sha256: 2f35a9ce29cd072db8313dfc7315c8e1c979442515f20887311d82b54939ebff
+            adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+            job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+            crate_checksum: 948332d4646bf6eb14796f70fa99a640baec53db5b786119be994f84317274f4
+            reasoning_version: 5.1.0
+            results_sha256: 674fb18e670d114a6fdfef3e125d5fd7114e06297848dc8a0cb301c74c983425
+            cargo_lock_sha256: 502dbb36aa9a1ce9f09e14221ea12ef846594a1549b7d2dcbdf766c1b0f042d4
+        capture_origin:
+          crate_version: 0.1.23
+          source_sha256: 2f35a9ce29cd072db8313dfc7315c8e1c979442515f20887311d82b54939ebff
+          adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+          job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+          git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.1.23.yaml
+  kimi_k3_typed_response_then_call:
+    value:
+      case_key: kimi_k3_typed_response_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: b6c996ab9bede6e4a6e9b284dc13fcceefbf6a6857a012b546bca3ee3c9b67bc
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.1.23
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.1.23
+            git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+            source_sha256: 2f35a9ce29cd072db8313dfc7315c8e1c979442515f20887311d82b54939ebff
+            adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+            job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+            crate_checksum: 948332d4646bf6eb14796f70fa99a640baec53db5b786119be994f84317274f4
+            reasoning_version: 5.1.0
+            results_sha256: 674fb18e670d114a6fdfef3e125d5fd7114e06297848dc8a0cb301c74c983425
+            cargo_lock_sha256: 502dbb36aa9a1ce9f09e14221ea12ef846594a1549b7d2dcbdf766c1b0f042d4
+        capture_origin:
+          crate_version: 0.1.23
+          source_sha256: 2f35a9ce29cd072db8313dfc7315c8e1c979442515f20887311d82b54939ebff
+          adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+          job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+          git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.1.23.yaml
+  kimi_k3_direct_typed_response_recovery:
+    value:
+      case_key: kimi_k3_direct_typed_response_recovery
+      stimulus:
+        ref: current
+        semantic_sha256: a54b346d3c3760509f79f3af9b3b709d87db685b309ab4d7a8abcbf2046d44f2
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: split capture cannot apply the requested initialization
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.1.23
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: Response
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.1.23
+            git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+            source_sha256: 2f35a9ce29cd072db8313dfc7315c8e1c979442515f20887311d82b54939ebff
+            adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+            job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+            crate_checksum: 948332d4646bf6eb14796f70fa99a640baec53db5b786119be994f84317274f4
+            reasoning_version: 5.1.0
+            results_sha256: 674fb18e670d114a6fdfef3e125d5fd7114e06297848dc8a0cb301c74c983425
+            cargo_lock_sha256: 502dbb36aa9a1ce9f09e14221ea12ef846594a1549b7d2dcbdf766c1b0f042d4
+        capture_origin:
+          crate_version: 0.1.23
+          source_sha256: 2f35a9ce29cd072db8313dfc7315c8e1c979442515f20887311d82b54939ebff
+          adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+          job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+          git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.1.23.yaml

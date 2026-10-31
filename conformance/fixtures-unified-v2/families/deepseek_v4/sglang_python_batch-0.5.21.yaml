@@ -1,0 +1,667 @@
+schema_version: 2
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.5.21
+    source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+    adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+    job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+document:
+  mode: unified
+records:
+  native_quoted_control_in_reasoning:
+    value:
+      case_key: native_quoted_control_in_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: cd13fe797c0e310f8325940e9ae2053e6de57817fd310b08a17805837fdfb5e4
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: ce740c7b97681e2fe84466d5c48d43e4a791d405cbd6d0fc687a4645db770c7f
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal "
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: cd315a5698d0555dbf11752e5856d31b67c537039df4ea715621b3f89ede5e3e
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal "
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: a5e13756a637db063cae59e60858c329b65f52a0e8a8c0650b34396bb42bd5c0
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal `
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal `
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  native_single_quote_contraction_reasoning:
+    value:
+      case_key: native_single_quote_contraction_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 2938b04536bb934a68dcd2e6dad6cc4e86af4613aaaf4b22d01c85fcf055364c
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: 38c99362c05e6e436e53c3b9de934d4c4827edc1924f424a8c12b304a0cf67a3
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''doesn''t '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'The literal ''doesn''t '
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: eefa887d200e1f2d5a12de395526b7219b41f594070263e3c05e63084a4e5f91
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''example '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'The literal ''example '
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: c507debfe3be3c599e2625ca84e55aed8319caaee67d17d223e653c9c66ecefc
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: He said "maybe
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 2a7defb75f1e13c93fe1a4892a61ed29120c18a60509c77b10bd4444575b722d
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: London
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: checking weather
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: London
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: no tool needed
+          - kind: text
+            text: The answer is 42.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: no tool needed
+            normal_text: The answer is 42.
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 7232a9331297a279b04594f622221b18a831ab58dca48f1d66c680dceccedc88
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: weighing options
+          - kind: text
+            text: 'Here''s what I found: '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: weighing options
+            normal_text: 'Here''s what I found: '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: ff01fd4ef27d324ad1ee7d522b97276d14edecc20f9af92eefff8f68b9cd7883
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: analyzing data
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: analyzing data
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: b8399187551098931c4f65a4b8d22d7994581be07562020d8a9817b1552d90ac
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: checking weather
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 0b1d9824f43b6e2ee803a046e2c662d190c8a5a6e9271f5d01b6ee6f552cc6f6
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <think>literal</think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: <think>literal</think> then a call
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.16.yaml
+    suppress_inherited_from: true
+  structured_response_after_reasoning:
+    value:
+      case_key: structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Parser-only batch capture does not execute structural-tag generation constraints.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 0f1a7035948600538168909eeb31125a56f09b848bb97ac96fe528c000e8bd43
+            results_sha256: 9dd4b5c2c17b1bb4c8f34a941ba72e73fea9cf9fbab040d4337a5068b4221f18
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.14.yaml
+    suppress_inherited_from: true

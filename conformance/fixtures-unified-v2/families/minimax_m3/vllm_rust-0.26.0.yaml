@@ -1,0 +1,347 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    vllm_rust: 0.26.0
+document:
+  mode: unified
+records:
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 543d331c555be2db08d4d4a4182fe7a4150c66ab4910494932b2dde9df1edf6c
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"\\\" marker is part of the explanation.\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.26.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+            implementation: vllm_rust
+            job_sha256: 7cdea3ef775da8da135fe53fb2df00c9cd641781796b83ec1791e0d21116d78e
+            results_sha256: 19246d5289c9578646f49e73a56e168a77ed10d8b7ec798b032c868a9e6e7081
+            source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+            version: 0.26.0
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml
+    suppress_inherited_from: true
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"\\\" marker is part of the explanation.]<]minimax[>[<tool_call>]<]minimax[>[<invoke\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.26.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+            implementation: vllm_rust
+            job_sha256: 7cdea3ef775da8da135fe53fb2df00c9cd641781796b83ec1791e0d21116d78e
+            results_sha256: 19246d5289c9578646f49e73a56e168a77ed10d8b7ec798b032c868a9e6e7081
+            source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+            version: 0.26.0
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml
+    suppress_inherited_from: true
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete MiniMax M3 tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.26.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal `
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+            implementation: vllm_rust
+            job_sha256: 7cdea3ef775da8da135fe53fb2df00c9cd641781796b83ec1791e0d21116d78e
+            results_sha256: 19246d5289c9578646f49e73a56e168a77ed10d8b7ec798b032c868a9e6e7081
+            source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+            version: 0.26.0
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml
+    suppress_inherited_from: true
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: e33413aa3749f755662ca1aaceb5ec9d30f120c84cb7f46e4506ea1098a3e45f
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \" marker'' stays quoted.\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.26.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''doesn''t '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+            implementation: vllm_rust
+            job_sha256: 7cdea3ef775da8da135fe53fb2df00c9cd641781796b83ec1791e0d21116d78e
+            results_sha256: 19246d5289c9578646f49e73a56e168a77ed10d8b7ec798b032c868a9e6e7081
+            source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+            version: 0.26.0
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml
+    suppress_inherited_from: true
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: b0b910ff77ea112990d5cc47dc50756613cb752578c2f48cb091d48ef3cb8fd6
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \" marker'' is part of the explanation.\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.26.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''example '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+            implementation: vllm_rust
+            job_sha256: 7cdea3ef775da8da135fe53fb2df00c9cd641781796b83ec1791e0d21116d78e
+            results_sha256: 19246d5289c9578646f49e73a56e168a77ed10d8b7ec798b032c868a9e6e7081
+            source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+            version: 0.26.0
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml
+    suppress_inherited_from: true
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: b0af57df118d379db2b65b3fbd88525d516b548b9f6a07ebe5c4e9d39a1e96e8
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: He said "maybe
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.26.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+            implementation: vllm_rust
+            job_sha256: 7cdea3ef775da8da135fe53fb2df00c9cd641781796b83ec1791e0d21116d78e
+            results_sha256: 19246d5289c9578646f49e73a56e168a77ed10d8b7ec798b032c868a9e6e7081
+            source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+            version: 0.26.0
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml
+    suppress_inherited_from: true
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 994a5cc49e2775f3609782ea14e61aa289b7c9904d3e7300dc7405038c6ac7bf
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <mm:think>literal</mm:think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: <mm:think>
+          - expected:
+            - kind: text
+              text: literal
+          - expected:
+            - kind: text
+              text: </mm:think>
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.26.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 568afb3a13806beb53bb2e6bd518269357b237c0
+            implementation: vllm_rust
+            job_sha256: 7cdea3ef775da8da135fe53fb2df00c9cd641781796b83ec1791e0d21116d78e
+            results_sha256: 19246d5289c9578646f49e73a56e168a77ed10d8b7ec798b032c868a9e6e7081
+            source_sha256: 0a7c1db1faff28f7ae6b11508db37da0efa62f3096312b821d962bf768dd37b6
+            version: 0.26.0
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml
+    suppress_inherited_from: true

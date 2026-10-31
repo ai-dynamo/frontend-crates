@@ -24,6 +24,7 @@ from capture_versions import capture_release_sort_key
 from verify_publication_transport import runtime_catalog
 from collections import defaultdict
 from unified_tools import unified_tools
+from explode_unified_fixtures import _split_only_cases
 
 
 REPO = Path(__file__).resolve().parents[3]
@@ -312,3 +313,96 @@ def assert_unique_behaviour(family, cases, *, retained_archives=None):
         assert len(canonical) <= 1, f"{family}: scenarios with identical behaviour: {names}"
     return {"family": family, "active_cases": len(active_ids), "retired_cases": retired_ids, "exact_duplicates": duplicates,
             "retained_archive_exceptions": retained_archives}
+
+
+# Exact native requests independently reproduced in whole-input and character
+# schedules before authoring these missing counterparts. Includes GOLDEN so a
+# matching input/output mutation cannot redefine the contract.
+GPT58_NATIVE_REQUEST_DIGESTS = {('gpt_oss_quoted_message_header_literal', 'beam'): '1b3415dded9f6858b543e93a6f474d192dcc48b44bd4d9d28205592ded84caea', ('gpt_oss_quoted_truncated_tool_then_final', 'beam'): 'd2f8b7ef827bf84218e537463b057661646e65a878f5aca1d94311708b85d1eb', ('gpt_oss_control_marker_inside_argument_string', 'beam'): '7bba34052b204df5cda97192ae7b014c5f5351c30bc3a86460ac7a8273c25b23', ('gpt_oss_control_marker_inside_argument_string', 'muse_glimmer'): '9c3b5d363eeaf8d015a1efaac853bc0e5a3861053bf7c0f60dde41cf32fde91c', ('gpt_oss_control_marker_inside_argument_string', 'muse_spark'): '9c3b5d363eeaf8d015a1efaac853bc0e5a3861053bf7c0f60dde41cf32fde91c'}
+
+
+def assert_gpt58_native_contract(family, scenario, case):
+    request = {
+        "input": case["input"], "init": case["init"], "tools": case["tools"],
+        "finish_reason": case["finish_reason"],
+        "chunks": [{"delta_text": chunk} for chunk in case.get("input_chunks", [case["input"]])],
+        "golden": case["golden"],
+    }
+    digest = hashlib.sha256(json.dumps(request, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+    assert digest == GPT58_NATIVE_REQUEST_DIGESTS[(scenario, family)], (family, scenario, "independent native marker/header request")
+
+
+FRAMED_FAMILIES = frozenset({'beam', 'gpt_oss', 'muse_glimmer', 'muse_spark'})
+SHARED_SCENARIOS = {
+    'kimi_k3_json_marker_then_long_field': 'arg_marker_in_string',
+    'kimi_k3_typed_response_then_call': 'tool_no_close',
+    'kimi_k3_direct_typed_response_recovery': 'tool_no_close',
+}
+
+# Source-authored native contracts, subsequently replayed against the retained
+# 0.9.0 producer; pin both sides to reject coordinated input/GOLDEN drift.
+NATIVE_RESPONSE_CONTRACTS = {
+    ('kimi_k3_json_marker_then_long_field', 'beam'): '767d3700b679500b429668654f6ed0c406038166d441fad237b3b500fba58972',
+    ('kimi_k3_typed_response_then_call', 'beam'): '4db9e5f52830d1f34a70a96e7d57819871f90285022956f35b80fed7b5c8ff5c',
+    ('kimi_k3_direct_typed_response_recovery', 'beam'): 'e2b2aa19be42eb83faa063675a29bc09739307eaf50ce29f4fbf903d4e3a76e2',
+    ('kimi_k3_json_marker_then_long_field', 'gpt_oss'): '4bd861694fdb9e55167cc97bed58c7a0fad3cf902765343240622d01afc0a0dc',
+    ('kimi_k3_typed_response_then_call', 'gpt_oss'): 'da3a6d34790da53b69455509e904adc94e5bc3c9a0ab62efcf27f18f524384b6',
+    ('kimi_k3_direct_typed_response_recovery', 'gpt_oss'): '681d506ef778aa0f9a3b8f0bc16ddabc590299fb5350256512e4ad45124e5f97',
+    ('kimi_k3_json_marker_then_long_field', 'muse_glimmer'): 'ac1bea64add9d8d848064a8927f9b4f4af3aec07de6251091d15cc4e468b492f',
+    ('kimi_k3_typed_response_then_call', 'muse_glimmer'): 'd6daed016b6deb3474a10b02e047dc27b0a7d0113caf19188a2c3be269aee6a2',
+    ('kimi_k3_direct_typed_response_recovery', 'muse_glimmer'): 'ab51ee971a4f42c9014dff20be8d5e9ffce889cc2a041260392ab5775bfd80f3',
+    ('kimi_k3_json_marker_then_long_field', 'muse_spark'): 'ac1bea64add9d8d848064a8927f9b4f4af3aec07de6251091d15cc4e468b492f',
+    ('kimi_k3_typed_response_then_call', 'muse_spark'): 'd6daed016b6deb3474a10b02e047dc27b0a7d0113caf19188a2c3be269aee6a2',
+    ('kimi_k3_direct_typed_response_recovery', 'muse_spark'): 'ab51ee971a4f42c9014dff20be8d5e9ffce889cc2a041260392ab5775bfd80f3',
+}
+
+TOOLS = [
+    {'name': 'lookup', 'parameters': {'type': 'object', 'properties': {
+        'q': {'type': 'string'}, 'content': {'type': 'string'}}, 'required': ['q']}},
+    {'name': 'next', 'parameters': {'type': 'object', 'properties': {
+        'n': {'type': 'integer'}}, 'required': ['n']}},
+]
+
+
+def assert_native_response_counterparts(corpus, golden, taxonomy):
+    for scenario, parent in SHARED_SCENARIOS.items():
+        assert set(golden.scenario_families(scenario)) == FRAMED_FAMILIES | {'kimi_k3'}
+        assert taxonomy.case_fold(scenario)[0] == parent
+        assert taxonomy.display_tax(scenario)[0] == taxonomy.display_tax(parent)[0]
+        for family in FRAMED_FAMILIES:
+            key = f'UNIFIED.{scenario}.{family}'
+            assert key in corpus[family], (family, scenario, 'missing applicable native child')
+            case = corpus[family][key]
+            assert case['tools'] == TOOLS
+            assert case['init'] == {'starting_state': 'Response' if 'direct_' in scenario else 'None',
+                                    'tool_output_mode': 'Native', 'named_tool': None}
+            assert case['finish_reason'] == 'stop' and case['finish_step'] is True
+            assert ''.join(case['input_chunks']) == case['input']
+            assert all(0 < len(chunk) <= 64 for chunk in case['input_chunks'])
+            assert '<|open|>' not in case['input'] and '<|close|>' not in case['input']
+            if scenario == 'kimi_k3_json_marker_then_long_field':
+                literal = ('<|start|>assistant to=user<|message|>literal<|eom|>'
+                           if family.startswith('muse_') else
+                           '<|start|>assistant<|channel|>final<|message|>literal<|return|>')
+                expected = [{'kind': 'tool_call', 'name': 'lookup',
+                             'arguments': {'q': literal, 'content': 'x' * 4096}}]
+            else:
+                # These native grammars require their own call/invoke terminator;
+                # a response boundary drops this incomplete call, unlike K3 recovery.
+                expected = [{'kind': 'text', 'text': 'recovered'}]
+                if scenario == 'kimi_k3_typed_response_then_call':
+                    expected.append({'kind': 'tool_call', 'name': 'next', 'arguments': {'n': 7}})
+            assert case['golden'] == expected, (family, scenario, 'independent native policy')
+            rows = _split_only_cases(family, {'family': family, 'cases': {key: case}})
+            row = next(iter(rows.values()))
+            contract = {field: row[field] for field in ('request', 'golden')}
+            digest = hashlib.sha256(json.dumps(contract, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
+            assert digest == NATIVE_RESPONSE_CONTRACTS[(scenario, family)], (family, scenario, 'independent native request and output')
+    raw = 'kimi_k3_direct_json_response_recovery'
+    typed = 'kimi_k3_direct_typed_response_recovery'
+    assert golden.scenario_families(raw) == {'kimi_k3'}
+    for family in FRAMED_FAMILIES:
+        assert taxonomy.coverage_case(raw, family) == typed
+        assert f'UNIFIED.{raw}.{family}' not in corpus[family]
+    assert taxonomy.coverage_case(raw, 'kimi_k3') == raw
+    assert taxonomy.coverage_case(raw) == raw

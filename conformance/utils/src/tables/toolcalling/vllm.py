@@ -32,7 +32,7 @@ from vllm.entrypoints.openai.parser.harmony_utils import get_encoding
 from vllm.tokenizers import TokenizerLike
 
 from ..common import ParseResult, decode_arguments, decode_stream_calls
-from peer_modules import VllmTextTokenizer as _StubTokenizer
+from peer_modules import VllmTextTokenizer as _StubTokenizer, parser_only_request, parser_tools
 
 _HARMONY_ASSISTANT_START = "<|start|>assistant"
 _HARMONY_COMMENTARY_CALL_RE = re.compile(
@@ -217,20 +217,11 @@ _STREAM_TOKEN_ID_REQUIRED_FAMILIES = {
 
 
 def _wrap_tools(tools: list[dict[str, Any]] | None) -> list[Any] | None:
-    return (
-        [
-            ChatCompletionToolsParam.model_validate(
-                t if "function" in t else {"type": "function", "function": t}
-            )
-            for t in tools
-        ]
-        if tools
-        else None
-    )
+    return parser_tools(ChatCompletionToolsParam, tools) if tools else None
 
 
 def _make_request(tools: list[Any] | None) -> ChatCompletionRequest:
-    return ChatCompletionRequest.model_construct(
+    return parser_only_request(ChatCompletionRequest, tool_type=ChatCompletionToolsParam,
         model="parser-parity",
         messages=[],
         tools=tools,

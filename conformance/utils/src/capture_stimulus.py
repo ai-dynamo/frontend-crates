@@ -12,6 +12,7 @@ from fixture_disposition import (
     canonicalize_unified_inputs,
 )
 from impls import UNIFIED_BATCH_IMPLS
+from numeric_cases import canonical_arguments, decode_arguments
 from viewer_codec import typed_equal
 from unified_taxonomy import V1_SPLIT_SCENARIOS
 from pathlib import Path, PurePosixPath
@@ -612,11 +613,9 @@ def assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = None
             elif not (raw or "").strip():
                 event["arguments"] = {}
             else:
-                try:
-                    event["arguments"] = json.loads(raw)
-                except (ValueError, TypeError):
+                event["arguments"] = decode_arguments(raw)
+                if canonical_arguments(raw)[0] == "invalid_json":
                     malformed.add(position)
-                    event["arguments"] = raw
     if malformed and recorded_assembly is not None:
         calls = [(position, event) for position, event in enumerate(events) if event["kind"] == "tool_call"]
         recorded = [event for event in recorded_assembly if event["kind"] == "tool_call"]

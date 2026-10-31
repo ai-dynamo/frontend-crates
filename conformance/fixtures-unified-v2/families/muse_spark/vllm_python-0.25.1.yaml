@@ -1,0 +1,504 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.25.1
+document:
+  mode: unified
+records:
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    value:
+      case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+      stimulus:
+        ref: current
+        semantic_sha256: ab8b8c9397b6a16a16a382bcdd84ea7ba22b6952b0eff251a7a9a0d2fd74adb4
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    value:
+      case_key: gemma4_guided_reasoning_opener_after_call_prefix
+      stimulus:
+        ref: current
+        semantic_sha256: 260797159b8f78b1b0324e197f163abccb8c5299ffa0053ed59e8d0d8fc68636
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  gemma4_guided_response_extra_body_opener:
+    value:
+      case_key: gemma4_guided_response_extra_body_opener
+      stimulus:
+        ref: current
+        semantic_sha256: d9e057e272a2c10569a7ef9f00be1b5690f394956c2ac6512fc48927ac917b0d
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  gpt_oss_control_marker_inside_argument_string:
+    value:
+      case_key: gpt_oss_control_marker_inside_argument_string
+      stimulus:
+        ref: current
+        semantic_sha256: 9937541f76e3019e7f2bdae34e031af3cabfa54d20064e17db8be294a31b8a88
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  guided_json_quoted_bare_header_after_payload_pr424:
+    value:
+      case_key: guided_json_quoted_bare_header_after_payload_pr424
+      stimulus:
+        ref: current
+        semantic_sha256: 748dadb039a0b1f92780eebcf21fbfb485e4f2a40d2d1e265f6287073da7d8d6
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  guided_json_quoted_bare_header_in_answer_pr424:
+    value:
+      case_key: guided_json_quoted_bare_header_in_answer_pr424
+      stimulus:
+        ref: current
+        semantic_sha256: 10582c568abf3039d51c403552221c0be1ca8cf2a6619bb2d16dc62f9dd753e0
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  guided_response_rejected_header_quote_ownership:
+    value:
+      case_key: guided_response_rejected_header_quote_ownership
+      stimulus:
+        ref: current
+        semantic_sha256: 08575bb0cb02805d624e91a613ed845a4541ab64892a499b25e1bc52cdf95cfd
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  kimi_k3_malformed_call_then_valid:
+    value:
+      case_key: kimi_k3_malformed_call_then_valid
+      stimulus:
+        ref: current
+        semantic_sha256: 674ead42c2f475c8478962282ac9a8691e5e984cf32ae5f3aa6596c5d6cfc18c
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  kimi_native_incremental_interfield_whitespace:
+    value:
+      case_key: kimi_native_incremental_interfield_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: 4526857ed7db5b59e4f65c734d457995249fcdb072e730f10b8d9f0fa9920ea6
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  kimi_native_k2_count_content_chunk1024:
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: a6caff65710f7b3614424b8948b00eaf534fe68798b9a1d4b2582edf8945dad5
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  kimi_native_k2_count_content_chunk7:
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: 7d277c1c0a6acb08945430f43a9b6c07ef07c77217773ca82d0c2c16cc6b7d37
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  prefilled_response_guided_pending_invoke_header:
+    value:
+      case_key: prefilled_response_guided_pending_invoke_header
+      stimulus:
+        ref: current
+        semantic_sha256: 7db6ae8c21c2f1719a0ef9ec62309f7880cea08ca0c070b2fc09fa9c88b5bc3e
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 98b5b8e16de16daa0dd3cc5e8e6d4ce488c74a7e7df3f231e0f2a27e19ee9537
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: b0ad398bfea4f9850ce474808330e0427087dbaa88e95a5e5c602414a835b6fd
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  qwen3_guided_reasoning_opener_inside_native_header:
+    value:
+      case_key: qwen3_guided_reasoning_opener_inside_native_header
+      stimulus:
+        ref: current
+        semantic_sha256: 544f5231851c73aa93687decbe012db0822a15f17aebd9286871580649b1b715
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml
+  xml_custom_type_double_quoted_object:
+    value:
+      case_key: xml_custom_type_double_quoted_object
+      stimulus:
+        ref: current
+        semantic_sha256: 080b504937a73514fefe4bb45a8bd3464ce6b234204e4b32ff14125287aa976d
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.25.1
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.25.1
+            artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+            extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+            adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: 119dfbeb5b0fcd814d71aa12538d21f0cab9075f5d8f8e0fcfd181b0fdc9a113
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml

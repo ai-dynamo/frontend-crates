@@ -1,0 +1,5839 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    sglang_python: 0.5.16
+document:
+  mode: unified
+records:
+  kimi_k3_malformed_call_then_valid:
+    value:
+      case_key: kimi_k3_malformed_call_then_valid
+      stimulus:
+        ref: current
+        semantic_sha256: 7d41147151eb7ac70b38cd31e8d836ab074373c1325ce9273684aaf6e8f5d3f4
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: bad
+            arguments: '{"invoke name=\"g\"": '
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: bad
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"invoke name=\"g\"": '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  kimi_k3_typed_json_marker_payload:
+    value:
+      case_key: kimi_k3_typed_json_marker_payload
+      stimulus:
+        ref: current
+        semantic_sha256: e6656ad97c927227adffd28cf35e91bc27ce22b2b51cb2452fc2028bfa7ccf1e
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: inspect
+            arguments:
+              x: {}
+              y: ']<]minimax[>[</inner>]<]minimax[>[</x>]<]minimax[>[<y>OK'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: inspect
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"x": '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ', "y": '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"]<]minimax[>[</i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: r
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[</x'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[<y'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: O
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: K
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  kimi_native_incremental_interfield_whitespace:
+    value:
+      case_key: kimi_native_incremental_interfield_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: 531ed08167bcca4e725c47c158a81c35213d744d1482a1797fd9ef064ecdbe6f
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: q
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: write_file
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"count": '
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '7'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ', "content": "q'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  kimi_native_k2_count_content_chunk1024:
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: e7a212aedeac5d1352d0169b723925aa7ecfe2142eb68dfa795bbbfe6e0534bc
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: write_file
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{"count": 7, "content": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  kimi_native_k2_count_content_chunk7:
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: 50daed6bb0c51372b021ec05459b776034ee0761d382bd4b346a1b25b9ef5af1
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: write_file
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"count": '
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '7'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ', "content": "qqqqqq'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qqqqqqq
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: qq
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  muse_opaque_declared_invoke:
+    value:
+      case_key: muse_opaque_declared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 7dfaa35c55bf7c8b10c0c7ad081175d6259767230fb0a7fa93b25dd5d137e08f
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              x: 'doc: ]<]minimax[>[</invoke>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"x": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"d'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: c
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ':'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ' '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[</i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: v
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: k
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[<i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: v
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: k
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ' '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: m
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '='
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: \"
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: g
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: t
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: _
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: w
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: t
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: h
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: r
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: \"
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[<c'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: i
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: t
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: y
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: P
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: r
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: i
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: s
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  muse_opaque_undeclared_invoke:
+    value:
+      case_key: muse_opaque_undeclared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 7a1df4aa9a44ef15ad1678aa80ccde77075cca5dc9542321a7c432935d7264b8
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              x: 'doc: ]<]minimax[>[</invoke>]<]minimax[>[<invoke name="rm_rf">]<]minimax[>[<path>/'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"x": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"d'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: c
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ':'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ' '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[</i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: v
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: k
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[<i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: v
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: k
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ' '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: m
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '='
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: \"
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: r
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: m
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: _
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: r
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: f
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: \"
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[<p'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: t
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: h
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: /
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  muse_unterminated_parameter_then_empty_call:
+    value:
+      case_key: muse_unterminated_parameter_then_empty_call
+      stimulus:
+        ref: current
+        semantic_sha256: 24497fbbbce73ccec8663ccc97d2889a4c0fd25e0581b317fcd0a185499b0d17
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "bad]<]minimax[>[</invoke>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"b'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: d
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[</i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: v
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: k
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[<i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: v
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: k
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ' '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: m
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '='
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: \"
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: f
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: \"
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[</i'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: n
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: v
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: k
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: e
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: ']<]minimax[>[</t'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: o
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: l
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: _
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: c
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: a
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: l
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: l
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '>'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_quoted_control_in_reasoning:
+    value:
+      case_key: native_quoted_control_in_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: f969091db9c5d6a03f4d1725c8182a380d3ed062ec797d273e1a52b6072fd0c6
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation.
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: The literal "]
+          - expected:
+            - kind: reasoning
+              text: <]minimax[>
+          - expected:
+            - kind: reasoning
+              text: '['
+          - expected:
+            - kind: reasoning
+              text: <tool_call>
+          - expected:
+            - kind: reasoning
+              text: '" marker is part of the explanation.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 543d331c555be2db08d4d4a4182fe7a4150c66ab4910494932b2dde9df1edf6c
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+          chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal `
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "` header is part of the explanation.'
+          chunks:
+          - expected:
+            - kind: text
+              text: The literal `
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"` header is part of the explanation.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_single_quote_contraction_reasoning:
+    value:
+      case_key: native_single_quote_contraction_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: d273e87ab478d3b8da15020945a146c3c07d1030fac9a81b36cdd1bcc99f541a
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal 'doesn't ]<]minimax[>[<tool_call> marker' stays quoted.
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: The literal 'doesn't ]
+          - expected:
+            - kind: reasoning
+              text: <]minimax[>
+          - expected:
+            - kind: reasoning
+              text: '['
+          - expected:
+            - kind: reasoning
+              text: <tool_call>
+          - expected:
+            - kind: reasoning
+              text: ' marker'' stays quoted.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: e33413aa3749f755662ca1aaceb5ec9d30f120c84cb7f46e4506ea1098a3e45f
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''doesn''t '
+          chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''doesn''t '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: b0b910ff77ea112990d5cc47dc50756613cb752578c2f48cb091d48ef3cb8fd6
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''example '
+          chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''example '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: b0af57df118d379db2b65b3fbd88525d516b548b9f6a07ebe5c4e9d39a1e96e8
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: He said "maybe
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: bb5cf0541028a843873efa0fd101119258f31de1c40eec14d74acc28e76d1864
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: London
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: checking weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"London'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: efa524e5766b641da14414232f884164d8a406286124b20f383ffbfac2a9b2b3
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: no tool needed
+          - kind: text
+            text: The answer is 42.
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: no tool needed
+          - expected: []
+          - expected:
+            - kind: text
+              text: The answer is 42.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 02b8af9752051d19ccc2d0a76c059989f339b77b67c8e735d15453911fd5b8d3
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: weighing options
+          - kind: text
+            text: 'Here''s what I found: '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: weighing options
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'Here''s what I found: '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: 8061f261c0e7b55a61c9017d66d6224d36704686d5983f04961e89296312fec9
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: analyzing data
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Par'
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: analyzing data
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Par'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: eb63ddc993a71227a9b1e7367d63239c35c30d22aac65dfb16b3c9780a410f3a
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: checking weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 994a5cc49e2775f3609782ea14e61aa289b7c9904d3e7300dc7405038c6ac7bf
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <mm:think>literal</mm:think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: <mm:think>
+          - expected:
+            - kind: text
+              text: literal
+          - expected:
+            - kind: text
+              text: </mm:think>
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          parser: SGLang Python 0.5.16 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.16.yaml
+  structured_response_after_reasoning:
+    value:
+      case_key: structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 7b361f978f698926ba4758a4da14cb9d4a42f9da61e6ba97cacc9b8c251fab4e
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Parser-only peer capture does not execute structural-tag generation constraints.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.16
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 5dfb87ad546fd86496be7043a367d0c349843e3ffffd72a2195a84a3b0a97466
+            results_sha256: d40ad66837c8f4e1c14280aa43acbc2af993cea086893f5bc7003fe79b435a0c
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.14.yaml
+    suppress_inherited_from: true

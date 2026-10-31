@@ -363,7 +363,10 @@ pub fn index_cached(root: &Path, workers: &str, cache: Option<&Path>) -> Result<
         }
     }
     let context_path = root.join("conformance/catalog-conversion-context.json");
-    if snapshots.is_empty() && context_path.is_file() {
+    if context_path.is_file() {
+        // History readers require fragments for every checkpoint, including
+        // sparse siblings of complete snapshots that already have summaries.
+        snapshots.clear();
         let context: Value = serde_json::from_slice(&source::read(
             &root,
             "conformance/catalog-conversion-context.json",
@@ -515,6 +518,112 @@ fn compact_codes(snapshot: &mut Value, families: &serde_json::Map<String, Value>
 mod tests {
     use super::*;
     use std::{sync::mpsc, time::Duration};
+
+    fn context_indexes_complete_and_sparse(sparse_sibling: bool) -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let cache = tempfile::tempdir()?;
+        let family = root.path().join(STORE).join("families/sample");
+        fs::create_dir_all(&family)?;
+        let request =
+            json!({"input":"sample", "init":{}, "finish_reason":"stop", "tools":[], "chunks":[]});
+        let authored = json!({"input_document":{"family":"sample"},"golden_document":{"family":"sample"},
+            "cases":{"id":{"lifecycle":"active","scenario":"sample","description":"sample","policy":[],
+                "display_id":"UNIFIED.1","historical_ids":[],"request":request,"golden":{"assembled":[]}}}});
+        fs::write(
+            family.join("inputs_and_golden.yaml"),
+            serde_json::to_vec(&authored)?,
+        )?;
+        let member = format!("{STORE}/families/sample/dynamo_v2-1.0.0.yaml");
+        let records = json!({"id":{"member":member,"suppress_inherited_from":true,"value":{
+            "case_key":"UNIFIED.1","stimulus":{"ref":"current"},
+            "observation":{"value":{"assembled":[{"kind":"text","text":"preserved"}]}},
+            "document":{"mode":"unified","captured_with":{"dynamo_v2":"1.0.0"},
+                "record_metadata":{"verified_recapture":{"result":{"chunks":[]},
+                    "provenance":{"version":"1.0.0","results_sha256":"a".repeat(64)}}}}}}});
+        let complete = json!({"schema_version":2,"provenance":{"status":"legacy","captured_with":{"dynamo_v2":"1.0.0"}},
+            "document":{"mode":"unified"},"records":records});
+        fs::write(
+            family.join("dynamo_v2-1.0.0.yaml"),
+            serde_json::to_vec(&complete)?,
+        )?;
+        if sparse_sibling {
+            let sparse = json!({"provenance":{"status":"legacy","captured_with":{"sglang_python":"1.0.0"}},
+                "document":{"mode":"unified"},"changes":{"id":{"case_key":"UNIFIED.1","stimulus":{"ref":"current"},
+                    "observation":{"value":{"assembled":[{"kind":"text","text":"sparse"}]}}}},
+                "metadata_changes":{},"document_overrides":{}});
+            fs::write(
+                family.join("sglang_python-1.0.0.yaml"),
+                serde_json::to_vec(&sparse)?,
+            )?;
+        }
+        let direct = index_cached(root.path(), "1", Some(cache.path()))?;
+        assert_eq!(direct["snapshots"].as_array().unwrap().len(), 1);
+        assert!(direct["snapshots"][0].get("fragment").is_none());
+        fs::write(
+            root.path()
+                .join("conformance/catalog-conversion-context.json"),
+            serde_json::to_vec(&json!({"dataset":"retained","metadata":{"unified_aliases":{}}}))?,
+        )?;
+        let converted = index_cached(root.path(), "1", Some(cache.path()))?;
+        let snapshots = converted["snapshots"].as_array().unwrap();
+        assert_eq!(snapshots.len(), if sparse_sibling { 2 } else { 1 });
+        let identities = snapshots
+            .iter()
+            .map(|row| {
+                (
+                    row["implementation"].as_str().unwrap(),
+                    row["version"].as_str().unwrap(),
+                )
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(identities.len(), snapshots.len());
+        for row in snapshots {
+            let key = row["fragment"]
+                .as_str()
+                .context("checkpoint has no history fragment")?;
+            let fragment = crate::conversion_cache::read(cache.path(), key)
+                .context("missing history fragment")?;
+            let actual = Node::from_typed(&fragment)?;
+            if row["implementation"] == "dynamo_v2" {
+                let mut expected = records.clone();
+                expected["id"]["value"]["stimulus"] = json!({"inline":request});
+                assert_eq!(
+                    actual.typed(),
+                    yaml::load_str(&serde_json::to_string(&expected)?)?.typed()
+                );
+                for field in ["provenance", "document"] {
+                    assert_eq!(
+                        row["capture"][field],
+                        yaml::load_str(&serde_json::to_string(&complete[field])?)?.typed()
+                    );
+                }
+            } else {
+                assert_eq!(
+                    actual
+                        .field("id")?
+                        .field("value")?
+                        .field("observation")?
+                        .field("value")?
+                        .field("assembled")?
+                        .array()?[0]
+                        .field("text")?
+                        .string()?,
+                    "sparse"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn conversion_context_indexes_complete_snapshots_as_history_fragments() -> Result<()> {
+        context_indexes_complete_and_sparse(false)
+    }
+
+    #[test]
+    fn conversion_context_keeps_sparse_siblings_and_unique_complete_snapshots() -> Result<()> {
+        context_indexes_complete_and_sparse(true)
+    }
 
     #[test]
     fn authenticated_malformed_document_metadata_is_a_cache_miss() -> Result<()> {

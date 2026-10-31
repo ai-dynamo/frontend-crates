@@ -81,7 +81,10 @@ def test_compact_historical_insertion_preserves_mixed_key_metadata_and_receipts(
     after = dict(unified_history.load_store(store).histories[("gemma4", implementation)].iter_resolved_snapshots())
     assert all(typed_equal(records, after[identity]) for identity, records in before.items())
     assert len(after) == 4
-    assert (store / "executions").is_dir()
+    for identity, records in after.items():
+        snapshot = unified_history.load_yaml(store / "families/gemma4" / (identity + ".yaml"))
+        assert snapshot["schema_version"] == 2
+        assert typed_equal({case: wrapped["value"] for case, wrapped in snapshot["records"].items()}, records)
     assert unified_history.compact_execution_store(store) == []
 
 
@@ -178,7 +181,7 @@ import fs from 'node:fs';
 import { parseYamlBytes } from './conformance/viewer/yaml_data.js';
 import { validateUnifiedCapture } from './conformance/viewer/resources.js';
 import { decodeTyped } from './conformance/viewer/values.js';
-import { resolveUnified } from './conformance/viewer/model.js';
+import { resolveUnified, selectedUnifiedSnapshot } from './conformance/viewer/model.js';
 const [root, expectedPath] = process.argv.slice(1);
 const expected = decodeTyped(JSON.parse(fs.readFileSync(expectedPath, 'utf8')));
 const inputs = parseYamlBytes(fs.readFileSync(`${root}/families/gemma4/inputs_and_golden.yaml`), { unified: true });
@@ -201,7 +204,10 @@ for (const identity of Object.keys(expected)) {
   const resource = { family: 'gemma4', implementation, version, path };
   const document = await validateUnifiedCapture(value, inputs, resource, manifest);
   captures.push({ ...resource, bytes, document });
-  assert.deepEqual(Object.fromEntries([...resolveUnified(captures, version)].map(([id, record]) => [id, record.value])), expected[identity]);
+  const records = document.schema_version !== undefined
+    ? selectedUnifiedSnapshot(new Map(Object.entries(document.records)), version, version)
+    : resolveUnified(captures, version);
+  assert.deepEqual(Object.fromEntries([...records].map(([id, record]) => [id, record.value])), expected[identity]);
 }
 '''
     result = subprocess.run(["node", "--input-type=module", "-e", script, str(store), str(expected)],
@@ -242,7 +248,12 @@ def test_execution_references_require_a_filename_in_the_owning_directory(referen
         execution_manifests.source_reference(reference, "executions")
 
 
-def proof_store(tmp_path, *, extra_unsupported=False):
+@pytest.fixture(params=["sparse", "complete"])
+def proof_representation(request):
+    return request.param
+
+
+def proof_store(tmp_path, *, extra_unsupported=False, representation="complete"):
     store = tmp_path / "store"
     _write_family(store)
     if extra_unsupported:
@@ -268,7 +279,30 @@ def proof_store(tmp_path, *, extra_unsupported=False):
         value["provenance"] = receipt
         path.write_text(json.dumps(value))
     import_capture_groups(store, {implementation: rows}, compact_executions=True)
-    unified_history._mutate_store(store, lambda loaded: loaded.histories[("gemma4", implementation)].captures["vllm_python_batch-0.2.0"].pop("execution_proof", None), compact_executions=True)
+    def retain_unchanged_historical_checkpoint(loaded):
+        history = loaded.histories[("gemma4", implementation)]
+        # Reproduce an older checkpoint with inherited observations and no
+        # receipt for its own execution. New imports retain per-record receipts.
+        history.captures["vllm_python_batch-0.2.0"].pop("execution_proof", None)
+        unified_history._replace_capture_snapshot(
+            history, "vllm_python_batch-0.2.0", history.resolve("vllm_python_batch-0.1.0"),
+        )
+        if representation == "sparse":
+            # Imports freeze complete snapshots to preserve source members. Keep
+            # an explicit legacy fixture too, so manifest corruption still runs
+            # through the retained sparse reader instead of disappearing.
+            snapshots = list(history.iter_resolved_snapshots())
+            history.resolved_snapshots.clear()
+            history.snapshot_members.clear()
+            history.snapshot_suppressed_inheritance.clear()
+            cursor = unified_history._HistoryCursor(history)
+            previous = {}
+            for identity, records in snapshots:
+                unified_history._set_capture_snapshot(history, identity, records, previous, cursor=cursor)
+                previous = records
+            assert typed_equal(dict(snapshots), dict(history.iter_resolved_snapshots()))
+
+    unified_history._mutate_store(store, retain_unchanged_historical_checkpoint, compact_executions=True)
     history = unified_history.load_store(store).histories[("gemma4", implementation)]
     before = dict(history.iter_resolved_snapshots())
     checkpoint = store / "families/gemma4/vllm_python_batch-0.2.0.yaml"
@@ -276,24 +310,31 @@ def proof_store(tmp_path, *, extra_unsupported=False):
     return store, implementation, rows, before, checkpoint
 
 
-def test_proof_only_unchanged_checkpoint_preserves_full_records_and_shared_readers(tmp_path):
-    store, implementation, rows, before, checkpoint = proof_store(tmp_path)
+def test_proof_only_unchanged_checkpoint_preserves_full_records_and_shared_readers(tmp_path, proof_representation):
+    store, implementation, rows, before, checkpoint = proof_store(tmp_path, representation=proof_representation)
     import_capture_groups(store, {implementation: [rows[1]]}, compact_executions=True, proof_only=True)
     loaded = unified_history.load_store(store)
     after = dict(loaded.histories[("gemma4", implementation)].iter_resolved_snapshots())
     assert typed_equal(before, after)
     raw = unified_history.load_yaml(checkpoint)
-    assert raw["parent"] == "vllm_python_batch-0.1.0"
-    manifest = unified_history.load_yaml(store / raw["execution"])
-    assert manifest["cases"] == []
+    if proof_representation == "sparse":
+        assert raw["parent"] == "vllm_python_batch-0.1.0"
+        manifest = unified_history.load_yaml(store / raw["execution"])
+        assert manifest["cases"] == []
+    else:
+        assert raw["schema_version"] == 2
+        assert typed_equal(raw["execution_proof"]["receipt"], rows[1][2])
     assert_javascript_records(store, before, tmp_path)
     assert import_capture_groups(store, {implementation: [rows[1]]}, compact_executions=True, proof_only=True) == []
 
 
-def test_proof_only_keeps_document_overrides(tmp_path):
-    store, implementation, rows, _before, checkpoint = proof_store(tmp_path)
+def test_proof_only_keeps_document_overrides(tmp_path, proof_representation):
+    store, implementation, rows, _before, checkpoint = proof_store(tmp_path, representation=proof_representation)
     value = unified_history.load_yaml(checkpoint)
-    value["document_overrides"] = {"text_only": {"parser_path": "original-path"}}
+    if proof_representation == "sparse":
+        value["document_overrides"] = {"text_only": {"parser_path": "original-path"}}
+    else:
+        value["records"]["text_only"]["value"]["document"]["parser_path"] = "original-path"
     checkpoint.write_text(unified_history.dump_yaml(value))
     before = dict(unified_history.load_store(store).histories[("gemma4", implementation)].iter_resolved_snapshots())
     import_capture_groups(store, {implementation: [rows[1]]}, compact_executions=True, proof_only=True)
@@ -303,8 +344,8 @@ def test_proof_only_keeps_document_overrides(tmp_path):
 
 
 @pytest.mark.parametrize("outcome", ["parser_error", "empty_output", "mixed_supported"])
-def test_proof_only_admits_real_errors_empty_outputs_and_mixed_capabilities(tmp_path, outcome):
-    store, implementation, rows, before, _checkpoint = proof_store(tmp_path, extra_unsupported=outcome == "mixed_supported")
+def test_proof_only_admits_real_errors_empty_outputs_and_mixed_capabilities(tmp_path, outcome, proof_representation):
+    store, implementation, rows, before, _checkpoint = proof_store(tmp_path, extra_unsupported=outcome == "mixed_supported", representation=proof_representation)
     job, path, receipt = rows[1]
     value = json.loads(path.read_text())
     if outcome == "parser_error":
@@ -324,8 +365,8 @@ def test_proof_only_admits_real_errors_empty_outputs_and_mixed_capabilities(tmp_
 
 
 @pytest.mark.parametrize("corruption,proof_only", [(kind, True) for kind in ("unsupported_only", "no_outcome", "mixed_outcome", "invalid_events", "wrong_version", "altered_request", "receipt_body")] + [(kind, False) for kind in ("no_outcome", "mixed_outcome", "invalid_events", "altered_request")])
-def test_proof_only_admission_rejects_unexecuted_or_unbound_capture(tmp_path, corruption, proof_only):
-    store, implementation, rows, _before, _checkpoint = proof_store(tmp_path)
+def test_proof_only_admission_rejects_unexecuted_or_unbound_capture(tmp_path, corruption, proof_only, proof_representation):
+    store, implementation, rows, _before, _checkpoint = proof_store(tmp_path, representation=proof_representation)
     job, path, receipt = rows[1]
     value = json.loads(path.read_text())
     result = value["results"]["UNIFIED.text_only.gemma4"]
@@ -355,10 +396,33 @@ def test_proof_only_admission_rejects_unexecuted_or_unbound_capture(tmp_path, co
 
 
 @pytest.mark.parametrize("corruption", ["version", "requests", "omitted_request", "extra_request", "null_proof", "unowned_defaults", "membership", "receipt_version"])
-def test_proof_only_readers_reject_corrupt_receipts_and_membership(tmp_path, corruption):
-    store, implementation, rows, before, checkpoint = proof_store(tmp_path)
+def test_proof_only_readers_reject_corrupt_receipts_and_membership(tmp_path, corruption, proof_representation):
+    store, implementation, rows, before, checkpoint = proof_store(tmp_path, representation=proof_representation)
     import_capture_groups(store, {implementation: [rows[1]]}, compact_executions=True, proof_only=True)
     raw = unified_history.load_yaml(checkpoint)
+    if proof_representation == "complete":
+        if corruption == "version":
+            raw["provenance"]["origin"]["crate_version"] = "9.9.9"
+        elif corruption == "requests":
+            raw["execution_proof"]["requests"]["text_only"] = "0" * 64
+        elif corruption == "membership":
+            raw["records"].pop("text_only")
+        elif corruption == "omitted_request":
+            raw["execution_proof"]["requests"] = {}
+        elif corruption == "extra_request":
+            raw["execution_proof"]["requests"]["extra"] = "0" * 64
+        elif corruption == "null_proof":
+            raw["execution_proof"] = None
+        elif corruption == "unowned_defaults":
+            raw["defaults"] = {"unowned": True}
+        else:
+            raw["execution_proof"]["receipt"]["version"] = "9.9.9"
+        checkpoint.write_text(unified_history.dump_yaml(raw))
+        with pytest.raises(ValueError):
+            unified_history.load_store(store)
+        with pytest.raises(AssertionError):
+            assert_javascript_records(store, before, tmp_path)
+        return
     manifest_path = store / raw["execution"]
     manifest = unified_history.load_yaml(manifest_path)
     if corruption == "version":
@@ -491,14 +555,14 @@ def test_ordinary_verified_import_retains_receipt_without_duplicate_proof(tmp_pa
     for _job, _path, receipt in rows:
         identity = f"{implementation}-{receipt['version']}"
         checkpoint = item.captures[identity]
-        ordinary = any(typed_equal(owner[key], receipt) for metadata in checkpoint["metadata_changes"].values() for owner, key in execution_manifests._receipt_slots(metadata))
+        ordinary = any(typed_equal(owner[key], receipt) for record in item.resolve(identity).values()
+                       for owner, key in execution_manifests._receipt_slots(record["document"].get("record_metadata", {})))
         proof = checkpoint.get("execution_proof")
         assert ordinary != (proof is not None)
         assert ordinary or typed_equal(proof["receipt"], receipt)
         raw = unified_history.load_yaml(store / "families/gemma4" / (identity + ".yaml"))
-        assert "execution" in raw
-        if receipt["version"] == "0.2.0":
-            assert raw["parent"] == f"{implementation}-0.1.0"
+        assert raw["schema_version"] == 2
+        assert typed_equal({case: wrapped["value"] for case, wrapped in raw["records"].items()}, before[identity])
     assert_javascript_records(store, before, tmp_path)
     if implementation in {"vllm_python_batch", "sglang_python_batch", "dynamo_v2", "dynamo_v1", "dynamo_v1_jail"}:
         assert import_capture_groups(store, {implementation: rows}, compact_executions=True) == []

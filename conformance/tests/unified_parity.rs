@@ -198,7 +198,18 @@ fn structural_response_case_checks_the_schema_before_parsing() {
     families.sort();
     assert_eq!(
         families,
-        ["deepseek_v4", "glm47", "gpt_oss", "muse_spark", "qwen3"]
+        [
+            "beam",
+            "deepseek_v4",
+            "deepseek_v41",
+            "glm47",
+            "gpt_oss",
+            "kimi_k2",
+            "kimi_k3",
+            "minimax_m3",
+            "muse_spark",
+            "qwen3"
+        ]
     );
 }
 
@@ -509,7 +520,7 @@ fn golden_only_change_warns_through_real_corpus_execution() {
 #[test]
 fn unified_parser_is_chunk_invariant() {
     let known = divergences::load();
-    let mut observed = std::collections::BTreeSet::new();
+    let mut observed = divergences::ObservedChunkDivergences::new();
     let mut failures = Vec::new();
     for file in load_native_golden() {
         for (id, case) in &file.cases {
@@ -520,48 +531,32 @@ fn unified_parser_is_chunk_invariant() {
                 &case.init,
                 &case_tools,
             );
+            let baseline_rendered = render(&baseline);
+            let expected = divergences::expected(&known, &file.family, id, Check::ChunkInvariance);
             let schedules = splittings(&case.input)
                 .into_iter()
                 .chain(extended_splittings(&case.input));
             for (label, chunks) in schedules {
                 let got = events(&file.family, &chunks, &case.init, &case_tools);
-                if got != baseline {
-                    match divergences::expected(
-                        &known,
-                        &file.family,
-                        id,
-                        Check::ChunkInvariance,
-                    ) {
-                        Some(Expected::ChunkInvariance(expected))
-                            if render(&baseline) == expected.baseline
-                                && render(&got) == expected.divergent =>
-                        {
-                            observed.insert((file.family.clone(), id.clone()));
-                        }
-                        Some(Expected::ChunkInvariance(expected)) => failures.push(format!(
-                            "{id} [{label}, {} chunks]: known divergence changed\n expected baseline: {}\n expected split: {}\n actual baseline: {}\n actual split: {}",
-                            chunks.len(),
-                            expected.baseline,
-                            expected.divergent,
-                            render(&baseline),
-                            render(&got),
-                        )),
-                        _ => failures.push(format!(
-                            "{id} [{label}, {} chunks]\n  whole: {}\n    got: {}",
-                            chunks.len(),
-                            render(&baseline),
-                            render(&got),
-                        )),
+                if let Some(Expected::ChunkInvariance(expected)) = &expected {
+                    let seen = observed
+                        .entry((file.family.clone(), id.clone()))
+                        .or_default();
+                    if let Err(detail) = expected.observe(&baseline_rendered, &render(&got), seen) {
+                        failures.push(format!("{id} [{label}, {} chunks]: {detail}", chunks.len()));
                     }
+                } else if got != baseline {
+                    failures.push(format!(
+                        "{id} [{label}, {} chunks]\n  whole: {}\n    got: {}",
+                        chunks.len(),
+                        baseline_rendered,
+                        render(&got),
+                    ));
                 }
             }
         }
     }
-    failures.extend(divergences::reconcile(
-        &known,
-        Check::ChunkInvariance,
-        &observed,
-    ));
+    failures.extend(divergences::reconcile_chunk_invariance(&known, &observed));
     assert!(
         failures.is_empty(),
         "chunk splitting changed the assembled events ({}):\n\n{}",
@@ -601,6 +596,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "gpt_oss",
         "kimi_k2",
         "kimi_k3",
+        "minimax_m3",
         "muse_glimmer",
         "muse_spark",
         "nemotron_v3",

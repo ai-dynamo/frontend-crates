@@ -129,6 +129,22 @@ changes:
           name: get_weather
           arguments:
             city: Paris
+  deepseek_v41_json_invocation_body:
+    case_key: deepseek_v41_json_invocation_body
+    stimulus:
+      ref: current
+      semantic_sha256: 40ae5babf8ea4b84cc167177eb5678ef0e3c12ec2e3373d281490bba9e5e4e4c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: ' &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}<|tool_call_end|>'
+        - kind: tool_call
+          name: inspect
+          arguments: '{"value": " café 🐈'
+        - kind: tool_call
+          name: done
+          arguments: {}
   deepseek_v41_mixed_control_text_in_string:
     observation:
       value:
@@ -137,6 +153,15 @@ changes:
           text: quoted
         - kind: text
           text: ' <|tool_call_end|> &amp; \"x\"\\\n "}<|tool_call_end|><|tool_calls_section_end|>'
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+    stimulus:
+      ref: current
+      semantic_sha256: 2923d3db506bdc89aa22a11316e53e866755398be9da6c508865aa0511e0a13d
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
   empty_args:
     observation:
       value:
@@ -144,6 +169,24 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments: {}
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    case_key: gemma4_guided_reasoning_opener_after_call_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: 34b5c0b9e9b12982b1fb241b207234f4df959ac0822a301d938122d78e5be424
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  gemma4_guided_response_extra_body_opener:
+    case_key: gemma4_guided_response_extra_body_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 28ae205e57b8067c2d65178b4661c5120143b495b86e427b079e957fa0c60413
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
   glm_ref_encoded_targets:
     observation:
       value:
@@ -402,6 +445,30 @@ changes:
           name: get_weather
           arguments:
             city: Paris
+  kimi_k3_malformed_call_then_valid:
+    case_key: kimi_k3_malformed_call_then_valid
+    stimulus:
+      ref: current
+      semantic_sha256: 14a19681bdcbd17c46222949b595bc2348bf4445ae4fdbf2d3ee60c2196c54b4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: 'not-an-argument<|tool_call_begin|>functions.g:2<|tool_call_argument_begin|>{"y": "2"}'
+  kimi_native_incremental_interfield_whitespace:
+    case_key: kimi_native_incremental_interfield_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: 23ae2018e8f3d886b601f749c8bfc5a24f4be892a4b04a3d6d462089a7f19e55
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: q
   local_schema_id_preserves_type:
     observation:
       value:
@@ -425,6 +492,71 @@ changes:
           name: echo
           arguments:
             value: Café
+  muse_opaque_declared_invoke:
+    case_key: muse_opaque_declared_invoke
+    stimulus:
+      ref: current
+      semantic_sha256: 15d3c0010e0d1ec7a6b7483a07b330b98ce41662d86ab57ce880a5f13042f16b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "doc:'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{\"city\": \"Paris"}'
+  muse_opaque_undeclared_invoke:
+    case_key: muse_opaque_undeclared_invoke
+    stimulus:
+      ref: current
+      semantic_sha256: a06bfcd990dee45bfdf6bba928f6d324e7f121db230c84451526ec0a108a08dd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "doc:'
+        - kind: tool_call
+          name: rm_rf
+          arguments: '{\"path\": \"/"}'
+  muse_recovery_second_parameter:
+    case_key: muse_recovery_second_parameter
+    stimulus:
+      ref: current
+      semantic_sha256: 7d2dda7e0f041482c09eabaedee22c31405bdc2ad09d3dc68744850c43fae553
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "done", "y": "broken'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{\"city\": \"Paris"}'
+  muse_unterminated_parameter_then_empty_call:
+    case_key: muse_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: cb3a0f1b4c1db056ddf2c815b9d637e050fc1fc427505ba7237de2c7f22f32b7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "bad'
+        - kind: tool_call
+          name: f
+          arguments: {}
+  muse_unterminated_reasoning_guided:
+    case_key: muse_unterminated_reasoning_guided
+    stimulus:
+      ref: current
+      semantic_sha256: d8d5c55049106b382c868d3a46c995c736751832466399f7bc11197dae62296d
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
   narrated_calls:
     observation:
       value:
@@ -551,7 +683,43 @@ changes:
           name: get_weather
           arguments:
             city: Paris
+  prefilled_response_guided_pending_invoke_header:
+    case_key: prefilled_response_guided_pending_invoke_header
+    stimulus:
+      ref: current
+      semantic_sha256: bedfa3f1dd556c4013b7695a3b2837291071126f54bdd8e5725d1531e21ef6d5
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
   prefilled_response_reasoning_markers_literal:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 9eff146fcef4f113abb6e04b6176c7211252f8aab8bda6e1b2271adc00b75774
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 088f7ee0629519a121e54470b4c223e931dc25352e6922f43ed068ab73cfac29
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  qwen3_guided_reasoning_opener_inside_native_header:
+    case_key: qwen3_guided_reasoning_opener_inside_native_header
+    stimulus:
+      ref: current
+      semantic_sha256: b91f3844a24af4540ff181b3a47e8f47554d6796fd8ae8e26849418ef64f80b9
     observation:
       unavailable:
         code: unsupported_request_mode
@@ -1924,11 +2092,47 @@ metadata_changes:
       - name: get_weather
         arguments:
           city: Paris
+  deepseek_v41_json_invocation_body:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ' &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}<|tool_call_end|>'
+      calls:
+      - name: inspect
+        arguments: '{"value": " café 🐈'
+      - name: done
+        arguments: {}
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
   deepseek_v41_mixed_control_text_in_string:
     batch_final:
       reasoning_text: quoted
       normal_text: ' <|tool_call_end|> &amp; \"x\"\\\n "}<|tool_call_end|><|tool_calls_section_end|>'
       calls: []
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
   empty_args:
     batch_final:
       reasoning_text: ''
@@ -1936,6 +2140,34 @@ metadata_changes:
       calls:
       - name: get_weather
         arguments: {}
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  gemma4_guided_response_extra_body_opener:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
   glm_ref_encoded_targets:
     batch_final:
       reasoning_text: ''
@@ -1985,6 +2217,48 @@ metadata_changes:
       - name: get_weather
         arguments:
           city: Paris
+  kimi_k3_malformed_call_then_valid:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: bad
+        arguments: 'not-an-argument<|tool_call_begin|>functions.g:2<|tool_call_argument_begin|>{"y": "2"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  kimi_native_incremental_interfield_whitespace:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: write_file
+        arguments:
+          count: 7
+          content: q
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
   local_schema_id_preserves_type:
     batch_final:
       reasoning_text: ''
@@ -2006,6 +2280,108 @@ metadata_changes:
       - name: echo
         arguments:
           value: Café
+  muse_opaque_declared_invoke:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments: '{"x": "doc:'
+      - name: get_weather
+        arguments: '{\"city\": \"Paris"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  muse_opaque_undeclared_invoke:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments: '{"x": "doc:'
+      - name: rm_rf
+        arguments: '{\"path\": \"/"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  muse_recovery_second_parameter:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments: '{"x": "done", "y": "broken'
+      - name: get_weather
+        arguments: '{\"city\": \"Paris"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  muse_unterminated_parameter_then_empty_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city": "bad'
+      - name: f
+        arguments: {}
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  muse_unterminated_reasoning_guided:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
   narrated_calls:
     batch_final:
       reasoning_text: ''
@@ -2025,11 +2401,514 @@ metadata_changes:
       reasoning_text: The literal "
       normal_text: ''
       calls: []
+  native_quoted_control_in_response:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: The literal "
+          calls: []
+        capture_input:
+          input: The literal "<|tool_calls_section_begin|>" marker is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: The literal "
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+        crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+        cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+        binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+      resolution: fresh_execution
+  native_quoted_control_then_call:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: The literal "
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: 'The literal "<|tool_calls_section_begin|>" marker is part of the explanation.<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: <|tool_call_begin|>
+          - delta_text: functions.get_weather:0
+          - delta_text: <|tool_call_argument_begin|>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: <|tool_call_end|>
+          - delta_text: <|tool_calls_section_end|>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+        crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+        cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+        binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+      resolution: fresh_execution
+  native_quoted_incomplete_header:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: The literal `
+          calls: []
+        capture_input:
+          input: 'The literal `<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "` header is part of the explanation.'
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal `
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: <|tool_call_begin|>
+          - delta_text: functions.get_weather:0
+          - delta_text: <|tool_call_argument_begin|>
+          - delta_text: '{"city": "` header is part of the explanation.'
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: The literal `
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+        crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+        cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+        binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+      resolution: fresh_execution
   native_single_quote_contraction_reasoning:
     batch_final:
       reasoning_text: 'The literal ''doesn''t '
       normal_text: ''
       calls: []
+  native_single_quote_contraction_response:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: 'The literal ''doesn''t '
+          calls: []
+        capture_input:
+          input: The literal 'doesn't <|tool_calls_section_begin|> marker' stays quoted.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: 'The literal ''doesn''t '
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+        crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+        cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+        binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+      resolution: fresh_execution
+  native_single_quoted_word_control:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: 'The literal ''example '
+          calls: []
+        capture_input:
+          input: The literal 'example <|tool_calls_section_begin|> marker' is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''example '
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: ' marker'' is part of the explanation.'
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: 'The literal ''example '
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+        crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+        cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+        binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+      resolution: fresh_execution
+  native_unmatched_quote_then_call:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: He said "maybe
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: 'He said "maybe<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: He said "maybe
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: <|tool_call_begin|>
+          - delta_text: functions.get_weather:0
+          - delta_text: <|tool_call_argument_begin|>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: <|tool_call_end|>
+          - delta_text: <|tool_calls_section_end|>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+        crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+        cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+        binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+      resolution: fresh_execution
   nullable_reference_alias_literals:
     batch_final:
       reasoning_text: ''
@@ -2078,6 +2957,156 @@ metadata_changes:
       - name: get_weather
         arguments:
           city: Paris
+  prefilled_response_guided_pending_invoke_header:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  prefilled_response_reasoning_markers_literal:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: <think>literal</think> then a call
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: '<think>literal</think> then a call<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: literal
+          - delta_text: </think>
+          - delta_text: ' then a call'
+          - delta_text: <|tool_calls_section_begin|>
+          - delta_text: <|tool_call_begin|>
+          - delta_text: functions.get_weather:0
+          - delta_text: <|tool_call_argument_begin|>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: <|tool_call_end|>
+          - delta_text: <|tool_calls_section_end|>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: <think>literal</think> then a call
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+        crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+        cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+        binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+      resolution: fresh_execution
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
+  qwen3_guided_reasoning_opener_inside_native_header:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 5.0.1
+      source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+      adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+      job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+      cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      results_sha256: f402a97f6ca423446532c7da1b2bd4b753e3d6cb9e90184fdc16e74ed9ca8d26
+      binary_sha256: 5923aa8c083a4f5290fd304bb17c8ac3a07f51c5a1b90be1a143839c3195fc96
   qwen_string_null:
     batch_final:
       reasoning_text: ''
@@ -3250,4 +4279,154 @@ metadata_changes:
           count: 42
           flag: false
           text: 'null'
-document_overrides: {}
+document_overrides:
+  deepseek_v41_json_invocation_body:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  gemma4_guided_response_extra_body_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  kimi_k3_malformed_call_then_valid:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  kimi_native_incremental_interfield_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  muse_opaque_declared_invoke:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  muse_opaque_undeclared_invoke:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  muse_recovery_second_parameter:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  muse_unterminated_parameter_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  muse_unterminated_reasoning_guided:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  prefilled_response_guided_pending_invoke_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null
+  qwen3_guided_reasoning_opener_inside_native_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.0.1
+      capture_origin:
+        crate_version: 5.0.1
+        source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
+      inherited_from: null

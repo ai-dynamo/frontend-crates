@@ -1,3 +1,4 @@
+schema_version: 2
 provenance:
   status: captured
   origin:
@@ -6,693 +7,5304 @@ provenance:
     source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
 document:
   mode: unified
-changes:
+records:
+  adjacent_calls_partial_header:
+    value:
+      case_key: UNIFIED.2-adjacent_calls_partial_header
+      stimulus:
+        ref: current
+        semantic_sha256: 710387f679573565fd334d4b7410847e5d59b89b777183ceb3ff75bd47c82aed
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              a: "1"
+          - kind: tool_call
+            name: g
+            arguments:
+              b: "2"
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"a":"1"}'
+              complete: true
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"b":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+    suppress_inherited_from: true
   arg_json_null_ref:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: null
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+    value:
+      case_key: UNIFIED.7-arg_json_null_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 6aaf9255136fc2bdac61c12ce29faf1cac9bef4f9f65aff765c473c051b83862
+      observation:
+        value:
+          assembled:
           - kind: tool_call
             name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":null}'
-            complete: true
-        - expected: []
-        - expected: []
-  arg_null_mixed_labels:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: set_labels
-          arguments:
-            label: null
-            note: null
-            literal: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: set_labels
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"label":null,"note":null,"literal":"null"}'
-            complete: true
-        - expected: []
-        - expected: []
-  arg_string_null_ref:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"null"}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_minimal:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: a.b
-          arguments: {}
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: a.b
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_mixed_punctuation:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: my-tool.v2
-          arguments:
-            location: Beijing
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: my-tool.v2
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_multiple_segments:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.tools.weather
-          arguments:
-            location: Beijing
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.tools.weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_shared_prefix:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.weather
-          arguments:
-            location: Beijing
-        - kind: tool_call
-          name: server.time
-          arguments:
-            timezone: Asia/Shanghai
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.time
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"timezone":"Asia/Shanghai"}'
-            complete: true
-        - expected: []
-        - expected: []
-  gpt_oss_control_marker_inside_argument_string:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: lookup
-          arguments:
-            markers: <think></think><｜DSML｜tool_calls><｜DSML｜invoke name="lookup"><｜DSML｜parameter name="q" string="true"></｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜</｜DSML｜
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: lookup
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"markers":"<think></think><｜DSML｜tool_calls><｜DSML｜invoke name=\"lookup\"><｜DSML｜parameter name=\"q\" string=\"true\"></｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜</｜DSML｜"}'
-            complete: true
-        - expected: []
-        - expected: []
-  gpt_oss_invalid_tool_body_then_empty_call:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: bad
-          arguments: {}
-        - kind: tool_call
-          name: get_weather
-          arguments: {}
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: bad
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            complete: true
-        - expected: []
-        - expected: []
-  gpt_oss_invalid_tool_body_then_valid_call:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: bad
-          arguments: {}
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: bad
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"Paris"}'
-            complete: true
-        - expected: []
-        - expected: []
-  gpt_oss_multiple_unknown_and_empty_tools:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: run
-          arguments: {}
-        - kind: tool_call
-          name: not_offered
-          arguments:
-            x: 2
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
+            arguments:
+              city: null
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":null}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  arg_marker_in_string:
+    value:
+      case_key: UNIFIED.7-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
           - kind: tool_call
             name: run
-            arguments: ''
-            complete: false
+            arguments:
+              cmd: git log </｜DSML｜invoke> --oneline
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: run
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"cmd":"git log </｜DSML｜invoke> --oneline"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  arg_null_mixed_labels:
+    value:
+      case_key: UNIFIED.7-4.mixed_labels
+      stimulus:
+        ref: current
+        semantic_sha256: c9221fef971c170c143d9d0ffd7ed94aff21dcec8d994bab7c4395282697e1e6
+      observation:
+        value:
+          assembled:
           - kind: tool_call
-            name: null
-            arguments: '{}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            name: set_labels
+            arguments:
+              label: null
+              note: null
+              literal: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: set_labels
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"label":null,"note":null,"literal":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  arg_string_null_ref:
+    value:
+      case_key: UNIFIED.7-arg_string_null_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 0a77462a1d2c29ac79fc4cde550759011b96514f5a224ecfb899037a8e38ae1b
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  arg_unicode:
+    value:
+      case_key: UNIFIED.7-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: São Paulo 東京
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"São Paulo 東京"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  content_then_reason:
+    value:
+      case_key: UNIFIED.11-7
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Hello there. '
+          - kind: reasoning
+            text: let me recall
+          - kind: text
+            text: The capital is Paris.
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Hello there. '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: let me recall
+          - expected: []
+          - expected:
+            - kind: text
+              text: The capital is Paris.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  content_then_reason_then_tool:
+    value:
+      case_key: UNIFIED.11-6
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Sure, one sec. '
+          - kind: reasoning
+            text: checking the forecast
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Sure, one sec. '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: checking the forecast
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  dotted_name_minimal:
+    value:
+      case_key: UNIFIED.1-dotted_name_minimal
+      stimulus:
+        ref: current
+        semantic_sha256: a2a13464cdeb2d275f48df7e707ed2e6fae20ad41d935279e1f69d826498f38e
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: a.b
+            arguments: {}
+          chunks:
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: a.b
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  dotted_name_mixed_punctuation:
+    value:
+      case_key: UNIFIED.1-dotted_name_mixed_punctuation
+      stimulus:
+        ref: current
+        semantic_sha256: e4fe2c407ef89006eeff13b9d9e4d7fb39441147b26ba81a5eeb3f8917af1898
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments:
+              location: Beijing
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: my-tool.v2
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"location":"Beijing"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  dotted_name_multiple_segments:
+    value:
+      case_key: UNIFIED.1-dotted_name_multiple_segments
+      stimulus:
+        ref: current
+        semantic_sha256: 85283d4ed88b080befacee2e2e2518b42eed236a374e9bd569b1d6867ba7418a
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments:
+              location: Beijing
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: server.tools.weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"location":"Beijing"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  dotted_name_shared_prefix:
+    value:
+      case_key: UNIFIED.2-dotted_name_shared_prefix
+      stimulus:
+        ref: current
+        semantic_sha256: 684774766b30a05a2e8b5f026c740caad9d522c3aad1f16742813d29dc2529a5
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: server.weather
+            arguments:
+              location: Beijing
+          - kind: tool_call
+            name: server.time
+            arguments:
+              timezone: Asia/Shanghai
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: server.weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"location":"Beijing"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: server.time
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"timezone":"Asia/Shanghai"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  empty_args:
+    value:
+      case_key: UNIFIED.6-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+          chunks:
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  gpt_oss_control_marker_inside_argument_string:
+    value:
+      case_key: UNIFIED.gpt_oss-control_marker_inside_argument_string
+      stimulus:
+        ref: current
+        semantic_sha256: b725a474004ca0c433cad804dd341702fccb4452784c170a9e705546d6356648
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: lookup
+            arguments:
+              markers: <think></think><｜DSML｜tool_calls><｜DSML｜invoke name="lookup"><｜DSML｜parameter name="q" string="true"></｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜</｜DSML｜
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: lookup
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"markers":"<think></think><｜DSML｜tool_calls><｜DSML｜invoke name=\"lookup\"><｜DSML｜parameter name=\"q\" string=\"true\"></｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜</｜DSML｜"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  gpt_oss_invalid_tool_body_then_empty_call:
+    value:
+      case_key: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
+      stimulus:
+        ref: current
+        semantic_sha256: 45619059c8ae9a3d1310433a84fad9ec838d680fc674a050850d6c138ee7f5d6
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: bad
+            arguments: {}
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: bad
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  gpt_oss_invalid_tool_body_then_valid_call:
+    value:
+      case_key: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
+      stimulus:
+        ref: current
+        semantic_sha256: fe97817e54f2b00748cb6ef19a9cd70100e4f054e197ba6a5b02ba22d4fb7496
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: bad
+            arguments: {}
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: bad
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  gpt_oss_multiple_unknown_and_empty_tools:
+    value:
+      case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+      stimulus:
+        ref: current
+        semantic_sha256: 7db2ea67f4e6ce4e2ab4fd37b6e2b5b160ad85af2a6ff8d20e959a8596981c25
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: run
+            arguments: {}
           - kind: tool_call
             name: not_offered
-            arguments: ''
-            complete: false
+            arguments:
+              x: 2
+          chunks:
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: run
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: not_offered
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":2}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  guided_json_after_reasoning:
+    value:
+      case_key: UNIFIED.30-6
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking
           - kind: tool_call
-            name: null
-            arguments: '{"x":2}'
-            complete: true
-        - expected: []
-        - expected: []
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: checking
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_array_argument:
+    value:
+      case_key: UNIFIED.30-5
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: sum_values
+            arguments:
+              values:
+              - 2
+              - 3
+              - 5
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: sum_values
+              arguments: '{"values": [2, 3, 5]}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    value:
+      case_key: UNIFIED.34-7
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: 'thinking '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: 'thinking '
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_escaped_string_args:
+    value:
+      case_key: UNIFIED.30-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: run
+            arguments:
+              cmd: echo "雪" > C:\tmp\a.txt
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: run
+              arguments: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_gt_in_argument_bare_opener:
+    value:
+      case_key: UNIFIED.30-13
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: a > b
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "a > b"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_gt_in_argument_trailing_close:
+    value:
+      case_key: UNIFIED.30-11
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: a > b
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "a > b"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_gt_in_argument_wrapped:
+    value:
+      case_key: UNIFIED.30-12
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: a > b
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "a > b"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_invalid_call:
+    value:
+      case_key: UNIFIED.31-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: '{"unexpected": "shape"}'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_list_with_broken_element:
+    value:
+      case_key: UNIFIED.31-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_malformed_json:
+    value:
+      case_key: UNIFIED.31-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Par'
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: '{"name": "get_weather", "arguments": {"city": "Par'
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_marker_inside_argument:
+    value:
+      case_key: UNIFIED.30-7
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: log
+            arguments:
+              note: </think>
+          chunks:
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: log
+              arguments: '{"note": "</think>"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_named_tool:
+    value:
+      case_key: UNIFIED.30-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_narrated_invoke_in_reasoning:
+    value:
+      case_key: UNIFIED.34-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: I'll use  next
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: 'I''ll use '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: ' next'
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_narrated_prefix_inside_reasoning:
+    value:
+      case_key: UNIFIED.34-5
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: I'll call get_weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: 'I''ll call '
+          - expected:
+            - kind: reasoning
+              text: get_weather
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_native_markup_only:
+    value:
+      case_key: UNIFIED.32-5
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
   guided_json_native_parameter_array_before_payload:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: I mean <think>self literal</think>
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Rome
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.35-guided_json_native_parameter_array_before_payload
+      stimulus:
+        ref: current
+        semantic_sha256: cbf33087df8acdd7ed8c159954d030d5acc48633b7e31a1d086ac0ccf64be101
+      observation:
+        value:
+          assembled:
           - kind: text
-            text: 'I mean '
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: self literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            text: I mean <think>self literal</think>
           - kind: tool_call
             name: get_weather
-            arguments: '{"city": "Rome"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            arguments:
+              city: Rome
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected: []
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: self literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Rome"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: Response
+            tool_output_mode: GuidedJson
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
   guided_json_native_parameter_object_before_payload:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: I mean <think>self literal</think>
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.35-guided_json_native_parameter_object_before_payload
+      stimulus:
+        ref: current
+        semantic_sha256: ac9106e9c0a1a4b863692d5b13719608d5201d0b0b01ce69a8b3a14ed9b236ce
+      observation:
+        value:
+          assembled:
           - kind: text
-            text: 'I mean '
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: self literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            text: I mean <think>self literal</think>
           - kind: tool_call
             name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: self literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: Response
+            tool_output_mode: GuidedJson
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
   guided_json_native_parameter_string_before_payload:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: I mean <think>self literal</think>
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Rome
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+      stimulus:
+        ref: current
+        semantic_sha256: aa229061edb756d6654d7e85a967fee7c71fdc3aef869f188a1fa0c71ceb279a
+      observation:
+        value:
+          assembled:
           - kind: text
-            text: 'I mean '
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: self literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            text: I mean <think>self literal</think>
           - kind: tool_call
             name: get_weather
-            arguments: '{"city":"Rome"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            arguments:
+              city: Rome
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected: []
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: self literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city":"Rome"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: Response
+            tool_output_mode: GuidedJson
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
   guided_json_noncall_before_native_array_before_payload:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: '{}I mean <think>self literal</think>'
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Rome
-        - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+      stimulus:
+        ref: current
+        semantic_sha256: 626ca596ce85b335514489bb1bc0ed76646505cabf757ce9e9b99effe153f1c0
+      observation:
+        value:
+          assembled:
           - kind: text
-            text: '{}I mean '
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: self literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            text: '{}I mean <think>self literal</think>'
           - kind: tool_call
             name: get_weather
-            arguments: '{"city": "Rome"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+            arguments:
+              city: Rome
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - expected: []
-  guided_quoted_reasoning_closer_named:
-    absent: true
-  guided_quoted_reasoning_closer_required:
-    absent: true
+          chunks:
+          - expected:
+            - kind: text
+              text: '{}I mean '
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: self literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Rome"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: Response
+            tool_output_mode: GuidedJson
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  guided_json_orphan_reason_close_before_payload:
+    value:
+      case_key: UNIFIED.34-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_orphan_tool_close_before_payload:
+    value:
+      case_key: UNIFIED.32-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_partial_calls:
+    value:
+      case_key: UNIFIED.31-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+          chunks:
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_prose_before_reasoning:
+    value:
+      case_key: UNIFIED.34-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Sure. '
+          - kind: reasoning
+            text: checking
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'Sure. '
+          - expected:
+            - kind: reasoning
+              text: checking
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_quoted_bare_header_after_payload:
+    value:
+      case_key: UNIFIED.35-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: I mean <think>self literal</think>
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+            - kind: text
+              text: 'I mean '
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: self literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_quoted_bare_header_in_answer:
+    value:
+      case_key: UNIFIED.35-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: I mean <think>self literal</think>
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: self literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_required_tool:
+    value:
+      case_key: UNIFIED.30-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_schema_error_nameless_element_bare_opener:
+    value:
+      case_key: UNIFIED.33-9
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+          chunks:
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_schema_error_nameless_element_trailing_close:
+    value:
+      case_key: UNIFIED.33-7
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+          chunks:
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_schema_error_nameless_element_wrapped:
+    value:
+      case_key: UNIFIED.33-8
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_schema_error_not_a_call_bare_opener:
+    value:
+      case_key: UNIFIED.33-6
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: '{"unexpected": "shape"}'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_schema_error_not_a_call_trailing_close:
+    value:
+      case_key: UNIFIED.33-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: '{"unexpected": "shape"}'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_schema_error_not_a_call_wrapped:
+    value:
+      case_key: UNIFIED.33-5
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: '{"unexpected": "shape"}'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_stray_prefix_before_reasoning:
+    value:
+      case_key: UNIFIED.34-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: secret
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: secret
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_syntax_error_bare_opener:
+    value:
+      case_key: UNIFIED.33-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": '
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city": '
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_syntax_error_trailing_close:
+    value:
+      case_key: UNIFIED.33-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city":'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city":'
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_syntax_error_wrapped:
+    value:
+      case_key: UNIFIED.33-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city":'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '[{"name": "get_weather", "arguments": {"city":'
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_tool_close_after_payload:
+    value:
+      case_key: UNIFIED.32-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_tool_open_before_payload:
+    value:
+      case_key: UNIFIED.32-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_two_calls:
+    value:
+      case_key: UNIFIED.30-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: run
+            arguments:
+              cmd: git log
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+            - kind: tool_call
+              name: run
+              arguments: '{"cmd": "git log"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    value:
+      case_key: UNIFIED.34-6
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: thinking
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: thinking
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  guided_json_wrapped_in_tool_markup:
+    value:
+      case_key: UNIFIED.32-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
   guided_response_native_wrapper_whitespace_before_prose:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'ok then '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
+    value:
+      case_key: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+      stimulus:
+        ref: current
+        semantic_sha256: 227af3cd1cc66fa4ead0d037a84884a0420352ef8193c0f3352ef1e6c6480af6
+      observation:
+        value:
+          assembled:
           - kind: text
             text: 'ok then '
           - kind: tool_call
             name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
-  guided_response_quoted_control_braces_named:
-    absent: true
-  guided_response_quoted_control_braces_required:
-    absent: true
-  guided_response_rejected_header_quote_ownership:
-    absent: true
-  native_quoted_control_in_reasoning:
-    absent: true
-  native_quoted_control_in_response:
-    absent: true
-  native_quoted_control_then_call:
-    absent: true
-  native_quoted_incomplete_header:
-    absent: true
-  native_single_quote_contraction_reasoning:
-    absent: true
-  native_single_quote_contraction_response:
-    absent: true
-  native_single_quoted_word_control:
-    absent: true
-  native_unmatched_quote_then_call:
-    absent: true
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'ok then '
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: Response
+            tool_output_mode: GuidedJson
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  interstitial_text:
+    value:
+      case_key: UNIFIED.11-5
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: a
+          - kind: text
+            text: 'Here you go: '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: a
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'Here you go: '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  narrated_calls:
+    value:
+      case_key: UNIFIED.8-5
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: ' then I''ll run '
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: text
+            text: ' and '
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' then I''ll run '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' and '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  orphan_close_after_prose:
+    value:
+      case_key: UNIFIED.5-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'I will check that. '
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I will check that. '
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: UNIFIED.41-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: London
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: checking weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"London"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  prefilled_reasoning_then_text:
+    value:
+      case_key: UNIFIED.40-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: no tool needed
+          - kind: text
+            text: The answer is 42.
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: no tool needed
+          - expected: []
+          - expected:
+            - kind: text
+              text: The answer is 42.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: UNIFIED.40-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: weighing options
+          - kind: text
+            text: 'Here''s what I found: '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: weighing options
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'Here''s what I found: '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  prefilled_reasoning_truncated:
+    value:
+      case_key: UNIFIED.41-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: analyzing data
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: analyzing data
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  prefilled_reasoning_with_guided_json:
+    value:
+      case_key: UNIFIED.40-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: checking weather
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: UNIFIED.40-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: checking weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: UNIFIED.50-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <think>literal</think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_after_tool:
+    value:
+      case_key: UNIFIED.11-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Look it up.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: reasoning
+            text: Now answer.
+          - kind: text
+            text: It's 18C.
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Look it up.
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Now answer.
+          - expected: []
+          - expected:
+            - kind: text
+              text: It's 18C.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_between_calls:
+    value:
+      case_key: UNIFIED.11-9
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: reasoning
+            text: mid
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: mid
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_interleaved:
+    value:
+      case_key: UNIFIED.11-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: A
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: reasoning
+            text: B
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: A
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: B
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_markup_in_arg:
+    value:
+      case_key: UNIFIED.12-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: log
+            arguments:
+              note: <think>reconsider</think>
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: log
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"note":"<think>reconsider</think>"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_markup_in_arg_with_text:
+    value:
+      case_key: UNIFIED.12-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Logging now: '
+          - kind: tool_call
+            name: log
+            arguments:
+              note: <think>reconsider</think>
+          - kind: text
+            text: ' done.'
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Logging now: '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: log
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"note":"<think>reconsider</think>"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' done.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_only:
+    value:
+      case_key: UNIFIED.10-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: just thinking, no answer
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: just thinking, no answer
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_then_content:
+    value:
+      case_key: UNIFIED.10-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: let me think
+          - kind: text
+            text: The answer is 42.
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: let me think
+          - expected: []
+          - expected:
+            - kind: text
+              text: The answer is 42.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_then_tool:
+    value:
+      case_key: UNIFIED.11-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_tool_reason_tool_reason:
+    value:
+      case_key: UNIFIED.11-8
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: A
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: reasoning
+            text: B
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          - kind: reasoning
+            text: C
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: A
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: B
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: C
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_tool_text_reason_tool:
+    value:
+      case_key: UNIFIED.11-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: A
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: text
+            text: working on it
+          - kind: reasoning
+            text: B
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: A
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: working on it
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: B
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  reason_unterminated:
+    value:
+      case_key: UNIFIED.10-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: thinking but stream ends
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: thinking but stream ends
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  retired__30_14:
+    value:
+      case_key: UNIFIED.30-14
+      stimulus:
+        ref: current
+        semantic_sha256: 164975491563c0f4193a6e2daf0eacbe6ca838a2424b07fab94ebaea76970ea3
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: a > b
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "a > b"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.1
+        capture_origin:
+          crate_version: 0.6.1
+          source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
+          git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
+        inherited_from: 0.6.1
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.1.yaml
+  retired__31_33:
+    value:
+      case_key: UNIFIED.31-33
+      stimulus:
+        ref: current
+        semantic_sha256: bb42cc7ece0ebc136f9b9c8943614c0da2873bb7b303ab29a0402d9e26451cf9
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: before  after
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: 'before '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: ' after'
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.1
+        capture_origin:
+          crate_version: 0.6.1
+          source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
+          git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
+        inherited_from: 0.6.1
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.1.yaml
+  retired__31_38:
+    value:
+      case_key: UNIFIED.31-38
+      stimulus:
+        ref: current
+        semantic_sha256: 275700efcb81eeab130805345da7269919388cba0319a64106fc44f268f3d750
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: f">x
+          - kind: tool_call
+            name: f
+            arguments: {}
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: f">x
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: '{}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.1
+        capture_origin:
+          crate_version: 0.6.1
+          source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
+          git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
+        inherited_from: 0.6.1
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.1.yaml
+  retired__31_40:
+    value:
+      case_key: UNIFIED.31-40
+      stimulus:
+        ref: current
+        semantic_sha256: 2f68764b84e866f9091457d4389e8cf8836d17e9655e406fb9c7abe570401248
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: before  after
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: 'before '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: ' after'
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.1
+        capture_origin:
+          crate_version: 0.6.1
+          source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
+          git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
+        inherited_from: 0.6.1
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.1.yaml
   structured_response_after_reasoning:
-    observation:
-      error:
-        code: legacy_unclassified
-        detail: "structural tag: structural-tag verifier: Traceback (most recent call last):\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__434-gpt-oss__DIS-3151/conformance/utils/src/check_structural_tag.py\", line 61, in <module>\n    print(json.dumps(verify(json.load(sys.stdin))))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__434-gpt-oss__DIS-3151/conformance/utils/src/check_structural_tag.py\", line 56, in verify\n    raise ValueError(f\"grammar accepted rejection probe {index}\")\nValueError: grammar accepted rejection probe 0\n"
-metadata_changes:
-  arg_json_null_ref:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_null_mixed_labels:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_ref:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_minimal:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_mixed_punctuation:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_multiple_segments:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_shared_prefix:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  gpt_oss_control_marker_inside_argument_string:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  gpt_oss_invalid_tool_body_then_empty_call:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  gpt_oss_invalid_tool_body_then_valid_call:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  gpt_oss_multiple_unknown_and_empty_tools:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  guided_json_native_parameter_array_before_payload:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: null
-  guided_json_native_parameter_object_before_payload:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: null
-  guided_json_native_parameter_string_before_payload:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: null
-  guided_json_noncall_before_native_array_before_payload:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: null
-  guided_response_native_wrapper_whitespace_before_prose:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: null
-  structured_response_after_reasoning:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-      structural_tag:
-        schema:
-          type: object
-          properties:
-            location:
-              type: string
-              enum:
-              - London
-              - New York
-            temperature:
-              type: number
-            conditions:
-              type: string
-          required:
-          - location
-          - temperature
-          - conditions
-          additionalProperties: false
-        rejected:
-        - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
-        - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
-        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
-        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
-        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
-document_overrides:
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.15
-      capture_origin:
-        crate_version: 0.7.15
-        git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
-        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
-      inherited_from: null
+    value:
+      case_key: UNIFIED.36-structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
+      observation:
+        error:
+          code: legacy_unclassified
+          detail: "structural tag: structural-tag verifier: Traceback (most recent call last):\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__434-gpt-oss__DIS-3151/conformance/utils/src/check_structural_tag.py\", line 61, in <module>\n    print(json.dumps(verify(json.load(sys.stdin))))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__434-gpt-oss__DIS-3151/conformance/utils/src/check_structural_tag.py\", line 56, in verify\n    raise ValueError(f\"grammar accepted rejection probe {index}\")\nValueError: grammar accepted rejection probe 0\n"
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+            structural_tag:
+              schema:
+                type: object
+                properties:
+                  location:
+                    type: string
+                    enum:
+                    - London
+                    - New York
+                  temperature:
+                    type: number
+                  conditions:
+                    type: string
+                required:
+                - location
+                - temperature
+                - conditions
+                additionalProperties: false
+              rejected:
+              - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
+              - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
+              - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+              - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
+              - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.15.yaml
+  text_before_tool:
+    value:
+      case_key: UNIFIED.8-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'On it: '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: 'On it: '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  text_between_calls:
+    value:
+      case_key: UNIFIED.8-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: text
+            text: ' then '
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' then '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  text_only:
+    value:
+      case_key: UNIFIED.3-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The answer is 42, no tools needed.
+          chunks:
+          - expected:
+            - kind: text
+              text: The answer is 42, no tools needed.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  text_reason_tool_text_reason_tool:
+    value:
+      case_key: UNIFIED.11-10
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Sure. '
+          - kind: reasoning
+            text: check A
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: text
+            text: ' and '
+          - kind: reasoning
+            text: check B
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Sure. '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: check A
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' and '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: check B
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  text_sandwich:
+    value:
+      case_key: UNIFIED.8-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Before. '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: ' After.'
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Before. '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' After.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
   three_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.15
-      capture_origin:
-        crate_version: 0.7.15
-        git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
-        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
-      inherited_from: null
+    value:
+      case_key: UNIFIED.2-three_calls_partial_header
+      stimulus:
+        ref: current
+        semantic_sha256: cd91b9ffc1849569a7ef8371845abde4348bdcad5ef7d3c6494f20b8fe4f132a
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: tool_call
+            name: g
+            arguments:
+              x: "2"
+          - kind: tool_call
+            name: h
+            arguments:
+              x: "3"
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"2"}'
+              complete: true
+            - kind: tool_call
+              name: h
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"3"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.15
+        capture_origin:
+          crate_version: 0.7.15
+          git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
+          source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+    suppress_inherited_from: true
+  tool_block_never_closed_then_text:
+    value:
+      case_key: UNIFIED.4-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  tool_in_reason:
+    value:
+      case_key: UNIFIED.12-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: 'I should check. '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: reasoning
+            text: ' now answer'
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: 'I should check. '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: ' now answer'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  tool_in_reason_with_text:
+    value:
+      case_key: UNIFIED.12-4
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Sure. '
+          - kind: reasoning
+            text: 'I should check. '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: reasoning
+            text: ' now answer'
+          - kind: text
+            text: ' Here you go.'
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Sure. '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: 'I should check. '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: ' now answer'
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' Here you go.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  tool_markup_only_emits_nothing:
+    value:
+      case_key: UNIFIED.4-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  tool_no_close:
+    value:
+      case_key: UNIFIED.5-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  tool_only:
+    value:
+      case_key: UNIFIED.1-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  trailing_text_after_tool:
+    value:
+      case_key: UNIFIED.8-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected:
+            - kind: text
+              text: The forecast shows clear skies for the rest of the week.
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  truncated_tool_eof:
+    value:
+      case_key: UNIFIED.5-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: ok
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: ok
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  two_adjacent_reason_spans:
+    value:
+      case_key: UNIFIED.10-5
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: 'first
+
+              second'
+          - kind: text
+            text: done
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: first
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: '
+
+                second'
+          - expected: []
+          - expected:
+            - kind: text
+              text: done
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  two_calls:
+    value:
+      case_key: UNIFIED.2-1
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              x: "1"
+          - kind: tool_call
+            name: g
+            arguments:
+              y: "2"
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":"1"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: g
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"y":"2"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  two_calls_same_name:
+    value:
+      case_key: UNIFIED.2-2
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Paris"}'
+              complete: true
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"Tokyo"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  two_reason_spans:
+    value:
+      case_key: UNIFIED.10-3
+      stimulus:
+        ref: current
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: first thought
+          - kind: text
+            text: 'interlude '
+          - kind: reasoning
+            text: second thought
+          - kind: text
+            text: done
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: first thought
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'interlude '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: second thought
+          - expected: []
+          - expected:
+            - kind: text
+              text: done
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.6.0
+        capture_origin:
+          crate_version: 0.6.0
+          source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+          git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+        inherited_from: 0.6.0
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml
+  arg_json_null_anyof:
+    value:
+      case_key: UNIFIED.7-4.anyof
+      stimulus:
+        ref: current
+        semantic_sha256: 4b25d2732e2b5fefb293b66909b0f5cf73d32f650c8fadbfaf27b0858e8b7270
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: null
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":null}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_json_null_const:
+    value:
+      case_key: UNIFIED.7-4.const
+      stimulus:
+        ref: current
+        semantic_sha256: 485f34252cd5a86a4148b41188de39bcdd6dfa0443a662c325d9c9531809dde2
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: null
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":null}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_json_null_nullable:
+    value:
+      case_key: UNIFIED.7-4.nullable
+      stimulus:
+        ref: current
+        semantic_sha256: eefb1a1086dcf37bcacb71c7df61f379e6adf06a3d9cfdca7ea181cc4f628a28
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: null
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":null}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_json_null_oneof:
+    value:
+      case_key: UNIFIED.7-4.oneof
+      stimulus:
+        ref: current
+        semantic_sha256: a943d6a764cb1c1009e3ff43e0d018eda1134f94dda1c591e6d2679cac9a922a
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: null
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":null}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_string_null:
+    value:
+      case_key: UNIFIED.7-5
+      stimulus:
+        ref: current
+        semantic_sha256: fa5b682c79c28e393dd3d7944fb6a3237e44bc10d0dfbefe5368368d01175ba9
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_string_null_const:
+    value:
+      case_key: UNIFIED.7-5.const
+      stimulus:
+        ref: current
+        semantic_sha256: fc6589cf6b04940819bce0d2ef03222098b779f095aa7c1e5dc90c34a11c53e7
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_string_null_enum:
+    value:
+      case_key: UNIFIED.7-5.enum
+      stimulus:
+        ref: current
+        semantic_sha256: 43ee5c1c7c94ed13cb0c7d6861bd8225bb536b1e8b3914eb5040024de049e7ac
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_string_null_sibling_anyof:
+    value:
+      case_key: UNIFIED.7-5.sibling_anyof
+      stimulus:
+        ref: current
+        semantic_sha256: 39755ece419745df93a7921f7ccdec3a27a7ccc04f24476d3164816bd90b5487
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_string_null_sibling_oneof:
+    value:
+      case_key: UNIFIED.7-5.sibling_oneof
+      stimulus:
+        ref: current
+        semantic_sha256: d603bc4ebb3957c3705d4b6328e1d4cb95f3abec75b2ee060a505f117803dca5
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_string_null_union:
+    value:
+      case_key: UNIFIED.7-5.union
+      stimulus:
+        ref: current
+        semantic_sha256: 5d51b4481c58935db3276720ef047b26c067d94a324a4b6326fa5181b70acfd9
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  arg_string_null_untyped_branch:
+    value:
+      case_key: UNIFIED.7-5.untyped_branch
+      stimulus:
+        ref: current
+        semantic_sha256: a3231c95bab994cba5a9f375c45ed076d15831da445b34cca7a7388b897c5292
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: 'null'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":"null"}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  deepseek_v41_mixed_control_text_in_string:
+    value:
+      case_key: UNIFIED.7-3
+      stimulus:
+        ref: current
+        semantic_sha256: ea6ae376587011bb11a7758790e5023b84742e182b7fd2e34c2722ca6ff0ea98
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments:
+              x: " <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"x":" <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  qwen_string_null:
+    value:
+      case_key: UNIFIED.7-4
+      stimulus:
+        ref: current
+        semantic_sha256: 36b7490bd67a9e93c4f25a0cd21ac02915cf3110c589e25108e8b8838bc4ccbc
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: null
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"city":null}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.4
+        capture_origin:
+          crate_version: 0.7.4
+          source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+          git_commit: e76882f2d26ac813055d147b3292364da342f40b
+        inherited_from: 0.7.4
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml
+  malformed_json_then_two_valid_calls:
+    value:
+      case_key: UNIFIED.5-4
+      stimulus:
+        ref: current
+        semantic_sha256: 47d44fbc177d4fa2972e154079aabd372c389373bbcc57b94f1c888a86ef9ec0
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: bad
+            arguments:
+              value: '{"x":"unfinished'
+          - kind: tool_call
+            name: echo
+            arguments:
+              value: é
+          - kind: tool_call
+            name: echo
+            arguments:
+              value: Café
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: bad
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":"{\"x\":\"unfinished"}'
+              complete: true
+            - kind: tool_call
+              name: echo
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":"é"}'
+              complete: true
+            - kind: tool_call
+              name: echo
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":"Café"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.13
+        capture_origin:
+          crate_version: 0.7.13
+          source_sha256: f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8
+          git_commit: 47ef952237deefe0643f94025272a558f249687d
+        inherited_from: 0.7.13
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.13.yaml
+  arg_numeric_14_const_decimal:
+    value:
+      case_key: UNIFIED.7-14.const_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: 0378d6735b79f6d4c37c1ce5858c003bcefe1044299e17d8d1208beefbdafe71
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_const_exponent:
+    value:
+      case_key: UNIFIED.7-14.const_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: e6783a9680467a3037f57fbf2d0ed809ea6c0fc7a8b35539cdb661a9ff3ec76d
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_enum_decimal:
+    value:
+      case_key: UNIFIED.7-14.enum_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: eaf10098d97d7958150123953b335b28b2b6bb47b8598ba1f833d41bef2dc414
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_enum_exponent:
+    value:
+      case_key: UNIFIED.7-14.enum_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: c416b8cd11e444a96f8800260563c8fbb6a7918c6b265d189bb63354a2f4ab1f
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_large_decimal:
+    value:
+      case_key: UNIFIED.7-14.large_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: c21262407fdd7a5b3802305d57abf41a4743b02e59d48e99230e26ba2cde95a7
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_large_exponent:
+    value:
+      case_key: UNIFIED.7-14.large_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: 0770f7e6c451e79d66d1f7d6470043059c667c2eb2f2d8e74fbb3d84b1419418
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_negative:
+    value:
+      case_key: UNIFIED.7-14.negative
+      stimulus:
+        ref: current
+        semantic_sha256: 429c6245c94017074feaa6e9721c0be316fccfd1a04f87397dc9efece457187f
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_negative_exponent:
+    value:
+      case_key: UNIFIED.7-14.negative_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: 6e2d71e5d30630e3c7bc916c997c19fd01ba20fd1cfd2afdb5e1900f6489619c
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_14_zero_underflow:
+    value:
+      case_key: UNIFIED.7-14.zero_underflow
+      stimulus:
+        ref: current
+        semantic_sha256: 95592bc113dbfec9aaf52792d6deeb63ef23c15f7a14775ed3ce5ed59e8d0a37
+      observation:
+        unavailable:
+          code: legacy_unclassified
+          detail: Original historical producer identity cannot be reproduced; no newer parser substituted.
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+    suppress_inherited_from: true
+  arg_numeric_15_exponent:
+    value:
+      case_key: UNIFIED.7-15.exponent
+      stimulus:
+        ref: current
+        semantic_sha256: ad01e44b5f334ef038b3425b26c6fdf8cb69cfafe8d21412d069f2b552365608
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              value: 9007199254740992.0
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":9007199254740992.0}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+        capture_origin:
+          crate_version: 0.7.14
+          git_commit: 9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9
+          source_sha256: 9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af
+        inherited_from: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+  arg_numeric_15_negative:
+    value:
+      case_key: UNIFIED.7-15.negative
+      stimulus:
+        ref: current
+        semantic_sha256: 92e76b0afb861bac225dcdb7432fb1848977c36b17bc5a0e48fc168bbb99f6d6
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              value: -9007199254740992.0
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":-9007199254740992.0}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+        capture_origin:
+          crate_version: 0.7.14
+          git_commit: 9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9
+          source_sha256: 9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af
+        inherited_from: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+  arg_numeric_15_ordinary:
+    value:
+      case_key: UNIFIED.7-15.ordinary
+      stimulus:
+        ref: current
+        semantic_sha256: 27ed5f06b322428623846a07b6853a0f038891a0b0d729f93e40b3cd96ec8bd1
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              value: 42.5
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":42.5}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+        capture_origin:
+          crate_version: 0.7.14
+          git_commit: 9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9
+          source_sha256: 9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af
+        inherited_from: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+  arg_numeric_15_quarter:
+    value:
+      case_key: UNIFIED.7-15.quarter
+      stimulus:
+        ref: current
+        semantic_sha256: 212dd0f935663cceab2f65a465ca16c3662e43faf20ad50c3b1edbc066cd30ab
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              value: 9007199254740994.0
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":9007199254740994.0}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+        capture_origin:
+          crate_version: 0.7.14
+          git_commit: 9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9
+          source_sha256: 9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af
+        inherited_from: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+  arg_numeric_15_round_down:
+    value:
+      case_key: UNIFIED.7-15.round_down
+      stimulus:
+        ref: current
+        semantic_sha256: b2fb852e084974ce1351b93297afc292bd4a51b84b3c518a88a77af48ac89d1d
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              value: 9007199254740992.0
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":9007199254740992.0}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+        capture_origin:
+          crate_version: 0.7.14
+          git_commit: 9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9
+          source_sha256: 9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af
+        inherited_from: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+  arg_numeric_15_round_up:
+    value:
+      case_key: UNIFIED.7-15.round_up
+      stimulus:
+        ref: current
+        semantic_sha256: af0834e5a700cb04b2e7178f1e1ec214ca36589389b23b5ddaa383092b3583eb
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              value: 9007199254740994.0
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":9007199254740994.0}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+        capture_origin:
+          crate_version: 0.7.14
+          git_commit: 9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9
+          source_sha256: 9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af
+        inherited_from: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml
+  arg_numeric_15_small:
+    value:
+      case_key: UNIFIED.7-15.small
+      stimulus:
+        ref: current
+        semantic_sha256: 77960ad3213bb16951a6a9a27bcaeb67a447315b9bb9aaac72020772e259de1c
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              value: 0.1
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"value":0.1}'
+              complete: true
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.14
+        capture_origin:
+          crate_version: 0.7.14
+          git_commit: 9e4fe9e4c383e3ce54024c8c571add4bff8e3bd9
+          source_sha256: 9886568549f43124587e6a508130dd270f875800efe8875236d8f513255cf2af
+        inherited_from: 0.7.14
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.14.yaml

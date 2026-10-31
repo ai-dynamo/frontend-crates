@@ -39,7 +39,8 @@ def test_capture_accounts_for_every_request_without_default_substitution():
     cases[3]["request"]["finish_reason"] = "unsupported"
     executed = []
 
-    def execute(names, request):
+    def execute(names, request, *, family):
+        assert family == "family"
         executed.append(copy.deepcopy(request))
         if request["input"] == "bad":
             raise ValueError("malformed arguments")
@@ -94,6 +95,59 @@ def test_batch_history_is_separate_sparse_bound_and_immutable(tmp_path):
     capture.write_text(json.dumps({"version": "0.27.0", "provenance": {**provenance, "version": "0.27.0"}, "results": {"UNIFIED.text_only.gemma4": changed}}))
     with pytest.raises(ValueError, match="executed batch differs from final fields"):
         import_capture(store, job, capture, {**provenance, "version": "0.27.0"}, implementation="vllm_python_batch")
+
+
+@pytest.mark.parametrize("implementation", ["vllm_python_batch", "sglang_python_batch"])
+def test_new_batch_request_retains_both_execution_receipts(tmp_path, implementation):
+    store = tmp_path / "store"
+    _write_family(store)
+    _write_capture(store, "0.26.0", {"text_only": _change("unified")}, implementation="vllm_python")
+    job = tmp_path / "job.json"
+    capture = tmp_path / "capture.json"
+    version = "0.26.0" if implementation == "vllm_python_batch" else "0.5.14"
+
+    def capture_job():
+        document = build_job(store / "families", "gemma4", mode="batch")
+        job.write_text(json.dumps(document))
+        results = {}
+        for case in document["cases"]:
+            final = {"reasoning_text": "", "normal_text": case["request"]["input"], "calls": []}
+            results[case["id"]] = {"capture_input": case["request"], "batch_final": final,
+                                   "assembled": batch_final_events(final)}
+        receipt = {"implementation": implementation, "version": version, "job_sha256": digest(job),
+                   "source_sha256": "a" * 64, "adapter_sha256": "b" * 64,
+                   "results_sha256": hashlib.sha256(json.dumps(results, sort_keys=True, ensure_ascii=False).encode()).hexdigest()}
+        capture.write_text(json.dumps({"version": version, "provenance": receipt, "results": results}))
+        return receipt
+
+    first_receipt = capture_job()
+    import_capture(store, job, capture, first_receipt, implementation=implementation)
+    identity = f"{implementation}-{version}"
+    before = unified_history.load_store(store).histories["gemma4", implementation]
+    original = before.resolve(identity)["text_only"]
+    assert "execution_proof" not in before.captures[identity]
+    original_origin = copy.deepcopy(before.captures[identity]["provenance"])
+    path = store / "families/gemma4/inputs_and_golden.yaml"
+    authored = unified_history.load_yaml(path)
+    added = copy.deepcopy(authored["cases"]["text_only"])
+    added.update(scenario="text_before_tool", display_id="UNIFIED.8-text_before_tool", request=_request("second"),
+                 golden={"assembled": [{"kind": "text", "text": "second"}]})
+    authored["cases"]["text_before_tool"] = added
+    path.write_text(unified_history.dump_yaml(authored))
+    second_receipt = capture_job()
+    assert second_receipt["job_sha256"] != first_receipt["job_sha256"]
+    import_capture(store, job, capture, second_receipt, implementation=implementation,
+                   backfill_only=True, selected_cases={"text_before_tool"})
+    after = unified_history.load_store(store).histories["gemma4", implementation]
+    resolved = after.resolve(identity)
+    assert resolved["text_only"] == original
+    assert after.captures[identity]["provenance"] == original_origin
+    assert resolved["text_only"]["document"]["record_metadata"]["capture_provenance"] == first_receipt
+    assert resolved["text_before_tool"]["document"]["record_metadata"]["capture_provenance"] == second_receipt
+    materialized, _ = unified_history.materialized_record(added, resolved["text_before_tool"])
+    assert materialized["capture_input"] == _request("second")
+    assert import_capture(store, job, capture, second_receipt, implementation=implementation,
+                          backfill_only=True, selected_cases={"text_before_tool"}) == []
 
 
 def test_jail_history_preserves_the_same_version_direct_batch_capture(tmp_path):
@@ -186,3 +240,73 @@ def test_peer_batch_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch)
     assert before["source_sha256"] == after["source_sha256"]
     assert before["adapter_sha256"] != after["adapter_sha256"]
     assert before["adapter_files"][config.name] != after["adapter_files"][config.name]
+
+
+@pytest.mark.parametrize("family, state, expected", [
+    ("nemotron_v3", "None", True), ("qwen3", "None", False),
+    ("qwen3", "Reasoning", True),
+])
+def test_sglang_batch_resolves_family_default_and_preserves_request(monkeypatch, family, state, expected):
+    seen = []
+
+    class Reasoner:
+        def __init__(self, model_type=None, stream_reasoning=True, force_reasoning=False):
+            seen.append(force_reasoning)
+
+        def parse_non_stream(self, text):
+            return "", text
+
+    class Tools:
+        def __init__(self, tools, tool_call_parser):
+            pass
+
+        def parse_non_stream(self, text):
+            return text, []
+
+    modules = {
+        "protocol": SimpleNamespace(Tool=SimpleNamespace, Function=SimpleNamespace),
+        "reasoning": SimpleNamespace(ReasoningParser=Reasoner),
+        "tools": SimpleNamespace(FunctionCallParser=Tools),
+    }
+    monkeypatch.setattr(capture_unified_batch, "resolve_peer_module", lambda engine, kind: modules[kind])
+    pipeline, _, execute, _ = capture_unified_batch.sglang_pipeline()
+    request = _request("Check Montréal.</think>雪")
+    request["init"]["starting_state"] = state
+    before = copy.deepcopy(request)
+    final = execute(pipeline[family], request, family=family)
+    assert seen == [expected]
+    assert final["normal_text"] == request["input"]
+    assert request == before
+
+
+
+def test_sglang_batch_response_bypasses_unregistered_reasoner_and_preserves_request(monkeypatch):
+    class UnregisteredReasoner:
+        DetectorMap = {}
+
+        def __init__(self, **kwargs):
+            raise AssertionError("Response must not construct a reasoner")
+
+    class Tools:
+        ToolCallParserEnum = {"qwen3_coder": object}
+
+        def __init__(self, tools, tool_call_parser):
+            pass
+
+        def parse_non_stream(self, text):
+            return text, []
+
+    modules = {"protocol": SimpleNamespace(Tool=SimpleNamespace, Function=SimpleNamespace),
+               "reasoning": SimpleNamespace(ReasoningParser=UnregisteredReasoner),
+               "tools": SimpleNamespace(FunctionCallParser=Tools)}
+    monkeypatch.setattr(capture_unified_batch, "resolve_peer_module", lambda engine, kind: modules[kind])
+    request = _request("<think>literal</think>")
+    request["init"]["starting_state"] = "Response"
+    before = copy.deepcopy(request)
+    job = {"cases": [{"id": "response", "family": "qwen3", "request": request}]}
+    result = capture_cases(job, *capture_unified_batch.sglang_pipeline(), supports_response_init=True)["response"]
+    assert result["batch_final"] == {"reasoning_text": "", "normal_text": request["input"], "calls": []}
+    assert result["capture_input"] == before and request == before
+    request["init"]["starting_state"] = "Reasoning"
+    result = capture_cases(job, *capture_unified_batch.sglang_pipeline(), supports_reasoning_init=True)["response"]
+    assert result["capture_observation"]["unavailable"]["code"] == "peer_detector_unavailable"

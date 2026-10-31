@@ -1,0 +1,1536 @@
+schema_version: 2
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.5.21
+    source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+    adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+    job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+document:
+  mode: unified
+records:
+  muse_quoted_reserved_eom_argument:
+    value:
+      case_key: muse_quoted_reserved_eom_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 3ad0716e2474d3b17674a46a60e7e9e0a48bd4c464519f7eccee3dc62cedeaff
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: a"<|close|>message<|sep|>"b
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: a"<|close|>message<|sep|>"b
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  muse_quoted_reserved_eot_argument:
+    value:
+      case_key: muse_quoted_reserved_eot_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 84134115b9e333c0b3789c7bbd3f8752b79a278bfc4bc3ae82a184805b7b0b5c
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: a"<|end_of_msg|>"b
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: a"<|end_of_msg|>"b
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  muse_quoted_reserved_start_argument:
+    value:
+      case_key: muse_quoted_reserved_start_argument
+      stimulus:
+        ref: current
+        semantic_sha256: d7b94eab69b6597fbba384b5b213da9d8af3040eee6e97f555caf3433b1d63bf
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: a"<|open|>message role="assistant"<|sep|>"b
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: a"<|open|>message role="assistant"<|sep|>"b
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_quoted_control_in_reasoning:
+    value:
+      case_key: native_quoted_control_in_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: f3bab920ab1147992756871eb340bebffac282f807aef945e53e0f8bbb9983e7
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal "<|open|>call" marker is part of the explanation.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: The literal "<|open|>call" marker is part of the explanation.
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: f24245070acb75fcbf2aef47b2e93099ba408cebfbcb26d13c8e60ef57bdecb5
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "<|open|>call" marker is part of the explanation.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal "<|open|>call" marker is part of the explanation.
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 2946a1731e5f56488dbb86a876bc57476b8086e8f8c361ef92974ec5bd3e5991
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "<|open|>call" marker is part of the explanation.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal "<|open|>call" marker is part of the explanation.
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 94eb9f4510587018b07e0355c0335e243e813a7aad5043fb7570de4196e8a67b
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal `
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal `
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_single_quote_contraction_reasoning:
+    value:
+      case_key: native_single_quote_contraction_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 499f79122fe3f3f45af256accdb5033c8f1a4cbacc92f9d5625df2200182bffc
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: The literal 'doesn't <|open|>call marker' stays quoted.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: The literal 'doesn't <|open|>call marker' stays quoted.
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: b90a9973ed3c6bc1f570108ed70984a811725bc9e017e9878a980aad2e7d10b1
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal 'doesn't <|open|>call marker' stays quoted.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal 'doesn't <|open|>call marker' stays quoted.
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: 1a50319c5b724f34f9b4789aff035e9a87465f6e759248b985401dc275b492fb
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal 'example <|open|>call marker' is part of the explanation.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal 'example <|open|>call marker' is part of the explanation.
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 79992d70c0af63bf5588dd9f003903a885f6cb3509ca6f85dd201d3f91185ef4
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: He said "maybe
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 3728925b2c917013b151e8da5bdab9fd8e8c415419b9b8518adbde3e40cbf5e8
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: London
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: checking weather
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: London
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: 49c915462e27ac6e12a5d02bafdd3c8b8f27ca4d24cca164268e988d5c0b131b
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: no tool needed
+          - kind: text
+            text: The answer is 42.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: no tool needed
+            normal_text: The answer is 42.
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 9a624017891a76f8826059738cc1a3d07941094099dd3e5a5d7980bbedcb3bfd
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: weighing options
+          - kind: text
+            text: 'Here''s what I found: '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: weighing options
+            normal_text: 'Here''s what I found: '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: b4112776c386372cb45b4470e4af8a46e92e61837e6d661ac5395b83087ab94c
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: analyzing data
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: analyzing data
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 613f3adfd437b9e160b2e80494491ee765d931eb22ac859a288715e3b83e0f05
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: checking weather
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: ad73c06ef05bfabd5e7d23fe2bcca277b804f0b4f4e8200409fb70eb7f7f8ebe
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <|open|>think<|sep|>literal<|close|>think<|sep|> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: <|open|>think<|sep|>literal<|close|>think<|sep|> then a call
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  structured_response_after_reasoning:
+    value:
+      case_key: structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 6e4a5c4c93b9513eec600dbeea39d4f43d89df50a7b245697d0a0be586526dbc
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Parser-only batch capture does not execute structural-tag generation constraints.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.14.yaml
+    suppress_inherited_from: true
+  deepseek_v41_json_invocation_body:
+    value:
+      case_key: deepseek_v41_json_invocation_body
+      stimulus:
+        ref: current
+        semantic_sha256: 85c42eb31dc7c66e20821bd407fca322a8fb40e1f370a8339cc4c0c6f6a83c97
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: inspect
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: inspect
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_native_incompatible_string_recovery:
+    value:
+      case_key: kimi_native_incompatible_string_recovery
+      stimulus:
+        ref: current
+        semantic_sha256: 7444b6e31b39c6b81749672ad50b0bc71c3353faa2075157e041feb4dbc0a4c9
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_native_k2_count_content_chunk1024:
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: c242650467aacd2c4f094547204fca86021b24f15c6c95ea99192f16c274da2b
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments:
+                count: 7
+                content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_native_k2_count_content_chunk7:
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: bd377305b85e0c1388359555d1222fbd80415776117f98831ae2b5399677823e
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments:
+                count: 7
+                content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_native_trailing_syntax_whitespace:
+    value:
+      case_key: kimi_native_trailing_syntax_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: cd96ba55e815d9fefb2ff30c924a53b0086ea2c69c455a2b96acf5248d698612
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_native_valid_object_trailing_garbage:
+    value:
+      case_key: kimi_native_valid_object_trailing_garbage
+      stimulus:
+        ref: current
+        semantic_sha256: dba37f2bf499646e3d456c0caaa7e434c24c1a58c0c9c8d9595fe499131aa106
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  muse_opaque_declared_invoke:
+    value:
+      case_key: muse_opaque_declared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: ba5079faccee45680f4bf5994ddccd13acc33976215c92b28145000a9418167b
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: f
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  muse_opaque_undeclared_invoke:
+    value:
+      case_key: muse_opaque_undeclared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 0d0b47c4fe36017ad60f2e87edf0ad05c11f42440668a503f41c30b84a518c87
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: f
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  muse_recovery_second_parameter:
+    value:
+      case_key: muse_recovery_second_parameter
+      stimulus:
+        ref: current
+        semantic_sha256: 758812425a918ddfa2e560eb10c6e87a7fdc973e7878fef5482d3681ddfcf7de
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: f
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  muse_unterminated_parameter_then_empty_call:
+    value:
+      case_key: muse_unterminated_parameter_then_empty_call
+      stimulus:
+        ref: current
+        semantic_sha256: 36c31b11e42255662c445bb891db90dd310291fefe06dc776c21ca1a86c617f3
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+          - kind: tool_call
+            name: f
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments: {}
+            - name: f
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 467f75d8a17827937d097237486337d8d36f40b965f638d2c104be3ee02e146c
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_k3_direct_json_response_recovery:
+    value:
+      case_key: kimi_k3_direct_json_response_recovery
+      stimulus:
+        ref: current
+        semantic_sha256: 81178979a52de1908e65235bf9f6e495047d810e01e80157b864afd2edef6094
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"first"}<|close|>json<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: <|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"first"}<|close|>json<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+            job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+            results_sha256: c3907d81451d8ff74c0579bb07bbfb210cf29a7e5b5938e87f3736bd192db00f
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+          job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_k3_direct_typed_response_recovery:
+    value:
+      case_key: kimi_k3_direct_typed_response_recovery
+      stimulus:
+        ref: current
+        semantic_sha256: 46734967eb51bf40339a32f95fe1d1f92bd512840278077d687f426db74eda3b
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <|open|>call tool="lookup" index="1"<|sep|><|open|>argument key="q" type="string"<|sep|>first<|close|>argument<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: <|open|>call tool="lookup" index="1"<|sep|><|open|>argument key="q" type="string"<|sep|>first<|close|>argument<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+            job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+            results_sha256: c3907d81451d8ff74c0579bb07bbfb210cf29a7e5b5938e87f3736bd192db00f
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+          job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_k3_json_marker_then_long_field:
+    value:
+      case_key: kimi_k3_json_marker_then_long_field
+      stimulus:
+        ref: current
+        semantic_sha256: ba91a518254a46ffffe14ac32965c62913197aa7657b2227e95ea7ac0459bd29
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: lookup
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: lookup
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+            job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+            results_sha256: c3907d81451d8ff74c0579bb07bbfb210cf29a7e5b5938e87f3736bd192db00f
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+          job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_k3_json_missing_close_literal_response:
+    value:
+      case_key: kimi_k3_json_missing_close_literal_response
+      stimulus:
+        ref: current
+        semantic_sha256: 214cad4c848d10488069c2b26d0736e6cf6d7f2784edf6ba165dca9c0cfb4565
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: lookup
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: lookup
+              arguments: {}
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+            job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+            results_sha256: c3907d81451d8ff74c0579bb07bbfb210cf29a7e5b5938e87f3736bd192db00f
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+          job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_k3_typed_response_argument_literal:
+    value:
+      case_key: kimi_k3_typed_response_argument_literal
+      stimulus:
+        ref: current
+        semantic_sha256: ca068f312ed658a154fd022a402ba96291f5d379814d6e1c643d99f96f618be4
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: lookup
+            arguments:
+              q: a
+              x: z
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: lookup
+              arguments:
+                q: a
+                x: z
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+            job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+            results_sha256: c3907d81451d8ff74c0579bb07bbfb210cf29a7e5b5938e87f3736bd192db00f
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+          job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_k3_typed_response_marker_payload:
+    value:
+      case_key: kimi_k3_typed_response_marker_payload
+      stimulus:
+        ref: current
+        semantic_sha256: 0ab3252c641192603d0698cf7808516335b47f29c89ab30a0e923d3968475e51
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: lookup
+            arguments:
+              q: ''
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: lookup
+              arguments:
+                q: ''
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+            job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+            results_sha256: c3907d81451d8ff74c0579bb07bbfb210cf29a7e5b5938e87f3736bd192db00f
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+          job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml
+  kimi_k3_typed_response_then_call:
+    value:
+      case_key: kimi_k3_typed_response_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 2592400382212d08ace247f86e3f432f17a32e48339677589c619ac57460e996
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: lookup
+            arguments:
+              q: first
+              n: 7
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.21
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: lookup
+              arguments:
+                q: first
+                n: 7
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.21
+            artifact_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
+            extracted_package_sha256: 251908443818d775765947f005c2d9e8dc89ab23b34fc6757ab838e9f372ea93
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+            adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+            job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+            results_sha256: c3907d81451d8ff74c0579bb07bbfb210cf29a7e5b5938e87f3736bd192db00f
+        capture_origin:
+          crate_version: 0.5.21
+          source_sha256: 0ed808db2b4d0c02fec9bbbd579906304968fd54e51a539ca2bc64b8ecda0290
+          adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
+          job_sha256: 9a31dbcb1ea35bb5fdf302045bd4b6d63c6f759c1edf2a87f8cc5c1a4d1bd2a9
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.21.yaml

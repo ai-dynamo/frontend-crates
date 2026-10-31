@@ -2,18 +2,58 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Expected Unified parser mismatches captured by the conformance corpus. Each
-# entry pins the exact output pair so another failure in the same case still
+# entry pins its exact observed outputs so another failure in the same case still
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
+
 beam: {}
-gpt_oss: {}
+gpt_oss:
+  UNIFIED.gemma-guided_response_extra_body_opener:
+    chunk_invariance:
+      note: Split delivery exposes a response prefix that whole input suppresses. Both observed prefixes are pinned exactly, including the variant with its trailing space.
+      baseline: ''
+      divergent:
+      - text("é ")
+      - text("é")
+    stream_batch:
+      note: Split delivery exposes a response prefix that whole input suppresses. Both observed prefixes are pinned exactly, including the variant with its trailing space.
+      batch: ''
+      stream: text("é ")
 kimi_k3: {}
 muse_glimmer: {}
 gemma4: {}
-deepseek_v41: {}
-
-glm47: {}
+deepseek_v41:
+  UNIFIED.kimi-malformed_call_then_valid:
+    stream_batch:
+      note: The same parser error is wrapped as native push for whole input and native finish for streamed input. Preserve both raw harness phase labels; they are not separate parser defects.
+      batch: 'ERROR: native push: invalid DeepSeek V4.1 parameter header'
+      stream: 'ERROR: native finish: invalid DeepSeek V4.1 parameter header'
+  UNIFIED.kimi-typed_json_marker_payload:
+    stream_batch:
+      note: A schema-valid quoted marker payload aborts parsing. Whole and streamed input retain the same error cause with different raw harness phase labels.
+      batch: 'ERROR: native push: EOF while parsing a string at line 1 column 10'
+      stream: 'ERROR: native finish: EOF while parsing a string at line 1 column 10'
+  UNIFIED.kimi-kimi_native_trailing_syntax_whitespace:
+    stream_batch:
+      note: The same parser error is wrapped as native push for whole input and native finish for streamed input. Preserve both raw harness phase labels; they are not separate parser defects.
+      batch: 'ERROR: native push: EOF while parsing a value at line 2 column 0'
+      stream: 'ERROR: native finish: EOF while parsing a value at line 2 column 0'
+  UNIFIED.kimi-kimi_native_valid_object_trailing_garbage:
+    stream_batch:
+      note: The same parser error is wrapped as native push for whole input and native finish for streamed input. Preserve both raw harness phase labels; they are not separate parser defects.
+      batch: 'ERROR: native push: trailing characters at line 1 column 27'
+      stream: 'ERROR: native finish: trailing characters at line 1 column 27'
+glm47:
+  UNIFIED.qwen3-qwen3_guided_reasoning_opener_inside_native_header:
+    chunk_invariance:
+      note: An embedded reasoning opener takes ownership of a provisional native header under split delivery; whole input emits only the tool call. Preserve the measured header leak and reasoning event.
+      baseline: tool_call(f, {})
+      divergent: text("<tool_call>")  |  reasoning("x")  |  tool_call(f, {})
+    stream_batch:
+      note: An embedded reasoning opener takes ownership of a provisional native header under split delivery; whole input emits only the tool call. Preserve the measured header leak and reasoning event.
+      batch: tool_call(f, {})
+      stream: text("<tool_call>")  |  reasoning("x")  |  tool_call(f, {})
 deepseek_v4: {}
 kimi_k2: {}
 nemotron_v3: {}

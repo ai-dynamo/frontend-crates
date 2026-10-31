@@ -121,6 +121,402 @@ changes:
             name: null
             arguments: '{"cmd": "git log }<tool_call|> --oneline"}'
         - expected: []
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: f950e2ad9f6f1b8f7c37b6c29883f1b60cb953560fd561f0ae7e8283ed5af1c5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 42.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 04fd2a2e7d8d3e55f9e25cbe71349c7bfd0149a1be763715902ac6d64a9bb6b2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 42.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: e5174405a9b9ddc1fee875c612ce8831ed05cf9490882a9104baa3606350e568
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 42.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 0938292b56798c1f7d7e47170e99bfb78a06da3c48790ae206ba90f0251fa2b3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 42.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: bf80223d35bbb51976540595cb68cfd1f8a1b98c4ff3777c84091bad025fc872
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 9007199254740992.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 7de650daac5940935de924586d0e16e1649a0a227ceef7b2cf7f713324617ad4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 9007199254740992.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 2d0fab1de452ca15ecc6fbbf3bb596db5fd0bd8a264c4b039d5081a568240625
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -42.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": -42.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 963801f8f31fa2fb2b1881a45c3356429c22ac6c00439d6ab23eea16227e5a45
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 4200e-2
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": "4200e-2"}'
+        - expected: []
+        - expected: []
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: f740ab8cd8ee265acec8bc6937bb8f62134d04597555013e72d4e0ec47490bc1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 0.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 699b4bacb5625075c51fd7d8988972212349d761e40ff772dc384a9f825116fc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 9007199254740992.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 7dc8b8556e1dcd3f4563509f52d7c5f5a86cdb24f3fd73c61ae9bc4a852a0e76
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -9007199254740992.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": -9007199254740992.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    stimulus:
+      ref: current
+      semantic_sha256: 17b429608d48a02a704b5c8db01b2ca500b5dabd07a97eb452f46d789ef6c261
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.5
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 42.5}'
+        - expected: []
+        - expected: []
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    stimulus:
+      ref: current
+      semantic_sha256: f15dab651ffa413692553b0e5c7890851104cd84b3f79371fd5b9111042f237e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 9007199254740994.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    stimulus:
+      ref: current
+      semantic_sha256: b2cac1c1874147c4f53c909cd714f6ee20fd644c9aa8fb6678895e429a47a411
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 9007199254740992.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    stimulus:
+      ref: current
+      semantic_sha256: ca5ebc5aaa5277376a60f5e5cf4fafd067e29b73c9311880c952641359ddd358
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 9007199254740994.0}'
+        - expected: []
+        - expected: []
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    stimulus:
+      ref: current
+      semantic_sha256: 27e00c09b5100992136f5f919c353877ac6dff6f537081439c5fb621b0061e21
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.1
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"value": 0.1}'
+        - expected: []
+        - expected: []
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    stimulus:
+      ref: current
+      semantic_sha256: d1e4eb124158925229635a1bdcc573af9532f6e31bbe6cddae88abeb7d5a45b5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            nested:
+              fraction: 9007199254740992.0
+              tiny: 1e-400
+            values:
+            - 9007199254740993
+            - -9007199254740993
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: inspect
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"nested": {"fraction": 9007199254740992.0, "tiny": "1e-400"}, "values": [9007199254740993, -9007199254740993]}'
+        - expected: []
+        - expected: []
   arg_string_null:
     case_key: arg_string_null
     stimulus:
@@ -420,6 +816,15 @@ changes:
             arguments: '{"x": "  <|tool_call> <tool_call|> &amp; \"x\"\\\n "}'
         - expected: []
         - expected: []
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+    stimulus:
+      ref: current
+      semantic_sha256: 6eec495389b25f3703beff5f9db9e2576871043f7d7f0cc2298bbcc0e9bdab13
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
   empty_args:
     case_key: UNIFIED.6.a
     stimulus:
@@ -456,6 +861,63 @@ changes:
       unavailable:
         code: peer_request_unsupported
         detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  glm47_parameterless_call_shape_inside_argument:
+    case_key: glm47_parameterless_call_shape_inside_argument
+    stimulus:
+      ref: current
+      semantic_sha256: 54ccf09a3df31c6924a1d0b11b4325ae80cfbadc5bbff8348826aceef038a85e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"cmd": "before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after"}'
+        - expected: []
+        - expected: []
+  glm47_reference_type_intersection:
+    case_key: glm47_reference_type_intersection
+    stimulus:
+      ref: current
+      semantic_sha256: 07ee093977f65ee22809a147d24fcd2a526f706ffa1456974e3b13899f299d37
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload: '{"x":1}'
+            count: 42
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"payload": "{\"x\":1}", "count": 42}'
   glm_ref_encoded_targets:
     case_key: glm_ref_encoded_targets
     stimulus:
@@ -906,6 +1368,24 @@ changes:
       unavailable:
         code: peer_request_unsupported
         detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  guided_native_after_prefilled_reasoning_named:
+    case_key: guided_native_after_prefilled_reasoning_named
+    stimulus:
+      ref: current
+      semantic_sha256: b6f6497e330c4b46a6b4957e4ce69edbf6f7f4ee3e09b1c40a35e766bad19055
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  guided_native_after_prefilled_reasoning_required:
+    case_key: guided_native_after_prefilled_reasoning_required
+    stimulus:
+      ref: current
+      semantic_sha256: 4387b0df380d794d1ea43f1b14891efc880c3a7704897ca2f9284577d6d57e38
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
   guided_quoted_reasoning_closer_named:
     case_key: guided_quoted_reasoning_closer_named
     stimulus:
@@ -972,6 +1452,1657 @@ changes:
             name: null
             arguments: '{"city": "Paris"}'
         - expected: []
+  kimi_k3_guided_native_wrapper:
+    case_key: kimi_k3_guided_native_wrapper
+    stimulus:
+      ref: current
+      semantic_sha256: 49b98d32d074815dab5b87b6943f625fc5fe8da365a9e31930b0768cf36a69e5
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  kimi_k3_malformed_call_then_valid:
+    case_key: kimi_k3_malformed_call_then_valid
+    stimulus:
+      ref: current
+      semantic_sha256: 699f3aed81bd16d098819f9e038de911c1623adefc165eaaca9201049ad7a869
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  kimi_k3_typed_argument_values:
+    case_key: kimi_k3_typed_argument_values
+    stimulus:
+      ref: current
+      semantic_sha256: 84277a8191493710d566784e2bc403d39d417208211725b7987c2c2982e79c26
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: echo ok
+            count: 2
+            force: true
+            options:
+              cwd: /tmp
+            tags:
+            - a
+            - b
+            note: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"cmd": "echo ok", "count": 2, "force": true, "options": {"cwd": "/tmp"}, "tags": ["a", "b"], "note": "null"}'
+  kimi_k3_typed_json_marker_payload:
+    case_key: kimi_k3_typed_json_marker_payload
+    stimulus:
+      ref: current
+      semantic_sha256: de6d419f8d6e384adb652e86b74a877ebb31376da3b61a4c145bb8d4f3cacc25
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            x:
+              inner: '},y:'
+            y: OK
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: inspect
+            arguments: ''
+          - kind: tool_call
+            name: null
+            arguments: '{"x": {"inner": "},y:"}, "y": "OK"}'
+  kimi_native_incompatible_string_recovery:
+    case_key: kimi_native_incompatible_string_recovery
+    stimulus:
+      ref: current
+      semantic_sha256: b5aa7543cfa5a0e48c906fff9bdebbc8b74196c12168fc06d2f8ce56324e347e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write_file
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  kimi_native_incremental_interfield_whitespace:
+    case_key: kimi_native_incremental_interfield_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: 528458fc5961b3dbe7d6bdcd369912a4f955b055682f72f73c3207d6c8f0b881
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: q
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write_file
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"count": 7, "content": "q"}'
+        - expected: []
+  kimi_native_k2_count_content_chunk1024:
+    case_key: kimi_native_k2_count_content_chunk1024
+    stimulus:
+      ref: current
+      semantic_sha256: 2b99650589d9aa61f209fbb5487957d920246d1e670b72b929dd523c0e68f0ef
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: write_file
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"count": 7, "content": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}'
+        - expected: []
+  kimi_native_k2_count_content_chunk7:
+    case_key: kimi_native_k2_count_content_chunk7
+    stimulus:
+      ref: current
+      semantic_sha256: 56bb9e569638da2310a2d54c22afc140dd4cfd2bcc5a8206593562d68644cf14
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write_file
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"count": 7, "content": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}'
+        - expected: []
+        - expected: []
+  kimi_native_trailing_syntax_whitespace:
+    case_key: kimi_native_trailing_syntax_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: 43f743be26dee6c06c45058ed0a4f22fa9fb69fe211a2395378a8b65f9f82dd8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write_file
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  kimi_native_valid_object_trailing_garbage:
+    case_key: kimi_native_valid_object_trailing_garbage
+    stimulus:
+      ref: current
+      semantic_sha256: b63d5ff27dee21d7a757342f3da105f6902d3dd6eb058b368129ca226aadc290
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: q
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: write_file
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"count": 7, "content": "q"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
   local_schema_id_preserves_type:
     case_key: local_schema_id_preserves_type
     stimulus:
@@ -1012,6 +3143,259 @@ changes:
             name: bad
             arguments: ''
         - expected: []
+  muse_unterminated_parameter_then_empty_call:
+    case_key: muse_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: fcd1d5c0daa831915763a8b1158c016b9e66b40de4fdc6e24fc2c236557bf2f5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  muse_unterminated_reasoning_guided:
+    case_key: muse_unterminated_reasoning_guided
+    stimulus:
+      ref: current
+      semantic_sha256: e8a6d0f660eda3472cf075fc7632918a8008b5f3ccc7ef61821baed956a3047b
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+  muse_unterminated_reasoning_native:
+    case_key: muse_unterminated_reasoning_native
+    stimulus:
+      ref: current
+      semantic_sha256: 4aeae6d140ae20da46adf90c07b0ff65fd1ef2cb2aa90040a27d9b696643da29
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Maybe call:x and more thought
+        - kind: text
+          text: Done.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: M
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected:
+          - kind: reasoning
+            text: y
+        - expected:
+          - kind: reasoning
+            text: b
+        - expected:
+          - kind: reasoning
+            text: e
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: c
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected:
+          - kind: reasoning
+            text: l
+        - expected:
+          - kind: reasoning
+            text: l
+        - expected:
+          - kind: reasoning
+            text: ':'
+        - expected:
+          - kind: reasoning
+            text: x
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected:
+          - kind: reasoning
+            text: n
+        - expected:
+          - kind: reasoning
+            text: d
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: m
+        - expected:
+          - kind: reasoning
+            text: o
+        - expected:
+          - kind: reasoning
+            text: r
+        - expected:
+          - kind: reasoning
+            text: e
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: t
+        - expected:
+          - kind: reasoning
+            text: h
+        - expected:
+          - kind: reasoning
+            text: o
+        - expected:
+          - kind: reasoning
+            text: u
+        - expected:
+          - kind: reasoning
+            text: g
+        - expected:
+          - kind: reasoning
+            text: h
+        - expected:
+          - kind: reasoning
+            text: t
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: D
+        - expected:
+          - kind: text
+            text: o
+        - expected:
+          - kind: text
+            text: n
+        - expected:
+          - kind: text
+            text: e
+        - expected:
+          - kind: text
+            text: .
   narrated_calls:
     case_key: UNIFIED.8.e
     stimulus:
@@ -1239,6 +3623,15 @@ changes:
       unavailable:
         code: peer_request_unsupported
         detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  prefilled_response_guided_pending_invoke_header:
+    case_key: prefilled_response_guided_pending_invoke_header
+    stimulus:
+      ref: current
+      semantic_sha256: 3babd0cf201d3fff5ba4de95fd2d95791e7bd30775adb3886a5cd9a8dca64d50
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
   prefilled_response_reasoning_markers_literal:
     case_key: prefilled_response_reasoning_markers_literal
     stimulus:
@@ -1248,6 +3641,33 @@ changes:
       unavailable:
         code: peer_request_unsupported
         detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 84988230b8ff8d468df27e8bb69830cc687e459e0406d3dbc79ea9c301006214
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 15c179b23d4288792948c302ecdcb79d32646b9c9401d92a21d474fe818120ba
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+  qwen3_guided_reasoning_opener_inside_native_header:
+    case_key: qwen3_guided_reasoning_opener_inside_native_header
+    stimulus:
+      ref: current
+      semantic_sha256: 188a80a5486a0fca06e1ee0e009967f300ffbb8037506f89e1f861135c4a66a5
+    observation:
+      unavailable:
+        code: peer_request_unsupported
+        detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
   qwen_string_null:
     case_key: qwen_string_null
     stimulus:
@@ -5260,6 +7680,278 @@ metadata_changes:
         upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
         version: 0.5.14
       resolution: historical_request_not_retained
+  arg_numeric_14_const_decimal:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_const_exponent:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_enum_decimal:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_enum_exponent:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_large_decimal:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_large_exponent:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_negative:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_negative_exponent:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_14_zero_underflow:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_15_exponent:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_15_negative:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_15_ordinary:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_15_quarter:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_15_round_down:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_15_round_up:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_15_small:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  arg_numeric_nested_exact:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
   arg_string_null:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -5638,6 +8330,21 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
   empty_args:
     verified_recapture:
       result:
@@ -5741,6 +8448,36 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+  glm47_parameterless_call_shape_inside_argument:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  glm47_reference_type_intersection:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+      job_sha256: 0f4bd67f1e13b767573bc9feb92ca7a8dc30e654276ffa946787e5bb5e23f7f7
+      results_sha256: fc937d9763fe261d8bee487555691ef941bda9565476c1edcaf92dac11b243a8
   glm_ref_encoded_targets:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6151,6 +8888,36 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+  guided_native_after_prefilled_reasoning_named:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+      job_sha256: 2e6f6ecf10ba83ba55905060e0fe7b05bfce39d64a22d053aa5e7dc86d9cd173
+      results_sha256: 8371c497681e1943d0021fe8b79279e1df1b941949205830b96f69047a25d826
+  guided_native_after_prefilled_reasoning_required:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+      job_sha256: 2e6f6ecf10ba83ba55905060e0fe7b05bfce39d64a22d053aa5e7dc86d9cd173
+      results_sha256: 8371c497681e1943d0021fe8b79279e1df1b941949205830b96f69047a25d826
   guided_quoted_reasoning_closer_named:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6303,6 +9070,163 @@ metadata_changes:
         upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
         version: 0.5.14
       resolution: historical_request_not_retained
+  kimi_k3_guided_native_wrapper:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  kimi_k3_malformed_call_then_valid:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  kimi_k3_typed_argument_values:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  kimi_k3_typed_json_marker_payload:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+      job_sha256: bb5c56da1daea2aae4487b05dfd80dbe1defa9a5d62f0bed1021e1eaddf0c62f
+      results_sha256: 732cf359cccbaab8683fa488ed84f4a713b09b5c29b95866ecd4f43f84a5cadb
+  kimi_native_incompatible_string_recovery:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  kimi_native_incremental_interfield_whitespace:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  kimi_native_k2_count_content_chunk1024:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  kimi_native_k2_count_content_chunk7:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  kimi_native_trailing_syntax_whitespace:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  kimi_native_valid_object_trailing_garbage:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
   local_schema_id_preserves_type:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6323,6 +9247,53 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+  muse_unterminated_parameter_then_empty_call:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  muse_unterminated_reasoning_guided:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  muse_unterminated_reasoning_native:
+    parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
   narrated_calls:
     verified_recapture:
       result:
@@ -6485,6 +9456,93 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: The literal "<|tool_call>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected:
+          - kind: reasoning
+            text: <|tool_call>
+        - expected:
+          - kind: reasoning
+            text: '" marker is part of the explanation.'
+        - expected: []
+        capture_input:
+          input: The literal "<|tool_call>" marker is part of the explanation.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   native_quoted_control_in_response:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6495,6 +9553,89 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: The literal "<|tool_call>" marker is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   native_quoted_control_then_call:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6505,6 +9646,113 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        capture_input:
+          input: The literal "<|tool_call>" marker is part of the explanation.<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   native_quoted_incomplete_header:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6515,6 +9763,99 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: The literal `
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: The literal `<|tool_call>call:get_weather{city:<|"|>` header is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal `
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: '` header is part of the explanation.'
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   native_single_quote_contraction_reasoning:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6525,6 +9866,93 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <|tool_call> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected:
+          - kind: reasoning
+            text: <|tool_call>
+        - expected:
+          - kind: reasoning
+            text: ' marker'' stays quoted.'
+        - expected: []
+        capture_input:
+          input: The literal 'doesn't <|tool_call> marker' stays quoted.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <|tool_call>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   native_single_quote_contraction_response:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6535,6 +9963,89 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: 'The literal ''doesn''t '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: The literal 'doesn't <|tool_call> marker' stays quoted.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <|tool_call>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   native_single_quoted_word_control:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6545,6 +10056,89 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: 'The literal ''example '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: The literal 'example <|tool_call> marker' is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''example '
+          - delta_text: <|tool_call>
+          - delta_text: ' marker'' is part of the explanation.'
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   native_unmatched_quote_then_call:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6555,6 +10149,109 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        capture_input:
+          input: He said "maybe<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: He said "maybe
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   nullable_reference_alias_literals:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6653,6 +10350,117 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "London"}'
+        - expected: []
+        - expected: []
+        capture_input:
+          input: '<|channel>thought
+
+            checking weather<channel|><|tool_call>call:get_weather{city:<|"|>London<|"|>}<tool_call|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|channel>
+          - delta_text: 'thought
+
+              checking weather'
+          - delta_text: <channel|>
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: London
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   prefilled_reasoning_then_text:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6663,6 +10471,93 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: no tool needed
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+        capture_input:
+          input: no tool needed<channel|>The answer is 42.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: no tool needed
+          - delta_text: <channel|>
+          - delta_text: The answer is 42.
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   prefilled_reasoning_then_text_then_tool:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6673,6 +10568,117 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here''s what I found: '
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        capture_input:
+          input: 'weighing options<channel|>Here''s what I found: <|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: weighing options
+          - delta_text: <channel|>
+          - delta_text: 'Here''s what I found: '
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   prefilled_reasoning_truncated:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6683,6 +10689,101 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: analyzing data
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: analyzing data<channel|><|tool_call>call:get_weather{city:<|"|>Par
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: length
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: analyzing data
+          - delta_text: <channel|>
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Par
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
   prefilled_reasoning_with_guided_json:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6703,6 +10804,126 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        capture_input:
+          input: checking weather<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: checking weather
+          - delta_text: <channel|>
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
+  prefilled_response_guided_pending_invoke_header:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
   prefilled_response_reasoning_markers_literal:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
@@ -6713,6 +10934,174 @@ metadata_changes:
       source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
       upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
       version: 0.5.14
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: '<|channel>thought
+
+            literal<channel|> then a call'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: <|channel>
+        - expected:
+          - kind: text
+            text: 'thought
+
+              literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected:
+          - kind: text
+            text: ' then a call'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        capture_input:
+          input: '<|channel>thought
+
+            literal<channel|> then a call<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>'
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|channel>
+          - delta_text: 'thought
+
+              literal'
+          - delta_text: <channel|>
+          - delta_text: ' then a call'
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        parser: SGLang Python 0.5.14 (stream, reasoning + tool detectors)
+      provenance:
+        implementation: sglang_python
+        version: 0.5.14
+        artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+        extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+        status: executed
+        parser_apis:
+          protocol: srt.entrypoints.openai.protocol
+          reasoning: srt.parser.reasoning_parser
+          tools: srt.function_call.function_call_parser
+        source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+        adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+        job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+        results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+      resolution: fresh_execution
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
+  qwen3_guided_reasoning_opener_inside_native_header:
+    sglang_capture_provenance:
+      implementation: sglang_python
+      version: 0.5.14
+      artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+      extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+      status: executed
+      parser_apis:
+        protocol: srt.entrypoints.openai.protocol
+        reasoning: srt.parser.reasoning_parser
+        tools: srt.function_call.function_call_parser
+      source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+      adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+      job_sha256: 7d6c3ee4f834e1f6126bb4c3bf407a4dea85748acd95fe19433063b12e6628b6
+      results_sha256: cffb4c31b78a8ed015ea56c32731c464f154f1c059e32bb7386d085b4f42ce3c
   qwen_string_null:
     sglang_capture_provenance:
       adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e

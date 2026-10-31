@@ -14,9 +14,27 @@ from conformance.utils.tests.schema_oracle import matches_schema
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import gen_unified_golden as unified
-from numeric_cases import NUMERIC_DESCRIPTIONS, NUMERIC_VARIANTS, applicable, canonical_arguments, numeric_expected, numeric_group, unified_numeric_expected
+from numeric_cases import NUMERIC_DESCRIPTIONS, NUMERIC_VARIANTS, applicable, canonical_arguments, decode_arguments, numeric_expected, numeric_group, unified_numeric_expected
+from capture_stimulus import assemble_stream
 from unified_taxonomy import numbered_id
 from conformance.utils.tests.fixture_test_support import run_node_contract
+
+
+@pytest.mark.parametrize("raw", [
+    '{"n":1.0000000000000000001}', '{"nested":[9007199254740992.5,1e-400]}',
+    '"null"', '"1"', '"true"',
+])
+def test_argument_projection_retains_decimal_precision_and_root_string_types(raw):
+    decoded = decode_arguments(raw)
+    assert decoded == raw
+    assembled = assemble_stream([[{"kind": "tool_call", "name": "f", "arguments": raw}]])
+    assert assembled == [{"kind": "tool_call", "name": "f", "arguments": raw}]
+    assert canonical_arguments(assembled[0]["arguments"]) == canonical_arguments(raw)
+
+
+@pytest.mark.parametrize("raw,expected", [('{"n":42}', {"n": 42}), ('{"n":"42"}', {"n": "42"}), ('false', False), ('0', 0), ('[]', [])])
+def test_argument_projection_keeps_lossless_native_types(raw, expected):
+    assert decode_arguments(raw) == expected
 
 
 def test_kimi_k2_json_spacing_and_nested_exact_numbers_are_preserved():

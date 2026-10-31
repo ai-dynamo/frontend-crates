@@ -1,0 +1,645 @@
+schema_version: 2
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.5.16
+    source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+    adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+    job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+document:
+  mode: unified
+records:
+  muse_quoted_reserved_eom_argument:
+    value:
+      case_key: muse_quoted_reserved_eom_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 3ad0716e2474d3b17674a46a60e7e9e0a48bd4c464519f7eccee3dc62cedeaff
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.14.yaml
+    suppress_inherited_from: true
+  muse_quoted_reserved_eot_argument:
+    value:
+      case_key: muse_quoted_reserved_eot_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 84134115b9e333c0b3789c7bbd3f8752b79a278bfc4bc3ae82a184805b7b0b5c
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.14.yaml
+    suppress_inherited_from: true
+  muse_quoted_reserved_start_argument:
+    value:
+      case_key: muse_quoted_reserved_start_argument
+      stimulus:
+        ref: current
+        semantic_sha256: d7b94eab69b6597fbba384b5b213da9d8af3040eee6e97f555caf3433b1d63bf
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.14.yaml
+    suppress_inherited_from: true
+  native_quoted_control_in_reasoning:
+    value:
+      case_key: native_quoted_control_in_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: f3bab920ab1147992756871eb340bebffac282f807aef945e53e0f8bbb9983e7
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3, ReasoningParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: f24245070acb75fcbf2aef47b2e93099ba408cebfbcb26d13c8e60ef57bdecb5
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 2946a1731e5f56488dbb86a876bc57476b8086e8f8c361ef92974ec5bd3e5991
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 94eb9f4510587018b07e0355c0335e243e813a7aad5043fb7570de4196e8a67b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  native_single_quote_contraction_reasoning:
+    value:
+      case_key: native_single_quote_contraction_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 499f79122fe3f3f45af256accdb5033c8f1a4cbacc92f9d5625df2200182bffc
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3, ReasoningParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: b90a9973ed3c6bc1f570108ed70984a811725bc9e017e9878a980aad2e7d10b1
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: 1a50319c5b724f34f9b4789aff035e9a87465f6e759248b985401dc275b492fb
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 79992d70c0af63bf5588dd9f003903a885f6cb3509ca6f85dd201d3f91185ef4
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 3728925b2c917013b151e8da5bdab9fd8e8c415419b9b8518adbde3e40cbf5e8
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3, ReasoningParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: 49c915462e27ac6e12a5d02bafdd3c8b8f27ca4d24cca164268e988d5c0b131b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3, ReasoningParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 9a624017891a76f8826059738cc1a3d07941094099dd3e5a5d7980bbedcb3bfd
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3, ReasoningParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: b4112776c386372cb45b4470e4af8a46e92e61837e6d661ac5395b83087ab94c
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3, ReasoningParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 613f3adfd437b9e160b2e80494491ee765d931eb22ac859a288715e3b83e0f05
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3, ReasoningParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: ad73c06ef05bfabd5e7d23fe2bcca277b804f0b4f4e8200409fb70eb7f7f8ebe
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser kimi_k3
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.16.yaml
+  structured_response_after_reasoning:
+    value:
+      case_key: structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 6e4a5c4c93b9513eec600dbeea39d4f43d89df50a7b245697d0a0be586526dbc
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Parser-only batch capture does not execute structural-tag generation constraints.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.16
+        capture_origin:
+          crate_version: 0.5.16
+          source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+          adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+          job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.16
+            artifact_sha256: b8ed16e72c7d6a643e31ba52e3ff106439e9dbb78543950e4c810158b826ea8e
+            extracted_package_sha256: d8626f790b4e47a341207c4193646efb4304dc8f1831486cf39ed60e686847b7
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 5e294b046da79c7a95fd736214b26516a53bb235915a15796616519628eb623e
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f66d8c0f605536b5b0e59a1f450949fef5fd94af9c91b08b28efcf222cf31ec8
+            results_sha256: 0477d489321b24de69ed41b14de88b5df931a16d014f875f4acda6197666a10a
+    member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.14.yaml
+    suppress_inherited_from: true

@@ -350,6 +350,13 @@ class History:
                 document[field] = copy.deepcopy(capture[field])
         return document
 
+    def preserve_snapshot_members(self) -> None:
+        """Freeze sparse observation origins before inserting or rebuilding checkpoints."""
+        if not self.resolved_snapshots:
+            # Sparse deltas cannot express an unchanged observation's original
+            # member after an inserted gap or an earlier identical backfill.
+            self.resolved_snapshots = dict(self.iter_resolved_snapshots(include_members=True))
+
     def _apply_capture(self, state: dict, current: str) -> None:
         capture = self.captures[current]
         for case_id, change in capture["changes"].items():

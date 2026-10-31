@@ -1226,7 +1226,13 @@ metadata_changes:
   malformed_json_then_two_valid_calls: {}
   narrated_calls: {}
   native_quoted_control_in_reasoning: {}
+  native_quoted_control_in_response: {}
+  native_quoted_control_then_call: {}
+  native_quoted_incomplete_header: {}
   native_single_quote_contraction_reasoning: {}
+  native_single_quote_contraction_response: {}
+  native_single_quoted_word_control: {}
+  native_unmatched_quote_then_call: {}
   nullable_reference_alias_literals: {}
   orphan_close_after_prose: {}
   prefilled_reasoning_redundant_opener: {}
@@ -1234,6 +1240,7 @@ metadata_changes:
   prefilled_reasoning_then_text_then_tool: {}
   prefilled_reasoning_truncated: {}
   prefilled_reasoning_with_tool: {}
+  prefilled_response_reasoning_markers_literal: {}
   reason_after_tool: {}
   reason_between_calls: {}
   reason_interleaved: {}

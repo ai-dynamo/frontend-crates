@@ -130,7 +130,7 @@ def _peer_cell(result, expected_chunk_count=None, *, require_assembled=False):
         if not result.get("error") or not isinstance(result["error_traceback"], str):
             raise ValueError("error traceback evidence requires a parser error and string traceback")
         record["error_traceback"] = result["error_traceback"]
-    record.update({key: result[key] for key in ("capture_input", "capture_stimulus", "capture_observation") if key in result})
+    record.update({key: result[key] for key in ("capture_input", "capture_stimulus", "capture_observation", "parser") if key in result})
     return record
 
 

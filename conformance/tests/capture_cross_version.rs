@@ -126,14 +126,24 @@ fn requires_request_init(init: &common::Init) -> bool {
         || !matches!(init.tool_output_mode.as_str(), "" | "Native")
         || init.named_tool.is_some()
         || init.structural_tag.is_some()
+        || init.preserve_message_phases
 }
 
 fn unavailable_init(init: &common::Init, native: bool, family: &str) -> bool {
+    if init.structural_tag.is_some() {
+        #[cfg(conformance_no_structural_tag)]
+        return true;
+        #[cfg(not(conformance_no_structural_tag))]
+        if dynamo_parsers_v2::structural_tag_builder_for_family(family).is_none() {
+            return true;
+        }
+    }
     requires_request_init(init)
         && (!native || cfg!(any(conformance_legacy_init, conformance_split_only)))
         || cfg!(conformance_muse_guided_unsupported)
             && family == "muse_glimmer"
             && init.tool_output_mode == "GuidedJson"
+        || init.preserve_message_phases && cfg!(conformance_legacy_message_phases)
 }
 
 #[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
@@ -158,6 +168,29 @@ fn apply_init(
 
 #[test]
 fn capture_request_init_availability() {
+    let constrained: common::Init = serde_json::from_value(json!({
+        "structural_tag": {"schema": {"type": "object"}, "rejected": ["[]"]}
+    }))
+    .unwrap();
+    assert!(unavailable_init(&constrained, true, "gemma4"));
+    #[cfg(not(conformance_no_structural_tag))]
+    assert_eq!(
+        unavailable_init(&constrained, true, "qwen3"),
+        cfg!(any(conformance_legacy_init, conformance_split_only))
+            || dynamo_parsers_v2::structural_tag_builder_for_family("qwen3").is_none()
+    );
+    let phases = common::Init {
+        preserve_message_phases: true,
+        ..Default::default()
+    };
+    assert_eq!(
+        unavailable_init(&phases, true, "muse_glimmer"),
+        cfg!(any(
+            conformance_legacy_message_phases,
+            conformance_legacy_init,
+            conformance_split_only
+        ))
+    );
     let guided = common::Init {
         tool_output_mode: "GuidedJson".into(),
         ..Default::default()

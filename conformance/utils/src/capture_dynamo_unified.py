@@ -22,6 +22,10 @@ from dynamo_version import SOURCE_PATHS, source_fingerprint
 ROOT = Path(__file__).resolve().parents[3]
 HARNESS = ROOT / "conformance/tests/capture_cross_version.rs"
 COMMON = HARNESS.parent / "common"
+STRUCTURAL_VERIFIER_FILES = (
+    ROOT / "conformance/utils/src/check_structural_tag.py",
+    ROOT / "conformance/utils/structural-tag-requirements.in",
+)
 
 
 def digest(data: bytes) -> str:
@@ -101,8 +105,13 @@ def prepare(target: dict, work: Path, target_dir: Path) -> dict:
         flags.append("conformance_split_only")
     if "create_unified_parser_for_family" in lib and "UnifiedParserEvent" not in lib:
         flags.append("conformance_legacy_delta")
-    if not unified.is_file() or "fn initialize_request" not in unified.read_text():
+    unified_source = unified.read_text() if unified.is_file() else ""
+    if "fn initialize_request" not in unified_source:
         flags.append("conformance_legacy_init")
+    if "fn preserve_message_phases" not in unified_source:
+        flags.append("conformance_legacy_message_phases")
+    if "structural_tag_builder_for_family" not in lib:
+        flags.append("conformance_no_structural_tag")
     if not tool_traits.is_file() or "pub complete:" not in tool_traits.read_text():
         flags.append("conformance_legacy_terminal")
     registry_names = []
@@ -126,7 +135,11 @@ def prepare(target: dict, work: Path, target_dir: Path) -> dict:
     shutil.copytree(COMMON, work / "tests/common")
     (work / "utils/src").mkdir(parents=True)
     shutil.copyfile(ROOT / "conformance/utils/src/unified_tools.json", work / "utils/src/unified_tools.json")
+    for path in STRUCTURAL_VERIFIER_FILES:
+        shutil.copyfile(path, work / path.relative_to(ROOT / "conformance"))
     env = {key: value for key, value in os.environ.items() if key in {"PATH", "HOME", "USER", "CARGO_HOME", "RUSTUP_HOME", "TMPDIR", "TMP", "TEMP", "SSL_CERT_FILE", "SSL_CERT_DIR"}}
+    env["CONFORMANCE_STRUCTURAL_TAG_CHECKER"] = str(work / "utils/src/check_structural_tag.py")
+    env["CONFORMANCE_GRAMMAR_PYTHON"] = os.environ.get("CONFORMANCE_GRAMMAR_PYTHON", "python3")
     env["XVER_TOOL_FAMILIES"] = json.dumps(registry_names)
     env["CARGO_TARGET_DIR"] = str(target_dir)
     env["RUSTFLAGS"] = " ".join(f"--cfg {flag}" for flag in flags)
@@ -149,7 +162,7 @@ def prepare(target: dict, work: Path, target_dir: Path) -> dict:
 
 
 def adapter_files() -> list[Path]:
-    return [HARNESS, *sorted(COMMON.glob("*.rs")), ROOT / "conformance/utils/src/parser_families.yaml",
+    return [HARNESS, *sorted(COMMON.glob("*.rs")), *STRUCTURAL_VERIFIER_FILES, ROOT / "conformance/utils/src/parser_families.yaml",
                      ROOT / "conformance/utils/src/unified_tools.json", Path(__file__), Path(capture_dynamo_unified_batch.__file__)]
 
 

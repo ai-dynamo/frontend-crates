@@ -1,0 +1,1100 @@
+schema_version: 2
+provenance:
+  status: captured
+  origin:
+    crate_version: 5.0.1
+    source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+    adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+    job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+document:
+  mode: unified
+records:
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    value:
+      case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+      stimulus:
+        ref: current
+        semantic_sha256: 88b5303b9e16d223750e697d88c38131ce6e50fa928d770a07112eef6267f854
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    value:
+      case_key: gemma4_guided_reasoning_opener_after_call_prefix
+      stimulus:
+        ref: current
+        semantic_sha256: 823e20811f7939d9f44514ebc5ee1b681b0c0bac38a1dff445a5d36217fe69b5
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  gemma4_guided_response_extra_body_opener:
+    value:
+      case_key: gemma4_guided_response_extra_body_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 860798003f8f854af36d5616d2e82bd86543bc7fe82b4ac992f806d1bb1f57e0
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  gpt_oss_channel_header_variants:
+    value:
+      case_key: gpt_oss_channel_header_variants
+      stimulus:
+        ref: current
+        semantic_sha256: 009265231d4b96b6de4a87d8deb1fa6cb2ecb25f5cbf7ca365c3b25ede542f12
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  gpt_oss_control_marker_inside_argument_string:
+    value:
+      case_key: gpt_oss_control_marker_inside_argument_string
+      stimulus:
+        ref: current
+        semantic_sha256: 00e616af52cb9ef1551b7b744654e0fa62b2563e42319c51c1659959ef27f9d1
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  gpt_oss_quoted_message_header_literal:
+    value:
+      case_key: gpt_oss_quoted_message_header_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 0f354e6098526fceba451c2258e34389ce2f27cb30f855d8946ac042ba793c02
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  gpt_oss_quoted_truncated_tool_then_final:
+    value:
+      case_key: gpt_oss_quoted_truncated_tool_then_final
+      stimulus:
+        ref: current
+        semantic_sha256: ccee32c22811f5728fa724b561b0effa99816b6735b9e002e9eaeb6ce03fba26
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  guided_json_quoted_bare_tool_header_in_answer:
+    value:
+      case_key: guided_json_quoted_bare_tool_header_in_answer
+      stimulus:
+        ref: current
+        semantic_sha256: af94806dcc5771f4a43c8ba8effe1f2b31b7624aa43c64064dd721ae17b51433
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  kimi_k3_malformed_call_then_valid:
+    value:
+      case_key: kimi_k3_malformed_call_then_valid
+      stimulus:
+        ref: current
+        semantic_sha256: 7f6b7072142a56ca82056b3bd1bff4620a2d778e0486e3b44f7eb4e4f4445023
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  kimi_native_incremental_interfield_whitespace:
+    value:
+      case_key: kimi_native_incremental_interfield_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: 16e1997983919314d3aaf43b1883b2babb2dc74025abe3349950bca70cdc34b4
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  kimi_native_k2_count_content_chunk1024:
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: 3c7d66e2cf7760d7d42acc21cddd6b39b9082b26565289b58af5ffa377cbd3d1
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  kimi_native_k2_count_content_chunk7:
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: c83e9fa6488f624e0b069aa76cfb1631d20dc7b59668e8e382a9259a037a3c15
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  kimi_native_rejected_next_header_progress:
+    value:
+      case_key: kimi_native_rejected_next_header_progress
+      stimulus:
+        ref: current
+        semantic_sha256: 3aeb8e3dfaec75097c515dd64e54aca1639103e1dbd615fbfe8f9cf784d11130
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_glimmer_guided_message_end_inside_native_header:
+    value:
+      case_key: muse_glimmer_guided_message_end_inside_native_header
+      stimulus:
+        ref: current
+        semantic_sha256: 9a75f9a51265d9cbf079520670bb2e639c81d0bc21f45a9d8badeaacf71b7694
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_opaque_declared_invoke:
+    value:
+      case_key: muse_opaque_declared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 8689bea41ace4c028c6d8ea1175d30528e46a4e38196f72996a9dca5b81ed362
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_opaque_undeclared_invoke:
+    value:
+      case_key: muse_opaque_undeclared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 9b8572c01dbf98f3e8f3f959e54ad1b77f7c408b4faaaf3048cb54199dc3f872
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_quoted_reserved_eom_argument:
+    value:
+      case_key: muse_quoted_reserved_eom_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 9be008e409c34347ab7d130b2f2ac96c42e20f803a75afb8271a7aa7d5dd001a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_quoted_reserved_eot_argument:
+    value:
+      case_key: muse_quoted_reserved_eot_argument
+      stimulus:
+        ref: current
+        semantic_sha256: d825b6a96964347aaf340cfac89b9914261faa753a6af6ae54d824b39bc653eb
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_quoted_reserved_start_argument:
+    value:
+      case_key: muse_quoted_reserved_start_argument
+      stimulus:
+        ref: current
+        semantic_sha256: f1de7ec8c3e8aa7c9d845d155d52df6d2eab435b8e5bf0cbb64ddef2b969755f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_recovery_second_parameter:
+    value:
+      case_key: muse_recovery_second_parameter
+      stimulus:
+        ref: current
+        semantic_sha256: fd4b2aaaf46fa7069ee9c66c235f40ce918e0649c977587bc2bcaab81cebd1a6
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_unterminated_parameter_then_empty_call:
+    value:
+      case_key: muse_unterminated_parameter_then_empty_call
+      stimulus:
+        ref: current
+        semantic_sha256: e74493dbcff237fcae66f6f7845c48c5aaf215fa8a3161d171b05cfa58e36f48
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  muse_unterminated_reasoning_guided:
+    value:
+      case_key: muse_unterminated_reasoning_guided
+      stimulus:
+        ref: current
+        semantic_sha256: a3b4f55a14eb4cf7d16f7719b27d8f07ba54c3e066fd0edbd7ad8be2cd17abe8
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 5b584e1544f31efb11c725416a08c296f57aa452b787f5302e99d92d49ccceaf
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 560e7d752f4478e521fc8ef4bbf7e6a9cf6ce33dd6f36e29495c747a4b290402
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 672343531fd29fcf7564c381cd935d4354b0652a8690af477956df7437699c21
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: 0cdafb42cf6b972f999c7711da48c980d22adec1ebfc94e7b2a67651a9f55dbe
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: 344d404895554073b1bbc9773f055c14228be1df3c82ae758f1e8401355c9d12
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: a727e358b7bfdaa821a849e584b301278d6de816e77e19788ab450e9d90ff05b
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  prefilled_response_guided_pending_invoke_header:
+    value:
+      case_key: prefilled_response_guided_pending_invoke_header
+      stimulus:
+        ref: current
+        semantic_sha256: 3e815046bfa3cee584257517faa7c87d7cfe5c6a5aef17e4abc09f0041efa5bb
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 523180aa89af25534be9a8102098f11cad69e5170e38ef60ebef37726164bbd4
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 6c0b597b3044a95fcf88930d832683dfee6c1899f57479c03c6a2e7ab0a244cd
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 3fb5216048bc6d2f35a474d1454ca846ba0235ebd449627e4d07eee61a0f4622
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml
+  qwen3_guided_reasoning_opener_inside_native_header:
+    value:
+      case_key: qwen3_guided_reasoning_opener_inside_native_header
+      stimulus:
+        ref: current
+        semantic_sha256: 4eee65291dd55d0de370a2c54fd1f16cfa9fd2730f24f84e0d0019d5f07ab50f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1_jail: 5.0.1
+        capture_origin:
+          crate_version: 5.0.1
+          source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+          adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+          job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+        record_metadata:
+          dynamo_v1_jail_capture_provenance:
+            implementation: dynamo_v1_jail
+            version: 5.0.1
+            source_sha256: c21806d27acb2927896004a4abf7f54892e484b4639746376c0dec92158c3150
+            adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+            job_sha256: 16ae2f9b744b4530f557be918dd3385b3672e22e51babf48394fd6171850f012
+            crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
+            cargo_lock_sha256: f983bbc8b1a2181d707083d4e13d760a3fff5fb2aa9a2cab9e5b2fb3bab4cc4b
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            results_sha256: 4f00cb319840b9c75a5a3ebedd1790850b28504f9f0cc26f89679c7e0e83e9b8
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v1_jail-5.0.1.yaml

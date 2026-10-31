@@ -34,6 +34,41 @@ def test_native_assembly_cfg_uses_available_source_capabilities(symbols: str, le
     )
 
 
+@pytest.mark.parametrize("modern", [False, True])
+def test_unified_probe_compiles_only_public_optional_apis(tmp_path, monkeypatch, modern):
+    source = tmp_path / "source"
+    (source / "src/unified").mkdir(parents=True)
+    (source / "src/tool_calling").mkdir()
+    (source / "Cargo.toml").write_text('[package]\nversion="0.6.0"\n')
+    exports = "create_unified_parser_for_family UnifiedParserEvent REGISTERED_FAMILIES assemble_with_tool_indices tool_arguments_raw"
+    (source / "src/lib.rs").write_text(exports + (" structural_tag_builder_for_family" if modern else ""))
+    (source / "src/unified/mod.rs").write_text("fn initialize_request" + (" fn preserve_message_phases" if modern else ""))
+    (source / "src/tool_calling/traits.rs").write_text("pub complete:")
+    monkeypatch.setattr(unified_capture, "crate_source", lambda target, directory: source)
+
+    def cargo(_program, arguments, *, work_dir, log, env):
+        assert arguments[0] == "generate-lockfile"
+        (work_dir / "Cargo.lock").write_text(
+            '[[package]]\nname="dynamo-parsers-v2"\nversion="0.6.0"\nchecksum="' + "a" * 64
+            + '"\n[[package]]\nname="dynamo-parsers"\nversion="8.2.2"\n')
+
+    monkeypatch.setattr(unified_capture, "_cargo", cargo)
+    monkeypatch.setenv("CONFORMANCE_GRAMMAR_PYTHON", "/verified/python")
+    monkeypatch.setenv("CONFORMANCE_STRUCTURAL_TAG_CHECKER", "/untracked/checker.py")
+    prepared = unified_capture.prepare({"version": "0.6.0", "source_kind": "crate",
+                                       "checksum": "a" * 64, "reasoning_version": "8.2.2"},
+                                      tmp_path / "work", tmp_path / "target")
+    assert ("conformance_legacy_message_phases" in prepared["flags"]) is not modern
+    assert ("conformance_no_structural_tag" in prepared["flags"]) is not modern
+    assert prepared["env"]["CONFORMANCE_GRAMMAR_PYTHON"] == "/verified/python"
+    checker = tmp_path / "work/utils/src/check_structural_tag.py"
+    assert prepared["env"]["CONFORMANCE_STRUCTURAL_TAG_CHECKER"] == str(checker)
+    for path in unified_capture.STRUCTURAL_VERIFIER_FILES:
+        copied = tmp_path / "work" / path.relative_to(unified_capture.ROOT / "conformance")
+        assert copied.read_bytes() == path.read_bytes()
+        assert path in unified_capture.adapter_files()
+
+
 def test_probe_job_uses_registered_gpt_oss_pipeline_without_changing_request() -> None:
     job = {"family": "gpt_oss", "cases": [{"id": "UNIFIED.example.gpt_oss", "request": {"input": "authored"}}]}
 
@@ -188,3 +223,24 @@ def test_dynamo_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch):
     after = capture.source_unavailable("9.2.13", job, tmp_path / "second.json")
     assert before["adapter_sha256"] != after["adapter_sha256"]
     assert before["job_sha256"] == after["job_sha256"]
+
+
+@pytest.mark.parametrize("jail", [False, True])
+def test_ds41_public_generic_config_is_batch_only_and_does_not_rewrite_request(jail):
+    request = {"input": "<｜DSML｜ calls><｜DSML｜ invoke name=\"f\"></｜DSML｜ invoke></｜DSML｜ calls>",
+               "init": {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+               "tools": [], "finish_reason": "stop", "chunks": []}
+    job = {"family": "deepseek_v41", "cases": [{"id": "case", "request": request}]}
+    before = json.loads(json.dumps(job))
+    wrapped = capture._probe_job(job, jail_buffer=jail)
+    assert job == before and wrapped["job"] is job
+    assert ("tool_config" in wrapped) is not jail
+    if not jail:
+        config = wrapped["tool_config"]["parser_config"]
+        assert config == {
+            "type": "dsml",
+            "block_start": "<｜DSML｜ calls>", "block_end": "</｜DSML｜ calls>",
+            "invoke_start_prefix": "<｜DSML｜ invoke name=", "invoke_end": "</｜DSML｜ invoke>",
+            "parameter_prefix": "<｜DSML｜ parameter name=", "parameter_end": "</｜DSML｜ parameter>",
+            "allow_eof_recovery": True,
+        }

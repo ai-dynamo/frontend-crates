@@ -430,6 +430,57 @@ changes:
       unavailable:
         code: vllm_rust_guided_json_unsupported
         detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  glm47_parameterless_call_shape_inside_argument:
+    case_key: glm47_parameterless_call_shape_inside_argument
+    stimulus:
+      ref: current
+      semantic_sha256: 54ccf09a3df31c6924a1d0b11b4325ae80cfbadc5bbff8348826aceef038a85e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"cmd":"before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after"}'
+            kind: tool_call
+            name: run
+  glm47_reference_type_intersection:
+    case_key: glm47_reference_type_intersection
+    stimulus:
+      ref: current
+      semantic_sha256: 07ee093977f65ee22809a147d24fcd2a526f706ffa1456974e3b13899f299d37
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload: '{"x":1}'
+            count: 42
+        chunks:
+        - expected:
+          - arguments: '{"payload":"{\"x\":1}","count":42}'
+            kind: tool_call
+            name: capture_payload
   glm_ref_encoded_targets:
     case_key: glm_ref_encoded_targets
     stimulus:
@@ -1122,6 +1173,24 @@ changes:
       error:
         code: legacy_unclassified
         detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"[{\\\"name\\\": \\\"get_weather\\\", \\\"arguments\\\": {\\\"city\\\": \\\"Paris\\\"}}]<tool_call|>\": " })'
+  guided_native_after_prefilled_reasoning_named:
+    case_key: guided_native_after_prefilled_reasoning_named
+    stimulus:
+      ref: current
+      semantic_sha256: b6f6497e330c4b46a6b4957e4ce69edbf6f7f4ee3e09b1c40a35e766bad19055
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  guided_native_after_prefilled_reasoning_required:
+    case_key: guided_native_after_prefilled_reasoning_required
+    stimulus:
+      ref: current
+      semantic_sha256: 4387b0df380d794d1ea43f1b14891efc880c3a7704897ca2f9284577d6d57e38
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
   guided_quoted_reasoning_closer_named:
     case_key: guided_quoted_reasoning_closer_named
     stimulus:
@@ -1193,6 +1262,1433 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"Paris"}'
+  kimi_k3_guided_native_wrapper:
+    case_key: kimi_k3_guided_native_wrapper
+    stimulus:
+      ref: current
+      semantic_sha256: 49b98d32d074815dab5b87b6943f625fc5fe8da365a9e31930b0768cf36a69e5
+    observation:
+      unavailable:
+        code: vllm_rust_guided_json_unsupported
+        detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+  kimi_k3_malformed_call_then_valid:
+    case_key: kimi_k3_malformed_call_then_valid
+    stimulus:
+      ref: current
+      semantic_sha256: 699f3aed81bd16d098819f9e038de911c1623adefc165eaaca9201049ad7a869
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments:
+            not-an-argument<|tool_call>call: g{y:<|"|>2<|"|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"not-an-argument<|tool_call>call":"g{y:<|\"|>2<|\"|>"}'
+            kind: tool_call
+            name: bad
+        - expected: []
+  kimi_k3_typed_argument_values:
+    case_key: kimi_k3_typed_argument_values
+    stimulus:
+      ref: current
+      semantic_sha256: 84277a8191493710d566784e2bc403d39d417208211725b7987c2c2982e79c26
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: echo ok
+            count: 2
+            force: true
+            options:
+              cwd: /tmp
+            tags:
+            - a
+            - b
+            note: null
+        chunks:
+        - expected:
+          - arguments: '{"cmd":"echo ok","count":2,"force":true,"options":{"cwd":"/tmp"},"tags":["a","b"],"note":null}'
+            kind: tool_call
+            name: run
+  kimi_k3_typed_json_marker_payload:
+    case_key: kimi_k3_typed_json_marker_payload
+    stimulus:
+      ref: current
+      semantic_sha256: de6d419f8d6e384adb652e86b74a877ebb31376da3b61a4c145bb8d4f3cacc25
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            x:
+              inner: '},y:'
+            y: OK
+        chunks:
+        - expected:
+          - arguments: '{"x":{"inner":"},y:"},"y":"OK"}'
+            kind: tool_call
+            name: inspect
+  kimi_native_incompatible_string_recovery:
+    case_key: kimi_native_incompatible_string_recovery
+    stimulus:
+      ref: current
+      semantic_sha256: b5aa7543cfa5a0e48c906fff9bdebbc8b74196c12168fc06d2f8ce56324e347e
+    observation:
+      error:
+        code: peer_parser_error
+        detail: 'UnifiedParserError::ParsingFailed { message: "incomplete Gemma4 tool call" }'
+  kimi_native_incremental_interfield_whitespace:
+    case_key: kimi_native_incremental_interfield_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: 528458fc5961b3dbe7d6bdcd369912a4f955b055682f72f73c3207d6c8f0b881
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: q
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"count":7,"content":"q"}'
+            kind: tool_call
+            name: write_file
+  kimi_native_k2_count_content_chunk1024:
+    case_key: kimi_native_k2_count_content_chunk1024
+    stimulus:
+      ref: current
+      semantic_sha256: 2b99650589d9aa61f209fbb5487957d920246d1e670b72b929dd523c0e68f0ef
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}'
+            kind: tool_call
+            name: write_file
+  kimi_native_k2_count_content_chunk7:
+    case_key: kimi_native_k2_count_content_chunk7
+    stimulus:
+      ref: current
+      semantic_sha256: 56bb9e569638da2310a2d54c22afc140dd4cfd2bcc5a8206593562d68644cf14
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}'
+            kind: tool_call
+            name: write_file
+  kimi_native_trailing_syntax_whitespace:
+    case_key: kimi_native_trailing_syntax_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: 43f743be26dee6c06c45058ed0a4f22fa9fb69fe211a2395378a8b65f9f82dd8
+    observation:
+      error:
+        code: peer_parser_error
+        detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"count:7,content: \\t\\n<tool_call|>\": " })'
+  kimi_native_valid_object_trailing_garbage:
+    case_key: kimi_native_valid_object_trailing_garbage
+    stimulus:
+      ref: current
+      semantic_sha256: b63d5ff27dee21d7a757342f3da105f6902d3dd6eb058b368129ca226aadc290
+    observation:
+      error:
+        code: peer_parser_error
+        detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"count:7,content:<|\\\"|>q<|\\\"|>} trailing<tool_call|>\": " })'
   local_schema_id_preserves_type:
     case_key: local_schema_id_preserves_type
     stimulus:
@@ -1222,6 +2718,158 @@ changes:
       error:
         code: peer_parser_error
         detail: 'UnifiedParserError::ParsingFailed { message: "incomplete Gemma4 tool call" }'
+  muse_unterminated_parameter_then_empty_call:
+    case_key: muse_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: fcd1d5c0daa831915763a8b1158c016b9e66b40de4fdc6e24fc2c236557bf2f5
+    observation:
+      error:
+        code: peer_parser_error
+        detail: 'UnifiedParserError::ParsingFailed { message: "incomplete Gemma4 tool call" }'
+  muse_unterminated_reasoning_native:
+    case_key: muse_unterminated_reasoning_native
+    stimulus:
+      ref: current
+      semantic_sha256: 4aeae6d140ae20da46adf90c07b0ff65fd1ef2cb2aa90040a27d9b696643da29
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Maybe call:x and more thought
+        - kind: text
+          text: Done.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: M
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected:
+          - kind: reasoning
+            text: y
+        - expected:
+          - kind: reasoning
+            text: b
+        - expected:
+          - kind: reasoning
+            text: e
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: c
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected:
+          - kind: reasoning
+            text: l
+        - expected:
+          - kind: reasoning
+            text: l
+        - expected:
+          - kind: reasoning
+            text: ':'
+        - expected:
+          - kind: reasoning
+            text: x
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected:
+          - kind: reasoning
+            text: n
+        - expected:
+          - kind: reasoning
+            text: d
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: m
+        - expected:
+          - kind: reasoning
+            text: o
+        - expected:
+          - kind: reasoning
+            text: r
+        - expected:
+          - kind: reasoning
+            text: e
+        - expected:
+          - kind: reasoning
+            text: ' '
+        - expected:
+          - kind: reasoning
+            text: t
+        - expected:
+          - kind: reasoning
+            text: h
+        - expected:
+          - kind: reasoning
+            text: o
+        - expected:
+          - kind: reasoning
+            text: u
+        - expected:
+          - kind: reasoning
+            text: g
+        - expected:
+          - kind: reasoning
+            text: h
+        - expected:
+          - kind: reasoning
+            text: t
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: D
+        - expected:
+          - kind: text
+            text: o
+        - expected:
+          - kind: text
+            text: n
+        - expected:
+          - kind: text
+            text: e
+        - expected:
+          - kind: text
+            text: .
   narrated_calls:
     case_key: UNIFIED.8.e
     stimulus:
@@ -5778,6 +7426,186 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_request_not_retained
+  glm47_parameterless_call_shape_inside_argument:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"cmd":"before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after"}'
+            kind: tool_call
+            name: run
+        capture_input:
+          chunks:
+          - delta_text: <|tool_
+          - delta_text: call>ca
+          - delta_text: ll:run{
+          - delta_text: cmd:<|"
+          - delta_text: '|>befor'
+          - delta_text: e <tool
+          - delta_text: _call|>
+          - delta_text: <|tool_
+          - delta_text: call>ca
+          - delta_text: ll:get_
+          - delta_text: weather
+          - delta_text: '{}<tool'
+          - delta_text: _call|>
+          - delta_text: ' after<'
+          - delta_text: '|"|>}<t'
+          - delta_text: ool_cal
+          - delta_text: l|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:run{cmd:<|"|>before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+        version: 0.25.1
+      resolution: fresh_execution
+  glm47_reference_type_intersection:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload: '{"x":1}'
+            count: 42
+        chunks:
+        - expected:
+          - arguments: '{"payload":"{\"x\":1}","count":42}'
+            kind: tool_call
+            name: capture_payload
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>call:capture_payload{payload:<|"|>{"x":1}<|"|>,count:42}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:capture_payload{payload:<|"|>{"x":1}<|"|>,count:42}<tool_call|>
+          tools:
+          - name: capture_payload
+            parameters:
+              $defs:
+                Count:
+                  type: integer
+                Text:
+                  type: string
+                TextAlias:
+                  $ref: '#/$defs/Text'
+              properties:
+                count:
+                  $ref: '#/$defs/Count'
+                  minimum: 1
+                payload:
+                  $ref: '#/$defs/TextAlias'
+                  allOf:
+                  - type: string
+              required:
+              - payload
+              - count
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+        version: 0.25.1
+      resolution: fresh_execution
   glm_ref_encoded_targets:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -8413,6 +10241,160 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_request_not_retained
+  guided_native_after_prefilled_reasoning_named:
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+    verified_recapture:
+      result:
+        unavailable: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+        capture_input:
+          chunks:
+          - delta_text: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: get_weather
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+          input: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        capture_stimulus:
+          unavailable:
+            code: vllm_rust_guided_json_unsupported
+            detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+        version: 0.25.1
+      resolution: fresh_execution
+  guided_native_after_prefilled_reasoning_required:
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+    verified_recapture:
+      result:
+        unavailable: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+        capture_input:
+          chunks:
+          - delta_text: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+          input: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        capture_stimulus:
+          unavailable:
+            code: vllm_rust_guided_json_unsupported
+            detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+        version: 0.25.1
+      resolution: fresh_execution
   guided_quoted_reasoning_closer_named:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -8547,6 +10529,495 @@ metadata_changes:
         adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
         job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
       resolution: historical_request_not_retained
+  kimi_k3_guided_native_wrapper:
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+    verified_recapture:
+      result:
+        unavailable: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+        capture_input:
+          chunks:
+          - delta_text: '<|tool_call>call:ignored{quoted:<|"|>literal<|"|>}<tool_call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: GuidedJson
+          input: '<|tool_call>call:ignored{quoted:<|"|>literal<|"|>}<tool_call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        capture_stimulus:
+          unavailable:
+            code: vllm_rust_guided_json_unsupported
+            detail: vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+        version: 0.25.1
+      resolution: fresh_execution
+  kimi_k3_malformed_call_then_valid:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+  kimi_k3_typed_argument_values:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: echo ok
+            count: 2
+            force: true
+            options:
+              cwd: /tmp
+            tags:
+            - a
+            - b
+            note: null
+        chunks:
+        - expected:
+          - arguments: '{"cmd":"echo ok","count":2,"force":true,"options":{"cwd":"/tmp"},"tags":["a","b"],"note":null}'
+            kind: tool_call
+            name: run
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>call:run{cmd:<|"|>echo ok<|"|>,count:2,force:true,options:{cwd:<|"|>/tmp<|"|>},tags:[<|"|>a<|"|>,<|"|>b<|"|>],note:null}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:run{cmd:<|"|>echo ok<|"|>,count:2,force:true,options:{cwd:<|"|>/tmp<|"|>},tags:[<|"|>a<|"|>,<|"|>b<|"|>],note:null}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                city:
+                  type: string
+              type: object
+          - name: f
+            parameters:
+              properties:
+                x:
+                  type: string
+              type: object
+          - name: g
+            parameters:
+              properties:
+                y:
+                  type: string
+              type: object
+          - name: run
+            parameters:
+              properties:
+                cmd:
+                  type: string
+              type: object
+          - name: log
+            parameters:
+              properties:
+                note:
+                  type: string
+              type: object
+          - name: sum_values
+            parameters:
+              properties:
+                values:
+                  items:
+                    type: number
+                  type: array
+              type: object
+          - name: functions.
+            parameters:
+              properties: {}
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+        version: 0.25.1
+      resolution: fresh_execution
+  kimi_k3_typed_json_marker_payload:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: e3e410e8fcbf36bfb47670e909beae6e0a6d6c1699d184fa9079aa66e6c37b95
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 9b705f2db0eefeee1cdac6a4479f1f7d19b044b153088878df7cb4476cc56fd9
+      results_sha256: c9b47d48f78cb70f4cf143ccd9785c49900cf6c46a3db6c6f2a46249c6fe1315
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+    verified_recapture:
+      result:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            x:
+              inner: '},y:'
+            y: OK
+        chunks:
+        - expected:
+          - arguments: '{"x":{"inner":"},y:"},"y":"OK"}'
+            kind: tool_call
+            name: inspect
+        capture_input:
+          chunks:
+          - delta_text: <|tool_call>call:inspect{x:{inner:<|"|>},y:<|"|>},y:<|"|>OK<|"|>}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:inspect{x:{inner:<|"|>},y:<|"|>},y:<|"|>OK<|"|>}<tool_call|>
+          tools:
+          - name: inspect
+            parameters:
+              properties:
+                x:
+                  properties:
+                    inner:
+                      type: string
+                  required:
+                  - inner
+                  type: object
+                y:
+                  type: string
+              required:
+              - x
+              - y
+              type: object
+        parser: vLLM Rust (UnifiedParser)
+      provenance:
+        adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+        git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+        implementation: vllm_rust
+        job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+        results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+        source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+        version: 0.25.1
+      resolution: fresh_execution
+  kimi_native_incompatible_string_recovery:
+    partial_chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+  kimi_native_incremental_interfield_whitespace:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+  kimi_native_k2_count_content_chunk1024:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+  kimi_native_k2_count_content_chunk7:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+  kimi_native_trailing_syntax_whitespace:
+    partial_chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+  kimi_native_valid_object_trailing_garbage:
+    partial_chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
   local_schema_id_preserves_type:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -8564,6 +11035,113 @@ metadata_changes:
       source_sha256: 664bd1b7626aecda5f914d95a3d2a700ea297e74171bac289520c671b2935b00
       adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
       job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
+  muse_unterminated_parameter_then_empty_call:
+    partial_chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
+  muse_unterminated_reasoning_native:
+    parser: vLLM Rust (UnifiedParser)
+    vllm_rust_capture_provenance:
+      adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+      git_commit: 752a3a504485790a2e8491cacbb35c137339ad34
+      implementation: vllm_rust
+      job_sha256: 878a5b2d480810eacaa095ea183891bcdb514e655350db7e9910a285ebf8be14
+      results_sha256: 2475b4a3c516e9cc60375555174806e53993adaecc11b58a527bc375eeda572b
+      source_sha256: 7298e85ff1ece73eb3b0c60cc7d6a626ba170785ccf1bb299775ba820d6ca6b3
+      version: 0.25.1
   narrated_calls:
     verified_recapture:
       result:

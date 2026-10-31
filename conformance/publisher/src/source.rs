@@ -1342,7 +1342,7 @@ pub fn load_history(
                 let source = admission
                     .index
                     .get(source_path)
-                    .context("resolved snapshot source member is outside catalog inventory")?;
+                    .with_context(|| format!("resolved snapshot source member {source_path} for {family}/{implementation}/{version} is outside catalog inventory"))?;
                 let source_version = source["version"]
                     .as_str()
                     .context("resolved snapshot source has no version")?;

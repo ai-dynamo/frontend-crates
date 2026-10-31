@@ -8,7 +8,568 @@ provenance:
 document:
   mode: unified
 changes: {}
-metadata_changes: {}
+metadata_changes:
+  native_quoted_control_in_response:
+    verified_recapture:
+      result:
+        unavailable: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_observation:
+          unavailable:
+            code: unsupported_family
+            detail: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_input:
+          input: The literal "<｜DSML｜ calls>" marker is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.1.3
+        source_sha256: 6870a29059370c43936b9c2edd854d26f814b5be214e038cb2c347b1cc84e102
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 55b2c0fd3e44e242024f2b222f3d15570fab9bc0b9e81e68416cb46e33350ce6
+        crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+        cargo_lock_sha256: fdb793a3a78cec9fb36dfa4b63f26f913d8eb15ee22bc82ddc8dacb2f7242b86
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f9b102fb256bd2f65426d71c27837306fb95410fc7ae34522d4e92de5a672c79
+        binary_sha256: 9dd885295b6ded6cfa9d322b031e63db5945e96dc26e550dd728a2f4dc1b1683
+      resolution: fresh_execution
+  native_quoted_control_then_call:
+    verified_recapture:
+      result:
+        unavailable: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_observation:
+          unavailable:
+            code: unsupported_family
+            detail: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_input:
+          input: The literal "<｜DSML｜ calls>" marker is part of the explanation.<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: <｜DSML｜ invoke name="get_weather">
+          - delta_text: <｜DSML｜ parameter name="city" string="true">
+          - delta_text: Paris
+          - delta_text: </｜DSML｜ parameter>
+          - delta_text: </｜DSML｜ invoke>
+          - delta_text: </｜DSML｜ calls>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.1.3
+        source_sha256: 6870a29059370c43936b9c2edd854d26f814b5be214e038cb2c347b1cc84e102
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 55b2c0fd3e44e242024f2b222f3d15570fab9bc0b9e81e68416cb46e33350ce6
+        crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+        cargo_lock_sha256: fdb793a3a78cec9fb36dfa4b63f26f913d8eb15ee22bc82ddc8dacb2f7242b86
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f9b102fb256bd2f65426d71c27837306fb95410fc7ae34522d4e92de5a672c79
+        binary_sha256: 9dd885295b6ded6cfa9d322b031e63db5945e96dc26e550dd728a2f4dc1b1683
+      resolution: fresh_execution
+  native_quoted_incomplete_header:
+    verified_recapture:
+      result:
+        unavailable: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_observation:
+          unavailable:
+            code: unsupported_family
+            detail: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_input:
+          input: The literal `<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">` header is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal `
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: <｜DSML｜ invoke name="get_weather">
+          - delta_text: <｜DSML｜ parameter name="city" string="true">
+          - delta_text: '` header is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.1.3
+        source_sha256: 6870a29059370c43936b9c2edd854d26f814b5be214e038cb2c347b1cc84e102
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 55b2c0fd3e44e242024f2b222f3d15570fab9bc0b9e81e68416cb46e33350ce6
+        crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+        cargo_lock_sha256: fdb793a3a78cec9fb36dfa4b63f26f913d8eb15ee22bc82ddc8dacb2f7242b86
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f9b102fb256bd2f65426d71c27837306fb95410fc7ae34522d4e92de5a672c79
+        binary_sha256: 9dd885295b6ded6cfa9d322b031e63db5945e96dc26e550dd728a2f4dc1b1683
+      resolution: fresh_execution
+  native_single_quote_contraction_response:
+    verified_recapture:
+      result:
+        unavailable: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_observation:
+          unavailable:
+            code: unsupported_family
+            detail: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_input:
+          input: The literal 'doesn't <｜DSML｜ calls> marker' stays quoted.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.1.3
+        source_sha256: 6870a29059370c43936b9c2edd854d26f814b5be214e038cb2c347b1cc84e102
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 55b2c0fd3e44e242024f2b222f3d15570fab9bc0b9e81e68416cb46e33350ce6
+        crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+        cargo_lock_sha256: fdb793a3a78cec9fb36dfa4b63f26f913d8eb15ee22bc82ddc8dacb2f7242b86
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f9b102fb256bd2f65426d71c27837306fb95410fc7ae34522d4e92de5a672c79
+        binary_sha256: 9dd885295b6ded6cfa9d322b031e63db5945e96dc26e550dd728a2f4dc1b1683
+      resolution: fresh_execution
+  native_single_quoted_word_control:
+    verified_recapture:
+      result:
+        unavailable: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_observation:
+          unavailable:
+            code: unsupported_family
+            detail: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_input:
+          input: The literal 'example <｜DSML｜ calls> marker' is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''example '
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: ' marker'' is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.1.3
+        source_sha256: 6870a29059370c43936b9c2edd854d26f814b5be214e038cb2c347b1cc84e102
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 55b2c0fd3e44e242024f2b222f3d15570fab9bc0b9e81e68416cb46e33350ce6
+        crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+        cargo_lock_sha256: fdb793a3a78cec9fb36dfa4b63f26f913d8eb15ee22bc82ddc8dacb2f7242b86
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f9b102fb256bd2f65426d71c27837306fb95410fc7ae34522d4e92de5a672c79
+        binary_sha256: 9dd885295b6ded6cfa9d322b031e63db5945e96dc26e550dd728a2f4dc1b1683
+      resolution: fresh_execution
+  native_unmatched_quote_then_call:
+    verified_recapture:
+      result:
+        unavailable: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_observation:
+          unavailable:
+            code: unsupported_family
+            detail: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_input:
+          input: He said "maybe<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: He said "maybe
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: <｜DSML｜ invoke name="get_weather">
+          - delta_text: <｜DSML｜ parameter name="city" string="true">
+          - delta_text: Paris
+          - delta_text: </｜DSML｜ parameter>
+          - delta_text: </｜DSML｜ invoke>
+          - delta_text: </｜DSML｜ calls>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.1.3
+        source_sha256: 6870a29059370c43936b9c2edd854d26f814b5be214e038cb2c347b1cc84e102
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 55b2c0fd3e44e242024f2b222f3d15570fab9bc0b9e81e68416cb46e33350ce6
+        crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+        cargo_lock_sha256: fdb793a3a78cec9fb36dfa4b63f26f913d8eb15ee22bc82ddc8dacb2f7242b86
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f9b102fb256bd2f65426d71c27837306fb95410fc7ae34522d4e92de5a672c79
+        binary_sha256: 9dd885295b6ded6cfa9d322b031e63db5945e96dc26e550dd728a2f4dc1b1683
+      resolution: fresh_execution
+  prefilled_response_reasoning_markers_literal:
+    verified_recapture:
+      result:
+        unavailable: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_observation:
+          unavailable:
+            code: unsupported_family
+            detail: The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.
+        capture_input:
+          input: <think>literal</think> then a call<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: literal
+          - delta_text: </think>
+          - delta_text: ' then a call'
+          - delta_text: <｜DSML｜ calls>
+          - delta_text: <｜DSML｜ invoke name="get_weather">
+          - delta_text: <｜DSML｜ parameter name="city" string="true">
+          - delta_text: Paris
+          - delta_text: </｜DSML｜ parameter>
+          - delta_text: </｜DSML｜ invoke>
+          - delta_text: </｜DSML｜ calls>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: dynamo_v1_jail
+        version: 5.1.3
+        source_sha256: 6870a29059370c43936b9c2edd854d26f814b5be214e038cb2c347b1cc84e102
+        adapter_sha256: 882f07594265cbbfbe5a5d09aff15a851cbd26018ed3887c4010ee329a669697
+        job_sha256: 55b2c0fd3e44e242024f2b222f3d15570fab9bc0b9e81e68416cb46e33350ce6
+        crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+        cargo_lock_sha256: fdb793a3a78cec9fb36dfa4b63f26f913d8eb15ee22bc82ddc8dacb2f7242b86
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        results_sha256: f9b102fb256bd2f65426d71c27837306fb95410fc7ae34522d4e92de5a672c79
+        binary_sha256: 9dd885295b6ded6cfa9d322b031e63db5945e96dc26e550dd728a2f4dc1b1683
+      resolution: fresh_execution
 document_overrides:
   guided_json_after_reasoning:
     capture_provenance:

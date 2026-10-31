@@ -218,6 +218,25 @@ def canonical_arguments(arguments):
     return canonical_value(arguments)
 
 
+def decode_arguments(arguments):
+    """Decode only when Python's JSON value preserves the original typed number.
+
+    Keeping the original JSON string uses the existing raw-arguments representation
+    and avoids rounding decimals or changing a root JSON string into another type.
+    """
+    if arguments is None or arguments == "":
+        return {}
+    if not isinstance(arguments, str):
+        return arguments
+    try:
+        value = json.loads(arguments)
+    except (ValueError, TypeError):
+        return arguments
+    if isinstance(value, str) or canonical_arguments(arguments) != canonical_value(value):
+        return arguments
+    return value
+
+
 def canonical_value(value):
     if isinstance(value, dict):
         return ["object", [[key, canonical_value(item)] for key, item in sorted(value.items())]]

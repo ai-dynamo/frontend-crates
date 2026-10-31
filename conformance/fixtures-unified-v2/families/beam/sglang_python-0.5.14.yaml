@@ -1,0 +1,2818 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    sglang_python: 0.5.14
+document:
+  mode: unified
+records:
+  adjacent_calls_partial_header:
+    value:
+      case_key: adjacent_calls_partial_header
+      stimulus:
+        ref: current
+        semantic_sha256: ff6d45acba343c93ce71e9c62ef38b556256ed870c810d411b93a2cc5d4dacfb
+      observation:
+        unavailable:
+          code: peer_termination_unsupported
+          detail: SGLang harness supports serving stop/length termination only
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+            job_sha256: 5850855541939b14a0c6ad3c6cf55955c62b01c2c5a79c6b1d331d4872785126
+            results_sha256: 49cfd077c1f793e34bba4480465460651683b787293bdf3ba9481ea7d09a0747
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_const_decimal:
+    value:
+      case_key: arg_numeric_14_const_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: b36d9e1606ddb138b13f6b3a264c9d51775265971010b1272ed7f20e3c5bbbe7
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_const_exponent:
+    value:
+      case_key: arg_numeric_14_const_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: ce8241181db48221cc7331d7fae5586e211498e20ab1bb7ecb606657f9fa78d4
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_enum_decimal:
+    value:
+      case_key: arg_numeric_14_enum_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: dc1598f479e259a932d4904a887e74a67a64a29b3e26439b0c511992759949a3
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_enum_exponent:
+    value:
+      case_key: arg_numeric_14_enum_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: 08e40893413102d20d2b9687b9a67680e3da3cfd77b94b5e464e3b0f5c2d076f
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_fraction_fallback:
+    value:
+      case_key: arg_numeric_14_fraction_fallback
+      stimulus:
+        ref: current
+        semantic_sha256: ea2b87a8efd840120591699fea1115306b45227fbde735e2e49c65f028129c7f
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_fraction_near_integer:
+    value:
+      case_key: arg_numeric_14_fraction_near_integer
+      stimulus:
+        ref: current
+        semantic_sha256: 9fa886a1cf782026ec5a73a8e4839da6ff712a6bc94e6465da4d9bf6bea27fab
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_fraction_underflow:
+    value:
+      case_key: arg_numeric_14_fraction_underflow
+      stimulus:
+        ref: current
+        semantic_sha256: ca565a93f80ab6fb42f02a133028dce1e277f8a14552d1a9024a86ccedfd04d4
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_large_decimal:
+    value:
+      case_key: arg_numeric_14_large_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: b157b148473eb6865701d3d7cee5b42fa8b62b1470d2b67d7735f547e24c115d
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_large_exponent:
+    value:
+      case_key: arg_numeric_14_large_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: 324e2f4ddd6238d6a350a813879bb54d39f5cc82ab64267bbd3652e5b119192e
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_negative:
+    value:
+      case_key: arg_numeric_14_negative
+      stimulus:
+        ref: current
+        semantic_sha256: 4249c30afc3f828849ef887b0ca2f1fe7dc6ed304d2760b4ac9d55eba86f0815
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_negative_exponent:
+    value:
+      case_key: arg_numeric_14_negative_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: 08f9365034eee24c88b50a2328cfa9fcad67a57ca5515173555d0f7f0161de0b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_14_zero_underflow:
+    value:
+      case_key: arg_numeric_14_zero_underflow
+      stimulus:
+        ref: current
+        semantic_sha256: ef23a795136fb96b2c1ccbde82c13dfbcec9a78c475a89d0a2a1a381d5b4021e
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_15_exponent:
+    value:
+      case_key: arg_numeric_15_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: db9db0f19c44d91cde87613c13ba20cba0ebd7419ad61292e3d8561af9c8ee12
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_15_negative:
+    value:
+      case_key: arg_numeric_15_negative
+      stimulus:
+        ref: current
+        semantic_sha256: 8b2c1b33c5f5b827c33173a46b59972b0ed69a5fd935eed1cca58aafde073c2a
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_15_ordinary:
+    value:
+      case_key: arg_numeric_15_ordinary
+      stimulus:
+        ref: current
+        semantic_sha256: 36d486bbbb6d33add74f5c8fe6096e8815af16301c9bd976c90b0532b4233b7b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_15_quarter:
+    value:
+      case_key: arg_numeric_15_quarter
+      stimulus:
+        ref: current
+        semantic_sha256: 6cc0b0e49242a474f11dfa6ef476d1dbf735e2b0a149ef5997aff5b2853a350d
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_15_round_down:
+    value:
+      case_key: arg_numeric_15_round_down
+      stimulus:
+        ref: current
+        semantic_sha256: f48dec5d277a73fb4cb4b3096913f7047f246f90fdf08c0a0952e086b8582785
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_15_round_up:
+    value:
+      case_key: arg_numeric_15_round_up
+      stimulus:
+        ref: current
+        semantic_sha256: 76147fdc18128cf41f4cdddbdd41837bf787c8d91e3b870a49319fa7b822802a
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_15_small:
+    value:
+      case_key: arg_numeric_15_small
+      stimulus:
+        ref: current
+        semantic_sha256: 212d0fc086e3ac1f47c9c5a3fea41385bded3f1a110d59489068f15fa91ca6d7
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  arg_numeric_nested_exact:
+    value:
+      case_key: arg_numeric_nested_exact
+      stimulus:
+        ref: current
+        semantic_sha256: 8b0725049695f396773aedccde7fd0261aba71614883fb1e1644c434573f5c6c
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    value:
+      case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+      stimulus:
+        ref: current
+        semantic_sha256: 88b5303b9e16d223750e697d88c38131ce6e50fa928d770a07112eef6267f854
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    value:
+      case_key: gemma4_guided_reasoning_opener_after_call_prefix
+      stimulus:
+        ref: current
+        semantic_sha256: 823e20811f7939d9f44514ebc5ee1b681b0c0bac38a1dff445a5d36217fe69b5
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  gemma4_guided_response_extra_body_opener:
+    value:
+      case_key: gemma4_guided_response_extra_body_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 860798003f8f854af36d5616d2e82bd86543bc7fe82b4ac992f806d1bb1f57e0
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  glm47_parameterless_call_shape_inside_argument:
+    value:
+      case_key: glm47_parameterless_call_shape_inside_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 2e90694e80f7298e504f6d3b8f0b302aeacc38c83ebef0f8fe04cf3c05d64d84
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  glm47_reference_type_intersection:
+    value:
+      case_key: glm47_reference_type_intersection
+      stimulus:
+        ref: current
+        semantic_sha256: 990402ca03f618dbf49583cc434e409de08fb902317f88bc175d7349dbb4a875
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+            job_sha256: 5850855541939b14a0c6ad3c6cf55955c62b01c2c5a79c6b1d331d4872785126
+            results_sha256: 49cfd077c1f793e34bba4480465460651683b787293bdf3ba9481ea7d09a0747
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  gpt_oss_channel_header_variants:
+    value:
+      case_key: gpt_oss_channel_header_variants
+      stimulus:
+        ref: current
+        semantic_sha256: 009265231d4b96b6de4a87d8deb1fa6cb2ecb25f5cbf7ca365c3b25ede542f12
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  gpt_oss_control_marker_inside_argument_string:
+    value:
+      case_key: gpt_oss_control_marker_inside_argument_string
+      stimulus:
+        ref: current
+        semantic_sha256: 00e616af52cb9ef1551b7b744654e0fa62b2563e42319c51c1659959ef27f9d1
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  gpt_oss_implicit_recipient_first_header:
+    value:
+      case_key: gpt_oss_implicit_recipient_first_header
+      stimulus:
+        ref: current
+        semantic_sha256: 9f9062e3929fb15ab0d26c62a38223e02fbe39d1ab55037842009f0b8b61ecba
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+            job_sha256: fba5424dddbbca7db2a7fe90a6c428f854b67b8b7ba68cfa8167789603150dc4
+            results_sha256: 783de97a1685563d9ed7da6d9452fc080ad911b7a9895f95284d7efdbe9b8870
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  gpt_oss_quoted_message_header_literal:
+    value:
+      case_key: gpt_oss_quoted_message_header_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 0f354e6098526fceba451c2258e34389ce2f27cb30f855d8946ac042ba793c02
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  gpt_oss_quoted_truncated_tool_then_final:
+    value:
+      case_key: gpt_oss_quoted_truncated_tool_then_final
+      stimulus:
+        ref: current
+        semantic_sha256: ccee32c22811f5728fa724b561b0effa99816b6735b9e002e9eaeb6ce03fba26
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  guided_json_quoted_bare_tool_header_in_answer:
+    value:
+      case_key: guided_json_quoted_bare_tool_header_in_answer
+      stimulus:
+        ref: current
+        semantic_sha256: af94806dcc5771f4a43c8ba8effe1f2b31b7624aa43c64064dd721ae17b51433
+      observation:
+        unavailable:
+          code: peer_termination_unsupported
+          detail: SGLang harness supports serving stop/length termination only
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  guided_native_after_prefilled_reasoning_named:
+    value:
+      case_key: guided_native_after_prefilled_reasoning_named
+      stimulus:
+        ref: current
+        semantic_sha256: 2005982c75a0df6d7e9a5acb6c836d24476f43ab901bd5eb6a9d964ad9de215a
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+            job_sha256: fba5424dddbbca7db2a7fe90a6c428f854b67b8b7ba68cfa8167789603150dc4
+            results_sha256: 783de97a1685563d9ed7da6d9452fc080ad911b7a9895f95284d7efdbe9b8870
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  guided_native_after_prefilled_reasoning_required:
+    value:
+      case_key: guided_native_after_prefilled_reasoning_required
+      stimulus:
+        ref: current
+        semantic_sha256: a0dc5f721d291d8226a9a38d0c768fdfa8be5d1e71ff9c56237288c4d2f72333
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+            job_sha256: fba5424dddbbca7db2a7fe90a6c428f854b67b8b7ba68cfa8167789603150dc4
+            results_sha256: 783de97a1685563d9ed7da6d9452fc080ad911b7a9895f95284d7efdbe9b8870
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  interrupted_reasoning_then_response:
+    value:
+      case_key: interrupted_reasoning_then_response
+      stimulus:
+        ref: current
+        semantic_sha256: 4e88ef7ac86ef86d15b206bba42997887d4ea03e996e59a721f820c9aab7f1da
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+            job_sha256: 5850855541939b14a0c6ad3c6cf55955c62b01c2c5a79c6b1d331d4872785126
+            results_sha256: 49cfd077c1f793e34bba4480465460651683b787293bdf3ba9481ea7d09a0747
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  kimi_k3_guided_native_wrapper:
+    value:
+      case_key: kimi_k3_guided_native_wrapper
+      stimulus:
+        ref: current
+        semantic_sha256: ca5c62c51d2dc7daee4d908dfbe569aea0e7c1cc7cbd216e130221bc5496092b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  kimi_k3_malformed_call_then_valid:
+    value:
+      case_key: kimi_k3_malformed_call_then_valid
+      stimulus:
+        ref: current
+        semantic_sha256: 7f6b7072142a56ca82056b3bd1bff4620a2d778e0486e3b44f7eb4e4f4445023
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  kimi_k3_typed_json_marker_payload:
+    value:
+      case_key: kimi_k3_typed_json_marker_payload
+      stimulus:
+        ref: current
+        semantic_sha256: d582d5ae8590e02c68dfd6414fac51fe280c6a8c07420f9b196759a888530d01
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  kimi_native_incremental_interfield_whitespace:
+    value:
+      case_key: kimi_native_incremental_interfield_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: 16e1997983919314d3aaf43b1883b2babb2dc74025abe3349950bca70cdc34b4
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  kimi_native_k2_count_content_chunk1024:
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: 3c7d66e2cf7760d7d42acc21cddd6b39b9082b26565289b58af5ffa377cbd3d1
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  kimi_native_k2_count_content_chunk7:
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: c83e9fa6488f624e0b069aa76cfb1631d20dc7b59668e8e382a9259a037a3c15
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  kimi_native_rejected_next_header_progress:
+    value:
+      case_key: kimi_native_rejected_next_header_progress
+      stimulus:
+        ref: current
+        semantic_sha256: 3aeb8e3dfaec75097c515dd64e54aca1639103e1dbd615fbfe8f9cf784d11130
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_glimmer_guided_message_end_inside_native_header:
+    value:
+      case_key: muse_glimmer_guided_message_end_inside_native_header
+      stimulus:
+        ref: current
+        semantic_sha256: 9a75f9a51265d9cbf079520670bb2e639c81d0bc21f45a9d8badeaacf71b7694
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_opaque_declared_invoke:
+    value:
+      case_key: muse_opaque_declared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 8689bea41ace4c028c6d8ea1175d30528e46a4e38196f72996a9dca5b81ed362
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_opaque_undeclared_invoke:
+    value:
+      case_key: muse_opaque_undeclared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 9b8572c01dbf98f3e8f3f959e54ad1b77f7c408b4faaaf3048cb54199dc3f872
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_quoted_reserved_eom_argument:
+    value:
+      case_key: muse_quoted_reserved_eom_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 9be008e409c34347ab7d130b2f2ac96c42e20f803a75afb8271a7aa7d5dd001a
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+          verified_recapture:
+            result:
+              unavailable: SGLang does not register FunctionCallParser beam
+              capture_input:
+                input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+                  a"<|end|>"b
+
+                  </rfl:parameter><|call|>'
+                init:
+                  starting_state: Response
+                  tool_output_mode: Native
+                  named_tool: null
+                finish_reason: stop
+                tools:
+                - name: get_weather
+                  parameters:
+                    type: object
+                    properties:
+                      city:
+                        type: string
+                - name: f
+                  parameters:
+                    type: object
+                    properties:
+                      x:
+                        type: string
+                - name: g
+                  parameters:
+                    type: object
+                    properties:
+                      y:
+                        type: string
+                - name: run
+                  parameters:
+                    type: object
+                    properties:
+                      cmd:
+                        type: string
+                - name: log
+                  parameters:
+                    type: object
+                    properties:
+                      note:
+                        type: string
+                - name: sum_values
+                  parameters:
+                    type: object
+                    properties:
+                      values:
+                        type: array
+                        items:
+                          type: number
+                - name: functions.
+                  parameters:
+                    type: object
+                    properties: {}
+                chunks:
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: s
+                - delta_text: t
+                - delta_text: a
+                - delta_text: r
+                - delta_text: t
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: a
+                - delta_text: s
+                - delta_text: s
+                - delta_text: i
+                - delta_text: s
+                - delta_text: t
+                - delta_text: a
+                - delta_text: n
+                - delta_text: t
+                - delta_text: ' '
+                - delta_text: t
+                - delta_text: o
+                - delta_text: '='
+                - delta_text: g
+                - delta_text: e
+                - delta_text: t
+                - delta_text: _
+                - delta_text: w
+                - delta_text: e
+                - delta_text: a
+                - delta_text: t
+                - delta_text: h
+                - delta_text: e
+                - delta_text: r
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: h
+                - delta_text: a
+                - delta_text: n
+                - delta_text: n
+                - delta_text: e
+                - delta_text: l
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: a
+                - delta_text: n
+                - delta_text: a
+                - delta_text: l
+                - delta_text: y
+                - delta_text: s
+                - delta_text: i
+                - delta_text: s
+                - delta_text: ' '
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: o
+                - delta_text: n
+                - delta_text: s
+                - delta_text: t
+                - delta_text: r
+                - delta_text: a
+                - delta_text: i
+                - delta_text: n
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: x
+                - delta_text: m
+                - delta_text: l
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: m
+                - delta_text: e
+                - delta_text: s
+                - delta_text: s
+                - delta_text: a
+                - delta_text: g
+                - delta_text: e
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: <
+                - delta_text: r
+                - delta_text: f
+                - delta_text: l
+                - delta_text: ':'
+                - delta_text: p
+                - delta_text: a
+                - delta_text: r
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: t
+                - delta_text: e
+                - delta_text: r
+                - delta_text: ' '
+                - delta_text: n
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: '='
+                - delta_text: '"'
+                - delta_text: c
+                - delta_text: i
+                - delta_text: t
+                - delta_text: y
+                - delta_text: '"'
+                - delta_text: '>'
+                - delta_text: '
+
+                    '
+                - delta_text: a
+                - delta_text: '"'
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: e
+                - delta_text: n
+                - delta_text: d
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: '"'
+                - delta_text: b
+                - delta_text: '
+
+                    '
+                - delta_text: <
+                - delta_text: /
+                - delta_text: r
+                - delta_text: f
+                - delta_text: l
+                - delta_text: ':'
+                - delta_text: p
+                - delta_text: a
+                - delta_text: r
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: t
+                - delta_text: e
+                - delta_text: r
+                - delta_text: '>'
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: a
+                - delta_text: l
+                - delta_text: l
+                - delta_text: '|'
+                - delta_text: '>'
+              capture_stimulus:
+                unavailable:
+                  code: peer_detector_unavailable
+                  detail: SGLang does not register FunctionCallParser beam
+            provenance:
+              implementation: sglang_python
+              version: 0.5.14
+              artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+              extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+              status: executed
+              parser_apis:
+                protocol: srt.entrypoints.openai.protocol
+                reasoning: srt.parser.reasoning_parser
+                tools: srt.function_call.function_call_parser
+              source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+              adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+              job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+              results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+            resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_quoted_reserved_eot_argument:
+    value:
+      case_key: muse_quoted_reserved_eot_argument
+      stimulus:
+        ref: current
+        semantic_sha256: d825b6a96964347aaf340cfac89b9914261faa753a6af6ae54d824b39bc653eb
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+          verified_recapture:
+            result:
+              unavailable: SGLang does not register FunctionCallParser beam
+              capture_input:
+                input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+                  a"<|return|>"b
+
+                  </rfl:parameter><|call|>'
+                init:
+                  starting_state: Response
+                  tool_output_mode: Native
+                  named_tool: null
+                finish_reason: stop
+                tools:
+                - name: get_weather
+                  parameters:
+                    type: object
+                    properties:
+                      city:
+                        type: string
+                - name: f
+                  parameters:
+                    type: object
+                    properties:
+                      x:
+                        type: string
+                - name: g
+                  parameters:
+                    type: object
+                    properties:
+                      y:
+                        type: string
+                - name: run
+                  parameters:
+                    type: object
+                    properties:
+                      cmd:
+                        type: string
+                - name: log
+                  parameters:
+                    type: object
+                    properties:
+                      note:
+                        type: string
+                - name: sum_values
+                  parameters:
+                    type: object
+                    properties:
+                      values:
+                        type: array
+                        items:
+                          type: number
+                - name: functions.
+                  parameters:
+                    type: object
+                    properties: {}
+                chunks:
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: s
+                - delta_text: t
+                - delta_text: a
+                - delta_text: r
+                - delta_text: t
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: a
+                - delta_text: s
+                - delta_text: s
+                - delta_text: i
+                - delta_text: s
+                - delta_text: t
+                - delta_text: a
+                - delta_text: n
+                - delta_text: t
+                - delta_text: ' '
+                - delta_text: t
+                - delta_text: o
+                - delta_text: '='
+                - delta_text: g
+                - delta_text: e
+                - delta_text: t
+                - delta_text: _
+                - delta_text: w
+                - delta_text: e
+                - delta_text: a
+                - delta_text: t
+                - delta_text: h
+                - delta_text: e
+                - delta_text: r
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: h
+                - delta_text: a
+                - delta_text: n
+                - delta_text: n
+                - delta_text: e
+                - delta_text: l
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: a
+                - delta_text: n
+                - delta_text: a
+                - delta_text: l
+                - delta_text: y
+                - delta_text: s
+                - delta_text: i
+                - delta_text: s
+                - delta_text: ' '
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: o
+                - delta_text: n
+                - delta_text: s
+                - delta_text: t
+                - delta_text: r
+                - delta_text: a
+                - delta_text: i
+                - delta_text: n
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: x
+                - delta_text: m
+                - delta_text: l
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: m
+                - delta_text: e
+                - delta_text: s
+                - delta_text: s
+                - delta_text: a
+                - delta_text: g
+                - delta_text: e
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: <
+                - delta_text: r
+                - delta_text: f
+                - delta_text: l
+                - delta_text: ':'
+                - delta_text: p
+                - delta_text: a
+                - delta_text: r
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: t
+                - delta_text: e
+                - delta_text: r
+                - delta_text: ' '
+                - delta_text: n
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: '='
+                - delta_text: '"'
+                - delta_text: c
+                - delta_text: i
+                - delta_text: t
+                - delta_text: y
+                - delta_text: '"'
+                - delta_text: '>'
+                - delta_text: '
+
+                    '
+                - delta_text: a
+                - delta_text: '"'
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: r
+                - delta_text: e
+                - delta_text: t
+                - delta_text: u
+                - delta_text: r
+                - delta_text: n
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: '"'
+                - delta_text: b
+                - delta_text: '
+
+                    '
+                - delta_text: <
+                - delta_text: /
+                - delta_text: r
+                - delta_text: f
+                - delta_text: l
+                - delta_text: ':'
+                - delta_text: p
+                - delta_text: a
+                - delta_text: r
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: t
+                - delta_text: e
+                - delta_text: r
+                - delta_text: '>'
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: a
+                - delta_text: l
+                - delta_text: l
+                - delta_text: '|'
+                - delta_text: '>'
+              capture_stimulus:
+                unavailable:
+                  code: peer_detector_unavailable
+                  detail: SGLang does not register FunctionCallParser beam
+            provenance:
+              implementation: sglang_python
+              version: 0.5.14
+              artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+              extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+              status: executed
+              parser_apis:
+                protocol: srt.entrypoints.openai.protocol
+                reasoning: srt.parser.reasoning_parser
+                tools: srt.function_call.function_call_parser
+              source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+              adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+              job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+              results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+            resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_quoted_reserved_start_argument:
+    value:
+      case_key: muse_quoted_reserved_start_argument
+      stimulus:
+        ref: current
+        semantic_sha256: f1de7ec8c3e8aa7c9d845d155d52df6d2eab435b8e5bf0cbb64ddef2b969755f
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser beam, FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: d6b1e364993045f95d69114f2853c9f844a6655d4b2569d30009e775d7b6c6ee
+            results_sha256: 9814b4d596910116dc8a592ff3aa8668fad56820466d4223b38c54e1efe0fd81
+          verified_recapture:
+            result:
+              unavailable: SGLang does not register FunctionCallParser beam
+              capture_input:
+                input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+                  a"<|start|>"b
+
+                  </rfl:parameter><|call|>'
+                init:
+                  starting_state: Response
+                  tool_output_mode: Native
+                  named_tool: null
+                finish_reason: stop
+                tools:
+                - name: get_weather
+                  parameters:
+                    type: object
+                    properties:
+                      city:
+                        type: string
+                - name: f
+                  parameters:
+                    type: object
+                    properties:
+                      x:
+                        type: string
+                - name: g
+                  parameters:
+                    type: object
+                    properties:
+                      y:
+                        type: string
+                - name: run
+                  parameters:
+                    type: object
+                    properties:
+                      cmd:
+                        type: string
+                - name: log
+                  parameters:
+                    type: object
+                    properties:
+                      note:
+                        type: string
+                - name: sum_values
+                  parameters:
+                    type: object
+                    properties:
+                      values:
+                        type: array
+                        items:
+                          type: number
+                - name: functions.
+                  parameters:
+                    type: object
+                    properties: {}
+                chunks:
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: s
+                - delta_text: t
+                - delta_text: a
+                - delta_text: r
+                - delta_text: t
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: a
+                - delta_text: s
+                - delta_text: s
+                - delta_text: i
+                - delta_text: s
+                - delta_text: t
+                - delta_text: a
+                - delta_text: n
+                - delta_text: t
+                - delta_text: ' '
+                - delta_text: t
+                - delta_text: o
+                - delta_text: '='
+                - delta_text: g
+                - delta_text: e
+                - delta_text: t
+                - delta_text: _
+                - delta_text: w
+                - delta_text: e
+                - delta_text: a
+                - delta_text: t
+                - delta_text: h
+                - delta_text: e
+                - delta_text: r
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: h
+                - delta_text: a
+                - delta_text: n
+                - delta_text: n
+                - delta_text: e
+                - delta_text: l
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: a
+                - delta_text: n
+                - delta_text: a
+                - delta_text: l
+                - delta_text: y
+                - delta_text: s
+                - delta_text: i
+                - delta_text: s
+                - delta_text: ' '
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: o
+                - delta_text: n
+                - delta_text: s
+                - delta_text: t
+                - delta_text: r
+                - delta_text: a
+                - delta_text: i
+                - delta_text: n
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: x
+                - delta_text: m
+                - delta_text: l
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: m
+                - delta_text: e
+                - delta_text: s
+                - delta_text: s
+                - delta_text: a
+                - delta_text: g
+                - delta_text: e
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: <
+                - delta_text: r
+                - delta_text: f
+                - delta_text: l
+                - delta_text: ':'
+                - delta_text: p
+                - delta_text: a
+                - delta_text: r
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: t
+                - delta_text: e
+                - delta_text: r
+                - delta_text: ' '
+                - delta_text: n
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: '='
+                - delta_text: '"'
+                - delta_text: c
+                - delta_text: i
+                - delta_text: t
+                - delta_text: y
+                - delta_text: '"'
+                - delta_text: '>'
+                - delta_text: '
+
+                    '
+                - delta_text: a
+                - delta_text: '"'
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: s
+                - delta_text: t
+                - delta_text: a
+                - delta_text: r
+                - delta_text: t
+                - delta_text: '|'
+                - delta_text: '>'
+                - delta_text: '"'
+                - delta_text: b
+                - delta_text: '
+
+                    '
+                - delta_text: <
+                - delta_text: /
+                - delta_text: r
+                - delta_text: f
+                - delta_text: l
+                - delta_text: ':'
+                - delta_text: p
+                - delta_text: a
+                - delta_text: r
+                - delta_text: a
+                - delta_text: m
+                - delta_text: e
+                - delta_text: t
+                - delta_text: e
+                - delta_text: r
+                - delta_text: '>'
+                - delta_text: <
+                - delta_text: '|'
+                - delta_text: c
+                - delta_text: a
+                - delta_text: l
+                - delta_text: l
+                - delta_text: '|'
+                - delta_text: '>'
+              capture_stimulus:
+                unavailable:
+                  code: peer_detector_unavailable
+                  detail: SGLang does not register FunctionCallParser beam
+            provenance:
+              implementation: sglang_python
+              version: 0.5.14
+              artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+              extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+              status: executed
+              parser_apis:
+                protocol: srt.entrypoints.openai.protocol
+                reasoning: srt.parser.reasoning_parser
+                tools: srt.function_call.function_call_parser
+              source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+              adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+              job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+              results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+            resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_recovery_second_parameter:
+    value:
+      case_key: muse_recovery_second_parameter
+      stimulus:
+        ref: current
+        semantic_sha256: fd4b2aaaf46fa7069ee9c66c235f40ce918e0649c977587bc2bcaab81cebd1a6
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_unterminated_parameter_then_empty_call:
+    value:
+      case_key: muse_unterminated_parameter_then_empty_call
+      stimulus:
+        ref: current
+        semantic_sha256: e74493dbcff237fcae66f6f7845c48c5aaf215fa8a3161d171b05cfa58e36f48
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  muse_unterminated_reasoning_guided:
+    value:
+      case_key: muse_unterminated_reasoning_guided
+      stimulus:
+        ref: current
+        semantic_sha256: a3b4f55a14eb4cf7d16f7719b27d8f07ba54c3e066fd0edbd7ad8be2cd17abe8
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_quoted_control_in_reasoning:
+    value:
+      case_key: native_quoted_control_in_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 8ddd4c75add7f9f77d183170caf043cfc2a4bae4010e2687b434bff625941256
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 5b584e1544f31efb11c725416a08c296f57aa452b787f5302e99d92d49ccceaf
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 560e7d752f4478e521fc8ef4bbf7e6a9cf6ce33dd6f36e29495c747a4b290402
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 672343531fd29fcf7564c381cd935d4354b0652a8690af477956df7437699c21
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_single_quote_contraction_reasoning:
+    value:
+      case_key: native_single_quote_contraction_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 5cace03c987a90f7aa69a5f40b633e2e18204780b5d533fb7b8753666966e67a
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: 0cdafb42cf6b972f999c7711da48c980d22adec1ebfc94e7b2a67651a9f55dbe
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: 344d404895554073b1bbc9773f055c14228be1df3c82ae758f1e8401355c9d12
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: a727e358b7bfdaa821a849e584b301278d6de816e77e19788ab450e9d90ff05b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 9543b456bd0a6e86a4203d78d5837d9cd2af6d9cd5b6d330ca9067ad9f4d5d78
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: 39560c02927780305ca31e8ae58a462ca206316e47c4404eb034fe3827cca3ab
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 544e346cadece74e9621fc50dde3dcdaab2c5ac6831dc8db9a4bfba6d84b2698
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: 50a6f684847daf2a587c93980a272f1f0c84307d3e096d345a954ca672f08b37
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 09f7f5c4eecc047cdfec4e6c41c5336239eb2d88b4e699cb11f36e1252b766e9
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  prefilled_response_guided_pending_invoke_header:
+    value:
+      case_key: prefilled_response_guided_pending_invoke_header
+      stimulus:
+        ref: current
+        semantic_sha256: 3e815046bfa3cee584257517faa7c87d7cfe5c6a5aef17e4abc09f0041efa5bb
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 523180aa89af25534be9a8102098f11cad69e5170e38ef60ebef37726164bbd4
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 6c0b597b3044a95fcf88930d832683dfee6c1899f57479c03c6a2e7ab0a244cd
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 3fb5216048bc6d2f35a474d1454ca846ba0235ebd449627e4d07eee61a0f4622
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  qwen3_guided_reasoning_opener_inside_native_header:
+    value:
+      case_key: qwen3_guided_reasoning_opener_inside_native_header
+      stimulus:
+        ref: current
+        semantic_sha256: 4eee65291dd55d0de370a2c54fd1f16cfa9fd2730f24f84e0d0019d5f07ab50f
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: 64927b662a042c23bea05b9764ee049586d6ca3109643ee1e1b107e2fc7c2903
+            results_sha256: 53029ec5a48cff256bc81c69bbdbd73e999418485963904d0a85b3bb3ba47665
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  structured_response_after_reasoning:
+    value:
+      case_key: structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Parser-only peer capture does not execute structural-tag generation constraints.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+            job_sha256: 5850855541939b14a0c6ad3c6cf55955c62b01c2c5a79c6b1d331d4872785126
+            results_sha256: 49cfd077c1f793e34bba4480465460651683b787293bdf3ba9481ea7d09a0747
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml
+  three_calls_partial_header:
+    value:
+      case_key: three_calls_partial_header
+      stimulus:
+        ref: current
+        semantic_sha256: de2e911bb7d478dccabf23a05630ec4bb5e0c33a9280aaa3e0e9c9018d1df403
+      observation:
+        unavailable:
+          code: peer_termination_unsupported
+          detail: SGLang harness supports serving stop/length termination only
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+            job_sha256: 5850855541939b14a0c6ad3c6cf55955c62b01c2c5a79c6b1d331d4872785126
+            results_sha256: 49cfd077c1f793e34bba4480465460651683b787293bdf3ba9481ea7d09a0747
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.14.yaml

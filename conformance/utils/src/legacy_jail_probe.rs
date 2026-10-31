@@ -4,11 +4,11 @@
 use std::collections::BTreeMap;
 
 use dynamo_parsers::reasoning::ReasoningParser;
-use dynamo_parsers::tool_calling::jail::{Annotated, JailedStream};
 use dynamo_parsers::tool_calling::ToolDefinition;
+use dynamo_parsers::tool_calling::jail::{Annotated, JailedStream};
 use dynamo_protocols::types::CreateChatCompletionStreamResponse;
 use futures::StreamExt;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn chunk(
     content: &str,
@@ -52,7 +52,7 @@ pub fn text_chunks(request: &Value) -> Result<Vec<&str>, String> {
 }
 
 pub async fn capture(
-    mut parser: impl ReasoningParser,
+    mut parser: Option<impl ReasoningParser>,
     tool_name: &str,
     tools: Vec<ToolDefinition>,
     request: Value,
@@ -60,11 +60,17 @@ pub async fn capture(
     let texts = text_chunks(&request)?;
     let mut inputs = Vec::new();
     for text in texts {
-        let delta = parser.parse_reasoning_streaming_incremental(text, &[]);
-        inputs.push(chunk(&delta.normal_text, &delta.reasoning_text, None));
+        if let Some(parser) = parser.as_mut() {
+            let delta = parser.parse_reasoning_streaming_incremental(text, &[]);
+            inputs.push(chunk(&delta.normal_text, &delta.reasoning_text, None));
+        } else {
+            inputs.push(chunk(text, "", None));
+        }
     }
-    let tail = parser.finish_reasoning_stream();
-    inputs.push(chunk(&tail.normal_text, &tail.reasoning_text, None));
+    if let Some(parser) = parser.as_mut() {
+        let tail = parser.finish_reasoning_stream();
+        inputs.push(chunk(&tail.normal_text, &tail.reasoning_text, None));
+    }
     inputs.push(chunk("", "", request["finish_reason"].as_str()));
     let jail = JailedStream::builder()
         .tool_call_parser(tool_name)
@@ -126,10 +132,23 @@ mod tests {
         let text = "<think>work</think><tool_call>{\"name\":\"first\",\"arguments\":{}}</tool_call><tool_call>{\"name\":\"second\",\"arguments\":{}}</tool_call>";
         let request = json!({"input":text,"chunks":[{"delta_text":text}],"finish_reason":"stop"});
         let parser = ReasoningParserType::get_reasoning_parser_from_name("qwen3");
-        let result = capture(parser, "hermes", vec![], request).await.unwrap();
+        let result = capture(Some(parser), "hermes", vec![], request)
+            .await
+            .unwrap();
         assert_eq!(result["reasoning_text"], "work");
         assert_eq!(result["calls"][0]["name"], "first");
         assert_eq!(result["calls"][1]["name"], "second");
+    }
+
+    #[tokio::test]
+    async fn tools_only_response_keeps_reasoning_markers_literal() {
+        let text = "<think>literal</think><tool_call>{\"name\":\"f\",\"arguments\":{}}</tool_call>";
+        let request = json!({"input":text,"chunks":[{"delta_text":text}],"finish_reason":"stop"});
+        let parser: Option<dynamo_parsers::reasoning::ReasoningParserWrapper> = None;
+        let result = capture(parser, "hermes", vec![], request).await.unwrap();
+        assert_eq!(result["reasoning_text"], "");
+        assert_eq!(result["normal_text"], "<think>literal</think>");
+        assert_eq!(result["calls"][0]["name"], "f");
     }
 
     #[tokio::test]
@@ -138,7 +157,7 @@ mod tests {
         for split in 0..=text.len() {
             let request = json!({"input":text,"chunks":[{"delta_text":&text[..split]},{"delta_text":&text[split..]}],"finish_reason":"length"});
             let parser = ReasoningParserType::get_reasoning_parser_from_name("qwen3");
-            let result = capture(parser, "qwen3_coder", vec![], request)
+            let result = capture(Some(parser), "qwen3_coder", vec![], request)
                 .await
                 .unwrap();
             assert_eq!(result["normal_text"], "answer", "split {split}");

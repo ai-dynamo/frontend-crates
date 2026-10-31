@@ -1,0 +1,1838 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    sglang_python: 0.5.14
+document:
+  mode: unified
+records:
+  arg_numeric_14_const_decimal:
+    value:
+      case_key: arg_numeric_14_const_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: 811cc3d9fd0ad8212e7399139895af404627a4916c22c27aa9e16a6f2f47f970
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_const_exponent:
+    value:
+      case_key: arg_numeric_14_const_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: cd08d996a53f36b30eeb86c8927e22002c54e8f376f4a6439db1ed94a6512c03
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_enum_decimal:
+    value:
+      case_key: arg_numeric_14_enum_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: 39f98eba514a990b0d70831a59ff35346064c62ad0e43abb80a566c1dd1b0642
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_enum_exponent:
+    value:
+      case_key: arg_numeric_14_enum_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: 0e0f52e7cfe341d5c44aee1cdf391b8dae5ac97507a9ee9849d9cc8ffef5126b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_large_decimal:
+    value:
+      case_key: arg_numeric_14_large_decimal
+      stimulus:
+        ref: current
+        semantic_sha256: 30dbf45e5241709339527e33375f1579bfc3107e1915866f6e756318ecffe525
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_large_exponent:
+    value:
+      case_key: arg_numeric_14_large_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: ad5c9f826e13f288cefccd2cc8ffbc5f47d0fe7b7d60e899c91a5234e0825850
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_negative:
+    value:
+      case_key: arg_numeric_14_negative
+      stimulus:
+        ref: current
+        semantic_sha256: 20a0b4606268dd088fb4e85c189aa467bdc414d61e4c9765c9ace080a144becf
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_negative_exponent:
+    value:
+      case_key: arg_numeric_14_negative_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: 5ada68442ae2ed878a971afb9b7ac969c0d6e168369a91dd7de0a66b82fa6882
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_14_zero_underflow:
+    value:
+      case_key: arg_numeric_14_zero_underflow
+      stimulus:
+        ref: current
+        semantic_sha256: 826d14757dcf9721e61339f53e9b3b064c4b5b0e32af3a128bf48678b289af03
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_15_exponent:
+    value:
+      case_key: arg_numeric_15_exponent
+      stimulus:
+        ref: current
+        semantic_sha256: adb5f02a5bbe80b4a176a760ed2c580dcc392b24252d0f86fb4830a4ddca8b08
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_15_negative:
+    value:
+      case_key: arg_numeric_15_negative
+      stimulus:
+        ref: current
+        semantic_sha256: f13ac4a93924abdd4698e288b50f72caad2ae353b2638aa88dec52dccb7b9930
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_15_ordinary:
+    value:
+      case_key: arg_numeric_15_ordinary
+      stimulus:
+        ref: current
+        semantic_sha256: 6c54a999df47f2b381ef552b15e026a1a09b81cfb2e94ad8bcc624c2f0452da9
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_15_quarter:
+    value:
+      case_key: arg_numeric_15_quarter
+      stimulus:
+        ref: current
+        semantic_sha256: bb91946d18bce3396c0064ca58e54366ffefd6ff1306917798b7f0d101a1cf05
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_15_round_down:
+    value:
+      case_key: arg_numeric_15_round_down
+      stimulus:
+        ref: current
+        semantic_sha256: aaf4947da8f3b9f6eb55b613062e4e0b5cabb406e685c50167b52a4db3506085
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_15_round_up:
+    value:
+      case_key: arg_numeric_15_round_up
+      stimulus:
+        ref: current
+        semantic_sha256: 2ce3646713c53c1be23d416ee314e18398bcf57876b8e20546a76906de43ee14
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_15_small:
+    value:
+      case_key: arg_numeric_15_small
+      stimulus:
+        ref: current
+        semantic_sha256: 0ffafd122c4791ef9a6e9d0ae40db8a50eb187cfb80af31cfafc22b588790b84
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  arg_numeric_nested_exact:
+    value:
+      case_key: arg_numeric_nested_exact
+      stimulus:
+        ref: current
+        semantic_sha256: 17061b9ed7af71022817e0089155ce66308b7531b05fa93be3a4c383a6af27df
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 4f4c8cde259e7d3f37cb963072dd55ec3a38d017d77888239dc1a2fdc8f98324
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    value:
+      case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+      stimulus:
+        ref: current
+        semantic_sha256: ab8b8c9397b6a16a16a382bcdd84ea7ba22b6952b0eff251a7a9a0d2fd74adb4
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    value:
+      case_key: gemma4_guided_reasoning_opener_after_call_prefix
+      stimulus:
+        ref: current
+        semantic_sha256: 260797159b8f78b1b0324e197f163abccb8c5299ffa0053ed59e8d0d8fc68636
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  gemma4_guided_response_extra_body_opener:
+    value:
+      case_key: gemma4_guided_response_extra_body_opener
+      stimulus:
+        ref: current
+        semantic_sha256: d9e057e272a2c10569a7ef9f00be1b5690f394956c2ac6512fc48927ac917b0d
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  glm47_parameterless_call_shape_inside_argument:
+    value:
+      case_key: glm47_parameterless_call_shape_inside_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 87a0070ad7cc94e1a7b08ee1e7ea2e6356e99f05c931aa04cf2e062f754d6a32
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  glm47_reference_type_intersection:
+    value:
+      case_key: glm47_reference_type_intersection
+      stimulus:
+        ref: current
+        semantic_sha256: 460dc5dd615dd6607367fb588910e5b96e870cee8bc1702c0d1f45f81a12049e
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+            job_sha256: c747ff3e089a16bdd94aed547ebba5cc4fa58bc7c5a0e87f5bbfb122da885eb3
+            results_sha256: c55d6f627cf78a90ca53494f6f11a8f30435d502027d7c8cc3585a68ca261798
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  gpt_oss_complete_alternate_message_ends:
+    value:
+      case_key: gpt_oss_complete_alternate_message_ends
+      stimulus:
+        ref: current
+        semantic_sha256: c1a84aa0d5e9c8894f5fd4c9781f7e935ac523a69199cd1fed35f6a006e25336
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  gpt_oss_control_marker_inside_argument_string:
+    value:
+      case_key: gpt_oss_control_marker_inside_argument_string
+      stimulus:
+        ref: current
+        semantic_sha256: 9937541f76e3019e7f2bdae34e031af3cabfa54d20064e17db8be294a31b8a88
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  gpt_oss_implicit_recipient_first_header:
+    value:
+      case_key: gpt_oss_implicit_recipient_first_header
+      stimulus:
+        ref: current
+        semantic_sha256: 3640fd22051cc8eacdb02bd73be91e96bd38e9f9b301073ad1b0fa5d60f1866d
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+            job_sha256: ad023e0d8fb90a62f74903b3d793f18ee38a3aedacb41c3d3fe41ee16bfa23e2
+            results_sha256: 48083021818fffda68e7fed2f96aeb388db044ed2ec97481f9aa13c665d408bc
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  guided_json_quoted_bare_header_after_payload_pr424:
+    value:
+      case_key: guided_json_quoted_bare_header_after_payload_pr424
+      stimulus:
+        ref: current
+        semantic_sha256: 748dadb039a0b1f92780eebcf21fbfb485e4f2a40d2d1e265f6287073da7d8d6
+      observation:
+        unavailable:
+          code: peer_termination_unsupported
+          detail: SGLang harness supports serving stop/length termination only
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  guided_json_quoted_bare_header_in_answer_pr424:
+    value:
+      case_key: guided_json_quoted_bare_header_in_answer_pr424
+      stimulus:
+        ref: current
+        semantic_sha256: 10582c568abf3039d51c403552221c0be1ca8cf2a6619bb2d16dc62f9dd753e0
+      observation:
+        unavailable:
+          code: peer_termination_unsupported
+          detail: SGLang harness supports serving stop/length termination only
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  guided_native_after_prefilled_reasoning_named:
+    value:
+      case_key: guided_native_after_prefilled_reasoning_named
+      stimulus:
+        ref: current
+        semantic_sha256: 1537d7cdcbab63404eb9d7347c279b6e729e01966f61ee124fde630f95a4943a
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+            job_sha256: ad023e0d8fb90a62f74903b3d793f18ee38a3aedacb41c3d3fe41ee16bfa23e2
+            results_sha256: 48083021818fffda68e7fed2f96aeb388db044ed2ec97481f9aa13c665d408bc
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  guided_native_after_prefilled_reasoning_required:
+    value:
+      case_key: guided_native_after_prefilled_reasoning_required
+      stimulus:
+        ref: current
+        semantic_sha256: dd1537e8b771fdad426425ed27f6fb9ca7990672558d2800ac24f5d9c7b5b7d3
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 94ddf3a66c9ab21043c425bcb40b81d4116b013769aa314550bfbf962de500fc
+            job_sha256: ad023e0d8fb90a62f74903b3d793f18ee38a3aedacb41c3d3fe41ee16bfa23e2
+            results_sha256: 48083021818fffda68e7fed2f96aeb388db044ed2ec97481f9aa13c665d408bc
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  guided_response_rejected_header_quote_ownership:
+    value:
+      case_key: guided_response_rejected_header_quote_ownership
+      stimulus:
+        ref: current
+        semantic_sha256: 08575bb0cb02805d624e91a613ed845a4541ab64892a499b25e1bc52cdf95cfd
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  interrupted_reasoning_then_response:
+    value:
+      case_key: interrupted_reasoning_then_response
+      stimulus:
+        ref: current
+        semantic_sha256: 96de9747525064aa5a103e00d44552437c238270c46ae318cc439249649df5f6
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 7aadf1d69d3c49e149b85106a7c3a54638a38e50cbd7627abb8f943972807c47
+            job_sha256: c747ff3e089a16bdd94aed547ebba5cc4fa58bc7c5a0e87f5bbfb122da885eb3
+            results_sha256: c55d6f627cf78a90ca53494f6f11a8f30435d502027d7c8cc3585a68ca261798
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  kimi_k3_guided_native_wrapper:
+    value:
+      case_key: kimi_k3_guided_native_wrapper
+      stimulus:
+        ref: current
+        semantic_sha256: 98c3ca3d4f537ab0eb07c6b27ea2cfb10d060761e816cd2b2a700500fce7badc
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  kimi_k3_malformed_call_then_valid:
+    value:
+      case_key: kimi_k3_malformed_call_then_valid
+      stimulus:
+        ref: current
+        semantic_sha256: 674ead42c2f475c8478962282ac9a8691e5e984cf32ae5f3aa6596c5d6cfc18c
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  kimi_k3_typed_argument_values:
+    value:
+      case_key: kimi_k3_typed_argument_values
+      stimulus:
+        ref: current
+        semantic_sha256: 7d44e502005490b8b3e938e88a2b5830558b6c046e3a74a0fb61db2c2ce8afb2
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  kimi_k3_typed_json_marker_payload:
+    value:
+      case_key: kimi_k3_typed_json_marker_payload
+      stimulus:
+        ref: current
+        semantic_sha256: 55286fd0000965060cfb5a50fe2b6997b7b6082faf960293e8d4380b7ad55ec0
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang 0.5.14 does not register ReasoningParser muse, FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 052665edb4d56ae5e93857cca86c2e606d21a292fac9849993c0672114db0116
+            job_sha256: 09a668b700a25ab34ba01ecd3afe6e044fdf4a27b6be9d576a329ed9bd171873
+            results_sha256: a712324e0739f99fe67dd02ba5ed424ae571ce634e9c7323afcef414d05093df
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  kimi_native_incremental_interfield_whitespace:
+    value:
+      case_key: kimi_native_incremental_interfield_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: 4526857ed7db5b59e4f65c734d457995249fcdb072e730f10b8d9f0fa9920ea6
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  kimi_native_k2_count_content_chunk1024:
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: a6caff65710f7b3614424b8948b00eaf534fe68798b9a1d4b2582edf8945dad5
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  kimi_native_k2_count_content_chunk7:
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: 7d277c1c0a6acb08945430f43a9b6c07ef07c77217773ca82d0c2c16cc6b7d37
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  muse_quoted_reserved_eom_argument:
+    value:
+      case_key: muse_quoted_reserved_eom_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 41d4f45d0c87e570b1dada9c90adcaf65831ec04f5bfaedf61f910f7d230e6a6
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  muse_quoted_reserved_eot_argument:
+    value:
+      case_key: muse_quoted_reserved_eot_argument
+      stimulus:
+        ref: current
+        semantic_sha256: dfea8211f5785e755620c2e892867ad9011ed8d981691d92a7affdfe6cf88d28
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  muse_quoted_reserved_start_argument:
+    value:
+      case_key: muse_quoted_reserved_start_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 6a982cca4c1916b8e76f44510ad476ef5cecd8aa8a0f89d442f5cc80ddb7b6cf
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_quoted_control_in_reasoning:
+    value:
+      case_key: native_quoted_control_in_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 6f75ed469619f443316bdd896b365abfbf9960a3e9aa538886d974a9042ce414
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 48c0bdb9e8e946eab34bbe8f34b33c79919a7ca96595df13062ecb4d093290e3
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 87417644fbdfb59dc40c130e032847e68b4420a7e12d7d2fccb5c41f220f84d9
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 39a9c789aeedbb9c7604bc2a86989e31ff11458102bfcf99bcc46adac0273b84
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_single_quote_contraction_reasoning:
+    value:
+      case_key: native_single_quote_contraction_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 625602f9f5b1ec7586ed450f311243ac2e96f1b7d872f52db652dbc38d2e0ec7
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: 34e524946dbff6033f75acefb08223b06f564ba2c2d320579eb2339e47c22684
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: b39af74534b89c4891e49f0cf0ceaff3b1a72017048d4105dc7d83c4f2cd2ff8
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: c41e7a54a5e757db3f56395959266291cae01fe14d274f7776b563c8cd35bd9e
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 0fc0444324f4a858435ab38128e8fe41a3733e0d29501c8ef1221442a67c7514
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: 461926fc66ee26ee136ccd2b239c2cfa33b2978ae78edd57b83648dd68e2646c
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: c3c114f7bd8af3f1415be9341f3e3277858f7b51057af7d67c76e1825ed444f9
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: 731dc04dbafb88f02e36944febe827ead4982f285421d95edc388186d2695293
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: b115a6330473dbeb63a2bc7c4f2c5a552419246e582061d441d636ea3cd35dc6
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  prefilled_response_guided_pending_invoke_header:
+    value:
+      case_key: prefilled_response_guided_pending_invoke_header
+      stimulus:
+        ref: current
+        semantic_sha256: 7db6ae8c21c2f1719a0ef9ec62309f7880cea08ca0c070b2fc09fa9c88b5bc3e
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 28f7fdfc71ae2facc4c38a928669e3c8ace8bbb9c1f773d1b011b690c9689e2b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 98b5b8e16de16daa0dd3cc5e8e6d4ce488c74a7e7df3f231e0f2a27e19ee9537
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: b0ad398bfea4f9850ce474808330e0427087dbaa88e95a5e5c602414a835b6fd
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  qwen3_guided_reasoning_opener_inside_native_header:
+    value:
+      case_key: qwen3_guided_reasoning_opener_inside_native_header
+      stimulus:
+        ref: current
+        semantic_sha256: 544f5231851c73aa93687decbe012db0822a15f17aebd9286871580649b1b715
+      observation:
+        unavailable:
+          code: peer_request_unsupported
+          detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  structured_response_after_reasoning:
+    value:
+      case_key: structured_response_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 7c5c4490e052bdf039c4ad72169df6fbea5db54264a9905549770d2e12fc16f2
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Parser-only peer capture does not execute structural-tag generation constraints.
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml
+  xml_custom_type_double_quoted_object:
+    value:
+      case_key: xml_custom_type_double_quoted_object
+      stimulus:
+        ref: current
+        semantic_sha256: 080b504937a73514fefe4bb45a8bd3464ce6b234204e4b32ff14125287aa976d
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser muse, ReasoningParser muse
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.14
+        record_metadata:
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.14
+            artifact_sha256: 4573aac774045ba926bab2f7efaaad7b120e4f84695ccf27c59d276f856deca8
+            extracted_package_sha256: 894c6c5b6f53adbe27e68153adc9b1b289832f94697bac3afdec4d14a27b937e
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 68671e8d38f0aa73f3205874499ccd07d62500586e30001b026b3c1202cde108
+            adapter_sha256: 8b26ef029822eaf3b4cad2367c2e5e1eaea7e2ff086b72f6737e70d84f3458c6
+            job_sha256: f7131f97c1149562d1fb2ba66307d0eeeb24ccabc3eebcf7da0e113c16417832
+            results_sha256: e26313c0ed7eced025992cc08657ab19ab38696906099fcb9a3bba2eaf54791d
+    member: conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.14.yaml

@@ -81,6 +81,258 @@ metadata_changes:
         implementation: dynamo_v1
         git_commit: fe37367a57466419fb4fd45c29f469b645e330fb
       resolution: historical_adapter_unsupported
+  native_quoted_control_in_response:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal "<|tool_call>" marker is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+        assembled: []
+      provenance:
+        implementation: dynamo_v1
+        version: 9.2.10
+        source_sha256: bb3426f4806045b1938da66fa112f32bc32dc8aea1d97c1a2142a4018f10181b
+        adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+        job_sha256: 579bfe1e5709a013d10daa4780c467e742627dc2c53976aca157379ba9413b57
+        crate_checksum: a55373e1c46ee3e616f75f19f7f35baeb049f4d3ca3031d9894c7c0ec0573d5d
+        cargo_lock_sha256: ff8c7646b36d11d2d69412dfcde888e55ab18eddebea9ca5f67d5909c20d6706
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: 074d0fc9b20f3ffd08d22b70e557096160d158af2d3b9dbd32c95448f15a1499
+        binary_sha256: 0c71b0b8fb65b32c297c395c34de3befa3f3552e6a5050a06a9d41a76d111bec
+      resolution: fresh_execution
+  native_quoted_control_then_call:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: The literal "<|tool_call>" marker is part of the explanation.
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: The literal "<|tool_call>" marker is part of the explanation.<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: The literal "<|tool_call>" marker is part of the explanation.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        implementation: dynamo_v1
+        version: 9.2.10
+        source_sha256: bb3426f4806045b1938da66fa112f32bc32dc8aea1d97c1a2142a4018f10181b
+        adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+        job_sha256: 579bfe1e5709a013d10daa4780c467e742627dc2c53976aca157379ba9413b57
+        crate_checksum: a55373e1c46ee3e616f75f19f7f35baeb049f4d3ca3031d9894c7c0ec0573d5d
+        cargo_lock_sha256: ff8c7646b36d11d2d69412dfcde888e55ab18eddebea9ca5f67d5909c20d6706
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: 074d0fc9b20f3ffd08d22b70e557096160d158af2d3b9dbd32c95448f15a1499
+        binary_sha256: 0c71b0b8fb65b32c297c395c34de3befa3f3552e6a5050a06a9d41a76d111bec
+      resolution: fresh_execution
+  native_quoted_incomplete_header:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal `<|tool_call>call:get_weather{city:<|"|>` header is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal `
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: '` header is part of the explanation.'
+          - delta_text: ‹finish›
+        assembled: []
+      provenance:
+        implementation: dynamo_v1
+        version: 9.2.10
+        source_sha256: bb3426f4806045b1938da66fa112f32bc32dc8aea1d97c1a2142a4018f10181b
+        adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+        job_sha256: 579bfe1e5709a013d10daa4780c467e742627dc2c53976aca157379ba9413b57
+        crate_checksum: a55373e1c46ee3e616f75f19f7f35baeb049f4d3ca3031d9894c7c0ec0573d5d
+        cargo_lock_sha256: ff8c7646b36d11d2d69412dfcde888e55ab18eddebea9ca5f67d5909c20d6706
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: 074d0fc9b20f3ffd08d22b70e557096160d158af2d3b9dbd32c95448f15a1499
+        binary_sha256: 0c71b0b8fb65b32c297c395c34de3befa3f3552e6a5050a06a9d41a76d111bec
+      resolution: fresh_execution
   native_single_quote_contraction_reasoning:
     verified_recapture:
       result:
@@ -152,6 +404,254 @@ metadata_changes:
         implementation: dynamo_v1
         git_commit: fe37367a57466419fb4fd45c29f469b645e330fb
       resolution: historical_adapter_unsupported
+  native_single_quote_contraction_response:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal 'doesn't <|tool_call> marker' stays quoted.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <|tool_call>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+        assembled: []
+      provenance:
+        implementation: dynamo_v1
+        version: 9.2.10
+        source_sha256: bb3426f4806045b1938da66fa112f32bc32dc8aea1d97c1a2142a4018f10181b
+        adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+        job_sha256: 579bfe1e5709a013d10daa4780c467e742627dc2c53976aca157379ba9413b57
+        crate_checksum: a55373e1c46ee3e616f75f19f7f35baeb049f4d3ca3031d9894c7c0ec0573d5d
+        cargo_lock_sha256: ff8c7646b36d11d2d69412dfcde888e55ab18eddebea9ca5f67d5909c20d6706
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: 074d0fc9b20f3ffd08d22b70e557096160d158af2d3b9dbd32c95448f15a1499
+        binary_sha256: 0c71b0b8fb65b32c297c395c34de3befa3f3552e6a5050a06a9d41a76d111bec
+      resolution: fresh_execution
+  native_single_quoted_word_control:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal 'example <|tool_call> marker' is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''example '
+          - delta_text: <|tool_call>
+          - delta_text: ' marker'' is part of the explanation.'
+          - delta_text: ‹finish›
+        assembled: []
+      provenance:
+        implementation: dynamo_v1
+        version: 9.2.10
+        source_sha256: bb3426f4806045b1938da66fa112f32bc32dc8aea1d97c1a2142a4018f10181b
+        adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+        job_sha256: 579bfe1e5709a013d10daa4780c467e742627dc2c53976aca157379ba9413b57
+        crate_checksum: a55373e1c46ee3e616f75f19f7f35baeb049f4d3ca3031d9894c7c0ec0573d5d
+        cargo_lock_sha256: ff8c7646b36d11d2d69412dfcde888e55ab18eddebea9ca5f67d5909c20d6706
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: 074d0fc9b20f3ffd08d22b70e557096160d158af2d3b9dbd32c95448f15a1499
+        binary_sha256: 0c71b0b8fb65b32c297c395c34de3befa3f3552e6a5050a06a9d41a76d111bec
+      resolution: fresh_execution
+  native_unmatched_quote_then_call:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: He said "maybe
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: He said "maybe<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: He said "maybe
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        implementation: dynamo_v1
+        version: 9.2.10
+        source_sha256: bb3426f4806045b1938da66fa112f32bc32dc8aea1d97c1a2142a4018f10181b
+        adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+        job_sha256: 579bfe1e5709a013d10daa4780c467e742627dc2c53976aca157379ba9413b57
+        crate_checksum: a55373e1c46ee3e616f75f19f7f35baeb049f4d3ca3031d9894c7c0ec0573d5d
+        cargo_lock_sha256: ff8c7646b36d11d2d69412dfcde888e55ab18eddebea9ca5f67d5909c20d6706
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: 074d0fc9b20f3ffd08d22b70e557096160d158af2d3b9dbd32c95448f15a1499
+        binary_sha256: 0c71b0b8fb65b32c297c395c34de3befa3f3552e6a5050a06a9d41a76d111bec
+      resolution: fresh_execution
   prefilled_reasoning_redundant_opener:
     verified_recapture:
       result:
@@ -569,6 +1069,109 @@ metadata_changes:
         implementation: dynamo_v1
         git_commit: fe37367a57466419fb4fd45c29f469b645e330fb
       resolution: historical_adapter_unsupported
+  prefilled_response_reasoning_markers_literal:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: ''
+          normal_text: '<|channel>thought
+
+            literal<channel|> then a call'
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: '<|channel>thought
+
+            literal<channel|> then a call<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>'
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|channel>
+          - delta_text: 'thought
+
+              literal'
+          - delta_text: <channel|>
+          - delta_text: ' then a call'
+          - delta_text: <|tool_call>
+          - delta_text: 'call:get_weather{city:'
+          - delta_text: <|"|>
+          - delta_text: Paris
+          - delta_text: <|"|>
+          - delta_text: '}'
+          - delta_text: <tool_call|>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: text
+          text: '<|channel>thought
+
+            literal<channel|> then a call'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        implementation: dynamo_v1
+        version: 9.2.10
+        source_sha256: bb3426f4806045b1938da66fa112f32bc32dc8aea1d97c1a2142a4018f10181b
+        adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+        job_sha256: 579bfe1e5709a013d10daa4780c467e742627dc2c53976aca157379ba9413b57
+        crate_checksum: a55373e1c46ee3e616f75f19f7f35baeb049f4d3ca3031d9894c7c0ec0573d5d
+        cargo_lock_sha256: ff8c7646b36d11d2d69412dfcde888e55ab18eddebea9ca5f67d5909c20d6706
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: 074d0fc9b20f3ffd08d22b70e557096160d158af2d3b9dbd32c95448f15a1499
+        binary_sha256: 0c71b0b8fb65b32c297c395c34de3befa3f3552e6a5050a06a9d41a76d111bec
+      resolution: fresh_execution
 document_overrides:
   gemma4_guided_json_malformed_call_prefix_before_reasoning:
     capture_provenance:

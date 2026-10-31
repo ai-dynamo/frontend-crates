@@ -1,0 +1,289 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    vllm_rust: 0.27.1
+document:
+  mode: unified
+records:
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 46890049010c48119006a129b49c3564f75c923c0a3ddd0a8af0da758ff9b34e
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"\\\" marker is part of the explanation.\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e710cf67397d2d758559658a3e2243aa7a78457a4e10fcf703ef0081ede73c8b
+            results_sha256: 0fab9ec4c5e6f2cacc2e92a2502026d09b38bd1c7ca378b68b0cf106b63545c5
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.27.1.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: e599a32f8b0fca2cbe3941cb98914a5780d507145d788b270da06cc98a4f72aa
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"\\\" marker is part of the explanation.<|tool_calls_section_begin|><|tool_call_begi\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e710cf67397d2d758559658a3e2243aa7a78457a4e10fcf703ef0081ede73c8b
+            results_sha256: 0fab9ec4c5e6f2cacc2e92a2502026d09b38bd1c7ca378b68b0cf106b63545c5
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.27.1.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 46c1878af949fb39fff658f1c145d0e28970326e45245327697d8799ea839c3d
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete Kimi K2 tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal `
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '{"city": "` header is part of the explanation.'
+              kind: tool_call
+              name: null
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e710cf67397d2d758559658a3e2243aa7a78457a4e10fcf703ef0081ede73c8b
+            results_sha256: 0fab9ec4c5e6f2cacc2e92a2502026d09b38bd1c7ca378b68b0cf106b63545c5
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.27.1.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: 43fee15d4076a0577f3e1db9c8afb2c6236dc699f01d501fdfedc40803b55154
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \" marker'' stays quoted.\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''doesn''t '
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e710cf67397d2d758559658a3e2243aa7a78457a4e10fcf703ef0081ede73c8b
+            results_sha256: 0fab9ec4c5e6f2cacc2e92a2502026d09b38bd1c7ca378b68b0cf106b63545c5
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.27.1.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: 07e1d00188ded60ec749b3553d7b4f83d25bdda76231e9038f016856b3183033
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \" marker'' is part of the explanation.\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''example '
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e710cf67397d2d758559658a3e2243aa7a78457a4e10fcf703ef0081ede73c8b
+            results_sha256: 0fab9ec4c5e6f2cacc2e92a2502026d09b38bd1c7ca378b68b0cf106b63545c5
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.27.1.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 8fc30455ba7470f8d5f16e398994f752be6a8aac7c2d0933596960b87e899b67
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: He said "maybe
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '{"city": "Paris"}'
+              kind: tool_call
+              name: null
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e710cf67397d2d758559658a3e2243aa7a78457a4e10fcf703ef0081ede73c8b
+            results_sha256: 0fab9ec4c5e6f2cacc2e92a2502026d09b38bd1c7ca378b68b0cf106b63545c5
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.27.1.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: f1b3f572339b9000250288109619d32e0b43332b519f50b2c49ff83cda568b71
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <think>literal</think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '{"city": "Paris"}'
+              kind: tool_call
+              name: null
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: e710cf67397d2d758559658a3e2243aa7a78457a4e10fcf703ef0081ede73c8b
+            results_sha256: 0fab9ec4c5e6f2cacc2e92a2502026d09b38bd1c7ca378b68b0cf106b63545c5
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.27.1.yaml

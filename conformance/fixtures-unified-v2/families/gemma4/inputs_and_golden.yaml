@@ -15218,6 +15218,3356 @@ cases:
         name: not_offered
         arguments:
           x: 2
+  glm47_reference_type_intersection:
+    lifecycle: active
+    scenario: glm47_reference_type_intersection
+    description: Resolve local reference chains before interpreting string and integer arguments. Preserve the JSON-looking payload as a string and count as an integer. This case does not distinguish sibling type intersections.
+    policy:
+    - I7
+    display_id: UNIFIED.glm5-reference_type_intersection
+    historical_ids: []
+    request:
+      input: <|tool_call>call:capture_payload{payload:<|"|>{"x":1}<|"|>,count:42}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Text:
+              type: string
+            TextAlias:
+              $ref: '#/$defs/Text'
+            Count:
+              type: integer
+          properties:
+            payload:
+              $ref: '#/$defs/TextAlias'
+              allOf:
+              - type: string
+            count:
+              $ref: '#/$defs/Count'
+              minimum: 1
+          required:
+          - payload
+          - count
+      chunks:
+      - delta_text: <|tool_call>call:capture_payload{payload:<|"|>{"x":1}<|"|>,count:42}<tool_call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          payload: '{"x":1}'
+          count: 42
+  guided_native_after_prefilled_reasoning_named:
+    lifecycle: active
+    scenario: guided_native_after_prefilled_reasoning_named
+    description: A native call follows prompt-prefilled reasoning despite JSON guidance. Preserve the reasoning exactly once. M3 explicitly recovers the native call; other families suppress the native control span.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_named
+    historical_ids: []
+    request:
+      input: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check.
+  guided_native_after_prefilled_reasoning_required:
+    lifecycle: active
+    scenario: guided_native_after_prefilled_reasoning_required
+    description: A native call follows prompt-prefilled reasoning despite JSON guidance. Preserve the reasoning exactly once. M3 explicitly recovers the native call; other families suppress the native control span.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_required
+    historical_ids: []
+    request:
+      input: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: Check.<channel|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check.
+  glm47_parameterless_call_shape_inside_argument:
+    lifecycle: active
+    scenario: glm47_parameterless_call_shape_inside_argument
+    description: An offered parameterless-call shape appears inside an open argument value. Each family uses its native closing marker and nested call; preserve the complete outer argument instead of dispatching a second call.
+    policy:
+    - I7
+    display_id: UNIFIED.glm5-parameterless_call_shape_inside_argument
+    historical_ids: []
+    request:
+      input: <|tool_call>call:run{cmd:<|"|>before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after<|"|>}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_
+      - delta_text: call>ca
+      - delta_text: ll:run{
+      - delta_text: cmd:<|"
+      - delta_text: '|>befor'
+      - delta_text: e <tool
+      - delta_text: _call|>
+      - delta_text: <|tool_
+      - delta_text: call>ca
+      - delta_text: ll:get_
+      - delta_text: weather
+      - delta_text: '{}<tool'
+      - delta_text: _call|>
+      - delta_text: ' after<'
+      - delta_text: '|"|>}<t'
+      - delta_text: ool_cal
+      - delta_text: l|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: before <tool_call|><|tool_call>call:get_weather{}<tool_call|> after
+  kimi_k3_guided_native_wrapper:
+    lifecycle: active
+    scenario: kimi_k3_guided_native_wrapper
+    description: A complete native call precedes a guided JSON payload. Guided-only families suppress the native wrapper and dispatch the payload; MiniMax M3 deliberately retains its native fallback and treats the following JSON as text.
+    policy:
+    - I3
+    display_id: UNIFIED.kimi-guided_native_wrapper
+    historical_ids: []
+    request:
+      input: '<|tool_call>call:ignored{quoted:<|"|>literal<|"|>}<tool_call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '<|tool_call>call:ignored{quoted:<|"|>literal<|"|>}<tool_call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  kimi_k3_typed_argument_values:
+    lifecycle: active
+    scenario: kimi_k3_typed_argument_values
+    description: Native argument syntax preserves string, number, boolean, object, array, and null values, including properties without schema type hints. Families need explicit native types or a complete JSON object to preserve these values.
+    policy:
+    - I7
+    display_id: UNIFIED.kimi-typed_argument_values
+    historical_ids: []
+    request:
+      input: <|tool_call>call:run{cmd:<|"|>echo ok<|"|>,count:2,force:true,options:{cwd:<|"|>/tmp<|"|>},tags:[<|"|>a<|"|>,<|"|>b<|"|>],note:null}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call>call:run{cmd:<|"|>echo ok<|"|>,count:2,force:true,options:{cwd:<|"|>/tmp<|"|>},tags:[<|"|>a<|"|>,<|"|>b<|"|>],note:null}<tool_call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: echo ok
+          count: 2
+          force: true
+          options:
+            cwd: /tmp
+          tags:
+          - a
+          - b
+          note: null
+  kimi_k3_typed_json_marker_payload:
+    lifecycle: active
+    scenario: kimi_k3_typed_json_marker_payload
+    description: A typed object field contains a literal native argument-close and next-header marker, followed by a string field. One-character delivery preserves the nested object and completes one call; M3 uses native nested field tags with a schema-declared inner string.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-typed_json_marker_payload
+    historical_ids: []
+    request:
+      input: <|tool_call>call:inspect{x:{inner:<|"|>},y:<|"|>},y:<|"|>OK<|"|>}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: inspect
+        parameters:
+          type: object
+          properties:
+            x:
+              type: object
+              properties:
+                inner:
+                  type: string
+              required:
+              - inner
+            y:
+              type: string
+          required:
+          - x
+          - y
+      chunks:
+      - delta_text: <|tool_call>call:inspect{x:{inner:<|"|>},y:<|"|>},y:<|"|>OK<|"|>}<tool_call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: inspect
+        arguments:
+          x:
+            inner: '},y:'
+          y: OK
+  kimi_native_incompatible_string_recovery:
+    lifecycle: active
+    scenario: kimi_native_incompatible_string_recovery
+    description: An unterminated native argument string ends in whitespace before native closers. One-character delivery preserves K2 completed-malformed empty-call recovery. The DeepSeek, Gemma, GPT-OSS, and Kimi K3 oracles emit no events for the unvalidated call. Preserve pending boundary bytes without leaking them as visible text or retracting emitted arguments.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_incompatible_string_recovery
+    historical_ids: []
+    request:
+      input: <|tool_call>call:write_file{x:<|"|>abc <tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      finish_reason: stop
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: w
+      - delta_text: r
+      - delta_text: i
+      - delta_text: t
+      - delta_text: e
+      - delta_text: _
+      - delta_text: f
+      - delta_text: i
+      - delta_text: l
+      - delta_text: e
+      - delta_text: '{'
+      - delta_text: x
+      - delta_text: ':'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: '"'
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: b
+      - delta_text: c
+      - delta_text: ' '
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+    golden:
+      assembled: []
+  kimi_native_incremental_interfield_whitespace:
+    lifecycle: active
+    scenario: kimi_native_incremental_interfield_whitespace
+    description: A native call has 4096 ASCII syntax spaces between count and content fields. Seven-character delivery retains unresolved lookahead across the gap and must release one stable local call identity and numeric count after the following field header completes, before the value or call closes. Preserve the completed call and scan each whitespace byte once. The gap belongs outside field values.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_incremental_interfield_whitespace
+    historical_ids: []
+    request:
+      input: <|tool_call>call:write_file{count:7,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                content:<|"|>q<|"|>}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: <|tool_
+      - delta_text: call>ca
+      - delta_text: ll:writ
+      - delta_text: e_file{
+      - delta_text: count:7
+      - delta_text: ',      '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '  conte'
+      - delta_text: nt:<|"|
+      - delta_text: '>q<|"|>'
+      - delta_text: '}<tool_'
+      - delta_text: call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments:
+          count: 7
+          content: q
+  kimi_native_k2_count_content_chunk1024:
+    lifecycle: active
+    scenario: kimi_native_k2_count_content_chunk1024
+    description: Native count-before-content call with 1024-character delivery (ASCII payload uses 1024-byte chunks). Pause after 3072 q characters, after 1024 more, and after value, invocation, and outer-envelope closure where present. Release one stable local call identity, numeric count, and known string bytes before closure. Family-native envelopes retain the same schema and pause contract.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_k2_count_content_chunk1024
+    historical_ids: []
+    request:
+      input: <|tool_call>call:write_file{count:7,content:<|"|>qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq<|"|>}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: <|tool_call>call:write_file{count:7,content:<|"|>qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: <|"|>}
+      - delta_text: <tool_call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments:
+          count: 7
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+  kimi_native_k2_count_content_chunk7:
+    lifecycle: active
+    scenario: kimi_native_k2_count_content_chunk7
+    description: Native count-before-content call with 7-character delivery (ASCII payload uses 7-byte chunks). Pause after 3072 q characters, after 1024 more, and after value, invocation, and outer-envelope closure where present. Release one stable local call identity, numeric count, and known string bytes before closure. Family-native envelopes retain the same schema and pause contract.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_k2_count_content_chunk7
+    historical_ids: []
+    request:
+      input: <|tool_call>call:write_file{count:7,content:<|"|>qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq<|"|>}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: <|tool_
+      - delta_text: call>ca
+      - delta_text: ll:writ
+      - delta_text: e_file{
+      - delta_text: count:7
+      - delta_text: ',conten'
+      - delta_text: t:<|"|>
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qq
+      - delta_text: <|"|>}
+      - delta_text: <tool_c
+      - delta_text: all|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments:
+          count: 7
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+  kimi_native_trailing_syntax_whitespace:
+    lifecycle: active
+    scenario: kimi_native_trailing_syntax_whitespace
+    description: 'A native argument object ends after a value separator and syntax whitespace. One-character delivery preserves native malformed-input policy: K2 and V4 recover an empty call. The Harmony, K3, Gemma, and V4.1 oracles emit no events; V4.1 records a strict JSON error. Do not retract bytes already emitted.'
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_trailing_syntax_whitespace
+    historical_ids: []
+    request:
+      input: "<|tool_call>call:write_file{count:7,content: \t\n<tool_call|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: w
+      - delta_text: r
+      - delta_text: i
+      - delta_text: t
+      - delta_text: e
+      - delta_text: _
+      - delta_text: f
+      - delta_text: i
+      - delta_text: l
+      - delta_text: e
+      - delta_text: '{'
+      - delta_text: c
+      - delta_text: o
+      - delta_text: u
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ':'
+      - delta_text: '7'
+      - delta_text: ','
+      - delta_text: c
+      - delta_text: o
+      - delta_text: n
+      - delta_text: t
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: "\t"
+      - delta_text: '
+
+          '
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+    golden:
+      assembled: []
+  kimi_native_valid_object_trailing_garbage:
+    lifecycle: active
+    scenario: kimi_native_valid_object_trailing_garbage
+    description: 'A complete native argument object is followed by garbage before the call closer. One-character delivery preserves native recovery policy: K2 keeps the valid object and V4 recovers an empty call. The Harmony, K3, Gemma, and V4.1 oracles emit no events; V4.1 records a strict JSON error.'
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_valid_object_trailing_garbage
+    historical_ids: []
+    request:
+      input: <|tool_call>call:write_file{count:7,content:<|"|>q<|"|>} trailing<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: w
+      - delta_text: r
+      - delta_text: i
+      - delta_text: t
+      - delta_text: e
+      - delta_text: _
+      - delta_text: f
+      - delta_text: i
+      - delta_text: l
+      - delta_text: e
+      - delta_text: '{'
+      - delta_text: c
+      - delta_text: o
+      - delta_text: u
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ':'
+      - delta_text: '7'
+      - delta_text: ','
+      - delta_text: c
+      - delta_text: o
+      - delta_text: n
+      - delta_text: t
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ':'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: '"'
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: q
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: '"'
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '}'
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: r
+      - delta_text: a
+      - delta_text: i
+      - delta_text: l
+      - delta_text: i
+      - delta_text: n
+      - delta_text: g
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+    golden:
+      assembled: []
+  prefilled_response_guided_pending_invoke_header:
+    lifecycle: active
+    scenario: prefilled_response_guided_pending_invoke_header
+    description: Response-prefilled guided output contains a quoted reasoning control marker, then an unfinished native invoke header before the JSON call. Response keeps the first marker as visible text; the pending tool header must remain owned by the scanner across chunks and never leak into that text.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.deepseek_v41-prefilled_response_guided_pending_invoke_header
+    historical_ids: []
+    request:
+      input: 'I mean <|channel>thought
+
+        self literal<channel|>call:[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: I
+      - delta_text: ' '
+      - delta_text: m
+      - delta_text: e
+      - delta_text: a
+      - delta_text: n
+      - delta_text: ' '
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: '
+
+          '
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: ' '
+      - delta_text: l
+      - delta_text: i
+      - delta_text: t
+      - delta_text: e
+      - delta_text: r
+      - delta_text: a
+      - delta_text: l
+      - delta_text: <
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'I mean <|channel>thought
+
+          self literal<channel|>call:'
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    lifecycle: active
+    scenario: deepseek_v4_guided_reasoning_opener_inside_native_body
+    description: A Reasoning-prefilled guided stream places a repeated reasoning opener inside a native invocation body without parameters. Preserve each grammar's ownership of the following bytes. Kimi K3 emits no events because its bare frame has neither typed arguments nor a raw JSON body, and no tools fence for recovery.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body
+    historical_ids: []
+    request:
+      input: 'call:f{<|channel>thought
+
+        x}<tool_call|>[{"name":"f","arguments":{}}]'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: f
+      - delta_text: '{'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: '
+
+          '
+      - delta_text: x
+      - delta_text: '}'
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '{'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: {}
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    lifecycle: active
+    scenario: qwen3_guided_non_ascii_header_in_truncated_reasoning
+    description: Guided reasoning ends inside an unfinished native tool-name header carrying UTF-8 text. Preserve native header ownership at EOF; no call dispatches. DeepSeek V4, Kimi K3, and MiniMax M3 emit no events for this unresolved header.
+    policy:
+    - I3
+    - P2
+    display_id: UNIFIED.qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning
+    historical_ids: []
+    request:
+      input: '<|channel>thought
+
+        call:éaaaaaaaaax'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: '
+
+          '
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: é
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: x
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: call:éaaaaaaaaax
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    lifecycle: active
+    scenario: qwen3_guided_non_ascii_header_in_closed_reasoning
+    description: A malformed native tool-name header carries UTF-8 text and reaches its invocation closer. Preserve grammar-specific name and closer text, close the actual thought, and dispatch the following guided Paris call.
+    policy:
+    - I3
+    display_id: UNIFIED.qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning
+    historical_ids: []
+    request:
+      input: '<|channel>thought
+
+        call:éaaaaaaaaax<tool_call|><channel|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: '
+
+          '
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: é
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: x
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: call:éaaaaaaaaax
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  qwen3_guided_reasoning_opener_inside_native_header:
+    lifecycle: active
+    scenario: qwen3_guided_reasoning_opener_inside_native_header
+    description: A native thought opener interrupts an unfinished native tool-name header, with no thought closer afterward. Preserve native header and closer recovery, including JSON that remains reasoning; committed control markup must not become visible text.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.qwen3-qwen3_guided_reasoning_opener_inside_native_header
+    historical_ids: []
+    request:
+      input: 'call:<|channel>thought
+
+        x<tool_call|>[{"name":"f","arguments":{}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: '
+
+          '
+      - delta_text: x
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '{'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: x
+      - kind: tool_call
+        name: f
+        arguments: {}
+  kimi_k3_malformed_call_then_valid:
+    lifecycle: active
+    scenario: kimi_k3_malformed_call_then_valid
+    description: An unclosed native invocation containing keyless prose reaches another call. Preserve native first-invocation ownership, strict body rejection or restart boundaries, including exact call names and argument types. The DeepSeek V4.1 oracle emits no events; its strict decoder reports a parse error.
+    policy:
+    - P2
+    display_id: UNIFIED.kimi-malformed_call_then_valid
+    historical_ids: []
+    request:
+      input: <|tool_call>call:bad{not-an-argument<|tool_call>call:g{y:<|"|>2<|"|>}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: b
+      - delta_text: a
+      - delta_text: d
+      - delta_text: '{'
+      - delta_text: n
+      - delta_text: o
+      - delta_text: t
+      - delta_text: '-'
+      - delta_text: a
+      - delta_text: n
+      - delta_text: '-'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: g
+      - delta_text: '{'
+      - delta_text: y
+      - delta_text: ':'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: '"'
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '2'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: '"'
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '}'
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  muse_unterminated_parameter_then_empty_call:
+    lifecycle: active
+    scenario: muse_unterminated_parameter_then_empty_call
+    description: 'A native outer parameter is unfinished before a parameterless declared invocation-shaped candidate. Keep native EOF policy explicit: Muse emits nothing after discarding the ambiguous outer invocation; Qwen/GLM repair the missing value closer; K2/M3/V4 apply empty-call recovery; strict framed readers recover only the following complete call.'
+    policy:
+    - P2
+    display_id: UNIFIED.muse-unterminated_parameter_then_empty_call
+    historical_ids: []
+    request:
+      input: <|tool_call>call:get_weather{city:<|"|>bad<tool_call|><|tool_call>call:f{}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      finish_reason: stop
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '{'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: ':'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: '"'
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: b
+      - delta_text: a
+      - delta_text: d
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: f
+      - delta_text: '{'
+      - delta_text: '}'
+      - delta_text: <
+      - delta_text: t
+      - delta_text: o
+      - delta_text: o
+      - delta_text: l
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: {}
+  muse_unterminated_reasoning_guided:
+    lifecycle: active
+    scenario: muse_unterminated_reasoning_guided
+    description: Named JSON-guided reasoning strips an unfinished native invocation prefix while preserving x and more thought, then parses get_weather(city=Paris). Native marker literals vary by grammar; the schema, initialization, and visible prose remain fixed.
+    policy:
+    - I5
+    display_id: UNIFIED.muse-unterminated_reasoning_guided
+    historical_ids: []
+    request:
+      input: '<|channel>thought
+
+        Maybe call:x and more thought<channel|>{"city":"Paris"}'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      finish_reason: stop
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: '
+
+          '
+      - delta_text: M
+      - delta_text: a
+      - delta_text: y
+      - delta_text: b
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: x
+      - delta_text: ' '
+      - delta_text: a
+      - delta_text: n
+      - delta_text: d
+      - delta_text: ' '
+      - delta_text: m
+      - delta_text: o
+      - delta_text: r
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: <
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Maybe x and more thought
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  muse_unterminated_reasoning_native:
+    lifecycle: active
+    scenario: muse_unterminated_reasoning_native
+    description: Where an unfinished native invocation prefix is ordinary reasoning prose, native mode preserves that prefix literally before Done. Guided JSON strips the native prefix in the paired case. Reserved structural prefixes cannot substitute for ordinary prose.
+    policy:
+    - I5
+    display_id: UNIFIED.muse-unterminated_reasoning_native
+    historical_ids: []
+    request:
+      input: '<|channel>thought
+
+        Maybe call:x and more thought<channel|>Done.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      finish_reason: stop
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '>'
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: '
+
+          '
+      - delta_text: M
+      - delta_text: a
+      - delta_text: y
+      - delta_text: b
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: ':'
+      - delta_text: x
+      - delta_text: ' '
+      - delta_text: a
+      - delta_text: n
+      - delta_text: d
+      - delta_text: ' '
+      - delta_text: m
+      - delta_text: o
+      - delta_text: r
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: h
+      - delta_text: o
+      - delta_text: u
+      - delta_text: g
+      - delta_text: h
+      - delta_text: t
+      - delta_text: <
+      - delta_text: c
+      - delta_text: h
+      - delta_text: a
+      - delta_text: n
+      - delta_text: n
+      - delta_text: e
+      - delta_text: l
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: D
+      - delta_text: o
+      - delta_text: n
+      - delta_text: e
+      - delta_text: .
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Maybe call:x and more thought
+      - kind: text
+        text: Done.
   blank_framing_tool_only:
     lifecycle: active
     scenario: blank_framing_tool_only

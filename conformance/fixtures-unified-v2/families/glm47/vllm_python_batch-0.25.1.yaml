@@ -7,9 +7,1811 @@ provenance:
     job_sha256: 2dc39e20e359db50f7ac541e961a86b3aa3618cf3e8c84e95ee5033d86bcfc41
 document:
   mode: unified
-changes: {}
-metadata_changes: {}
+changes:
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+    stimulus:
+      ref: current
+      semantic_sha256: e6c526a2bb3d70f46bbdbe94a4d580e647068c5905bb28cb882c35a23d05ca30
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    case_key: gemma4_guided_reasoning_opener_after_call_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: 0e1f0a9b486b1ac7a8781536ad004f90de1a664766dfedbcab1e0fe923d1e4db
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  gemma4_guided_response_extra_body_opener:
+    case_key: gemma4_guided_response_extra_body_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 94bd70365709f0b992422e5be0f1f5c92d7eb56e5aa560e8428ec6c3c8274215
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Public tool engine consumes reasoning markers and has no persistent reasoning-disable API
+  kimi_native_incremental_interfield_whitespace:
+    case_key: kimi_native_incremental_interfield_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: 6530678bf6bd4652c3939e9db94c127eddc3730d594431b1aabce67294817a50
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: q
+  kimi_native_k2_count_content_chunk1024:
+    case_key: kimi_native_k2_count_content_chunk1024
+    stimulus:
+      ref: current
+      semantic_sha256: c59839bef14ea1b29b6cb77d15944cacb3c0ee0157e619f48ba2d6afbd5e7f2e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+  kimi_native_k2_count_content_chunk7:
+    case_key: kimi_native_k2_count_content_chunk7
+    stimulus:
+      ref: current
+      semantic_sha256: 7112ec689a5c0967a13f32de44a28c677a1ac167b7199da0a404ce7eab9398f2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: write_file
+          arguments:
+            count: 7
+            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+  muse_opaque_declared_invoke:
+    case_key: muse_opaque_declared_invoke
+    stimulus:
+      ref: current
+      semantic_sha256: b52715d0f65f616e64ecb657ac32238a6d05bbdfa3207d943b45f7acbca291c8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: {}
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  muse_opaque_undeclared_invoke:
+    case_key: muse_opaque_undeclared_invoke
+    stimulus:
+      ref: current
+      semantic_sha256: 89022fe38f0bc89ce9933778df16b1f403ea8181db995335bd46fadd8a01ba7b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: {}
+  muse_recovery_second_parameter:
+    case_key: muse_recovery_second_parameter
+    stimulus:
+      ref: current
+      semantic_sha256: 3d094a5918b08d76157f0320978f0287009dcb4c87b696dd5fa7ea8bebf50ede
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: done
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  muse_unterminated_parameter_then_empty_call:
+    case_key: muse_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: ae19023c8f54ad5bcef07fd38fe9a4ab653b2c50a67dfc98775bc264a458d743
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        - kind: tool_call
+          name: f
+          arguments: {}
+  muse_unterminated_reasoning_guided:
+    case_key: muse_unterminated_reasoning_guided
+    stimulus:
+      ref: current
+      semantic_sha256: d59a0a3c10e7fc5d510d3ee0e7e94de114ebaff4643bd2ebd11d0653fd167449
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_response_guided_pending_invoke_header:
+    case_key: prefilled_response_guided_pending_invoke_header
+    stimulus:
+      ref: current
+      semantic_sha256: 8ca73f1413af1424d735b6592cbc904863453f271d7ae2425eb9490ca2b80ace
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Public tool engine consumes reasoning markers and has no persistent reasoning-disable API
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 7fc639173fb51a1123856ae18abb8b67460a12d5b3be30d80e051328fa2a17e6
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 51fb85761bc30ee3da547932659ce798048c5de74f408752bc601e7310adb6a6
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  qwen3_guided_reasoning_opener_inside_native_header:
+    case_key: qwen3_guided_reasoning_opener_inside_native_header
+    stimulus:
+      ref: current
+      semantic_sha256: ab4ed7528b8dd97f7056addd81eba36c2a1e2fa623dd62c36082152cd7a0ed43
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  structured_response_after_reasoning:
+    case_key: structured_response_after_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Parser-only batch capture does not execute structural-tag generation constraints.
+  xml_custom_type_double_quoted_object:
+    case_key: xml_custom_type_double_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: 2d19038b20a64d0a8a2c37b687af58922b82c31011bbc1673a4f01837180c98e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              a: 1
+metadata_changes:
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  gemma4_guided_response_extra_body_opener:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  kimi_native_incremental_interfield_whitespace:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: write_file
+        arguments:
+          count: 7
+          content: q
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  kimi_native_k2_count_content_chunk1024:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: write_file
+        arguments:
+          count: 7
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  kimi_native_k2_count_content_chunk7:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: write_file
+        arguments:
+          count: 7
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  muse_opaque_declared_invoke:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments: {}
+      - name: get_weather
+        arguments:
+          city: Paris
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  muse_opaque_undeclared_invoke:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments: {}
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  muse_recovery_second_parameter:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: done
+      - name: get_weather
+        arguments:
+          city: Paris
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  muse_unterminated_parameter_then_empty_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: {}
+      - name: f
+        arguments: {}
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  muse_unterminated_reasoning_guided:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  native_quoted_control_in_reasoning:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: The literal "
+        batch_final:
+          reasoning_text: The literal "
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal "<tool_call>" marker is part of the explanation.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  native_quoted_control_in_response:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: The literal "
+        batch_final:
+          reasoning_text: ''
+          normal_text: The literal "
+          calls: []
+        capture_input:
+          input: The literal "<tool_call>" marker is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  native_quoted_control_then_call:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: The literal "
+        batch_final:
+          reasoning_text: ''
+          normal_text: The literal "
+          calls: []
+        capture_input:
+          input: The literal "<tool_call>" marker is part of the explanation.<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  native_quoted_incomplete_header:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: The literal `
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        batch_final:
+          reasoning_text: ''
+          normal_text: The literal `
+          calls:
+          - name: get_weather
+            arguments: {}
+        capture_input:
+          input: The literal `<tool_call>get_weather<arg_key>city</arg_key><arg_value>` header is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal `
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: '` header is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  native_single_quote_contraction_reasoning:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        batch_final:
+          reasoning_text: The literal 'doesn't
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal 'doesn't <tool_call> marker' stays quoted.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <tool_call>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  native_single_quote_contraction_response:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: 'The literal ''doesn''t '
+        batch_final:
+          reasoning_text: ''
+          normal_text: 'The literal ''doesn''t '
+          calls: []
+        capture_input:
+          input: The literal 'doesn't <tool_call> marker' stays quoted.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <tool_call>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  native_single_quoted_word_control:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: 'The literal ''example '
+        batch_final:
+          reasoning_text: ''
+          normal_text: 'The literal ''example '
+          calls: []
+        capture_input:
+          input: The literal 'example <tool_call> marker' is part of the explanation.
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''example '
+          - delta_text: <tool_call>
+          - delta_text: ' marker'' is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  native_unmatched_quote_then_call:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        batch_final:
+          reasoning_text: ''
+          normal_text: He said "maybe
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: He said "maybe<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: He said "maybe
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  prefilled_reasoning_redundant_opener:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+        batch_final:
+          reasoning_text: checking weather
+          normal_text: ''
+          calls:
+          - name: get_weather
+            arguments:
+              city: London
+        capture_input:
+          input: <think>checking weather</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>London</arg_value></tool_call>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: checking weather
+          - delta_text: </think>
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: London
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  prefilled_reasoning_then_text:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+        batch_final:
+          reasoning_text: no tool needed
+          normal_text: The answer is 42.
+          calls: []
+        capture_input:
+          input: no tool needed</think>The answer is 42.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: no tool needed
+          - delta_text: </think>
+          - delta_text: The answer is 42.
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  prefilled_reasoning_then_text_then_tool:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found:'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        batch_final:
+          reasoning_text: weighing options
+          normal_text: 'Here''s what I found:'
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: 'weighing options</think>Here''s what I found: <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: weighing options
+          - delta_text: </think>
+          - delta_text: 'Here''s what I found: '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  prefilled_reasoning_truncated:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        batch_final:
+          reasoning_text: analyzing data
+          normal_text: ''
+          calls:
+          - name: get_weather
+            arguments: {}
+        capture_input:
+          input: analyzing data</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Par
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: length
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: analyzing data
+          - delta_text: </think>
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Par
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  prefilled_reasoning_with_tool:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        batch_final:
+          reasoning_text: checking weather
+          normal_text: ''
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: checking weather</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: checking weather
+          - delta_text: </think>
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  prefilled_response_guided_pending_invoke_header:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  prefilled_response_reasoning_markers_literal:
+    verified_recapture:
+      result:
+        assembled:
+        - kind: text
+          text: <think>literal</think> then a call
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        batch_final:
+          reasoning_text: ''
+          normal_text: <think>literal</think> then a call
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: <think>literal</think> then a call<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+          init:
+            starting_state: Response
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: literal
+          - delta_text: </think>
+          - delta_text: ' then a call'
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python_batch
+        version: 0.25.1
+        artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+        extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+        results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+      resolution: fresh_execution
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  qwen3_guided_reasoning_opener_inside_native_header:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  structured_response_after_reasoning:
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
+  xml_custom_type_double_quoted_object:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            a: 1
+    capture_provenance:
+      implementation: vllm_python_batch
+      version: 0.25.1
+      artifact_sha256: 16fc7a28df1576eb6f7ca0455026551b8f9adb674c19c66059359ef3e964bd1e
+      extracted_package_sha256: ebf5ece9499cdc690532b770085a4b58eed7af7193039bda9845c6afd4f713e0
+      status: executed
+      parser_apis:
+        protocol: entrypoints.openai.chat_completion.protocol
+        tools: tool_parsers
+        reasoning: reasoning
+        combined: parser.parser_manager
+      source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+      adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+      job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      results_sha256: 8c92df2854c8bf477f160a77aea70c32dd31f38ed1e7965c696834a23ea10d16
 document_overrides:
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  gemma4_guided_response_extra_body_opener:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
@@ -410,6 +2212,86 @@ document_overrides:
         adapter_sha256: aa8605e4b960eee9cc3245169f53f6e58dc4ceada9c2ae5f7e006c3bdee14660
         job_sha256: 2dc39e20e359db50f7ac541e961a86b3aa3618cf3e8c84e95ee5033d86bcfc41
       inherited_from: null
+  kimi_native_incremental_interfield_whitespace:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  kimi_native_k2_count_content_chunk1024:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  kimi_native_k2_count_content_chunk7:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  muse_opaque_declared_invoke:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  muse_opaque_undeclared_invoke:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  muse_recovery_second_parameter:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  muse_unterminated_parameter_then_empty_call:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  muse_unterminated_reasoning_guided:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
   native_quoted_control_in_reasoning:
     capture_provenance:
       captured_with:
@@ -550,6 +2432,16 @@ document_overrides:
         adapter_sha256: aa8605e4b960eee9cc3245169f53f6e58dc4ceada9c2ae5f7e006c3bdee14660
         job_sha256: 2dc39e20e359db50f7ac541e961a86b3aa3618cf3e8c84e95ee5033d86bcfc41
       inherited_from: null
+  prefilled_response_guided_pending_invoke_header:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
   prefilled_response_reasoning_markers_literal:
     capture_provenance:
       captured_with:
@@ -559,4 +2451,54 @@ document_overrides:
         source_sha256: b435b62f4393bbbfe51520b347480405a0b3d5d08ed0276292c9391b6904c7c1
         adapter_sha256: aa8605e4b960eee9cc3245169f53f6e58dc4ceada9c2ae5f7e006c3bdee14660
         job_sha256: 2dc39e20e359db50f7ac541e961a86b3aa3618cf3e8c84e95ee5033d86bcfc41
+      inherited_from: null
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  qwen3_guided_reasoning_opener_inside_native_header:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
+      inherited_from: null
+  xml_custom_type_double_quoted_object:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.25.1
+      capture_origin:
+        crate_version: 0.25.1
+        source_sha256: ed05d00c5622646099289cb8d6ce3ddb275e0dbb228b18c80c7128aad2c16773
+        adapter_sha256: 39165e4c14a46036e7fdcb72a58e6ec53b6f697fd5c0b432770ee77f33037b3d
+        job_sha256: 01f197e0c14953d917034692ba7af62796535786d3a42d067e83b74510a3fbce
       inherited_from: null

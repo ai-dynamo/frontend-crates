@@ -17815,7 +17815,7 @@ cases:
   guided_json_quoted_bare_tool_header_in_answer:
     lifecycle: active
     scenario: guided_json_quoted_bare_tool_header_in_answer
-    description: Muse's quoted TOOL-recipient header remains visible answer text. Promoting it deletes the `to=…` words instead of splitting the answer. Only Muse has this recipient boundary; changing a word inside another family's reasoning envelope duplicates `35-1`.
+    description: A bare native tool-recipient header appears inside a prompt-prefilled visible response. Preserve native literal-marker and prose ownership, then dispatch only the following guided Paris call. Invocation attributes and thought-body words are different owners.
     policy:
     - I3
     display_id: UNIFIED.muse-guided_json_quoted_bare_tool_header_in_answer
@@ -18342,7 +18342,7 @@ cases:
   muse_unterminated_parameter_then_empty_call:
     lifecycle: active
     scenario: muse_unterminated_parameter_then_empty_call
-    description: 'Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.'
+    description: 'A native outer parameter is unfinished before a parameterless declared invocation-shaped candidate. Keep native EOF policy explicit: Muse emits nothing after discarding the ambiguous outer invocation; Qwen/GLM repair the missing value closer; K2/M3/V4 apply empty-call recovery; strict framed readers recover only the following complete call.'
     policy:
     - P2
     display_id: UNIFIED.muse-unterminated_parameter_then_empty_call
@@ -18762,7 +18762,7 @@ cases:
   muse_opaque_undeclared_invoke:
     lifecycle: active
     scenario: muse_opaque_undeclared_invoke
-    description: Muse arguments own invocation-shaped text naming an undeclared tool. A complete outer string must not become an undeclared call during recovery.
+    description: A complete native outer string owns invocation-shaped text naming an undeclared tool. Preserve its native invocation/parameter prefix as data rather than manufacturing an unknown call.
     policy:
     - I5
     - I7
@@ -18842,7 +18842,7 @@ cases:
   muse_recovery_second_parameter:
     lifecycle: active
     scenario: muse_recovery_second_parameter
-    description: A later Muse parameter owns its bytes through its closer. Declared invocation-shaped content inside it must not be promoted to an executable call.
+    description: A later native string parameter owns invocation-shaped text through its closer, after x=done. Preserve the declared inner invocation as data; the original open schema permits the later y field.
     policy:
     - I5
     - I7
@@ -18926,7 +18926,7 @@ cases:
   muse_unterminated_reasoning_guided:
     lifecycle: active
     scenario: muse_unterminated_reasoning_guided
-    description: JSON-guided Muse reasoning strips an unterminated native invoke-start marker while preserving its following prose; this intentional guided/native distinction is chunk invariant.
+    description: Named JSON-guided reasoning strips an unfinished native invocation prefix while preserving x and more thought, then parses get_weather(city=Paris). Native marker literals vary by grammar; the schema, initialization, and visible prose remain fixed.
     policy:
     - I5
     display_id: UNIFIED.muse-unterminated_reasoning_guided
@@ -19000,7 +19000,7 @@ cases:
   muse_unterminated_reasoning_native:
     lifecycle: active
     scenario: muse_unterminated_reasoning_native
-    description: Native Muse reasoning preserves an unterminated invocation header as literal prose. Guided JSON treats the same native prefix as stray control syntax (see the paired guided case).
+    description: Where an unfinished native invocation prefix is ordinary reasoning prose, native mode preserves that prefix literally before Done. Guided JSON strips the native prefix in the paired case. Reserved structural prefixes cannot substitute for ordinary prose.
     policy:
     - I5
     display_id: UNIFIED.muse-unterminated_reasoning_native
@@ -19480,7 +19480,7 @@ cases:
   muse_opaque_declared_invoke:
     lifecycle: active
     scenario: muse_opaque_declared_invoke
-    description: Muse arguments own invocation-shaped text even when the embedded tool is declared. The complete outer argument remains data instead of dispatching the embedded call.
+    description: A complete native outer string owns invocation-shaped text naming a declared tool. Preserve the inner native invocation/parameter prefix as data rather than dispatching it.
     policy:
     - I5
     - I7
@@ -21505,14 +21505,15 @@ cases:
         arguments:
           city: 'null'
   gpt_oss_interrupted_reasoning_then_response:
-    lifecycle: active
+    lifecycle: retired
     scenario: gpt_oss_interrupted_reasoning_then_response
     description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
     policy:
     - I1
     - I3
-    display_id: UNIFIED.gpt_oss-interrupted_reasoning_then_response
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.gpt_oss-interrupted_reasoning_then_response
     request:
       input: <|start|>assistant to=self<|message|>checking<|start|>assistant to=user<|message|>done<|eom|>
       init:
@@ -21683,6 +21684,4535 @@ cases:
           q: unfinished
       - kind: text
         text: recovered
+  interrupted_reasoning_then_response:
+    lifecycle: active
+    scenario: interrupted_reasoning_then_response
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and following visible answer. Paired-tag grammars without an independent response header cannot express this transition.
+    policy:
+    - I1
+    - I3
+    display_id: UNIFIED.10-interrupted_reasoning_then_response
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=self<|message|>let me think<|start|>assistant to=user<|message|>The answer is 42.<|eom|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>assistant to=self<|message|>let me think<|start|>assistant to=user<|message|>The answer is 42.<|eom|>
+    golden:
+      assembled:
+      - kind: reasoning
+        text: let me think
+      - kind: text
+        text: The answer is 42.
+  glm47_reference_type_intersection:
+    lifecycle: active
+    scenario: glm47_reference_type_intersection
+    description: Resolve local reference chains before interpreting string and integer arguments. Preserve the JSON-looking payload as a string and count as an integer. This case does not distinguish sibling type intersections.
+    policy:
+    - I7
+    display_id: UNIFIED.glm5-reference_type_intersection
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="payload">"{\"x\":1}"</atem:parameter>
+
+        <atem:parameter name="count">42</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Text:
+              type: string
+            TextAlias:
+              $ref: '#/$defs/Text'
+            Count:
+              type: integer
+          properties:
+            payload:
+              $ref: '#/$defs/TextAlias'
+              allOf:
+              - type: string
+            count:
+              $ref: '#/$defs/Count'
+              minimum: 1
+          required:
+          - payload
+          - count
+      chunks:
+      - delta_text: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+          <atem:invoke name="capture_payload">
+
+          <atem:parameter name="payload">"{\"x\":1}"</atem:parameter>
+
+          <atem:parameter name="count">42</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          payload: '{"x":1}'
+          count: 42
+  guided_native_after_prefilled_reasoning_named:
+    lifecycle: active
+    scenario: guided_native_after_prefilled_reasoning_named
+    description: A native call follows prompt-prefilled reasoning despite JSON guidance. Preserve the reasoning exactly once. M3 explicitly recovers the native call; other families suppress the native control span.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_named
+    historical_ids: []
+    request:
+      input: 'Check.<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Check.<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check.
+  guided_native_after_prefilled_reasoning_required:
+    lifecycle: active
+    scenario: guided_native_after_prefilled_reasoning_required
+    description: A native call follows prompt-prefilled reasoning despite JSON guidance. Preserve the reasoning exactly once. M3 explicitly recovers the native call; other families suppress the native control span.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_required
+    historical_ids: []
+    request:
+      input: 'Check.<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Check.<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check.
+  gpt_oss_implicit_recipient_first_header:
+    lifecycle: active
+    scenario: gpt_oss_implicit_recipient_first_header
+    description: A native generated suffix begins with the recipient after the prompt-consumed assistant role. Hold the remaining header until its message marker and dispatch the native call without leaking the recipient.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-implicit_recipient_first_header
+    historical_ids: []
+    request:
+      input: ' to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q">x</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: ' to=lookup<|message|><atem:function_calls>
+
+          <atem:invoke name="lookup">
+
+          <atem:parameter name="q">x</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: x
+  glm47_parameterless_call_shape_inside_argument:
+    lifecycle: active
+    scenario: glm47_parameterless_call_shape_inside_argument
+    description: An offered parameterless-call shape appears inside an open argument value. Each family uses its native closing marker and nested call; preserve the complete outer argument instead of dispatching a second call.
+    policy:
+    - I7
+    display_id: UNIFIED.glm5-parameterless_call_shape_inside_argument
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=run<|message|><atem:function_calls>
+
+        <atem:invoke name="run">
+
+        <atem:parameter name="cmd">before <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|> after</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start
+      - delta_text: '|>assis'
+      - delta_text: tant to
+      - delta_text: =run<|m
+      - delta_text: essage|
+      - delta_text: '><atem:'
+      - delta_text: functio
+      - delta_text: n_calls
+      - delta_text: '>
+
+          <atem'
+      - delta_text: :invoke
+      - delta_text: ' name="'
+      - delta_text: 'run">
+
+          <'
+      - delta_text: atem:pa
+      - delta_text: rameter
+      - delta_text: ' name="'
+      - delta_text: cmd">be
+      - delta_text: fore <|
+      - delta_text: eom|><|
+      - delta_text: start|>
+      - delta_text: assista
+      - delta_text: nt to=g
+      - delta_text: et_weat
+      - delta_text: her<|me
+      - delta_text: ssage|>
+      - delta_text: <atem:f
+      - delta_text: unction
+      - delta_text: _calls>
+      - delta_text: '
+
+          <atem:'
+      - delta_text: 'invoke '
+      - delta_text: name="g
+      - delta_text: et_weat
+      - delta_text: 'her">
+
+          <'
+      - delta_text: /atem:i
+      - delta_text: 'nvoke>
+
+          '
+      - delta_text: '</atem:'
+      - delta_text: functio
+      - delta_text: n_calls
+      - delta_text: '><|eom|'
+      - delta_text: '> after'
+      - delta_text: '</atem:'
+      - delta_text: paramet
+      - delta_text: 'er>
+
+          </a'
+      - delta_text: tem:inv
+      - delta_text: 'oke>
+
+          </'
+      - delta_text: atem:fu
+      - delta_text: nction_
+      - delta_text: calls><
+      - delta_text: '|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: 'before <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|> after'
+  gpt_oss_complete_alternate_message_ends:
+    lifecycle: active
+    scenario: gpt_oss_complete_alternate_message_ends
+    description: Harmony native function messages contain complete JSON and end with message-end or turn-end instead of handoff. Unified recovers both delimiter-complete calls; legacy missing-handoff behavior remains separate.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-complete_alternate_message_ends
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q">end</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q">return</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eot|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start
+      - delta_text: '|>assis'
+      - delta_text: tant to
+      - delta_text: =lookup
+      - delta_text: <|messa
+      - delta_text: ge|><at
+      - delta_text: em:func
+      - delta_text: tion_ca
+      - delta_text: 'lls>
+
+          <a'
+      - delta_text: tem:inv
+      - delta_text: oke nam
+      - delta_text: e="look
+      - delta_text: 'up">
+
+          <a'
+      - delta_text: tem:par
+      - delta_text: 'ameter '
+      - delta_text: name="q
+      - delta_text: '">end</'
+      - delta_text: atem:pa
+      - delta_text: rameter
+      - delta_text: '>
+
+          </ate'
+      - delta_text: m:invok
+      - delta_text: 'e>
+
+          </at'
+      - delta_text: em:func
+      - delta_text: tion_ca
+      - delta_text: lls><|e
+      - delta_text: om|><|s
+      - delta_text: tart|>a
+      - delta_text: ssistan
+      - delta_text: t to=lo
+      - delta_text: okup<|m
+      - delta_text: essage|
+      - delta_text: '><atem:'
+      - delta_text: functio
+      - delta_text: n_calls
+      - delta_text: '>
+
+          <atem'
+      - delta_text: :invoke
+      - delta_text: ' name="'
+      - delta_text: lookup"
+      - delta_text: '>
+
+          <atem'
+      - delta_text: :parame
+      - delta_text: ter nam
+      - delta_text: e="q">r
+      - delta_text: eturn</
+      - delta_text: atem:pa
+      - delta_text: rameter
+      - delta_text: '>
+
+          </ate'
+      - delta_text: m:invok
+      - delta_text: 'e>
+
+          </at'
+      - delta_text: em:func
+      - delta_text: tion_ca
+      - delta_text: lls><|e
+      - delta_text: ot|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: end
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: return
+  kimi_k3_guided_native_wrapper:
+    lifecycle: active
+    scenario: kimi_k3_guided_native_wrapper
+    description: A complete native call precedes a guided JSON payload. Guided-only families suppress the native wrapper and dispatch the payload; MiniMax M3 deliberately retains its native fallback and treats the following JSON as text.
+    policy:
+    - I3
+    display_id: UNIFIED.kimi-guided_native_wrapper
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=ignored<|message|><atem:function_calls>
+
+        <atem:invoke name="ignored">
+
+        <atem:parameter name="quoted">literal</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '<|start|>assistant to=ignored<|message|><atem:function_calls>
+
+          <atem:invoke name="ignored">
+
+          <atem:parameter name="quoted">literal</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  kimi_k3_typed_argument_values:
+    lifecycle: active
+    scenario: kimi_k3_typed_argument_values
+    description: Native argument syntax preserves string, number, boolean, object, array, and null values, including properties without schema type hints. Families need explicit native types or a complete JSON object to preserve these values.
+    policy:
+    - I7
+    display_id: UNIFIED.kimi-typed_argument_values
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=run<|message|><atem:function_calls>
+
+        <atem:invoke name="run">
+
+        <atem:parameter name="cmd">echo ok</atem:parameter>
+
+        <atem:parameter name="count">2</atem:parameter>
+
+        <atem:parameter name="force">true</atem:parameter>
+
+        <atem:parameter name="options">{"cwd":"/tmp"}</atem:parameter>
+
+        <atem:parameter name="tags">["a","b"]</atem:parameter>
+
+        <atem:parameter name="note">null</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '<|start|>assistant to=run<|message|><atem:function_calls>
+
+          <atem:invoke name="run">
+
+          <atem:parameter name="cmd">echo ok</atem:parameter>
+
+          <atem:parameter name="count">2</atem:parameter>
+
+          <atem:parameter name="force">true</atem:parameter>
+
+          <atem:parameter name="options">{"cwd":"/tmp"}</atem:parameter>
+
+          <atem:parameter name="tags">["a","b"]</atem:parameter>
+
+          <atem:parameter name="note">null</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: echo ok
+          count: 2
+          force: true
+          options:
+            cwd: /tmp
+          tags:
+          - a
+          - b
+          note: null
+  kimi_k3_typed_json_marker_payload:
+    lifecycle: active
+    scenario: kimi_k3_typed_json_marker_payload
+    description: A typed object field contains a literal native argument-close and next-header marker, followed by a string field. One-character delivery preserves the nested object and completes one call; M3 uses native nested field tags with a schema-declared inner string.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-typed_json_marker_payload
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=inspect<|message|><atem:function_calls>
+
+        <atem:invoke name="inspect">
+
+        <atem:parameter name="x">{"inner":"</atem:parameter><atem:parameter name="}</atem:parameter>
+
+        <atem:parameter name="y">OK</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: inspect
+        parameters:
+          type: object
+          properties:
+            x:
+              type: object
+              properties:
+                inner:
+                  type: string
+              required:
+              - inner
+            y:
+              type: string
+          required:
+          - x
+          - y
+      chunks:
+      - delta_text: '<|start|>assistant to=inspect<|message|><atem:function_calls>
+
+          <atem:invoke name="inspect">
+
+          <atem:parameter name="x">{"inner":"</atem:parameter><atem:parameter name="}</atem:parameter>
+
+          <atem:parameter name="y">OK</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: inspect
+        arguments:
+          x:
+            inner: </atem:parameter><atem:parameter name=
+          y: OK
+  kimi_native_incremental_interfield_whitespace:
+    lifecycle: active
+    scenario: kimi_native_incremental_interfield_whitespace
+    description: A native call has 4096 ASCII syntax spaces between count and content fields. Seven-character delivery retains unresolved lookahead across the gap and must release one stable local call identity and numeric count after the following field header completes, before the value or call closes. Preserve the completed call and scan each whitespace byte once. The gap belongs outside field values.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_incremental_interfield_whitespace
+    historical_ids: []
+    request:
+      input: "<|start|>assistant to=write_file<|message|><atem:function_calls>\n<atem:invoke name=\"write_file\">\n<atem:parameter name=\"count\">7</atem:parameter>\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           \
+        \                                                                                                                                                                     <atem:parameter name=\"content\">q</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: <|start
+      - delta_text: '|>assis'
+      - delta_text: tant to
+      - delta_text: =write_
+      - delta_text: file<|m
+      - delta_text: essage|
+      - delta_text: '><atem:'
+      - delta_text: functio
+      - delta_text: n_calls
+      - delta_text: '>
+
+          <atem'
+      - delta_text: :invoke
+      - delta_text: ' name="'
+      - delta_text: write_f
+      - delta_text: 'ile">
+
+          <'
+      - delta_text: atem:pa
+      - delta_text: rameter
+      - delta_text: ' name="'
+      - delta_text: count">
+      - delta_text: 7</atem
+      - delta_text: :parame
+      - delta_text: "ter>\n  "
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '       '
+      - delta_text: '      <'
+      - delta_text: atem:pa
+      - delta_text: rameter
+      - delta_text: ' name="'
+      - delta_text: content
+      - delta_text: '">q</at'
+      - delta_text: em:para
+      - delta_text: 'meter>
+
+          '
+      - delta_text: '</atem:'
+      - delta_text: invoke>
+      - delta_text: '
+
+          </atem'
+      - delta_text: :functi
+      - delta_text: on_call
+      - delta_text: s><|eom
+      - delta_text: '|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments:
+          count: 7
+          content: q
+  kimi_native_k2_count_content_chunk1024:
+    lifecycle: active
+    scenario: kimi_native_k2_count_content_chunk1024
+    description: Native count-before-content call with 1024-character delivery (ASCII payload uses 1024-byte chunks). Pause after 3072 q characters, after 1024 more, and after value, invocation, and outer-envelope closure where present. Release one stable local call identity, numeric count, and known string bytes before closure. Family-native envelopes retain the same schema and pause contract.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_k2_count_content_chunk1024
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=write_file<|message|><atem:function_calls>
+
+        <atem:invoke name="write_file">
+
+        <atem:parameter name="count">7</atem:parameter>
+
+        <atem:parameter name="content">qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: '<|start|>assistant to=write_file<|message|><atem:function_calls>
+
+          <atem:invoke name="write_file">
+
+          <atem:parameter name="count">7</atem:parameter>
+
+          <atem:parameter name="content">qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      - delta_text: '</atem:parameter>
+
+          '
+      - delta_text: '</atem:invoke>
+
+          '
+      - delta_text: </atem:function_calls><|eom|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments:
+          count: 7
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+  kimi_native_k2_count_content_chunk7:
+    lifecycle: active
+    scenario: kimi_native_k2_count_content_chunk7
+    description: Native count-before-content call with 7-character delivery (ASCII payload uses 7-byte chunks). Pause after 3072 q characters, after 1024 more, and after value, invocation, and outer-envelope closure where present. Release one stable local call identity, numeric count, and known string bytes before closure. Family-native envelopes retain the same schema and pause contract.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-kimi_native_k2_count_content_chunk7
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=write_file<|message|><atem:function_calls>
+
+        <atem:invoke name="write_file">
+
+        <atem:parameter name="count">7</atem:parameter>
+
+        <atem:parameter name="content">qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      tools:
+      - name: write_file
+        parameters:
+          type: object
+          properties:
+            count:
+              type: integer
+            content:
+              type: string
+          required:
+          - count
+          - content
+      finish_reason: stop
+      chunks:
+      - delta_text: <|start
+      - delta_text: '|>assis'
+      - delta_text: tant to
+      - delta_text: =write_
+      - delta_text: file<|m
+      - delta_text: essage|
+      - delta_text: '><atem:'
+      - delta_text: functio
+      - delta_text: n_calls
+      - delta_text: '>
+
+          <atem'
+      - delta_text: :invoke
+      - delta_text: ' name="'
+      - delta_text: write_f
+      - delta_text: 'ile">
+
+          <'
+      - delta_text: atem:pa
+      - delta_text: rameter
+      - delta_text: ' name="'
+      - delta_text: count">
+      - delta_text: 7</atem
+      - delta_text: :parame
+      - delta_text: 'ter>
+
+          <a'
+      - delta_text: tem:par
+      - delta_text: 'ameter '
+      - delta_text: name="c
+      - delta_text: ontent"
+      - delta_text: '>qqqqqq'
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qqqqqqq
+      - delta_text: qq
+      - delta_text: '</atem:'
+      - delta_text: paramet
+      - delta_text: 'er>
+
+          '
+      - delta_text: '</atem:'
+      - delta_text: invoke>
+      - delta_text: '
+
+          '
+      - delta_text: '</atem:'
+      - delta_text: functio
+      - delta_text: n_calls
+      - delta_text: '><|eom|'
+      - delta_text: '>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments:
+          count: 7
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+  prefilled_response_guided_pending_invoke_header:
+    lifecycle: active
+    scenario: prefilled_response_guided_pending_invoke_header
+    description: Response-prefilled guided output contains a quoted reasoning control marker, then an unfinished native invoke header before the JSON call. Response keeps the first marker as visible text; the pending tool header must remain owned by the scanner across chunks and never leak into that text.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.deepseek_v41-prefilled_response_guided_pending_invoke_header
+    historical_ids: []
+    request:
+      input: 'I mean to=self<|message|>literal<|eom|><atem:invoke name="[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: I
+      - delta_text: ' '
+      - delta_text: m
+      - delta_text: e
+      - delta_text: a
+      - delta_text: n
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: l
+      - delta_text: i
+      - delta_text: t
+      - delta_text: e
+      - delta_text: r
+      - delta_text: a
+      - delta_text: l
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: e
+      - delta_text: o
+      - delta_text: m
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean to=selfliteral
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  gemma4_guided_reasoning_opener_after_call_prefix:
+    lifecycle: active
+    scenario: gemma4_guided_reasoning_opener_after_call_prefix
+    description: 'Gemma Reasoning-prefilled guided output has a repeated thought opener immediately after bare call: with no function name or argument opener. The call: prefix remains reasoning text across the repeated thought marker; the thought closer then permits the following guided call.'
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.gemma-guided_reasoning_opener_after_call_prefix
+    historical_ids: []
+    request:
+      input: <atem:invoke name="<|start|>assistant to=self<|message|>x<|eom|>[{"name":"f","arguments":{}}]
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: x
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: e
+      - delta_text: o
+      - delta_text: m
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '{'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: x
+      - kind: tool_call
+        name: f
+        arguments: {}
+  guided_json_quoted_bare_header_after_payload_pr424:
+    lifecycle: active
+    scenario: guided_json_quoted_bare_header_after_payload_pr424
+    description: A `to=self` header quoted AFTER the guided payload has already dispatched. No header routed this turn — the payload did — so a reader that tracks only 'has a header been seen' stays permissive and promotes the quote into a thought. Same corruption as the header-routed case, reached down the other axis.
+    policy:
+    - I3
+    display_id: UNIFIED.35-guided_json_quoted_bare_header_after_payload_pr424
+    historical_ids: []
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean <|start|>assistant to=self<|message|>self literal<|eom|>'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: tool_calls
+      tools: []
+      chunks:
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: I
+      - delta_text: ' '
+      - delta_text: m
+      - delta_text: e
+      - delta_text: a
+      - delta_text: n
+      - delta_text: ' '
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: ' '
+      - delta_text: l
+      - delta_text: i
+      - delta_text: t
+      - delta_text: e
+      - delta_text: r
+      - delta_text: a
+      - delta_text: l
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: e
+      - delta_text: o
+      - delta_text: m
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: I mean assistant to=selfself literal
+  guided_json_quoted_bare_header_in_answer_pr424:
+    lifecycle: active
+    scenario: guided_json_quoted_bare_header_in_answer_pr424
+    description: A `to=self` header QUOTED inside the visible answer, after the turn has already been routed to the user. The words are the model's prose and only the marker is structural, so the answer stays one run. Promoting the quote opened a real THOUGHT and split the answer in two, which reaches the client as an answer plus chain-of-thought the model never meant to expose.
+    policy:
+    - I3
+    display_id: UNIFIED.35-guided_json_quoted_bare_header_in_answer_pr424
+    historical_ids: []
+    request:
+      input: 'I mean <|start|>assistant to=self<|message|>self literal<|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: tool_calls
+      tools: []
+      chunks:
+      - delta_text: I
+      - delta_text: ' '
+      - delta_text: m
+      - delta_text: e
+      - delta_text: a
+      - delta_text: n
+      - delta_text: ' '
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: ' '
+      - delta_text: l
+      - delta_text: i
+      - delta_text: t
+      - delta_text: e
+      - delta_text: r
+      - delta_text: a
+      - delta_text: l
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: e
+      - delta_text: o
+      - delta_text: m
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean assistant to=selfself literal
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_response_rejected_header_quote_ownership:
+    lifecycle: active
+    scenario: guided_response_rejected_header_quote_ownership
+    description: A Response-prefilled guided stream places a quoted invoke-name closer before the guided payload. Preserve quote ownership and each native grammar's header recovery. The DeepSeek V4.1 and Kimi K3 oracles emit no events.
+    policy:
+    - P2
+    display_id: UNIFIED.35-guided_response_rejected_header_quote_ownership
+    historical_ids: []
+    request:
+      input: <atem:invoke name="f"<atem:parameter name="x">x[{"name":"f","arguments":{"x":"ok"}}]
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      chunks:
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: p
+      - delta_text: a
+      - delta_text: r
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: t
+      - delta_text: e
+      - delta_text: r
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: x
+      - delta_text: '"'
+      - delta_text: '>'
+      - delta_text: x
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: x
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: o
+      - delta_text: k
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: x
+      - kind: tool_call
+        name: f
+        arguments:
+          x: ok
+  deepseek_v4_guided_reasoning_opener_inside_native_body:
+    lifecycle: active
+    scenario: deepseek_v4_guided_reasoning_opener_inside_native_body
+    description: A Reasoning-prefilled guided stream places a repeated reasoning opener inside a native invocation body without parameters. Preserve each grammar's ownership of the following bytes. Kimi K3 emits no events because its bare frame has neither typed arguments nor a raw JSON body, and no tools fence for recovery.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body
+    historical_ids: []
+    request:
+      input: <atem:invoke name="f"><|start|>assistant to=self<|message|>x</atem:invoke>[{"name":"f","arguments":{}}]
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: x
+      - delta_text: <
+      - delta_text: /
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '{'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: x[{"name":"f","arguments":{}}]
+  gemma4_guided_response_extra_body_opener:
+    lifecycle: active
+    scenario: gemma4_guided_response_extra_body_opener
+    description: Gemma Response-prefilled guided output has an extra opening brace after a bare call header, without a native parameter key. The malformed wrapper is stripped and the following guided array still dispatches; the preceding UTF-8 prose remains visible.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.gemma-guided_response_extra_body_opener
+    historical_ids: []
+    request:
+      input: 'é <atem:invoke name="get_weather">{[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: é
+      - delta_text: ' '
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: '>'
+      - delta_text: '{'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: é {
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  xml_custom_type_double_quoted_object:
+    lifecycle: active
+    scenario: xml_custom_type_double_quoted_object
+    description: 'Native XML compatibility: {"a":1} under type custom must produce {"a": 1}. The raw parameter body contains a double-quoted JSON object; custom is intentionally outside JSON Schema.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-xml_custom_type_double_quoted_object
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
+
+        <atem:invoke name="schema_probe">
+
+        <atem:parameter name="value">
+
+        {"a":1}
+
+        </atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: custom
+          required:
+          - value
+          additionalProperties: false
+        strict: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=schema_probe
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="schema_probe">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '
+
+          {"a":1}
+
+          '
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value:
+            a: 1
+  qwen3_guided_non_ascii_header_in_truncated_reasoning:
+    lifecycle: active
+    scenario: qwen3_guided_non_ascii_header_in_truncated_reasoning
+    description: Guided reasoning ends inside an unfinished native tool-name header carrying UTF-8 text. Preserve native header ownership at EOF; no call dispatches. DeepSeek V4, Kimi K3, and MiniMax M3 emit no events for this unresolved header.
+    policy:
+    - I3
+    - P2
+    display_id: UNIFIED.qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=self<|message|><atem:invoke name="éaaaaaaaaax
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: é
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: x
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: éaaaaaaaaax
+  qwen3_guided_non_ascii_header_in_closed_reasoning:
+    lifecycle: active
+    scenario: qwen3_guided_non_ascii_header_in_closed_reasoning
+    description: A malformed native tool-name header carries UTF-8 text and reaches its invocation closer. Preserve grammar-specific name and closer text, close the actual thought, and dispatch the following guided Paris call.
+    policy:
+    - I3
+    display_id: UNIFIED.qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=self<|message|><atem:invoke name="éaaaaaaaaax</atem:invoke><|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: é
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: a
+      - delta_text: x
+      - delta_text: <
+      - delta_text: /
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: e
+      - delta_text: o
+      - delta_text: m
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: e
+      - delta_text: t
+      - delta_text: _
+      - delta_text: w
+      - delta_text: e
+      - delta_text: a
+      - delta_text: t
+      - delta_text: h
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: c
+      - delta_text: i
+      - delta_text: t
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: ' '
+      - delta_text: '"'
+      - delta_text: P
+      - delta_text: a
+      - delta_text: r
+      - delta_text: i
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: éaaaaaaaaax
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  qwen3_guided_reasoning_opener_inside_native_header:
+    lifecycle: active
+    scenario: qwen3_guided_reasoning_opener_inside_native_header
+    description: A native thought opener interrupts an unfinished native tool-name header, with no thought closer afterward. Preserve native header and closer recovery, including JSON that remains reasoning; committed control markup must not become visible text.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.qwen3-qwen3_guided_reasoning_opener_inside_native_header
+    historical_ids: []
+    request:
+      input: <atem:invoke name="<|start|>assistant to=self<|message|>x</atem:invoke>[{"name":"f","arguments":{}}]
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: s
+      - delta_text: e
+      - delta_text: l
+      - delta_text: f
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: x
+      - delta_text: <
+      - delta_text: /
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: '>'
+      - delta_text: '['
+      - delta_text: '{'
+      - delta_text: '"'
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '"'
+      - delta_text: f
+      - delta_text: '"'
+      - delta_text: ','
+      - delta_text: '"'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: s
+      - delta_text: '"'
+      - delta_text: ':'
+      - delta_text: '{'
+      - delta_text: '}'
+      - delta_text: '}'
+      - delta_text: ']'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: x[{"name":"f","arguments":{}}]
+  gpt_oss_control_marker_inside_argument_string:
+    lifecycle: active
+    scenario: gpt_oss_control_marker_inside_argument_string
+    description: Native control marker spellings inside a JSON string are payload and must not end, split, or resynchronize the tool call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="markers">"<|start|><|message|><|eom|><atem:function_calls><atem:invoke name=\"lookup\"><atem:parameter name=\"q\"></atem:parameter></atem:invoke></atem:function_calls><atem:invoke<atem:parameter"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+          <atem:invoke name="lookup">
+
+          <atem:parameter name="markers">"<|start|><|message|><|eom|><atem:function_calls><atem:invoke name=\"lookup\"><atem:parameter name=\"q\"></atem:parameter></atem:invoke></atem:function_calls><atem:invoke<atem:parameter"</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          markers: <|start|><|message|><|eom|><atem:function_calls><atem:invoke name="lookup"><atem:parameter name="q"></atem:parameter></atem:invoke></atem:function_calls><atem:invoke<atem:parameter
+  kimi_k3_malformed_call_then_valid:
+    lifecycle: active
+    scenario: kimi_k3_malformed_call_then_valid
+    description: An unclosed native invocation containing keyless prose reaches another call. Preserve native first-invocation ownership, strict body rejection or restart boundaries, including exact call names and argument types. The DeepSeek V4.1 oracle emits no events; its strict decoder reports a parse error.
+    policy:
+    - P2
+    display_id: UNIFIED.kimi-malformed_call_then_valid
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=bad<|message|><atem:function_calls>
+
+        <atem:invoke name="bad">not-an-argument<atem:invoke name="g">
+
+        <atem:parameter name="y">"2"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: r
+      - delta_text: t
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: a
+      - delta_text: s
+      - delta_text: s
+      - delta_text: i
+      - delta_text: s
+      - delta_text: t
+      - delta_text: a
+      - delta_text: n
+      - delta_text: t
+      - delta_text: ' '
+      - delta_text: t
+      - delta_text: o
+      - delta_text: '='
+      - delta_text: b
+      - delta_text: a
+      - delta_text: d
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: m
+      - delta_text: e
+      - delta_text: s
+      - delta_text: s
+      - delta_text: a
+      - delta_text: g
+      - delta_text: e
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: f
+      - delta_text: u
+      - delta_text: n
+      - delta_text: c
+      - delta_text: t
+      - delta_text: i
+      - delta_text: o
+      - delta_text: n
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: s
+      - delta_text: '>'
+      - delta_text: '
+
+          '
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: b
+      - delta_text: a
+      - delta_text: d
+      - delta_text: '"'
+      - delta_text: '>'
+      - delta_text: n
+      - delta_text: o
+      - delta_text: t
+      - delta_text: '-'
+      - delta_text: a
+      - delta_text: n
+      - delta_text: '-'
+      - delta_text: a
+      - delta_text: r
+      - delta_text: g
+      - delta_text: u
+      - delta_text: m
+      - delta_text: e
+      - delta_text: n
+      - delta_text: t
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: g
+      - delta_text: '"'
+      - delta_text: '>'
+      - delta_text: '
+
+          '
+      - delta_text: <
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: p
+      - delta_text: a
+      - delta_text: r
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: t
+      - delta_text: e
+      - delta_text: r
+      - delta_text: ' '
+      - delta_text: n
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: '='
+      - delta_text: '"'
+      - delta_text: y
+      - delta_text: '"'
+      - delta_text: '>'
+      - delta_text: '"'
+      - delta_text: '2'
+      - delta_text: '"'
+      - delta_text: <
+      - delta_text: /
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: p
+      - delta_text: a
+      - delta_text: r
+      - delta_text: a
+      - delta_text: m
+      - delta_text: e
+      - delta_text: t
+      - delta_text: e
+      - delta_text: r
+      - delta_text: '>'
+      - delta_text: '
+
+          '
+      - delta_text: <
+      - delta_text: /
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: i
+      - delta_text: n
+      - delta_text: v
+      - delta_text: o
+      - delta_text: k
+      - delta_text: e
+      - delta_text: '>'
+      - delta_text: '
+
+          '
+      - delta_text: <
+      - delta_text: /
+      - delta_text: a
+      - delta_text: t
+      - delta_text: e
+      - delta_text: m
+      - delta_text: ':'
+      - delta_text: f
+      - delta_text: u
+      - delta_text: n
+      - delta_text: c
+      - delta_text: t
+      - delta_text: i
+      - delta_text: o
+      - delta_text: n
+      - delta_text: _
+      - delta_text: c
+      - delta_text: a
+      - delta_text: l
+      - delta_text: l
+      - delta_text: s
+      - delta_text: '>'
+      - delta_text: <
+      - delta_text: '|'
+      - delta_text: e
+      - delta_text: o
+      - delta_text: m
+      - delta_text: '|'
+      - delta_text: '>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: bad
+        arguments:
+          y: '2'
+  kimi_k3_json_marker_then_long_field:
+    lifecycle: active
+    scenario: kimi_k3_json_marker_then_long_field
+    description: A native response header stays literal in the first string argument before a long second field. Preserve both values through 64-byte delivery; the native producer's partial-argument or whole-invoke progress remains observable.
+    policy:
+    - I3
+    - I5
+    - I7
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q"><|start|>assistant to=user<|message|>literal<|eom|></atem:parameter>
+
+        <atem:parameter name="content">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+            content:
+              type: string
+          required:
+          - q
+      - name: next
+        parameters:
+          type: object
+          properties:
+            n:
+              type: integer
+          required:
+          - n
+      chunks:
+      - delta_text: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+          <at'
+      - delta_text: 'em:invoke name="lookup">
+
+          <atem:parameter name="q"><|start|>assis'
+      - delta_text: 'tant to=user<|message|>literal<|eom|></atem:parameter>
+
+          <atem:par'
+      - delta_text: ameter name="content">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - delta_text: 'xxxxxxxxxxxxxxxxxxxxxx</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:fu'
+      - delta_text: nction_calls><|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: <|start|>assistant to=user<|message|>literal<|eom|>
+          content: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    display_id: UNIFIED.kimi-json_marker_then_long_field
+    historical_ids: []
+  kimi_k3_typed_response_then_call:
+    lifecycle: active
+    scenario: kimi_k3_typed_response_then_call
+    description: A native call has a closed argument but lacks its call/invoke terminator, then a response and another valid call. Drop the incomplete first call, preserve the response, and keep the later call's argument close with that call.
+    policy:
+    - I3
+    - I5
+    - I7
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q">first</atem:parameter>
+
+        <|start|>assistant to=user<|message|>recovered<|eom|><|start|>assistant to=next<|message|><atem:function_calls>
+
+        <atem:invoke name="next">
+
+        <atem:parameter name="n">7</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+            content:
+              type: string
+          required:
+          - q
+      - name: next
+        parameters:
+          type: object
+          properties:
+            n:
+              type: integer
+          required:
+          - n
+      chunks:
+      - delta_text: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+          <at'
+      - delta_text: 'em:invoke name="lookup">
+
+          <atem:parameter name="q">first</atem:pa'
+      - delta_text: 'rameter>
+
+          <|start|>assistant to=user<|message|>recovered<|eom|><|'
+      - delta_text: 'start|>assistant to=next<|message|><atem:function_calls>
+
+          <atem:i'
+      - delta_text: 'nvoke name="next">
+
+          <atem:parameter name="n">7</atem:parameter>
+
+          <'
+      - delta_text: '/atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: recovered
+      - kind: tool_call
+        name: next
+        arguments:
+          n: 7
+    display_id: UNIFIED.kimi-typed_response_then_call
+    historical_ids: []
+  kimi_k3_direct_typed_response_recovery:
+    lifecycle: active
+    scenario: kimi_k3_direct_typed_response_recovery
+    description: Starting in Response, a direct native call has a closed argument but lacks its call/invoke terminator. Drop the incomplete call and recover the framed response without leaking native headers.
+    policy:
+    - I3
+    - I5
+    - I7
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:invoke name="lookup">
+
+        <atem:parameter name="q">first</atem:parameter>
+
+        <|start|>assistant to=user<|message|>recovered<|eom|>'
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+            content:
+              type: string
+          required:
+          - q
+      - name: next
+        parameters:
+          type: object
+          properties:
+            n:
+              type: integer
+          required:
+          - n
+      chunks:
+      - delta_text: <|start|>assistant to=lookup<|message|><atem:invoke name="lookup
+      - delta_text: '">
+
+          <atem:parameter name="q">first</atem:parameter>
+
+          <|start|>assi'
+      - delta_text: stant to=user<|message|>recovered<|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: recovered
+    display_id: UNIFIED.kimi-direct_typed_response_recovery
+    historical_ids: []
   blank_framing_tool_only:
     lifecycle: active
     scenario: blank_framing_tool_only
