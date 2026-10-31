@@ -5,6 +5,7 @@ import hashlib
 import gzip
 import json
 import re
+import shutil
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -30,6 +31,7 @@ if str(SRC) not in sys.path:
 
 import unified_history
 import capture_sources
+import ci_publication_cache
 from browser_helpers import raw_view_download, settle
 
 
@@ -48,6 +50,25 @@ def _published_capture(site, implementation=None, version=None):
 
 def _published_capture_index(site, implementation=None, version=None):
     return _published_capture(site, implementation, version)["recipe_index"]["path"]
+
+
+def _assert_generation_provenance(driver, metadata):
+    # The UI abbreviates commit labels to 12 characters; links must retain full IDs.
+    generated_revision = metadata.get("generated_revision", metadata["revision"])
+    identity = (f"from working tree {metadata['candidate_tree'][:12]} based on commit"
+                if metadata.get("candidate_tree") else "on commit")
+    label = "Catalog generated on" if metadata.get("source_checkout") else "Generated on"
+    expected = f"{label} {metadata['generated_on']} {identity} {generated_revision[:12]}"
+    revisions = [generated_revision]
+    if generated_revision != metadata["revision"]:
+        expected += f" (source links use commit {metadata['revision'][:12]})"
+        revisions.append(metadata["revision"])
+    generated = WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", ".generated")
+        if "generated on" in page.find_element("css selector", ".generated").text.lower() else False)
+    assert generated.text == expected
+    assert [link.get_attribute("href").rsplit("/", 1)[-1]
+            for link in generated.find_elements(By.TAG_NAME, "a")] == revisions
+    return generated
 
 
 def _server(prefix: str = "", gate=None, gate_path: str | None = None, fault=None, root: Path = ROOT, missing_paths=(), external=False, html_transform=None):
@@ -298,8 +319,21 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
         server.shutdown()
 
 
-def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_published_viewer):
+@pytest.mark.parametrize("restamp", [False, True], ids=["published", "restamped"])
+def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_published_viewer, tmp_path, restamp):
     site = historical_published_viewer
+    if restamp:
+        site = tmp_path / "restamped-site"
+        shutil.copytree(historical_published_viewer, site)
+        original = publication_metadata(site)
+        # A different valid identity forces the cache path without pinning a real release.
+        revision = hashlib.sha256(original["revision"].encode()).hexdigest()[:40]
+        ci_publication_cache.stamp(site, revision)
+        stamped = publication_metadata(site)
+        assert stamped["revision"] == revision
+        assert stamped["generated_revision"] == original.get("generated_revision", original["revision"])
+        assert stamped["generated_revision"] != revision
+        assert all(stamped[key] == original[key] for key in ("generated_on", "command", "output"))
     catalog = json.loads(gzip.decompress((site / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
     server, requests = _server(root=site)
     driver = _driver()
@@ -307,15 +341,11 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified")
         _ready(driver, "tab-unified")
         provenance = json.loads((site / "conformance/viewer-publication.json").read_text())
-        generated = WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", ".generated") if "Generated on" in page.find_element("css selector", ".generated").text else False)
-        identity = (f"from working tree {provenance['candidate_tree'][:12]} based on commit"
-                    if provenance.get('candidate_tree') else "on commit")
-        assert generated.text == f"Generated on {provenance['generated_on']} {identity} {provenance['revision'][:12]}"
+        generated = _assert_generation_provenance(driver, provenance)
         command_details = driver.find_element("css selector", ".generated-command")
         assert not command_details.is_displayed()
         assert provenance["command"] not in generated.text
         assert provenance["output"] not in generated.text
-        assert generated.find_element("css selector", "a").get_attribute("href").endswith(provenance["revision"])
         driver.find_element("css selector", "[data-view-detailed]").click()
         assert command_details.is_displayed()
         assert provenance["command"] in command_details.text
@@ -1341,16 +1371,16 @@ def test_report_details_keep_legend_below_chart_and_generation_last(published_vi
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
         _ready(driver, "tab-unified")
+        # This deliberately long command/path exercises wrapping, not a deployment location.
         command = "python3 /mnt/sda/keivenc/frontend-crates/artifacts/integrate_parallel_publication.py --candidate /mnt/sda/keivenc/frontend-crates/artifacts/parallel-publication-candidate-20261017 --output /home/keivenc/dev/frontend-crates/frontend-crates__403-resolved-json__publication-preview"
-        driver.execute_script("window.ConformanceView.updateGeneration(document.getElementById('viewer'), arguments[0])", {
+        # Synthetic commit IDs and timestamp isolate formatting from release history.
+        metadata = {
             "generated_on": "2026-10-17", "generated_revision": "a" * 40, "revision": "b" * 40,
             "command": command,
             "output": "/home/keivenc/dev/frontend-crates/frontend-crates__403-resolved-json__publication-preview",
-        })
-        generated = driver.find_element("css selector", ".generated")
-        assert generated.text == f"Generated on 2026-10-17 on commit {'a' * 12} (source links use commit {'b' * 12})"
-        assert generated.find_elements(By.TAG_NAME, "a")[0].get_attribute("href").endswith("a" * 40)
-        assert generated.find_elements(By.TAG_NAME, "a")[1].get_attribute("href").endswith("b" * 40)
+        }
+        driver.execute_script("window.ConformanceView.updateGeneration(document.getElementById('viewer'), arguments[0])", metadata)
+        _assert_generation_provenance(driver, metadata)
         details = driver.find_element("css selector", ".generated-command")
         assert not details.is_displayed()
         driver.find_element("css selector", "[data-view-detailed]").click()
