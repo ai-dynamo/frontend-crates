@@ -68713,3 +68713,222 @@ records:
           job_sha256: 9b009b3e2ed7952ba31b4f735272b0c5823ede2c6a78ccbf0f2303223bf20d37
           git_commit: e9fb03035cda270fcd3e51f8cfb89f60b6a05d64
     member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.0.yaml
+  arg_numeric_overflow_siblings_finite:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+      stimulus:
+        semantic_sha256: 410d2eaefabcbff895f0bac780bea91ec1796f9f936fadf9e34a9f0ea08c89b0
+        inline:
+          input: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><rfl:parameter name="value">
+
+            1.5
+
+            </rfl:parameter><|call|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Paris
+
+              </rfl:parameter><rfl:parameter name="value">
+
+              1.5
+
+              </rfl:parameter><|call|>'
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city": "Paris", "value": 1.5}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city": "Paris", "value": 1.5}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 572891aa0eb931527f8dcbedcb7c3482c0f43c92d4584f11f99a589d759759b9
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      stimulus:
+        semantic_sha256: 9934491ace0b0f0a3ac05f5bea09d245c8dbfabebbef3eefd340873194078329
+        inline:
+          input: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><rfl:parameter name="value">
+
+            -1E+400
+
+            </rfl:parameter><|call|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Paris
+
+              </rfl:parameter><rfl:parameter name="value">
+
+              -1E+400
+
+              </rfl:parameter><|call|>'
+      observation:
+        value:
+          assembled:
+          - arguments: '{}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city": "Paris", "value": -1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 572891aa0eb931527f8dcbedcb7c3482c0f43c92d4584f11f99a589d759759b9
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      stimulus:
+        semantic_sha256: d2dc41b724893d5a7a70a2fd1f6b92f450b87e6b2fc38307736adb6f2ff33e14
+        inline:
+          input: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><rfl:parameter name="value">
+
+            1e400
+
+            </rfl:parameter><|call|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Paris
+
+              </rfl:parameter><rfl:parameter name="value">
+
+              1e400
+
+              </rfl:parameter><|call|>'
+      observation:
+        value:
+          assembled:
+          - arguments: '{}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city": "Paris", "value": 1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 572891aa0eb931527f8dcbedcb7c3482c0f43c92d4584f11f99a589d759759b9
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true

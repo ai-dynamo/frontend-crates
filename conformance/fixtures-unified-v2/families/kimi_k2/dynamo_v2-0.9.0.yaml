@@ -48886,3 +48886,174 @@ records:
           job_sha256: 7d6f229d500f0025b1fbe53bbae2669e686ce7af2e47c1ea7f85eab1d0e57b90
           git_commit: e9fb03035cda270fcd3e51f8cfb89f60b6a05d64
     member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.0.yaml
+  arg_numeric_overflow_siblings_finite:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+      stimulus:
+        semantic_sha256: 0781b08661772b5764e44ab3657787a63f6e9ed6a569eba533963cbff4769654
+        inline:
+          input: <|tool_calls_section_begin|><|tool_call_begin|>functions.echo:0<|tool_call_argument_begin|>{"city":"Paris","value":1.5}<|tool_call_end|><|tool_calls_section_end|>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.echo:0<|tool_call_argument_begin|>{"city":"Paris","value":1.5}<|tool_call_end|><|tool_calls_section_end|>
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1.5}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1.5}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 4005c28d7478bb7eae46a7f28ab5a921ba1a159188434eddbb6dd58933066010
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      stimulus:
+        semantic_sha256: bb5459951c6e27b33a4a2d68dfc5c391082ee655302911535249f007c831d130
+        inline:
+          input: <|tool_calls_section_begin|><|tool_call_begin|>functions.echo:0<|tool_call_argument_begin|>{"city":"Paris","value":-1E+400}<|tool_call_end|><|tool_calls_section_end|>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.echo:0<|tool_call_argument_begin|>{"city":"Paris","value":-1E+400}<|tool_call_end|><|tool_calls_section_end|>
+      observation:
+        value:
+          assembled:
+          - arguments: '{}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":-1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 4005c28d7478bb7eae46a7f28ab5a921ba1a159188434eddbb6dd58933066010
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      stimulus:
+        semantic_sha256: e180ae126d55cc7de9753813dde238b490ce0f91e8d9e95571dbe49c885403b3
+        inline:
+          input: <|tool_calls_section_begin|><|tool_call_begin|>functions.echo:0<|tool_call_argument_begin|>{"city":"Paris","value":1e400}<|tool_call_end|><|tool_calls_section_end|>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.echo:0<|tool_call_argument_begin|>{"city":"Paris","value":1e400}<|tool_call_end|><|tool_calls_section_end|>
+      observation:
+        value:
+          assembled:
+          - arguments: '{}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 4005c28d7478bb7eae46a7f28ab5a921ba1a159188434eddbb6dd58933066010
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true

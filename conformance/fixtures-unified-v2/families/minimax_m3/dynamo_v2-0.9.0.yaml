@@ -61296,3 +61296,174 @@ records:
           job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
           git_commit: e9fb03035cda270fcd3e51f8cfb89f60b6a05d64
     member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.0.yaml
+  arg_numeric_overflow_siblings_finite:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+      stimulus:
+        semantic_sha256: edcff88ca31a9ab246ef6744011a0fa3bd0ac9a99f32320efe2d3175470f17b7
+        inline:
+          input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="echo">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[<value>1.5]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="echo">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[<value>1.5]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1.5}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1.5}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 9b89af0ca5e395e8c5565aadc122be4a57e498af238a6c10cd1244456c159d68
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      stimulus:
+        semantic_sha256: 8937b49c563bde9dd31beeab5f4f2970fcb74d97fa19c8bc039b2b9f4535125a
+        inline:
+          input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="echo">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[<value>-1E+400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="echo">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[<value>-1E+400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      observation:
+        value:
+          assembled:
+          - arguments: '"{\"city\":\"Paris\",\"value\":-1E+400}"'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":-1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 9b89af0ca5e395e8c5565aadc122be4a57e498af238a6c10cd1244456c159d68
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      stimulus:
+        semantic_sha256: 91f2e4d688bb0eda1eedc41a07c53dc29c76d7724a44f1a672278c9154c1bae0
+        inline:
+          input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="echo">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[<value>1e400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: echo
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+          chunks:
+          - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="echo">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[<value>1e400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      observation:
+        value:
+          assembled:
+          - arguments: '"{\"city\":\"Paris\",\"value\":1e400}"'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.8.8
+        capture_origin:
+          git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+          source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          job_sha256: 9b89af0ca5e395e8c5565aadc122be4a57e498af238a6c10cd1244456c159d68
+          crate_version: 0.8.8
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.8.8.yaml
+    suppress_inherited_from: true
