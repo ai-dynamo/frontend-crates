@@ -9,18 +9,8 @@ import re
 
 import yaml
 
+import ci_plan
 from verify_publication_transport import publication_metadata, runtime_catalog
-
-
-QUALIFICATION_SHARDS = 8
-
-QUALIFICATION = {
-    "test_bundled_history_json_snapshots_match_original_yaml",
-    "test_shared_javascript_matrix_contracts",
-    "test_full_corpus_json_snapshots_match_python_and_javascript_resolution",
-    "test_reference_backfills_require_request_bound_version_receipts",
-    "test_structural_request_is_bound_in_every_retained_dynamo_column",
-}
 
 
 def read_assignments(directory):
@@ -53,7 +43,49 @@ def verify_jobs(results, jobs, gate="conformance-table"):
     return {"validation_jobs": sorted(required)}
 
 
-def verify(baseline, assignments, *, require_history=False):
+def verify_plan(baseline, assignments, *, revision=None):
+    entries = [ci_plan.entry("fixtures", 0, 1), *ci_plan.plan()]
+    expected = {item["id"]: item for item in entries}
+    observed = Counter(document.get("plan", {}).get("entry") for document in assignments)
+    if observed != Counter({identifier: 1 for identifier in expected}):
+        raise ValueError(f"publication plan entries differ: expected={sorted(expected)}, observed={dict(observed)}")
+    qualification = set(ci_plan.qualification_nodes())
+    collected = {node for document in baseline for node in document["selected"]}
+    if not qualification <= collected:
+        raise ValueError("publication baseline is missing planned qualification tests")
+    for document in [*baseline, *assignments]:
+        if revision is not None and document.get("revision") != revision:
+            raise ValueError("publication test receipt differs from the checked revision")
+    for document in assignments:
+        receipt = document["plan"]
+        item = expected[receipt["entry"]]
+        resource_receipt = document.get("resource_shard", {})
+        if any(type(value) is not int for value in (receipt.get("index"), receipt.get("count"),
+                                                   resource_receipt.get("index"), resource_receipt.get("count"))):
+            raise ValueError("publication receipt coordinates must be integers")
+        coordinate = {"id": ci_plan.plan_digest(), "entry": item["id"], "lane": item["lane"],
+                      "index": item["index"], "count": item["count"]}
+        if receipt != coordinate:
+            raise ValueError("publication test receipt has a stale or invalid plan coordinate")
+        resource = ci_plan.resource_shard(item)
+        if resource_receipt != resource:
+            raise ValueError("publication resource shard differs from its planned coordinate")
+        eligible = document["eligible"]
+        if len(eligible) != len(set(eligible)):
+            raise ValueError("publication test receipt repeats eligible tests")
+        group = ci_plan.test_group(item)
+        if document.get("group") != group:
+            raise ValueError("publication test group differs from its planned coordinate")
+        selected = sorted(eligible)
+        if group:
+            selected = [node for ordinal, node in enumerate(selected) if ordinal % item["count"] == item["index"]]
+        if sorted(document["selected"]) != selected:
+            raise ValueError("publication receipt does not contain its complete test assignment")
+        if item["lane"] == "qualification" and set(selected) != qualification:
+            raise ValueError("publication resource shard is missing qualification tests")
+
+
+def verify(baseline, assignments, *, require_history=False, revision=None):
     if require_history:
         for document in [*baseline, *assignments]:
             if document.get("include_history") is not True or document.get("coverage") != "exhaustive":
@@ -61,16 +93,18 @@ def verify(baseline, assignments, *, require_history=False):
         if any(document.get("scope") is not None or document.get("group") is not None
                or document.get("selected") != document.get("eligible") for document in baseline):
             raise ValueError("publication baseline must collect every eligible test without filtering")
+        verify_plan(baseline, assignments, revision=revision)
     expected = {node for document in baseline for node in document["selected"]}
     observed = Counter(node for document in assignments for node in document["selected"])
     missing = sorted(expected - observed.keys())
     extra = sorted(observed.keys() - expected)
+    qualification_shards = sum(item["lane"] == "qualification" for item in ci_plan.plan())
     wrong_counts = {node: count for node, count in observed.items()
-                    if count != (QUALIFICATION_SHARDS if node.rsplit("::", 1)[-1] in QUALIFICATION else 1)}
+                    if count != (qualification_shards if node in ci_plan.qualification_nodes() else 1)}
     if not expected or missing or extra or wrong_counts:
         raise ValueError(f"CI selection mismatch: missing={missing}, extra={extra}, counts={wrong_counts}")
     return {"unique_tests": len(expected), "test_assignments": sum(observed.values()),
-            "qualification_shards": QUALIFICATION_SHARDS}
+            "qualification_shards": qualification_shards}
 
 
 def verify_publication(site, revision):
@@ -99,7 +133,7 @@ def main():
     if args.shard_matrix:
         if any((args.baseline, args.selections, args.job_results, args.require_history, args.publication, args.revision)):
             parser.error("--shard-matrix cannot be combined with test assignments")
-        print(json.dumps(list(range(QUALIFICATION_SHARDS))))
+        print(json.dumps([item["index"] for item in ci_plan.plan() if item["lane"] == "qualification"]))
         return
     if args.job_results is not None:
         if any((args.baseline, args.selections, args.require_history, args.publication, args.revision)):
@@ -110,7 +144,8 @@ def main():
         parser.error("--baseline and --selections are required for accounting")
     if bool(args.publication) != bool(args.revision) or args.publication and not args.require_history:
         parser.error("--publication and --revision require each other and --require-history")
-    result = verify(read_assignments(args.baseline), read_assignments(args.selections), require_history=args.require_history)
+    result = verify(read_assignments(args.baseline), read_assignments(args.selections), require_history=args.require_history,
+                    revision=args.revision)
     if args.publication:
         result.update(verify_publication(args.publication, args.revision))
     print(json.dumps(result))

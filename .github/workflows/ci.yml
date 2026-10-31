@@ -23,18 +23,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      qualification_matrix: ${{ steps.qualification.outputs.matrix }}
+      validation_matrix: ${{ steps.validation.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      - name: Install gate dependencies
+      - name: Select complete validation matrix
+        id: validation
         run: |
-          python3 -m venv "$RUNNER_TEMP/publication-gate"
-          "$RUNNER_TEMP/publication-gate/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
-      - name: Select complete qualification matrix
-        id: qualification
-        run: |
-          matrix=$("$RUNNER_TEMP/publication-gate/bin/python3" conformance/utils/src/verify_ci_selection.py --shard-matrix)
+          matrix=$(python3 conformance/utils/src/ci_plan.py --matrix)
           printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
 
   structural-tag-compat:
@@ -115,10 +111,6 @@ jobs:
     needs: prepare
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    env:
-      CONFORMANCE_PUBLISHER: ${{ github.workspace }}/target/release/conformance-publish
-      # Bump when the publisher command or output policy changes.
-      CONFORMANCE_PUBLICATION_POLICY: native-history-context-v4
     steps:
       - name: Checkout publication sources
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -126,24 +118,12 @@ jobs:
           lfs: true
           fetch-depth: 0
       - name: Configure publication output
-        run: |
-          {
-            printf 'CONFORMANCE_PUBLISHED_SITE=%s/pages\n' "$RUNNER_TEMP"
-            printf 'CONFORMANCE_PUBLICATION_CONTEXT=%s/conformance/publication-context.json\n' "$GITHUB_WORKSPACE"
-            printf 'CONFORMANCE_CONVERSION_CACHE=%s/conversion-cache\n' "$RUNNER_TEMP"
-          } >> "$GITHUB_ENV"
+        run: python3 conformance/utils/src/ci_publication.py configure
       - name: Install publication identity dependencies
-        run: |
-          python3 -m venv "$RUNNER_TEMP/publication-venv"
-          "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
-          echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
+        run: python3 conformance/utils/src/ci_plan.py --setup
       - name: Identify exact publication inputs and reader
         id: identity
-        run: |
-          history_args=()
-          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          identity=$("$CONFORMANCE_PYTHON" conformance/utils/src/ci_publication_cache.py identify --context "$CONFORMANCE_PUBLICATION_CONTEXT" --publication-policy "$CONFORMANCE_PUBLICATION_POLICY" "${history_args[@]}")
-          printf 'key=%s\n' "$identity" >> "$GITHUB_OUTPUT"
+        run: python3 conformance/utils/src/ci_publication.py identify
       - name: Restore exact publication cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
@@ -151,17 +131,7 @@ jobs:
           key: ${{ runner.os }}-native-publication-v4-${{ github.ref }}-${{ steps.identity.outputs.key }}
       - name: Admit cached publication or fall back to cold generation
         id: cache
-        run: |
-          if python3 conformance/utils/src/ci_publication_cache.py check --directory "$RUNNER_TEMP/native-publication" --identity '${{ steps.identity.outputs.key }}'; then
-            echo 'usable=true' >> "$GITHUB_OUTPUT"
-            mkdir -p "$CONFORMANCE_PUBLISHED_SITE" "$(dirname "$CONFORMANCE_PUBLISHER")"
-            tar -xf "$RUNNER_TEMP/native-publication/native-pages.tar" -C "$CONFORMANCE_PUBLISHED_SITE"
-            tar -xf "$RUNNER_TEMP/native-publication/source-catalogs.tar" -C "$GITHUB_WORKSPACE"
-            \cp -f "$RUNNER_TEMP/native-publication/conformance-publish" "$CONFORMANCE_PUBLISHER"
-            chmod u+x "$CONFORMANCE_PUBLISHER"
-          else
-            echo 'usable=false' >> "$GITHUB_OUTPUT"
-          fi
+        run: python3 conformance/utils/src/ci_publication.py restore --identity '${{ steps.identity.outputs.key }}'
       - name: Install locked production JavaScript bundler
         if: ${{ steps.cache.outputs.usable != 'true' }}
         uses: ./.github/actions/conformance-viewer-build
@@ -169,13 +139,10 @@ jobs:
       # qualification jobs below exercise this release binary on the full store.
       - name: Build native publisher
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: cargo build --locked --release -p conformance-publisher
+        run: python3 conformance/utils/src/ci_publication.py build
       - name: Snapshot permanent evidence and YAML paths
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: |
-          history_args=()
-          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          python3 conformance/utils/src/verify_publication_transport.py snapshot --inventory "$RUNNER_TEMP/source-generation-inventory.json" "${history_args[@]}"
+        run: python3 conformance/utils/src/ci_publication.py snapshot
       - name: Restore compatible family conversion fragments
         if: ${{ steps.cache.outputs.usable != 'true' }}
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
@@ -186,42 +153,19 @@ jobs:
             ${{ runner.os }}-conversion-v1-${{ github.ref }}-
       - name: Generate source catalog inputs
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: |
-          history_args=()
-          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py
-          \cp -f conformance/viewer-catalog.json conformance/viewer-latest-catalog.json
-          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then
-            "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py "${history_args[@]}"
-          fi
+        run: python3 conformance/utils/src/ci_publication.py catalog
       - name: Publish native site
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: |
-          history_args=()
-          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          "$CONFORMANCE_PUBLISHER" --root "$GITHUB_WORKSPACE" --output "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA" --cache-dir "$CONFORMANCE_CONVERSION_CACHE" "${history_args[@]}"
+        run: python3 conformance/utils/src/ci_publication.py publish
       - name: Verify publication preserved evidence without per-case YAML expansion
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: |
-          history_args=()
-          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          python3 conformance/utils/src/verify_publication_transport.py check --inventory "$RUNNER_TEMP/source-generation-inventory.json" "${history_args[@]}"
+        run: python3 conformance/utils/src/ci_publication.py verify
       - name: Bind publication metadata to this commit
-        run: >-
-          python3 conformance/utils/src/ci_publication_cache.py stamp
-          --directory "$CONFORMANCE_PUBLISHED_SITE"
-          --revision "$GITHUB_SHA"
+        run: python3 conformance/utils/src/ci_publication.py stamp
       - name: Package candidate site and matching binary
-        run: |
-          mkdir -p "$RUNNER_TEMP/native-publication"
-          tar -C "$CONFORMANCE_PUBLISHED_SITE" -cf "$RUNNER_TEMP/native-publication/native-pages.tar" .
-          test "$(stat -c %s "$RUNNER_TEMP/native-publication/native-pages.tar")" -lt 1000000000
-          if [[ "$CONFORMANCE_PUBLISHER" != "$RUNNER_TEMP/native-publication/conformance-publish" ]]; then
-            \cp -f "$CONFORMANCE_PUBLISHER" "$RUNNER_TEMP/native-publication/conformance-publish"
-          fi
-          tar -cf "$RUNNER_TEMP/native-publication/source-catalogs.tar" conformance/viewer-catalog.json conformance/viewer-unified-catalog.json conformance/viewer-latest-catalog.json conformance/publication-context.json
+        run: python3 conformance/utils/src/ci_publication.py package
       - name: Seal reusable publication payload
-        run: python3 conformance/utils/src/ci_publication_cache.py seal --directory "$RUNNER_TEMP/native-publication" --identity '${{ steps.identity.outputs.key }}'
+        run: python3 conformance/utils/src/ci_publication.py seal --identity '${{ steps.identity.outputs.key }}'
       - name: Retain candidate inputs for independent qualification
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -250,11 +194,7 @@ jobs:
       - name: Build isolated-fixture publisher
         run: cargo build --locked --release -p conformance-publisher
       - name: Fixture-only checks (start alongside publication)
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
-          CONFORMANCE_SELECTION_DIR="$RUNNER_TEMP/baseline-selection" /tmp/pvenv/bin/python3 -m pytest conformance/utils/tests --collect-only -q > "$RUNNER_TEMP/test-inventory.log"
-          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="-vv --numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" CONFORMANCE_CI_SHARD=fixtures conformance/utils/check.sh ci
+        run: python3 conformance/utils/src/ci_plan.py --setup --run fixtures
       - name: Retain complete collection baseline
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -271,216 +211,37 @@ jobs:
           if-no-files-found: error
 
 
-  conformance-core:
+  # Every plan entry gets its own runner; workload policy lives in ci_plan.py.
+  conformance-check:
+    name: conformance-check (${{ matrix.id }})
     needs: [prepare, pages-build]
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
-          # the render + guard steps extract them locally on first use.
-          lfs: true
-          # The renderer needs release tags to distinguish releases from changed source.
-          fetch-depth: 0
-
-      - name: Restore candidate publication for qualification
-        uses: ./.github/actions/conformance-publication
-
-      - name: Install bundler for publication equivalence checks
-        uses: ./.github/actions/conformance-viewer-build
-
-      - name: Conformance core shard (catalog + lint + invariants)
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
-          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="-vv --numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" CONFORMANCE_CI_SHARD=core conformance/utils/check.sh ci
-      - name: Retain collected test assignments
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
-          path: /tmp/conformance-selection/*.json
-          if-no-files-found: error
-
-
-  conformance-qualification:
-    needs: [prepare, pages-build]
-    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(needs.prepare.outputs.qualification_matrix) }}
-    env:
-      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
-      CONFORMANCE_PARITY_SHARD: ${{ matrix.shard }}
-      CONFORMANCE_PARITY_SHARDS: ${{ strategy.job-total }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
-          # the render + guard steps extract them locally on first use.
-          lfs: true
-          # The renderer needs release tags to distinguish releases from changed source.
-          fetch-depth: 0
-
-      - name: Restore candidate publication for qualification
-        uses: ./.github/actions/conformance-publication
-
-      - name: Independent source-to-JSON parity, matrix models, and historical receipts
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
-          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="--numprocesses=3 --dist=loadfile" CONFORMANCE_CI_SHARD=qualification conformance/utils/check.sh ci
-      - name: Retain collected test assignments
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
-          path: /tmp/conformance-selection/*.json
-          if-no-files-found: error
-
-
-  conformance-native-browser:
-    needs: [prepare, pages-build]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
+        include: ${{ fromJSON(needs.prepare.outputs.validation_matrix) }}
     env:
       CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
-          # the render + guard steps extract them locally on first use.
           lfs: true
-          # The renderer needs release tags to distinguish releases from changed source.
           fetch-depth: 0
-
       - name: Restore candidate publication for qualification
         uses: ./.github/actions/conformance-publication
-
       - name: Install bundler for isolated publication fixtures
+        if: ${{ matrix.bundler }}
         uses: ./.github/actions/conformance-viewer-build
-
-      - name: Strict native publication browser and startup acceptance
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
-          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=native-browser conformance/utils/check.sh ci
-      - name: Retain collected test assignments
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
-          path: /tmp/conformance-selection/*.json
-          if-no-files-found: error
-
-
-  conformance-browser:
-    needs: [prepare, pages-build]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        group: [0, 1]
-    env:
-      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
-      PYTEST_ADDOPTS: --conformance-group=${{ matrix.group }}/2
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-
-      - name: Restore candidate publication for qualification
-        uses: ./.github/actions/conformance-publication
-
-      - name: Conformance browser shard
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
-          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=browser conformance/utils/check.sh ci
-
-  # This module's Selenium runs contend with the Node model-contract test under
-  # xdist, so keep it on a separate runner from the core and smoke shards.
-      - name: Retain collected test assignments
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
-          path: /tmp/conformance-selection/*.json
-          if-no-files-found: error
-
-
-  conformance-viewer:
-    needs: [prepare, pages-build]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        group: [0, 1, 2]
-    env:
-      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
-      PYTEST_ADDOPTS: --conformance-group=${{ matrix.group }}/3
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-
-      - name: Restore candidate publication for qualification
-        uses: ./.github/actions/conformance-publication
-
-      - name: Install bundler for isolated publication fixtures
-        uses: ./.github/actions/conformance-viewer-build
-
-      - name: Conformance viewer browser shard
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
-          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=viewer conformance/utils/check.sh ci
-
-  # The first-visible-matrix tests each start an independent Chrome profile.
-  # Keep those initial-load checks on their own runner to bound the smoke shard.
-      - name: Retain collected test assignments
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
-          path: /tmp/conformance-selection/*.json
-          if-no-files-found: error
-
-
-  conformance-first-matrix:
-    needs: [prepare, pages-build]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-
-      - name: Restore candidate publication for qualification
-        uses: ./.github/actions/conformance-publication
-
-      - name: First visible matrix browser shard
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
-          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=first-matrix conformance/utils/check.sh ci
-
-  # Preserve one stable required status and publish only after every test shard passes.
+      - name: Run planned validation
+        env:
+          PLAN_LANE: ${{ matrix.lane }}
+          PLAN_INDEX: ${{ matrix.index }}
+          PLAN_COUNT: ${{ matrix.count }}
+        run: python3 conformance/utils/src/ci_plan.py --setup --run "$PLAN_LANE" --index "$PLAN_INDEX" --count "$PLAN_COUNT"
       - name: Retain collected test assignments
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -491,7 +252,7 @@ jobs:
 
 
   conformance-table:
-    needs: [prepare, rust, structural-tag-compat, pages-build, conformance-fixtures, conformance-core, conformance-qualification, conformance-native-browser, conformance-browser, conformance-viewer, conformance-first-matrix]
+    needs: [prepare, rust, structural-tag-compat, pages-build, conformance-fixtures, conformance-check]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -506,15 +267,13 @@ jobs:
           lfs: true
           fetch-depth: 0
       - name: Install gate dependencies
-        run: |
-          python3 -m venv "$RUNNER_TEMP/publication-gate"
-          "$RUNNER_TEMP/publication-gate/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
+        run: python3 conformance/utils/src/ci_plan.py --setup
       - name: Require every validation job
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
           printf '%s\n' "$NEEDS_JSON" > "$RUNNER_TEMP/validation-results.json"
-          "$RUNNER_TEMP/publication-gate/bin/python3" conformance/utils/src/verify_ci_selection.py --job-results "$RUNNER_TEMP/validation-results.json"
+          python3 conformance/utils/src/verify_ci_selection.py --job-results "$RUNNER_TEMP/validation-results.json"
       - name: Restore qualified publication
         uses: ./.github/actions/conformance-publication
       - name: Download complete collection baseline
@@ -530,7 +289,7 @@ jobs:
           path: ${{ runner.temp }}/assignments
       - name: Account for every collected test before publication
         run: |
-          "$RUNNER_TEMP/publication-gate/bin/python3" conformance/utils/src/verify_ci_selection.py --baseline "$RUNNER_TEMP/baseline-selection" --selections "$RUNNER_TEMP/assignments" --require-history --publication "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA"
+          python3 conformance/utils/src/verify_ci_selection.py --baseline "$RUNNER_TEMP/baseline-selection" --selections "$RUNNER_TEMP/assignments" --require-history --publication "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA"
 
       - name: Configure GitHub Pages
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -579,10 +338,9 @@ jobs:
           fetch-depth: 0
       - name: Restore deployed publication
         uses: ./.github/actions/conformance-publication
+      - name: Install delivery dependencies
+        run: python3 conformance/utils/src/ci_plan.py --setup
       - name: Verify public artifact and browser journey
         env:
           PUBLICATION_URL: ${{ steps.deployment.outputs.page_url }}
-        run: |
-          python3 -m venv "$RUNNER_TEMP/publication-smoke"
-          "$RUNNER_TEMP/publication-smoke/bin/pip" install --quiet -r conformance/utils/publication-requirements.in pytest selenium
-          "$RUNNER_TEMP/publication-smoke/bin/python3" -m pytest conformance/utils/tests/test_native_publication_browser.py -k test_publication_delivery_matches_qualified_artifact --publication-url "$PUBLICATION_URL" --include-history -vv
+        run: python3 conformance/utils/src/ci_publication.py delivery --url "$PUBLICATION_URL"
