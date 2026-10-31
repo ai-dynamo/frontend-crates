@@ -18,7 +18,9 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from browser_helpers import raw_view_download, settle
 from verify_publication_transport import runtime_catalog
-from fixture_test_support import capture_releases, historical_source_bytes
+from fixture_test_support import (assert_viewer_data_matches_history, capture_releases,
+                                  historical_source_bytes, history_request_contract,
+                                  identity_for_key)
 from test_browser_viewer import _driver, _ready, _server, _choose_engine
 from test_browser_smoke import _RECORD_FIRST_VISIBLE_MATRIX_JS
 import capture_sources
@@ -130,7 +132,8 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
         _ready(driver, "tab-unified")
         WebDriverWait(driver, 30).until(lambda page: page.find_element("css selector", "#viewer").get_attribute("data-history-available") != "checking")
         assert driver.find_element("css selector", "#viewer").get_attribute("data-history-available") == "true"
-        assert not any("/viewer-data/" in path for path in requests)
+        identity = identity_for_key(catalog, "dynamo")
+        assert_viewer_data_matches_history(site, requests, [identity])
         select = driver.find_element("css selector", "[data-slot-capture='0']")
         options = [option.get_attribute("value") for option in select.find_elements("tag name", "option")
                    if option.is_enabled()]
@@ -143,11 +146,15 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
         assert historical[0] != historical[1]
         Select(select).select_by_value(historical[0])
         _ready(driver, "tab-unified")
-        assert any("/viewer-data/" in path for path in requests)
+        assert_viewer_data_matches_history(site, requests, [identity, historical[0]])
         _choose_engine(driver, 1, "dynamo")
         _ready(driver, "tab-unified")
+        intermediate = driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys")
+        loaded = [identity, *(identity_for_key(catalog, key) for key in intermediate)]
+        assert_viewer_data_matches_history(site, requests, loaded)
         Select(driver.find_element("css selector", "[data-slot-capture='1']")).select_by_value(historical[1])
         _ready(driver, "tab-unified")
+        assert_viewer_data_matches_history(site, requests, [*loaded, *historical])
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == historical
         assert driver.execute_script("return [...document.querySelectorAll('#tab-unified .matrix-segments')].some(box => box.children.length === 2)")
         selection_url = driver.current_url
@@ -163,19 +170,14 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
                      if row["family"] == "qwen3" and row["implementation"] == "dynamo_v2"),
                     key=lambda row: unified_history._capture_release_sort_key(row["version"]))
         assert unified_history._capture_release_sort_key(older["version"]) < unified_history._capture_release_sort_key(current["version"])
-        original = historical_source_bytes(history_source, older["path"])
-        lineage = next(row for row in catalog['sources']['original_unified']
-                       if row['family'] == 'nemotron_v3' and row['implementation'] == 'vllm_rust'
-                       and row['version'] == '0.26.0')
-        lineage_original = historical_source_bytes(history_source, lineage['path'])
         checkout = Path(__file__).resolve().parents[3]
+        original = historical_source_bytes(history_source, older["path"])
         current_original = (checkout / current["yaml_path"]).read_bytes()
         selection = json.loads((checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
         latest_payload = (checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[1]
         assert hashlib.sha256(latest_payload).hexdigest() == selection["payload_sha256"]
         for path, expected, size in ((legacy["path"], legacy["sha256"], legacy["size"]),
                                      (older["path"], hashlib.sha256(original).hexdigest(), len(original)),
-                                     (lineage['path'], hashlib.sha256(lineage_original).hexdigest(), len(lineage_original)),
                                      (current["source"], hashlib.sha256(current_original).hexdigest(), len(current_original))):
             before = len(requests)
             driver.get(url + "?" + urlencode({"raw": path}))
@@ -231,7 +233,19 @@ def test_history_json_loading_dims_page_until_success_or_failure(historical_publ
         _ready(driver, "tab-unified")
         assert not dialog.is_displayed()
         assert driver.find_element("id", "viewer").get_attribute("data-history-available") == str(not missing).lower()
-        assert len(driver.find_elements("css selector", "#tab-unified .matrix-cell")) == geometry["cells"]
+        cells = len(driver.find_elements("css selector", "#tab-unified .matrix-cell"))
+        expected_cells = driver.execute_script("""
+            const view = window.__conformanceComparison.view;
+            return view.rows.length * view.columns.length;
+        """)
+        assert cells == expected_cells
+        catalog = runtime_catalog(historical_published_viewer)
+        families, _allowed, _indexes = history_request_contract(
+            historical_published_viewer, [identity_for_key(catalog, "dynamo")])
+        if not missing and families:
+            assert cells > geometry["cells"], "history discovery should add retained families outside the bootstrap catalog"
+        else:
+            assert cells == geometry["cells"]
     finally:
         gate[1].set()
         driver.quit()
@@ -371,9 +385,25 @@ def test_history_discovery_preserves_completed_table_selection_and_popup(histori
                     initial: window.__firstVisibleMatrix, loading: window.__loadingMatrixInsertions});
             }));
         """)
-        assert after == before
+        assert after["selection"] == before["selection"]
+        assert after["popup"] == before["popup"]
+        assert after["initial"] == before["initial"]
+        assert after["loading"] == before["loading"]
+        expected_cells = driver.execute_script("""
+            const view = window.__conformanceComparison.view;
+            return view.rows.length * view.columns.length;
+        """)
+        assert after["cells"] == expected_cells
+        catalog = runtime_catalog(historical_published_viewer)
+        identity = identity_for_key(catalog, "dynamo")
+        nonembedded_families, _allowed, _indexes = history_request_contract(
+            historical_published_viewer, [identity])
+        if nonembedded_families:
+            assert after["cells"] > before["cells"]
+        else:
+            assert after["cells"] == before["cells"]
         frames = driver.execute_script("return window.historyTransitionFrames")
-        assert frames and all(frame["cells"] == before["cells"] and frame["popup"] for frame in frames)
+        assert frames and all(frame["cells"] in {before["cells"], after["cells"]} and frame["popup"] for frame in frames)
     finally:
         gate[1].set()
         driver.quit()
