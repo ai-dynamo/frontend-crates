@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v41","implementation":"vllm_python_batch","lineage":[{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.23.0.yaml","version":"0.23.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.24.0.yaml","version":"0.24.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.25.1.yaml","version":"0.25.1"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.26.0.yaml","version":"0.26.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"9bd726065a422573e26156cda845ec5a87335224f58b84963ec1fe496a4984be","source":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"deepseek_v41","implementation":"vllm_python_batch","lineage":[{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.23.0.yaml","version":"0.23.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.24.0.yaml","version":"0.24.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.25.1.yaml","version":"0.25.1"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.26.0.yaml","version":"0.26.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"8507c3c5b7bbb9d5e9a440dd6862f05572f8089c98d879b06758a0f09100f0c1","source":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: captured
@@ -63685,3 +63685,745 @@ records:
               results_sha256: d36354ecc281527aba8940697a3bf1629d862e853550503a812497b2689cb7bd
             resolution: fresh_execution
     member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+        inline:
+          input: '
+
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: 1a0ddbf16ea9ea2c6bcf5eb6bccdf261ab53ba1040910fafbcb7d22db8a9961c
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 78d0d48e6ac1d002b99717eeca0831b9827c32605227ee3cf78fab08e7f43a7e
+        inline:
+          input: '<think>Check weather.</think>
+
+
+            <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<think>Check weather.</think>
+
+
+              <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+              '
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: Check weather.
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: 1a0ddbf16ea9ea2c6bcf5eb6bccdf261ab53ba1040910fafbcb7d22db8a9961c
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: 8535bbfb6301dfc14740df33e2e8b7ebaf622965f3055975291bb49ef965b030
+        inline:
+          input: '
+
+            <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+
+            <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Tokyo</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+
+              <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Tokyo</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+              '
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+            - name: get_weather
+              arguments:
+                city: Tokyo
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: 1a0ddbf16ea9ea2c6bcf5eb6bccdf261ab53ba1040910fafbcb7d22db8a9961c
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: db0882d529586a1c51fac24c2b5756f1ec03c1fc73f6729cdce16ed130162a71
+        inline:
+          input: '
+
+            <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+            Done.'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+              Done.'
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: 1a0ddbf16ea9ea2c6bcf5eb6bccdf261ab53ba1040910fafbcb7d22db8a9961c
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: 32127195f42115de7afb0b21c261963db0ba7a883244db2ebf138e308ec74274
+        inline:
+          input: '
+
+            <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+              '
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: 1a0ddbf16ea9ea2c6bcf5eb6bccdf261ab53ba1040910fafbcb7d22db8a9961c
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 3b113335d295455c9edeb008177e7e96fd6b480f2c35b47c248d784c3e79746b
+        inline:
+          input: 'Pressing it now.
+
+
+            <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'Pressing it now.
+
+
+              <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+              '
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Pressing it now.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: Pressing it now.
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: 1a0ddbf16ea9ea2c6bcf5eb6bccdf261ab53ba1040910fafbcb7d22db8a9961c
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: f324fcdc278a5392b202ba6fb96cd234ca6ff4dfc161331665b45a634773f7cf
+        inline:
+          input: '
+
+            <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par'
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments: {}
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: 1a0ddbf16ea9ea2c6bcf5eb6bccdf261ab53ba1040910fafbcb7d22db8a9961c
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16

@@ -1,4 +1,4 @@
-capture_selection: {"family":"glm47","implementation":"sglang_python","lineage":[{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.14.yaml","version":"0.5.14"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.16.yaml","version":"0.5.16"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.21.yaml","version":"0.5.21"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"09b556d03801c57ec221ff97f0926abe811540450f6bcfebd5ad1d1d1b44b44d","source":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"glm47","implementation":"sglang_python","lineage":[{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.14.yaml","version":"0.5.14"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.16.yaml","version":"0.5.16"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.21.yaml","version":"0.5.21"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"d7beebbfc0e5e3529d369992b0cd9f3ed0fd4ca20e9c2918ef23f3f93b5efbe9","source":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
 schema_version: 2
 provenance:
   status: legacy
@@ -59799,3 +59799,950 @@ records:
               results_sha256: 2a61f1200e6cdcdcf1a5c0f0f298b9a9581a2dc92d7399406617a28e6eebdf52
             resolution: fresh_execution
     member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: e7cef13b2af653b2a594af37fdda39bbcd286e2c3dd72570df66434cdd3014a9
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: b911a86887666870f7b18ab55d3b9a2df2e8ea3acdbd75d46ba7fabbc6f8de52
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: ebcf626b05d3ab1bfa8881337776d11bf2ccc06e128c825ed9b62e679f390451
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Tokyo</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+
+              <tool_call>get_weather<arg_key>city</arg_key><arg_value>Tokyo</arg_value></tool_call>
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{"city": "Paris"'
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: b911a86887666870f7b18ab55d3b9a2df2e8ea3acdbd75d46ba7fabbc6f8de52
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 716640936c95406fa398101157d2aae270cd17aebf0bc0a044525def5b8393c3
+        inline:
+          input: 'Pressing it now.
+
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Pressing it now.
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: b911a86887666870f7b18ab55d3b9a2df2e8ea3acdbd75d46ba7fabbc6f8de52
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 6946aebb7a885be03c780f7e0f4b5784ca3eeae8190e577e66d6613c7b08b79c
+        inline:
+          input: '<think>Check weather.</think>
+
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: Check weather.
+          - delta_text: </think>
+          - delta_text: '
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: b911a86887666870f7b18ab55d3b9a2df2e8ea3acdbd75d46ba7fabbc6f8de52
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: a17933e6112b4f271c90a3b471f6cf20596a50367a516635c31a4555384062d0
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            Done.'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              Done.'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              Done.'
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{'
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"city": '
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"Paris'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+          - expected:
+            - kind: text
+              text: '
+
+                Done.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: b911a86887666870f7b18ab55d3b9a2df2e8ea3acdbd75d46ba7fabbc6f8de52
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+        inline:
+          input: '
+
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: b911a86887666870f7b18ab55d3b9a2df2e8ea3acdbd75d46ba7fabbc6f8de52
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 4e82ce4fb4f41f2e4e6bfdd3570d5472557ffaf3264b2db70f013541f39d3f39
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <tool_call>get_weather<arg_key>city</arg_key><arg_value>Par'
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Par'
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - kind: tool_call
+              name: get_weather
+              arguments: ''
+            - kind: tool_call
+              name: null
+              arguments: '{"city": "Par'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: b911a86887666870f7b18ab55d3b9a2df2e8ea3acdbd75d46ba7fabbc6f8de52

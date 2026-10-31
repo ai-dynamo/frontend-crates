@@ -813,11 +813,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              a: '1'
+              a: "1"
           - kind: tool_call
             name: g
             arguments:
-              b: '2'
+              b: "2"
           chunks:
           - expected:
             - arguments: ''
@@ -855,11 +855,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  a: '1'
+                  a: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  b: '2'
+                  b: "2"
               chunks:
               - expected:
                 - arguments: ''
@@ -4857,9 +4857,7 @@ records:
           - kind: tool_call
             name: inspect
             arguments:
-              value: ' café 🐈 <|tool_call_end|> <|tool_calls_section_end|> &amp; "x"
-
-                '
+              value: " café \U0001F408 <|tool_call_end|> <|tool_calls_section_end|> &amp; \"x\"\n"
               nested:
                 values:
                 - true
@@ -5035,7 +5033,7 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: 🐈
+            - arguments: "\U0001F408"
               kind: tool_call
               name: null
           - expected:
@@ -5393,11 +5391,11 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '4'
+            - arguments: "4"
               kind: tool_call
               name: null
           - expected:
-            - arguments: '2'
+            - arguments: "2"
               kind: tool_call
               name: null
           - expected:
@@ -5413,19 +5411,19 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '1'
+            - arguments: "1"
               kind: tool_call
               name: null
           - expected:
-            - arguments: '2'
+            - arguments: "2"
               kind: tool_call
               name: null
           - expected:
-            - arguments: '5'
+            - arguments: "5"
               kind: tool_call
               name: null
           - expected:
-            - arguments: '0'
+            - arguments: "0"
               kind: tool_call
               name: null
           - expected:
@@ -13974,7 +13972,7 @@ records:
                 - delta_text: l
                 - delta_text: e
                 - delta_text: ':'
-                - delta_text: '0'
+                - delta_text: "0"
                 - delta_text: <
                 - delta_text: '|'
                 - delta_text: t
@@ -22246,7 +22244,7 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '7'
+            - arguments: "7"
               kind: tool_call
               name: null
           - expected:
@@ -22624,7 +22622,7 @@ records:
                   kind: tool_call
                   name: null
               - expected:
-                - arguments: '7'
+                - arguments: "7"
                   kind: tool_call
                   name: null
               - expected:
@@ -22922,7 +22920,7 @@ records:
                 - delta_text: l
                 - delta_text: e
                 - delta_text: ':'
-                - delta_text: '0'
+                - delta_text: "0"
                 - delta_text: <
                 - delta_text: '|'
                 - delta_text: t
@@ -22960,7 +22958,7 @@ records:
                 - delta_text: t
                 - delta_text: '"'
                 - delta_text: ':'
-                - delta_text: '7'
+                - delta_text: "7"
                 - delta_text: ','
                 - delta_text: '"'
                 - delta_text: c
@@ -23207,7 +23205,7 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '7'
+            - arguments: "7"
               kind: tool_call
               name: null
           - expected:
@@ -23473,7 +23471,7 @@ records:
                   kind: tool_call
                   name: null
               - expected:
-                - arguments: '7'
+                - arguments: "7"
                   kind: tool_call
                   name: null
               - expected:
@@ -23659,7 +23657,7 @@ records:
                 - delta_text: l
                 - delta_text: e
                 - delta_text: ':'
-                - delta_text: '0'
+                - delta_text: "0"
                 - delta_text: <
                 - delta_text: '|'
                 - delta_text: t
@@ -23697,7 +23695,7 @@ records:
                 - delta_text: t
                 - delta_text: '"'
                 - delta_text: ':'
-                - delta_text: '7'
+                - delta_text: "7"
                 - delta_text: ','
                 - delta_text: '"'
                 - delta_text: c
@@ -24365,7 +24363,7 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '1'
+            - arguments: "1"
               kind: tool_call
               name: null
           - expected: []
@@ -24971,7 +24969,7 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '1'
+            - arguments: "1"
               kind: tool_call
               name: null
           - expected: []
@@ -25642,7 +25640,7 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '1'
+            - arguments: "1"
               kind: tool_call
               name: null
           - expected: []
@@ -26248,7 +26246,7 @@ records:
               kind: tool_call
               name: null
           - expected:
-            - arguments: '1'
+            - arguments: "1"
               kind: tool_call
               name: null
           - expected: []
@@ -28405,7 +28403,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: reasoning
             text: mid
           chunks:
@@ -28455,7 +28453,7 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: mid
               chunks:
@@ -28579,7 +28577,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: reasoning
             text: B
           chunks:
@@ -28636,7 +28634,7 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: B
               chunks:
@@ -29480,7 +29478,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: reasoning
             text: BC
           chunks:
@@ -29542,7 +29540,7 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: BC
               chunks:
@@ -29682,7 +29680,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: reasoning
             text: B
           chunks:
@@ -29740,7 +29738,7 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: B
               chunks:
@@ -30214,7 +30212,7 @@ records:
                 - delta_text: <|tool_call_begin|>
                 - delta_text: functions.f:0
                 - delta_text: <|tool_call_argument_begin|>
-                - delta_text: '{"x": "é🙂'
+                - delta_text: "{\"x\": \"é\U0001F642"
                 - delta_text: <par{value}"}<|tool_call_end|>
                 - delta_text: ' after'
                 - delta_text: </think>
@@ -30225,7 +30223,7 @@ records:
                   named_tool: null
                   starting_state: None
                   tool_output_mode: GuidedJson
-                input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "é🙂<par{value}"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                input: "<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{\"x\": \"é\U0001F642<par{value}\"}<|tool_call_end|> after</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
                 tools:
                 - name: get_weather
                   parameters:
@@ -32075,7 +32073,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -32111,7 +32109,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -32150,7 +32148,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -32180,7 +32178,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -32216,7 +32214,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -32254,7 +32252,7 @@ records:
                     additionalProperties: false
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     type: object
@@ -32283,7 +32281,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -32319,7 +32317,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -32356,7 +32354,7 @@ records:
                   parameters:
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                     additionalProperties: false
                     properties:
                       value:
@@ -32389,7 +32387,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -32425,7 +32423,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -32463,7 +32461,7 @@ records:
                     additionalProperties: false
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                         type: string
                     required:
                     - value
@@ -35416,7 +35414,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -35452,7 +35450,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -35492,7 +35490,7 @@ records:
                       value:
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                         type: string
                     required:
                     - value
@@ -35732,7 +35730,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -35768,7 +35766,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -35807,7 +35805,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -36365,7 +36363,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -36401,7 +36399,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -36438,7 +36436,7 @@ records:
                   parameters:
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                     additionalProperties: false
                     properties:
                       value:
@@ -37230,7 +37228,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -37266,7 +37264,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -42415,18 +42413,18 @@ records:
               unavailable: Parser-only peer capture does not execute structural-tag generation constraints.
               capture_input:
                 chunks:
-                - delta_text: Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
                 finish_reason: stop
                 init:
                   named_tool: null
                   starting_state: Reasoning
                   structural_tag:
                     rejected:
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
-                    - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
                     schema:
                       additionalProperties: false
                       properties:
@@ -42445,7 +42443,7 @@ records:
                       - conditions
                       type: object
                   tool_output_mode: Native
-                input: Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
                 tools: []
               capture_stimulus:
                 unavailable:
@@ -42619,7 +42617,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           chunks:
           - expected: []
           - expected: []
@@ -42663,7 +42661,7 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               chunks:
               - expected: []
               - expected: []
@@ -42885,7 +42883,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: reasoning
             text: check B
           chunks:
@@ -42948,7 +42946,7 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: check B
               chunks:
@@ -43232,15 +43230,15 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              x: '2'
+              x: "2"
           - kind: tool_call
             name: h
             arguments:
-              x: '3'
+              x: "3"
           chunks:
           - expected: []
           - expected:
@@ -43285,15 +43283,15 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  x: '2'
+                  x: "2"
               - kind: tool_call
                 name: h
                 arguments:
-                  x: '3'
+                  x: "3"
               chunks:
               - expected: []
               - expected:
@@ -44710,7 +44708,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           chunks:
           - expected: []
           - expected: []
@@ -44753,7 +44751,7 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               chunks:
               - expected: []
               - expected: []
@@ -45508,4 +45506,346 @@ records:
               source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
               version: 0.31.0
             resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml
+  blank_framing_tool_only:
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: 05bbd45200112bcfb2f622f40a844b91ddaa3fba3f5455433ffa5f77be2c0987
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '{"city": "Paris"}'
+              kind: tool_call
+              name: null
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 8c870ed23ee76eaccf06713d38ef2cf0015da8b9415955306be5c8399ca3bc51
+            results_sha256: 1c6e9f3b9d4b5fbc6cef7a6f7829d27d1ba80342230fbeac207cc47fe23c917f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml
+  blank_framing_between_calls_single_chunk:
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        ref: current
+        semantic_sha256: 43c838b5169b200b4eee7fadd8e1fc19ece327204c6f346a12d6a0a8cf99e663
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+            - arguments: '{"city": "Paris"}'
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 8c870ed23ee76eaccf06713d38ef2cf0015da8b9415955306be5c8399ca3bc51
+            results_sha256: 1c6e9f3b9d4b5fbc6cef7a6f7829d27d1ba80342230fbeac207cc47fe23c917f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml
+  blank_framing_with_prose:
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        ref: current
+        semantic_sha256: 95ef435d0897d5c06d939a118d373749d3d176196520664498c85f967b0d2748
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Pressing it now.
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '{"city": "Paris"}'
+              kind: tool_call
+              name: null
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 8c870ed23ee76eaccf06713d38ef2cf0015da8b9415955306be5c8399ca3bc51
+            results_sha256: 1c6e9f3b9d4b5fbc6cef7a6f7829d27d1ba80342230fbeac207cc47fe23c917f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml
+  blank_framing_after_reasoning:
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 8f0991b1b42524feb541b16a07fbdd172cfdf390a5a56e96445a44c99c7d1a34
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '{"city": "Paris"}'
+              kind: tool_call
+              name: null
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 8c870ed23ee76eaccf06713d38ef2cf0015da8b9415955306be5c8399ca3bc51
+            results_sha256: 1c6e9f3b9d4b5fbc6cef7a6f7829d27d1ba80342230fbeac207cc47fe23c917f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml
+  blank_framing_prose_after_call:
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        ref: current
+        semantic_sha256: 11cde50da21d459babee00017da87532c472a87cf6916c75ec74e5b8abfb40b8
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '{"city": "Paris"}'
+              kind: tool_call
+              name: null
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 8c870ed23ee76eaccf06713d38ef2cf0015da8b9415955306be5c8399ca3bc51
+            results_sha256: 1c6e9f3b9d4b5fbc6cef7a6f7829d27d1ba80342230fbeac207cc47fe23c917f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml
+  blank_output_without_call:
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        ref: current
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 8c870ed23ee76eaccf06713d38ef2cf0015da8b9415955306be5c8399ca3bc51
+            results_sha256: 1c6e9f3b9d4b5fbc6cef7a6f7829d27d1ba80342230fbeac207cc47fe23c917f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml
+  blank_framing_incomplete_call:
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        ref: current
+        semantic_sha256: 085bb425d2ca1ee6c867a8fec2ea3179c77b8ae4e729aeecd73293b93b0edbee
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete Kimi K2 tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - arguments: ''
+              kind: tool_call
+              name: get_weather
+            - arguments: '{"city": "Par'
+              kind: tool_call
+              name: null
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 8c870ed23ee76eaccf06713d38ef2cf0015da8b9415955306be5c8399ca3bc51
+            results_sha256: 1c6e9f3b9d4b5fbc6cef7a6f7829d27d1ba80342230fbeac207cc47fe23c917f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
     member: conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.31.0.yaml

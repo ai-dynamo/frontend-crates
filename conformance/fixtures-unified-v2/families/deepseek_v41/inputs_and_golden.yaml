@@ -21076,6 +21076,502 @@ cases:
 
 
           '
+  blank_framing_after_reasoning:
+    lifecycle: active
+    scenario: blank_framing_after_reasoning
+    description: Reasoning precedes a native call with a two-LF DSML separator. Preserve reasoning and the call, consume the separator, and retain the trailing LF.
+    policy:
+    - P8
+    - I2
+    display_id: UNIFIED.11-blank_framing_after_reasoning
+    historical_ids: []
+    request:
+      input: '<think>Check weather.</think>
+
+
+        <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '<think>Check weather.</think>
+
+
+          <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+          '
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_between_calls_single_chunk:
+    lifecycle: active
+    scenario: blank_framing_between_calls_single_chunk
+    description: Two native calls have one LF before and after them and a two-LF separator between them, delivered in one push. DSML consumes only the separator and retains the outer LFs.
+    policy:
+    - P8
+    - I6
+    display_id: UNIFIED.8-blank_framing_between_calls_single_chunk
+    historical_ids: []
+    request:
+      input: '
+
+        <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+
+        <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Tokyo</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+          <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+
+          <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Tokyo</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+          '
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Tokyo
+      - kind: text
+        text: '
+
+          '
+  blank_framing_prose_after_call:
+    lifecycle: active
+    scenario: blank_framing_prose_after_call
+    description: A native call has a leading LF and trailing LF plus prose. Neither run is a two-LF DSML separator, so preserve both in event order.
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_prose_after_call
+    historical_ids: []
+    request:
+      input: '
+
+        <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+        Done.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+          <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+          Done.'
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          Done.'
+  blank_framing_tool_only:
+    lifecycle: active
+    scenario: blank_framing_tool_only
+    description: A native call has one LF before and after it. Neither run is the two-LF DSML separator, so both stay visible text.
+    policy:
+    - P8
+    - I5
+    display_id: UNIFIED.8-blank_framing_tool_only
+    historical_ids: []
+    request:
+      input: '
+
+        <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+          <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+          '
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_with_prose:
+    lifecycle: active
+    scenario: blank_framing_with_prose
+    description: Visible prose precedes a native call with a two-LF DSML separator. Consume that separator, preserve the prose and the trailing LF.
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_with_prose
+    historical_ids: []
+    request:
+      input: 'Pressing it now.
+
+
+        <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Pressing it now.
+
+
+          <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+
+          '
+    golden:
+      assembled:
+      - kind: text
+        text: Pressing it now.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_incomplete_call:
+    lifecycle: active
+    scenario: blank_framing_incomplete_call
+    description: A framing newline, then a call cut off mid-parameter at EOF. The call never completes, so the newline is kept as text and the partial call is dropped, for Nemotron V3 as for Qwen3. DeepSeek consumes only its native two-LF separator immediately before a call; other visible whitespace remains text.
+    policy:
+    - P8
+    - P2
+    display_id: UNIFIED.5-blank_framing_incomplete_call
+    historical_ids: []
+    request:
+      input: '
+
+        <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+          <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par'
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
   arg_numeric_overflow_siblings_finite:
     lifecycle: active
     scenario: arg_numeric_overflow_siblings_finite

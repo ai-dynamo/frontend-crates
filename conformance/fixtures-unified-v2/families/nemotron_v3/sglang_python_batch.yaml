@@ -1,4 +1,4 @@
-capture_selection: {"family":"nemotron_v3","implementation":"sglang_python_batch","lineage":[{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.14.yaml","version":"0.5.14"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.16.yaml","version":"0.5.16"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.21.yaml","version":"0.5.21"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"29202a66ff8f66cce19d52b6eff811590b96f29f5fd343b01a6f1d54128b51f4","source":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"nemotron_v3","implementation":"sglang_python_batch","lineage":[{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.14.yaml","version":"0.5.14"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.16.yaml","version":"0.5.16"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.21.yaml","version":"0.5.21"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"b2dcd0d130e816a209ffe3b82cfd6f7f2c819c5c82d075a2a38ef70d3ea020ae","source":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml","surface":"unified","version":"0.5.22"}
 schema_version: 2
 provenance:
   status: captured
@@ -82069,3 +82069,1009 @@ records:
               results_sha256: e0acd458221300b728b772ee47e93f342b7579cdf1a649f703e7f09926fecc9b
             resolution: fresh_execution
     member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: ff4f9786360718ee21dbae8f7456d6314019d9ee987411cf59f9cb67e90fdc79
+        inline:
+          input: '</think>
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: </think>
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+            results_sha256: b5862f198bc9a837d694eb998589d4cfe2462fe35d61a37b0ef580f76b33ddbd
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: a97a97b3761bb38b46c0d436bcec1564fcbe24ce537298dcb93ac6eac9bc6c85
+        inline:
+          input: '</think>
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Tokyo
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '</think>
+
+              <tool_call>
+
+              <function=get_weather>
+
+              <parameter=city>
+
+              Paris
+
+              </parameter>
+
+              </function>
+
+              </tool_call>
+
+
+              <tool_call>
+
+              <function=get_weather>
+
+              <parameter=city>
+
+              Tokyo
+
+              </parameter>
+
+              </function>
+
+              </tool_call>
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+            - name: get_weather
+              arguments:
+                city: Tokyo
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+            results_sha256: b5862f198bc9a837d694eb998589d4cfe2462fe35d61a37b0ef580f76b33ddbd
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 2bde40cfcdf8a90074673afd3ce2ad04c05b55f43d9ae22ed84afb084559ed48
+        inline:
+          input: '</think>Pressing it now.
+
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: </think>
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'Pressing it now.
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+            results_sha256: b5862f198bc9a837d694eb998589d4cfe2462fe35d61a37b0ef580f76b33ddbd
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: d190f8bebe0dc4bc2ca3087c97c0353be469b0a7e11d911bc074a141462f6083
+        inline:
+          input: '</think><think>Check weather.</think>
+
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: </think>
+          - delta_text: <think>
+          - delta_text: Check weather.
+          - delta_text: </think>
+          - delta_text: '
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '<think>Check weather.</think>
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '<think>Check weather.</think>
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+            results_sha256: b5862f198bc9a837d694eb998589d4cfe2462fe35d61a37b0ef580f76b33ddbd
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 3e092974d72ef5cf3dc94309395d1274c570f466a91ff5eb8cd88c6fd156ba21
+        inline:
+          input: '</think>
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            Done.'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: </think>
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              Done.'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+            results_sha256: b5862f198bc9a837d694eb998589d4cfe2462fe35d61a37b0ef580f76b33ddbd
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 8c6b43542f03a1e166037a7b6d72551c79451876b4dbe865d91c9692fb6a1f8b
+        inline:
+          input: '</think>
+
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: </think>
+          - delta_text: '
+
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+
+              '
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+            results_sha256: b5862f198bc9a837d694eb998589d4cfe2462fe35d61a37b0ef580f76b33ddbd
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 87edd5e87914960855aac5be187f49f4b5de6009895ac0634f2ca5eb6a903130
+        inline:
+          input: '</think>
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: </think>
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Par'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Par
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Par
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c
+            results_sha256: b5862f198bc9a837d694eb998589d4cfe2462fe35d61a37b0ef580f76b33ddbd
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: 75f2b0f1edef93c9ef7a820fa1c07ab90154f8ac6fffbe693fde52ca9ed2fb1c

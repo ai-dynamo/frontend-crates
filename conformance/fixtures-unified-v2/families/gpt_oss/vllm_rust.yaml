@@ -1,4 +1,4 @@
-capture_selection: {"family":"gpt_oss","implementation":"vllm_rust","lineage":[{"family":"gpt_oss","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"ee42c7ca299182b95eb1b46542e50bb26da32c584b37c4622175ff55f0ec5fc8","source":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"gpt_oss","implementation":"vllm_rust","lineage":[{"family":"gpt_oss","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"be7f6b33d0727c315d0f33d3e7f04f2f92d2c86ca2219313b60c1c19725c8806","source":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: legacy
@@ -31894,5 +31894,403 @@ records:
             implementation: vllm_rust
             job_sha256: 851782760c4093484ebeb42a5b8db1d275966a26155b093336cf7c37627dffcc
             results_sha256: 455e2fe247e4350834da2721f8bc5eac895d524b47e91dd6a6419c9f04df484e
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: a1b6dfd5ebcba51f7d16ee24f24c09f253dd36190c65bb8940cf138d89ac6aeb
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: 'commentary to=functions.get_weather '
+          - delta_text: <|constrain|>
+          - delta_text: json
+          - delta_text: <|message|>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: ef4a4795b68a017ba4e9c2d078ccacfd9d5ab0c10ed8b3222a68eb86d1c6894a
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+
+            <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Tokyo"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: '<|start|>assistant<|channel|>final<|message|>
+
+              <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+
+              <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Tokyo"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+              <|return|>'
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: e773900072a012c169f920114723c7984eb0f07b06a6ca42456d488a8d99eefa
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>Pressing it now.
+
+
+            <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: 'commentary to=functions.get_weather '
+          - delta_text: <|constrain|>
+          - delta_text: json
+          - delta_text: <|message|>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 91613061bcf6105b20a0da7701ca645f661aa26503538e8ff9cc7d69899de649
+        inline:
+          input: '<|start|>assistant<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>final<|message|>
+
+
+            <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: analysis
+          - delta_text: <|message|>
+          - delta_text: Check weather.
+          - delta_text: <|end|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: 'commentary to=functions.get_weather '
+          - delta_text: <|constrain|>
+          - delta_text: json
+          - delta_text: <|message|>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 2e2bc267c32fd66f1cee9f7390b930af291fd551db48d4c10a2b3de44b2db21d
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+            Done.<|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: 'commentary to=functions.get_weather '
+          - delta_text: <|constrain|>
+          - delta_text: json
+          - delta_text: <|message|>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              Done.'
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 712994908f4ed1624e90608946cd8b24678590aeea3c521f75da6010c685fff3
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: b9e90d6a16e99f0c5b7c3cd056d68d790e8a7e36c00495890a10222031ebc99a
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: '<|start|>assistant<|channel|>final<|message|>
+
+              <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Par'
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
             source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
             version: 0.31.0

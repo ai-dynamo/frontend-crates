@@ -1,4 +1,4 @@
-capture_selection: {"family":"beam","implementation":"sglang_python_batch","lineage":[{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.14.yaml","version":"0.5.14"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.16.yaml","version":"0.5.16"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.21.yaml","version":"0.5.21"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"3f6581cfdbe230e98e7313d806636df0f4e513cdfbddc2a3f41088080a65fbaf","source":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"beam","implementation":"sglang_python_batch","lineage":[{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.14.yaml","version":"0.5.14"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.16.yaml","version":"0.5.16"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.21.yaml","version":"0.5.21"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"34bbf521cc05560be63d784bc746212846051a232b23337b2f909c22697aed4e","source":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml","surface":"unified","version":"0.5.22"}
 schema_version: 2
 provenance:
   status: captured
@@ -49136,3 +49136,832 @@ records:
           source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
           adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
           job_sha256: d265a21f903f1d4d6633d73233cb37d9d9df187461cb164471c5d0aa0b954fd7
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: 1baadf2baaaf46839686b394c021f4f7fd05d6c4bb35a75c18eb120a98e8663b
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </rfl:parameter>
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: 32c6b838c973262eceb269ae40cdc04fbd1b2b245cdcac67ccccde022c9f7139
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: bd73c35e01a076b637b40126b7d8bc020e5fb0a24462a77dad877f4d0b8b28be
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+
+            <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Tokyo
+
+            </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant<|channel|>final<|message|>
+
+              <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Paris
+
+              </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+
+              <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Tokyo
+
+              </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+              <|return|>'
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: 32c6b838c973262eceb269ae40cdc04fbd1b2b245cdcac67ccccde022c9f7139
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: ffbf6441e3db11afa46f31fdd9aaa2732916a74041f26614b9ef8118fe67dd6f
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>Pressing it now.
+
+
+            <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </rfl:parameter>
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: 32c6b838c973262eceb269ae40cdc04fbd1b2b245cdcac67ccccde022c9f7139
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: c81a2428132a777e876058012adc99aa6e5137a6c3a05b3ee0b6d74237ace7a2
+        inline:
+          input: '<|start|>assistant<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>final<|message|>
+
+
+            <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: analysis
+          - delta_text: <|message|>
+          - delta_text: Check weather.
+          - delta_text: <|end|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </rfl:parameter>
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: 32c6b838c973262eceb269ae40cdc04fbd1b2b245cdcac67ccccde022c9f7139
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 04ca9dfe9186067b9a06aa4626d98c4e1f1611249ed4661b69faa8c4595053ae
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>
+
+            Done.<|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </rfl:parameter>
+          - delta_text: <|call|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+              Done.'
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: 32c6b838c973262eceb269ae40cdc04fbd1b2b245cdcac67ccccde022c9f7139
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: b18eb06312b40a4a6ff52c6b49cc649cabd32ab00453df2b42619446a52fa213
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+
+            <|return|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: 32c6b838c973262eceb269ae40cdc04fbd1b2b245cdcac67ccccde022c9f7139
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: e322a03644bb6b7d2275d31e34afcbb4eece96a2a42a2367b5d3f7fe43766724
+        inline:
+          input: '<|start|>assistant<|channel|>final<|message|>
+
+            <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant<|channel|>final<|message|>
+
+              <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Par'
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: SGLang does not register FunctionCallParser beam, ReasoningParser beam
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: 32c6b838c973262eceb269ae40cdc04fbd1b2b245cdcac67ccccde022c9f7139
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a

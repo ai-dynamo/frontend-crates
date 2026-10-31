@@ -1587,7 +1587,7 @@ def _family_value(scenario, family):
 
 
 def _logical_events(scenario, family, events):
-    """Replace only the authored family-marker value, never event kinds or keys."""
+    """Normalize checked grammar differences while preserving event payloads."""
     family_value = _family_value(scenario, family)
     out = json.loads(json.dumps(events))
     if family_value is not None:
@@ -1604,6 +1604,16 @@ def _logical_events(scenario, family, events):
                     event["arguments"][key]["inner"] = "FAMILY_MARKER_VALUE"
                     matches += 1
         assert matches == 1, (scenario, family, "wrong marker role or payload", events)
+    if family in {"deepseek_v4", "deepseek_v41"}:
+        # The full native blank-framing oracle is checked before normalization.
+        # Restore only the single DSML-owned separator for comparison with
+        # families that preserve that same run as visible text.
+        if scenario == "blank_framing_between_calls_single_chunk":
+            out.insert(2, {"kind": "text", "text": "\n\n"})
+        elif scenario == "blank_framing_with_prose":
+            out[0]["text"] += "\n\n"
+        elif scenario == "blank_framing_after_reasoning":
+            out.insert(1, {"kind": "text", "text": "\n\n"})
     return out
 
 
@@ -3043,7 +3053,70 @@ def _assert_quoted_tool_recipient_boundary(family, case):
     assert family in headers and headers[family] in case["input"], (family, "guided_json_quoted_bare_tool_header_in_answer", "missing tool-recipient boundary")
 
 
+def _assert_blank_framing_contracts(corpus):
+    # P2 preserves preceding text when EOF drops a call. DSML consumes exactly
+    # one two-LF separator before calls; P8 holds framing only for Nemotron.
+    # Literal expectations are independent of the generator and observations.
+    lf = {"kind": "text", "text": "\n"}
+    twoLf = {"kind": "text", "text": "\n\n"}
+    call = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
+    second = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Tokyo"}}
+    reason = {"kind": "reasoning", "text": "Check weather."}
+    for family in NATIVE_FAMILIES:
+        expected = {
+            "blank_framing_tool_only": [lf, call, lf],
+            "blank_framing_between_calls_single_chunk": [lf, call, twoLf, second, lf],
+            "blank_framing_with_prose": [{"kind": "text", "text": "Pressing it now.\n\n"}, call, lf],
+            "blank_framing_after_reasoning": [reason, twoLf, call, lf],
+            "blank_framing_prose_after_call": [lf, call, {"kind": "text", "text": "\nDone."}],
+            "blank_output_without_call": [twoLf],
+            "blank_framing_incomplete_call": [lf],
+        }
+        if family in {"deepseek_v4", "deepseek_v41"}:
+            expected.update({
+                "blank_framing_between_calls_single_chunk": [lf, call, second, lf],
+                "blank_framing_with_prose": [{"kind": "text", "text": "Pressing it now."}, call, lf],
+                "blank_framing_after_reasoning": [reason, call, lf],
+            })
+        elif family == "nemotron_v3":
+            expected.update({
+                "blank_framing_tool_only": [call],
+                "blank_framing_between_calls_single_chunk": [call, second],
+                "blank_framing_after_reasoning": [reason, call],
+                "blank_framing_prose_after_call": [call, {"kind": "text", "text": "\n\nDone."}],
+            })
+        for scenario, golden in expected.items():
+            key = f"UNIFIED.{scenario}.{family}"
+            assert key in corpus[family], (family, scenario, "missing applicable blank-framing input")
+            assert corpus[family][key]["golden"] == golden, (family, scenario, "blank-framing source-policy oracle")
+
+
+@pytest.fixture(scope="module")
+def blank_framing_contract_corpus():
+    return {family: build_cases(family) for family in NATIVE_FAMILIES}
+
+
+@pytest.mark.parametrize("family", ["deepseek_v4", "deepseek_v41"])
+@pytest.mark.parametrize("mutation", ["drop_lf", "invent_call", "city", "extra_lf", "wrong_family"])
+def test_blank_framing_contract_rejects_semantic_mutations(blank_framing_contract_corpus, family, mutation):
+    corpus = deepcopy(blank_framing_contract_corpus)
+    case = corpus[family][f"UNIFIED.blank_framing_tool_only.{family}"]
+    if mutation == "drop_lf":
+        case["golden"].pop(0)
+    elif mutation == "invent_call":
+        corpus[family][f"UNIFIED.blank_framing_incomplete_call.{family}"]["golden"].append(case["golden"][1])
+    elif mutation == "city":
+        case["golden"][1]["arguments"]["city"] = "London"
+    elif mutation == "extra_lf":
+        case["golden"][0]["text"] += "\n"
+    else:
+        case["golden"] = deepcopy(corpus["nemotron_v3"]["UNIFIED.blank_framing_tool_only.nemotron_v3"]["golden"])
+    with pytest.raises(AssertionError, match="blank-framing source-policy oracle"):
+        _assert_blank_framing_contracts(corpus)
+
+
 def _assert_cross_family_contract(corpus):
+    _assert_blank_framing_contracts(corpus)
     assert_native_response_counterparts(corpus, G, taxonomy)
     _assert_m3_nested_marker_contract(corpus)
     _assert_muse_native_scopes(corpus)

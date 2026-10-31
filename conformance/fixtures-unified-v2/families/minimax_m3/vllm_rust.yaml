@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"vllm_rust","lineage":[{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.27.1.yaml","version":"0.27.1"},{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"f11684af8905862497098acba88418ade663127e3f4a44b34f99cbd07cc3168c","source":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"minimax_m3","implementation":"vllm_rust","lineage":[{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.27.1.yaml","version":"0.27.1"},{"family":"minimax_m3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"36ed05a34f229fdce1f24cfcdd7f3dd07dfd6ad3cd970e376c7f41d22fa8fcc3","source":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: legacy
@@ -58450,3 +58450,910 @@ records:
               source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
               version: 0.31.0
             resolution: fresh_execution
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: de4ff590d7de3dab82726506bc6a378c15780319a3044c191f9ff959b64053d7
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 2a925259cbf637151e84c7dae9e02d4b998b2a385073f66a2f8078d81179e0ee
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: ceb17b015fed73f758cb17300d0d86fe45a8d016874883823cef09fdb34123c5
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Tokyo]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Tokyo]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 2a925259cbf637151e84c7dae9e02d4b998b2a385073f66a2f8078d81179e0ee
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 7415d2ba453f4a2cfc0583570aafccba6ebf7b8d2c3012e0e0c066de4e6150aa
+        inline:
+          input: 'Pressing it now.
+
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'Pressing it now.
+
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Pressing it now.
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 2a925259cbf637151e84c7dae9e02d4b998b2a385073f66a2f8078d81179e0ee
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 8d40727d63ea4545d5594ed626afb71ce7bfb3958c42e4209ae62e0133c7ca21
+        inline:
+          input: '<mm:think>Check weather.</mm:think>
+
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <mm:think>
+          - delta_text: Check weather.
+          - delta_text: </mm:think>
+          - delta_text: '
+
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 2a925259cbf637151e84c7dae9e02d4b998b2a385073f66a2f8078d81179e0ee
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 8cd3d2a2c23e905a5be2aa16178434a783d02a048b01dcb6b9db1517ac258c0e
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            Done.'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              Done.'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 2a925259cbf637151e84c7dae9e02d4b998b2a385073f66a2f8078d81179e0ee
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+        inline:
+          input: '
+
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 2a925259cbf637151e84c7dae9e02d4b998b2a385073f66a2f8078d81179e0ee
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 84d4be1dd2ed3f70fab6e6c5915575c3706d414296388236cf16dd6f8c0cb703
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete MiniMax M3 tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 2a925259cbf637151e84c7dae9e02d4b998b2a385073f66a2f8078d81179e0ee
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0

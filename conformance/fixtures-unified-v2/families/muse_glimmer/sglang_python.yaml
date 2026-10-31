@@ -1,4 +1,4 @@
-capture_selection: {"family":"muse_glimmer","implementation":"sglang_python","lineage":[{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.14.yaml","version":"0.5.14"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.16.yaml","version":"0.5.16"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.21.yaml","version":"0.5.21"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"1584f34878d2b2c192b99dd7c7e96d03e66e624bc00719b0bc62c6ba220f56c7","source":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"muse_glimmer","implementation":"sglang_python","lineage":[{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.14.yaml","version":"0.5.14"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.16.yaml","version":"0.5.16"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.21.yaml","version":"0.5.21"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"4a3d760b21b5ad51dbc56e07e7aefe12054397273a78167ee740ef295c2de702","source":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
 schema_version: 2
 provenance:
   status: legacy
@@ -69516,3 +69516,1116 @@ records:
             adapter_sha256: e8f076d32d7ce79fe38c25f54c52a2fd833f54ec0cbb25e8a9329db247b59c02
             job_sha256: ff041a6b59b7f7a786b21cda34796ba156ddb47c98c0d5d6723a742bc90b969e
             results_sha256: 8d60d1db74f88279306ce06472e4e6e5aa99926a621606d488eab8a925aef577
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: 0492e2b0b933adf2b295915a0f237509ba13bdef643aabb115e31dd0617abc4c
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 40d7fc1a627d26c8f7f8507f6bcdafdabf22ff8020ea0609bface187f50fb890
+            results_sha256: 6cfbac0c79191f680cc00a63e57ce602cae634e81f619592c0d5da533fb9ad73
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: 628fe38932831aaa14f81114a898a70d586e89a004b1753ad5480d0133c4d6c0
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Tokyo</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant to=user<|message|>
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Paris</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Tokyo</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+              <|eom|>'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+
+
+
+                '
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Tokyo"}'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 40d7fc1a627d26c8f7f8507f6bcdafdabf22ff8020ea0609bface187f50fb890
+            results_sha256: 6cfbac0c79191f680cc00a63e57ce602cae634e81f619592c0d5da533fb9ad73
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 877d9c1afb9a26e7d72586c7bb7b3a14de238e95af9e219f6df9f4d330a57c2f
+        inline:
+          input: '<|start|>assistant to=user<|message|>Pressing it now.
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'Pressing it now.
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 40d7fc1a627d26c8f7f8507f6bcdafdabf22ff8020ea0609bface187f50fb890
+            results_sha256: 6cfbac0c79191f680cc00a63e57ce602cae634e81f619592c0d5da533fb9ad73
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 03a8e2ea82c41e1ef220f4fbcc902be9b4426161694a06b099582bed7bdf9d93
+        inline:
+          input: '<|start|>assistant to=self<|message|>Check weather.<|eom|><|start|>assistant to=user<|message|>
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=self
+          - delta_text: <|message|>
+          - delta_text: Check weather.
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 40d7fc1a627d26c8f7f8507f6bcdafdabf22ff8020ea0609bface187f50fb890
+            results_sha256: 6cfbac0c79191f680cc00a63e57ce602cae634e81f619592c0d5da533fb9ad73
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 49eada9bd51943687cf41eab72f72dace0b0d0978f7bc763f0ac5a85fb1e0f77
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            Done.<|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              Done.'
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: text
+            text: '
+
+              Done.'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+                Done.'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 40d7fc1a627d26c8f7f8507f6bcdafdabf22ff8020ea0609bface187f50fb890
+            results_sha256: 6cfbac0c79191f680cc00a63e57ce602cae634e81f619592c0d5da533fb9ad73
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 29100324e159669f00e18e159fffd58f862b76f87ef941ad0914f61d84ae44ad
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 40d7fc1a627d26c8f7f8507f6bcdafdabf22ff8020ea0609bface187f50fb890
+            results_sha256: 6cfbac0c79191f680cc00a63e57ce602cae634e81f619592c0d5da533fb9ad73
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 79bb0c8787812ee17ade637b65ca2f4a3b6adfa46b91ac68704d6ca62a14bbee
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant to=user<|message|>
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Par'
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: 40d7fc1a627d26c8f7f8507f6bcdafdabf22ff8020ea0609bface187f50fb890
+            results_sha256: 6cfbac0c79191f680cc00a63e57ce602cae634e81f619592c0d5da533fb9ad73

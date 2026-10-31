@@ -29279,6 +29279,77 @@ cases:
 
 
           '
+  blank_framing_incomplete_call:
+    lifecycle: active
+    scenario: blank_framing_incomplete_call
+    description: A framing newline precedes a native call cut off inside its city parameter at EOF. P2 preserves the newline and drops the incomplete call without leaking native markup.
+    policy:
+    - P8
+    - P2
+    display_id: UNIFIED.5-blank_framing_incomplete_call
+    historical_ids: []
+    request:
+      input: '<|open|>response<|sep|>
+
+        <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Par'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '<|open|>response<|sep|>
+
+          <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Par'
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
   arg_numeric_overflow_siblings_finite:
     lifecycle: active
     scenario: arg_numeric_overflow_siblings_finite

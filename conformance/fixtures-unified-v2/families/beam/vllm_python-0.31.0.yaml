@@ -31973,3 +31973,220 @@ records:
             job_sha256: b93ca1b2f799d40a839cdfd526f4c1b59859e1bd213707fefcc2666839c8c90b
             results_sha256: 2f1c2428625dd71d72bf0eb00e17a13496393aaacd023ff7a5cc036c1d4e3b98
     member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml
+  blank_framing_tool_only:
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: 1baadf2baaaf46839686b394c021f4f7fd05d6c4bb35a75c18eb120a98e8663b
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for beam
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: ffd7b85e4762eb8b9e74f04bd24df4b3ba439decb0d9aa19d35481a189ec3cbb
+    member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml
+  blank_framing_between_calls_single_chunk:
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        ref: current
+        semantic_sha256: bd73c35e01a076b637b40126b7d8bc020e5fb0a24462a77dad877f4d0b8b28be
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for beam
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: ffd7b85e4762eb8b9e74f04bd24df4b3ba439decb0d9aa19d35481a189ec3cbb
+    member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml
+  blank_framing_with_prose:
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        ref: current
+        semantic_sha256: ffbf6441e3db11afa46f31fdd9aaa2732916a74041f26614b9ef8118fe67dd6f
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for beam
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: ffd7b85e4762eb8b9e74f04bd24df4b3ba439decb0d9aa19d35481a189ec3cbb
+    member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml
+  blank_framing_after_reasoning:
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: c81a2428132a777e876058012adc99aa6e5137a6c3a05b3ee0b6d74237ace7a2
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for beam
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: ffd7b85e4762eb8b9e74f04bd24df4b3ba439decb0d9aa19d35481a189ec3cbb
+    member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml
+  blank_framing_prose_after_call:
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        ref: current
+        semantic_sha256: 04ca9dfe9186067b9a06aa4626d98c4e1f1611249ed4661b69faa8c4595053ae
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for beam
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: ffd7b85e4762eb8b9e74f04bd24df4b3ba439decb0d9aa19d35481a189ec3cbb
+    member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml
+  blank_output_without_call:
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        ref: current
+        semantic_sha256: b18eb06312b40a4a6ff52c6b49cc649cabd32ab00453df2b42619446a52fa213
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for beam
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: ffd7b85e4762eb8b9e74f04bd24df4b3ba439decb0d9aa19d35481a189ec3cbb
+    member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml
+  blank_framing_incomplete_call:
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        ref: current
+        semantic_sha256: e322a03644bb6b7d2275d31e34afcbb4eece96a2a42a2367b5d3f7fe43766724
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for beam
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f8e6d067e744f8cfea58f9061628fabdf72755bb5e7f12aef0e50ef6735c5f9a
+            results_sha256: ffd7b85e4762eb8b9e74f04bd24df4b3ba439decb0d9aa19d35481a189ec3cbb
+    member: conformance/fixtures-unified-v2/families/beam/vllm_python-0.31.0.yaml

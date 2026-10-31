@@ -5369,7 +5369,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: 4200e-2
+              value: "4200e-2"
       document:
         mode: unified
         captured_with:
@@ -5386,21 +5386,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: 4200e-2
+                value: "4200e-2"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4200e-2
+                  value: "4200e-2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4200e-2
+                    value: "4200e-2"
               capture_input:
                 input: <|tool_call>call:get_weather{value:4200e-2}<tool_call|>
                 init:
@@ -5443,14 +5443,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4200e-2
+                  value: "4200e-2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4200e-2
+                    value: "4200e-2"
               capture_input:
                 input: <|tool_call>call:get_weather{value:4200e-2}<tool_call|>
                 init:
@@ -5492,14 +5492,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4200e-2
+                  value: "4200e-2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4200e-2
+                    value: "4200e-2"
               capture_input:
                 input: <|tool_call>call:get_weather{value:4200e-2}<tool_call|>
                 init:
@@ -6958,7 +6958,7 @@ records:
             arguments:
               nested:
                 fraction: 9007199254740992.0
-                tiny: 1e-400
+                tiny: "1e-400"
               values:
               - 9007199254740993
               - -9007199254740993
@@ -6980,7 +6980,7 @@ records:
               arguments:
                 nested:
                   fraction: 9007199254740992.0
-                  tiny: 1e-400
+                  tiny: "1e-400"
                 values:
                 - 9007199254740993
                 - -9007199254740993
@@ -6992,7 +6992,7 @@ records:
                 arguments:
                   nested:
                     fraction: 9007199254740992.0
-                    tiny: 1e-400
+                    tiny: "1e-400"
                   values:
                   - 9007199254740993
                   - -9007199254740993
@@ -7004,7 +7004,7 @@ records:
                   arguments:
                     nested:
                       fraction: 9007199254740992.0
-                      tiny: 1e-400
+                      tiny: "1e-400"
                     values:
                     - 9007199254740993
                     - -9007199254740993
@@ -7059,7 +7059,7 @@ records:
                 arguments:
                   nested:
                     fraction: 9007199254740992.0
-                    tiny: 1e-400
+                    tiny: "1e-400"
                   values:
                   - 9007199254740993
                   - -9007199254740993
@@ -7071,7 +7071,7 @@ records:
                   arguments:
                     nested:
                       fraction: 9007199254740992.0
-                      tiny: 1e-400
+                      tiny: "1e-400"
                     values:
                     - 9007199254740993
                     - -9007199254740993
@@ -7125,7 +7125,7 @@ records:
                 arguments:
                   nested:
                     fraction: 9007199254740992.0
-                    tiny: 1e-400
+                    tiny: "1e-400"
                   values:
                   - 9007199254740993
                   - -9007199254740993
@@ -7137,7 +7137,7 @@ records:
                   arguments:
                     nested:
                       fraction: 9007199254740992.0
-                      tiny: 1e-400
+                      tiny: "1e-400"
                     values:
                     - 9007199254740993
                     - -9007199254740993
@@ -21740,11 +21740,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -21765,10 +21765,10 @@ records:
                 city: Paris
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
@@ -21779,11 +21779,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
@@ -21793,10 +21793,10 @@ records:
                     city: Paris
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: <|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|> then I'll run <|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|> and <|tool_call>call:g{y:<|"|>2<|"|>}<tool_call|>
                 init:
@@ -21859,7 +21859,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -21867,7 +21867,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -21897,11 +21897,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
@@ -21911,10 +21911,10 @@ records:
                     city: Paris
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: <|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|> then I'll run <|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|> and <|tool_call>call:g{y:<|"|>2<|"|>}<tool_call|>
                 init:
@@ -21977,7 +21977,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -21985,7 +21985,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23083,7 +23083,7 @@ records:
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -23103,7 +23103,7 @@ records:
             calls:
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
@@ -23114,7 +23114,7 @@ records:
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: '<|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|channel>thought
 
@@ -23123,7 +23123,7 @@ records:
                 calls:
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|channel>thought
 
@@ -23180,7 +23180,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23192,7 +23192,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23222,7 +23222,7 @@ records:
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: '<|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|channel>thought
 
@@ -23231,7 +23231,7 @@ records:
                 calls:
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|channel>thought
 
@@ -23288,7 +23288,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23300,7 +23300,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23335,11 +23335,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -23357,10 +23357,10 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
@@ -23369,21 +23369,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|channel>thought
 
@@ -23447,7 +23447,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23459,7 +23459,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23487,21 +23487,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|channel>thought
 
@@ -23565,7 +23565,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -23577,7 +23577,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -24684,11 +24684,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -24706,10 +24706,10 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
@@ -24718,21 +24718,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|channel>thought
 
@@ -24798,7 +24798,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -24810,7 +24810,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -24843,21 +24843,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|channel>thought
 
@@ -24923,7 +24923,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -24935,7 +24935,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -24975,11 +24975,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -24997,10 +24997,10 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
@@ -25009,21 +25009,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|channel>thought
 
@@ -25087,7 +25087,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -25100,7 +25100,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -25128,21 +25128,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: '<|channel>thought
 
@@ -25206,7 +25206,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -25219,7 +25219,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -25631,9 +25631,7 @@ records:
                   code: peer_request_unsupported
                   detail: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
               capture_input:
-                input: '<|channel>thought
-
-                  before call:f{x:<|"|>é🙂<par{value}<|"|>}<tool_call|> after<channel|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                input: "<|channel>thought\nbefore call:f{x:<|\"|>é\U0001F642<par{value}<|\"|>}<tool_call|> after<channel|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
                 init:
                   starting_state: None
                   tool_output_mode: GuidedJson
@@ -25688,7 +25686,7 @@ records:
 
                     before call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: é🙂
+                - delta_text: "é\U0001F642"
                 - delta_text: <par{value}<|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -25719,9 +25717,7 @@ records:
                   code: unsupported_request_mode
                   detail: Legacy batch API cannot apply this authored initialization or finish reason
               capture_input:
-                input: '<|channel>thought
-
-                  before call:f{x:<|"|>é🙂<par{value}<|"|>}<tool_call|> after<channel|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                input: "<|channel>thought\nbefore call:f{x:<|\"|>é\U0001F642<par{value}<|\"|>}<tool_call|> after<channel|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
                 init:
                   starting_state: None
                   tool_output_mode: GuidedJson
@@ -25776,7 +25772,7 @@ records:
 
                     before call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: é🙂
+                - delta_text: "é\U0001F642"
                 - delta_text: <par{value}<|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -28563,7 +28559,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -28581,21 +28577,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -28610,7 +28606,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -28620,7 +28616,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -28646,14 +28642,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -28668,7 +28664,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -28678,7 +28674,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -28711,7 +28707,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -28729,21 +28725,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -28757,7 +28753,7 @@ records:
                     type: object
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -28766,7 +28762,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -28792,14 +28788,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -28813,7 +28809,7 @@ records:
                     type: object
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -28822,7 +28818,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -28855,7 +28851,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -28873,21 +28869,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -28907,13 +28903,13 @@ records:
                     additionalProperties: false
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -28939,14 +28935,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -28966,13 +28962,13 @@ records:
                     additionalProperties: false
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -29005,7 +29001,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -29023,21 +29019,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -29052,7 +29048,7 @@ records:
                     properties:
                       value:
                         type: string
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -29061,7 +29057,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -29087,14 +29083,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -29109,7 +29105,7 @@ records:
                     properties:
                       value:
                         type: string
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -29118,7 +29114,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -33211,7 +33207,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -33229,21 +33225,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -33260,7 +33256,7 @@ records:
                         type: string
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                     required:
                     - value
                     additionalProperties: false
@@ -33269,7 +33265,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -33295,14 +33291,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -33319,7 +33315,7 @@ records:
                         type: string
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                     required:
                     - value
                     additionalProperties: false
@@ -33328,7 +33324,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -33649,7 +33645,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -33667,21 +33663,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -33696,7 +33692,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -33706,7 +33702,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -33732,14 +33728,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -33754,7 +33750,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -33764,7 +33760,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -34511,7 +34507,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -34529,21 +34525,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -34563,13 +34559,13 @@ records:
                     additionalProperties: false
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -34595,14 +34591,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -34622,13 +34618,13 @@ records:
                     additionalProperties: false
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -35705,7 +35701,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -35723,21 +35719,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -35762,7 +35758,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -35788,14 +35784,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
                 init:
@@ -35820,7 +35816,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:schema_probe{value:'
                 - delta_text: <|"|>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43053,11 +43049,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -43075,31 +43071,31 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: <|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|> then <|tool_call>call:g{y:<|"|>2<|"|>}<tool_call|>
                 init:
@@ -43154,7 +43150,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43162,7 +43158,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43188,21 +43184,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: <|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|> then <|tool_call>call:g{y:<|"|>2<|"|>}<tool_call|>
                 init:
@@ -43257,7 +43253,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43265,7 +43261,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43483,11 +43479,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -43507,10 +43503,10 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
@@ -43521,11 +43517,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: 'Sure. <|channel>thought
 
@@ -43534,10 +43530,10 @@ records:
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: 'Sure. <|channel>thought
 
@@ -43602,7 +43598,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43615,7 +43611,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43645,11 +43641,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: 'Sure. <|channel>thought
 
@@ -43658,10 +43654,10 @@ records:
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: 'Sure. <|channel>thought
 
@@ -43726,7 +43722,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -43739,7 +43735,7 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -45988,11 +45984,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
       document:
         mode: unified
         captured_with:
@@ -46010,31 +46006,31 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: <|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|tool_call>call:g{y:<|"|>2<|"|>}<tool_call|>
                 init:
@@ -46089,14 +46085,14 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -46122,21 +46118,21 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
                 - name: g
                   arguments:
-                    y: '2'
+                    y: "2"
               capture_input:
                 input: <|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|tool_call>call:g{y:<|"|>2<|"|>}<tool_call|>
                 init:
@@ -46191,14 +46187,14 @@ records:
                 - delta_text: <|tool_call>
                 - delta_text: 'call:f{x:'
                 - delta_text: <|"|>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
                 - delta_text: <|tool_call>
                 - delta_text: 'call:g{y:'
                 - delta_text: <|"|>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: <|"|>
                 - delta_text: '}'
                 - delta_text: <tool_call|>
@@ -47214,4 +47210,362 @@ records:
               job_sha256: e17a1ca9c3f59c889cf2ce0d5616a94a9a1c63f655e5e97c68827c3a6501c082
               results_sha256: f8632d5e650e891b19fe4faeff2ea9cfedd9283a165ed17a28c868e542474947
             resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml
+  blank_framing_tool_only:
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: 0f32aea617d51d1b1e191a23f850ceb1d3b295416d9db139bc4621803cc11553
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+            results_sha256: 0a8c81333cdd0cd8c6616ffad24c85cb9fb5326c32763eabb35e9612eae34577
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+    member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml
+  blank_framing_between_calls_single_chunk:
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        ref: current
+        semantic_sha256: b1f5514820a37dd3e9e6254e401a3602f385fca25d13d15414a75a5acbd0dd5c
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+            - name: get_weather
+              arguments:
+                city: Tokyo
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+            results_sha256: 0a8c81333cdd0cd8c6616ffad24c85cb9fb5326c32763eabb35e9612eae34577
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+    member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml
+  blank_framing_with_prose:
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        ref: current
+        semantic_sha256: f88af99d637c6f89eeb5b44e29bd4b4f605fa8ce026b20fdddd0dc0f747c1aea
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'Pressing it now.
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+            results_sha256: 0a8c81333cdd0cd8c6616ffad24c85cb9fb5326c32763eabb35e9612eae34577
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+    member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml
+  blank_framing_after_reasoning:
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 222d1df12a99b5a86ba4ebfeb376d9195b8872e602248d45be3f281da5b2d006
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: Check weather.
+            normal_text: '
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+            results_sha256: 0a8c81333cdd0cd8c6616ffad24c85cb9fb5326c32763eabb35e9612eae34577
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+    member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml
+  blank_framing_prose_after_call:
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        ref: current
+        semantic_sha256: 35e63c8c49b40d54aa50f20f8ddd00e837c75e00a1c63943767bf794155a62c2
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+            results_sha256: 0a8c81333cdd0cd8c6616ffad24c85cb9fb5326c32763eabb35e9612eae34577
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+    member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml
+  blank_output_without_call:
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        ref: current
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+
+              '
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+            results_sha256: 0a8c81333cdd0cd8c6616ffad24c85cb9fb5326c32763eabb35e9612eae34577
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+    member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml
+  blank_framing_incomplete_call:
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        ref: current
+        semantic_sha256: 814b4b6dd762638a4465d98855d3e8c815b9c4afca140034ee2a03a43e490cbe
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              <|tool_call>call:get_weather{city:<|"|>Par'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              <|tool_call>call:get_weather{city:<|"|>Par'
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
+            results_sha256: 0a8c81333cdd0cd8c6616ffad24c85cb9fb5326c32763eabb35e9612eae34577
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: d6af77b1a14da116af4258227558eb530114cb70b7e2e3312f4f4ec1d2eb124b
     member: conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.22.yaml

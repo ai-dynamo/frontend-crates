@@ -1,4 +1,4 @@
-capture_selection: {"family":"qwen3","implementation":"vllm_python_batch","lineage":[{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.23.0.yaml","version":"0.23.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.24.0.yaml","version":"0.24.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.25.1.yaml","version":"0.25.1"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.26.0.yaml","version":"0.26.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"83f86a5409eb3b0da074c4c5576fc9bb20678e99c8dd6cbd24996ef243be7b23","source":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"qwen3","implementation":"vllm_python_batch","lineage":[{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.23.0.yaml","version":"0.23.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.24.0.yaml","version":"0.24.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.25.1.yaml","version":"0.25.1"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.26.0.yaml","version":"0.26.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"4cf86844a8bf8382d6e9a480ef93c28e9f43dfc85a58e5720190f0df9a55e6f5","source":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: captured
@@ -81354,3 +81354,1002 @@ records:
               results_sha256: e8028ea529b79cff3abc79fa20e3c6f1ebb889345edf2492d07f622327e36617
             resolution: fresh_execution
     member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: f8096bb374edfcf2a5411850167d12e063c1874282aa69cc975f8e4addf23d4a
+        inline:
+          input: '
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: '
+
+              '
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+            results_sha256: 2c7553f2a171442ae1fa2ff007a3e44e88dc853a9a7794e5a90d517a553884cb
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: 4d444f84030d90d5f8fd90bed74d1ce9410265405b14b45613b55e74cb470904
+        inline:
+          input: '
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Tokyo
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <tool_call>
+
+              <function=get_weather>
+
+              <parameter=city>
+
+              Paris
+
+              </parameter>
+
+              </function>
+
+              </tool_call>
+
+
+              <tool_call>
+
+              <function=get_weather>
+
+              <parameter=city>
+
+              Tokyo
+
+              </parameter>
+
+              </function>
+
+              </tool_call>
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: '
+
+              '
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+            - name: get_weather
+              arguments:
+                city: Tokyo
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+            results_sha256: 2c7553f2a171442ae1fa2ff007a3e44e88dc853a9a7794e5a90d517a553884cb
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: afc565d68c9c135a15c14e5591157893a9d0fefc69e6aab38cfa4cb38be14900
+        inline:
+          input: 'Pressing it now.
+
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: 'Pressing it now.
+
+
+              '
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+            results_sha256: 2c7553f2a171442ae1fa2ff007a3e44e88dc853a9a7794e5a90d517a553884cb
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 64d42a88ff5dd624f074a1b0963545e7579b57e28b33b1bd179b6502a46430e5
+        inline:
+          input: '<think>Check weather.</think>
+
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: Check weather.
+          - delta_text: </think>
+          - delta_text: '
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: Check weather.
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+            results_sha256: 2c7553f2a171442ae1fa2ff007a3e44e88dc853a9a7794e5a90d517a553884cb
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: c31a0b235b797e5f2615298381ee1b40a50989c9147c0ceb9cc49933e3197c32
+        inline:
+          input: '
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call>
+
+            Done.'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </function>
+          - delta_text: '
+
+              '
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              Done.'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: '
+
+              '
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+            results_sha256: 2c7553f2a171442ae1fa2ff007a3e44e88dc853a9a7794e5a90d517a553884cb
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+        inline:
+          input: '
+
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: '
+
+
+              '
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: '
+
+
+              '
+            normal_text: ''
+            calls: []
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+            results_sha256: 2c7553f2a171442ae1fa2ff007a3e44e88dc853a9a7794e5a90d517a553884cb
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: c51ca9b4cb0e641413d936dedb3be2521d62a3d8ba0345099927f65fbabb6667
+        inline:
+          input: '
+
+            <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: <function=get_weather>
+          - delta_text: '
+
+              '
+          - delta_text: <parameter=city>
+          - delta_text: '
+
+              Par'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: '
+
+              '
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments: {}
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9
+            results_sha256: 2c7553f2a171442ae1fa2ff007a3e44e88dc853a9a7794e5a90d517a553884cb
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: f7886c0b12c3b56eccf9dd4f8fd479c6ef83e213a61901b2d38cf9457e99aaa9

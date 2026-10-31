@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"sglang_python_batch","lineage":[{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.14.yaml","version":"0.5.14"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.16.yaml","version":"0.5.16"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.21.yaml","version":"0.5.21"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"13b2bbcfea905ac675c7a12b7aee19e4249d7d04c1651456b761c3e67bad3480","source":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"minimax_m3","implementation":"sglang_python_batch","lineage":[{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.14.yaml","version":"0.5.14"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.16.yaml","version":"0.5.16"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.21.yaml","version":"0.5.21"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"565df5ff8104aa1f5e7fc893b11b7ec27713af9c1b186f94a699be1ee4f5c6df","source":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml","surface":"unified","version":"0.5.22"}
 schema_version: 2
 provenance:
   status: captured
@@ -70610,3 +70610,897 @@ records:
               results_sha256: 853c14df736afc54a7255cff562d2b9f4e7bb5e4d3282f535a468b3d2244ed8d
             resolution: fresh_execution
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: de4ff590d7de3dab82726506bc6a378c15780319a3044c191f9ff959b64053d7
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 59da7ccc4d97895de08c7f85e161d3afeb41cef615c9a55eb492b449f10ccad1
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: ceb17b015fed73f758cb17300d0d86fe45a8d016874883823cef09fdb34123c5
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Tokyo]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Tokyo]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+            - name: get_weather
+              arguments:
+                city: Tokyo
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 59da7ccc4d97895de08c7f85e161d3afeb41cef615c9a55eb492b449f10ccad1
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 7415d2ba453f4a2cfc0583570aafccba6ebf7b8d2c3012e0e0c066de4e6150aa
+        inline:
+          input: 'Pressing it now.
+
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'Pressing it now.
+
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'Pressing it now.
+
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 59da7ccc4d97895de08c7f85e161d3afeb41cef615c9a55eb492b449f10ccad1
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 8d40727d63ea4545d5594ed626afb71ce7bfb3958c42e4209ae62e0133c7ca21
+        inline:
+          input: '<mm:think>Check weather.</mm:think>
+
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <mm:think>
+          - delta_text: Check weather.
+          - delta_text: </mm:think>
+          - delta_text: '
+
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: Check weather.
+            normal_text: '
+
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 59da7ccc4d97895de08c7f85e161d3afeb41cef615c9a55eb492b449f10ccad1
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 8cd3d2a2c23e905a5be2aa16178434a783d02a048b01dcb6b9db1517ac258c0e
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+
+            Done.'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              Done.'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              Done.'
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+
+              Done.'
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 59da7ccc4d97895de08c7f85e161d3afeb41cef615c9a55eb492b449f10ccad1
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+        inline:
+          input: '
+
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+
+              '
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 59da7ccc4d97895de08c7f85e161d3afeb41cef615c9a55eb492b449f10ccad1
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.22.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 84d4be1dd2ed3f70fab6e6c5915575c3706d414296388236cf16dd6f8c0cb703
+        inline:
+          input: '
+
+            ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.5.22
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+            calls: []
+          capture_provenance:
+            implementation: sglang_python_batch
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: 59da7ccc4d97895de08c7f85e161d3afeb41cef615c9a55eb492b449f10ccad1
+        capture_origin:
+          crate_version: 0.5.22
+          source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+          adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9

@@ -1,4 +1,4 @@
-capture_selection: {"family":"glm47","implementation":"vllm_rust","lineage":[{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml","version":"0.27.1"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"dd9c4aefd9148ec81a1c78474df5a7e06da81b2a310dab27212b665d1e5cabe1","source":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"glm47","implementation":"vllm_rust","lineage":[{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml","version":"0.27.1"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"34b0dce2722a90e33ca86e85a4872e9cad02779c6c8e6a7c8f4f8f4e5c3590cb","source":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: legacy
@@ -71150,3 +71150,805 @@ records:
               source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
               version: 0.31.0
             resolution: fresh_execution
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: e7cef13b2af653b2a594af37fdda39bbcd286e2c3dd72570df66434cdd3014a9
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 8a042c18cdd824c18104ade22a444ba861c6abbcb38f82b034a5c07b18770e1c
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: ebcf626b05d3ab1bfa8881337776d11bf2ccc06e128c825ed9b62e679f390451
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Tokyo</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+
+              <tool_call>get_weather<arg_key>city</arg_key><arg_value>Tokyo</arg_value></tool_call>
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+            - arguments: '{"city":"Tokyo"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 8a042c18cdd824c18104ade22a444ba861c6abbcb38f82b034a5c07b18770e1c
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 716640936c95406fa398101157d2aae270cd17aebf0bc0a044525def5b8393c3
+        inline:
+          input: 'Pressing it now.
+
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: 'Pressing it now.
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 8a042c18cdd824c18104ade22a444ba861c6abbcb38f82b034a5c07b18770e1c
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 6946aebb7a885be03c780f7e0f4b5784ca3eeae8190e577e66d6613c7b08b79c
+        inline:
+          input: '<think>Check weather.</think>
+
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: Check weather.
+          - delta_text: </think>
+          - delta_text: '
+
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 8a042c18cdd824c18104ade22a444ba861c6abbcb38f82b034a5c07b18770e1c
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: a17933e6112b4f271c90a3b471f6cf20596a50367a516635c31a4555384062d0
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>
+
+            Done.'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              '
+          - delta_text: <tool_call>
+          - delta_text: get_weather
+          - delta_text: <arg_key>
+          - delta_text: city
+          - delta_text: </arg_key>
+          - delta_text: <arg_value>
+          - delta_text: Paris
+          - delta_text: </arg_value>
+          - delta_text: </tool_call>
+          - delta_text: '
+
+              Done.'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 8a042c18cdd824c18104ade22a444ba861c6abbcb38f82b034a5c07b18770e1c
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+        inline:
+          input: '
+
+
+            '
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+
+              '
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 8a042c18cdd824c18104ade22a444ba861c6abbcb38f82b034a5c07b18770e1c
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 4e82ce4fb4f41f2e4e6bfdd3570d5472557ffaf3264b2db70f013541f39d3f39
+        inline:
+          input: '
+
+            <tool_call>get_weather<arg_key>city</arg_key><arg_value>Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '
+
+              <tool_call>get_weather<arg_key>city</arg_key><arg_value>Par'
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete GLM MoE tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 8a042c18cdd824c18104ade22a444ba861c6abbcb38f82b034a5c07b18770e1c
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0

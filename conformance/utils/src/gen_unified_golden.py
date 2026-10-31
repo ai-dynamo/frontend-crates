@@ -4011,10 +4011,11 @@ DEFAULT_REASONING_CASES = [
 # Any turn with visible text keeps every whitespace byte, and whitespace with no
 # call is visible content, for every family.
 # Inputs render each whitespace run as the family's own visible-text segment.
-# Excluded: DeepSeek V4/V4.1 own their call framing (the `dsml-*` cases above keep
-# non-separator whitespace as content). GPT-OSS renders each run as a `final` message.
+# DeepSeek V4/V4.1 consume their existing two-LF call separator; their rows use
+# that grammar contract rather than excluding applicable native inputs. GPT-OSS
+# renders each run as a `final` message.
 _BLANK_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
-_BLANK_FAMILIES = [f for f in TEMPLATE_FAMILIES if f not in ("deepseek_v4", "deepseek_v41")]
+_BLANK_FAMILIES = TEMPLATE_FAMILIES
 _BLANK_CALL = ("tool", "get_weather", "city", "Paris")
 _BLANK_SECOND_CALL = ("tool", "get_weather", "city", "Tokyo")
 BLANK_FRAMING = [
@@ -4048,22 +4049,42 @@ BLANK_FRAMING = [
 # (scenario, family) -> that family's golden. Keep it to measured, scoped rules.
 INHERITED_GOLDEN = {}
 for _scenario, _description, _policy, _segments, _nemotron_golden, _stream, _families in BLANK_FRAMING:
+    _per_family = {f: (render_input(f, _segments), M, M) for f in _families}
+    for _family in _DSML_FAMILIES:
+        if _family not in _per_family:
+            continue
+        # The DSML encoder owns exactly two LFs before a native call. This is
+        # the same contract as DSML_FRAMING, including between-call separators.
+        _dsml_segments = []
+        for _index, _segment in enumerate(_segments):
+            if (_segment[0] == "text" and _segment[1].endswith("\n\n")
+                    and _index + 1 < len(_segments) and _segments[_index + 1][0] == "tool"):
+                if _segment[1][:-2]:
+                    _dsml_segments.append(("text", _segment[1][:-2]))
+            else:
+                _dsml_segments.append(_segment)
+        _per_family[_family] = (*_per_family[_family], golden_of(_dsml_segments))
     EDGE.append((
         _scenario, _description, _policy, golden_of(_segments), _BLANK_INIT, _stream,
-        OnlyFamilies({f: (render_input(f, _segments), M, M) for f in _families}),
+        OnlyFamilies(_per_family),
     ))
     if golden_of(_nemotron_golden) != golden_of(_segments):
         INHERITED_GOLDEN[(_scenario, "nemotron_v3")] = golden_of(_nemotron_golden)
 
-# A framing newline before a call that never completes: no completed call, so the
-# whitespace is visible content for every family, Nemotron V3 included. Scoped to
-# the Qwen3 grammar (Nemotron inherits it): Qwen3 is the negative control and
-# Nemotron the family whose rule must not fire.
+# P2 preserves preceding visible text and drops an unrecoverable call at EOF.
+# Author each native call independently, then stop inside its city argument,
+# before any parameter, invocation, or message closer can complete that call.
+_blank_incomplete_inputs = {}
+for _family in TEMPLATE_FAMILIES:
+    _wire = render_input(_family, [("text", "\n"), _BLANK_CALL])
+    if _wire.count("Paris") != 1:
+        raise ValueError(f"{_family}: incomplete-call input needs exactly one city value")
+    _blank_incomplete_inputs[_family] = (_wire[:_wire.index("Paris") + len("Par")], M, M)
 EDGE.append((
     "blank_framing_incomplete_call",
     "A framing newline, then a call cut off mid-parameter at EOF. The call never completes, so the newline is kept as text and the partial call is dropped, for Nemotron V3 as for Qwen3.",
     ["P8", "P2"], golden_of([("text", "\n")]), _BLANK_INIT, {"finish_reason": "stop"},
-    OnlyFamilies({"qwen3": ("\n<tool_call>\n<function=get_weather>\n<parameter=city>\nPar", M, M)}),
+    OnlyFamilies(_blank_incomplete_inputs),
 ))
 
 

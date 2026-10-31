@@ -20086,3 +20086,171 @@ records:
             source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
             version: 0.31.0
     member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+  blank_framing_tool_only:
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: a1b6dfd5ebcba51f7d16ee24f24c09f253dd36190c65bb8940cf138d89ac6aeb
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+  blank_framing_between_calls_single_chunk:
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        ref: current
+        semantic_sha256: ef4a4795b68a017ba4e9c2d078ccacfd9d5ab0c10ed8b3222a68eb86d1c6894a
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+  blank_framing_with_prose:
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        ref: current
+        semantic_sha256: e773900072a012c169f920114723c7984eb0f07b06a6ca42456d488a8d99eefa
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+  blank_framing_after_reasoning:
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 91613061bcf6105b20a0da7701ca645f661aa26503538e8ff9cc7d69899de649
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+  blank_framing_prose_after_call:
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        ref: current
+        semantic_sha256: 2e2bc267c32fd66f1cee9f7390b930af291fd551db48d4c10a2b3de44b2db21d
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+  blank_output_without_call:
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        ref: current
+        semantic_sha256: 712994908f4ed1624e90608946cd8b24678590aeea3c521f75da6010c685fff3
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml
+  blank_framing_incomplete_call:
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        ref: current
+        semantic_sha256: b9e90d6a16e99f0c5b7c3cd056d68d790e8a7e36c00495890a10222031ebc99a
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for gpt_oss at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: 5df32742f2c600cca12e74c0f03218d1ef1cafbbd2dd34a400c56c02abb03bbb
+            results_sha256: 697c66cf14c4b4fd03d3b5ee00bab7e91bbd52a8a99289accc8a9aa5a3329e8f
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+    member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_rust-0.31.0.yaml

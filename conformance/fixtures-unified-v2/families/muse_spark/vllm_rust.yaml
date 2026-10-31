@@ -1,4 +1,4 @@
-capture_selection: {"family":"muse_spark","implementation":"vllm_rust","lineage":[{"family":"muse_spark","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"185c64165ef58f5f235913907ce16b98f2984154c6eb44cb4b0a5f385fb1baf2","source":"conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"muse_spark","implementation":"vllm_rust","lineage":[{"family":"muse_spark","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"27ab446dd46d8fda225cbe12539831504de81e5d39ee101e53f6c323fef9b222","source":"conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: legacy
@@ -51659,5 +51659,805 @@ records:
             implementation: vllm_rust
             job_sha256: 9bb8f19b5d4909d8d4c1c070a96b8572abd92f4c2f51cf61a1bd47723c581668
             results_sha256: c2a9c04888399168ff8bf4a5f6c4fdcdd3ccf4acb26b566f99d3c28a486c7e78
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: 0492e2b0b933adf2b295915a0f237509ba13bdef643aabb115e31dd0617abc4c
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for muse_spark at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: 33fe49436186c90e9b5cfa591cb39cc2d7cb03f77cbb5fbbfdc670b0bf8262f6
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: 628fe38932831aaa14f81114a898a70d586e89a004b1753ad5480d0133c4d6c0
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Tokyo</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant to=user<|message|>
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Paris</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Tokyo</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+              <|eom|>'
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for muse_spark at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: 33fe49436186c90e9b5cfa591cb39cc2d7cb03f77cbb5fbbfdc670b0bf8262f6
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 877d9c1afb9a26e7d72586c7bb7b3a14de238e95af9e219f6df9f4d330a57c2f
+        inline:
+          input: '<|start|>assistant to=user<|message|>Pressing it now.
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for muse_spark at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: 33fe49436186c90e9b5cfa591cb39cc2d7cb03f77cbb5fbbfdc670b0bf8262f6
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 03a8e2ea82c41e1ef220f4fbcc902be9b4426161694a06b099582bed7bdf9d93
+        inline:
+          input: '<|start|>assistant to=self<|message|>Check weather.<|eom|><|start|>assistant to=user<|message|>
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=self
+          - delta_text: <|message|>
+          - delta_text: Check weather.
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for muse_spark at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: 33fe49436186c90e9b5cfa591cb39cc2d7cb03f77cbb5fbbfdc670b0bf8262f6
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 49eada9bd51943687cf41eab72f72dace0b0d0978f7bc763f0ac5a85fb1e0f77
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            Done.<|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              Done.'
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for muse_spark at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: 33fe49436186c90e9b5cfa591cb39cc2d7cb03f77cbb5fbbfdc670b0bf8262f6
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 29100324e159669f00e18e159fffd58f862b76f87ef941ad0914f61d84ae44ad
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for muse_spark at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: 33fe49436186c90e9b5cfa591cb39cc2d7cb03f77cbb5fbbfdc670b0bf8262f6
+            source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
+            version: 0.31.0
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_rust-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 79bb0c8787812ee17ade637b65ca2f4a3b6adfa46b91ac68704d6ca62a14bbee
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant to=user<|message|>
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Par'
+      observation:
+        unavailable:
+          code: vllm_rust_parser_not_registered
+          detail: No vLLM Rust Unified parser is registered for muse_spark at 0.31.0.
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.31.0
+        record_metadata:
+          vllm_rust_capture_provenance:
+            adapter_sha256: 348f8623c6fe7c0eaa243fc874815f5b50db77fffdc397da05022b8d553d2cf5
+            git_commit: db9527a46873454610df6dbedf79a36d6bf1a7f6
+            implementation: vllm_rust
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: 33fe49436186c90e9b5cfa591cb39cc2d7cb03f77cbb5fbbfdc670b0bf8262f6
             source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
             version: 0.31.0

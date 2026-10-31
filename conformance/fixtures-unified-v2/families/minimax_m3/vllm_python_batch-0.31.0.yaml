@@ -4793,7 +4793,7 @@ records:
                   code: unsupported_request_mode
                   detail: Parser-only batch capture does not execute structural-tag generation constraints.
               capture_input:
-                input: Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
                 init:
                   starting_state: Reasoning
                   tool_output_mode: Native
@@ -4817,15 +4817,15 @@ records:
                       - conditions
                       additionalProperties: false
                     rejected:
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>[]
-                    - 'Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":'
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>[]"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
                 finish_reason: stop
                 tools: []
                 chunks:
-                - delta_text: Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
             provenance:
               implementation: vllm_python_batch
               version: 0.31.0
@@ -4850,7 +4850,7 @@ records:
                   code: unsupported_request_mode
                   detail: Parser-only batch capture does not execute structural-tag generation constraints.
               capture_input:
-                input: Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
                 init:
                   starting_state: Reasoning
                   tool_output_mode: Native
@@ -4874,15 +4874,15 @@ records:
                       - conditions
                       additionalProperties: false
                     rejected:
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>[]
-                    - 'Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":'
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>[]"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
                 finish_reason: stop
                 tools: []
                 chunks:
-                - delta_text: Check London météo🙂 before answering; this is prose, not JSON.</mm:think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON.</mm:think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
             provenance:
               implementation: vllm_python_batch
               version: 0.31.0
@@ -6567,7 +6567,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '42.0'
+              value: "42.0"
       document:
         mode: unified
         captured_with:
@@ -6584,21 +6584,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: '42.0'
+                value: "42.0"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0'
+                  value: "42.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0'
+                    value: "42.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -6640,14 +6640,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0'
+                  value: "42.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0'
+                    value: "42.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -6688,14 +6688,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0'
+                  value: "42.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0'
+                    value: "42.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -6744,7 +6744,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: 4.2e1
+              value: "4.2e1"
       document:
         mode: unified
         captured_with:
@@ -6761,21 +6761,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: 4.2e1
+                value: "4.2e1"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4.2e1
+                  value: "4.2e1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4.2e1
+                    value: "4.2e1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4.2e1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -6817,14 +6817,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4.2e1
+                  value: "4.2e1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4.2e1
+                    value: "4.2e1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4.2e1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -6865,14 +6865,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4.2e1
+                  value: "4.2e1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4.2e1
+                    value: "4.2e1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4.2e1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -6921,7 +6921,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '42.0'
+              value: "42.0"
       document:
         mode: unified
         captured_with:
@@ -6938,21 +6938,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: '42.0'
+                value: "42.0"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0'
+                  value: "42.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0'
+                    value: "42.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -6995,14 +6995,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0'
+                  value: "42.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0'
+                    value: "42.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7044,14 +7044,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0'
+                  value: "42.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0'
+                    value: "42.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7101,7 +7101,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: 4.2e1
+              value: "4.2e1"
       document:
         mode: unified
         captured_with:
@@ -7118,21 +7118,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: 4.2e1
+                value: "4.2e1"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4.2e1
+                  value: "4.2e1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4.2e1
+                    value: "4.2e1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4.2e1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7175,14 +7175,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4.2e1
+                  value: "4.2e1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4.2e1
+                    value: "4.2e1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4.2e1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7224,14 +7224,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4.2e1
+                  value: "4.2e1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4.2e1
+                    value: "4.2e1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4.2e1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7281,7 +7281,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '42.5'
+              value: "42.5"
       document:
         mode: unified
         captured_with:
@@ -7298,21 +7298,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: '42.5'
+                value: "42.5"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.5'
+                  value: "42.5"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.5'
+                    value: "42.5"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.5]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7353,14 +7353,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.5'
+                  value: "42.5"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.5'
+                    value: "42.5"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.5]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7400,14 +7400,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.5'
+                  value: "42.5"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.5'
+                    value: "42.5"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.5]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7455,7 +7455,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '42.0000000000000001'
+              value: "42.0000000000000001"
       document:
         mode: unified
         captured_with:
@@ -7472,21 +7472,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: '42.0000000000000001'
+                value: "42.0000000000000001"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0000000000000001'
+                  value: "42.0000000000000001"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0000000000000001'
+                    value: "42.0000000000000001"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0000000000000001]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7527,14 +7527,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0000000000000001'
+                  value: "42.0000000000000001"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0000000000000001'
+                    value: "42.0000000000000001"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0000000000000001]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7574,14 +7574,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0000000000000001'
+                  value: "42.0000000000000001"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '42.0000000000000001'
+                    value: "42.0000000000000001"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>42.0000000000000001]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7629,7 +7629,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: 1e-400
+              value: "1e-400"
       document:
         mode: unified
         captured_with:
@@ -7646,21 +7646,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: 1e-400
+                value: "1e-400"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 1e-400
+                  value: "1e-400"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 1e-400
+                    value: "1e-400"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>1e-400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7701,14 +7701,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 1e-400
+                  value: "1e-400"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 1e-400
+                    value: "1e-400"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>1e-400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7748,14 +7748,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 1e-400
+                  value: "1e-400"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 1e-400
+                    value: "1e-400"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>1e-400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7803,7 +7803,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '9007199254740993.0'
+              value: "9007199254740993.0"
       document:
         mode: unified
         captured_with:
@@ -7820,21 +7820,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: '9007199254740993.0'
+                value: "9007199254740993.0"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '9007199254740993.0'
+                  value: "9007199254740993.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '9007199254740993.0'
+                    value: "9007199254740993.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>9007199254740993.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7873,14 +7873,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '9007199254740993.0'
+                  value: "9007199254740993.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '9007199254740993.0'
+                    value: "9007199254740993.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>9007199254740993.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7918,14 +7918,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '9007199254740993.0'
+                  value: "9007199254740993.0"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '9007199254740993.0'
+                    value: "9007199254740993.0"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>9007199254740993.0]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -7971,7 +7971,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: 9.007199254740993e15
+              value: "9.007199254740993e15"
       document:
         mode: unified
         captured_with:
@@ -7988,21 +7988,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: 9.007199254740993e15
+                value: "9.007199254740993e15"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 9.007199254740993e15
+                  value: "9.007199254740993e15"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 9.007199254740993e15
+                    value: "9.007199254740993e15"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>9.007199254740993e15]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8041,14 +8041,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 9.007199254740993e15
+                  value: "9.007199254740993e15"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 9.007199254740993e15
+                    value: "9.007199254740993e15"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>9.007199254740993e15]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8086,14 +8086,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 9.007199254740993e15
+                  value: "9.007199254740993e15"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 9.007199254740993e15
+                    value: "9.007199254740993e15"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>9.007199254740993e15]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8139,7 +8139,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '-4.2E+1'
+              value: "-4.2E+1"
       document:
         mode: unified
         captured_with:
@@ -8156,21 +8156,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: '-4.2E+1'
+                value: "-4.2E+1"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '-4.2E+1'
+                  value: "-4.2E+1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '-4.2E+1'
+                    value: "-4.2E+1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>-4.2E+1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8209,14 +8209,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '-4.2E+1'
+                  value: "-4.2E+1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '-4.2E+1'
+                    value: "-4.2E+1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>-4.2E+1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8254,14 +8254,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '-4.2E+1'
+                  value: "-4.2E+1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '-4.2E+1'
+                    value: "-4.2E+1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>-4.2E+1]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8307,7 +8307,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: 4200e-2
+              value: "4200e-2"
       document:
         mode: unified
         captured_with:
@@ -8324,21 +8324,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: 4200e-2
+                value: "4200e-2"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4200e-2
+                  value: "4200e-2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4200e-2
+                    value: "4200e-2"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4200e-2]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8377,14 +8377,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4200e-2
+                  value: "4200e-2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4200e-2
+                    value: "4200e-2"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4200e-2]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8422,14 +8422,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 4200e-2
+                  value: "4200e-2"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: 4200e-2
+                    value: "4200e-2"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>4200e-2]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8475,7 +8475,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '0.0e-400'
+              value: "0.0e-400"
       document:
         mode: unified
         captured_with:
@@ -8492,21 +8492,21 @@ records:
             calls:
             - name: get_weather
               arguments:
-                value: '0.0e-400'
+                value: "0.0e-400"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '0.0e-400'
+                  value: "0.0e-400"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '0.0e-400'
+                    value: "0.0e-400"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>0.0e-400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8545,14 +8545,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '0.0e-400'
+                  value: "0.0e-400"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '0.0e-400'
+                    value: "0.0e-400"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>0.0e-400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -8590,14 +8590,14 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '0.0e-400'
+                  value: "0.0e-400"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: get_weather
                   arguments:
-                    value: '0.0e-400'
+                    value: "0.0e-400"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<value>0.0e-400]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -13443,7 +13443,7 @@ records:
             name: capture_payload
             arguments:
               payload: '{"x":1}'
-              count: '42'
+              count: "42"
       document:
         mode: unified
         captured_with:
@@ -13461,7 +13461,7 @@ records:
             - name: capture_payload
               arguments:
                 payload: '{"x":1}'
-                count: '42'
+                count: "42"
           verified_recapture:
             result:
               assembled:
@@ -13469,7 +13469,7 @@ records:
                 name: capture_payload
                 arguments:
                   payload: '{"x":1}'
-                  count: '42'
+                  count: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
@@ -13477,7 +13477,7 @@ records:
                 - name: capture_payload
                   arguments:
                     payload: '{"x":1}'
-                    count: '42'
+                    count: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="capture_payload">]<]minimax[>[<payload>{"x":1}]<]minimax[>[</payload>]<]minimax[>[<count>42]<]minimax[>[</count>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -13532,7 +13532,7 @@ records:
                 name: capture_payload
                 arguments:
                   payload: '{"x":1}'
-                  count: '42'
+                  count: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
@@ -13540,7 +13540,7 @@ records:
                 - name: capture_payload
                   arguments:
                     payload: '{"x":1}'
-                    count: '42'
+                    count: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="capture_payload">]<]minimax[>[<payload>{"x":1}]<]minimax[>[</payload>]<]minimax[>[<count>42]<]minimax[>[</count>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -13601,9 +13601,9 @@ records:
           - kind: tool_call
             name: capture_payload
             arguments:
-              space: '42'
-              utf8_plus: '42'
-              pointer: '42'
+              space: "42"
+              utf8_plus: "42"
+              pointer: "42"
       document:
         mode: unified
         captured_with:
@@ -13620,27 +13620,27 @@ records:
             calls:
             - name: capture_payload
               arguments:
-                space: '42'
-                utf8_plus: '42'
-                pointer: '42'
+                space: "42"
+                utf8_plus: "42"
+                pointer: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  space: '42'
-                  utf8_plus: '42'
-                  pointer: '42'
+                  space: "42"
+                  utf8_plus: "42"
+                  pointer: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: capture_payload
                   arguments:
-                    space: '42'
-                    utf8_plus: '42'
-                    pointer: '42'
+                    space: "42"
+                    utf8_plus: "42"
+                    pointer: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="capture_payload">]<]minimax[>[<space>42]<]minimax[>[</space>]<]minimax[>[<utf8_plus>42]<]minimax[>[</utf8_plus>]<]minimax[>[<pointer>42]<]minimax[>[</pointer>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -13730,18 +13730,18 @@ records:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  space: '42'
-                  utf8_plus: '42'
-                  pointer: '42'
+                  space: "42"
+                  utf8_plus: "42"
+                  pointer: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: capture_payload
                   arguments:
-                    space: '42'
-                    utf8_plus: '42'
-                    pointer: '42'
+                    space: "42"
+                    utf8_plus: "42"
+                    pointer: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="capture_payload">]<]minimax[>[<space>42]<]minimax[>[</space>]<]minimax[>[<utf8_plus>42]<]minimax[>[</utf8_plus>]<]minimax[>[<pointer>42]<]minimax[>[</pointer>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -14276,8 +14276,8 @@ records:
           - kind: tool_call
             name: capture_payload
             arguments:
-              count: '42'
-              ratio: '3.5'
+              count: "42"
+              ratio: "3.5"
               flag: 'true'
               narrowed: 42
       document:
@@ -14296,8 +14296,8 @@ records:
             calls:
             - name: capture_payload
               arguments:
-                count: '42'
-                ratio: '3.5'
+                count: "42"
+                ratio: "3.5"
                 flag: 'true'
                 narrowed: 42
           verified_recapture:
@@ -14306,8 +14306,8 @@ records:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  count: '42'
-                  ratio: '3.5'
+                  count: "42"
+                  ratio: "3.5"
                   flag: 'true'
                   narrowed: 42
               batch_final:
@@ -14316,8 +14316,8 @@ records:
                 calls:
                 - name: capture_payload
                   arguments:
-                    count: '42'
-                    ratio: '3.5'
+                    count: "42"
+                    ratio: "3.5"
                     flag: 'true'
                     narrowed: 42
               capture_input:
@@ -14424,8 +14424,8 @@ records:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  count: '42'
-                  ratio: '3.5'
+                  count: "42"
+                  ratio: "3.5"
                   flag: 'true'
                   narrowed: 42
               batch_final:
@@ -14434,8 +14434,8 @@ records:
                 calls:
                 - name: capture_payload
                   arguments:
-                    count: '42'
-                    ratio: '3.5'
+                    count: "42"
+                    ratio: "3.5"
                     flag: 'true'
                     narrowed: 42
               capture_input:
@@ -17552,7 +17552,7 @@ records:
                   code: unsupported_request_mode
                   detail: Legacy batch API cannot apply this authored initialization or finish reason
               capture_input:
-                input: '<mm:think>before ]<]minimax[>[<invoke name="f">]<]minimax[>[<x>é🙂<par{value}]<]minimax[>[</x>]<]minimax[>[</invoke> after</mm:think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                input: "<mm:think>before ]<]minimax[>[<invoke name=\"f\">]<]minimax[>[<x>é\U0001F642<par{value}]<]minimax[>[</x>]<]minimax[>[</invoke> after</mm:think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
                 init:
                   starting_state: None
                   tool_output_mode: GuidedJson
@@ -17611,7 +17611,7 @@ records:
                 - delta_text: <]minimax[>
                 - delta_text: '['
                 - delta_text: <x>
-                - delta_text: é🙂
+                - delta_text: "é\U0001F642"
                 - delta_text: <par{value}]<]minimax[>
                 - delta_text: '['
                 - delta_text: </x>
@@ -17647,7 +17647,7 @@ records:
                   code: unsupported_request_mode
                   detail: Legacy batch API cannot apply this authored initialization or finish reason
               capture_input:
-                input: '<mm:think>before ]<]minimax[>[<invoke name="f">]<]minimax[>[<x>é🙂<par{value}]<]minimax[>[</x>]<]minimax[>[</invoke> after</mm:think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                input: "<mm:think>before ]<]minimax[>[<invoke name=\"f\">]<]minimax[>[<x>é\U0001F642<par{value}]<]minimax[>[</x>]<]minimax[>[</invoke> after</mm:think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
                 init:
                   starting_state: None
                   tool_output_mode: GuidedJson
@@ -17706,7 +17706,7 @@ records:
                 - delta_text: <]minimax[>
                 - delta_text: '['
                 - delta_text: <x>
-                - delta_text: é🙂
+                - delta_text: "é\U0001F642"
                 - delta_text: <par{value}]<]minimax[>
                 - delta_text: '['
                 - delta_text: </x>
@@ -24943,7 +24943,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
       document:
         mode: unified
         captured_with:
@@ -24960,7 +24960,7 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
           verified_recapture:
             result:
               assembled:
@@ -24969,14 +24969,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: mid
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>mid</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -25104,14 +25104,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: mid
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>mid</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -25246,7 +25246,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
       document:
         mode: unified
         captured_with:
@@ -25263,7 +25263,7 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
           verified_recapture:
             result:
               assembled:
@@ -25272,14 +25272,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: <mm:think>A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
                 init:
@@ -25410,14 +25410,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: <mm:think>A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
                 init:
@@ -26708,7 +26708,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
       document:
         mode: unified
         captured_with:
@@ -26725,7 +26725,7 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
           verified_recapture:
             result:
               assembled:
@@ -26734,14 +26734,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: <mm:think>A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>C</mm:think>
                 init:
@@ -26875,14 +26875,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: <mm:think>A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call><mm:think>C</mm:think>
                 init:
@@ -27023,7 +27023,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
       document:
         mode: unified
         captured_with:
@@ -27040,7 +27040,7 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
           verified_recapture:
             result:
               assembled:
@@ -27049,14 +27049,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: <mm:think>A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>working on it<mm:think>B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
                 init:
@@ -27188,14 +27188,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: A
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: <mm:think>A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>working on it<mm:think>B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
                 init:
@@ -30428,7 +30428,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -30445,21 +30445,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -30474,7 +30474,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -30528,14 +30528,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -30550,7 +30550,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -30611,7 +30611,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -30628,21 +30628,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -30656,7 +30656,7 @@ records:
                     type: object
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -30709,14 +30709,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -30730,7 +30730,7 @@ records:
                     type: object
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -30790,7 +30790,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -30807,21 +30807,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -30841,7 +30841,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: ']'
@@ -30891,14 +30891,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -30918,7 +30918,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: ']'
@@ -30975,7 +30975,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -30992,21 +30992,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -31021,7 +31021,7 @@ records:
                     properties:
                       value:
                         type: string
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -31074,14 +31074,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -31096,7 +31096,7 @@ records:
                     properties:
                       value:
                         type: string
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -36252,7 +36252,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -36269,21 +36269,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -36300,7 +36300,7 @@ records:
                         type: string
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                     required:
                     - value
                     additionalProperties: false
@@ -36353,14 +36353,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -36377,7 +36377,7 @@ records:
                         type: string
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                     required:
                     - value
                     additionalProperties: false
@@ -36849,7 +36849,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -36925,7 +36925,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -36986,7 +36986,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -37003,21 +37003,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -37088,14 +37088,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -37173,7 +37173,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -37190,21 +37190,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -37275,14 +37275,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -37913,7 +37913,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -37930,21 +37930,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -37964,7 +37964,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: ']'
@@ -38014,14 +38014,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -38041,7 +38041,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: ']'
@@ -38289,7 +38289,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '-7'
+              value: "-7"
       document:
         mode: unified
         captured_with:
@@ -38306,21 +38306,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '-7'
+                value: "-7"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '-7'
+                    value: "-7"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>-7]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -38394,14 +38394,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '-7'
+                    value: "-7"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>-7]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -38675,7 +38675,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '-7'
+              value: "-7"
       document:
         mode: unified
         captured_with:
@@ -38692,21 +38692,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '-7'
+                value: "-7"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '-7'
+                    value: "-7"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>-7]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -38780,14 +38780,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '-7'
+                    value: "-7"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>-7]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -39427,7 +39427,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
       document:
         mode: unified
         captured_with:
@@ -39444,21 +39444,21 @@ records:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -39527,14 +39527,14 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: schema_probe
                   arguments:
-                    value: '42'
+                    value: "42"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -48715,7 +48715,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
       document:
         mode: unified
         captured_with:
@@ -48732,21 +48732,21 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call> then ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -48869,14 +48869,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call> then ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -49192,7 +49192,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
       document:
         mode: unified
         captured_with:
@@ -49209,7 +49209,7 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
           verified_recapture:
             result:
               assembled:
@@ -49220,14 +49220,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: check A
                 normal_text: 'Sure. '
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: Sure. <mm:think>check A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call> and <mm:think>check B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
                 init:
@@ -49362,14 +49362,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: check A
                 normal_text: 'Sure. '
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: Sure. <mm:think>check A</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call> and <mm:think>check B</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
                 init:
@@ -51916,7 +51916,7 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
       document:
         mode: unified
         captured_with:
@@ -51933,21 +51933,21 @@ records:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
           verified_recapture:
             result:
               assembled:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -52070,14 +52070,14 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               batch_final:
                 reasoning_text: ''
                 normal_text: ''
                 calls:
                 - name: f
                   arguments:
-                    x: '1'
+                    x: "1"
               capture_input:
                 input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="g">]<]minimax[>[<y>2]<]minimax[>[</y>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
                 init:
@@ -53254,4 +53254,362 @@ records:
               job_sha256: 9d29aeb25723eb2d225f399d740a4a32232adb3e42008840cd55960cc97b887c
               results_sha256: 75a1a7b956b644bbb004d9b20fa23b3ea6c3c0750f5f790383227163a2ee7c1e
             resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml
+  blank_framing_tool_only:
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: de4ff590d7de3dab82726506bc6a378c15780319a3044c191f9ff959b64053d7
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: b3d8ce320684d93eb0d87dd46cc0edd6f6970840cb0cc1e1fcf606cfbd80fdf3
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml
+  blank_framing_between_calls_single_chunk:
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        ref: current
+        semantic_sha256: ceb17b015fed73f758cb17300d0d86fe45a8d016874883823cef09fdb34123c5
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: b3d8ce320684d93eb0d87dd46cc0edd6f6970840cb0cc1e1fcf606cfbd80fdf3
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml
+  blank_framing_with_prose:
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        ref: current
+        semantic_sha256: 7415d2ba453f4a2cfc0583570aafccba6ebf7b8d2c3012e0e0c066de4e6150aa
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'Pressing it now.
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: b3d8ce320684d93eb0d87dd46cc0edd6f6970840cb0cc1e1fcf606cfbd80fdf3
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml
+  blank_framing_after_reasoning:
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 8d40727d63ea4545d5594ed626afb71ce7bfb3958c42e4209ae62e0133c7ca21
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: Check weather.
+            normal_text: '
+
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: b3d8ce320684d93eb0d87dd46cc0edd6f6970840cb0cc1e1fcf606cfbd80fdf3
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml
+  blank_framing_prose_after_call:
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        ref: current
+        semantic_sha256: 8cd3d2a2c23e905a5be2aa16178434a783d02a048b01dcb6b9db1517ac258c0e
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              '
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: b3d8ce320684d93eb0d87dd46cc0edd6f6970840cb0cc1e1fcf606cfbd80fdf3
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml
+  blank_output_without_call:
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        ref: current
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+
+              '
+            calls: []
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: b3d8ce320684d93eb0d87dd46cc0edd6f6970840cb0cc1e1fcf606cfbd80fdf3
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+    member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml
+  blank_framing_incomplete_call:
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        ref: current
+        semantic_sha256: 84d4be1dd2ed3f70fab6e6c5915575c3706d414296388236cf16dd6f8c0cb703
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+      document:
+        mode: unified
+        captured_with:
+          vllm_python_batch: 0.31.0
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: '
+
+              ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+            calls: []
+          capture_provenance:
+            implementation: vllm_python_batch
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
+            results_sha256: b3d8ce320684d93eb0d87dd46cc0edd6f6970840cb0cc1e1fcf606cfbd80fdf3
+        capture_origin:
+          crate_version: 0.31.0
+          source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+          adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+          job_sha256: be866818e5231b9eb50139131b23e5c577c4a5d6d63f391c1a9f34c144dc15e9
     member: conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.31.0.yaml

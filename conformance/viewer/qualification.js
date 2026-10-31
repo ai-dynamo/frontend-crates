@@ -455,14 +455,15 @@ const { readFile } = await import('node:fs/promises');
 const { createNodeResourceStore } = await import('./data.js');
 const { initializeDevelopmentParser } = await import('./yaml_data.js');
 const { FixtureResources } = await import('./resources.js');
-const { buildPage, buildTab, pageMetadata } = await import('./presentation.js');
+const { buildPage, buildTab, pageMetadata, unifiedComparisonFailure } = await import('./presentation.js');
+const { materializeUnifiedRecord } = await import('./resources.js');
 
 const { tabCandidates, selectedUnifiedFamilies } = await import('./model.js');
 const { classifyUnified, compareLegacyVersions, resolveUnified } = await import('./model.js');
 const { leafCells } = await import('./model.js');
 const { columnKeysFor, tabPresentation } = await import('./presentation.js');
 const { sameValue } = await import('./values.js');
-const { getField, parseJson, isMapping } = await import('./values.js');
+const { getField, parseJson, isMapping, hasField, mappingEntries } = await import('./values.js');
 const { selectedCaptureOutcome } = await import('./model.js');
 const { canonicalUnifiedEvents } = await import('./model.js');
 
@@ -831,7 +832,27 @@ function warnGoldenDifference(cell, key, label) {
   if (selectedCaptureOutcome(cell, key) !== 'pass') console.warn(`WARNING: ${label}: recorded result differs from GOLDEN`);
   return current;
 }
-function checkDottedNameContracts(tab, loadedKeys) {
+let checkedHistoricalOmission = false;
+function assertRetainedBatchObservation(value, block, label) {
+  const failures = ['unavailable', 'unavailable_code', 'error'].filter(field => hasField(value, field));
+  if (failures.length) {
+    for (const field of failures) {
+      const raw = getField(value, field);
+      const expected = field === 'unavailable_code' ? catalog.metadata.unavailable_categories?.[raw] || raw : raw;
+      assert.deepEqual(block[field], expected, `${label}: retained ${field}`);
+    }
+    const observation = getField(value, 'capture_observation') || getField(value, 'capture_stimulus');
+    const unavailableCode = getField(getField(observation, 'unavailable'), 'code');
+    if (unavailableCode) assert.equal(block.unavailable_code,
+      catalog.metadata.unavailable_categories?.[unavailableCode] || unavailableCode, `${label}: retained unavailability code`);
+    assert.equal(Object.hasOwn(block, 'events'), false, `${label}: retained failure has no fabricated events`);
+    return;
+  }
+  assert.ok(Array.isArray(getField(value, 'assembled')), `${label}: retained batch observation has assembled events`);
+  assert.ok(Array.isArray(block.events), `${label}: retained observation must not be omitted`);
+  assert.deepEqual(canonicalUnifiedEvents(block.events), canonicalUnifiedEvents(getField(value, 'assembled')), `${label}: exact retained observation`);
+}
+async function checkDottedNameContracts(tab, loadedKeys, reader) {
   const cases = {
     dotted_name_minimal: [{ kind: 'tool_call', name: 'a.b', arguments: {} }],
     dotted_name_mixed_punctuation: [{ kind: 'tool_call', name: 'my-tool.v2', arguments: { location: 'Beijing' } }],
@@ -842,6 +863,8 @@ function checkDottedNameContracts(tab, loadedKeys) {
   for (const family of families) {
     const row = tab.rows.find(item => item.family === family);
     assert.ok(row, `${family}: dotted-name family is rendered`);
+    const { value: inputs } = await reader.unifiedInputs(family);
+    const rawCandidates = new Map();
     for (const [scenario, expected] of Object.entries(cases)) {
       const cell = leafCells(row).get(scenario);
       const golden = cell.tooltip.candidates.find(item => item.key === 'golden');
@@ -850,14 +873,32 @@ function checkDottedNameContracts(tab, loadedKeys) {
       assert.equal(cell.cmp[defaultKey].na, 0);
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
-        const measured = descriptor.source.implementation.startsWith('dynamo_v1')
-          && catalog.capture_generation?.current.some(item => item.family === family
-          && item.implementation === descriptor.source.implementation && item.version === descriptor.source.version);
-        if (measured) {
-          assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}: refreshed capture is retained`);
-          assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family',
-            `${family}/${scenario}/${other.key}: ${JSON.stringify(other.block)}`);
-        } else if (family === 'deepseek_v41' && descriptor.source.implementation === 'dynamo_v1'
+        if (!rawCandidates.has(other.key)) rawCandidates.set(other.key,
+          await reader.unified(family, descriptor.source.implementation, descriptor.source.version, inputs));
+        const [caseId, input] = Object.entries(inputs.cases).find(([, item]) => item.lifecycle === 'active' && item.scenario === scenario);
+        const record = rawCandidates.get(other.key).records.get(caseId);
+        const label = `${family}/${scenario}/${other.key}`;
+        if (record) {
+          // This reads the validated request/receipt-bound source record before
+          // presentation; a changing current release cannot erase old evidence.
+          const projected = materializeUnifiedRecord(input, record, family, {
+            implementation: descriptor.source.implementation, version: descriptor.source.version,
+            captureMode: catalog.metadata.unified_capture_policy[descriptor.source.implementation].mode,
+          });
+          const value = mappingEntries(getField(projected, 'cases'))[0][1];
+          assert.equal(unifiedComparisonFailure(input.request, value), null, `${label}: retained request binding`);
+          assertRetainedBatchObservation(value, other.block, label);
+          if (!checkedHistoricalOmission && Array.isArray(getField(value, 'assembled'))
+              && !hasField(value, 'unavailable') && !hasField(value, 'error')) {
+            assert.throws(() => assertRetainedBatchObservation(value, { ...other.block, events: undefined }, label),
+              /retained observation must not be omitted/);
+            checkedHistoricalOmission = true;
+          }
+        } else {
+          assert.equal(other.block.unavailable_code, 'missing_capture', `${label}: retained source has no observation`);
+          assert.equal(Object.hasOwn(other.block, 'events'), false);
+        }
+        if (family === 'deepseek_v41' && descriptor.source.implementation === 'dynamo_v1'
             && descriptor.source.version === '3.0.0') {
           // The oldest verified v1 producer executed these four original requests.
           assert.deepEqual(canonicalUnifiedEvents(other.block.events), canonicalUnifiedEvents(expected), `${family}/${scenario}/${other.key}: exact retained producer observation`);
@@ -868,9 +909,6 @@ function checkDottedNameContracts(tab, loadedKeys) {
             unavailable: 'The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.',
             unavailable_code: 'unsupported_family',
           }, `${family}/${scenario}/${other.key}: exact retained public-API blocker`);
-        } else {
-          assert.equal(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}/${other.key}: retained historical dotted-name capture`);
-          assert.equal(Object.hasOwn(other.block, 'events'), false);
         }
       }
       if (family === 'gpt_oss') {
@@ -943,7 +981,7 @@ async function checkUnifiedBatch(batch) {
     validateTab(tab, loadedKeys);
     validateUnifiedColumns(tab);
     await checkRebaseContracts(tab, reader);
-    checkDottedNameContracts(tab, loadedKeys);
+    await checkDottedNameContracts(tab, loadedKeys, reader);
     checkInterruptedResponseContracts(tab);
     checkNativeMarkerHeaderContracts(tab);
     const beam = tab.rows.find(row => row.family === 'beam');
@@ -981,6 +1019,7 @@ assert.deepEqual([...testedKeys].sort(), unifiedDescriptors.map(item => item.con
 assert.deepEqual([...testedFamilies].sort(), [...selectedUnifiedFamilies(catalog, unifiedDescriptors)].sort());
 assert.deepEqual([...testedScenarios].sort(), catalog.metadata.unified_presentation.authored_scenarios.filter(scenario => catalog.metadata.unified_presentation.scenario_families[scenario]?.some(family => testedFamilies.has(family))).sort());
 assert.equal(singletonKeys.size, 0);
+assert.ok(checkedHistoricalOmission, 'retained source observation omission control ran');
 assert.equal(pageMetadata(catalog).schema, 1);
 console.log(`Shared matrix structural contracts passed: ${catalog.metadata.tabs.length} tabs, ${testedKeys.size} Unified candidates, ${cells} visible cells, ${leaves} leaf appearances`);
 

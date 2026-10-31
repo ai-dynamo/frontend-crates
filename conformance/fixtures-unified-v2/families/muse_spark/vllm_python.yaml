@@ -1,4 +1,4 @@
-capture_selection: {"family":"muse_spark","implementation":"vllm_python","lineage":[{"family":"muse_spark","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml","version":"0.25.1"},{"family":"muse_spark","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"bec15304db5750b8a9444d8f9539a7d1d11249e6a031cb5a29fb0a77e07f6579","source":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"muse_spark","implementation":"vllm_python","lineage":[{"family":"muse_spark","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.25.1.yaml","version":"0.25.1"},{"family":"muse_spark","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"ba9eacc6e40c0b07e0be79aa35eac12753307cc0d4526c95ff6d44b01ac7e06b","source":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: legacy
@@ -57197,3 +57197,852 @@ records:
             adapter_sha256: 7fd33f2c4b31db58e94b3480968874f6dcc1c7ad5d67f32c0263974e6b8b7192
             job_sha256: 9bb8f19b5d4909d8d4c1c070a96b8572abd92f4c2f51cf61a1bd47723c581668
             results_sha256: 8acaa22cf79336379b8a331f5f9a1f16c82e14dbb473537e5dd53c64c5149f64
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: 0492e2b0b933adf2b295915a0f237509ba13bdef643aabb115e31dd0617abc4c
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: ba2849f00bd634d3b1260a5486532eb0e18441fc8699be0a3e0b8df0d252abb6
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: 628fe38932831aaa14f81114a898a70d586e89a004b1753ad5480d0133c4d6c0
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Tokyo</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant to=user<|message|>
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Paris</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Tokyo</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+              <|eom|>'
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: ba2849f00bd634d3b1260a5486532eb0e18441fc8699be0a3e0b8df0d252abb6
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: 877d9c1afb9a26e7d72586c7bb7b3a14de238e95af9e219f6df9f4d330a57c2f
+        inline:
+          input: '<|start|>assistant to=user<|message|>Pressing it now.
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: ba2849f00bd634d3b1260a5486532eb0e18441fc8699be0a3e0b8df0d252abb6
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: 03a8e2ea82c41e1ef220f4fbcc902be9b4426161694a06b099582bed7bdf9d93
+        inline:
+          input: '<|start|>assistant to=self<|message|>Check weather.<|eom|><|start|>assistant to=user<|message|>
+
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=self
+          - delta_text: <|message|>
+          - delta_text: Check weather.
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: ba2849f00bd634d3b1260a5486532eb0e18441fc8699be0a3e0b8df0d252abb6
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: 49eada9bd51943687cf41eab72f72dace0b0d0978f7bc763f0ac5a85fb1e0f77
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+            Done.<|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|message|>
+          - delta_text: <atem:function_calls>
+          - delta_text: '
+
+              '
+          - delta_text: <atem:invoke name="get_weather">
+          - delta_text: '
+
+              '
+          - delta_text: <atem:parameter name="city">
+          - delta_text: Paris
+          - delta_text: </atem:parameter>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:invoke>
+          - delta_text: '
+
+              '
+          - delta_text: </atem:function_calls>
+          - delta_text: <|eom|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+              Done.'
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: ba2849f00bd634d3b1260a5486532eb0e18441fc8699be0a3e0b8df0d252abb6
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: 29100324e159669f00e18e159fffd58f862b76f87ef941ad0914f61d84ae44ad
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+
+            <|eom|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant to=user
+          - delta_text: <|message|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|eom|>
+          - delta_text: ‹finish›
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: ba2849f00bd634d3b1260a5486532eb0e18441fc8699be0a3e0b8df0d252abb6
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 79bb0c8787812ee17ade637b65ca2f4a3b6adfa46b91ac68704d6ca62a14bbee
+        inline:
+          input: '<|start|>assistant to=user<|message|>
+
+            <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+            <atem:invoke name="get_weather">
+
+            <atem:parameter name="city">Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|start|>assistant to=user<|message|>
+
+              <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="city">Par'
+      observation:
+        unavailable:
+          code: peer_detector_unavailable
+          detail: The shared vllm stream adapter has no registered pipeline for muse_spark
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: fda72713e9dc8bd21c918b38aa7a5b6a50025c8e65f85aa2d63fa5240cb26517
+            results_sha256: ba2849f00bd634d3b1260a5486532eb0e18441fc8699be0a3e0b8df0d252abb6

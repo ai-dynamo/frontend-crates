@@ -1,3 +1,4 @@
+schema_version: 2
 provenance:
   status: captured
   origin:
@@ -7,739 +8,1001 @@ provenance:
     job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
 document:
   mode: unified
-changes:
+records:
   deepseek_v4_guided_reasoning_opener_inside_native_body:
-    case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
-    stimulus:
-      ref: current
-      semantic_sha256: 31c2dd56a7b7a68a10a1a6b43730f645c7fa4e272b67f8b7adb783a5a595bab2
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: deepseek_v4_guided_reasoning_opener_inside_native_body
+      stimulus:
+        ref: current
+        semantic_sha256: 31c2dd56a7b7a68a10a1a6b43730f645c7fa4e272b67f8b7adb783a5a595bab2
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   gemma4_guided_reasoning_opener_after_call_prefix:
-    case_key: gemma4_guided_reasoning_opener_after_call_prefix
-    stimulus:
-      ref: current
-      semantic_sha256: 47f4980a91daa603725ff2f82155d3e918c2e24d4937b72dddce3f129b83bd64
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: gemma4_guided_reasoning_opener_after_call_prefix
+      stimulus:
+        ref: current
+        semantic_sha256: 47f4980a91daa603725ff2f82155d3e918c2e24d4937b72dddce3f129b83bd64
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   gemma4_guided_response_extra_body_opener:
-    case_key: gemma4_guided_response_extra_body_opener
-    stimulus:
-      ref: current
-      semantic_sha256: 1b878d846d6082c699cd2cdde17924ffc749f386c4cf02d373fd23219ef13aea
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: gemma4_guided_response_extra_body_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 1b878d846d6082c699cd2cdde17924ffc749f386c4cf02d373fd23219ef13aea
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   guided_response_rejected_header_quote_ownership:
-    case_key: guided_response_rejected_header_quote_ownership
-    stimulus:
-      ref: current
-      semantic_sha256: 36422b7abcdb51a3141c8e730a3554c9d407e849f02c0a59f83d95244605df26
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: guided_response_rejected_header_quote_ownership
+      stimulus:
+        ref: current
+        semantic_sha256: 36422b7abcdb51a3141c8e730a3554c9d407e849f02c0a59f83d95244605df26
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   kimi_k3_malformed_call_then_valid:
-    case_key: kimi_k3_malformed_call_then_valid
-    stimulus:
-      ref: current
-      semantic_sha256: 7d41147151eb7ac70b38cd31e8d836ab074373c1325ce9273684aaf6e8f5d3f4
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: bad
-          arguments:
-            y: '2'
+    value:
+      case_key: kimi_k3_malformed_call_then_valid
+      stimulus:
+        ref: current
+        semantic_sha256: 7d41147151eb7ac70b38cd31e8d836ab074373c1325ce9273684aaf6e8f5d3f4
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: bad
+            arguments:
+              y: "2"
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: bad
+              arguments:
+                y: "2"
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   kimi_k3_typed_json_marker_payload:
-    case_key: kimi_k3_typed_json_marker_payload
-    stimulus:
-      ref: current
-      semantic_sha256: e6656ad97c927227adffd28cf35e91bc27ce22b2b51cb2452fc2028bfa7ccf1e
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: inspect
-          arguments:
-            x:
-              inner: ''
-            y:
-              y: OK
+    value:
+      case_key: kimi_k3_typed_json_marker_payload
+      stimulus:
+        ref: current
+        semantic_sha256: e6656ad97c927227adffd28cf35e91bc27ce22b2b51cb2452fc2028bfa7ccf1e
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: inspect
+            arguments:
+              x:
+                inner: ''
+              y:
+                y: OK
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: inspect
+              arguments:
+                x:
+                  inner: ''
+                y:
+                  y: OK
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   kimi_native_incremental_interfield_whitespace:
-    case_key: kimi_native_incremental_interfield_whitespace
-    stimulus:
-      ref: current
-      semantic_sha256: 531ed08167bcca4e725c47c158a81c35213d744d1482a1797fd9ef064ecdbe6f
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: write_file
-          arguments:
-            count: 7
-            content: q
+    value:
+      case_key: kimi_native_incremental_interfield_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: 531ed08167bcca4e725c47c158a81c35213d744d1482a1797fd9ef064ecdbe6f
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: q
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments:
+                count: 7
+                content: q
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   kimi_native_k2_count_content_chunk1024:
-    case_key: kimi_native_k2_count_content_chunk1024
-    stimulus:
-      ref: current
-      semantic_sha256: e7a212aedeac5d1352d0169b723925aa7ecfe2142eb68dfa795bbbfe6e0534bc
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: write_file
-          arguments:
-            count: 7
-            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: e7a212aedeac5d1352d0169b723925aa7ecfe2142eb68dfa795bbbfe6e0534bc
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments:
+                count: 7
+                content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   kimi_native_k2_count_content_chunk7:
-    case_key: kimi_native_k2_count_content_chunk7
-    stimulus:
-      ref: current
-      semantic_sha256: 50daed6bb0c51372b021ec05459b776034ee0761d382bd4b346a1b25b9ef5af1
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: write_file
-          arguments:
-            count: 7
-            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: 50daed6bb0c51372b021ec05459b776034ee0761d382bd4b346a1b25b9ef5af1
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: write_file
+            arguments:
+              count: 7
+              content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: write_file
+              arguments:
+                count: 7
+                content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   muse_opaque_declared_invoke:
-    case_key: muse_opaque_declared_invoke
-    stimulus:
-      ref: current
-      semantic_sha256: 7dfaa35c55bf7c8b10c0c7ad081175d6259767230fb0a7fa93b25dd5d137e08f
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments: {}
-        - kind: tool_call
-          name: get_weather
-          arguments: {}
+    value:
+      case_key: muse_opaque_declared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 7dfaa35c55bf7c8b10c0c7ad081175d6259767230fb0a7fa93b25dd5d137e08f
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments: {}
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: f
+              arguments: {}
+            - name: get_weather
+              arguments: {}
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   muse_opaque_undeclared_invoke:
-    case_key: muse_opaque_undeclared_invoke
-    stimulus:
-      ref: current
-      semantic_sha256: 7a1df4aa9a44ef15ad1678aa80ccde77075cca5dc9542321a7c432935d7264b8
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments: {}
-        - kind: tool_call
-          name: rm_rf
-          arguments: {}
+    value:
+      case_key: muse_opaque_undeclared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 7a1df4aa9a44ef15ad1678aa80ccde77075cca5dc9542321a7c432935d7264b8
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments: {}
+          - kind: tool_call
+            name: rm_rf
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: f
+              arguments: {}
+            - name: rm_rf
+              arguments: {}
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   muse_unterminated_parameter_then_empty_call:
-    case_key: muse_unterminated_parameter_then_empty_call
-    stimulus:
-      ref: current
-      semantic_sha256: 24497fbbbce73ccec8663ccc97d2889a4c0fd25e0581b317fcd0a185499b0d17
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments: {}
-        - kind: tool_call
-          name: f
-          arguments: {}
+    value:
+      case_key: muse_unterminated_parameter_then_empty_call
+      stimulus:
+        ref: current
+        semantic_sha256: 24497fbbbce73ccec8663ccc97d2889a4c0fd25e0581b317fcd0a185499b0d17
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+          - kind: tool_call
+            name: f
+            arguments: {}
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: ''
+            calls:
+            - name: get_weather
+              arguments: {}
+            - name: f
+              arguments: {}
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   muse_unterminated_reasoning_guided:
-    case_key: muse_unterminated_reasoning_guided
-    stimulus:
-      ref: current
-      semantic_sha256: ea5a97494148483a8ad4133a464ea9163c67dde1c13b71602a192ab52187e32c
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: muse_unterminated_reasoning_guided
+      stimulus:
+        ref: current
+        semantic_sha256: ea5a97494148483a8ad4133a464ea9163c67dde1c13b71602a192ab52187e32c
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   native_quoted_control_in_response:
-    case_key: native_quoted_control_in_response
-    stimulus:
-      ref: current
-      semantic_sha256: 543d331c555be2db08d4d4a4182fe7a4150c66ab4910494932b2dde9df1edf6c
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The literal "
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 543d331c555be2db08d4d4a4182fe7a4150c66ab4910494932b2dde9df1edf6c
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal "
+            calls: []
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   native_quoted_control_then_call:
-    case_key: native_quoted_control_then_call
-    stimulus:
-      ref: current
-      semantic_sha256: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The literal "
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal "
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal "
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   native_quoted_incomplete_header:
-    case_key: native_quoted_incomplete_header
-    stimulus:
-      ref: current
-      semantic_sha256: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: The literal `
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: The literal `
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: The literal `
+            calls: []
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   native_single_quote_contraction_response:
-    case_key: native_single_quote_contraction_response
-    stimulus:
-      ref: current
-      semantic_sha256: e33413aa3749f755662ca1aaceb5ec9d30f120c84cb7f46e4506ea1098a3e45f
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'The literal ''doesn''t '
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: e33413aa3749f755662ca1aaceb5ec9d30f120c84cb7f46e4506ea1098a3e45f
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''doesn''t '
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'The literal ''doesn''t '
+            calls: []
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   native_single_quoted_word_control:
-    case_key: native_single_quoted_word_control
-    stimulus:
-      ref: current
-      semantic_sha256: b0b910ff77ea112990d5cc47dc50756613cb752578c2f48cb091d48ef3cb8fd6
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'The literal ''example '
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: b0b910ff77ea112990d5cc47dc50756613cb752578c2f48cb091d48ef3cb8fd6
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'The literal ''example '
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: 'The literal ''example '
+            calls: []
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   native_unmatched_quote_then_call:
-    case_key: native_unmatched_quote_then_call
-    stimulus:
-      ref: current
-      semantic_sha256: b0af57df118d379db2b65b3fbd88525d516b548b9f6a07ebe5c4e9d39a1e96e8
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: He said "maybe
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: b0af57df118d379db2b65b3fbd88525d516b548b9f6a07ebe5c4e9d39a1e96e8
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: He said "maybe
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   prefilled_response_guided_pending_invoke_header:
-    case_key: prefilled_response_guided_pending_invoke_header
-    stimulus:
-      ref: current
-      semantic_sha256: 0b02735c7ca2ed5f326842ade1554ae19e7726a719f92d92fe647269dfb248ab
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: prefilled_response_guided_pending_invoke_header
+      stimulus:
+        ref: current
+        semantic_sha256: 0b02735c7ca2ed5f326842ade1554ae19e7726a719f92d92fe647269dfb248ab
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   prefilled_response_reasoning_markers_literal:
-    case_key: prefilled_response_reasoning_markers_literal
-    stimulus:
-      ref: current
-      semantic_sha256: 994a5cc49e2775f3609782ea14e61aa289b7c9904d3e7300dc7405038c6ac7bf
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: <mm:think>literal</mm:think> then a call
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: 994a5cc49e2775f3609782ea14e61aa289b7c9904d3e7300dc7405038c6ac7bf
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <mm:think>literal</mm:think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          batch_final:
+            reasoning_text: ''
+            normal_text: <mm:think>literal</mm:think> then a call
+            calls:
+            - name: get_weather
+              arguments:
+                city: Paris
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   qwen3_guided_non_ascii_header_in_closed_reasoning:
-    case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
-    stimulus:
-      ref: current
-      semantic_sha256: 632f3bd28ca8be8e8f5ba06e23b38bd46e6b1ec36ace2008d7394090a6b8bdf9
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_closed_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 632f3bd28ca8be8e8f5ba06e23b38bd46e6b1ec36ace2008d7394090a6b8bdf9
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   qwen3_guided_non_ascii_header_in_truncated_reasoning:
-    case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
-    stimulus:
-      ref: current
-      semantic_sha256: b8570fba31caa358c504d3dec22c98d08cdf1be5b8e55db2cab9f113977f2657
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    value:
+      case_key: qwen3_guided_non_ascii_header_in_truncated_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: b8570fba31caa358c504d3dec22c98d08cdf1be5b8e55db2cab9f113977f2657
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml
   qwen3_guided_reasoning_opener_inside_native_header:
-    case_key: qwen3_guided_reasoning_opener_inside_native_header
-    stimulus:
-      ref: current
-      semantic_sha256: 3f2c8eee44143ee0a914bde4c683108cf6c04addf4914994578793be989199ab
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-metadata_changes:
-  deepseek_v4_guided_reasoning_opener_inside_native_body:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  gemma4_guided_reasoning_opener_after_call_prefix:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  gemma4_guided_response_extra_body_opener:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  guided_response_rejected_header_quote_ownership:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  kimi_k3_malformed_call_then_valid:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: bad
-        arguments:
-          y: '2'
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  kimi_k3_typed_json_marker_payload:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: inspect
-        arguments:
-          x:
-            inner: ''
-          y:
-            y: OK
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  kimi_native_incremental_interfield_whitespace:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: write_file
-        arguments:
-          count: 7
-          content: q
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  kimi_native_k2_count_content_chunk1024:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: write_file
-        arguments:
-          count: 7
-          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  kimi_native_k2_count_content_chunk7:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: write_file
-        arguments:
-          count: 7
-          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  muse_opaque_declared_invoke:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: f
-        arguments: {}
-      - name: get_weather
-        arguments: {}
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  muse_opaque_undeclared_invoke:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: f
-        arguments: {}
-      - name: rm_rf
-        arguments: {}
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  muse_unterminated_parameter_then_empty_call:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: get_weather
-        arguments: {}
-      - name: f
-        arguments: {}
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  muse_unterminated_reasoning_guided:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  native_quoted_control_in_response:
-    batch_final:
-      reasoning_text: ''
-      normal_text: The literal "
-      calls: []
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  native_quoted_control_then_call:
-    batch_final:
-      reasoning_text: ''
-      normal_text: The literal "
-      calls:
-      - name: get_weather
-        arguments:
-          city: Paris
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  native_quoted_incomplete_header:
-    batch_final:
-      reasoning_text: ''
-      normal_text: The literal `
-      calls: []
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  native_single_quote_contraction_response:
-    batch_final:
-      reasoning_text: ''
-      normal_text: 'The literal ''doesn''t '
-      calls: []
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  native_single_quoted_word_control:
-    batch_final:
-      reasoning_text: ''
-      normal_text: 'The literal ''example '
-      calls: []
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  native_unmatched_quote_then_call:
-    batch_final:
-      reasoning_text: ''
-      normal_text: He said "maybe
-      calls:
-      - name: get_weather
-        arguments:
-          city: Paris
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  prefilled_response_guided_pending_invoke_header:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  prefilled_response_reasoning_markers_literal:
-    batch_final:
-      reasoning_text: ''
-      normal_text: <mm:think>literal</mm:think> then a call
-      calls:
-      - name: get_weather
-        arguments:
-          city: Paris
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  qwen3_guided_non_ascii_header_in_closed_reasoning:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  qwen3_guided_non_ascii_header_in_truncated_reasoning:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-  qwen3_guided_reasoning_opener_inside_native_header:
-    dynamo_v1_capture_provenance:
-      implementation: dynamo_v1
-      version: 3.0.0
-      source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
-      adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
-      job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
-      crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
-      cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
-      compatibility_flags:
-      - conformance_async_tool_api
-      - conformance_tool_api_schemas
-      - conformance_no_jail
-      results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
-      binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
-document_overrides: {}
+    value:
+      case_key: qwen3_guided_reasoning_opener_inside_native_header
+      stimulus:
+        ref: current
+        semantic_sha256: 3f2c8eee44143ee0a914bde4c683108cf6c04addf4914994578793be989199ab
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v1: 3.0.0
+        capture_origin:
+          crate_version: 3.0.0
+          source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+          adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+          job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+        record_metadata:
+          dynamo_v1_capture_provenance:
+            implementation: dynamo_v1
+            version: 3.0.0
+            source_sha256: 9b9feb87d9f81647a4b1b20a48535d4a9efe2837fb00dbc974f3758821e171da
+            adapter_sha256: 53ef2e7e03cc2210315c5b71d8b5ef770bb1c9c78537077b347a7312ece8aff1
+            job_sha256: 1a9c1893abb0cbfae4504eb461abaaad7429fb2d3b6f5aaccb9cae67468a00b6
+            crate_checksum: e1d76028cd9b3d99e733427f6c9fc0e176ddd5269437f4a71492c0ec8838bb5e
+            cargo_lock_sha256: 3246b173b4ddeb8cf76ecae25b68c77df3de49b30776caa14b38966e15027b53
+            compatibility_flags:
+            - conformance_async_tool_api
+            - conformance_tool_api_schemas
+            - conformance_no_jail
+            results_sha256: 5954910e019f30660ed5a2ff847815b67db6e8fce8e3bb738274b561d7efc2d1
+            binary_sha256: c5fc003c27d6b13d6d069360816f7ea39dd8b6f553c2f5aa744baa6e6d0eca38
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-3.0.0.yaml

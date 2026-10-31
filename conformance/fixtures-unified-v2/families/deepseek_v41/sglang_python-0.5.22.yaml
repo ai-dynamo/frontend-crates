@@ -1853,17 +1853,7 @@ records:
               - expected: []
               - expected: []
               capture_input:
-                input: '<｜DSML｜ calls>
-
-                  <｜DSML｜ invoke name="inspect">
-
-                  {"value": " café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}
-
-                  </｜DSML｜ invoke>
-
-                  <｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>
-
-                  </｜DSML｜ calls>'
+                input: "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"inspect\">\n{\"value\": \" café \U0001F408 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \\\"x\\\"\\n\", \"nested\": {\"values\": [true, 42, -1250]}}\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"done\">{}</｜DSML｜ invoke>\n</｜DSML｜ calls>"
                 init:
                   starting_state: None
                   tool_output_mode: Native
@@ -1890,9 +1880,7 @@ records:
 
                     '
                 - delta_text: <｜DSML｜ invoke name="inspect">
-                - delta_text: '
-
-                    {"value": " café 🐈 '
+                - delta_text: "\n{\"value\": \" café \U0001F408 "
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: ' '
                 - delta_text: </｜DSML｜ calls>
@@ -2166,13 +2154,13 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="capture_payload">
                 - delta_text: <｜DSML｜ parameter name="space" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: <｜DSML｜ parameter name="utf8_plus" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: <｜DSML｜ parameter name="pointer" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -2576,16 +2564,16 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="capture_payload">
                 - delta_text: <｜DSML｜ parameter name="count" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: <｜DSML｜ parameter name="ratio" string="false">
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: <｜DSML｜ parameter name="flag" string="false">
                 - delta_text: 'true'
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: <｜DSML｜ parameter name="narrowed" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -7246,7 +7234,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="capture_payload">
                 - delta_text: <｜DSML｜ parameter name="count" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -7407,11 +7395,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -7475,11 +7463,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -7576,7 +7564,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -7584,7 +7572,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -9598,13 +9586,13 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: reasoning
             text: mid
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -9657,13 +9645,13 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: mid
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -9745,7 +9733,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -9755,7 +9743,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -9815,13 +9803,13 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: B
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected:
                 - kind: reasoning
@@ -9909,7 +9897,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -9919,7 +9907,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -10672,13 +10660,13 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: B
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected:
                 - kind: reasoning
@@ -10769,7 +10757,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -10779,7 +10767,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -10842,13 +10830,13 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: reasoning
                 text: B
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected:
                 - kind: reasoning
@@ -10937,7 +10925,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -10948,7 +10936,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -11221,7 +11209,7 @@ records:
             result:
               unavailable: SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization.
               capture_input:
-                input: '<think>before <｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">é🙂<par{value}</｜DSML｜ parameter></｜DSML｜ invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                input: "<think>before <｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"true\">é\U0001F642<par{value}</｜DSML｜ parameter></｜DSML｜ invoke> after</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
                 init:
                   starting_state: None
                   tool_output_mode: GuidedJson
@@ -11275,7 +11263,7 @@ records:
                 - delta_text: 'before '
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: é🙂
+                - delta_text: "é\U0001F642"
                 - delta_text: <par{value}</｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: ' after'
@@ -13466,7 +13454,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -13504,7 +13492,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -13531,7 +13519,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -13541,7 +13529,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -13576,7 +13564,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -13614,7 +13602,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -13640,7 +13628,7 @@ records:
                     type: object
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -13649,7 +13637,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -13684,7 +13672,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -13722,7 +13710,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -13754,13 +13742,13 @@ records:
                     additionalProperties: false
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -13795,7 +13783,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -13833,7 +13821,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -13860,7 +13848,7 @@ records:
                     properties:
                       value:
                         type: string
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -13869,7 +13857,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -16387,7 +16375,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -16603,7 +16591,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -16932,7 +16920,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -16967,7 +16955,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -17005,7 +16993,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -17034,7 +17022,7 @@ records:
                         type: string
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                     required:
                     - value
                     additionalProperties: false
@@ -17043,7 +17031,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -17263,7 +17251,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -17298,7 +17286,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -17336,7 +17324,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -17363,7 +17351,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -17373,7 +17361,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -17485,7 +17473,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -17597,7 +17585,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -17961,7 +17949,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -17999,7 +17987,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -18031,13 +18019,13 @@ records:
                     additionalProperties: false
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -18151,7 +18139,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -18266,7 +18254,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '-7'
+                - delta_text: "-7"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -18496,7 +18484,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '-7'
+                - delta_text: "-7"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -18721,7 +18709,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -18866,7 +18854,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected: []
           - expected: []
@@ -18904,7 +18892,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -18941,7 +18929,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="true">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -20049,7 +20037,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -20269,7 +20257,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -20929,7 +20917,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -21149,7 +21137,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -22701,7 +22689,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -22921,7 +22909,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -23581,7 +23569,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -23801,7 +23789,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="schema_probe">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -24301,7 +24289,7 @@ records:
             result:
               unavailable: Parser-only peer capture does not execute structural-tag generation constraints.
               capture_input:
-                input: Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
                 init:
                   starting_state: Reasoning
                   tool_output_mode: Native
@@ -24325,15 +24313,15 @@ records:
                       - conditions
                       additionalProperties: false
                     rejected:
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
-                    - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
                 finish_reason: stop
                 tools: []
                 chunks:
-                - delta_text: Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
               capture_stimulus:
                 unavailable:
                   code: unsupported_request_mode
@@ -24521,11 +24509,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -24574,11 +24562,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -24656,7 +24644,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -24664,7 +24652,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -24821,11 +24809,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected:
             - kind: text
@@ -24893,11 +24881,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected:
                 - kind: text
@@ -24992,7 +24980,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -25003,7 +24991,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -26499,11 +26487,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -26549,11 +26537,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -26628,12 +26616,12 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="f">
                 - delta_text: <｜DSML｜ parameter name="x" string="true">
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: <｜DSML｜ invoke name="g">
                 - delta_text: <｜DSML｜ parameter name="y" string="true">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -27101,7 +27089,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="capture_payload">
                 - delta_text: <｜DSML｜ parameter name="count" string="false">
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: <｜DSML｜ parameter name="flag" string="false">
                 - delta_text: 'false'
@@ -30691,7 +30679,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -30752,7 +30740,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -30858,7 +30846,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -30919,7 +30907,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31026,7 +31014,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31088,7 +31076,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31195,7 +31183,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31257,7 +31245,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31362,7 +31350,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740993.0'
+                - delta_text: "9007199254740993.0"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31422,7 +31410,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740993.0'
+                - delta_text: "9007199254740993.0"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31527,7 +31515,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 9.007199254740993e15
+                - delta_text: "9.007199254740993e15"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31587,7 +31575,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 9.007199254740993e15
+                - delta_text: "9.007199254740993e15"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31692,7 +31680,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '-4.2E+1'
+                - delta_text: "-4.2E+1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31752,7 +31740,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '-4.2E+1'
+                - delta_text: "-4.2E+1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31857,7 +31845,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 4200e-2
+                - delta_text: "4200e-2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -31917,7 +31905,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 4200e-2
+                - delta_text: "4200e-2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32022,7 +32010,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '0.0e-400'
+                - delta_text: "0.0e-400"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32082,7 +32070,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '0.0e-400'
+                - delta_text: "0.0e-400"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32185,7 +32173,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 9.0071992547409925e15
+                - delta_text: "9.0071992547409925e15"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32243,7 +32231,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: 9.0071992547409925e15
+                - delta_text: "9.0071992547409925e15"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32346,7 +32334,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '-9007199254740992.5'
+                - delta_text: "-9007199254740992.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32404,7 +32392,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '-9007199254740992.5'
+                - delta_text: "-9007199254740992.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32507,7 +32495,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42.5'
+                - delta_text: "42.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32565,7 +32553,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '42.5'
+                - delta_text: "42.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32668,7 +32656,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740993.25'
+                - delta_text: "9007199254740993.25"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32726,7 +32714,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740993.25'
+                - delta_text: "9007199254740993.25"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32829,7 +32817,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740992.5'
+                - delta_text: "9007199254740992.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32887,7 +32875,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740992.5'
+                - delta_text: "9007199254740992.5"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -32990,7 +32978,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740993.1'
+                - delta_text: "9007199254740993.1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -33048,7 +33036,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '9007199254740993.1'
+                - delta_text: "9007199254740993.1"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -33151,7 +33139,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '0.10000000000000000001'
+                - delta_text: "0.10000000000000000001"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -33209,7 +33197,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="get_weather">
                 - delta_text: <｜DSML｜ parameter name="value" string="false">
-                - delta_text: '0.10000000000000000001'
+                - delta_text: "0.10000000000000000001"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -36455,7 +36443,7 @@ records:
               text: <｜DSML｜ parameter name="x" string="false">
           - expected:
             - kind: text
-              text: '2'
+              text: "2"
           - expected:
             - kind: text
               text: </｜DSML｜ parameter>
@@ -36514,7 +36502,7 @@ records:
                   text: <｜DSML｜ parameter name="x" string="false">
               - expected:
                 - kind: text
-                  text: '2'
+                  text: "2"
               - expected:
                 - kind: text
                   text: </｜DSML｜ parameter>
@@ -36541,7 +36529,7 @@ records:
                 - delta_text: <｜DSML｜ calls>
                 - delta_text: <｜DSML｜ invoke name="not_offered">
                 - delta_text: <｜DSML｜ parameter name="x" string="false">
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </｜DSML｜ parameter>
                 - delta_text: </｜DSML｜ invoke>
                 - delta_text: </｜DSML｜ calls>
@@ -38441,4 +38429,321 @@ records:
               job_sha256: 5ad2743d284dbc2ee804cedb9b1f6a3d7917161c98d1255451cfc50cc7fb4d0d
               results_sha256: 4a9efef7d2e11a2dea90bb3607228b42b5bc4aaaf6fd456a5bcf029771e2c1ca
             resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml
+  blank_output_without_call:
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        ref: current
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: be7f406a13f0a7d615495cc10cdab06f2ec9edeb04e15f6284bdf47f5d07fa8a
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml
+  blank_framing_after_reasoning:
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 78d0d48e6ac1d002b99717eeca0831b9827c32605227ee3cf78fab08e7f43a7e
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: be7f406a13f0a7d615495cc10cdab06f2ec9edeb04e15f6284bdf47f5d07fa8a
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml
+  blank_framing_between_calls_single_chunk:
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        ref: current
+        semantic_sha256: 8535bbfb6301dfc14740df33e2e8b7ebaf622965f3055975291bb49ef965b030
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Tokyo"}'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: be7f406a13f0a7d615495cc10cdab06f2ec9edeb04e15f6284bdf47f5d07fa8a
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml
+  blank_framing_prose_after_call:
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        ref: current
+        semantic_sha256: db0882d529586a1c51fac24c2b5756f1ec03c1fc73f6729cdce16ed130162a71
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: be7f406a13f0a7d615495cc10cdab06f2ec9edeb04e15f6284bdf47f5d07fa8a
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml
+  blank_framing_tool_only:
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: 32127195f42115de7afb0b21c261963db0ba7a883244db2ebf138e308ec74274
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: be7f406a13f0a7d615495cc10cdab06f2ec9edeb04e15f6284bdf47f5d07fa8a
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml
+  blank_framing_with_prose:
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        ref: current
+        semantic_sha256: 3b113335d295455c9edeb008177e7e96fd6b480f2c35b47c248d784c3e79746b
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: Pressing it now.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: Pressing it now.
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: be7f406a13f0a7d615495cc10cdab06f2ec9edeb04e15f6284bdf47f5d07fa8a
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml
+  blank_framing_incomplete_call:
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        ref: current
+        semantic_sha256: f324fcdc278a5392b202ba6fb96cd234ca6ff4dfc161331665b45a634773f7cf
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected:
+            - kind: text
+              text: '
+
+                '
+      document:
+        mode: unified
+        captured_with:
+          sglang_python: 0.5.22
+        record_metadata:
+          parser: SGLang Python 0.5.22 (stream, reasoning + tool detectors)
+          sglang_capture_provenance:
+            implementation: sglang_python
+            version: 0.5.22
+            artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
+            extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+            status: executed
+            parser_apis:
+              protocol: srt.entrypoints.openai.protocol
+              reasoning: srt.parser.reasoning_parser
+              tools: srt.function_call.function_call_parser
+            source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+            adapter_sha256: 75fab27358efae1d4a3183c0d3a6057f886a9a8a914decdc7583ee92cd0ba8db
+            job_sha256: d41de5da1c08d66fb7600cc611a1f2729e320ff1de51985257690baf45c77f16
+            results_sha256: be7f406a13f0a7d615495cc10cdab06f2ec9edeb04e15f6284bdf47f5d07fa8a
     member: conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.22.yaml

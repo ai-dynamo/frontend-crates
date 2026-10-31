@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k3","implementation":"vllm_python","lineage":[{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.25.1.yaml","version":"0.25.1"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.26.0.yaml","version":"0.26.0"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.27.1.yaml","version":"0.27.1"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"6e2a4ba627872ff46a011f605efefd8568c17442f55bfb35e93a11bece8c5fb1","source":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml","surface":"unified","version":"0.31.0"}
+capture_selection: {"family":"kimi_k3","implementation":"vllm_python","lineage":[{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.25.1.yaml","version":"0.25.1"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.26.0.yaml","version":"0.26.0"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.27.1.yaml","version":"0.27.1"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"58b17e3863ad743071eca8d51707e7ae0023cff5ce558d9892c3c04646732df2","source":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 schema_version: 2
 provenance:
   status: legacy
@@ -135657,3 +135657,1161 @@ records:
             adapter_sha256: 7fd33f2c4b31db58e94b3480968874f6dcc1c7ad5d67f32c0263974e6b8b7192
             job_sha256: a10bf2e849288a05da71e88bd6f46492013890da1689c6e91396ff1de684a3ba
             results_sha256: fc0dfa329dc22b33cefc9391825b00e70b051c78bdbbf02800f1c5d3f1d67157
+  blank_framing_tool_only:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        semantic_sha256: 9899e867b9a84017442d2298c5ccc4dcc573bd16fd347db4ce7d227859bb4d04
+        inline:
+          input: '<|open|>response<|sep|>
+
+            <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+            <|close|>response<|sep|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: call tool="get_weather" index="1"
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: argument key="city" type="string"
+          - delta_text: <|sep|>
+          - delta_text: Paris
+          - delta_text: <|close|>
+          - delta_text: argument
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: call
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: '
+
+                '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>tools
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>call tool="get_weather" index="1"
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>argument key="city" type="string"
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: Paris
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>argument
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>call
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>tools
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: '
+
+                '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 9083e68edc3ac42eae18627737ce71193c0d53777648e98c1a99dec182e7d074
+            results_sha256: 61329f961f249b01a2c3ec9275148ea4f7445280dd5b7f3dddaba344f1e19def
+  blank_framing_between_calls_single_chunk:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        semantic_sha256: d423ef55abf7e52bb5dd73827c1d3dd7b102e350692e004abf432739bb14797a
+        inline:
+          input: '<|open|>response<|sep|>
+
+            <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+
+            <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Tokyo<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+            <|close|>response<|sep|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|open|>response<|sep|>
+
+              <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+
+              <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Tokyo<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+              <|close|>response<|sep|>'
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: '<|open|>response<|sep|>
+
+                <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+
+                <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Tokyo<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+                <|close|>response<|sep|>'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 9083e68edc3ac42eae18627737ce71193c0d53777648e98c1a99dec182e7d074
+            results_sha256: 61329f961f249b01a2c3ec9275148ea4f7445280dd5b7f3dddaba344f1e19def
+  blank_framing_with_prose:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        semantic_sha256: eff027024412987c8781e71cfbd725e645f75a85f2641ef7e864b9494e65633d
+        inline:
+          input: '<|open|>response<|sep|>Pressing it now.
+
+
+            <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+            <|close|>response<|sep|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: 'Pressing it now.
+
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: call tool="get_weather" index="1"
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: argument key="city" type="string"
+          - delta_text: <|sep|>
+          - delta_text: Paris
+          - delta_text: <|close|>
+          - delta_text: argument
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: call
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: 'Pressing it now.
+
+
+                '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>tools
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>call tool="get_weather" index="1"
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>argument key="city" type="string"
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: Paris
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>argument
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>call
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>tools
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: '
+
+                '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 9083e68edc3ac42eae18627737ce71193c0d53777648e98c1a99dec182e7d074
+            results_sha256: 61329f961f249b01a2c3ec9275148ea4f7445280dd5b7f3dddaba344f1e19def
+  blank_framing_after_reasoning:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        semantic_sha256: a4a35ed9789677e2f0732c169c21eb2bacb5d5e5d29f6e73f7833f0abeb0555e
+        inline:
+          input: '<|open|>think<|sep|>Check weather.<|close|>think<|sep|><|open|>response<|sep|>
+
+
+            <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+            <|close|>response<|sep|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|open|>
+          - delta_text: think
+          - delta_text: <|sep|>
+          - delta_text: Check weather.
+          - delta_text: <|close|>
+          - delta_text: think
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: call tool="get_weather" index="1"
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: argument key="city" type="string"
+          - delta_text: <|sep|>
+          - delta_text: Paris
+          - delta_text: <|close|>
+          - delta_text: argument
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: call
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 9083e68edc3ac42eae18627737ce71193c0d53777648e98c1a99dec182e7d074
+            results_sha256: 61329f961f249b01a2c3ec9275148ea4f7445280dd5b7f3dddaba344f1e19def
+  blank_framing_prose_after_call:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        semantic_sha256: afc7a68b7f297fbd9da14871e5a4e1534923b531f55e87137bf4d88452648c94
+        inline:
+          input: '<|open|>response<|sep|>
+
+            <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+            Done.<|close|>response<|sep|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: call tool="get_weather" index="1"
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: argument key="city" type="string"
+          - delta_text: <|sep|>
+          - delta_text: Paris
+          - delta_text: <|close|>
+          - delta_text: argument
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: call
+          - delta_text: <|sep|>
+          - delta_text: <|close|>
+          - delta_text: tools
+          - delta_text: <|sep|>
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+              Done.'
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: '
+
+                '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>tools
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>call tool="get_weather" index="1"
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>argument key="city" type="string"
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: Paris
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>argument
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>call
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>tools
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: '
+
+                Done.'
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 9083e68edc3ac42eae18627737ce71193c0d53777648e98c1a99dec182e7d074
+            results_sha256: 61329f961f249b01a2c3ec9275148ea4f7445280dd5b7f3dddaba344f1e19def
+  blank_output_without_call:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        semantic_sha256: c6e08e63118d882f4c39a27e0b2eb786185014c401db36b65f8ed9ba8922d788
+        inline:
+          input: '<|open|>response<|sep|>
+
+
+            <|close|>response<|sep|>'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|open|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: '
+
+
+              '
+          - delta_text: <|close|>
+          - delta_text: response
+          - delta_text: <|sep|>
+          - delta_text: ‹finish›
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+
+              '
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|open|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected:
+            - kind: reasoning
+              text: '
+
+
+                '
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: <|close|>response
+          - expected:
+            - kind: reasoning
+              text: <|sep|>
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 9083e68edc3ac42eae18627737ce71193c0d53777648e98c1a99dec182e7d074
+            results_sha256: 61329f961f249b01a2c3ec9275148ea4f7445280dd5b7f3dddaba344f1e19def
+  blank_framing_incomplete_call:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        semantic_sha256: 3d099e29b094ed725f8c38a0ba88c980e8d564cece5b9688e2ef1d035a7fc42e
+        inline:
+          input: '<|open|>response<|sep|>
+
+            <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Par'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|open|>response<|sep|>
+
+              <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Par'
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: '
+
+              '
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: '<|open|>response<|sep|>
+
+                <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Par'
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 9083e68edc3ac42eae18627737ce71193c0d53777648e98c1a99dec182e7d074
+            results_sha256: 61329f961f249b01a2c3ec9275148ea4f7445280dd5b7f3dddaba344f1e19def

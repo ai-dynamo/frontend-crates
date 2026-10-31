@@ -4608,7 +4608,7 @@ records:
             name: capture_payload
             arguments:
               payload: '{"x":1}'
-              count: '42'
+              count: "42"
           chunks:
           - expected: []
           - expected: []
@@ -4637,7 +4637,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -4656,7 +4656,7 @@ records:
                 name: capture_payload
                 arguments:
                   payload: '{"x":1}'
-                  count: '42'
+                  count: "42"
               chunks:
               - expected: []
               - expected: []
@@ -4685,7 +4685,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -4734,7 +4734,7 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -4761,7 +4761,7 @@ records:
                 name: capture_payload
                 arguments:
                   payload: '{"x":1}'
-                  count: '42'
+                  count: "42"
               chunks:
               - expected: []
               - expected: []
@@ -4790,7 +4790,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -4839,7 +4839,7 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -4873,9 +4873,9 @@ records:
           - kind: tool_call
             name: capture_payload
             arguments:
-              space: '42'
-              utf8_plus: '42'
-              pointer: '42'
+              space: "42"
+              utf8_plus: "42"
+              pointer: "42"
           chunks:
           - expected: []
           - expected: []
@@ -4892,7 +4892,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected: []
           - expected: []
@@ -4904,7 +4904,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected: []
           - expected: []
@@ -4916,7 +4916,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -4935,9 +4935,9 @@ records:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  space: '42'
-                  utf8_plus: '42'
-                  pointer: '42'
+                  space: "42"
+                  utf8_plus: "42"
+                  pointer: "42"
               chunks:
               - expected: []
               - expected: []
@@ -4954,7 +4954,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected: []
               - expected: []
@@ -4966,7 +4966,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected: []
               - expected: []
@@ -4978,7 +4978,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -5017,19 +5017,19 @@ records:
                 - delta_text: space
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: utf8_plus
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: pointer
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -5055,9 +5055,9 @@ records:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  space: '42'
-                  utf8_plus: '42'
-                  pointer: '42'
+                  space: "42"
+                  utf8_plus: "42"
+                  pointer: "42"
               chunks:
               - expected: []
               - expected: []
@@ -5074,7 +5074,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected: []
               - expected: []
@@ -5086,7 +5086,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected: []
               - expected: []
@@ -5098,7 +5098,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -5137,19 +5137,19 @@ records:
                 - delta_text: space
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: utf8_plus
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: pointer
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -5735,8 +5735,8 @@ records:
           - kind: tool_call
             name: capture_payload
             arguments:
-              count: '42'
-              ratio: '3.5'
+              count: "42"
+              ratio: "3.5"
               flag: 'true'
               narrowed: 42
           chunks:
@@ -5755,7 +5755,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected: []
           - expected: []
@@ -5767,7 +5767,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '3.5'
+              arguments: "3.5"
           - expected: []
           - expected: []
           - expected: []
@@ -5807,8 +5807,8 @@ records:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  count: '42'
-                  ratio: '3.5'
+                  count: "42"
+                  ratio: "3.5"
                   flag: 'true'
                   narrowed: 42
               chunks:
@@ -5827,7 +5827,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected: []
               - expected: []
@@ -5839,7 +5839,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '3.5'
+                  arguments: "3.5"
               - expected: []
               - expected: []
               - expected: []
@@ -5906,13 +5906,13 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: ratio
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: flag
@@ -5924,7 +5924,7 @@ records:
                 - delta_text: narrowed
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -5950,8 +5950,8 @@ records:
               - kind: tool_call
                 name: capture_payload
                 arguments:
-                  count: '42'
-                  ratio: '3.5'
+                  count: "42"
+                  ratio: "3.5"
                   flag: 'true'
                   narrowed: 42
               chunks:
@@ -5970,7 +5970,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected: []
               - expected: []
@@ -5982,7 +5982,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '3.5'
+                  arguments: "3.5"
               - expected: []
               - expected: []
               - expected: []
@@ -6049,13 +6049,13 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: ratio
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: flag
@@ -6067,7 +6067,7 @@ records:
                 - delta_text: narrowed
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -14120,7 +14120,7 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -14189,7 +14189,7 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -14403,11 +14403,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -14448,7 +14448,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -14472,7 +14472,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -14495,11 +14495,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -14540,7 +14540,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -14564,7 +14564,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -14638,7 +14638,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ' and '
@@ -14648,7 +14648,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -14678,11 +14678,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -14723,7 +14723,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -14747,7 +14747,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -14821,7 +14821,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ' and '
@@ -14831,7 +14831,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -19361,11 +19361,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -19382,7 +19382,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -19408,7 +19408,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -19429,11 +19429,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -19450,7 +19450,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -19476,7 +19476,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -19540,7 +19540,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -19552,7 +19552,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -19580,11 +19580,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -19601,7 +19601,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -19627,7 +19627,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -19691,7 +19691,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -19703,7 +19703,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -19738,11 +19738,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected:
@@ -19764,7 +19764,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -19790,7 +19790,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -19811,11 +19811,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected:
@@ -19837,7 +19837,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -19863,7 +19863,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -19930,7 +19930,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -19942,7 +19942,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -19970,11 +19970,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected:
@@ -19996,7 +19996,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -20022,7 +20022,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -20089,7 +20089,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -20101,7 +20101,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -21423,11 +21423,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected:
@@ -21449,7 +21449,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -21475,7 +21475,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -21501,11 +21501,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected:
@@ -21527,7 +21527,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -21553,7 +21553,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -21625,7 +21625,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -21637,7 +21637,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -21668,11 +21668,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected:
@@ -21694,7 +21694,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -21720,7 +21720,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -21792,7 +21792,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -21804,7 +21804,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <think>
@@ -21842,11 +21842,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected:
@@ -21868,7 +21868,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -21897,7 +21897,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -21918,11 +21918,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected:
@@ -21944,7 +21944,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -21973,7 +21973,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -22040,7 +22040,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: working on it
@@ -22053,7 +22053,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -22081,11 +22081,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected:
@@ -22107,7 +22107,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -22136,7 +22136,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -22203,7 +22203,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: working on it
@@ -22216,7 +22216,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -25699,7 +25699,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected:
             - kind: reasoning
@@ -25718,7 +25718,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -25742,7 +25742,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -25759,7 +25759,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -25780,7 +25780,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -25793,7 +25793,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -25819,7 +25819,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -25836,7 +25836,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -25857,7 +25857,7 @@ records:
                     properties:
                       value:
                         allOf:
-                        - const: '42'
+                        - const: "42"
                         - minLength: 0
                     required:
                     - value
@@ -25870,7 +25870,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -25904,7 +25904,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected:
             - kind: reasoning
@@ -25923,7 +25923,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -25947,7 +25947,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -25964,7 +25964,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -25984,7 +25984,7 @@ records:
                     type: object
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -25996,7 +25996,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -26022,7 +26022,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -26039,7 +26039,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -26059,7 +26059,7 @@ records:
                     type: object
                     properties:
                       value:
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -26071,7 +26071,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -26105,7 +26105,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected:
             - kind: reasoning
@@ -26124,7 +26124,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -26148,7 +26148,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -26165,7 +26165,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -26191,7 +26191,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <tool_call>
@@ -26200,7 +26200,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -26226,7 +26226,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -26243,7 +26243,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -26269,7 +26269,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Literal:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <tool_call>
@@ -26278,7 +26278,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -26312,7 +26312,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected:
             - kind: reasoning
@@ -26331,7 +26331,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -26355,7 +26355,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -26372,7 +26372,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -26393,7 +26393,7 @@ records:
                     properties:
                       value:
                         type: string
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -26405,7 +26405,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -26431,7 +26431,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -26448,7 +26448,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -26469,7 +26469,7 @@ records:
                     properties:
                       value:
                         type: string
-                        const: '42'
+                        const: "42"
                     required:
                     - value
                     additionalProperties: false
@@ -26481,7 +26481,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -31071,7 +31071,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -31143,7 +31143,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -31455,7 +31455,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -31527,7 +31527,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32046,7 +32046,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32121,7 +32121,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32155,7 +32155,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected:
             - kind: reasoning
@@ -32174,7 +32174,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -32198,7 +32198,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -32215,7 +32215,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -32238,7 +32238,7 @@ records:
                         type: string
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                     required:
                     - value
                     additionalProperties: false
@@ -32250,7 +32250,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32276,7 +32276,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -32293,7 +32293,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -32316,7 +32316,7 @@ records:
                         type: string
                         enum:
                         - auto
-                        - '42'
+                        - "42"
                     required:
                     - value
                     additionalProperties: false
@@ -32328,7 +32328,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32656,7 +32656,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32729,7 +32729,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32838,7 +32838,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -32851,7 +32851,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -32912,7 +32912,7 @@ records:
                     properties:
                       value:
                         anyOf:
-                        - const: '42'
+                        - const: "42"
                         - type: integer
                     required:
                     - value
@@ -32925,7 +32925,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -33049,7 +33049,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -33125,7 +33125,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -33249,7 +33249,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -33325,7 +33325,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -33957,7 +33957,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
           chunks:
           - expected:
             - kind: reasoning
@@ -33976,7 +33976,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '42'
+              arguments: "42"
           - expected: []
           - expected:
             - kind: tool_call
@@ -34000,7 +34000,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -34017,7 +34017,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -34043,7 +34043,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <tool_call>
@@ -34052,7 +34052,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -34078,7 +34078,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '42'
+                  value: "42"
               chunks:
               - expected: []
               - expected: []
@@ -34095,7 +34095,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '42'
+                  arguments: "42"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -34121,7 +34121,7 @@ records:
                     additionalProperties: false
                     $defs:
                       Café:
-                        const: '42'
+                        const: "42"
                   strict: true
                 chunks:
                 - delta_text: <tool_call>
@@ -34130,7 +34130,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -34256,7 +34256,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -34334,7 +34334,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -34368,7 +34368,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '-7'
+              value: "-7"
           chunks:
           - expected:
             - kind: reasoning
@@ -34387,7 +34387,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '-7'
+              arguments: "-7"
           - expected: []
           - expected:
             - kind: tool_call
@@ -34411,7 +34411,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               chunks:
               - expected: []
               - expected: []
@@ -34428,7 +34428,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '-7'
+                  arguments: "-7"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -34467,7 +34467,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-7'
+                - delta_text: "-7"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -34493,7 +34493,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               chunks:
               - expected: []
               - expected: []
@@ -34510,7 +34510,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '-7'
+                  arguments: "-7"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -34549,7 +34549,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-7'
+                - delta_text: "-7"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -34798,7 +34798,7 @@ records:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '-7'
+              value: "-7"
           chunks:
           - expected:
             - kind: reasoning
@@ -34817,7 +34817,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '-7'
+              arguments: "-7"
           - expected: []
           - expected:
             - kind: tool_call
@@ -34841,7 +34841,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               chunks:
               - expected: []
               - expected: []
@@ -34858,7 +34858,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '-7'
+                  arguments: "-7"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -34897,7 +34897,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-7'
+                - delta_text: "-7"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -34923,7 +34923,7 @@ records:
               - kind: tool_call
                 name: schema_probe
                 arguments:
-                  value: '-7'
+                  value: "-7"
               chunks:
               - expected: []
               - expected: []
@@ -34940,7 +34940,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '-7'
+                  arguments: "-7"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -34979,7 +34979,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-7'
+                - delta_text: "-7"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -35316,7 +35316,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -35390,7 +35390,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -35708,7 +35708,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -35782,7 +35782,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -37680,7 +37680,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -37754,7 +37754,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -38072,7 +38072,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -38146,7 +38146,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -39248,7 +39248,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -39322,7 +39322,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -39640,7 +39640,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -39714,7 +39714,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -42402,7 +42402,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -42476,7 +42476,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -42794,7 +42794,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -42868,7 +42868,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -43970,7 +43970,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -44044,7 +44044,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -44362,7 +44362,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -44436,7 +44436,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '3.5'
+                - delta_text: "3.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -45534,11 +45534,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -45555,7 +45555,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -45579,7 +45579,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -45598,11 +45598,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -45619,7 +45619,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -45643,7 +45643,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -45707,7 +45707,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ' then '
@@ -45717,7 +45717,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -45743,11 +45743,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -45764,7 +45764,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -45788,7 +45788,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -45852,7 +45852,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ' then '
@@ -45862,7 +45862,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -46078,11 +46078,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected:
             - kind: reasoning
@@ -46107,7 +46107,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -46136,7 +46136,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -46157,11 +46157,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected:
                 - kind: reasoning
@@ -46186,7 +46186,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -46215,7 +46215,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -46283,7 +46283,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ' and '
@@ -46296,7 +46296,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -46324,11 +46324,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected:
                 - kind: reasoning
@@ -46353,7 +46353,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -46382,7 +46382,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -46450,7 +46450,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ' and '
@@ -46463,7 +46463,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -49035,11 +49035,11 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
           chunks:
           - expected: []
           - expected: []
@@ -49056,7 +49056,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '1'
+              arguments: "1"
           - expected: []
           - expected:
             - kind: tool_call
@@ -49077,7 +49077,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -49096,11 +49096,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -49117,7 +49117,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -49138,7 +49138,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -49202,7 +49202,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <tool_call>
@@ -49211,7 +49211,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -49237,11 +49237,11 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: '1'
+                  x: "1"
               - kind: tool_call
                 name: g
                 arguments:
-                  y: '2'
+                  y: "2"
               chunks:
               - expected: []
               - expected: []
@@ -49258,7 +49258,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '1'
+                  arguments: "1"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -49279,7 +49279,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -49343,7 +49343,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '1'
+                - delta_text: "1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: <tool_call>
@@ -49352,7 +49352,7 @@ records:
                 - delta_text: y
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -50140,7 +50140,7 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: flag
@@ -50288,7 +50288,7 @@ records:
                 - delta_text: count
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42'
+                - delta_text: "42"
                 - delta_text: </arg_value>
                 - delta_text: <arg_key>
                 - delta_text: flag
@@ -50644,7 +50644,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -50715,7 +50715,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -50840,7 +50840,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -50911,7 +50911,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51037,7 +51037,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51109,7 +51109,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.0'
+                - delta_text: "42.0"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51235,7 +51235,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51307,7 +51307,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 4.2e1
+                - delta_text: "4.2e1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51340,7 +51340,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '42.5'
+              value: "42.5"
           chunks:
           - expected: []
           - expected: []
@@ -51387,7 +51387,7 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.5'
+                  value: "42.5"
               chunks:
               - expected: []
               - expected: []
@@ -51431,7 +51431,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.5'
+                - delta_text: "42.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51457,7 +51457,7 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.5'
+                  value: "42.5"
               chunks:
               - expected: []
               - expected: []
@@ -51501,7 +51501,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.5'
+                - delta_text: "42.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51534,7 +51534,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: '42.0000000000000001'
+              value: "42.0000000000000001"
           chunks:
           - expected: []
           - expected: []
@@ -51581,7 +51581,7 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0000000000000001'
+                  value: "42.0000000000000001"
               chunks:
               - expected: []
               - expected: []
@@ -51625,7 +51625,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.0000000000000001'
+                - delta_text: "42.0000000000000001"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51651,7 +51651,7 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: '42.0000000000000001'
+                  value: "42.0000000000000001"
               chunks:
               - expected: []
               - expected: []
@@ -51695,7 +51695,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.0000000000000001'
+                - delta_text: "42.0000000000000001"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51728,7 +51728,7 @@ records:
           - kind: tool_call
             name: get_weather
             arguments:
-              value: 1e-400
+              value: "1e-400"
           chunks:
           - expected: []
           - expected: []
@@ -51775,7 +51775,7 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 1e-400
+                  value: "1e-400"
               chunks:
               - expected: []
               - expected: []
@@ -51819,7 +51819,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 1e-400
+                - delta_text: "1e-400"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -51845,7 +51845,7 @@ records:
               - kind: tool_call
                 name: get_weather
                 arguments:
-                  value: 1e-400
+                  value: "1e-400"
               chunks:
               - expected: []
               - expected: []
@@ -51889,7 +51889,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 1e-400
+                - delta_text: "1e-400"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52011,7 +52011,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740993.0'
+                - delta_text: "9007199254740993.0"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52079,7 +52079,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740993.0'
+                - delta_text: "9007199254740993.0"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52201,7 +52201,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 9.007199254740993e15
+                - delta_text: "9.007199254740993e15"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52269,7 +52269,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 9.007199254740993e15
+                - delta_text: "9.007199254740993e15"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52391,7 +52391,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-4.2E+1'
+                - delta_text: "-4.2E+1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52459,7 +52459,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-4.2E+1'
+                - delta_text: "-4.2E+1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52581,7 +52581,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 4200e-2
+                - delta_text: "4200e-2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52649,7 +52649,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 4200e-2
+                - delta_text: "4200e-2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52771,7 +52771,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '0.0e-400'
+                - delta_text: "0.0e-400"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52839,7 +52839,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '0.0e-400'
+                - delta_text: "0.0e-400"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -52961,7 +52961,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 9.0071992547409925e15
+                - delta_text: "9.0071992547409925e15"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53029,7 +53029,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: 9.0071992547409925e15
+                - delta_text: "9.0071992547409925e15"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53151,7 +53151,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-9007199254740992.5'
+                - delta_text: "-9007199254740992.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53219,7 +53219,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '-9007199254740992.5'
+                - delta_text: "-9007199254740992.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53341,7 +53341,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.5'
+                - delta_text: "42.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53409,7 +53409,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '42.5'
+                - delta_text: "42.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53531,7 +53531,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740993.25'
+                - delta_text: "9007199254740993.25"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53599,7 +53599,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740993.25'
+                - delta_text: "9007199254740993.25"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53721,7 +53721,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740992.5'
+                - delta_text: "9007199254740992.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53789,7 +53789,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740992.5'
+                - delta_text: "9007199254740992.5"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53911,7 +53911,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740993.1'
+                - delta_text: "9007199254740993.1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -53979,7 +53979,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '9007199254740993.1'
+                - delta_text: "9007199254740993.1"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -54101,7 +54101,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '0.10000000000000000001'
+                - delta_text: "0.10000000000000000001"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -54169,7 +54169,7 @@ records:
                 - delta_text: value
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '0.10000000000000000001'
+                - delta_text: "0.10000000000000000001"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -55518,7 +55518,7 @@ records:
           - kind: tool_call
             name: not_offered
             arguments:
-              x: '2'
+              x: "2"
           chunks:
           - expected: []
           - expected: []
@@ -55541,7 +55541,7 @@ records:
           - expected:
             - kind: tool_call
               name: null
-              arguments: '2'
+              arguments: "2"
           - expected: []
           - expected:
             - kind: tool_call
@@ -55577,7 +55577,7 @@ records:
               - kind: tool_call
                 name: not_offered
                 arguments:
-                  x: '2'
+                  x: "2"
               chunks:
               - expected: []
               - expected: []
@@ -55600,7 +55600,7 @@ records:
               - expected:
                 - kind: tool_call
                   name: null
-                  arguments: '2'
+                  arguments: "2"
               - expected: []
               - expected:
                 - kind: tool_call
@@ -55625,7 +55625,7 @@ records:
                 - delta_text: x
                 - delta_text: </arg_key>
                 - delta_text: <arg_value>
-                - delta_text: '2'
+                - delta_text: "2"
                 - delta_text: </arg_value>
                 - delta_text: </tool_call>
                 - delta_text: ‹finish›
@@ -55859,13 +55859,13 @@ records:
           - kind: tool_call
             name: f
             arguments:
-              x: é🙂<par{value}
+              x: "é\U0001F642<par{value}"
           chunks:
           - expected:
             - kind: reasoning
               text: before
             - kind: text
-              text: '<tool_call>f<arg_key>x</arg_key><arg_value>é🙂<par{value}</arg_value></tool_call> after[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+              text: "<tool_call>f<arg_key>x</arg_key><arg_value>é\U0001F642<par{value}</arg_value></tool_call> after[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
       document:
         mode: unified
         captured_with:
@@ -55894,15 +55894,15 @@ records:
               - kind: tool_call
                 name: f
                 arguments:
-                  x: é🙂<par{value}
+                  x: "é\U0001F642<par{value}"
               chunks:
               - expected:
                 - kind: reasoning
                   text: before
                 - kind: text
-                  text: '<tool_call>f<arg_key>x</arg_key><arg_value>é🙂<par{value}</arg_value></tool_call> after[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                  text: "<tool_call>f<arg_key>x</arg_key><arg_value>é\U0001F642<par{value}</arg_value></tool_call> after[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
               capture_input:
-                input: '<think>before <tool_call>f<arg_key>x</arg_key><arg_value>é🙂<par{value}</arg_value></tool_call> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                input: "<think>before <tool_call>f<arg_key>x</arg_key><arg_value>é\U0001F642<par{value}</arg_value></tool_call> after</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
                 init:
                   starting_state: None
                   tool_output_mode: GuidedJson
@@ -55952,7 +55952,7 @@ records:
                     type: object
                     properties: {}
                 chunks:
-                - delta_text: '<think>before <tool_call>f<arg_key>x</arg_key><arg_value>é🙂<par{value}</arg_value></tool_call> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+                - delta_text: "<think>before <tool_call>f<arg_key>x</arg_key><arg_value>é\U0001F642<par{value}</arg_value></tool_call> after</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
             provenance:
               implementation: vllm_python
               version: 0.31.0
@@ -57360,7 +57360,7 @@ records:
               text: <arg_value>
           - expected:
             - kind: text
-              text: '7'
+              text: "7"
           - expected:
             - kind: text
               text: '</arg_value> '
@@ -59255,7 +59255,7 @@ records:
               text: <arg_value>
           - expected:
             - kind: text
-              text: '7'
+              text: "7"
           - expected:
             - kind: text
               text: </arg_value>
@@ -62666,13 +62666,13 @@ records:
         value:
           assembled:
           - kind: reasoning
-            text: Check London météo🙂 before answering; this is prose, not JSON.
+            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
           - kind: text
             text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
           chunks:
           - expected:
             - kind: reasoning
-              text: Check London météo🙂 before answering; this is prose, not JSON.
+              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
           - expected: []
           - expected:
             - kind: text
@@ -62702,20 +62702,20 @@ records:
             result:
               assembled:
               - kind: reasoning
-                text: Check London météo🙂 before answering; this is prose, not JSON.
+                text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
               - kind: text
                 text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
               chunks:
               - expected:
                 - kind: reasoning
-                  text: Check London météo🙂 before answering; this is prose, not JSON.
+                  text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
               - expected: []
               - expected:
                 - kind: text
                   text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
               - expected: []
               capture_input:
-                input: Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy"}
+                input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
                 init:
                   starting_state: Reasoning
                   tool_output_mode: Native
@@ -62739,15 +62739,15 @@ records:
                       - conditions
                       additionalProperties: false
                     rejected:
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
-                    - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
-                    - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
+                    - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
                 finish_reason: stop
                 tools: []
                 chunks:
-                - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
+                - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
                 - delta_text: </think>
                 - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
                 - delta_text: ‹finish›
@@ -63178,4 +63178,373 @@ records:
               job_sha256: d3101d51a68e9a63313f6995e85ef493f8dd22592e108ec8826fccc52e05fe89
               results_sha256: 7241fa85db6ec8268c195f14748a925506f839010e1099faacf6595915a39619
             resolution: fresh_execution
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
+  blank_framing_tool_only:
+    value:
+      case_key: blank_framing_tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: e7cef13b2af653b2a594af37fdda39bbcd286e2c3dd72570df66434cdd3014a9
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: null
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '{"city": "'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: Paris
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"}'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 2168cb503dc457420d25049d081b00c8e8248849bf1cd6589ce74a6b6aab0771
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
+  blank_framing_between_calls_single_chunk:
+    value:
+      case_key: blank_framing_between_calls_single_chunk
+      stimulus:
+        ref: current
+        semantic_sha256: ebcf626b05d3ab1bfa8881337776d11bf2ccc06e128c825ed9b62e679f390451
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Tokyo
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Tokyo"}'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 2168cb503dc457420d25049d081b00c8e8248849bf1cd6589ce74a6b6aab0771
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
+  blank_framing_with_prose:
+    value:
+      case_key: blank_framing_with_prose
+      stimulus:
+        ref: current
+        semantic_sha256: 716640936c95406fa398101157d2aae270cd17aebf0bc0a044525def5b8393c3
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Pressing it now.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: Pressing it now.
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: null
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '{"city": "'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: Paris
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"}'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 2168cb503dc457420d25049d081b00c8e8248849bf1cd6589ce74a6b6aab0771
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
+  blank_framing_after_reasoning:
+    value:
+      case_key: blank_framing_after_reasoning
+      stimulus:
+        ref: current
+        semantic_sha256: 6946aebb7a885be03c780f7e0f4b5784ca3eeae8190e577e66d6613c7b08b79c
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: null
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '{"city": "'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: Paris
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"}'
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 2168cb503dc457420d25049d081b00c8e8248849bf1cd6589ce74a6b6aab0771
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
+  blank_framing_prose_after_call:
+    value:
+      case_key: blank_framing_prose_after_call
+      stimulus:
+        ref: current
+        semantic_sha256: a17933e6112b4f271c90a3b471f6cf20596a50367a516635c31a4555384062d0
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: null
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '{"city": "'
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: Paris
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"}'
+          - expected:
+            - kind: text
+              text: '
+
+                Done.'
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 2168cb503dc457420d25049d081b00c8e8248849bf1cd6589ce74a6b6aab0771
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
+  blank_output_without_call:
+    value:
+      case_key: blank_output_without_call
+      stimulus:
+        ref: current
+        semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 2168cb503dc457420d25049d081b00c8e8248849bf1cd6589ce74a6b6aab0771
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
+  blank_framing_incomplete_call:
+    value:
+      case_key: blank_framing_incomplete_call
+      stimulus:
+        ref: current
+        semantic_sha256: 4e82ce4fb4f41f2e4e6bfdd3570d5472557ffaf3264b2db70f013541f39d3f39
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments: {}
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Par'
+      document:
+        mode: unified
+        captured_with:
+          vllm_python: 0.31.0
+        record_metadata:
+          vllm_capture_provenance:
+            implementation: vllm_python
+            version: 0.31.0
+            artifact_sha256: 39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+            extracted_package_sha256: 556f6dd69cedb16183d0009b62c4d63906f894bc0b255e1574ab00996459e4d0
+            status: executed
+            parser_apis:
+              protocol: entrypoints.openai.chat_completion.protocol
+              tools: tool_parsers
+              reasoning: reasoning
+              combined: parser.parser_manager
+            source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+            adapter_sha256: b379bbe351157756554cb038bfd89a41e08114aa477d5a7c044a68b9ce19f756
+            job_sha256: 1cec687ab07d4efa0a3db92c25ef032e49964906de6cb07b14088aa215199d07
+            results_sha256: 2168cb503dc457420d25049d081b00c8e8248849bf1cd6589ce74a6b6aab0771
     member: conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml
