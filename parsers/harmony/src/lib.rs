@@ -10,7 +10,6 @@ use anyhow::{Context, Result};
 use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
 use sha2::{Digest, Sha256};
 
-#[cfg(test)]
 const VOCAB_CACHE_KEY: &str = "fb374d419588a4632f3f557e76b4b70aebbca790";
 const VOCAB_SHA256: &str = "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d";
 
@@ -109,12 +108,20 @@ fn acquire_cache_lock_at_using(
                     })?
             } else {
                 // A verified cached vocabulary can serve as a stable lock inode on read-only mounts.
+                let standard_path = cache_dir.join(VOCAB_CACHE_KEY);
+                // Harmony 0.0.8 opens this key directly; searchable caches need not permit listing.
+                if standard_path.is_file()
+                    && let Some(file) =
+                        try_verified_vocab_lock(&standard_path, expected_vocab_sha256)?
+                {
+                    return Ok(file);
+                }
                 let mut paths = Vec::new();
                 for entry in fs::read_dir(cache_dir).with_context(|| {
                     format!("listing Harmony vocabulary cache directory {cache_dir:?}")
                 })? {
                     let path = entry?.path();
-                    if path.is_file() {
+                    if path != standard_path && path.is_file() {
                         paths.push(path);
                     }
                 }
@@ -147,20 +154,28 @@ fn open_verified_vocab_lock(
     expected_sha256: &str,
 ) -> Result<File> {
     for vocab_path in vocab_paths {
-        let Ok(mut vocab_file) = File::open(&vocab_path) else {
-            continue;
-        };
-        if !matches_vocab_checksum(&mut vocab_file, expected_sha256)? {
-            continue;
-        }
-        vocab_file
-            .lock()
-            .with_context(|| format!("locking Harmony vocabulary cache file {vocab_path:?}"))?;
-        if matches_vocab_checksum(&mut vocab_file, expected_sha256)? {
-            return Ok(vocab_file);
+        if let Some(file) = try_verified_vocab_lock(&vocab_path, expected_sha256)? {
+            return Ok(file);
         }
     }
     anyhow::bail!("no checksum-verified Harmony vocabulary file was found")
+}
+
+fn try_verified_vocab_lock(vocab_path: &Path, expected_sha256: &str) -> Result<Option<File>> {
+    let Ok(mut vocab_file) = File::open(vocab_path) else {
+        return Ok(None);
+    };
+    if !matches_vocab_checksum(&mut vocab_file, expected_sha256)? {
+        return Ok(None);
+    }
+    vocab_file
+        .lock()
+        .with_context(|| format!("locking Harmony vocabulary cache file {vocab_path:?}"))?;
+    if matches_vocab_checksum(&mut vocab_file, expected_sha256)? {
+        Ok(Some(vocab_file))
+    } else {
+        Ok(None)
+    }
 }
 
 fn matches_vocab_checksum(vocab_file: &mut File, expected_sha256: &str) -> Result<bool> {
@@ -185,6 +200,31 @@ mod tests {
 
     const TEST_VOCAB_SHA256: &str =
         "5d459a81205fa7ba34f57d3af8e41660c76527de1759589b487b96491f3d3793";
+
+    #[cfg(unix)]
+    #[test]
+    fn known_vocabulary_does_not_require_cache_directory_listing() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+        fs::write(cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
+        for permissions in [0o111, 0o555] {
+            fs::set_permissions(&cache, fs::Permissions::from_mode(permissions))?;
+            let result = with_vocab_lock_at_using(
+                &cache,
+                None,
+                TEST_VOCAB_SHA256,
+                || Ok(true),
+                |_| Err(io::Error::from(io::ErrorKind::PermissionDenied)),
+            );
+            fs::set_permissions(&cache, fs::Permissions::from_mode(0o755))?;
+            assert!(result?);
+        }
+        assert!(!cache.join("harmony-vocab.lock").exists());
+        Ok(())
+    }
 
     #[cfg(unix)]
     #[test]
