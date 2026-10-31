@@ -1446,6 +1446,9 @@ def test_unified_slots_migrate_legacy_stream_candidate_keys(published_viewer):
         server.shutdown()
 
 
+# Retained URLs pin real version normalization, including the exact v2/v1 link
+# that failed in CI. Coverage comes from the catalog, not these release numbers;
+# generated presentation fixtures independently require each set relationship.
 @pytest.mark.parametrize("identities", [
     ["dynamo_v1@10.0.1"],
     ["dynamo_v2@0.7.24", "dynamo_v1@10.0.1"],
