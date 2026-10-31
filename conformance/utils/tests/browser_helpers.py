@@ -29,7 +29,7 @@ def settle(driver, tab=None, *, history_ready=False, idle=True):
               || panel?.querySelector('.load-status[role=alert]');
             return {error: error ? error.textContent : null,
               ready: panel?.dataset.loadState === 'ready'
-                && Boolean(panel.querySelector('td.cell'))
+                && Boolean(panel.querySelector('[data-comparison-table]'))
                 && (!arguments[2] || window.__conformanceLoader?.pending === 0)
                 && (!arguments[1] || document.getElementById('viewer')?.dataset.historyAvailable !== 'checking')};
         """, tab, history_ready, idle)

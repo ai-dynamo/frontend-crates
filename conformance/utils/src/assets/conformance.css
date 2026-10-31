@@ -277,18 +277,20 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .case-label-full { display: none; }
 .case-label-short { display: inline; }
 .case-label-placeholder { color: #8a8f98; font-size: 0.72em; }
-.case-sub a[data-hover-hint], .trow-case a[data-hover-hint] { position: relative; }
+.case-sub a[data-hover-hint], .trow-case a[data-hover-hint], .matrix-case-label[data-hover-hint] { position: relative; }
 th.case-sub:has(a[data-hover-hint]:hover), th.case-sub:has(a[data-hover-hint]:focus-visible),
-th.trow-case:has(a[data-hover-hint]:hover), th.trow-case:has(a[data-hover-hint]:focus-visible) { z-index: 2000; }
-.case-sub a[data-hover-hint]::after, .trow-case a[data-hover-hint]::after {
+th.trow-case:has(a[data-hover-hint]:hover), th.trow-case:has(a[data-hover-hint]:focus-visible),
+.matrix-case-heading:has([data-hover-hint]:hover), .matrix-case-heading:focus-visible { z-index: 2000; }
+.case-sub a[data-hover-hint]::after, .trow-case a[data-hover-hint]::after, .matrix-case-label[data-hover-hint]::after {
   content: attr(data-hover-hint); position: absolute; left: var(--case-hint-left, 0px); top: var(--case-hint-top, calc(100% + 24px)); z-index: 4000;
-  box-sizing: border-box; width: max-content; max-width: min(560px, calc(100vw - 64px)); padding: 5px 8px;
+  box-sizing: border-box; width: max-content; max-width: min(560px, calc(100vw - 64px), var(--case-hint-max-width, 560px)); padding: 5px 8px;
   border-radius: 5px; background: #1f2937; color: #e5e7eb; font: 12px/1.35 -apple-system, system-ui, sans-serif;
   text-align: left; white-space: normal; visibility: hidden; opacity: 0; pointer-events: none;
   transition: opacity 0s linear 650ms, visibility 0s linear 650ms;
 }
 .case-sub a[data-hover-hint]:hover::after, .case-sub a[data-hover-hint]:focus-visible::after,
-.trow-case a[data-hover-hint]:hover::after, .trow-case a[data-hover-hint]:focus-visible::after { visibility: visible; opacity: 1; }
+.trow-case a[data-hover-hint]:hover::after, .trow-case a[data-hover-hint]:focus-visible::after,
+.matrix-case-label[data-hover-hint]:hover::after, .matrix-case-heading:focus-visible .matrix-case-label[data-hover-hint]::after { visibility: visible; opacity: 1; }
 #tab-unified th.case-group .col-toggle-label,
 #tab-unified .transpose-table tr.section td { color: #596575; }
 body.transpose-mode .transpose-table .case-label-full { display: inline; }
@@ -433,6 +435,8 @@ td.cell, td.parser { position: relative; }
 :is([data-parity-table], [data-transpose-table]) [data-ttip-wired]:hover,
 :is([data-parity-table], [data-transpose-table]) [data-ttip-wired]:focus-within { z-index: 2000; }
 .ttip {
+    /* Closed popups must not enlarge the page when restored under a sticky header. */
+    display: none;
     visibility: hidden;
     opacity: 0;
     position: absolute;
@@ -469,6 +473,7 @@ td.cell, td.parser { position: relative; }
        is already held back 750ms, so it does not also need to fade in. */
 }
 .ttip-visible {
+    display: block;
     visibility: visible;
     opacity: 1;
 }
@@ -789,14 +794,14 @@ body.transpose-mode .tab-panel.active .transpose-table { display: table; }
   vertical-align: bottom;
 }
 .transpose-table .tcol-model-line,
-.transpose-table .tcol-model-name,
+:is(.transpose-table, .comparison-matrix) .tcol-model-name,
 .transpose-table .tcol-model-family {
   writing-mode: sideways-lr;
   white-space: nowrap;
   display: inline-block;
   line-height: 1;
 }
-.transpose-table .tcol-model-name { font-weight: 600; }
+:is(.transpose-table, .comparison-matrix) .tcol-model-name { font-weight: 600; }
 /* No forced color: the cloned parser markup keeps its own styling (the parser-
    source link stays clickable, the parser-base text stays muted). */
 .transpose-table .tcol-model-family { font-size: 11px; font-family: ui-monospace, monospace; }
@@ -1172,6 +1177,9 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 /* Case-description glossary: the ID column is an identifier (mono, inherited from the
  * `table` base), the description beside it is a sentence and reads as one. */
 table.glossary td.gloss-desc { font-family: -apple-system, system-ui, sans-serif; }
+.case-descriptions table.glossary { width: 100%; }
+.case-descriptions table.glossary td.sub { width: 40%; white-space: normal; overflow-wrap: anywhere; }
+.case-descriptions table.glossary td.gloss-desc { overflow-wrap: anywhere; }
 
 .case-schema-indicator { display: none; margin-left: 0.25em; color: #8a8f98; font: 0.72em ui-monospace, monospace; }
 body.view-details .case-schema-indicator { display: inline; }

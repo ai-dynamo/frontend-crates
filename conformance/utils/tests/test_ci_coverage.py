@@ -217,7 +217,7 @@ def test_cache_stamp_updates_source_revision_without_rewriting_generation_proven
     revision = "c" * 40
 
     expected = json.loads((publication_root / "conformance/viewer-publication.json").read_bytes())
-    assert expected == {**publication, "revision": revision}
+    assert expected == {**publication, "revision": revision, "source_commit_sha": revision}
     assert report_path.read_bytes() == (publication_root / "index.html").read_bytes()
     assert payload_path.read_bytes() == b"\x00untouched published bytes\xff"
     assert expected["revision"] == revision
@@ -247,7 +247,7 @@ def test_cache_stamp_keeps_bootstrap_independent_of_sidecar_policy(publication_r
     page = publication_root / "index.html"
     page.write_text('<script type="application/json" id="conformance-publication">' + json.dumps(identity) + '</script>')
     ci_publication_cache.stamp(publication_root, "d" * 40)
-    expected = {**identity, "revision": "d" * 40}
+    expected = {**identity, "revision": "d" * 40, "source_commit_sha": "d" * 40}
     actual = page.read_text().split('id="conformance-publication">', 1)[1].split('</script>', 1)[0]
     assert json.loads(actual) == expected
     if standalone:
@@ -384,7 +384,7 @@ def test_cache_stamp_cli_uses_native_publication_layout(publication_root):
     for target in ["b" * 40, "b" * 40, "c" * 40]:
         subprocess.run([sys.executable, str(script), "stamp", "--directory", str(publication_root),
                         "--revision", target], check=True, capture_output=True, text=True)
-        expected = {**metadata, "revision": target}
+        expected = {**metadata, "revision": target, "source_commit_sha": target}
         assert json.loads(publication_path.read_bytes()) == expected
         embedded = index_path.read_text().split('id="conformance-publication">', 1)[1].split("</script>", 1)[0]
         assert json.loads(embedded) == expected

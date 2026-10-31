@@ -1207,11 +1207,7 @@
   }
 
   // --- Static per-panel sections (legends, stats, glossary) ------------------
-  const segmentLabels = { pass: 'Matches golden', documented: 'Documented difference',
-    diverge: 'Disagreement', leak: 'Markup leak', error: 'Parser error', expected: 'Expected error',
-    unsupported: 'Not applicable or unsupported', missing: 'Output not yet captured', blocked: 'Source unavailable',
-    uncompared: 'GOLDEN unavailable' };
-  window.__conformanceSegmentLabels = segmentLabels;
+  const segmentLabels = window.__conformanceSegmentLabels;
 
   window.__conformanceUpdateLegend = function (panel) {
     const list = panel.querySelector('.capture-legend ul');
@@ -1220,7 +1216,7 @@
     const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === panel.id);
     const captures = tab.candidates.filter(item => selected.has(item.key));
     panel.querySelector('[data-dynamo-v1]').hidden = !captures.some(item => item.identity?.startsWith('dynamo_v1@') || item.identity?.startsWith('dynamo_v1_jail@'));
-    const table = panel.querySelector(document.body.classList.contains('transpose-mode')
+    const table = panel.querySelector(panel.querySelector('[data-comparison-table]') ? '[data-parity-table]' : document.body.classList.contains('transpose-mode')
       ? 'table[data-transpose-table]' : 'table[data-parity-table]:not([data-transpose-table])');
     const present = new Set();
     if (table) {
@@ -1273,7 +1269,7 @@
     var sid = tab.case_section_id || tab.mode || '';
     var prefix = tab.case_prefix || '';
     const columns = new Map((tab.columns || []).map(column => [column.label, column]));
-    var h = '<div class="details-only"><h2 id="case-descriptions-' + escapeAttr(sid) + '">'
+    var h = '<div class="case-descriptions details-only"><h2 id="case-descriptions-' + escapeAttr(sid) + '">'
       + 'Case descriptions</h2><p>Full case definitions: <a href="'
       + escapeAttr(tab.case_docs_href || '') + '">' + escapeHtml(tab.case_docs_label || '')
       + '</a>.</p><table class="glossary"><tbody>';
@@ -1381,6 +1377,17 @@
       if (!retainedIds.has(id)) delete _ttipModels[id];
     });
   }
+  function sourceCommitLink(sha) {
+    const link = document.createElement('a');
+    link.className = 'source-commit';
+    link.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + sha;
+    link.title = sha;
+    link.setAttribute('aria-label', 'Source commit ' + sha);
+    const label = document.createElement('code');
+    label.textContent = sha.slice(0, 12);
+    link.appendChild(label);
+    return link;
+  }
   window.ConformanceView = {
     historyPublicationCommand,
     updateGeneration(root, metadata) {
@@ -1388,22 +1395,13 @@
       if (!revision) return;
       revision.hidden = false;
       const generatedRevision = metadata.generated_revision || metadata.revision;
-      const link = document.createElement('a');
-      link.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + generatedRevision;
-      const sha = document.createElement('code'); sha.textContent = generatedRevision.slice(0, 12);
-      link.appendChild(sha);
       const command = document.createElement('code');
       command.textContent = metadata.command + ' (output: ' + metadata.output + ')';
-      const identity = metadata.candidate_tree ? ' from working tree ' + metadata.candidate_tree.slice(0, 12) + ' based on commit ' : ' on commit ';
       const generatedLabel = metadata.source_checkout ? 'Catalog generated on ' : 'Generated on ';
-      revision.replaceChildren(generatedLabel + metadata.generated_on + identity, link);
-      if (generatedRevision !== metadata.revision) {
-        const sourceLink = document.createElement('a');
-        sourceLink.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + metadata.revision;
-        const sourceSha = document.createElement('code'); sourceSha.textContent = metadata.revision.slice(0, 12);
-        sourceLink.appendChild(sourceSha);
-        revision.append(' (source links use commit ', sourceLink, ')');
-      }
+      const identity = generatedRevision === metadata.revision && !metadata.candidate_tree ? ' on commit ' : '; source commit ';
+      revision.replaceChildren(generatedLabel + metadata.generated_on + identity, sourceCommitLink(metadata.revision));
+      revision.title = 'Generated from commit ' + generatedRevision
+        + (metadata.candidate_tree ? ' (working tree ' + metadata.candidate_tree + ')' : '');
       let commandDetails = root.querySelector('.generated-command');
       if (!commandDetails) {
         commandDetails = document.createElement('p');
@@ -1417,17 +1415,18 @@
       _familyMarkers = page.family_markers || {};
       _summaryLegendHtml = page.meta?.summary_legend_html || null;
       const heading = document.createElement('h1');
-      heading.textContent = page.meta.title;
+      heading.textContent = 'Parser Conformance';
       document.title = page.meta.title;
       const header = [heading];
       const revision = document.createElement('p');
       revision.className = 'generated';
-      revision.hidden = true;
+      revision.hidden = !page.meta.sha;
+      if (page.meta.sha) revision.append('Source commit ', sourceCommitLink(page.meta.sha));
       header.push(revision);
-      root.replaceChildren(...header, buildTabsBar(page), ...page.tabs.map(tab => buildPanel(prepare(tab), page, true)));
+      root.replaceChildren(...header, buildTabsBar(page), ...page.tabs.map(tab => buildPanel(prepare(tab), page, page.tabs.length > 1)));
     },
     prepareUpdate(panel, tab, page) {
-      const next = buildPanel(prepare(tab), page, true);
+      const next = buildPanel(prepare(tab), page, page.tabs.length > 1);
       // Preparing the same models reuses IDs already registered by the replacement.
       // Retiring the old DOM must not delete those replacement-owned entries.
       const retainedIds = new Set([...next.querySelectorAll('[data-ttip-id]')].map(cell => cell.getAttribute('data-ttip-id')));
@@ -1435,9 +1434,9 @@
         disposePanel(panel, retainedIds);
         // Candidate controls and their handlers survive asynchronous data updates.
         const generationDetails = panel.querySelector('.generated-command');
-        for (const child of [...panel.children]) if (!child.matches('.cmpctl, .capture-slots')) child.remove();
+        for (const child of [...panel.children]) if (!child.matches('.cmpctl, .capture-slots, .comparison-ui, .legacy-report-details')) child.remove();
         for (const child of [...next.children]) if (!child.matches('.cmpctl, .capture-slots')) panel.appendChild(child);
-        if (generationDetails) panel.querySelector('.generation-instructions')?.appendChild(generationDetails);
+        if (generationDetails) panel.querySelector(':scope > .generation-instructions')?.appendChild(generationDetails);
       };
     },
     update(panel, tab, page) {
