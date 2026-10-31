@@ -37,6 +37,21 @@ def test_kimi_k2_json_spacing_and_nested_exact_numbers_are_preserved():
     )
 
 
+def test_overflow_sibling_cases_have_independent_raw_number_oracles_for_every_native_family():
+    expected = {"finite": Decimal("1.5"), "positive": Decimal("1e400"), "negative": Decimal("-1e400")}
+    for family in sorted(unified.UNIFIED_FAMILIES):
+        cases = unified.build_cases(family)
+        for variant, number in expected.items():
+            scenario = f"arg_numeric_overflow_siblings_{variant}"
+            case = cases[f"UNIFIED.{scenario}.{family}"]
+            arguments = json.loads(case["golden"][0]["arguments"], parse_float=Decimal)
+            assert arguments == {"city": "Paris", "value": number}
+            assert not isinstance(arguments["value"], str)
+            assert matches_schema(arguments, case["tools"][0]["parameters"])
+            assert numbered_id(scenario).startswith("UNIFIED.7-")
+            assert "Paris" in case["input"]
+
+
 def test_numeric_backcaptures_use_their_versioned_archive_path():
     root = Path(__file__).resolve().parents[2] / "fixtures/toolcalling/fixtures-stream-v1"
     measured = 0

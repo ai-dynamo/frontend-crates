@@ -591,6 +591,21 @@ export function* resolveUnifiedSeries(captures, versions) {
   }
 }
 
+// Historical typed captures rounded numbers, but lost fields and changed values
+// are parser results. Restore raw precision only across the same projection.
+function matchesRecordedProjection(raw, recorded) {
+  const numeric = value => typeof value === 'number' || typeof value === 'bigint';
+  if (typeof recorded === 'bigint') return raw === recorded;
+  if (numeric(raw) && typeof recorded === 'number') return Number.isFinite(recorded) && Number(raw) === recorded;
+  if (Array.isArray(raw)) return Array.isArray(recorded) && raw.length === recorded.length && raw.every((value, index) => matchesRecordedProjection(value, recorded[index]));
+  if (isMapping(raw)) {
+    if (!isMapping(recorded) || Array.isArray(recorded)) return false;
+    const entries = mappingEntries(raw);
+    return entries.length === mappingEntries(recorded).length && entries.every(([key, value]) => hasField(recorded, key) && matchesRecordedProjection(value, getField(recorded, key)));
+  }
+  return sameValue(raw, recorded);
+}
+
 export function assembleStream(chunks, recordedAssembly = null, preserveArguments = false) {
   const events = [];
   let currentTool = null;
@@ -629,9 +644,9 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
   for (const event of completed) {
     if (event.kind !== 'tool_call') continue;
     delete event.complete;
-    if (isMapping(event.arguments) || Array.isArray(event.arguments)) continue;
+    if (isMapping(event.arguments) || Array.isArray(event.arguments)) { projections.set(event, event.arguments); continue; }
     if (typeof event.arguments !== 'string') throw new Error('Unified argument fragment must be text, a mapping, or a list');
-    if (!event.arguments.trim()) event.arguments = {};
+    if (!event.arguments.trim()) { event.arguments = {}; projections.set(event, event.arguments); }
     else {
       try { const decoded = parseJson(event.arguments); projections.set(event, decoded); if (!preserveArguments) event.arguments = decoded; }
       catch (error) {
@@ -640,18 +655,26 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
       }
     }
   }
-  if (malformed.size && recordedAssembly) {
-    const calls = completed.filter((event) => event.kind === 'tool_call');
-    const recorded = recordedAssembly.filter((event) => getField(event, 'kind') === 'tool_call');
-    // Old assembled records contain binary-float projections. Use them only to
-    // align malformed fallback calls; exact raw bytes still drive comparison.
-    const projected = recorded.map((event) => {
-      const args = getField(event, 'arguments');
-      if (typeof args !== 'string') return args;
-      try { return parseJson(args); } catch (error) { if (!(error instanceof SyntaxError)) throw error; return args; }
-    });
-    if (calls.length === recorded.length && calls.every((event, index) => event.name === getField(recorded[index], 'name') && (sameValue(projections.has(event) ? projections.get(event) : event.arguments, projected[index]) || (malformed.has(event) && sameValue(projected[index], {}))))) {
-      calls.forEach((event, index) => { if (malformed.has(event)) event.arguments = preserveArguments ? getField(recorded[index], 'arguments') : projected[index]; });
+  if (recordedAssembly) {
+    const calls = completed.filter(event => event.kind === 'tool_call');
+    const recorded = recordedAssembly.filter(event => getField(event, 'kind') === 'tool_call');
+    if (calls.length === recorded.length && calls.every((event, index) => event.name === getField(recorded[index], 'name'))) {
+      calls.forEach((event, index) => {
+        const args = getField(recorded[index], 'arguments');
+        let projected = args;
+        if (typeof args === 'string') {
+          try { projected = parseJson(args); } catch (error) { if (!(error instanceof SyntaxError)) throw error; }
+        }
+        if (malformed.has(event)) {
+          if (sameValue(projected, {})) event.arguments = preserveArguments ? args : projected;
+          return;
+        }
+        if (!projections.has(event)) return;
+        const matches = typeof args === 'string'
+          ? sameValue(canonicalArguments(event.arguments), canonicalArguments(args))
+          : matchesRecordedProjection(projections.get(event), projected);
+        if (!matches) event.arguments = preserveArguments ? args : projected;
+      });
     }
   }
   return completed;

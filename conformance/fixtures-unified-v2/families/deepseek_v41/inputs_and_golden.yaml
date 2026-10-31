@@ -15948,184 +15948,180 @@ cases:
         name: get_weather
         arguments:
           city: Paris
-  conditional_schema_number_types:
+  blank_output_without_call:
     lifecycle: active
-    scenario: conditional_schema_number_types
-    description: 'ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number; an integer `if` with a numeric `else` keeps 37 an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    scenario: blank_output_without_call
+    description: Whitespace-only output with no call is visible content and is kept unchanged by every family.
     policy:
-    - I7
-    display_id: UNIFIED.7-conditional_schema_number_types
+    - P8
+    - I1
+    display_id: UNIFIED.3-blank_output_without_call
     historical_ids: []
     request:
-      input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="amount" string="false">21.5</｜DSML｜ parameter><｜DSML｜ parameter name="retries" string="false">37</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      input: '
+
+
+        '
       init:
         starting_state: None
         tool_output_mode: Native
         named_tool: null
       finish_reason: stop
       tools:
-      - name: capture_payload
+      - name: get_weather
         parameters:
           type: object
           properties:
-            amount:
-              if:
-                minimum: 0
-              then:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
                 type: number
-                minimum: 0
-              else:
-                type: number
-            retries:
-              if:
-                type: integer
-              then:
-                minimum: 0
-              else:
-                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
       chunks:
-      - delta_text: <｜DSML｜ calls>
-      - delta_text: <｜DSML｜ invoke name="capture_payload">
-      - delta_text: <｜DSML｜ parameter name="amount" string="false">
-      - delta_text: '21.5'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: <｜DSML｜ parameter name="retries" string="false">
-      - delta_text: '37'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: </｜DSML｜ invoke>
-      - delta_text: </｜DSML｜ calls>
+      - delta_text: '
+
+
+          '
       - delta_text: ‹finish›
     golden:
       assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments:
-          amount: 21.5
-          retries: 37
-  not_keyword_type_complement:
+      - kind: text
+        text: '
+
+
+          '
+  arg_numeric_overflow_siblings_finite:
     lifecycle: active
-    scenario: not_keyword_type_complement
-    description: 'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    scenario: arg_numeric_overflow_siblings_finite
+    description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
     policy:
     - I7
-    display_id: UNIFIED.7-not_keyword_type_complement
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_finite
     historical_ids: []
     request:
-      input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">-2500</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       init:
         starting_state: None
         tool_output_mode: Native
         named_tool: null
       finish_reason: stop
       tools:
-      - name: capture_payload
+      - name: echo
         parameters:
           type: object
           properties:
-            count:
-              not:
-                type: string
-            text:
-              not:
-                type: integer
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
       chunks:
-      - delta_text: <｜DSML｜ calls>
-      - delta_text: <｜DSML｜ invoke name="capture_payload">
-      - delta_text: <｜DSML｜ parameter name="count" string="false">
-      - delta_text: '-2500'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: <｜DSML｜ parameter name="text" string="true">
-      - delta_text: '42'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: </｜DSML｜ invoke>
-      - delta_text: </｜DSML｜ calls>
-      - delta_text: ‹finish›
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     golden:
       assembled:
       - kind: tool_call
-        name: capture_payload
-        arguments:
-          count: -2500
-          text: '42'
-  reference_object_recursive_and_composed_types:
+        name: echo
+        arguments: '{"city":"Paris","value":1.5}'
+  arg_numeric_overflow_siblings_positive:
     lifecycle: active
-    scenario: reference_object_recursive_and_composed_types
-    description: 'ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` all keep their JSON types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    scenario: arg_numeric_overflow_siblings_positive
+    description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
     policy:
     - I7
-    display_id: UNIFIED.7-reference_object_recursive_and_composed_types
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_positive
     historical_ids: []
     request:
-      input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="category" string="false">{"label":"Garden Tools","children":[]}</｜DSML｜ parameter><｜DSML｜ parameter name="tree" string="false">{"label":"root","children":[{"label":"leaf","children":[]}]}</｜DSML｜ parameter><｜DSML｜ parameter name="retries" string="false">37</｜DSML｜ parameter><｜DSML｜ parameter name="dry_run" string="false">false</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       init:
         starting_state: None
         tool_output_mode: Native
         named_tool: null
       finish_reason: stop
       tools:
-      - name: capture_payload
+      - name: echo
         parameters:
           type: object
-          $defs:
-            Category:
-              type: object
-              properties:
-                label:
-                  type: string
-                children:
-                  type: array
-            Node:
-              type: object
-              properties:
-                label:
-                  type: string
-                children:
-                  type: array
-                  items:
-                    $ref: '#/$defs/Node'
           properties:
-            category:
-              $ref: '#/$defs/Category'
-            tree:
-              $ref: '#/$defs/Node'
-            retries:
-              type:
-              - integer
-              - 'null'
-            dry_run:
-              allOf:
-              - type: boolean
-              - description: flag
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
       chunks:
-      - delta_text: <｜DSML｜ calls>
-      - delta_text: <｜DSML｜ invoke name="capture_payload">
-      - delta_text: <｜DSML｜ parameter name="category" string="false">
-      - delta_text: '{"label":"Garden Tools","children":[]}'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: <｜DSML｜ parameter name="tree" string="false">
-      - delta_text: '{"label":"root","children":[{"label":"leaf","children":[]}]}'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: <｜DSML｜ parameter name="retries" string="false">
-      - delta_text: '37'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: <｜DSML｜ parameter name="dry_run" string="false">
-      - delta_text: 'false'
-      - delta_text: </｜DSML｜ parameter>
-      - delta_text: </｜DSML｜ invoke>
-      - delta_text: </｜DSML｜ calls>
-      - delta_text: ‹finish›
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     golden:
       assembled:
       - kind: tool_call
-        name: capture_payload
-        arguments:
-          category:
-            label: Garden Tools
-            children: []
-          tree:
-            label: root
-            children:
-            - label: leaf
-              children: []
-          retries: 37
-          dry_run: false
+        name: echo
+        arguments: '{"city":"Paris","value":1e400}'
+  arg_numeric_overflow_siblings_negative:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_negative
+    description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_negative
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":-1E+400}'

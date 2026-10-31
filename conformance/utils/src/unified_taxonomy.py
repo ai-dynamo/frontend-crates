@@ -25,7 +25,7 @@ from typing import NamedTuple
 from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
 from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group, schema_case_label
-from numeric_cases import NUMERIC_VARIANTS
+from numeric_cases import NUMERIC_VARIANTS, OVERFLOW_SIBLING_VARIANTS
 
 UNIFIED_TAX = {
     "default_reasoning_without_opener": (10, "6"),
@@ -76,6 +76,8 @@ UNIFIED_TAX = {
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_numeric_nested_exact": (7, "20.nested_exact"),
+    **{f"arg_numeric_overflow_siblings_{variant}": (7, f"29.{variant}")
+       for variant, _ in OVERFLOW_SIBLING_VARIANTS},
     "arg_json_null_ref": (7, "4.ref"),
     "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),
@@ -266,6 +268,14 @@ UNIFIED_TAX = {
     # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases). Completed below with family-scoped aliases.
     "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
     "prefilled_response_guided_closer_inside_invoke_quote": ("muse", "6"),
+    # Issue #406 — whitespace-only text in a tool-only turn is call framing.
+    "blank_framing_tool_only": (8, "12"),
+    "blank_framing_between_calls_single_chunk": (8, "13"),
+    "blank_framing_with_prose": (8, "14"),
+    "blank_output_without_call": (3, "2"),
+    "blank_framing_after_reasoning": (11, "11"),
+    "blank_framing_prose_after_call": (8, "15"),
+    "blank_framing_incomplete_call": (5, "5"),
     # DeepSeek V4 and V4.1 — DSML tool-call separator framing.
     **{scenario: ("dsml", str(index)) for index, scenario in enumerate([
         "dsml_separator_two_lf", "dsml_separator_four_lf", "dsml_no_separator",

@@ -55,6 +55,46 @@ use crate::tool_calling::{
 pub use self::annotated::Annotated;
 use self::prefix_matcher::{MarkerMatcher, MatchResult};
 
+/// Whitespace held before visible text is released past this size.
+const MAX_HELD_BLANK_BYTES: usize = 4096;
+
+/// Which whitespace-only emissions `hold_blank_content` may take.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Absorb {
+    All,
+    /// A terminal chunk: whitespace after a call there is the terminal filter's
+    /// (`normalize_terminal_emissions` drops it with its logprobs, as before #406).
+    BeforeFirstCall,
+    Nothing,
+}
+
+/// Held whitespace is dropped only when the turn finished successfully after a
+/// call. A truncated or filtered turn (`length`, `content_filter`) or one with no
+/// finish keeps it, so the caller sees exactly what the model generated (#406).
+/// The jail rewrites `stop` to `tool_calls` after a call, so both count.
+fn drops_held_blank(finish: Option<FinishReason>, made_tool_call: bool) -> bool {
+    made_tool_call && matches!(finish, Some(FinishReason::Stop | FinishReason::ToolCalls))
+}
+
+/// Whether the jail holds whitespace-only content for the tool-only-turn rule (#406).
+///
+/// Only the parser pair Nemotron V3 serves with, where the rule was measured: its
+/// chat template trims assistant content, so dropping the call framing newlines
+/// re-renders the same prompt tokens. Other templates render content verbatim, and
+/// dropping it there would cost prefix-cache reuse on the next turn.
+///
+/// The reasoning name is matched case-insensitively, as the reasoning parser
+/// registry resolves it; the tool parser name is exact, as the jail resolves it.
+fn holds_blank_tool_only_content(
+    tool_parser: Option<&str>,
+    reasoning_parser: Option<&str>,
+) -> bool {
+    tool_parser == Some("qwen3_coder")
+        && reasoning_parser.is_some_and(|name| {
+            name.eq_ignore_ascii_case("nemotron_v3") || name.eq_ignore_ascii_case("nemotron3")
+        })
+}
+
 fn is_harmony_parser(parser: Option<&str>) -> bool {
     parser == Some("harmony")
 }
@@ -291,6 +331,28 @@ impl ChoiceEmission {
         }
     }
 
+    fn has_tool_calls(&self) -> bool {
+        self.choice()
+            .delta
+            .tool_calls
+            .as_ref()
+            .is_some_and(|calls| !calls.is_empty())
+    }
+
+    /// A parsed emission left with nothing to send after its content was held.
+    fn is_empty_remainder(&self) -> bool {
+        let choice = self.choice();
+        #[allow(deprecated)]
+        let empty = choice.delta.content.is_none()
+            && choice.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
+            && choice.delta.function_call.is_none()
+            && choice.delta.refusal.is_none()
+            && choice.delta.reasoning_content.is_none()
+            && choice.finish_reason.is_none()
+            && choice.logprobs.is_none();
+        empty && (choice.delta.role.is_none() || !matches!(self, ChoiceEmission::PassThrough(_)))
+    }
+
     fn is_whitespace_only_content(&self) -> bool {
         let choice = self.choice();
         choice.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
@@ -376,6 +438,11 @@ struct ChoiceJailState {
     terminal_suffix_logprobs: Vec<ChatCompletionTokenLogprob>,
     /// A parsed call was emitted, with no subsequent visible prose.
     terminal_suffix_after_tool_call: bool,
+    /// Whitespace-only content held until visible text or the finish decides it.
+    /// Its logprobs stay on the chunk that generated them.
+    blank_content_buffer: String,
+    /// Holding is over: visible text arrived or the hold reached its limit.
+    blank_hold_closed: bool,
     /// Stream finish reason
     stream_finish_reason: Option<FinishReason>,
     /// Number of tool calls already emitted for this choice
@@ -702,6 +769,8 @@ impl ChoiceJailState {
             terminal_suffix_buffer: String::new(),
             terminal_suffix_logprobs: Vec::new(),
             terminal_suffix_after_tool_call: false,
+            blank_content_buffer: String::new(),
+            blank_hold_closed: false,
             stream_finish_reason: None,
             emitted_tool_calls_count: 0,
             pending_reasoning_content: None,
@@ -849,6 +918,97 @@ impl ChoiceJailState {
         std::mem::take(&mut self.accumulated_content)
     }
 
+    /// Hold whitespace-only content until the choice shows visible text, so a
+    /// turn that only calls tools can drop its framing newlines when it finishes.
+    /// Visible text anywhere in `emissions` still closes the hold and releases it in
+    /// front of that text; `absorb` only limits which blank emissions are taken.
+    /// Returns whether holding removed every emission.
+    fn hold_blank_content(&mut self, emissions: &mut Vec<ChoiceEmission>, absorb: Absorb) -> bool {
+        let had_emissions = !emissions.is_empty();
+        let mut absorbing = absorb != Absorb::Nothing;
+        let mut index = 0;
+        while index < emissions.len() && !self.blank_hold_closed {
+            let has_tool_calls = emissions[index].has_tool_calls();
+            if has_tool_calls && absorb == Absorb::BeforeFirstCall {
+                absorbing = false;
+            }
+            let choice = emissions[index].choice_mut();
+            let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) =
+                choice.delta.content.as_mut()
+            else {
+                index += 1;
+                continue;
+            };
+            if text.is_empty() {
+                index += 1;
+                continue;
+            }
+            let blank = text.trim().is_empty();
+            if !blank || self.blank_content_buffer.len() + text.len() > MAX_HELD_BLANK_BYTES {
+                text.insert_str(0, &std::mem::take(&mut self.blank_content_buffer));
+                self.blank_hold_closed = true;
+                break;
+            }
+            if has_tool_calls || !absorbing {
+                index += 1;
+                continue;
+            }
+            self.blank_content_buffer.push_str(&std::mem::take(text));
+            choice.delta.content = None;
+            if emissions[index].is_empty_remainder() {
+                emissions.remove(index);
+                continue;
+            }
+            index += 1;
+        }
+        had_emissions && emissions.is_empty()
+    }
+
+    fn made_tool_call(&self, emissions: &[ChoiceEmission]) -> bool {
+        self.emitted_tool_calls_count > 0 || emissions.iter().any(ChoiceEmission::has_tool_calls)
+    }
+
+    /// Settle held whitespace once the choice finishes: drop it after a tool
+    /// call, otherwise put it back in front of the first emission.
+    fn settle_blank_content(&mut self, emissions: &mut Vec<ChoiceEmission>, made_tool_call: bool) {
+        let text = std::mem::take(&mut self.blank_content_buffer);
+        if text.is_empty() || made_tool_call {
+            return;
+        }
+        if let Some(first) = emissions.first_mut() {
+            let delta = &mut first.choice_mut().delta;
+            match delta.content.as_mut() {
+                Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(content)) => {
+                    content.insert_str(0, &text);
+                    return;
+                }
+                None if delta.tool_calls.is_none() && delta.reasoning_content.is_none() => {
+                    delta.content = Some(
+                        dynamo_protocols::types::ChatCompletionMessageContent::Text(text),
+                    );
+                    return;
+                }
+                _ => {}
+            }
+        }
+        // Match the neighbor's kind: the stream emits pass-through before parsed output.
+        let choice = create_choice_stream(self.index, None, &text, None, None, None);
+        let released = match emissions.first() {
+            None | Some(ChoiceEmission::PassThrough(_)) => ChoiceEmission::PassThrough(choice),
+            Some(ChoiceEmission::Trailing(_)) => ChoiceEmission::Trailing(choice),
+            Some(ChoiceEmission::ToolCall(_) | ChoiceEmission::Content(_)) => {
+                ChoiceEmission::Content(choice)
+            }
+        };
+        emissions.insert(0, released);
+    }
+
+    fn has_deferred_output(&self) -> bool {
+        self.is_jailed
+            || !self.partial_match_buffer.is_empty()
+            || !self.terminal_suffix_buffer.is_empty()
+    }
+
     /// Transfer an upstream terminal reason to exactly one emitted choice.
     ///
     /// One terminal engine delta can split into a parsed tool call and trailing
@@ -857,7 +1017,7 @@ impl ChoiceJailState {
     /// whitespace after a tool call is also parser framing rather than assistant
     /// content and should not become a second content delta.
     fn normalize_terminal_emissions(
-        &self,
+        &mut self,
         choice: &ChatChoiceStream,
         had_tool_calls_before: bool,
         emissions: &mut Vec<ChoiceEmission>,
@@ -865,6 +1025,11 @@ impl ChoiceJailState {
         let Some(finish_reason) = choice.finish_reason else {
             return;
         };
+
+        let drop_blank = drops_held_blank(
+            Some(finish_reason),
+            had_tool_calls_before || self.made_tool_call(emissions),
+        );
 
         let mut saw_tool_call = had_tool_calls_before;
         emissions.retain(|emission| {
@@ -882,6 +1047,12 @@ impl ChoiceJailState {
             !(saw_tool_call && emission.is_whitespace_only_content())
         });
 
+        // Settle after the terminal filter above, which already handles whitespace
+        // that arrived in this chunk; released held text must not be filtered again.
+        if !self.has_deferred_output() {
+            self.settle_blank_content(emissions, drop_blank);
+        }
+
         // Every split emission was built from `choice`, so remove copied finish
         // reasons before assigning ownership to the actual final output.
         for emission in emissions.iter_mut() {
@@ -890,10 +1061,7 @@ impl ChoiceJailState {
 
         // A terminal marker may still be buffered. `finalize` owns the finish
         // reason in that case and reads it from `stream_finish_reason`.
-        if self.is_jailed
-            || !self.partial_match_buffer.is_empty()
-            || !self.terminal_suffix_buffer.is_empty()
-        {
+        if self.has_deferred_output() {
             return;
         }
 
@@ -1677,6 +1845,21 @@ impl ChoiceJailState {
                 emissions.push(self.take_terminal_suffix_emission(self.stream_finish_reason));
             }
         }
+        // Hold only what will be dropped, so released text stays on its own delta.
+        let drop_blank =
+            drops_held_blank(self.stream_finish_reason, self.made_tool_call(&emissions));
+        if drop_blank && jail_stream.holds_blank_content {
+            let _ = self.hold_blank_content(&mut emissions, Absorb::All);
+        }
+        if !self.blank_content_buffer.is_empty() {
+            let finish_owned = emissions
+                .iter()
+                .any(|emission| emission.choice().finish_reason.is_some());
+            self.settle_blank_content(&mut emissions, drop_blank);
+            if !finish_owned && let Some(last) = emissions.last_mut() {
+                last.choice_mut().finish_reason = self.stream_finish_reason;
+            }
+        }
         emissions
     }
 }
@@ -1743,6 +1926,10 @@ pub struct JailedStream {
     emission_mode: EmissionMode,
     marker_matcher: MarkerMatcher,
     jail_mode: JailMode,
+    /// Whether whitespace-only content is held for the tool-only-turn rule (#406).
+    /// See `holds_blank_tool_only_content`; false unless the caller names the
+    /// Nemotron V3 reasoning parser.
+    holds_blank_content: bool,
     /// Release guided calls as they arrive instead of at the closing brace.
     ///
     /// Off by default: turning it on changes the emission SHAPE for every consumer
@@ -1826,6 +2013,7 @@ impl JailedStream {
                     last_stream_created = chat_response.created;
 
                     let mut all_emissions = Vec::new();
+                    let mut held_blank_choices = Vec::new();
 
                     if chat_response.choices.is_empty() {
                         // No choices processed (e.g., usage-only chunk)
@@ -1877,6 +2065,21 @@ impl JailedStream {
                                 // Process this choice and get emissions
                                 let had_tool_calls_before = choice_state.emitted_tool_calls_count > 0;
                                 let mut emissions = choice_state.process_content(choice, text, &self).await;
+                                // In a terminal chunk, whitespace after a call is left to
+                                // the terminal filter exactly as before; held text from
+                                // earlier chunks settles in `normalize_terminal_emissions`.
+                                let absorb = match choice.finish_reason {
+                                    None => Absorb::All,
+                                    Some(_) if had_tool_calls_before => Absorb::Nothing,
+                                    Some(_) => Absorb::BeforeFirstCall,
+                                };
+                                let held_all = self.holds_blank_content
+                                    && choice_state.hold_blank_content(&mut emissions, absorb);
+                                if held_all {
+                                    let mut held_choice = choice.clone();
+                                    held_choice.delta.content = None;
+                                    held_blank_choices.push(held_choice);
+                                }
                                 choice_state.hold_terminal_suffix(
                                     &mut emissions,
                                     self.terminal_marker_policy,
@@ -1886,6 +2089,15 @@ impl JailedStream {
                                     had_tool_calls_before,
                                     &mut emissions,
                                 );
+                                // Reasoning rides on the first emission; send it alone
+                                // rather than strand it behind held whitespace.
+                                if held_all
+                                    && emissions.is_empty()
+                                    && let Some(reasoning) =
+                                        choice_state.take_pending_reasoning_emission()
+                                {
+                                    emissions.push(reasoning);
+                                }
                                 if !emissions.is_empty() {
                                     if separates_k3_reasoning {
                                         if let Some(reasoning_emission) =
@@ -1925,6 +2137,15 @@ impl JailedStream {
                             // the Immediate-mode finalize path can emit the correct finish_reason.
                             if choice.finish_reason.is_some() {
                                 choice_state.stream_finish_reason = choice.finish_reason;
+                                if !choice_state.has_deferred_output() {
+                                    let mut settled = Vec::new();
+                                    let drop_blank = drops_held_blank(
+                                        choice.finish_reason,
+                                        choice_state.emitted_tool_calls_count > 0,
+                                    );
+                                    choice_state.settle_blank_content(&mut settled, drop_blank);
+                                    all_emissions.extend(settled);
+                                }
                             }
                             let has_pending_buffered_output =
                                 !choice_state.partial_match_buffer.is_empty()
@@ -1969,6 +2190,20 @@ impl JailedStream {
                                 choice_state.held_after_contentless.extend(choice.logprobs.clone().map(HeldRecords::Contentless));
                             }
                         }
+                    }
+
+                    // Holding blank text must not also swallow this frame's usage
+                    // or SSE metadata. Keep empty per-choice deltas: an empty
+                    // choices list would make fix_finish_reason end the turn.
+                    if !held_blank_choices.is_empty() && all_emissions.is_empty()
+                        && (chat_response.usage.is_some() || response.id.is_some()
+                            || response.event.is_some() || response.comment.is_some()
+                            || response.error.is_some() || chat_response.service_tier.is_some()
+                            || chat_response.system_fingerprint.is_some())
+                    {
+                        let mut metadata = response.clone();
+                        metadata.data.as_mut().unwrap().choices = held_blank_choices;
+                        yield metadata;
                     }
 
                     // Emit all results based on emission mode
@@ -2995,6 +3230,7 @@ pub struct JailedStreamBuilder {
     emission_mode: EmissionMode,
     jail_mode: JailMode,
     guided_streaming: bool,
+    reasoning_parser: Option<String>,
 }
 
 impl JailedStreamBuilder {
@@ -3010,6 +3246,7 @@ impl JailedStreamBuilder {
             tool_definitions: None,
             emission_mode: EmissionMode::default(),
             jail_mode: JailMode::MarkerBased,
+            reasoning_parser: None,
         }
     }
 
@@ -3050,6 +3287,20 @@ impl JailedStreamBuilder {
     /// Set the tool call parser to use for detection and parsing
     pub fn tool_call_parser(mut self, parser: impl Into<String>) -> Self {
         self.tool_call_parser = Some(parser.into());
+        self
+    }
+
+    /// Name the request's reasoning parser.
+    ///
+    /// The jail does not parse reasoning; the name only selects parser-pair
+    /// behavior. Today that is the Nemotron V3 tool-only-turn rule (#406): with
+    /// `qwen3_coder` and `nemotron_v3` (or `nemotron3`, any case), whitespace-only
+    /// content is dropped from a turn that completed a tool call, showed no visible
+    /// text, and finished with `stop` or `tool_calls`. On any other finish it is
+    /// kept, though it may arrive in a later chunk than it was generated in; its
+    /// logprobs stay on their chunk. For every other pair the output is unchanged.
+    pub fn reasoning_parser(mut self, parser: impl Into<String>) -> Self {
+        self.reasoning_parser = Some(parser.into());
         self
     }
 
@@ -3138,6 +3389,11 @@ impl JailedStreamBuilder {
                 }
             }
         }
+
+        let holds_blank_content = holds_blank_tool_only_content(
+            self.tool_call_parser.as_deref(),
+            self.reasoning_parser.as_deref(),
+        );
 
         let completion_strategy = if self.has_custom_end_sequences {
             CompletionStrategy::EndMarker
@@ -3244,6 +3500,7 @@ impl JailedStreamBuilder {
             emission_mode: self.emission_mode,
             marker_matcher,
             jail_mode: self.jail_mode,
+            holds_blank_content,
             guided_streaming: self.guided_streaming,
         }
     }
@@ -3278,6 +3535,7 @@ where
         tool_definitions,
         uses_tool_call_structural_tag,
         false,
+        None,
         stream,
     )
 }
@@ -3304,6 +3562,39 @@ where
         tool_definitions,
         uses_tool_call_structural_tag,
         true,
+        None,
+        stream,
+    )
+}
+
+/// Like [`apply_tool_calling_jail`], but also told the request's reasoning parser,
+/// with `guided_streaming` as in [`apply_tool_calling_jail_with_guided_streaming`].
+///
+/// The reasoning parser selects parser-pair behavior the tool parser name alone
+/// cannot: with `qwen3_coder` and `nemotron_v3`, a turn that only calls tools
+/// streams no whitespace-only content (#406). See
+/// [`JailedStreamBuilder::reasoning_parser`]. Every other pair matches
+/// [`apply_tool_calling_jail`] exactly. A separate entry point so existing
+/// callers keep their output.
+pub fn apply_tool_calling_jail_with_reasoning_parser<S>(
+    tool_call_parser: Option<String>,
+    reasoning_parser: Option<String>,
+    tool_choice: Option<dynamo_protocols::types::ChatCompletionToolChoiceOption>,
+    tool_definitions: Option<Vec<crate::tool_calling::ToolDefinition>>,
+    uses_tool_call_structural_tag: bool,
+    guided_streaming: bool,
+    stream: S,
+) -> impl Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send
+where
+    S: Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send + 'static,
+{
+    apply_tool_calling_jail_configured(
+        tool_call_parser,
+        tool_choice,
+        tool_definitions,
+        uses_tool_call_structural_tag,
+        guided_streaming,
+        reasoning_parser,
         stream,
     )
 }
@@ -3314,6 +3605,7 @@ fn apply_tool_calling_jail_configured<S>(
     tool_definitions: Option<Vec<crate::tool_calling::ToolDefinition>>,
     uses_tool_call_structural_tag: bool,
     guided_streaming: bool,
+    reasoning_parser: Option<String>,
     stream: S,
 ) -> impl Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send
 where
@@ -3322,6 +3614,9 @@ where
     use dynamo_protocols::types::ChatCompletionToolChoiceOption;
 
     let mut builder = JailedStream::builder().guided_streaming(guided_streaming);
+    if let Some(reasoning_parser) = reasoning_parser {
+        builder = builder.reasoning_parser(reasoning_parser);
+    }
 
     let uses_native_forced_format = tool_call_parser
         .as_deref()
@@ -4347,6 +4642,45 @@ mod tests {
             collect_tool_calls(&responses),
             vec![("kvv_walle_case".to_string(), r#"{"value":{}}"#.to_string())]
         );
+    }
+
+    #[test]
+    fn held_whitespace_returns_before_prose_in_a_tool_call_emission() {
+        let mut state = ChoiceJailState::new(0, false, None);
+        let mut blank = vec![ChoiceEmission::Content(create_choice_stream(
+            0, None, "\n\n", None, None, None,
+        ))];
+        assert!(state.hold_blank_content(&mut blank, Absorb::All));
+        assert_eq!(state.blank_content_buffer, "\n\n");
+
+        let call = ChatCompletionMessageToolCallChunk {
+            index: 0,
+            id: Some("call-1".to_string()),
+            r#type: Some(FunctionType::Function),
+            function: Some(FunctionCallStream {
+                name: Some("search".to_string()),
+                arguments: Some("{}".to_string()),
+            }),
+            custom: None,
+        };
+        let mut emissions = vec![ChoiceEmission::ToolCall(create_choice_stream(
+            0,
+            None,
+            "Sure.",
+            Some(vec![call]),
+            None,
+            None,
+        ))];
+        assert!(!state.hold_blank_content(&mut emissions, Absorb::All));
+
+        assert_eq!(
+            emissions[0].choice().delta.content,
+            Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(
+                "\n\nSure.".to_string()
+            ))
+        );
+        assert!(state.blank_content_buffer.is_empty());
+        assert!(state.blank_hold_closed);
     }
 
     #[rstest::rstest]
