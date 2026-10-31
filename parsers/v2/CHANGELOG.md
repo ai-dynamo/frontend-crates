@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.3...dynamo-parsers-v2-v0.9.4) - 2026-10-31
+
+### Bug fixes
+
+- Preserve sibling arguments for out-of-range numbers ([#515](https://github.com/ai-dynamo/frontend-crates/pull/515))
+
 ## [0.9.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.2...dynamo-parsers-v2-v0.9.3) - 2026-10-31
 
 ### Bug fixes
