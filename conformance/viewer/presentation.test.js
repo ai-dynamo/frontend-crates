@@ -206,6 +206,22 @@ assert.equal(selectedCaptureOutcome(toolOnlyCell(unionPanel, 'qwen3'), 'dynamo')
 assert.deepEqual(unionReads.sort(), ['glm47:dynamo_v1', 'glm47:dynamo_v2', 'kimi_k2:dynamo_v2', 'qwen3:dynamo_v1']);
 console.log('A/B plus B/C renders the union once with distinct unsupported and missing-capture segments');
 
+const equalScopeCatalog = structuredClone(unionCatalog);
+for (const candidate of equalScopeCatalog.sources.candidates) {
+  candidate.capture_families = ['glm47', 'kimi_k2', 'qwen3'];
+  if (candidate.implementation === 'dynamo_v2') candidate.native_unified_families = [...candidate.capture_families];
+}
+unionReads.length = 0;
+const equalScopePanel = await unifiedPanel(equalScopeCatalog, unionReader, { selected: ['dynamo', 'dynamo_v1@1.0.0'], reference: null });
+assert.deepEqual(equalScopePanel.rows.map(row => row.family), ['glm47', 'kimi_k2', 'qwen3']);
+for (const family of ['glm47', 'kimi_k2', 'qwen3']) {
+  for (const key of ['dynamo', 'dynamo_v1@1.0.0']) {
+    assert.equal(selectedCaptureOutcome(toolOnlyCell(equalScopePanel, family), key), 'missing');
+  }
+}
+assert.deepEqual(unionReads.sort(), ['glm47:dynamo_v1', 'glm47:dynamo_v2', 'kimi_k2:dynamo_v1', 'kimi_k2:dynamo_v2', 'qwen3:dynamo_v1', 'qwen3:dynamo_v2']);
+console.log('Equal capture scopes render each shared family once without unsupported segments');
+
 const scopedCatalog = structuredClone(unionCatalog);
 scopedCatalog.metadata.unified_presentation.scenario_families.tool_only = ['glm47', 'kimi_k2'];
 const scopedReader = { ...unionReader, unifiedInputs: async family => {
