@@ -1509,8 +1509,8 @@ def test_missing_sidecar_keeps_source_identity_without_inventing_generation(publ
         _ready(driver, "tab-unified")
         metadata = publication_metadata(published_viewer)
         generated = driver.find_element(By.CSS_SELECTOR, ".generated")
-        assert not generated.is_displayed()
-        assert generated.get_attribute("textContent") == ""
+        assert generated.is_displayed()
+        assert generated.text == 'Source commit ' + metadata['revision'][:12]
         driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
         assert not driver.find_elements(By.CSS_SELECTOR, ".generated-command")
         assert not driver.find_elements(By.CSS_SELECTOR, ".generation-instructions")
