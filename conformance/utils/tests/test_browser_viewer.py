@@ -317,17 +317,15 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         _ready(driver, "tab-unified")
         provenance = json.loads((site / "conformance/viewer-publication.json").read_text())
         generated = WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", ".generated") if "Generated on" in page.find_element("css selector", ".generated").text else False)
-        identity = (f"from working tree {provenance['candidate_tree'][:12]} based on commit"
-                    if provenance.get('candidate_tree') else "on commit")
         generated_revision = provenance.get('generated_revision', provenance['revision'])
-        expected = f"Generated on {provenance['generated_on']} {identity} {generated_revision[:12]}"
-        if generated_revision != provenance['revision']:
-            expected += f" (source links use commit {provenance['revision'][:12]})"
+        identity = ' on commit ' if generated_revision == provenance['revision'] and not provenance.get('candidate_tree') else '; source commit '
+        expected = f"Generated on {provenance['generated_on']}{identity}{provenance['revision'][:12]}"
         assert generated.text == expected
         assert provenance["command"] not in generated.text
         assert provenance["output"] not in generated.text
-        assert generated.find_element("css selector", "a").get_attribute("href").endswith(generated_revision)
-        assert driver.find_element('css selector', 'h1 .source-commit').get_attribute('href').endswith(provenance['revision'])
+        assert generated.find_element("css selector", "a").get_attribute("href").endswith(provenance['revision'])
+        assert generated_revision in generated.get_attribute('title')
+        assert not driver.find_elements('css selector', 'h1 .source-commit')
         driver.find_element("css selector", "[data-view-detailed]").click()
         assert not any(node.is_displayed() for node in driver.find_elements('css selector', '.generated-command'))
         assert driver.find_element('css selector', '.case-descriptions').is_displayed()
