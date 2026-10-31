@@ -16,13 +16,19 @@ const VOCAB_SHA256: &str = "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5
 
 static HARMONY_GPT_OSS_ENCODING: OnceLock<Result<HarmonyEncoding>> = OnceLock::new();
 
-/// Loads the GPT-OSS Harmony encoding once per process, coordinated across processes sharing its cache.
+/// Returns the shared encoding without starting or waiting for initialization.
+pub fn initialized_harmony_gpt_oss_encoding() -> Option<&'static Result<HarmonyEncoding>> {
+    HARMONY_GPT_OSS_ENCODING.get()
+}
+
+/// Loads the GPT-OSS Harmony encoding once per process, coordinated across processes sharing its vocabulary.
 pub fn harmony_gpt_oss_encoding() -> &'static Result<HarmonyEncoding> {
     HARMONY_GPT_OSS_ENCODING.get_or_init(|| {
         // Harmony's blocking HTTP client creates and drops a Tokio runtime, so load it outside async runtimes.
         std::thread::spawn(|| {
             let cache_dir = resolve_cache_dir();
-            with_cache_lock_at(&cache_dir, || {
+            let explicit_vocab = explicit_vocab_path();
+            with_vocab_lock_at(&cache_dir, explicit_vocab.as_deref(), || {
                 load_harmony_encoding(HarmonyEncodingName::HarmonyGptOss)
                     .context("loading GPT-OSS Harmony encoding")
             })
@@ -32,6 +38,12 @@ pub fn harmony_gpt_oss_encoding() -> &'static Result<HarmonyEncoding> {
     })
 }
 
+fn explicit_vocab_path() -> Option<PathBuf> {
+    std::env::var("TIKTOKEN_ENCODINGS_BASE")
+        .ok()
+        .map(|base| PathBuf::from(base).join("o200k_base.tiktoken"))
+}
+
 fn resolve_cache_dir() -> PathBuf {
     std::env::var("TIKTOKEN_RS_CACHE_DIR")
         .ok()
@@ -39,18 +51,43 @@ fn resolve_cache_dir() -> PathBuf {
         .unwrap_or_else(|| std::env::temp_dir().join("tiktoken-rs-cache"))
 }
 
-fn with_cache_lock_at<T>(cache_dir: &Path, load: impl FnOnce() -> Result<T>) -> Result<T> {
-    with_cache_lock_at_using(cache_dir, VOCAB_SHA256, load, |lock_path| {
-        open_lock_file(lock_path)
-    })
+fn with_vocab_lock_at<T>(
+    cache_dir: &Path,
+    explicit_vocab: Option<&Path>,
+    load: impl FnOnce() -> Result<T>,
+) -> Result<T> {
+    with_vocab_lock_at_using(
+        cache_dir,
+        explicit_vocab,
+        VOCAB_SHA256,
+        load,
+        open_lock_file,
+    )
 }
 
-fn with_cache_lock_at_using<T>(
+fn with_vocab_lock_at_using<T>(
     cache_dir: &Path,
+    explicit_vocab: Option<&Path>,
     expected_vocab_sha256: &str,
     load: impl FnOnce() -> Result<T>,
-    open_lock_file: impl FnOnce(&Path) -> std::io::Result<std::fs::File>,
+    open_lock_file: impl FnOnce(&Path) -> std::io::Result<File>,
 ) -> Result<T> {
+    let lock_file = if let Some(vocab_path) = explicit_vocab {
+        // Explicit vocabularies bypass Harmony's download cache, including its permissions and lifetime.
+        open_verified_vocab_lock([vocab_path.to_path_buf()], expected_vocab_sha256)?
+    } else {
+        acquire_cache_lock_at_using(cache_dir, expected_vocab_sha256, open_lock_file)?
+    };
+    let result = load();
+    drop(lock_file);
+    result
+}
+
+fn acquire_cache_lock_at_using(
+    cache_dir: &Path,
+    expected_vocab_sha256: &str,
+    open_lock_file: impl FnOnce(&Path) -> std::io::Result<File>,
+) -> Result<File> {
     fs::create_dir_all(cache_dir)
         .with_context(|| format!("creating Harmony vocabulary cache directory {cache_dir:?}"))?;
     let lock_path = cache_dir.join("harmony-vocab.lock");
@@ -72,7 +109,17 @@ fn with_cache_lock_at_using<T>(
                     })?
             } else {
                 // A verified cached vocabulary can serve as a stable lock inode on read-only mounts.
-                open_verified_vocab_lock(cache_dir, expected_vocab_sha256)?
+                let mut paths = Vec::new();
+                for entry in fs::read_dir(cache_dir).with_context(|| {
+                    format!("listing Harmony vocabulary cache directory {cache_dir:?}")
+                })? {
+                    let path = entry?.path();
+                    if path.is_file() {
+                        paths.push(path);
+                    }
+                }
+                paths.sort();
+                return open_verified_vocab_lock(paths, expected_vocab_sha256);
             }
         }
         Err(error) => {
@@ -83,10 +130,7 @@ fn with_cache_lock_at_using<T>(
     lock_file
         .lock()
         .with_context(|| format!("locking Harmony vocabulary cache {cache_dir:?}"))?;
-
-    let result = load();
-    drop(lock_file);
-    result
+    Ok(lock_file)
 }
 
 fn open_lock_file(lock_path: &Path) -> std::io::Result<File> {
@@ -98,25 +142,10 @@ fn open_lock_file(lock_path: &Path) -> std::io::Result<File> {
         .open(lock_path)
 }
 
-fn open_verified_vocab_lock(cache_dir: &Path, expected_sha256: &str) -> Result<File> {
-    let explicit_vocab_path = std::env::var_os("TIKTOKEN_ENCODINGS_BASE")
-        .map(|base| PathBuf::from(base).join("o200k_base.tiktoken"));
-    let vocab_paths = if let Some(vocab_path) = explicit_vocab_path {
-        vec![vocab_path]
-    } else {
-        let entries = fs::read_dir(cache_dir)
-            .with_context(|| format!("listing Harmony vocabulary cache directory {cache_dir:?}"))?
-            .collect::<std::io::Result<Vec<_>>>()?;
-        let mut paths = Vec::new();
-        for entry in entries {
-            if entry.file_type()?.is_file() {
-                paths.push(entry.path());
-            }
-        }
-        paths.sort();
-        paths
-    };
-
+fn open_verified_vocab_lock(
+    vocab_paths: impl IntoIterator<Item = PathBuf>,
+    expected_sha256: &str,
+) -> Result<File> {
     for vocab_path in vocab_paths {
         let Ok(mut vocab_file) = File::open(&vocab_path) else {
             continue;
@@ -131,10 +160,7 @@ fn open_verified_vocab_lock(cache_dir: &Path, expected_sha256: &str) -> Result<F
             return Ok(vocab_file);
         }
     }
-
-    anyhow::bail!(
-        "no checksum-verified Harmony vocabulary file was found in cache directory {cache_dir:?}"
-    )
+    anyhow::bail!("no checksum-verified Harmony vocabulary file was found")
 }
 
 fn matches_vocab_checksum(vocab_file: &mut File, expected_sha256: &str) -> Result<bool> {
@@ -155,10 +181,174 @@ mod tests {
 
     use anyhow::Result;
 
-    use super::{VOCAB_CACHE_KEY, with_cache_lock_at, with_cache_lock_at_using};
+    use super::{VOCAB_CACHE_KEY, with_vocab_lock_at, with_vocab_lock_at_using};
 
     const TEST_VOCAB_SHA256: &str =
         "5d459a81205fa7ba34f57d3af8e41660c76527de1759589b487b96491f3d3793";
+
+    #[cfg(unix)]
+    #[test]
+    fn read_only_cache_accepts_symlinked_vocabulary() -> Result<()> {
+        use std::os::unix::fs::symlink;
+
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+        let vocabulary = directory.path().join("vocabulary");
+        fs::write(&vocabulary, b"test vocabulary")?;
+        symlink(&vocabulary, cache.join(VOCAB_CACHE_KEY))?;
+        symlink(directory.path().join("missing"), cache.join("dangling"))?;
+        fs::create_dir(cache.join("directory"))?;
+
+        let loaded = with_vocab_lock_at_using(
+            &cache,
+            None,
+            TEST_VOCAB_SHA256,
+            || Ok(true),
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        )?;
+        assert!(loaded);
+        assert!(!cache.join("harmony-vocab.lock").exists());
+        fs::write(&vocabulary, b"partial vocabulary")?;
+        let mut loaded = false;
+        let invalid = with_vocab_lock_at_using(
+            &cache,
+            None,
+            TEST_VOCAB_SHA256,
+            || {
+                loaded = true;
+                Ok(())
+            },
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        );
+        assert!(invalid.is_err());
+        assert!(!loaded, "symlink target bypassed checksum verification");
+        Ok(())
+    }
+
+    #[test]
+    fn subprocess_explicit_vocab_helper() -> Result<()> {
+        let Some(cache) = std::env::var_os("DYNAMO_HARMONY_EXPLICIT_TEST_CACHE") else {
+            return Ok(());
+        };
+        with_vocab_lock_at_using(
+            Path::new(&cache),
+            super::explicit_vocab_path().as_deref(),
+            TEST_VOCAB_SHA256,
+            || Ok(()),
+            |_| panic!("explicit vocabulary loading accessed the download-cache lock"),
+        )
+    }
+
+    #[test]
+    fn explicit_vocabulary_bypasses_unavailable_download_cache() -> Result<()> {
+        let directory = tempfile::tempdir()?;
+        let base = directory.path().join("encodings");
+        fs::create_dir(&base)?;
+        fs::write(base.join("o200k_base.tiktoken"), b"test vocabulary")?;
+        let blocker = directory.path().join("not-a-directory");
+        fs::write(&blocker, b"block cache creation")?;
+        let cache = blocker.join("cache");
+        let output = test_subprocess("tests::subprocess_explicit_vocab_helper")?
+            .env("TIKTOKEN_ENCODINGS_BASE", &base)
+            .env("DYNAMO_HARMONY_EXPLICIT_TEST_CACHE", &cache)
+            .output()?;
+        assert!(
+            output.status.success(),
+            "explicit vocabulary failed with an unavailable cache: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        assert!(!cache.exists());
+        Ok(())
+    }
+
+    // Cache permissions, file aliases and process termination cannot be represented by model-output fixtures.
+    #[test]
+    fn explicit_vocabulary_rejects_invalid_files_before_accessing_cache() -> Result<()> {
+        let directory = tempfile::tempdir()?;
+        let blocker = directory.path().join("not-a-directory");
+        fs::write(&blocker, b"block cache creation")?;
+        let cache = blocker.join("cache");
+        let partial = directory.path().join("partial");
+        fs::write(&partial, b"partial vocabulary")?;
+        let missing = directory.path().join("missing");
+        for vocabulary in [&partial, &missing] {
+            let mut loaded = false;
+            let result = with_vocab_lock_at_using(
+                &cache,
+                Some(vocabulary),
+                TEST_VOCAB_SHA256,
+                || {
+                    loaded = true;
+                    Ok(())
+                },
+                |_| panic!("explicit vocabulary accessed download-cache lock"),
+            );
+            assert!(result.is_err());
+            assert!(!loaded);
+            assert!(!cache.exists());
+        }
+        let result = with_vocab_lock_at_using(
+            &cache,
+            None,
+            TEST_VOCAB_SHA256,
+            || Ok(()),
+            |_| panic!("unavailable cache unexpectedly reached lock creation"),
+        );
+        assert!(
+            result.is_err(),
+            "cache mode bypassed its unavailable directory"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn subprocess_encoding_state_helper() {
+        if std::env::var_os("DYNAMO_HARMONY_ENCODING_STATE_TEST").is_none() {
+            return;
+        }
+        assert!(super::initialized_harmony_gpt_oss_encoding().is_none());
+        let result = super::harmony_gpt_oss_encoding();
+        assert!(result.is_err());
+        assert!(std::ptr::eq(
+            super::initialized_harmony_gpt_oss_encoding().unwrap(),
+            result,
+        ));
+        assert!(std::ptr::eq(super::harmony_gpt_oss_encoding(), result));
+    }
+
+    #[test]
+    fn cached_error_is_visible_without_reinitializing() -> Result<()> {
+        let directory = tempfile::tempdir()?;
+        let output = test_subprocess("tests::subprocess_encoding_state_helper")?
+            .env("DYNAMO_HARMONY_ENCODING_STATE_TEST", "true")
+            .env("TIKTOKEN_ENCODINGS_BASE", directory.path().join("missing"))
+            .env(
+                "TIKTOKEN_RS_CACHE_DIR",
+                directory.path().join("unused-cache"),
+            )
+            .output()?;
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        assert!(!directory.path().join("unused-cache").exists());
+        Ok(())
+    }
+
+    fn test_subprocess(test: &str) -> Result<Command> {
+        let mut command = Command::new(std::env::current_exe()?);
+        command
+            .env_clear()
+            .envs(std::env::vars_os().filter(|(key, _)| {
+                ["PATH", "HOME", "LD_LIBRARY_PATH", "TMPDIR", "TMP", "TEMP"]
+                    .iter()
+                    .any(|allowed| key == allowed)
+            }));
+        command.arg("--exact").arg(test).arg("--nocapture");
+        Ok(command)
+    }
 
     struct ChildGuard(Child);
 
@@ -206,27 +396,32 @@ mod tests {
 
     fn spawn_helper(
         mode: &str,
-        cache_dir: &PathBuf,
-        marker_dir: &PathBuf,
+        cache_dir: &Path,
+        marker_dir: &Path,
         read_only_fs: bool,
+        explicit_vocab: Option<&Path>,
     ) -> ChildGuard {
-        ChildGuard(
-            Command::new(std::env::current_exe().unwrap())
-                .arg("--exact")
-                .arg("tests::subprocess_lock_helper")
-                .arg("--nocapture")
-                .env("DYNAMO_HARMONY_LOCK_TEST_MODE", mode)
-                .env("DYNAMO_HARMONY_LOCK_TEST_CACHE", cache_dir)
-                .env("DYNAMO_HARMONY_LOCK_TEST_MARKERS", marker_dir)
-                .env(
-                    "DYNAMO_HARMONY_LOCK_TEST_READ_ONLY_FS",
-                    read_only_fs.to_string(),
-                )
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .spawn()
-                .unwrap(),
-        )
+        for suffix in ["entered", "attempting"] {
+            assert!(
+                !marker_dir.join(format!("{mode}.{suffix}")).exists(),
+                "readiness from an earlier child would invalidate the lock observation"
+            );
+        }
+        let mut command = test_subprocess("tests::subprocess_lock_helper").unwrap();
+        command
+            .env("DYNAMO_HARMONY_LOCK_TEST_MODE", mode)
+            .env("DYNAMO_HARMONY_LOCK_TEST_CACHE", cache_dir)
+            .env("DYNAMO_HARMONY_LOCK_TEST_MARKERS", marker_dir)
+            .env(
+                "DYNAMO_HARMONY_LOCK_TEST_READ_ONLY_FS",
+                read_only_fs.to_string(),
+            )
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        if let Some(path) = explicit_vocab {
+            command.env("DYNAMO_HARMONY_LOCK_TEST_EXPLICIT_VOCAB", path);
+        }
+        ChildGuard(command.spawn().unwrap())
     }
 
     #[test]
@@ -255,15 +450,23 @@ mod tests {
                     }
                     Ok(())
                 };
-                let result = if std::env::var("DYNAMO_HARMONY_LOCK_TEST_READ_ONLY_FS")
-                    .is_ok_and(|value| value == "true")
-                {
-                    super::with_cache_lock_at_using(&cache_dir, TEST_VOCAB_SHA256, load, |_| {
-                        Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem))
-                    })
-                } else {
-                    with_cache_lock_at(&cache_dir, load)
-                };
+                let explicit_vocab =
+                    std::env::var_os("DYNAMO_HARMONY_LOCK_TEST_EXPLICIT_VOCAB").map(PathBuf::from);
+                let read_only_fs = std::env::var("DYNAMO_HARMONY_LOCK_TEST_READ_ONLY_FS")
+                    .is_ok_and(|value| value == "true");
+                let result = with_vocab_lock_at_using(
+                    &cache_dir,
+                    explicit_vocab.as_deref(),
+                    TEST_VOCAB_SHA256,
+                    load,
+                    |path| {
+                        if read_only_fs {
+                            Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem))
+                        } else {
+                            super::open_lock_file(path)
+                        }
+                    },
+                );
                 result.unwrap();
             }
             _ => panic!("unknown subprocess lock mode {mode}"),
@@ -286,15 +489,15 @@ mod tests {
                 fs::write(second_cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
             }
 
-            let mut holder = spawn_helper("hold", &first_cache, &markers, read_only_fs);
+            let mut holder = spawn_helper("hold", &first_cache, &markers, read_only_fs, None);
             wait_for_file(&markers.join("hold.entered"));
 
             let mut other_cache =
-                spawn_helper("other-cache", &second_cache, &markers, read_only_fs);
+                spawn_helper("other-cache", &second_cache, &markers, read_only_fs, None);
             wait_for_file(&markers.join("other-cache.entered"));
             assert!(other_cache.wait()?.success());
 
-            let mut waiter = spawn_helper("waiter", &first_cache, &markers, read_only_fs);
+            let mut waiter = spawn_helper("waiter", &first_cache, &markers, read_only_fs, None);
             wait_for_file(&markers.join("waiter.attempting"));
             let waiter_status = waiter.try_wait()?;
             assert!(
@@ -318,6 +521,49 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn explicit_vocabularies_lock_by_inode_and_release_after_failure() -> Result<()> {
+        use std::os::unix::fs::symlink;
+
+        let directory = tempfile::tempdir()?;
+        let markers = directory.path().join("markers");
+        fs::create_dir(&markers)?;
+        let cache = directory.path().join("unused-cache");
+        let other_cache = directory.path().join("other-unused-cache");
+        let vocabulary = directory.path().join("vocabulary");
+        let alias = directory.path().join("alias");
+        let independent = directory.path().join("independent-vocabulary");
+        fs::write(&vocabulary, b"test vocabulary")?;
+        fs::write(&independent, b"test vocabulary")?;
+        symlink(&vocabulary, &alias)?;
+        let error: Result<()> = with_vocab_lock_at_using(
+            &cache,
+            Some(&vocabulary),
+            TEST_VOCAB_SHA256,
+            || anyhow::bail!("injected explicit-loader failure"),
+            super::open_lock_file,
+        );
+        assert!(error.is_err());
+
+        let mut holder = spawn_helper("hold", &cache, &markers, false, Some(&vocabulary));
+        wait_for_file(&markers.join("hold.entered"));
+        let mut other = spawn_helper("other-cache", &cache, &markers, false, Some(&independent));
+        wait_for_file(&markers.join("other-cache.entered"));
+        assert!(other.wait()?.success());
+        let mut waiter = spawn_helper("waiter", &other_cache, &markers, false, Some(&alias));
+        wait_for_file(&markers.join("waiter.attempting"));
+        assert!(waiter.try_wait()?.is_none());
+        assert_file_stays_absent(&markers.join("waiter.entered"));
+        holder.kill()?;
+        assert!(!holder.wait()?.success());
+        assert!(waiter.wait()?.success());
+        assert!(markers.join("waiter.entered").exists());
+        assert!(!cache.exists());
+        assert!(!other_cache.exists());
+        Ok(())
+    }
+
     #[test]
     fn lock_is_released_after_load_error_and_process_termination() -> Result<()> {
         let directory = tempfile::tempdir()?;
@@ -325,16 +571,17 @@ mod tests {
         let cache = directory.path().join("cache");
         fs::create_dir_all(&markers)?;
 
-        let error = with_cache_lock_at::<()>(&cache, || anyhow::bail!("injected loader failure"));
+        let error =
+            with_vocab_lock_at::<()>(&cache, None, || anyhow::bail!("injected loader failure"));
         assert!(error.is_err());
-        with_cache_lock_at(&cache, || Ok(()))?;
+        with_vocab_lock_at(&cache, None, || Ok(()))?;
 
-        let mut holder = spawn_helper("hold", &cache, &markers, false);
+        let mut holder = spawn_helper("hold", &cache, &markers, false, None);
         wait_for_file(&markers.join("hold.entered"));
         holder.kill()?;
         assert!(!holder.wait()?.success());
 
-        let next = with_cache_lock_at(&cache, || Ok(()));
+        let next = with_vocab_lock_at(&cache, None, || Ok(()));
         assert!(
             next.is_ok(),
             "OS did not release the lock after holder termination"
@@ -342,14 +589,17 @@ mod tests {
         assert!(cache.join("harmony-vocab.lock").exists());
 
         let read_only_cache = directory.path().join("read-only-cache");
+        let read_only_markers = directory.path().join("read-only-markers");
         fs::create_dir(&read_only_cache)?;
+        fs::create_dir(&read_only_markers)?;
         fs::write(read_only_cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
-        let mut holder = spawn_helper("hold", &read_only_cache, &markers, true);
-        wait_for_file(&markers.join("hold.entered"));
+        let mut holder = spawn_helper("hold", &read_only_cache, &read_only_markers, true, None);
+        wait_for_file(&read_only_markers.join("hold.entered"));
         holder.kill()?;
         assert!(!holder.wait()?.success());
-        let released = with_cache_lock_at_using(
+        let released = with_vocab_lock_at_using(
             &read_only_cache,
+            None,
             TEST_VOCAB_SHA256,
             || Ok(()),
             |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
@@ -372,8 +622,9 @@ mod tests {
         fs::write(cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o555))?;
 
-        let result = with_cache_lock_at_using(
+        let result = with_vocab_lock_at_using(
             &cache,
+            None,
             TEST_VOCAB_SHA256,
             || Ok("loaded"),
             |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
@@ -398,8 +649,9 @@ mod tests {
         fs::set_permissions(&lock_path, fs::Permissions::from_mode(0o444))?;
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o555))?;
 
-        let result = with_cache_lock_at_using(
+        let result = with_vocab_lock_at_using(
             &cache,
+            None,
             TEST_VOCAB_SHA256,
             || Ok("loaded"),
             |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
@@ -418,8 +670,9 @@ mod tests {
         fs::create_dir(&cache)?;
 
         fs::write(cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
-        let result = with_cache_lock_at_using(
+        let result = with_vocab_lock_at_using(
             &cache,
+            None,
             TEST_VOCAB_SHA256,
             || Ok("loaded"),
             |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
@@ -439,8 +692,9 @@ mod tests {
             cache.join("custom-url-derived-cache-key"),
             b"test vocabulary",
         )?;
-        let result = with_cache_lock_at_using(
+        let result = with_vocab_lock_at_using(
             &cache,
+            None,
             TEST_VOCAB_SHA256,
             || Ok("loaded"),
             |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
@@ -459,8 +713,9 @@ mod tests {
         fs::write(cache.join(VOCAB_CACHE_KEY), b"partial vocabulary")?;
         let mut loaded = false;
 
-        let result = with_cache_lock_at_using(
+        let result = with_vocab_lock_at_using(
             &cache,
+            None,
             TEST_VOCAB_SHA256,
             || {
                 loaded = true;
