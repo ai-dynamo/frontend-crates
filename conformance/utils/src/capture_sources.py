@@ -30,8 +30,6 @@ INVENTORY = "capture-inventory.json"
 UPDATE_JOURNAL = "conformance/.capture-update.json"
 STORE = "conformance/fixtures-unified-v2"
 DATASETS = "conformance/history-datasets.json"
-LEGACY_CORPORA = {"batch": "toolcalling/fixtures-batch-v1", "stream": "toolcalling/fixtures-stream-v1",
-                  "reasoning": "reasoning/fixtures-v1", "batch-on-stream": "toolcalling/fixtures-batch-on-stream-v1"}
 
 
 def digest(data: bytes) -> str:
@@ -162,7 +160,6 @@ def retained_inventory(root: Path) -> dict:
         paths.extend(sorted((root / STORE / directory).glob("*.yaml")))
     version_archives = unified_archives.paths(root / STORE)
     paths.extend(version_archives)
-    paths.extend(sorted((root / "conformance/fixtures").rglob("*.tar.gz")))
     paths.append(root / "conformance/fixtures-manifest.json")
     rows = [identity(path.relative_to(root).as_posix(), read(root, path.relative_to(root).as_posix()))
             for path in paths]
@@ -184,18 +181,17 @@ def default_history(root: Path) -> Path:
 
 
 def latest_path(mode: str, family: str, implementation: str) -> str:
-    if mode == "unified":
-        return f"{STORE}/families/{family}/{implementation}.yaml"
-    return f"conformance/captures/{mode}/{family}/{implementation}.yaml"
+    if mode != "unified":
+        raise ValueError("only Unified conformance captures are supported")
+    return f"{STORE}/families/{family}/{implementation}.yaml"
 
 
 def pending_updates(root: Path):
-    return sorted([*(root / STORE / "families").glob("*/.capture-update-*.json"),
-                   *(root / "conformance/captures").glob("*/*/.capture-update-*.json")])
+    return sorted((root / STORE / "families").glob("*/.capture-update-*.json"))
 
 
 def is_current(root: Path) -> bool:
-    return bool(latest_unified_paths(root)) or any((root / "conformance/captures").glob("*/*/*.yaml"))
+    return bool(latest_unified_paths(root))
 
 
 def independent_snapshot(document: dict, authored: dict, *, source_member: str | None = None) -> dict:
@@ -229,7 +225,7 @@ def current(root: Path) -> dict:
         raise ValueError("capture publication is pending; run publish_current_capture.py --recover")
     captures, lineage = [], {}
     latest = latest_unified_paths(root)
-    for path in sorted([*latest, *(root / "conformance/captures").glob("*/*/*.yaml")]):
+    for path in latest:
         if list(path.parent.glob(".capture-update-*.json")):
             raise ValueError("capture publication is pending; run publish_current_capture.py --recover")
         name = path.relative_to(root).as_posix()
@@ -245,7 +241,7 @@ def current(root: Path) -> dict:
             if previous != item:
                 raise ValueError("conflicting observation lineage")
         row = {**selection, **identity(name, data)}
-        surface = "unified" if path in latest else path.parent.parent.name
+        surface = "unified"
         if (row["surface"] != surface or row["family"] != path.parent.name
                 or row["implementation"] != path.stem or row["mode"] != row["surface"]):
             raise ValueError(f"current capture identity mismatch: {name}")
@@ -390,8 +386,7 @@ def stage_history(root: Path, destination: Path, history: Path, *, separate: boo
     descriptors = [json.loads(admitted_bytes(row["path"])) for row in evidence["files"]
                    if row["path"].startswith("additions/") and row["path"].endswith(".json")]
     if any(descriptor["selection"]["mode"] != "unified" for descriptor in descriptors):
-        subprocess.run([sys.executable, str(Path(__file__).with_name("publish_current_capture.py")),
-                        "--root", str(root), "--history-source", str(history), "--validate-history"], check=True, capture_output=True)
+        raise ValueError("retired conformance corpus in history additions")
     baseline = {row["path"]: row for row in unified_archives.inventory(destination / STORE)}
     for descriptor in descriptors:
         archive_row = descriptor["archive"]
@@ -402,16 +397,6 @@ def stage_history(root: Path, destination: Path, history: Path, *, separate: boo
             for member in descriptor["archive"]["members"]:
                 name = relative(member["path"])
                 data = archive.extractfile(name).read()
-                if descriptor["selection"]["mode"] != "unified":
-                    snapshot = yaml.safe_load(data)
-                    compressed = unified_archives.capture_archive_bytes(dict(legacy_payloads(snapshot, descriptor["selection"])))
-                    selection = descriptor["selection"]
-                    derived_name = f"additions/{digest(compressed)}/{LEGACY_CORPORA[selection['mode']]}/{selection['implementation']}-{selection['version']}.tar.gz"
-                    target = destination / "conformance/fixtures" / derived_name
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_bytes(compressed)
-                    manifest["shards"].append({"path": derived_name, "size": len(compressed), "sha256": digest(compressed)})
-                    continue
                 baseline_resource = baseline.get(name.removeprefix(STORE + "/"))
                 if baseline_resource is not None:
                     original = unified_archives.read_source(destination / STORE, baseline_resource)
@@ -586,51 +571,6 @@ def verify_prepared(root: Path) -> None:
         raise ValueError("publication current capture discovery changed")
     if guard["history_source"] is not None:
         verify(Path(guard["history_source"]), guard["history_pin"])
-
-
-def materialize_legacy(root: Path, destination: Path, *, document: dict, authored: list[dict]) -> None:
-    for mode, corpus in LEGACY_CORPORA.items():
-        prefix = f"conformance/inputs/{mode}/"
-        for row in authored:
-            if not row["path"].startswith(prefix):
-                continue
-            target = destination / corpus / "inputs" / relative(row["path"].removeprefix(prefix))
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(checked_bytes(root, row, label="authored inputs"))
-    for row in document["captures"]:
-        if row["surface"] == "unified":
-            continue
-        snapshot = yaml.safe_load(checked_bytes(root, row))
-        for name, data in legacy_payloads(snapshot, row):
-            target = destination / name
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if target.exists() and target.read_bytes() != data:
-                raise ValueError(f"conflicting legacy current documents: {target}")
-            target.write_bytes(data)
-
-
-def legacy_payloads(snapshot, row):
-    mode, implementation = row["mode"], row["implementation"]
-    if any(snapshot[key] != row[key] for key in ("family", "implementation", "version", "surface")):
-        raise ValueError("legacy snapshot identity mismatch")
-    for name, original in snapshot["documents"].items():
-        document = copy.deepcopy(original)
-        if mode == "stream":
-            for case in document.get("cases", {}).values():
-                for key in ("unavailable", "exception"):
-                    if isinstance(case.get(key), dict):
-                        value = case.pop(key).get(implementation)
-                        if value is not None:
-                            case[key] = value
-                for chunk in case.get("chunks", []):
-                    chunk["expected"] = (chunk.get("expected") or {}).get(implementation, [])
-                    text = chunk.pop("normal_text", {})
-                    if isinstance(text, dict) and implementation in text:
-                        chunk["normal_text"] = text[implementation]
-        corpus = Path(LEGACY_CORPORA[mode])
-        folder = corpus if mode == "batch-on-stream" else corpus / f"{implementation}-{row['version']}"
-        name = (folder / row["family"] / relative(name)).as_posix()
-        yield name, yaml.safe_dump(document, sort_keys=False, allow_unicode=True, width=4096).encode()
 
 
 def main() -> None:

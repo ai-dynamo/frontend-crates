@@ -690,36 +690,39 @@ def test_publication_guard_rejects_added_capture_discovery(split_evidence, tmp_p
 
 
 def test_independent_family_captures_publish_concurrently_without_shared_mutations(split_evidence, tmp_path):
-    root, history, _capture, _path = split_evidence
+    root, history, capture, _path = split_evidence
+    jobs = []
+    authored_source = sources.read(root, sources.STORE + "/families/gemma4/inputs_and_golden.yaml")
+    snapshot = unified_history.yaml.safe_load(capture.read_bytes())
+    for family in ("one", "two"):
+        authored = root / sources.STORE / "families" / family / "inputs_and_golden.yaml"
+        authored.parent.mkdir(parents=True)
+        authored.write_bytes(authored_source.replace(b"gemma4", family.encode()))
+        retained_authored = history / sources.STORE / "families" / family / "inputs_and_golden.yaml"
+        retained_authored.parent.mkdir(parents=True)
+        retained_authored.write_bytes(authored.read_bytes())
+        document = json.loads(json.dumps(snapshot))
+        for record in document["records"].values():
+            record["member"] = f"conformance/fixtures-unified-v2/families/{family}/dynamo_v2-0.5.3.yaml"
+        data = unified_history.dump_yaml(document).replace("gemma4", family)
+        candidate = tmp_path / (family + ".yaml")
+        candidate.write_text(data)
+        jobs.append((root, history, candidate, family, "dynamo_v2", "0.5.3", "unified"))
+    (root / sources.PIN).write_bytes(sources.encoded(pin_history(history)))
     baseline = sources.read(history, sources.INVENTORY)
     pin = sources.read(root, sources.PIN)
-    jobs = []
-    for family in ("one", "two"):
-        authored = root / "conformance/inputs/stream" / family / "case.yaml"
-        authored.parent.mkdir(parents=True, exist_ok=True)
-        authored.write_bytes(b"cases: {case: {model_text: hello}}\n")
-        capture = tmp_path / (family + ".yaml")
-        capture.write_text(unified_history.dump_yaml({"schema_version": 1, "surface": "stream", "family": family,
-            "implementation": "vllm_python", "version": "1.0.0", "source_records": [],
-            "documents": {"case.yaml": {"family": family, "cases": {"case": {"chunks": []}}}}}))
-        jobs.append((root, history, capture, family, "vllm_python", "1.0.0", "stream"))
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(lambda args: publish_current_capture.publish(*args), jobs))
     assert all(row["archived"] and row["current_advanced"] for row in results)
     assert len(list((history / "additions").glob("*/*.json"))) == 2
     assert sources.read(history, sources.INVENTORY) == baseline
     assert sources.read(root, sources.PIN) == pin
-    assert len(sources.current(root)["captures"]) == 3
+    assert {row["family"] for row in sources.current(root)["captures"]} == {"gemma4", "one", "two"}
     view = tmp_path / "history-view"
     manifest = sources.stage_history(root, view, history)
-    assert not sources.is_current(view)
-    assert len(manifest["shards"]) == 3
-    for shard in manifest["shards"]:
-        if shard.get("format") == "unified-history":
-            continue
-        with tarfile.open(view / "conformance/fixtures" / shard["path"], "r:gz") as archive:
-            assert len(archive.getmembers()) == 1
-            assert "/vllm_python-1.0.0/" in archive.getmembers()[0].name
+    assert len(manifest["shards"]) == 1
+    store = unified_history.load_store(view / sources.STORE)
+    assert {family for family, _implementation in store.histories} == {"gemma4", "one", "two"}
 
 
 @pytest.mark.parametrize("damage", ["pending-unrelated", "corrupt-latest"])
@@ -756,65 +759,6 @@ def test_added_snapshot_is_in_combined_history_without_rewriting_baseline(split_
     descriptor.unlink()
     with pytest.raises(ValueError, match="missing capture descriptor"):
         sources.verify(history, sources.history_pin(root, history))
-
-
-def test_legacy_backfill_conflict_checks_older_baseline_release(tmp_path):
-    history = tmp_path / "history"
-    (history / sources.STORE).mkdir(parents=True)
-    archive_path = history / "conformance/fixtures/toolcalling/fixtures-batch-v1/evidence.tar.gz"
-    archive_path.parent.mkdir(parents=True)
-    documents = {
-        "inputs": {"family": "demo", "cases": {"one": {"input": "hello"}}},
-        "vllm_python-1.0.0": {"family": "demo", "cases": {"one": {"expected": {"vllm_python": {"value": "original"}}}}},
-        "vllm_python-2.0.0": {"family": "demo", "cases": {"one": {"expected": {"vllm_python": {"value": "newer"}}}}},
-    }
-    with tarfile.open(archive_path, "w:gz") as archive:
-        for version, document in documents.items():
-            body = unified_history.dump_yaml(document).encode()
-            member = tarfile.TarInfo(f"toolcalling/fixtures-batch-v1/{version}/demo/case.yaml")
-            member.size = len(body)
-            archive.addfile(member, io.BytesIO(body))
-    (history / "conformance/fixtures-manifest.json").write_bytes(sources.encoded({"shards": []}))
-    pin = pin_history(history)
-    root = tmp_path / "code"
-    migrate = publish_current_capture.migrate_capture_sources
-    migrate.convert(root, history)
-    (root / sources.PIN).write_bytes(sources.encoded(pin))
-    target = root / "conformance/captures/batch/demo/vllm_python.yaml"
-    before = target.read_bytes()
-    snapshot = unified_history.load_yaml(target)
-    snapshot.pop(sources.SELECTION)
-    snapshot["version"] = "1.0.0"
-    snapshot["documents"]["case.yaml"]["cases"]["one"]["expected"]["vllm_python"]["value"] = "CONFLICT"
-    capture = tmp_path / "conflict.yaml"
-    capture.write_text(unified_history.dump_yaml(snapshot))
-    with pytest.raises(ValueError, match="conflicting frozen legacy"):
-        publish_current_capture.publish(root, history, capture, "demo", "vllm_python", "1.0.0", "batch")
-    assert target.read_bytes() == before
-    assert not (history / "additions").exists()
-
-
-def test_history_staging_rejects_conflicting_legacy_branch_additions(split_evidence, tmp_path):
-    root, history, _capture, _path = split_evidence
-    authored = root / "conformance/inputs/batch/demo/case.yaml"
-    authored.parent.mkdir(parents=True, exist_ok=True)
-    authored.write_bytes(b"family: demo\ncases: {one: {input: hello}}\n")
-    branch = tmp_path / "branch"
-    other_history = tmp_path / "other-history"
-    shutil.copytree(root, branch)
-    shutil.copytree(history, other_history)
-    for checkout, evidence, value in ((root, history, "A"), (branch, other_history, "B")):
-        capture = tmp_path / (value + ".yaml")
-        capture.write_text(unified_history.dump_yaml({"schema_version": 1, "surface": "batch", "family": "demo",
-            "implementation": "vllm_python", "version": "1.0.0", "source_records": [],
-            "documents": {"case.yaml": {"family": "demo", "cases": {"one": {"input": "hello", "expected": {"vllm_python": {"value": value}}}}}}}))
-        publish_current_capture.publish(checkout, evidence, capture, "demo", "vllm_python", "1.0.0", "batch")
-    for directory in (other_history / "additions").iterdir():
-        shutil.copytree(directory, history / "additions" / directory.name)
-    with pytest.raises(ValueError, match="conflicting frozen legacy"):
-        publish_current_capture.validate_legacy_baseline(root, history)
-    with pytest.raises(subprocess.CalledProcessError):
-        sources.stage_history(root, tmp_path / "rejected-view", history)
 
 
 def test_capture_archives_have_portable_headers_and_stable_member_order():
@@ -1002,83 +946,6 @@ def test_latest_preparation_uses_the_copied_manifest(split_evidence, tmp_path, m
     assert root_reads == 1
     monkeypatch.setattr(sources, "read", original_read)
     sources.verify_prepared(view)
-
-
-@pytest.mark.parametrize("mode", ["batch", "stream", "reasoning", "batch-on-stream"])
-def test_legacy_publication_rejects_added_authored_document_before_finish(split_evidence, tmp_path, monkeypatch, mode):
-    root, history, _capture, _path = split_evidence
-    input_mode = "batch" if mode == "batch-on-stream" else mode
-    authored = root / "conformance/inputs" / input_mode / "demo/case.yaml"
-    authored.parent.mkdir(parents=True, exist_ok=True)
-    authored.write_bytes(b"family: demo\ncases: {one: {input: hello}}\n")
-    snapshot = {"schema_version": 1, "surface": mode, "family": "demo", "implementation": "vllm_python",
-                "version": "0.9.0", "source_records": [],
-                "documents": {"case.yaml": {"family": "demo", "cases": {"one": {"input": "hello"}}}}}
-    row = {"surface": mode, "mode": mode, "family": "demo", "implementation": "vllm_python", "version": "0.9.0",
-           "source": f"conformance/captures/{mode}/demo/vllm_python-0.9.0.yaml"}
-    latest = root / f"conformance/captures/{mode}/demo/vllm_python.yaml"
-    latest.parent.mkdir(parents=True)
-    before = sources.selected_bytes(unified_history.dump_yaml(snapshot).encode(), row, [])
-    latest.write_bytes(before)
-    snapshot["version"] = "1.0.0"
-    capture = tmp_path / "legacy-next.yaml"
-    capture.write_text(unified_history.dump_yaml(snapshot))
-    original_write = publish_current_capture.atomic_write
-
-    def add_document_after_journal(path, data, **kwargs):
-        original_write(path, data, **kwargs)
-        if path.name.startswith(".capture-update-"):
-            authored.with_name("new-case.yaml").write_bytes(b"family: demo\ncases: {two: {input: new}}\n")
-
-    monkeypatch.setattr(publish_current_capture, "atomic_write", add_document_after_journal)
-    with pytest.raises(ValueError, match="authored.*changed"):
-        publish_current_capture.publish(root, history, capture, "demo", "vllm_python", "1.0.0", mode)
-    assert latest.read_bytes() == before
-
-
-@pytest.mark.parametrize("mode", ["batch", "stream", "reasoning", "batch-on-stream"])
-@pytest.mark.parametrize("replacement", ["capture", "authored"])
-def test_current_extraction_rejects_transient_legacy_source_bytes(tmp_path, monkeypatch, mode, replacement):
-    root = tmp_path / "code"
-    input_mode = "batch" if mode == "batch-on-stream" else mode
-    authored_name = f"conformance/inputs/{input_mode}/demo/case.yaml"
-    authored = root / authored_name
-    authored.parent.mkdir(parents=True, exist_ok=True)
-    authored.write_bytes(b"family: demo\ncases: {one: {input: original}}\n")
-    capture_name = f"conformance/captures/{mode}/demo/vllm_python.yaml"
-    capture = root / capture_name
-    capture.parent.mkdir(parents=True)
-    row = {"surface": mode, "mode": mode, "family": "demo", "implementation": "vllm_python", "version": "1.0.0",
-           "source": f"conformance/captures/{mode}/demo/vllm_python-1.0.0.yaml"}
-    snapshot = {"schema_version": 1, "surface": mode, "family": "demo", "implementation": "vllm_python",
-                "version": "1.0.0", "source_records": [],
-                "documents": {"case.yaml": {"family": "demo", "cases": {"one": {"expected": {"vllm_python": "original"}}}}}}
-    original = sources.selected_bytes(unified_history.dump_yaml(snapshot).encode(), row, [])
-    capture.write_bytes(original)
-    snapshot["documents"]["case.yaml"]["cases"]["one"]["expected"]["vllm_python"] = "transient"
-    replacement_bytes = (sources.selected_bytes(unified_history.dump_yaml(snapshot).encode(), row, [])
-                         if replacement == "capture" else b"family: demo\ncases: {one: {input: transient}}\n")
-    replaced_name = capture_name if replacement == "capture" else authored_name
-    original_read = sources.read
-    reads = 0
-
-    def replace_only_consumed_bytes(parent, name):
-        nonlocal reads
-        if parent == root and name == replaced_name:
-            reads += 1
-            if reads == 2:
-                return replacement_bytes
-        return original_read(parent, name)
-
-    cache = tmp_path / "cache"
-    monkeypatch.setattr(sources, "read", replace_only_consumed_bytes)
-    monkeypatch.setattr(extract_fixtures, "ROOT", root)
-    monkeypatch.setattr(extract_fixtures, "get_cache_root", lambda: cache)
-    with pytest.raises(ValueError, match="changed during staging"):
-        extract_fixtures._extract(SimpleNamespace(info=False, dry_run=False, full_refresh=False), legacy_only=True)
-    assert reads == 2
-    assert capture.read_bytes() == original
-    assert not list(cache.glob("current-*"))
 
 
 def test_capture_owner_lock_is_shared_across_bulk_job_tmpdirs(tmp_path):

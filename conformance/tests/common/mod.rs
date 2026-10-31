@@ -1,22 +1,15 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Shared helpers for the conformance parity test binaries (audit B8): fixture
-//! discovery + the crate-relative display path used in failure messages, which
-//! were copied verbatim across `conformance_toolcalling`, `conformance_toolcalling_stream`,
-//! and `conformance_toolcalling_batch_via_stream`. Each test binary declares
-//! `mod common;` so this compiles into it; a binary that uses only a subset is
-//! fine (hence the allow).
+//! Shared fixture, oracle, and request helpers for Unified conformance tests.
 #![allow(dead_code)]
 // The copied historical harness supplies this cfg without editing old manifests.
 #![allow(unexpected_cfgs)]
 
-pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
 pub mod unified_capture;
 
 use std::collections::BTreeMap;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -287,88 +280,6 @@ pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Ensures fixture files are available and returns the fixtures root path.
-///
-/// Priority:
-/// 1. `CONFORMANCE_FIXTURES_ROOT` env var — set by `check.sh` after it has
-///    already extracted and verified the cache.
-/// 2. Cache at `~/.cache/dynamo/conformance-fixtures/` (or `$XDG_CACHE_HOME`),
-///    kept current by running `extract_fixtures.py` every time (extracts the
-///    in-repo LFS shard store; no network). The script exits instantly on a
-///    cache hit and re-extracts when the committed manifest pin moved — an
-///    exists-check here would silently test against a stale snapshot. A
-///    `flock` on `/tmp/dynamo-conformance-extract.lock` serializes parallel
-///    test binaries so only one extraction runs at a time.
-///
-/// If extraction fails (e.g. shards are un-pulled git-lfs pointers), the test
-/// panics with the exact command to fix the checkout.
-pub fn ensure_fixtures() -> PathBuf {
-    if let Ok(r) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
-        return PathBuf::from(r);
-    }
-
-    let script = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/extract_fixtures.py");
-
-    // flock serializes parallel test binaries so only one extraction runs.
-    let output = std::process::Command::new("flock")
-        .args([
-            "/tmp/dynamo-conformance-extract.lock",
-            "python3",
-            script.to_str().expect("non-UTF-8 script path"),
-            "--legacy-only",
-            "--include-history",
-        ])
-        .output()
-        .expect("flock/python3 not found — ensure python3 is in PATH");
-
-    // `.output()` captures stderr instead of inheriting it (needed to also
-    // capture stdout below) -- forward it so extraction progress ("Extracting
-    // N shard(s)...", "Cache hit: ...") is still visible in the test run,
-    // not silently swallowed. A failure writing to this process's own
-    // stderr is itself unusual enough to fail fast on rather than ignore.
-    std::io::stderr()
-        .write_all(&output.stderr)
-        .expect("failed to forward extract_fixtures.py stderr to this process's stderr");
-
-    if !output.status.success() {
-        panic!(
-            "fixture extraction failed (exit {}). If the shards are git-lfs \
-             pointers, run:\n  git lfs install && git lfs pull\nthen retry:\n  python3 {}",
-            output.status.code().unwrap_or(-1),
-            script.display()
-        );
-    }
-
-    // `extract_fixtures.py` prints its resolved, content-addressed snapshot
-    // dir as the last stdout line. Return THAT, not `cache_root` (the
-    // directory holding the mutable `toolcalling`/`reasoning`/`unified`
-    // symlinks): every caller does `ensure_fixtures().join("<family>/...")`
-    // and then reads many files under it over the test's lifetime, and
-    // `Path::join` never touches the filesystem — the OS re-resolves any
-    // symlink component on EVERY subsequent file access. A concurrent
-    // sibling checkout publishing a different manifest's identity and
-    // retargeting the symlink mid-test would silently switch which
-    // snapshot later reads in the SAME test see, even though extraction
-    // itself is now race-free (`fixtures_identity`-keyed, atomically
-    // published). Resolving to the immutable identity dir once, up front,
-    // keeps every later read bound to the same extraction generation.
-    let stdout = String::from_utf8(output.stdout).expect("extract_fixtures.py stdout is not UTF-8");
-    match resolve_snap_dir(&stdout) {
-        Ok(snap_dir) => snap_dir,
-        // A missing, malformed, or non-directory printed path is NOT
-        // recovered by falling back to `cache_root` — that fallback is
-        // exactly the mutable, racy path this function exists to stop
-        // returning. Fail loudly with the full captured output instead, so a
-        // broken contract is caught here, not silently downgraded back to
-        // the old ownership model.
-        Err(reason) => panic!(
-            "extract_fixtures.py did not print a valid resolved snapshot directory as its \
-             last stdout line: {reason}.\nfull stdout: {stdout:?}\nstderr: {:?}",
-            String::from_utf8_lossy(&output.stderr)
-        ),
-    }
-}
-
 /// Native parser checks consume authored inputs and only their two selected captures.
 pub fn ensure_unified_fixtures() -> PathBuf {
     if let Ok(root) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
@@ -408,98 +319,13 @@ pub fn ensure_unified_fixtures() -> PathBuf {
         .clone()
 }
 
-/// Pure parsing/validation of `ensure_fixtures`'s subprocess contract,
-/// split out so the failure shapes (empty output, a non-existent path, a
-/// malformed line, extra noisy lines) are directly unit-testable without a
-/// real `flock`/`python3` subprocess.
-fn resolve_snap_dir(stdout: &str) -> Result<PathBuf, String> {
-    let printed = stdout.lines().next_back().unwrap_or("").trim();
-    if printed.is_empty() {
-        return Err("stdout was empty (or only blank lines)".to_string());
-    }
-    let snap_dir = PathBuf::from(printed);
-    if !snap_dir.is_dir() {
-        return Err(format!(
-            "printed path {printed:?} is not an existing directory"
-        ));
-    }
-    Ok(snap_dir)
-}
-
-#[cfg(test)]
-mod resolve_snap_dir_tests {
-    use super::resolve_snap_dir;
-
-    #[test]
-    fn accepts_a_real_directory_on_the_last_line() {
-        let dir = std::env::temp_dir().join(format!(
-            "dynamo-resolve-snap-dir-test-{}-{}",
-            std::process::id(),
-            "ok"
-        ));
-        std::fs::create_dir_all(&dir).unwrap();
-        let stdout = format!("Extracting 3 shard(s) into ...\n{}\n", dir.display());
-        assert_eq!(resolve_snap_dir(&stdout), Ok(dir.clone()));
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn rejects_empty_stdout() {
-        assert!(resolve_snap_dir("").is_err());
-        assert!(resolve_snap_dir("\n\n").is_err());
-    }
-
-    #[test]
-    fn rejects_a_malformed_or_missing_path() {
-        let err = resolve_snap_dir("not a real path at all\n").unwrap_err();
-        assert!(err.contains("not an existing directory"), "{err}");
-    }
-
-    #[test]
-    fn rejects_a_path_that_does_not_exist_on_disk() {
-        let err = resolve_snap_dir("/definitely/does/not/exist/anywhere\n").unwrap_err();
-        assert!(err.contains("not an existing directory"), "{err}");
-    }
-
-    #[test]
-    fn uses_only_the_last_line_ignoring_noisy_progress_output() {
-        let dir = std::env::temp_dir().join(format!(
-            "dynamo-resolve-snap-dir-test-{}-{}",
-            std::process::id(),
-            "noisy"
-        ));
-        std::fs::create_dir_all(&dir).unwrap();
-        let stdout = format!(
-            "Extracting 47 shard(s) into {}\n  [extract] a.tar.gz -> ...\n  [extract] b.tar.gz -> ...\n{}\n",
-            dir.display(),
-            dir.display()
-        );
-        assert_eq!(resolve_snap_dir(&stdout), Ok(dir.clone()));
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn rejects_a_directory_that_is_actually_a_file() {
-        let file = std::env::temp_dir().join(format!(
-            "dynamo-resolve-snap-dir-test-{}-{}",
-            std::process::id(),
-            "file"
-        ));
-        std::fs::write(&file, b"not a directory").unwrap();
-        let stdout = format!("{}\n", file.display());
-        let err = resolve_snap_dir(&stdout).unwrap_err();
-        assert!(err.contains("not an existing directory"), "{err}");
-        std::fs::remove_file(&file).unwrap();
-    }
-}
-
 /// Ensures the authored unified golden spec exists and returns its directory.
 ///
 /// The golden corpus is the AUTHORED oracle — a spec, not a capture — so it is
 /// NOT committed (that would leave a stray loose YAML tree next to the versioned
 /// `*.tar.gz` shards). Instead `gen_unified_golden.py` renders it from one
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
-/// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
+/// on demand. Current capture materialization uses `ensure_unified_fixtures`.
 /// The committed canonical family YAML is DERIVED from this via render -> explode
 /// -> package. CI prepares one job-owned `CONFORMANCE_GOLDEN_ROOT` for all readers.
 /// Alternate-source subprocesses regenerate against their changed authored inputs.
@@ -573,12 +399,6 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Current stream fixtures carry their own release identities, independent of the build.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-latest-recorded";
-
-/// The retained batch-on-stream oracle predates the current stream captures.
-pub const BATCH_ON_STREAM_DYNAMO_V2_CAPTURE: &str = "dynamo_v2-0.7.24";
-
 // Consumers may reuse verified archives in tagless clones; producers still require tags.
 pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
 
@@ -607,10 +427,7 @@ pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
     serde_json::from_slice(&output.stdout).expect("Dynamo capture provenance JSON")
 }
 
-/// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
-/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v1), ASCENDING by
-/// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
-/// readers fold them ascending so the latest capture wins per case.
+/// Version directories are folded in ascending order so later observations win.
 pub type VersionCaptureSortKey = (Vec<u64>, bool, String);
 
 pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
@@ -655,9 +472,7 @@ fn version_dirs_with_identity_command(
     current_dir: &str,
     mut command: std::process::Command,
 ) -> Vec<PathBuf> {
-    let current_dir = if current_dir == STREAM_DYNAMO_V2_CURRENT_CAPTURE {
-        latest_recorded_capture_dir(root, prefix).expect("no recorded stream release capture")
-    } else if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
+    let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
         let output = command
             .args(["--format", "label"])
             .stdout(std::process::Stdio::piped())
@@ -837,16 +652,6 @@ mod capture_selector_tests {
         assert_eq!(select(&captures, &clone, None).last(), Some(&release));
         write_capture(&release, &recorded);
         assert_eq!(select(&captures, &clone, None).last(), Some(&release));
-
-        let stream = captures.join("dynamo_v2-0.7.33");
-        std::fs::create_dir_all(&stream).unwrap();
-        let stream_dirs = version_dirs_with_identity_command(
-            &captures,
-            "dynamo_v2-",
-            STREAM_DYNAMO_V2_CURRENT_CAPTURE,
-            std::process::Command::new("this-command-must-not-run"),
-        );
-        assert_eq!(stream_dirs.last(), Some(&stream));
     }
 }
 

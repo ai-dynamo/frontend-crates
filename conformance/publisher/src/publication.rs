@@ -339,7 +339,6 @@ fn metadata_sources(root: &Path, catalog: &Value) -> Result<BTreeMap<String, Str
             "parser_families",
             "conformance/utils/src/parser_families.yaml",
         ),
-        ("legacy_taxonomy", "conformance/case-taxonomy.yaml"),
         (
             "unified_taxonomy",
             "conformance/utils/src/unified_taxonomy.py",
@@ -347,10 +346,6 @@ fn metadata_sources(root: &Path, catalog: &Value) -> Result<BTreeMap<String, Str
         ("implementations", "conformance/utils/src/impls.py"),
         ("peer_versions", "conformance/utils/src/pyproject.stub.toml"),
         ("parser_config", "parsers/v1/src/tool_calling/config.rs"),
-        (
-            "divergence_notes",
-            "conformance/toolcalling/known-divergences.yaml",
-        ),
         (
             "unified_authoring",
             "conformance/utils/src/gen_unified_golden.py",
