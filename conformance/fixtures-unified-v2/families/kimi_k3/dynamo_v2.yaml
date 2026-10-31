@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"8f1d0aa7f15678cb27d54934c51235ada39071db65445b97f04b4dd5c69d01bf","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"a74003cafa5dd619a9ece14f6ecd48181baa74750701fcaad27eb8c76323fa3f","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
 document:
   mode: unified
 provenance:
@@ -44686,4 +44686,175 @@ records:
               type: object
             strict: false
         semantic_sha256: 23a604b96d2712d787dc90078aefffe98a733b52a7b4521a904500df22701087
+  arg_numeric_overflow_siblings_finite:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1.5}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1.5}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1.5<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1.5<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 253ca28b53f1e5c21821a761ccd0d0feae65ea238105b324c601fc97061179a3
+  arg_numeric_overflow_siblings_positive:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1e400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1e400<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1e400<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: bd3fbac047c245bd6f97ef059dc80c535d80ba8c91ad374a11937d143c8f9a35
+  arg_numeric_overflow_siblings_negative:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":-1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>-1E+400<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>-1E+400<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 1e4b084c1bc20a747cfd242e8900e2d22e969ddb48bb50dd6ac6ac6abd47bf70
 schema_version: 2

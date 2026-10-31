@@ -1,0 +1,286 @@
+provenance:
+  status: captured
+  origin:
+    git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+    source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+    adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+    job_sha256: 6899b03cc63bef1fbade033273083346c56013ee7fc85c713bfdc7db93d9b284
+    crate_version: 0.8.8
+document:
+  mode: unified
+changes:
+  arg_numeric_overflow_siblings_finite:
+    case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+    stimulus:
+      semantic_sha256: c791603572d14d697c7a7780a3a84379eac4c6ac9028d7ebf32d3076325e73be
+      inline:
+        input: '<tool_call>
+
+          <function=echo>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          <parameter=value>
+
+          1.5
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+              value:
+                type: number
+            required:
+            - city
+            - value
+        chunks:
+        - delta_text: '<tool_call>
+
+            <function=echo>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            <parameter=value>
+
+            1.5
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+    observation:
+      value:
+        assembled:
+        - arguments: '{"city":"Paris","value":1.5}'
+          kind: tool_call
+          name: echo
+        chunks:
+        - expected:
+          - arguments: '{"city":"Paris","value":1.5}'
+            complete: true
+            kind: tool_call
+            name: echo
+        - expected: []
+  arg_numeric_overflow_siblings_negative:
+    case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+    stimulus:
+      semantic_sha256: 3abf2b9db2690a14d97d98061a06f3c496c74d4304625a19b1536708653e0523
+      inline:
+        input: '<tool_call>
+
+          <function=echo>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          <parameter=value>
+
+          -1E+400
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+              value:
+                type: number
+            required:
+            - city
+            - value
+        chunks:
+        - delta_text: '<tool_call>
+
+            <function=echo>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            <parameter=value>
+
+            -1E+400
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+    observation:
+      value:
+        assembled:
+        - arguments: '{}'
+          kind: tool_call
+          name: echo
+        chunks:
+        - expected:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            complete: true
+            kind: tool_call
+            name: echo
+        - expected: []
+  arg_numeric_overflow_siblings_positive:
+    case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+    stimulus:
+      semantic_sha256: eb82096bef3f4ea53c7b0b2abca3601f8769a9d784fe9f268bbe1da65b010c55
+      inline:
+        input: '<tool_call>
+
+          <function=echo>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          <parameter=value>
+
+          1e400
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: echo
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+              value:
+                type: number
+            required:
+            - city
+            - value
+        chunks:
+        - delta_text: '<tool_call>
+
+            <function=echo>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            <parameter=value>
+
+            1e400
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+    observation:
+      value:
+        assembled:
+        - arguments: '{}'
+          kind: tool_call
+          name: echo
+        chunks:
+        - expected:
+          - arguments: '{"city":"Paris","value":1e400}'
+            complete: true
+            kind: tool_call
+            name: echo
+        - expected: []
+metadata_changes:
+  arg_numeric_overflow_siblings_finite:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+  arg_numeric_overflow_siblings_negative:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+  arg_numeric_overflow_siblings_positive:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+document_overrides:
+  arg_numeric_overflow_siblings_finite:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.8
+      capture_origin:
+        git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+        source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+        adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+        job_sha256: 6899b03cc63bef1fbade033273083346c56013ee7fc85c713bfdc7db93d9b284
+        crate_version: 0.8.8
+      inherited_from: null
+  arg_numeric_overflow_siblings_negative:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.8
+      capture_origin:
+        git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+        source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+        adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+        job_sha256: 6899b03cc63bef1fbade033273083346c56013ee7fc85c713bfdc7db93d9b284
+        crate_version: 0.8.8
+      inherited_from: null
+  arg_numeric_overflow_siblings_positive:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.8
+      capture_origin:
+        git_commit: 2072cb430eb2fef09321da941d779f7aae778e17
+        source_sha256: 4acb0ac2667eec3765625baa4b52d0a2f219398f7033b7c4af8b6b7763f271dc
+        adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+        job_sha256: 6899b03cc63bef1fbade033273083346c56013ee7fc85c713bfdc7db93d9b284
+        crate_version: 0.8.8
+      inherited_from: null

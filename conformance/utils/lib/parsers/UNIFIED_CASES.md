@@ -139,6 +139,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-arg_
 - **`7-nullable_reference_alias_literals`** (`nullable_reference_alias_literals`) Nullable aliases to string `const: "null"` and `enum: ["null"]` retain the schema-valid string null values.
 - **`7-local_schema_id_preserves_type`** (`local_schema_id_preserves_type`) A local `$id` disables unsupported reference traversal without discarding a directly declared integer type.
 - **`7-arg_numeric_nested_exact`** (`arg_numeric_nested_exact`) Nested objects and arrays preserve a large fractional number, an underflow-sized exponent, and positive and negative integers beyond the exact binary64 range.
+- **`7-arg_numeric_overflow_siblings_{finite,positive,negative}`** A finite `1.5` control and signed overflow tokens `1e400` / `-1E+400` accompany `city: "Paris"` in every applicable native grammar. Raw deltas preserve the numeric token; the default typed batch projection may stringify overflow but must retain the city and value fields. Capture reconstruction restores exact numeric text only when the assembled field structure and scalar values survive, so an older assembler returning `{}` remains visible as a failure.
 
 ### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
 - **`8-text_before_tool`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv1.8.a.
@@ -184,7 +185,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-arg_
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 277 of the 408 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 280 of the 411 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
 - The 131 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 

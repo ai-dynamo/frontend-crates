@@ -37,6 +37,7 @@ from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, 
 from numeric_cases import (
     NUMERIC_DESCRIPTIONS,
     NUMERIC_VARIANTS,
+    OVERFLOW_SIBLING_VARIANTS,
     SCHEMA_DIRECTED_FAMILIES,
     NumericLiteral,
     applicable,
@@ -3323,6 +3324,32 @@ EDGE.append((
 ))
 
 
+OVERFLOW_SIBLING_CASES = []
+for variant, token in OVERFLOW_SIBLING_VARIANTS:
+    arguments = {"city": "Paris", "value": NumericLiteral(token)}
+    golden = '{"city":"Paris","value":' + token + '}'
+    tools = [{"name": "echo", "parameters": {
+        "type": "object", "properties": {
+            "city": {"type": "string"}, "value": {"type": "number"},
+        },
+        "required": ["city", "value"],
+    }}]
+    OVERFLOW_SIBLING_CASES.append((
+        f"arg_numeric_overflow_siblings_{variant}",
+        f"Numeric token {token} preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.",
+        ["I7"], [{"kind": "tool_call", "name": "echo", "arguments": golden}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({family: (
+            r_tool_arguments(family, "echo", arguments, 0),
+            VLLM_UNCAPTURABLE.get(family, M), M,
+            [{"kind": "tool_call", "name": "echo", "arguments": golden}],
+        ) for family in FAMILIES}),
+        {family: tools for family in FAMILIES},
+    ))
+EDGE.extend(OVERFLOW_SIBLING_CASES)
+
+
 _NATIVE_QUOTED_CONTROL = {
     "gpt_oss": r_tool("gpt_oss", "get_weather", "city", "Paris", 0).split("{", 1)[0],
     "deepseek_v4": "<｜DSML｜tool_calls>",
@@ -4311,7 +4338,18 @@ def build_cases(fam):
 def _build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     if _MANIFEST[fam].get("scenario_profile") == "native":
-        return _registered_native_cases(fam)
+        cases = _registered_native_cases(fam)
+        if fam in UNIFIED_FAMILIES:
+            grammar = next(
+                shared for shared in FAMILIES
+                if _MANIFEST[shared].get("registry") == _MANIFEST[fam].get("registry")
+                and _MANIFEST[shared].get("native")
+            )
+            cases.update({
+                key.rsplit(".", 1)[0] + "." + fam: case
+                for key, case in _build_edge_cases(grammar, OVERFLOW_SIBLING_CASES).items()
+            })
+        return cases
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
         inp, state = (_deepseek_v41_input(segs) if fam == "deepseek_v41"

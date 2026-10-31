@@ -669,7 +669,7 @@ async function checkRebaseContracts(tab, reader) {
   }
   const groups = new Map(tab.column_groups.map(group => [group.key, group]));
   const argumentGroups = tab.column_groups.filter(group => group.key.startsWith('unified_g7_'));
-  assert.deepEqual(argumentGroups.map(group => group.span), [5, 4, 12, 6, 10, 17, 14]);
+  assert.deepEqual(argumentGroups.map(group => group.span), [5, 7, 12, 6, 10, 17, 14]);
   const argumentColumns = tab.columns.filter(column => column.group_key.startsWith('unified_g7_'));
   const numericColumns=tab.columns.filter(column=>['7-17','7-19','7-18'].includes(column.label));
   assert.deepEqual(numericColumns.map(column=>column.label),['7-17','7-19','7-18']);
@@ -681,8 +681,8 @@ async function checkRebaseContracts(tab, reader) {
     assert.equal(cell.variants.length,{'7-17':9,'7-19':3,'7-18':7}[column.label]);
     assert.equal(cell.status==='na',column.label==='7-19'&&!catalog.metadata.folds.numeric_applicability['7-14.string'].includes(row.family));
   }
-  assert.equal(argumentColumns.length, 68);
-  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: 68 }, (_, index) => index + 1));
+  assert.equal(argumentColumns.length, 71);
+  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: 71 }, (_, index) => index + 1));
   for (const row of tab.rows.filter(row => !row.section)) {
     for (const [scenario, cell] of leafCells(row)) {
       if (!['arg_object_quoted_parameter_close', 'arg_array_quoted_parameter_close'].includes(scenario)
@@ -760,7 +760,8 @@ function checkDottedNameContracts(tab, loadedKeys) {
           && item.implementation === descriptor.source.implementation && item.version === descriptor.source.version);
         if (measured) {
           assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}: refreshed capture is retained`);
-          assert.ok(Array.isArray(other.block.events) || other.block.unavailable === `No parser for ${family}`);
+          assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family',
+            `${family}/${scenario}/${other.key}: ${JSON.stringify(other.block)}`);
         } else {
           assert.equal(other.block.unavailable_code, 'missing_capture');
           assert.equal(Object.hasOwn(other.block, 'events'), false);

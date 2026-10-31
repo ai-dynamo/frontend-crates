@@ -371,3 +371,52 @@ fn muse_malformed_json_recovers_before_two_valid_calls_at_every_split() {
         assert_native_result(family, &input, &[], expected.clone());
     }
 }
+
+// Exercise both Cargo feature configurations: raw tokens stay identical, but
+// only the default build projects out-of-range numbers to strings.
+#[test]
+fn unified_numeric_assembly_preserves_siblings_at_every_split() {
+    let tools = [Tool {
+        name: "echo".into(),
+        description: None,
+        strict: None,
+        parameters: serde_json::json!({"type":"object","properties":{
+            "city":{"type":"string"}, "value":{"type":"number"}
+        }}),
+    }];
+    for raw in ["1.5", "1e308", "-1e308", "1e400", "-1E+400", "1e-400"] {
+        let projected = serde_json::from_str::<serde_json::Value>(raw)
+            .unwrap_or_else(|_| serde_json::Value::String(raw.into()));
+        let expected = vec![crate::UnifiedEvent::ToolCall {
+            name: "echo".into(),
+            arguments: serde_json::json!({"city":"Paris", "value":projected}),
+        }];
+        for family in ["deepseek_v4", "glm47"] {
+            let input = if family == "deepseek_v4" {
+                format!(
+                    "<｜DSML｜tool_calls><｜DSML｜invoke name=\"echo\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris</｜DSML｜parameter><｜DSML｜parameter name=\"value\" string=\"false\">{raw}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>"
+                )
+            } else {
+                format!(
+                    "<tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>{raw}</arg_value></tool_call>"
+                )
+            };
+            let arguments = format!(r#"{{"city":"Paris","value":{raw}}}"#);
+            for chunks in deliveries(&input) {
+                let mut parser = create_unified_parser_for_family(family, &tools).unwrap();
+                let mut output = crate::UnifiedParserOutput::default();
+                for chunk in chunks {
+                    parser.parse_into(chunk, &mut output).unwrap();
+                }
+                assert_eq!(
+                    output.tool_arguments_raw().get(&0),
+                    Some(&arguments),
+                    "{family}: {raw}"
+                );
+                output.append(&mut parser.finish().unwrap());
+                assert_eq!(output.tool_arguments_raw().get(&0), Some(&arguments));
+                assert_eq!(output.assembled(), expected, "{family}: {raw}");
+            }
+        }
+    }
+}

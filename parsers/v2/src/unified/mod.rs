@@ -751,6 +751,9 @@ pub fn tool_arguments_raw(deltas: &[UnifiedParserEvent]) -> BTreeMap<usize, Stri
 /// call's position at its FIRST delta so order survives fragmentation. Empty or
 /// unparseable arguments become `{}` (policy P3) rather than an error, because a
 /// malformed argument payload must not take down the rest of the turn.
+/// Without `arbitrary-precision`, out-of-range numeric tokens become strings in
+/// this projection, preserving sibling values. Raw argument deltas and
+/// [`tool_arguments_raw`] retain the original numeric JSON tokens.
 pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
     assemble_with_tool_indices(deltas)
         .into_iter()
@@ -822,17 +825,23 @@ pub fn assemble_with_tool_indices(
             // Best-effort (P3): a malformed payload must not take down the turn, but
             // it is NOT discarded silently — `{}` alone is indistinguishable from a
             // genuine no-arg call, so a corrupted argument would look like a clean parse.
-            *arguments = serde_json::from_str(&raw).unwrap_or_else(|e| {
-                if !raw.trim().is_empty() {
-                    tracing::warn!(
-                        why = "unified_unparseable_tool_arguments",
-                        error = %e,
-                        argument_bytes = raw.len(),
-                        "tool-call arguments did not parse as JSON; emitting an empty object"
-                    );
-                }
-                serde_json::json!({})
-            });
+            *arguments = serde_json::from_str(&raw)
+                .or_else(|error| {
+                    parsed_json_literal(&raw)
+                        .map(|value| value.to_value())
+                        .ok_or(error)
+                })
+                .unwrap_or_else(|e| {
+                    if !raw.trim().is_empty() {
+                        tracing::warn!(
+                            why = "unified_unparseable_tool_arguments",
+                            error = %e,
+                            argument_bytes = raw.len(),
+                            "tool-call arguments did not parse as JSON; emitting an empty object"
+                        );
+                    }
+                    serde_json::json!({})
+                });
         }
     }
     incomplete_positions.sort_unstable_by(|left, right| right.cmp(left));
@@ -8422,6 +8431,44 @@ mod tests {
                 UnifiedEvent::Text { text: "mid".into() },
             ]
         );
+    }
+
+    // Overflow must not erase siblings at any depth in the Value projection.
+    #[test]
+    fn assemble_out_of_range_numbers_preserves_nested_siblings() {
+        let raw = r#"{"before":true,"nested":{"value":1e400,"city":"Paris"},"items":[-1e400,1.5,null],"after":"ok"}"#;
+        let projected = |raw: &str| {
+            serde_json::from_str::<serde_json::Value>(raw)
+                .unwrap_or_else(|_| serde_json::Value::String(raw.into()))
+        };
+        let expected = vec![UnifiedEvent::ToolCall {
+            name: "f".into(),
+            arguments: serde_json::json!({
+                "before":true, "nested":{"value":projected("1e400"),"city":"Paris"},
+                "items":[projected("-1e400"),1.5,null], "after":"ok"
+            }),
+        }];
+        let split = raw.find("1e400").unwrap() + 2;
+        assert_eq!(
+            assemble(&[
+                call(0, Some("f"), &raw[..split]),
+                call(0, None, &raw[split..]),
+            ]),
+            expected
+        );
+        for malformed in [
+            r#"{"value":1e400,"broken":}"#,
+            r#"{"value":1e400} trailing"#,
+            r#"{"value":1e+}"#,
+        ] {
+            assert_eq!(
+                assemble(&[call(0, Some("f"), malformed)]),
+                vec![UnifiedEvent::ToolCall {
+                    name: "f".into(),
+                    arguments: serde_json::json!({}),
+                }]
+            );
+        }
     }
 
     #[test]

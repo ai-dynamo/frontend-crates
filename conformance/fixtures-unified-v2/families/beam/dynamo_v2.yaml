@@ -1,4 +1,4 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"0ac50f56358572f1dc6336376a54d18f3a99fe48f1d9ff3abe39495651ddea7f","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"9bb78d8145b3f76fba7724a625c4467710a6428dac4bedf93ac576ccd7b14b71","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
 document:
   mode: unified
 provenance:
@@ -28491,4 +28491,223 @@ records:
               type: object
             strict: false
         semantic_sha256: 1e94534f941f5b72c84be40e0329b6d7f3083ff25aa24335245d65c847d724d7
+  arg_numeric_overflow_siblings_finite:
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city": "Paris", "value": 1.5}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city": "Paris", "value": 1.5}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Paris
+
+              </rfl:parameter><rfl:parameter name="value">
+
+              1.5
+
+              </rfl:parameter><|call|>'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><rfl:parameter name="value">
+
+            1.5
+
+            </rfl:parameter><|call|>'
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 410d2eaefabcbff895f0bac780bea91ec1796f9f936fadf9e34a9f0ea08c89b0
+  arg_numeric_overflow_siblings_positive:
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city": "Paris", "value": 1e400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city": "Paris", "value": 1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Paris
+
+              </rfl:parameter><rfl:parameter name="value">
+
+              1e400
+
+              </rfl:parameter><|call|>'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><rfl:parameter name="value">
+
+            1e400
+
+            </rfl:parameter><|call|>'
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: d2dc41b724893d5a7a70a2fd1f6b92f450b87e6b2fc38307736adb6f2ff33e14
+  arg_numeric_overflow_siblings_negative:
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city": "Paris", "value": -1E+400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city": "Paris", "value": -1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              Paris
+
+              </rfl:parameter><rfl:parameter name="value">
+
+              -1E+400
+
+              </rfl:parameter><|call|>'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><rfl:parameter name="value">
+
+            -1E+400
+
+            </rfl:parameter><|call|>'
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 9934491ace0b0f0a3ac05f5bea09d245c8dbfabebbef3eefd340873194078329
 schema_version: 2

@@ -60,7 +60,7 @@ from gen_unified_golden import (  # noqa: E402
     control_tokens,
     invoke_header_prefix,
 )
-from numeric_cases import NUMERIC_VARIANTS, applicable as numeric_applicable, canonical_events, numeric_expected, unified_numeric_expected
+from numeric_cases import NUMERIC_VARIANTS, OVERFLOW_SIBLING_VARIANTS, applicable as numeric_applicable, canonical_events, numeric_expected, unified_numeric_expected
 from unified_taxonomy import (  # noqa: E402
     historical_case_label,
     UNIFIED_GROUP_LABEL,
@@ -976,7 +976,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 260 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
+    assert len(UNIFIED_TAX) == 260 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 1
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
