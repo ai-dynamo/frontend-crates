@@ -224,6 +224,7 @@ const { default: assert } = await import('node:assert/strict');
 const { spawnSync } = await import('node:child_process');
 const { fileURLToPath } = await import('node:url');
 const { buildStatus, cellState, defaultReference, parseStatusArguments, printStatus, runStatus, selectRows, selectTabs, statusTotals, validateUnifiedKnownDivergences } = await import('./qualification.js');
+const { unifiedFamilyIdentity } = await import('./presentation.js');
 const { selectedCellOutcome, selectedCaptureOutcome } = await import('./model.js');
 
 
@@ -292,6 +293,8 @@ const tab = { id: 'tab-unified', kind: 'unified', label: 'Unified v2 (reasoning 
   rows: [{ family: null, section: 'heading' }, { family: 'qwen3_coder', model_label: 'Qwen 3 Coder / Nemotron V3', cells: { present: cell, absent: { ...cell, status: 'na' } } }] };
 assert.deepEqual(selectTabs({ tabs: [tab] }, ['tab-unified', 'Unified v2 reasoning tools', 'unified']), [tab]);
 assert.deepEqual(selectRows(tab, ['qwen3-coder', 'Qwen 3 Coder Nemotron V3']), [tab.rows[1]]);
+const currentIdentity = unifiedFamilyIdentity('qwen3');
+assert.deepEqual(selectRows({ id: 'tab-unified', rows: [currentIdentity] }, ['Qwen 3', 'QWEN3']), [currentIdentity]);
 assert.throws(() => selectTabs({ tabs: [tab] }, ['unknown']), /unknown tab/);
 assert.throws(() => selectRows(tab, ['unknown']), /unknown model/);
 assert.throws(() => defaultReference({ ...tab, candidates: [] }), /found 0/);

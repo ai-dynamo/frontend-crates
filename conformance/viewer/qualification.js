@@ -10,8 +10,8 @@ import { createNodeResourceStore } from './data.js';
 import { initializeDevelopmentParser } from './yaml_data.js';
 initializeDevelopmentParser();
 import { FixtureResources } from './resources.js';
-import { buildTab, pageMetadata } from './presentation.js';
-import { selectedCellOutcome } from './model.js';
+import { buildTab, pageMetadata, unifiedFamilyIdentity } from './presentation.js';
+import { selectedCellOutcome, tabCandidates, selectedUnifiedFamilies } from './model.js';
 import { leafCells, isApplicableCell } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
@@ -207,7 +207,13 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const known = options.knownDivergences ? await reader.parser.parseYaml(await readFile(options.knownDivergences), { path: options.knownDivergences }) : null;
     const status = { schema: 1, html: options.reportPath || resolve(root, 'index.html'), generated: page.meta, reports: [] };
     for (const spec of selected) {
-      const tab = await buildTab(catalog, reader, spec.id);
+      let families = null;
+      if (options.models.length && !options.knownDivergences) {
+        const descriptors = tabCandidates(catalog, spec).filter(item => item.source.implementation !== 'golden');
+        const rows = [...selectedUnifiedFamilies(catalog, descriptors)].sort().map(unifiedFamilyIdentity);
+        families = selectRows({ id: spec.id, rows }, options.models).map(row => row.family);
+      }
+      const tab = await buildTab(catalog, reader, spec.id, { families });
       if (options.knownDivergences && tab.id === 'tab-unified') validateUnifiedKnownDivergences({ tabs: [tab] }, known, Object.keys(catalog.metadata.unified_presentation.parser_generations), catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);
       status.reports.push(...buildStatus(page, [tab], options.models, status.html).reports);
     }
@@ -458,7 +464,7 @@ const { FixtureResources } = await import('./resources.js');
 const { buildPage, buildTab, pageMetadata, unifiedComparisonFailure } = await import('./presentation.js');
 const { materializeUnifiedRecord } = await import('./resources.js');
 
-const { tabCandidates, selectedUnifiedFamilies } = await import('./model.js');
+const { tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate } = await import('./model.js');
 const { classifyUnified, compareLegacyVersions, resolveUnified } = await import('./model.js');
 const { leafCells } = await import('./model.js');
 const { columnKeysFor, tabPresentation } = await import('./presentation.js');
@@ -853,6 +859,7 @@ function assertRetainedBatchObservation(value, block, label) {
   assert.deepEqual(canonicalUnifiedEvents(block.events), canonicalUnifiedEvents(getField(value, 'assembled')), `${label}: exact retained observation`);
 }
 async function checkDottedNameContracts(tab, loadedKeys, reader) {
+  const capturesFamily = unifiedDisplayFamilyPredicate(catalog, allUnifiedDescriptors);
   const cases = {
     dotted_name_minimal: [{ kind: 'tool_call', name: 'a.b', arguments: {} }],
     dotted_name_mixed_punctuation: [{ kind: 'tool_call', name: 'my-tool.v2', arguments: { location: 'Beijing' } }],
@@ -873,30 +880,34 @@ async function checkDottedNameContracts(tab, loadedKeys, reader) {
       assert.equal(cell.cmp[defaultKey].na, 0);
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
-        if (!rawCandidates.has(other.key)) rawCandidates.set(other.key,
-          await reader.unified(family, descriptor.source.implementation, descriptor.source.version, inputs));
-        const [caseId, input] = Object.entries(inputs.cases).find(([, item]) => item.lifecycle === 'active' && item.scenario === scenario);
-        const record = rawCandidates.get(other.key).records.get(caseId);
         const label = `${family}/${scenario}/${other.key}`;
-        if (record) {
-          // This reads the validated request/receipt-bound source record before
-          // presentation; a changing current release cannot erase old evidence.
-          const projected = materializeUnifiedRecord(input, record, family, {
-            implementation: descriptor.source.implementation, version: descriptor.source.version,
-            captureMode: catalog.metadata.unified_capture_policy[descriptor.source.implementation].mode,
-          });
-          const value = mappingEntries(getField(projected, 'cases'))[0][1];
-          assert.equal(unifiedComparisonFailure(input.request, value), null, `${label}: retained request binding`);
-          assertRetainedBatchObservation(value, other.block, label);
-          if (!checkedHistoricalOmission && Array.isArray(getField(value, 'assembled'))
-              && !hasField(value, 'unavailable') && !hasField(value, 'error')) {
-            assert.throws(() => assertRetainedBatchObservation(value, { ...other.block, events: undefined }, label),
-              /retained observation must not be omitted/);
-            checkedHistoricalOmission = true;
-          }
+        if (!capturesFamily(descriptor.source, family)) {
+          assert.deepEqual(other.block, { unavailable: `No parser for ${family}` }, `${label}: excluded producer family`);
         } else {
-          assert.equal(other.block.unavailable_code, 'missing_capture', `${label}: retained source has no observation`);
-          assert.equal(Object.hasOwn(other.block, 'events'), false);
+          if (!rawCandidates.has(other.key)) rawCandidates.set(other.key,
+            await reader.unified(family, descriptor.source.implementation, descriptor.source.version, inputs));
+          const [caseId, input] = Object.entries(inputs.cases).find(([, item]) => item.lifecycle === 'active' && item.scenario === scenario);
+          const record = rawCandidates.get(other.key).records.get(caseId);
+          if (record) {
+            // This reads the validated request/receipt-bound source record before
+            // presentation; a changing current release cannot erase old evidence.
+            const projected = materializeUnifiedRecord(input, record, family, {
+              implementation: descriptor.source.implementation, version: descriptor.source.version,
+              captureMode: catalog.metadata.unified_capture_policy[descriptor.source.implementation].mode,
+            });
+            const value = mappingEntries(getField(projected, 'cases'))[0][1];
+            assert.equal(unifiedComparisonFailure(input.request, value), null, `${label}: retained request binding`);
+            assertRetainedBatchObservation(value, other.block, label);
+            if (!checkedHistoricalOmission && Array.isArray(getField(value, 'assembled'))
+                && !hasField(value, 'unavailable') && !hasField(value, 'error')) {
+              assert.throws(() => assertRetainedBatchObservation(value, { ...other.block, events: undefined }, label),
+                /retained observation must not be omitted/);
+              checkedHistoricalOmission = true;
+            }
+          } else {
+            assert.equal(other.block.unavailable_code, 'missing_capture', `${label}: retained source has no observation`);
+            assert.equal(Object.hasOwn(other.block, 'events'), false);
+          }
         }
         if (family === 'deepseek_v41' && descriptor.source.implementation === 'dynamo_v1'
             && descriptor.source.version === '3.0.0') {

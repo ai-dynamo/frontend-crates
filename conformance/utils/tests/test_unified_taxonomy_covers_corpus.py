@@ -1398,27 +1398,18 @@ def test_reference_backfill_binding_rejects_unproven_older_results(corruption):
             _assert_reference_backfill_record(record, document, request, "0.1.0")
 
 
-def test_retained_unified_captures_cover_the_current_corpus(authored_unified_store):
-    store = authored_unified_store
-    captured = set()
-    # Coverage is a latest-capture assertion, independent of the parity shard.
-    catalog = json.loads((UTILS.parent / "viewer-catalog.json").read_bytes())
-    resources = [row for row in catalog["sources"]["unified"]
-                 if row["kind"] == "history" and row["implementation"] == "dynamo_v2"]
-    latest = {}
-    for row in resources:
-        if row["family"] not in latest or unified_history._capture_release_sort_key(row["version"]) > unified_history._capture_release_sort_key(latest[row["family"]]["version"]):
-            latest[row["family"]] = row
+def test_current_unified_captures_cover_the_current_corpus():
     root = UTILS.parent / "fixtures-unified-v2"
-    selected = [_store_resource(row) for row in latest.values()]
-    with unified_history._store_read_lock(root):
-        for resource, data in unified_archives.read_sources(root, selected):
-            document = yaml.load(data, Loader=unified_history.StrictLoader)
-            family = resource["family"]
-            for case_id in document["records"]:
-                case = store.families[family].cases[case_id]
-                case_key = case["display_id"] or case["historical_ids"][0]
-                captured.add((family, historical_unified_case_key(family, case_key)))
+    store, _ = unified_history.selected_materialization_store(root, ["latest:dynamo_v2"])
+    captured = set()
+    # Coverage reads the same sealed current selections as parser replay, so an
+    # unrelated generated catalog cannot select stale historical source bytes.
+    for family in NATIVE_FAMILIES:
+        history = store.histories[family, "dynamo_v2"]
+        for case_id in history.resolve(history.ordered_capture_ids()[-1]):
+            case = store.families[family].cases[case_id]
+            case_key = case["display_id"] or case["historical_ids"][0]
+            captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
         for family in NATIVE_FAMILIES for case_id in build_cases(family)
@@ -3963,7 +3954,7 @@ def test_kimi_native_contract_rejects_omissions_exclusions_and_payload_drift(mon
 
 @pytest.mark.parametrize("family,scenario", [
     (family, name) for name in UNIFIED_TAX if name.startswith("kimi_native_")
-    for family in G.scenario_families(name)
+    for family in sorted(G.scenario_families(name))
 ])
 @pytest.mark.parametrize("mutation", ["empty", "name", "arguments"])
 def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):

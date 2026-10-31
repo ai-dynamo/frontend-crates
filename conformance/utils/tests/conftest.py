@@ -180,8 +180,7 @@ def needs_publication(item):
     return (bool({"published_viewer", "historical_published_viewer", "source_catalog", "native_publisher"}.intersection(item.fixturenames))
             or item.path.name in {"test_viewer_catalog.py", "test_unified_regeneration.py", "test_capture_split_browser.py"}
             or item.name in {"test_reference_backfills_require_request_bound_version_receipts",
-                             "test_bundled_history_json_snapshots_match_original_yaml",
-                             "test_retained_unified_captures_cover_the_current_corpus"})
+                             "test_bundled_history_json_snapshots_match_original_yaml"})
 
 
 @pytest.hookimpl(hookwrapper=True)

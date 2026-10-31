@@ -876,8 +876,10 @@ def test_recovery_popup_has_contiguous_variant_blocks(driver, viewer_url, transp
             }));
             """, tip)
         assert [group['key'] for group in groups] == [
-            'tool_no_close', 'gpt_oss_quoted_truncated_tool_then_final',
+            'tool_no_close', 'kimi_k3_direct_typed_response_recovery',
+            'gpt_oss_quoted_truncated_tool_then_final',
             'gpt_oss_truncated_tool_resynchronizes_at_next_message',
+            'kimi_k3_typed_response_then_call',
         ]
         families = _script(driver, "return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label || row.family)")
         for group in groups:
