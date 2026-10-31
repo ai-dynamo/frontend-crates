@@ -93,10 +93,8 @@ raw[0] ^= 1;
 assert.throws(() => readTarGzip(gzipSync(raw)), /checksum/i);
 const pointer = enc.encode('version https://git-lfs.github.com/spec/v1\noid sha256:abc\nsize 1\n');
 assert.throws(() => readTarGzip(pointer), /LFS/i);
-const member = 'toolcalling/fixtures-stream-v1/inputs/deepseek_v3/TOOLCALLING.streamv1.1.yaml';
-const retained = readTarGzip(await readFile('conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz'), { selectedPaths: [member] });
-const authored = retained.get(member);
-assert.ok(authored?.length, 'retained archive must contain the original authored input');
+const member = 'families/deepseek_v3/inputs_and_golden.yaml';
+const authored = enc.encode('family: deepseek_v3\ncases: {}\n');
 const archiveBytes = tar(entry(member, authored), entry('unselected.yaml', 'value: 1\n'));
 assert.equal(readTarGzip(archiveBytes, { selectedPaths: [member] }).size, 1);
 console.log('viewer data primitives passed');
@@ -138,10 +136,6 @@ assert.deepEqual(value.binary, new TextEncoder().encode('bytes'));
 assert.equal(Object.hasOwn(value, 'missing'), false);
 """
     subprocess.run(["node", "--input-type=module", "-e", script], input=json.dumps(viewer_codec.encode_typed(value)), text=True, cwd=ROOT, capture_output=True, check=True)
-
-
-
-
 
 
 @pytest.mark.parametrize("value", [None, True, False, 12345678901234567890, -0.0, 1.5, float("inf"),

@@ -8,14 +8,12 @@ from __future__ import annotations
 import argparse
 import copy
 import hashlib
-import io
 import json
 import os
 import re
 import shlex
 import sys
 import subprocess
-import tarfile
 import tempfile
 import threading
 from datetime import datetime
@@ -45,7 +43,15 @@ from impls import (
     BATCH_SOURCE_BLOCKERS,
     UNIFIED_DISPLAY,
 )
-from fixture_disposition import TOOLCALLING_CASE_ALIASES
+from null_cases import NULL_DESCRIPTIONS, MIXED_CASE_FAMILIES
+from numeric_cases import (
+    NUMERIC_DESCRIPTIONS,
+    NUMERIC_DISPLAY_LABELS,
+    NUMERIC_VARIANTS,
+    numeric_group,
+    applicable as numeric_applicable,
+)
+from schema_cases import schema_fold
 
 VIEWER_SELECTION_POLICY = {
     "unified": {
@@ -117,67 +123,6 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
-
-
-def _safe_member_name(name: str) -> None:
-    path = PurePosixPath(name)
-    if not name or name.startswith("/") or "\\" in name or any(part in ("", ".", "..") for part in name.split("/")):
-        raise ValueError(f"unsafe archive member path: {name!r}")
-    if path.is_absolute():
-        raise ValueError(f"absolute archive member path: {name!r}")
-
-
-def _archive_inventory(path: Path, root: Path = ROOT) -> list[dict[str, Any]]:
-    seen: set[str] = set()
-    members: list[dict[str, Any]] = []
-    with tarfile.open(fileobj=io.BytesIO(path.read_bytes()), mode="r:gz") as archive:
-        for member in archive:
-            _safe_member_name(member.name.rstrip("/") if member.isdir() else member.name)
-            if member.name in seen:
-                raise ValueError(f"duplicate member {member.name!r} in {path.relative_to(root)}")
-            seen.add(member.name)
-            if member.isfile():
-                kind = "file"
-            elif member.isdir():
-                kind = "directory"
-            else:
-                raise ValueError(f"unsupported tar member type {member.type!r} in {path.relative_to(root)}")
-            members.append({"path": member.name, "kind": kind, "size": member.size})
-    return members
-
-
-def _archive_records(
-    manifest: dict[str, Any], root: Path = ROOT, fixtures: Path | None = None
-) -> list[dict[str, Any]]:
-    fixtures = fixtures or root / "conformance/fixtures"
-    records: list[dict[str, Any]] = []
-    for entry in sorted(manifest.get("shards", []), key=lambda row: row["path"]):
-        rel = entry["path"]
-        if entry.get("format") == "unified-history":
-            continue
-        path = (fixtures / rel).resolve()
-        if not path.is_relative_to(fixtures.resolve()) or not path.is_file():
-            raise FileNotFoundError(f"missing or escaped active fixture archive: {rel}")
-        data = path.read_bytes()
-        digest = _sha256(data)
-        if digest != entry["sha256"] or len(data) != entry["size"]:
-            raise ValueError(f"fixture archive does not match manifest: {rel}")
-        records.append(
-            {
-                "path": (Path("conformance/fixtures") / rel).as_posix(),
-                "sha256": digest,
-                "size": len(data),
-                "members": _archive_inventory(path, fixtures),
-            }
-        )
-        records[-1]["families"] = sorted(
-            {
-                PurePosixPath(member["path"]).parent.name
-                for member in records[-1]["members"]
-                if member["kind"] == "file" and member["path"].endswith(".yaml")
-            }
-        )
-    return records
 
 
 def _unified_records(root: Path = ROOT, unified: Path | None = None, *, store=None, inventory=None, document_index=None) -> list[dict[str, Any]]:
@@ -781,44 +726,9 @@ def _index_snapshot_families(candidates: list[dict], metadata: dict, *,
             candidate["native_unified_families"] = native_families
 
 
-def historical_catalog_fingerprint(catalog: dict) -> str:
-    """Pin complete retained descriptors independently of the catalog self-revision."""
-    historical = {
-        "archives": catalog["sources"]["archives"],
-        "candidates": [candidate for candidate in catalog["sources"]["candidates"]
-                       if candidate["mode"] != "unified"],
-    }
-    return _sha256(json.dumps(historical, sort_keys=True, separators=(",", ":")).encode())
-
-
-def retained_archive_catalog(root: Path, manifest: dict) -> dict:
-    """Bind historical descriptors to retained pins without opening archive bytes."""
-    catalog = json.loads((root / "conformance/viewer-catalog.json").read_text())
-    content = {key: value for key, value in catalog.items() if key != "revision"}
-    if catalog.get("revision") != _sha256(json.dumps(content, sort_keys=True, separators=(",", ":")).encode()):
-        raise ValueError("retained archive catalog revision is invalid")
-    if manifest.get("historical_catalog_sha256") != historical_catalog_fingerprint(catalog):
-        raise ValueError("retained historical catalog differs from manifest fingerprint; refresh historical catalog explicitly")
-    pins = [entry for entry in manifest.get("shards", []) if entry.get("format") != "unified-history"]
-    expected = {"conformance/fixtures/" + entry["path"]: (entry["sha256"], entry["size"]) for entry in pins}
-    if len(expected) != len(pins):
-        raise ValueError("retained archive manifest has duplicate pins")
-    archives = catalog["sources"]["archives"]
-    actual = {entry["path"]: (entry["sha256"], entry["size"]) for entry in archives}
-    if len(actual) != len(archives) or actual != expected:
-        raise ValueError("retained archive descriptors differ from manifest pins; refresh historical catalog explicitly")
-    for candidate in catalog["sources"]["candidates"]:
-        if candidate["mode"] != "unified" and any(path not in actual for path in candidate["sources"]):
-            raise ValueError("retained candidate refers to an unpinned archive")
-    return catalog
-
-
-
-
 def build_catalog(
     root: Path = ROOT,
     *,
-    fixtures: Path | None = None,
     unified: Path | None = None,
     manifest: Path | None = None,
     generation: CatalogGeneration | None = None,
@@ -829,7 +739,6 @@ def build_catalog(
     root = Path(root).resolve()
     if (
         capture_sources.is_current(root)
-        and fixtures is None
         and unified is None
         and manifest is None
     ):
@@ -855,12 +764,6 @@ def build_catalog(
             if entry.get("format") == "unified-history"
         ),
         None,
-    )
-    retained = retained_archive_catalog(root, manifest) if unified_only else None
-    archives = (
-        copy.deepcopy(retained["sources"]["archives"])
-        if retained is not None
-        else _archive_records(manifest, root, fixtures)
     )
     unified_root = unified or root / "conformance/fixtures-unified-v2"
     inventory, document_index, snapshot_metadata = _catalog_document_index(
@@ -964,7 +867,7 @@ def build_catalog(
         "schema": 1,
         "snapshot": manifest.get("snapshot"),
         "sources": {
-            "archives": archives,
+            "archives": [],
             "unified": unified,
             "unified_history": unified_shard,
             "candidates": list(unique_candidates.values()),
@@ -1087,7 +990,7 @@ def catalog_generation(root: Path = ROOT, *, read_only: bool = False):
 
 
 def refresh_catalog(root: Path = ROOT, *, destination: Path | None = None, check: bool = False,
-                    fixtures: Path | None = None, unified: Path | None = None,
+                    unified: Path | None = None,
                     manifest: Path | None = None, generation: CatalogGeneration | None = None,
                     unified_only: bool = False, include_history: bool = False,
                     history_source: Path | None = None) -> bool:
@@ -1095,14 +998,14 @@ def refresh_catalog(root: Path = ROOT, *, destination: Path | None = None, check
     root = Path(root).resolve()
     if generation is None:
         with catalog_generation(root, read_only=check) as generation:
-            return refresh_catalog(root, destination=destination, check=check, fixtures=fixtures,
+            return refresh_catalog(root, destination=destination, check=check,
                                    unified=unified, manifest=manifest, generation=generation, unified_only=unified_only,
                                    include_history=include_history, history_source=history_source)
     if not generation.active or generation.root != root or generation.owner != threading.get_ident():
         raise ValueError("catalog generation lease is inactive or belongs to another root/thread")
     if generation.read_only and not check:
         raise ValueError("catalog updates require a writer lease")
-    catalog = build_catalog(root, fixtures=fixtures, unified=unified, manifest=manifest, generation=generation, unified_only=unified_only,
+    catalog = build_catalog(root, unified=unified, manifest=manifest, generation=generation, unified_only=unified_only,
                             include_history=include_history, history_source=history_source)
     destination = destination or root / "conformance/viewer-catalog.json"
     documents = {
@@ -1136,7 +1039,7 @@ def refresh_catalog(root: Path = ROOT, *, destination: Path | None = None, check
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT, help="checkout containing metadata and fixture resources")
-    parser.add_argument("--unified-only", action="store_true", help="reuse unchanged manifest-bound historical archive descriptors without opening archives")
+    parser.add_argument("--unified-only", action="store_true", help="generate the Unified catalog")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="fail if the generated catalog is stale")
     mode.add_argument("--output", type=Path, help="write catalog to this path (default: generated catalog)")

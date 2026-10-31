@@ -5,23 +5,14 @@
 import hashlib
 import json
 import re
-import tarfile
 from pathlib import Path, PurePosixPath
 
-from capture_versions import DYNAMO_VERSION_RE
 
 import unified_taxonomy
 from unified_taxonomy import historical_case_label
 
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
 UNIFIED_HISTORY_PATH = "unified-history"
-
-
-def is_source_capture(name: str) -> bool:
-    if not name.startswith("dynamo_v2-"):
-        return False
-    version, separator, digest = name.removeprefix("dynamo_v2-").partition("+source.")
-    return bool(separator and DYNAMO_VERSION_RE.fullmatch(version) and re.fullmatch(r"[0-9a-f]{64}", digest))
 
 
 def capture_snapshot_members(data: bytes | None, available) -> set[str] | None:
@@ -35,22 +26,6 @@ def capture_snapshot_members(data: bytes | None, available) -> set[str] | None:
     if len(paths) != len(members) or paths != {key for key in available if key.endswith(".yaml")}:
         raise ValueError("complete capture snapshot differs from its capture files")
     return paths
-
-
-def capture_layer_sort_key(label: str) -> tuple[str, int]:
-    match = re.fullmatch(r"(.*)\.patch(\d+)", label)
-    return (match[1], int(match[2])) if match else (label, 0)
-
-
-TOOLCALLING_CASE_ALIASES = {
-    "TOOLCALLING.streamv1.7-1": "TOOLCALLING.streamv1.7-5",
-    "TOOLCALLING.streamv1.7-2": "TOOLCALLING.streamv1.7-4",
-}
-
-
-def canonical_toolcalling_case_key(case_id: str) -> str:
-    """Align display IDs without rewriting immutable stream archives."""
-    return TOOLCALLING_CASE_ALIASES.get(case_id, case_id)
 
 
 def historical_unified_case_key(family: str, key: str) -> str:
@@ -105,34 +80,6 @@ def canonical_unified_record_key(family: str, key: str, input_aliases: dict) -> 
         (family, key),
         input_aliases.get((family, historical), (family, historical)),
     )
-
-
-def capture_archive_layers(store: Path, relative: str) -> list[Path]:
-    base = store / relative
-    candidates = [base.with_name(base.name + ".tar.gz")]
-    candidates.extend(base.parent.glob(base.name + ".patch*.tar.gz"))
-    return sorted(
-        (path for path in candidates if path.is_file()
-         and capture_layer_sort_key(path.name.removesuffix(".tar.gz"))[0] == base.name),
-        key=lambda path: capture_layer_sort_key(path.name.removesuffix(".tar.gz")),
-    )
-
-
-def capture_archive_files(path: Path, relative: str) -> dict[str, bytes]:
-    prefix = relative + "/"
-    files = {}
-    with tarfile.open(path) as archive:
-        for member in archive.getmembers():
-            if member.isdir():
-                continue
-            if not member.isfile() or not member.name.startswith(prefix):
-                raise ValueError(f"unexpected capture archive member: {path}: {member.name}")
-            key = member.name[len(prefix):]
-            if ".." in PurePosixPath(key).parts or key in files:
-                raise ValueError(f"ambiguous capture archive member: {path}: {member.name}")
-            with archive.extractfile(member) as source:
-                files[key] = source.read()
-    return files
 
 
 def inactive_shards(manifest: dict) -> dict[str, dict]:

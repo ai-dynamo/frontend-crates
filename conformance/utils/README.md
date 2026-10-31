@@ -1,6 +1,6 @@
 # Conformance utilities
 
-Unified v2 is the active conformance workflow. Deprecated toolcalling batch, stream, batch-on-stream, and Reasoning runners, generators, renderers, and tests are retired. Existing archives and capture YAML remain unchanged. Dynamo v1 observations captured against Unified requests remain selectable comparisons; they do not reactivate the deprecated test corpus.
+Unified v2 is the active conformance workflow. Deprecated toolcalling batch, stream, batch-on-stream, and Reasoning runners, generators, renderers, and tests are retired. The retired corpora and archive shards are removed. Unified capture YAML remains unchanged. Dynamo v1 observations captured against Unified requests remain selectable comparisons; they do not reactivate the deprecated test corpus.
 
 Latest YAML lives at `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Each file contains complete records and sealed request bindings, with producer provenance separate from selection metadata. Authored inputs/GOLDEN live beside the captures in `inputs_and_golden.yaml`. Latest generation and parser tests read those inputs and versionless snapshots without historical reads or network access. Backfill, versioned-v2 removal, historical moves, and compression remain deferred; see [the scope and acceptance plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
@@ -53,7 +53,7 @@ Contributors edit parser code and independently authored inputs/GOLDEN, run late
 
 Unified capture entrypoints are `src/capture_dynamo_versions.py`, `src/capture_peer_unified_versions.py`, and the engine-specific Unified adapters. Run their `--help` before use. Batch, stream, and jail-buffer identities remain distinct. Peer exceptions, unsupported APIs, missing source, and missing evidence remain explicit outcomes. The shared capture-stimulus owner validates request membership and normalized results; the peer adapter owns published-package compatibility.
 
-Historical interpretation remains independent of publication. The migration owner retains distinct source-layout and snapshot conversions. Read-only archive resolution preserves sparse history, provenance, and exact source downloads. The retained Unified split scenarios keep their original IDs and frozen observations; the old archive-import writer is retired.
+Historical interpretation remains independent of publication. The migration owner retains distinct source-layout and snapshot conversions. Unified history resolution preserves sparse history, provenance, and exact source downloads. The retained Unified split scenarios keep their original IDs and frozen observations; the old archive-import writer is retired.
 
 ## Source ownership and caching
 
