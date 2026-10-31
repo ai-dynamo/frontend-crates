@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.2...dynamo-parsers-v2-v0.9.3) - 2026-10-31
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only content from tool-only jail turns ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
 ### Bug fixes
 
 - *(parsers)* Drop whitespace-only text from Nemotron V3 Unified tool-only turns, so the call framing newlines are no longer content. Other families are unchanged ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
