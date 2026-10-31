@@ -16986,8 +16986,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_message_header_literal
-    historical_ids: []
+    display_id: UNIFIED.7-arg_marker_in_string_quoted_closer_and_response_header
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_message_header_literal
     request:
       input: '<|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q": "<|close|>call<|sep|><|open|>response<|sep|>literal<|close|>response<|sep|>"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
       init:
@@ -17048,8 +17049,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_truncated_tool_then_final
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_malformed_argument_then_visible_response
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_truncated_tool_then_final
     request:
       input: <|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"abc<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>Answer<|close|>response<|sep|>
       init:
@@ -17156,8 +17158,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.1-tool_body_whitespace
-    historical_ids: []
+    display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
+    historical_ids:
+    - UNIFIED.1-tool_body_whitespace
     request:
       input: "<|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|> \n\t{\"city\":\"Paris\"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
       init:
@@ -18814,8 +18817,9 @@ cases:
     policy:
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
-    historical_ids: []
+    display_id: UNIFIED.7-arg_marker_in_string_native_controls_in_arguments
+    historical_ids:
+    - UNIFIED.gpt_oss-control_marker_inside_argument_string
     request:
       input: '<|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"markers": "<|open|><|sep|><|close|><|end_of_msg|>"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
       init:
@@ -18863,8 +18867,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_invalid_text_then_empty_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
     request:
       input: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>not-json<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
       init:
@@ -18918,8 +18923,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_truncated_json_then_valid_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
     request:
       input: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>{"city":<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
       init:
@@ -18981,8 +18987,9 @@ cases:
     policy:
     - I6
     - I7
-    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
-    historical_ids: []
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     request:
       input: <|open|>tools<|sep|><|open|>call tool="run" index="1"<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="not_offered" index="2"<|sep|><|open|>argument key="x" type="integer"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
       init:
@@ -19041,8 +19048,9 @@ cases:
     - I3
     - I4
     - I5
-    display_id: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_next_message_recovery
+    historical_ids:
+    - UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
     request:
       input: <|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"unfinished"}<|close|>json<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
       init:
@@ -23205,8 +23213,9 @@ cases:
     description: Kimi K3 may omit the think closer when it opens the response channel. The channel transition still ends private reasoning and emits the following response as visible text.
     policy:
     - P2
-    display_id: UNIFIED.10-interrupted_reasoning_then_response
-    historical_ids: []
+    display_id: UNIFIED.10-reason_then_content_interrupted
+    historical_ids:
+    - UNIFIED.10-interrupted_reasoning_then_response
     request:
       input: <|open|>think<|sep|>let me think<|open|>response<|sep|>The answer is 42.<|close|>response<|sep|>
       init:

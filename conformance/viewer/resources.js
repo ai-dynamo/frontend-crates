@@ -56,8 +56,22 @@ export function canonicalUnifiedLabel(label, family, metadata) {
   if (dotted) key = `31-${dotted[1].charCodeAt(0) - 'a'.charCodeAt(0) + 1}`;
   const owners = Object.hasOwn(metadata.owners, key) ? metadata.owners[key] : [];
   if (owners.length > 1) throw new Error(`conflicting Unified alias ownership: ${label}`);
-  if (owners.length && metadata.owner_families?.[owners[0]] && metadata.owner_families[owners[0]] !== family) return `UNIFIED.${original}`;
+  if (family && owners.length && metadata.owner_families?.[owners[0]] && metadata.owner_families[owners[0]] !== family) return `UNIFIED.${original}`;
   return owners.length ? `UNIFIED.${metadata.canonical[owners[0]]}` : `UNIFIED.${original}`;
+}
+
+export function canonicalUnifiedPopupKey(value, metadata) {
+  let parts;
+  try { parts = JSON.parse(value); }
+  catch { return value; }
+  if (!Array.isArray(parts) || !['cell', 'grammar'].includes(parts[0]) || parts[1] !== 'tab-unified'
+      || typeof parts[2] !== 'string' || parts.length !== (parts[0] === 'cell' ? 4 : 3)
+      || parts[0] === 'cell' && typeof parts[3] !== 'string') return value;
+  const family = parts[0] === 'cell' ? parts[3] : '';
+  const owners = metadata?.owners?.[parts[2].replace(/^UNIFIED\./, '')] || [];
+  if (!family && owners.length > 1) return value;
+  parts[2] = canonicalUnifiedLabel(parts[2], family, metadata);
+  return JSON.stringify(parts);
 }
 
 export function validateUnifiedInputs(document, family, path, aliasMetadata = null) {

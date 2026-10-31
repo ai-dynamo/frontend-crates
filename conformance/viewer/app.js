@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 import { HttpResourceStore, gunzipSync, sha256, resourceMetrics, boundedGunzip } from './data.js';
-import { rawResource, FixtureResources } from './resources.js';
+import { rawResource, FixtureResources, canonicalUnifiedPopupKey } from './resources.js';
 import { buildTab, pageMetadata, tabPresentation, columnKeysFor, createSourceLink, captureSegmentHtml } from './presentation.js';
 import { tabCandidates, selectedCellOutcome, selectedCaptureOutcome, captureStatusLabels } from './model.js';
 import { mountComparison, verticalDefault } from './comparison.js';
@@ -372,7 +372,7 @@ async function initialize() {
   });
   window.__conformanceLoader = loader;
   const load = panel => { if (panel.classList.contains('active')) return loader.select(panel.id, controller.selection(panel)); };
-  controller = window.initializeConformanceController({ engineSelection: { selection: () => slotOwner?.selection() || { reference: null, selected: [] } }, columnKeys: columnKeysFor(catalog.metadata), cellOutcome: selectedCellOutcome, selectionChanged: load, tabChanged: id => load(document.getElementById(id)) });
+  controller = window.initializeConformanceController({ normalizePopupKey: key => canonicalUnifiedPopupKey(key, catalog.metadata.unified_aliases), engineSelection: { selection: () => slotOwner?.selection() || { reference: null, selected: [] } }, columnKeys: columnKeysFor(catalog.metadata), cellOutcome: selectedCellOutcome, selectionChanged: load, tabChanged: id => load(document.getElementById(id)) });
   window.__conformanceController = controller;
   const panel = document.getElementById('tab-unified');
   panel.querySelector('.cmpctl')?.replaceChildren();

@@ -15191,8 +15191,9 @@ cases:
     policy:
     - I6
     - I7
-    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
-    historical_ids: []
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     request:
       input: <|tool_call>call:run{}<tool_call|><|tool_call>call:not_offered{x:2}<tool_call|>
       init:

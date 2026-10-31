@@ -15879,8 +15879,9 @@ cases:
     policy:
     - I6
     - I7
-    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
-    historical_ids: []
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     request:
       input: <｜DSML｜tool_calls><｜DSML｜invoke name="run"></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="not_offered"><｜DSML｜parameter name="x" string="false">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
       init:
@@ -15918,8 +15919,9 @@ cases:
     policy:
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
-    historical_ids: []
+    display_id: UNIFIED.7-arg_marker_in_string_native_controls_in_arguments
+    historical_ids:
+    - UNIFIED.gpt_oss-control_marker_inside_argument_string
     request:
       input: '<｜DSML｜tool_calls><｜DSML｜invoke name="lookup">{"markers": "<think></think><\uff5cDSML\uff5ctool_calls><\uff5cDSML\uff5cinvoke name=\"lookup\"><\uff5cDSML\uff5cparameter name=\"q\" string=\"true\"></\uff5cDSML\uff5cparameter></\uff5cDSML\uff5cinvoke></\uff5cDSML\uff5ctool_calls><\uff5cDSML\uff5c</\uff5cDSML\uff5c"}</｜DSML｜invoke></｜DSML｜tool_calls>'
       init:
@@ -15956,8 +15958,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_invalid_text_then_empty_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
     request:
       input: <｜DSML｜tool_calls><｜DSML｜invoke name="bad">not-json</｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"></｜DSML｜invoke></｜DSML｜tool_calls>
       init:
@@ -15992,8 +15995,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_truncated_json_then_valid_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
     request:
       input: <｜DSML｜tool_calls><｜DSML｜invoke name="bad">{"city":</｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
       init:

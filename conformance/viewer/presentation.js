@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, foldNullVariants, foldSchemaVariants, rankUnifiedColumns } from './model.js';
+import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, rankUnifiedColumns } from './model.js';
 import { isMapping, hasField, getField, compareText, mappingEntries, mergeMappings, deleteField, sameValue } from './values.js';
 import { materializeUnifiedRecord, canonicalUnifiedLabel } from './resources.js';
 
@@ -122,7 +122,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
   const shared = explicitSchemas(metadata.unified_presentation.shared_tools) || [];
   const columns = ordered.map((scenario) => {
     const taxonomy = metadata.unified_taxonomy[scenario];
-    const column = { sub: scenario, group_key: taxonomy.section, band: band(scenario), label: metadata.folds.unified[scenario].canonical_label, desc: descriptions.get(scenario) || '', init: null };
+    const column = { sub: scenario, group_key: taxonomy.section, band: band(scenario), label: metadata.unified_taxonomy[scenario].canonical_label, desc: descriptions.get(scenario) || '', init: null };
     const schemas = schemaVariants(families, byFamily, scenario, shared);
     if (schemas.length) column.schemas = schemas;
     return column;
@@ -141,7 +141,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
     for (const scenario of scenarios) {
       const entry = byFamily.get(family).get(scenario);
       const taxonomy = metadata.unified_taxonomy[scenario];
-      const caseId = `UNIFIED.${metadata.folds.unified[scenario].canonical_label}`;
+      const caseId = `UNIFIED.${metadata.unified_taxonomy[scenario].canonical_label}`;
       const applicable = metadata.unified_presentation.scenario_families[scenario];
       const markerFamily = metadata.unified_presentation.marker_families[family] || family;
       if (!entry && !applicable?.includes(family)) {
@@ -197,7 +197,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       const current = results.get('dynamo');
       const reasons = current && ['MERGE', 'ORDER'].includes(current.verdict) ? [{ label: 'stream vs final message', reason: "Final output changes event order or combines separate events." }] : [];
       // Scope applicability stays independent of selection, so an empty Reference
-      // keeps every authored variant available in the folded popup.
+      // keeps every authored case available as its own column.
       cells[scenario] = { kind: 'cell', case_id: caseId, family, sub: scenario, col_group: taxonomy.section, band: band(scenario), status: referenceKey !== null && comparisons[referenceKey]?.err ? 'problem' : 'ok', red_on_diff: true,
         cmp: equivalenceEntries(comparisons), facts: [], tooltip: { head: `${caseId} (${scenario}) — ${family}`, description: input.description + (input.policy.length ? `  [policy: ${input.policy.join(', ')}]` : ''),
           init: { starting_state: 'None', tool_output_mode: 'Native', named_tool: null, ...Object.fromEntries(mappingEntries(init)) }, finish_reason: request.finish_reason || 'stop',
@@ -216,11 +216,9 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
   }
   const all = rows.flatMap((row) => Object.values(row.cells));
   const na = all.filter((cell) => cell.status === 'na').length;
-  const stats = { families: families.length, sub_cases: scenarios.length, slots: all.length, real: all.length - na, parity: 0, dynamo_only: 0, documented: 0, research: 0, errors: 0, na, missing: 0 };
-  const glossary = groups.map((group) => ({ label: group.label, rows: ordered.filter((scenario) => metadata.unified_taxonomy[scenario].section === group.key).map((scenario) => [metadata.folds.unified[scenario].canonical_label, descriptions.get(scenario) || '']) }));
+  const stats = { families: families.length, fixture_cases: all.length - na, sub_cases: scenarios.length, slots: all.length, real: all.length - na, parity: 0, dynamo_only: 0, documented: 0, research: 0, errors: 0, na, missing: 0 };
+  const glossary = groups.map((group) => ({ label: group.label, rows: ordered.filter((scenario) => metadata.unified_taxonomy[scenario].section === group.key).map((scenario) => [metadata.unified_taxonomy[scenario].canonical_label, descriptions.get(scenario) || '']) }));
   const tab = { id: 'tab-unified', kind: 'unified', mode: 'unified', no_parser_col: true, columns, column_groups: groups, rows, stats, glossary, candidates: descriptors.map((descriptor) => descriptor.control) };
-  foldNullVariants(tab, metadata);
-  foldSchemaVariants(tab, metadata);
   rankUnifiedColumns(tab, metadata);
   return tab;
 }

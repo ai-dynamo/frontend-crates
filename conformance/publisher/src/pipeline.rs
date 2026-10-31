@@ -929,7 +929,6 @@ pub fn projection(catalog: &Value) -> Result<Value> {
         "markers",
         "unified",
         "unified_presentation",
-        "folds",
         "unified_taxonomy",
         "unified_aliases",
         "unified_leak_markers",
@@ -982,9 +981,6 @@ pub fn projection(catalog: &Value) -> Result<Value> {
             .collect::<Vec<_>>()
     );
     metadata["selection_policy"] = json!({"unified":metadata["selection_policy"].get("unified").cloned().unwrap_or(json!({}))});
-    if metadata.get("folds").is_none() {
-        metadata["folds"] = json!({});
-    }
     let mut result = json!({});
     if let Some(generation) = catalog.get("capture_generation") {
         result["capture_generation"] = generation.clone();

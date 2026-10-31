@@ -2,6 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 
+await test('historical popup identities use current aliases', async () => {
+  const { default: assert } = await import('node:assert/strict');
+  const { readFile } = await import('node:fs/promises');
+  const { canonicalUnifiedPopupKey } = await import('./resources.js');
+  const catalog = JSON.parse(await readFile(new URL('../viewer-catalog.json', import.meta.url), 'utf8'));
+  const aliases = catalog.metadata.unified_aliases;
+  for (const [old, owners] of Object.entries(aliases.owners)) {
+    if (owners.length !== 1 || aliases.canonical[owners[0]] === old) continue;
+    const family = aliases.owner_families?.[owners[0]] || 'gpt_oss';
+    for (const kind of ['cell', 'grammar']) {
+      const key = [kind, 'tab-unified', 'UNIFIED.' + old, ...(kind === 'cell' ? [family] : [])];
+      const normalized = JSON.parse(canonicalUnifiedPopupKey(JSON.stringify(key), aliases));
+      assert.equal(normalized[2], 'UNIFIED.' + aliases.canonical[owners[0]]);
+      assert.equal(canonicalUnifiedPopupKey(JSON.stringify(normalized), aliases), JSON.stringify(normalized));
+    }
+  }
+  for (const value of ['invalid', 'null', '{}', '["cell","other","old","gpt_oss"]']) {
+    assert.equal(canonicalUnifiedPopupKey(value, aliases), value);
+  }
+});
+
 await test('resources contracts', async () => {
 const savedGlobals = Object.getOwnPropertyDescriptors(globalThis);
 try {

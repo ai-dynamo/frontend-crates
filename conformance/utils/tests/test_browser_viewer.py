@@ -1650,7 +1650,7 @@ def test_nemotron_default_reasoning_popup_describes_family_default(published_vie
 
 
 @pytest.mark.parametrize('vertical', [False, True])
-def test_shared_parent_displays_missing_child_capture(historical_published_viewer, vertical):
+def test_expanded_variant_displays_its_own_missing_capture(historical_published_viewer, vertical):
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
@@ -1660,7 +1660,7 @@ def test_shared_parent_displays_missing_child_capture(historical_published_viewe
         result = driver.execute_script("""
             const host = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
                 const cell = window.__conformanceCellModel(node);
-                return cell?.family === 'kimi_k3' && cell.sub === 'tool_only'
+                return cell?.family === 'kimi_k3' && cell.sub === 'tool_body_whitespace'
                     && node.getBoundingClientRect().height > 0;
             });
             if (!host) return null;
@@ -1670,14 +1670,14 @@ def test_shared_parent_displays_missing_child_capture(historical_published_viewe
             return {identity:candidate.identity,
                     status:window.__conformanceCaptureOutcome(cell, key, 'golden'),
                     painted:host.querySelector('[data-capture="' + key + '"]').className,
-                    variants:Object.fromEntries(cell.variants.map(variant=>[
-                      variant.sub,window.__conformanceCaptureOutcome(variant, key, 'golden')]))};
+                    case_id:cell.case_id,variants:cell.variants || []};
         """)
         assert result is not None
         assert result['identity'] == 'dynamo_v2@0.9.0'
         assert result['status'] == 'missing'
         assert 'status-missing' in result['painted']
-        assert result['variants'] == {'tool_body_whitespace': 'missing', 'tool_only': 'pass'}
+        assert result['variants'] == []
+        assert result['case_id'] == 'UNIFIED.1-tool_only_leading_json_body_whitespace'
     finally:
         driver.quit()
         server.shutdown()
@@ -1731,23 +1731,43 @@ def _assert_numeric_argument_popup(site):
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
         _ready(driver, "tab-unified")
-        scenario = driver.execute_script("""
-            const cell = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
-                const model = window.__conformanceCellModel(node);
-                return model?.family === 'qwen3' && model.variants?.some(leaf => leaf.sub === 'arg_numeric_15_round_down');
-            });
-            return cell && window.__conformanceCellModel(cell).sub;
-        """)
-        assert scenario
+        scenario = 'arg_numeric_15_round_down'
         popup = _popup_for_scenario(driver, 'qwen3', scenario)
-        variants = popup.find_elements(By.CSS_SELECTOR, '.case-variant')
-        assert len(variants) == 7
-        variant = next(node for node in variants
-                       if 'arg_numeric_15_round_down' in node.find_element(By.CSS_SELECTOR, '.ttip-head').text)
-        output = variant.find_element(By.CSS_SELECTOR, '.ttip-final [data-cand="dynamo"]')
+        assert not popup.find_elements(By.CSS_SELECTOR, '.case-variant')
+        output = popup.find_element(By.CSS_SELECTOR, '.ttip-final [data-cand="dynamo"]')
         assert '9007199254740992.5' in output.text
         assert '9007199254740992.0' not in output.text
         assert 'cand-diverge' not in output.get_attribute('class').split()
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("kind", ["cell", "grammar"])
+def test_renamed_case_popup_urls_keep_the_same_case(published_viewer, vertical, kind):
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        previous = "UNIFIED.1-tool_body_whitespace"
+        current = "UNIFIED.1-tool_only_leading_json_body_whitespace"
+        for identity in (previous, current):
+            popup_key = [kind, "tab-unified", identity]
+            if kind == "cell":
+                popup_key.append("kimi_k3")
+            query = urlencode({"tab": "tab-unified", "vertical": int(vertical), "popup": json.dumps(popup_key)})
+            driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+            _ready(driver, "tab-unified")
+            popup = WebDriverWait(driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+            assert "tool_only_leading_json_body_whitespace" in popup.text
+            assert "get_weather" in popup.text and "Paris" in popup.text
+            expected = [kind, "tab-unified", current]
+            if kind == "cell":
+                expected.append("kimi_k3")
+            actual = driver.execute_script("return JSON.parse(new URL(location.href).searchParams.get('popup'))")
+            assert actual == expected
     finally:
         driver.quit()
         server.shutdown()

@@ -17644,8 +17644,9 @@ cases:
     policy:
     - I6
     - I7
-    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
-    historical_ids: []
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     request:
       input: '<|start|>assistant to=run<|channel|>analysis <|constrain|>xml<|message|><|call|><|start|>assistant to=not_offered<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
 
@@ -17700,8 +17701,9 @@ cases:
     - I3
     - I4
     - I5
-    display_id: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_next_message_recovery
+    historical_ids:
+    - UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
     request:
       input: '<|start|>assistant to=lookup<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="q">
 
@@ -18573,8 +18575,9 @@ cases:
     policy:
     - I1
     - I3
-    display_id: UNIFIED.10-interrupted_reasoning_then_response
-    historical_ids: []
+    display_id: UNIFIED.10-reason_then_content_interrupted
+    historical_ids:
+    - UNIFIED.10-interrupted_reasoning_then_response
     request:
       input: <|start|>assistant<|channel|>analysis<|message|>let me think<|start|>assistant<|channel|>final<|message|>The answer is 42.<|return|>
       init:

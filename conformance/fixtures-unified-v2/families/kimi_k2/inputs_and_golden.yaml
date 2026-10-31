@@ -13780,8 +13780,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.1-tool_body_whitespace
-    historical_ids: []
+    display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
+    historical_ids:
+    - UNIFIED.1-tool_body_whitespace
     request:
       input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|> \n\t{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>"
       init:
@@ -15070,8 +15071,9 @@ cases:
     policy:
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
-    historical_ids: []
+    display_id: UNIFIED.7-arg_marker_in_string_native_controls_in_arguments
+    historical_ids:
+    - UNIFIED.gpt_oss-control_marker_inside_argument_string
     request:
       input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|>{"markers": "<think></think><|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>"}<|tool_call_end|><|tool_calls_section_end|>'
       init:
@@ -15110,8 +15112,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_invalid_text_then_empty_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
     request:
       input: <|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>not-json<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
       init:
@@ -15151,8 +15154,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_truncated_json_then_valid_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
     request:
       input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"city":<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
       init:
@@ -15193,8 +15197,9 @@ cases:
     policy:
     - I6
     - I7
-    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
-    historical_ids: []
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     request:
       input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.not_offered:1<|tool_call_argument_begin|>{"x": 2}<|tool_call_end|><|tool_calls_section_end|>'
       init:

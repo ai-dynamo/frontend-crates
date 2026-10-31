@@ -45,15 +45,6 @@ from impls import (
     UNIFIED_DISPLAY,
 )
 from fixture_disposition import TOOLCALLING_CASE_ALIASES
-from null_cases import NULL_DESCRIPTIONS, MIXED_CASE_FAMILIES
-from numeric_cases import (
-    NUMERIC_DESCRIPTIONS,
-    NUMERIC_DISPLAY_LABELS,
-    NUMERIC_VARIANTS,
-    numeric_group,
-    applicable as numeric_applicable,
-)
-from schema_cases import schema_fold
 
 VIEWER_SELECTION_POLICY = {
     "unified": {
@@ -239,11 +230,12 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
     unified_taxonomy_path = (
         root / "conformance" / "utils" / "src" / "unified_taxonomy.py"
     )
-    unified_labels = unified_taxonomy.display_case_labels(unified_taxonomy.UNIFIED_TAX)
+    scenario_families = {scenario: gen_unified_golden.scenario_families(scenario) for scenario in unified_taxonomy.UNIFIED_TAX}
+    unified_labels = unified_taxonomy.display_case_labels(unified_taxonomy.UNIFIED_TAX, scenario_families)
     unified_order = {
         scenario: index
         for index, scenario in enumerate(
-            sorted(unified_taxonomy.UNIFIED_TAX, key=unified_taxonomy.display_sort_key)
+            sorted(unified_taxonomy.UNIFIED_TAX, key=lambda scenario: unified_taxonomy.display_sort_key(scenario, scenario_families[scenario]))
         )
     }
     documentation_paths = [
@@ -396,50 +388,16 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
             },
             "marker_families": unified_marker_families,
         },
-        "folds": {
-            "null_descriptions": NULL_DESCRIPTIONS,
-            "variant_descriptions": {**NULL_DESCRIPTIONS, **NUMERIC_DESCRIPTIONS},
-            "variant_groups": {
-                label: numeric_group(label) for _, label, *_ in NUMERIC_VARIANTS
-            },
-            "display_labels": NUMERIC_DISPLAY_LABELS,
-            "numeric_applicability": {
-                parent: [
-                    family
-                    for family in gen_unified_golden.FAMILIES
-                    if any(
-                        (
-                            numeric_group(label) == parent
-                            and numeric_applicable(family, label)
-                            for _, label, *_ in NUMERIC_VARIANTS
-                        )
-                    )
-                ]
-                for parent in NUMERIC_DESCRIPTIONS
-            },
-            "mixed_families": {
-                key: sorted(value) for key, value in MIXED_CASE_FAMILIES.items()
-            },
-            "unified": {
-                scenario: {
-                    "legacy_label": unified_taxonomy.legacy_case_label(scenario),
-                    "canonical_label": unified_taxonomy.case_label(scenario),
-                    "taxonomy_order": unified_taxonomy.taxonomy_sort_key(scenario),
-                    "schema": schema_fold(scenario),
-                    "case": unified_taxonomy.case_fold(scenario),
-                }
-                for scenario in unified_taxonomy.UNIFIED_TAX
-            },
-        },
         "unified_taxonomy": {
             scenario: {
+                "canonical_label": unified_taxonomy.case_label(scenario),
                 "group": identity[0],
                 "suffix": identity[1],
                 **unified_labels[scenario],
-                "display_group": unified_taxonomy.display_tax(scenario)[0],
+                "display_group": unified_taxonomy.display_tax(scenario, scenario_families[scenario])[0],
                 "display_order": unified_order[scenario],
-                "section": unified_taxonomy.display_section(scenario)[0],
-                "section_label": unified_taxonomy.display_section(scenario)[1],
+                "section": unified_taxonomy.display_section(scenario, scenario_families[scenario])[0],
+                "section_label": unified_taxonomy.display_section(scenario, scenario_families[scenario])[1],
             }
             for scenario, identity in unified_taxonomy.UNIFIED_TAX.items()
         },
@@ -1032,7 +990,7 @@ def build_catalog(
 
 def unified_projection(catalog: dict) -> dict:
     """Keep browser initialization independent of legacy archives and metadata."""
-    keys = ["selection_policy", "unavailable_categories", "implementations", "dynamo_v2_producer", "unified_display", "unified_capture_policy", "markers", "unified", "unified_presentation", "folds", "unified_taxonomy", "unified_aliases", "unified_leak_markers", "documentation", "peer_versions"]
+    keys = ["selection_policy", "unavailable_categories", "implementations", "dynamo_v2_producer", "unified_display", "unified_capture_policy", "markers", "unified", "unified_presentation", "unified_taxonomy", "unified_aliases", "unified_leak_markers", "documentation", "peer_versions"]
     metadata = {key: catalog["metadata"][key] for key in keys if key in catalog["metadata"]}
     legacy_candidate_identities = {}
     for candidate in catalog["sources"].get("candidates", []):
@@ -1047,7 +1005,6 @@ def unified_projection(catalog: dict) -> dict:
     metadata["legacy_candidate_identities"] = legacy_candidate_identities
     metadata["tabs"] = [tab for tab in catalog["metadata"].get("tabs", []) if tab["suite"] == "unified"]
     metadata["selection_policy"] = {"unified": metadata.get("selection_policy", {}).get("unified", {})}
-    metadata["folds"] = metadata.get("folds", {})
     return {**({"capture_generation": catalog["capture_generation"]} if "capture_generation" in catalog else {}),
             **({"source_revision": catalog["source_revision"]} if "source_revision" in catalog else {}),
             "schema": catalog.get("schema", 1), "revision": catalog["revision"], "snapshot": catalog.get("snapshot"),

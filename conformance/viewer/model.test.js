@@ -2,101 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 
-await test('folds contracts', async () => {
-const savedGlobals = Object.getOwnPropertyDescriptors(globalThis);
-try {
-const { default: assert } = await import('node:assert/strict');
-const { aggregateCells, leafCells, foldSchemaVariants, foldNullVariants } = await import('./model.js');
-const { selectedCaptureOutcome } = await import('./model.js');
-const { equivalenceGroups } = await import('./model.js');
-
-
-const cell = (sub, cmp, status = 'ok') => ({ kind: 'cell', sub, family: 'sample', case_id: `TOOLCALLING.batch.${sub}`, status, cmp, tooltip: { head: sub } });
-const entry = (sig, fields = {}) => ({ sig, na: 0, err: 0, leak: 0, ...fields });
-const children = [cell('7-4', { golden: entry(1), reference: entry(1), peer: entry(2) }), cell('7-4.anyof', { golden: entry(4), reference: entry(4), peer: entry(5) })];
-const aggregate = aggregateCells(children, '7-4', 'nullable');
-assert.deepEqual(equivalenceGroups(aggregate.cmp).reference.sig, ['golden', 'reference']);
-assert.deepEqual(aggregate.variants.map((leaf) => leaf.sub), ['7-4', '7-4.anyof']);
-const missing = aggregateCells([children[0], cell('7-4.anyof', { golden: entry(4), reference: entry(0, { na: 1 }), peer: entry(0, { na: 1 }) })], '7-4', 'nullable');
-assert.equal(missing.cmp.reference.na, 1);
-const failure = aggregateCells([cell('7-4', { golden: entry(1), reference: entry(2) }), cell('7-4.anyof', { golden: entry(4), reference: entry(0, { na: 1 }) })], '7-4', 'nullable');
-assert.equal(failure.cmp.reference.na, 0);
-assert.notEqual(failure.cmp.reference.sig, failure.cmp.golden.sig);
-const mixed = cell('7-4.mixed_labels', { golden: entry(1), reference: entry(1) });
-assert.equal(leafCells({ cells: { null: { variants: [...children, mixed] }, string: { variants: [mixed] } } }).size, 3);
-assert.throws(() => leafCells({ cells: { null: { variants: [mixed] }, string: { variants: [{ ...mixed, status: 'problem' }] } } }), /inconsistent/);
-for (const family of ['beam', 'glm47']) {
-  const labels = ['7-4', '7-4.anyof', '7-4.mixed_labels', '7-5', '7-5.union'];
-  const config = { folds: { null_descriptions: { '7-4': 'JSON null', '7-5': 'String null' },
-    mixed_families: { '7-4.mixed_labels': [] }, unified: Object.fromEntries(labels.map((label, index) =>
-      [label, { legacy_label: label, canonical_label: label, taxonomy_order: [7, index] }])) } };
-  const tab = { id: 'tab-unified', candidates: [{ key: 'golden' }],
-    columns: labels.map(label => ({ sub: label, label, group_key: 'unified_g7' })),
-    column_groups: [{ key: 'unified_g7', span: labels.length }], stats: {}, glossary: [],
-    rows: [{ family, cells: Object.fromEntries(labels.map(label =>
-      [label, { ...cell(label, { golden: entry(1) }), family }])) }] };
-  const original = structuredClone(tab.rows[0].cells);
-  foldNullVariants(tab, config);
-  for (const parent of ['7-4', '7-5']) assert.ok(tab.rows[0].cells[parent].variants.some(leaf => leaf.sub === '7-4.mixed_labels'));
-  assert.deepEqual(Object.fromEntries(leafCells(tab.rows[0])), original);
-  assert.equal(tab.stats.fixture_cases, labels.length);
-}
-const allInapplicable = aggregateCells([
-  cell('schema_a', { golden: entry(0, { na: 1 }), dynamo: entry(0, { na: 1 }), sglang: entry(0, { na: 1 }) }, 'na'),
-  cell('schema_b', { golden: entry(0, { na: 1 }), dynamo: entry(0, { na: 1 }), sglang: entry(0, { na: 1 }) }, 'na'),
-], 'schema', 'schema variants');
-assert.deepEqual(Object.keys(allInapplicable.cmp), ['dynamo', 'golden', 'sglang']);
-assert.equal(allInapplicable.cmp.dynamo.na, 1);
-assert.equal(allInapplicable.cmp.sglang.na, 1);
-for (const [parent, variant] of [
-  ['arg_marker_in_string', 'arg_marker_in_string_pr424'],
-  ['tool_in_reason', 'gpt_oss_interrupted_reasoning_then_tool'],
-  ['tool_no_close', 'gpt_oss_truncated_tool_resynchronizes_at_next_message'],
-]) for (const missingParent of [false, true]) {
-  const leaves = [cell(parent, { golden: entry(1), engine: entry(1) }, missingParent ? 'na' : 'ok'), cell(variant, { golden: entry(1), engine: entry(1) })];
-  const before = structuredClone(leaves);
-  const metadata = { folds: { unified: Object.fromEntries([parent, variant].map(sub => [sub, { canonical_label: sub, case: [parent, sub] }])) } };
-  const folded = { id: 'tab-unified', columns: [parent, variant].map(sub => ({ sub, label: sub, desc: 'shared behavior', group_key: 'group' })), rows: [{ family: 'sample', cells: Object.fromEntries(leaves.map(leaf => [leaf.sub, leaf])) }], column_groups: [{ key: 'group', span: 2 }], stats: {}, glossary: [] };
-  foldSchemaVariants(folded, metadata);
-  assert.deepEqual(folded.columns.map(column => column.sub), [parent]);
-  assert.deepEqual([...leafCells(folded.rows[0]).keys()], [parent, variant]);
-  assert.deepEqual(leaves, before, 'folding must preserve the original leaves');
-  const expected = before.map(leaf => ({ ...leaf, tooltip: { ...leaf.tooltip, head: `${leaf.sub} — ${leaf.tooltip.head}` } }));
-  assert.deepEqual(folded.rows[0].cells[parent].variants, expected);
-  assert.equal(folded.stats.fixture_cases, missingParent ? 1 : 2);
-}
-for (const [parentNa, code, signature, expected] of [
-  [true, 'missing_capture', 1, 'missing'], [true, 'source_unavailable', 1, 'blocked'],
-  [true, 'unsupported_request_mode', 1, 'unsupported'], [false, 'missing_capture', 1, 'missing'],
-  [false, 'missing_capture', 2, 'diverge'], [true, null, 1, 'pass'],
-]) {
-  const parent = cell('parent', { golden: entry(1), engine: entry(signature) }, parentNa ? 'na' : 'ok');
-  const variant = cell('variant', { golden: entry(1), engine: entry(1, { na: Number(code !== null) }) });
-  variant.tooltip.candidates = [{ key: 'engine', block: code ? { unavailable_code: code } : {} }];
-  assert.equal(selectedCaptureOutcome(aggregateCells([parent, variant], 'parent', ''), 'engine'), expected);
-}
-
-} finally {
-  for (const key of Object.getOwnPropertyNames(globalThis)) {
-    if (!Object.hasOwn(savedGlobals, key) && Object.getOwnPropertyDescriptor(globalThis, key).configurable) delete globalThis[key];
-  }
-  for (const [key, descriptor] of Object.entries(savedGlobals)) {
-    if (descriptor.configurable) Object.defineProperty(globalThis, key, descriptor);
-  }
-}
-
-});
-
 await test('numeric contracts', async () => {
 const savedGlobals = Object.getOwnPropertyDescriptors(globalThis);
 try {
 const { equivalenceEntries, canonicalUnifiedEvents } = await import('./model.js');
 const { default: assert } = await import('node:assert/strict');
-const { readFile } = await import('node:fs/promises');
 const { canonicalArguments, sameValue } = await import('./values.js');
 const { classifyUnified } = await import('./model.js');
 const { assembleStream } = await import('./model.js');
-const { foldNullVariants, rankUnifiedColumns } = await import('./model.js');
 
 
 const comparisonEntries = blocks => equivalenceEntries(Object.fromEntries(Object.entries(blocks).map(([key, block]) => [key, {value: canonicalUnifiedEvents((block.calls || []).map(call => ({kind: 'tool_call', ...call})))}])));
@@ -179,30 +92,6 @@ assert.deepEqual(assembleStream([[{...event('  '), complete: true}]], [event({ci
 for (const preserve of [false, true]) {
   const result = assembleStream([[{...event('{"value":1.5}'),complete:true},{kind:'tool_call',name:'bad',arguments:'{bad',complete:true}]], [event({value:2.5}),{kind:'tool_call',name:'bad',arguments:{}}],preserve);
   assert.deepEqual(result.map(call=>call.arguments),[{value:2.5},{}]);
-}
-const metadata=JSON.parse(await readFile(new URL('../viewer-catalog.json',import.meta.url),'utf8')).metadata;
-const numeric=Object.entries(metadata.folds.unified).filter(([,item])=>metadata.folds.variant_groups[item.legacy_label]);
-assert.equal(numeric.length,19);
-const makeCell=(sub,label,family,status='ok')=>({sub,family,case_id:`UNIFIED.${label}`,kind:status==='missing'?'missing':'cell',status,red_on_diff:true,
-  cmp:{golden:{sig:1,na:0},dynamo:{sig:2,na:0}},tooltip:{head:sub,description:'schema '+label}});
-for (const family of ['qwen3','deepseek_v4']) {
-  const entries=[['unused_reference_graph_parameter_types',metadata.folds.unified.unused_reference_graph_parameter_types],['nullable_reference_alias_literals',metadata.folds.unified.nullable_reference_alias_literals],...numeric];
-  const columns=entries.map(([sub,item])=>({sub,label:item.canonical_label,desc:'schema '+item.legacy_label,group_key:'args'}));
-  const cells=Object.fromEntries(entries.map(([sub,item])=>[sub,makeCell(sub,item.legacy_label,family)]));
-  const bare=structuredClone([cells.unused_reference_graph_parameter_types,cells.nullable_reference_alias_literals]);
-  const tab={id:'tab-unified',columns,rows:[{family,cells}],candidates:[{key:'dynamo'},{key:'dynamo@0.6.1'}],column_groups:[{key:'args',span:columns.length}],stats:{},glossary:[{rows:entries.map(([,item])=>[item.canonical_label,'description'])}]};
-  foldNullVariants(tab,metadata);
-  rankUnifiedColumns(tab,metadata);
-  assert.deepEqual(tab.columns.slice(-3).map(column=>column.label),['7-17','7-19','7-18']);
-  assert.deepEqual(tab.glossary[0].rows.slice(-3).map(([label])=>label),['7-17','7-19','7-18']);
-  assert.deepEqual([cells.unused_reference_graph_parameter_types,cells.nullable_reference_alias_literals],bare);
-  for (const [label,count] of [['7-17',9],['7-19',3],['7-18',7]]) {
-    const column=tab.columns.find(column=>column.label===label), cell=cells[column.sub];
-    assert.equal(cell.case_id,`UNIFIED.${label}`);assert.equal(cell.variants.length,count);
-    assert.deepEqual(Object.keys(cell.cmp).sort(), ['dynamo','golden']);
-    for (const leaf of cell.variants) assert.deepEqual(Object.keys(leaf.cmp).sort(), ['dynamo','golden']);
-    assert.equal(cell.status==='na',label==='7-19'&&family==='deepseek_v4');
-  }
 }
 console.log('numeric report contracts passed');
 

@@ -18951,8 +18951,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_message_header_literal
-    historical_ids: []
+    display_id: UNIFIED.7-arg_marker_in_string_quoted_closer_and_response_header
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_message_header_literal
     request:
       input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
 
@@ -19019,8 +19020,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_truncated_tool_then_final
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_malformed_argument_then_visible_response
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_truncated_tool_then_final
     request:
       input: <|start|>assistant to=lookup<|message|><atem:invoke name="lookup"><atem:parameter name="q">abc<|eom|><|start|>assistant to=user<|message|>Answer<|eom|>
       init:
@@ -21453,8 +21455,9 @@ cases:
     policy:
     - I6
     - I7
-    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
-    historical_ids: []
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     request:
       input: '<|start|>assistant to=run<|message|><atem:function_calls>
 
@@ -21536,8 +21539,9 @@ cases:
     - I3
     - I4
     - I5
-    display_id: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_next_message_recovery
+    historical_ids:
+    - UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
     request:
       input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
 
@@ -22479,8 +22483,9 @@ cases:
     policy:
     - I1
     - I3
-    display_id: UNIFIED.10-interrupted_reasoning_then_response
-    historical_ids: []
+    display_id: UNIFIED.10-reason_then_content_interrupted
+    historical_ids:
+    - UNIFIED.10-interrupted_reasoning_then_response
     request:
       input: <|start|>assistant to=self<|message|>let me think<|start|>assistant to=user<|message|>The answer is 42.<|eom|>
       init:

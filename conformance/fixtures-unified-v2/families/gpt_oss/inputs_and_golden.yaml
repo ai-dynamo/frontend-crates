@@ -6650,8 +6650,9 @@ cases:
     description: 'Harmony partial header: Guided JSON, payload is gt_in_argument, surrounded by a bare invoke HEADER before the payload, never terminated. Markers around a recoverable payload must not cost the call (`I3`).'
     policy:
     - I3
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_gt_in_argument_bare_opener
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_bare_opener_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_gt_in_argument_bare_opener
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -6674,8 +6675,9 @@ cases:
     description: 'Harmony partial header: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).'
     policy:
     - I3
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_gt_in_argument_named_bare_opener
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_gt_in_argument_named_bare_opener
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.get_weather[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -6698,8 +6700,9 @@ cases:
     description: 'Harmony partial header: The model NARRATES an invoke header inside its thought and never terminates it, so the only `>` in reach belongs to the thought''s own closer. The header is literal text the model wrote, so it is stripped and the surrounding thought survives intact — it must not swallow the closer and it must not survive into the reasoning the user sees.'
     policy:
     - I3
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_narrated_prefix_inside_reasoning
-    historical_ids: []
+    display_id: UNIFIED.34-guided_json_narrated_prefix_inside_reasoning_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_narrated_prefix_inside_reasoning
     request:
       input: '<|channel|>analysis<|message|>I''ll call <|start|>assistant<|channel|>commentary to=functions.get_weather<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -6724,8 +6727,9 @@ cases:
     description: 'Harmony partial header: Guided JSON, payload is schema_error_nameless_element, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
     policy:
     - P2
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_schema_error_nameless_element_bare_opener
-    historical_ids: []
+    display_id: UNIFIED.33-guided_json_schema_error_nameless_element_bare_opener_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_schema_error_nameless_element_bare_opener
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
       init:
@@ -6746,8 +6750,9 @@ cases:
     description: 'Harmony partial header: Guided JSON, payload is schema_error_not_a_call, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
     policy:
     - P2
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_schema_error_not_a_call_bare_opener
-    historical_ids: []
+    display_id: UNIFIED.33-guided_json_schema_error_not_a_call_bare_opener_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_schema_error_not_a_call_bare_opener
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.{"unexpected": "shape"}'
       init:
@@ -6768,8 +6773,9 @@ cases:
     description: 'Harmony partial header: A bare invoke HEADER with no terminator of its own sits before a reasoning span, so the only `>` in reach belongs to the thought opener. The header must NOT claim it: doing so consumed the opener, and the model''s private reasoning was emitted as user-visible text (`I3`, and a privacy failure, not just a cosmetic leak). The header is incomplete markup and is stripped; the thought stays a thought.'
     policy:
     - I3
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_stray_prefix_before_reasoning
-    historical_ids: []
+    display_id: UNIFIED.34-guided_json_stray_prefix_before_reasoning_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_stray_prefix_before_reasoning
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.<|channel|>analysis<|message|>secret<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -6794,8 +6800,9 @@ cases:
     description: 'Harmony partial header: Guided JSON, payload is syntax_error, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
     policy:
     - P2
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_syntax_error_bare_opener
-    historical_ids: []
+    display_id: UNIFIED.33-guided_json_syntax_error_bare_opener_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_syntax_error_bare_opener
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": '
       init:
@@ -6816,8 +6823,9 @@ cases:
     description: 'Harmony partial header: A native tool OPENER precedes the constrained payload. Guided decoding delivers the call as JSON, so leading markup is stray: it must be stripped, not carried into the payload buffer where it breaks the parse and costs the call.'
     policy:
     - P2
-    display_id: UNIFIED.gpt_oss-harmony_guided_json_tool_open_before_payload
-    historical_ids: []
+    display_id: UNIFIED.32-guided_json_tool_open_before_payload_harmony_partial_header
+    historical_ids:
+    - UNIFIED.gpt_oss-harmony_guided_json_tool_open_before_payload
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -8395,8 +8403,9 @@ cases:
     policy:
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
-    historical_ids: []
+    display_id: UNIFIED.7-arg_marker_in_string_native_controls_in_arguments
+    historical_ids:
+    - UNIFIED.gpt_oss-control_marker_inside_argument_string
     request:
       input: <|start|>assistant to=functions.lookup<|channel|>commentary <|message|>{"markers":"<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>"}<|call|>
       init:
@@ -8435,8 +8444,9 @@ cases:
     policy:
     - I6
     - I7
-    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
-    historical_ids: []
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     request:
       input: <|start|>assistant to=functions.run<|channel|>commentary <|message|><|call|><|start|>assistant to=functions.not_offered<|channel|>commentary <|constrain|>json<|message|>{"x":2}<|call|>
       init:
@@ -8507,8 +8517,9 @@ cases:
     - I3
     - I4
     - I5
-    display_id: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_next_message_recovery
+    historical_ids:
+    - UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
     request:
       input: <|start|>assistant to=functions.lookup<|channel|>commentary <|message|>{"q":"unfinished"}<|start|>assistant<|channel|>final<|message|>recovered<|return|>
       init:
@@ -8895,8 +8906,9 @@ cases:
     policy:
     - I3
     - I6
-    display_id: UNIFIED.gpt_oss-interrupted_reasoning_then_tool
-    historical_ids: []
+    display_id: UNIFIED.12-tool_in_reason_interrupted_harmony_reasoning
+    historical_ids:
+    - UNIFIED.gpt_oss-interrupted_reasoning_then_tool
     request:
       input: '<|start|>assistant<|channel|>analysis<|message|>I should check. <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>analysis<|message|> now answer<|end|>'
       init:
@@ -8946,8 +8958,9 @@ cases:
     policy:
     - I3
     - I6
-    display_id: UNIFIED.gpt_oss-interrupted_reasoning_then_tool_with_text
-    historical_ids: []
+    display_id: UNIFIED.12-tool_in_reason_with_text_interrupted_harmony_reasoning
+    historical_ids:
+    - UNIFIED.gpt_oss-interrupted_reasoning_then_tool_with_text
     request:
       input: '<|start|>assistant<|channel|>final<|message|>Sure. <|return|><|start|>assistant<|channel|>analysis<|message|>I should check. <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>analysis<|message|> now answer<|end|><|start|>assistant<|channel|>final<|message|> Here you go.<|return|>'
       init:
@@ -9015,8 +9028,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_invalid_text_then_empty_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
     request:
       input: <|start|>assistant<|channel|>commentary to=functions.bad <|constrain|>json<|message|>not-json<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{}<|call|>
       init:
@@ -9057,8 +9071,9 @@ cases:
     policy:
     - P2
     - I7
-    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
-    historical_ids: []
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls_truncated_json_then_valid_call
+    historical_ids:
+    - UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
     request:
       input: '<|start|>assistant<|channel|>commentary to=functions.bad <|constrain|>json<|message|>{"city":<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|>'
       init:
@@ -9572,8 +9587,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_message_header_literal
-    historical_ids: []
+    display_id: UNIFIED.7-arg_marker_in_string_quoted_closer_and_response_header
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_message_header_literal
     request:
       input: <|start|>assistant to=functions.lookup<|message|>{"q":"<|call|><|start|>assistant<|channel|>final<|message|>literal<|return|>"}<|call|>
       init:
@@ -9612,8 +9628,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_truncated_tool_then_final
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_malformed_argument_then_visible_response
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_truncated_tool_then_final
     request:
       input: <|start|>assistant to=functions.lookup <|constrain|>json<|message|>{"q":"abc<|call|><|start|>assistant<|channel|>final<|message|>Answer<|return|>
       init:
@@ -9686,8 +9703,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.1-tool_body_whitespace
-    historical_ids: []
+    display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
+    historical_ids:
+    - UNIFIED.1-tool_body_whitespace
     request:
       input: "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{\"city\":\"Paris\"}<|call|>"
       init:
@@ -11216,8 +11234,9 @@ cases:
     policy:
     - I1
     - I3
-    display_id: UNIFIED.10-interrupted_reasoning_then_response
-    historical_ids: []
+    display_id: UNIFIED.10-reason_then_content_interrupted
+    historical_ids:
+    - UNIFIED.10-interrupted_reasoning_then_response
     request:
       input: <|start|>assistant<|channel|>analysis<|message|>let me think<|start|>assistant<|channel|>final<|message|>The answer is 42.<|return|>
       init:
