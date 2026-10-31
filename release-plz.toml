@@ -46,6 +46,11 @@ name = "dynamo-parsers-v2-py"
 publish = false
 release = false
 
+# A new crate needs its first trusted publication before release-plz can manage it.
+[[package]]
+name = "dynamo-harmony"
+release = false
+
 [changelog]
 header = """# Changelog
 

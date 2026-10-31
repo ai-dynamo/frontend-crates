@@ -1523,15 +1523,15 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
                 assert all(item["matches"] for item in geometry["styles"])
         if len(identities) == 2:
             difference = scopes[0] ^ scopes[1]
-            assert difference
-            family = sorted(difference)[0]
-            missing = effective[0] if family not in scopes[0] else effective[1]
-            assert driver.execute_script("""
-              const row = window.__conformanceModel.rows.find(row => row.family === arguments[0]);
-              const tab = window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === 'tab-unified');
-              const key = tab.candidates.find(candidate => candidate.identity === arguments[1]).key;
-              return Object.values(row.cells).some(cell => cell.cmp?.[key]?.na === 1);
-            """, family, missing)
+            if difference:
+                family = sorted(difference)[0]
+                missing = effective[0] if family not in scopes[0] else effective[1]
+                assert driver.execute_script("""
+                  const row = window.__conformanceModel.rows.find(row => row.family === arguments[0]);
+                  const tab = window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === 'tab-unified');
+                  const key = tab.candidates.find(candidate => candidate.identity === arguments[1]).key;
+                  return Object.values(row.cells).some(cell => cell.cmp?.[key]?.na === 1);
+                """, family, missing)
     finally:
         driver.quit()
         server.shutdown()

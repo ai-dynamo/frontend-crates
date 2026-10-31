@@ -4,8 +4,9 @@
 use super::super::ToolDefinition;
 use super::config::JsonParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use dynamo_harmony::{harmony_gpt_oss_encoding, initialized_harmony_gpt_oss_encoding};
+use openai_harmony::HarmonyEncoding;
 use openai_harmony::chat::{Content, Role};
-use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
 use regex::{Captures, Regex};
 use serde_json::Value;
 use std::sync::OnceLock;
@@ -304,21 +305,13 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
     (out, residual.trim().to_string())
 }
 
-static GLOBAL_HARMONY_GPTOSS_ENCODING: tokio::sync::OnceCell<
-    Result<HarmonyEncoding, anyhow::Error>,
-> = tokio::sync::OnceCell::const_new();
-
 pub async fn get_harmony_encoding() -> &'static Result<HarmonyEncoding, anyhow::Error> {
-    GLOBAL_HARMONY_GPTOSS_ENCODING
-        .get_or_init(|| async {
-            tokio::task::spawn_blocking(|| {
-                load_harmony_encoding(HarmonyEncodingName::HarmonyGptOss)
-            })
-            .await
-            .map_err(anyhow::Error::msg)
-            .flatten()
-        })
+    if let Some(encoding) = initialized_harmony_gpt_oss_encoding() {
+        return encoding;
+    }
+    tokio::task::spawn_blocking(harmony_gpt_oss_encoding)
         .await
+        .unwrap_or_else(|_| harmony_gpt_oss_encoding())
 }
 
 /// Parse tool calls from a complete Harmony Format text chunk using direct token parsing.
@@ -528,6 +521,37 @@ pub fn detect_tool_call_start_harmony(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Model-output fixtures cannot own or saturate a Tokio runtime blocking pool.
+    #[test]
+    fn warm_encoding_does_not_wait_for_the_blocking_pool() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .max_blocking_threads(1)
+            .build()
+            .unwrap();
+        let cached = runtime.block_on(get_harmony_encoding());
+        assert!(cached.is_ok());
+        let (entered_tx, entered_rx) = std::sync::mpsc::channel();
+        let (release_tx, release_rx) = std::sync::mpsc::channel();
+        let blocker = runtime.spawn_blocking(move || {
+            entered_tx.send(()).unwrap();
+            release_rx.recv().unwrap();
+        });
+        entered_rx
+            .recv_timeout(std::time::Duration::from_secs(10))
+            .unwrap();
+        let ready = runtime.block_on(async {
+            let mut lookup = std::pin::pin!(get_harmony_encoding());
+            let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+            matches!(
+                std::future::Future::poll(lookup.as_mut(), &mut context),
+                std::task::Poll::Ready(encoding) if std::ptr::eq(encoding, cached)
+            )
+        });
+        release_tx.send(()).unwrap();
+        runtime.block_on(blocker).unwrap();
+        assert!(ready, "warm lookup waited behind unrelated blocking work");
+    }
 
     fn extract_name_and_args(call: ToolCallResponse) -> (String, serde_json::Value) {
         let args: serde_json::Value = serde_json::from_str(&call.function.arguments).unwrap();

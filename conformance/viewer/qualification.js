@@ -11,7 +11,7 @@ import { initializeDevelopmentParser } from './yaml_data.js';
 initializeDevelopmentParser();
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
-import { selectedCellOutcome } from './model.js';
+import { selectedCellOutcome, selectedCaptureOutcome } from './model.js';
 import { leafCells, isApplicableCell } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
@@ -760,8 +760,8 @@ function checkDottedNameContracts(tab, loadedKeys) {
           && item.implementation === descriptor.source.implementation && item.version === descriptor.source.version);
         if (measured) {
           assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}: refreshed capture is retained`);
-          assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family',
-            `${family}/${scenario}/${other.key}: ${JSON.stringify(other.block)}`);
+          assert.ok(Array.isArray(other.block.events) || selectedCaptureOutcome(cell, other.key) === 'unsupported',
+            `${family}/${scenario}/${other.key}: measured candidates need events or an explicit unsupported result`);
         } else {
           assert.equal(other.block.unavailable_code, 'missing_capture');
           assert.equal(Object.hasOwn(other.block, 'events'), false);
