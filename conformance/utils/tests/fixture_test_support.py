@@ -3,11 +3,15 @@
 """Isolated checkout identity for synthetic fixture-extraction tests."""
 
 from pathlib import Path
+import base64
 import copy
+import gzip
 import json
+import re
 import shutil
 import subprocess
 from types import SimpleNamespace
+from urllib.parse import urlsplit
 import capture_sources
 import extract_fixtures
 import unified_archives
@@ -200,6 +204,98 @@ def capture_releases(site):
             versions.setdefault(resource['implementation'], set()).add(resource['version'])
     return {implementation: sorted(releases, key=capture_release_sort_key)
             for implementation, releases in versions.items()}
+
+
+def history_request_contract(site, identities):
+    """Return transport paths allowed for selected captures' non-embedded families."""
+    site = Path(site)
+    html = (site / "index.html").read_text()
+    payload = json.loads(re.search(r'id="conformance-embedded">(.*?)</script>', html, re.S).group(1))
+    embedded = json.loads(gzip.decompress(base64.b64decode(payload["catalog"]["bytes"])))
+    catalog = json.loads(gzip.decompress((site / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
+    current = embedded["capture_generation"]["current"]
+    implementations = {capture["implementation"] for capture in current}
+    embedded_ids = {f"{implementation}@{max((capture['version'] for capture in current if capture['implementation'] == implementation), key=unified_history._capture_release_sort_key)}"
+                    for implementation in implementations}
+    embedded_families = {resource["family"] for resource in embedded["sources"]["unified"]
+                         if resource["kind"] == "inputs-and-golden"}
+    candidates = catalog["sources"]["candidates"]
+    latest_dynamo = max((item for item in candidates if item["implementation"] == "dynamo_v2"),
+                        key=lambda item: unified_history._capture_release_sort_key(item["version"]))
+    resources = catalog["sources"]["unified"]
+    required_families = set()
+    selected_resources = {}
+    for identity in identities:
+        implementation, version = identity.split("@", 1)
+        if implementation == "dynamo":
+            implementation = "dynamo_v2"
+            identity = f"{implementation}@{version}"
+        candidate = next(item for item in candidates
+                         if item["implementation"] == implementation and item["version"] == version)
+        families = set(candidate.get("capture_families") or ())
+        if implementation == "dynamo_v2":
+            families.intersection_update(latest_dynamo.get("native_unified_families") or ())
+        if identity in embedded_ids:
+            families.difference_update(embedded_families)
+        required_families.update(families)
+        for family in families:
+            input_resource = next((item for item in resources
+                                   if item["kind"] == "inputs-and-golden" and item["family"] == family), None)
+            if input_resource:
+                selected_resources[input_resource["path"]] = input_resource
+            packed = next((item for item in resources if item["kind"] == "resolved-capture"
+                           and item["implementation"] == implementation and item["version"] == version
+                           and (item.get("family") == family or family in item.get("families", ()))), None)
+            if packed is None:
+                packed = next((item for item in sorted(
+                    (item for item in resources if item["kind"] == "history" and item["family"] == family
+                     and item["implementation"] == implementation
+                     and unified_history._capture_release_sort_key(item["version"])
+                     <= unified_history._capture_release_sort_key(version)),
+                    key=lambda item: unified_history._capture_release_sort_key(item["version"]), reverse=True)), None)
+            if packed:
+                selected_resources[packed["path"]] = packed
+    allowed_paths, required_indexes = set(), set()
+    for resource in selected_resources.values():
+        allowed_paths.add(resource["path"])
+        recipe = resource.get("recipe_index")
+        if not recipe:
+            continue
+        required_indexes.add(recipe["path"])
+        allowed_paths.add(recipe["path"])
+        index = json.loads(gzip.decompress((site / recipe["path"]).read_bytes()))
+        packed_resource = index["resources"].get(resource["path"], {})
+        for chunk in packed_resource.get("chunks", ()):
+            pack = chunk.get("pack", {}).get("path")
+            if pack:
+                allowed_paths.add(pack)
+    return required_families, allowed_paths, required_indexes
+
+
+def assert_viewer_data_matches_history(site, requests, identities):
+    families, allowed, required_indexes = history_request_contract(site, identities)
+    actual = {urlsplit(path).path.split("/conformance/viewer-data/", 1)[-1]
+              for path in requests if "/conformance/viewer-data/" in urlsplit(path).path}
+    allowed_suffixes = {path.split("viewer-data/", 1)[-1] for path in allowed}
+    required_suffixes = {path.split("viewer-data/", 1)[-1] for path in required_indexes}
+    assert actual <= allowed_suffixes, {"unexpected": sorted(actual - allowed_suffixes), "allowed_families": sorted(families)}
+    assert required_suffixes <= actual, {"missing_history_resources": sorted(required_suffixes - actual), "families": sorted(families)}
+    return actual
+
+
+def identity_for_key(catalog, key):
+    if key.startswith("dynamo@"):
+        implementation = catalog["metadata"]["selection_policy"]["unified"]["reference"]
+        return f"{implementation}@{key.split('@', 1)[1]}"
+    if "@" in key:
+        return key
+    if key != "dynamo":
+        raise ValueError(f"unversioned selection key is not the Unified reference: {key}")
+    implementation = catalog["metadata"]["selection_policy"]["unified"]["reference"]
+    latest = max((item["version"] for item in catalog["sources"]["candidates"]
+                  if item["implementation"] == implementation),
+                 key=unified_history._capture_release_sort_key)
+    return f"{implementation}@{latest}"
 
 
 def retained_source_bytes(store_root: Path, resource: dict) -> bytes:

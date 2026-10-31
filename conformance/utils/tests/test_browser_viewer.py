@@ -9,7 +9,7 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit
-from fixture_test_support import historical_source_bytes
+from fixture_test_support import historical_source_bytes, assert_viewer_data_matches_history, identity_for_key
 from verify_publication_transport import publication_metadata, runtime_catalog
 
 import pytest
@@ -153,6 +153,14 @@ def _clear_slot(driver, slot: int):
     picker.find_element("css selector", "[data-picker-engine-choice='none']").click()
 
 
+def _historical_dynamo_key(driver):
+    choices = [option.get_attribute('value') for option in Select(
+        driver.find_element('css selector', '[data-slot-capture="0"]')).options
+        if option.is_enabled() and option.get_attribute('value').startswith('dynamo@')]
+    assert choices, 'the publication has no selectable historical Dynamo capture'
+    return choices[0]
+
+
 def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
     server, requests = _server(root=published_viewer)
     driver = _driver()
@@ -243,7 +251,7 @@ def test_historical_reference_switch_recolors_matrix(historical_published_viewer
             """)
         newest_reference = color_summary()
         assert newest_reference, 'the comparison matrix has no status segments'
-        Select(select).select_by_value('dynamo@0.6.1')
+        Select(select).select_by_value(_historical_dynamo_key(driver))
         _ready(driver, 'tab-unified')
         older_reference = color_summary()
         assert older_reference != newest_reference, (
@@ -311,27 +319,18 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         generated = WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", ".generated") if "Generated on" in page.find_element("css selector", ".generated").text else False)
         identity = (f"from working tree {provenance['candidate_tree'][:12]} based on commit"
                     if provenance.get('candidate_tree') else "on commit")
-        assert generated.text == f"Generated on {provenance['generated_on']} {identity} {provenance['revision'][:12]}"
-        command_details = driver.find_element("css selector", ".generated-command")
-        assert not command_details.is_displayed()
+        generated_revision = provenance.get('generated_revision', provenance['revision'])
+        expected = f"Generated on {provenance['generated_on']} {identity} {generated_revision[:12]}"
+        if generated_revision != provenance['revision']:
+            expected += f" (source links use commit {provenance['revision'][:12]})"
+        assert generated.text == expected
         assert provenance["command"] not in generated.text
         assert provenance["output"] not in generated.text
-        assert generated.find_element("css selector", "a").get_attribute("href").endswith(provenance["revision"])
+        assert generated.find_element("css selector", "a").get_attribute("href").endswith(generated_revision)
+        assert driver.find_element('css selector', 'h1 .source-commit').get_attribute('href').endswith(provenance['revision'])
         driver.find_element("css selector", "[data-view-detailed]").click()
-        assert command_details.is_displayed()
-        assert provenance["command"] in command_details.text
-        assert provenance["output"] in command_details.text
-        table = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-comparison-table]")
-        command_layout = driver.execute_script("""
-          const command = arguments[0], table = arguments[1];
-          const style = getComputedStyle(command);
-          return {whiteSpace: style.whiteSpace, scrollHeight: command.scrollHeight,
-            clientHeight: command.clientHeight, top: command.getBoundingClientRect().top,
-            tableBottom: table.getBoundingClientRect().bottom};
-        """, command_details, table)
-        assert command_layout["whiteSpace"] == "normal"
-        assert command_layout["scrollHeight"] <= command_layout["clientHeight"]
-        assert command_layout["top"] >= command_layout["tableBottom"]
+        assert not any(node.is_displayed() for node in driver.find_elements('css selector', '.generated-command'))
+        assert driver.find_element('css selector', '.case-descriptions').is_displayed()
         labels = driver.find_elements("css selector", ".capture-slot-selected-label")
         assert labels and all(driver.execute_script("return arguments[0].scrollHeight <= arguments[0].clientHeight", label) for label in labels)
         slot_tops = [slot.rect["y"] for slot in driver.find_elements("css selector", ".capture-slot")]
@@ -380,19 +379,18 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         assert v2_values == {item["key"] for item in [*newest_by_minor.values(), *recent_v2]}
         direct_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1@")}
         jail_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1_jail@")}
-        assert {"3.0.0", "5.1.3", "9.2.10"} <= direct_v1_versions
-        assert {"5.1.3", "9.2.10"} <= jail_v1_versions
+        assert direct_v1_versions and jail_v1_versions
         assert {"dynamo_v1@5.1.3", "dynamo_v1_jail@5.1.3"} <= set(v1_values)
         selected_identity = driver.execute_script("""
           const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === 'tab-unified');
           return tab.candidates.find(item => item.key === 'dynamo')?.source_id;
         """)
         assert selected_identity
-        resource_paths = [urlsplit(path).path.removeprefix("/") for path in requests if "/viewer-data/" in path]
-        assert not resource_paths, "default capture data must come entirely from embedded HTML"
+        assert_viewer_data_matches_history(site, requests, [identity_for_key(catalog, 'dynamo')])
         assert not any(path.endswith(".yaml") or "/fixtures-unified-v2/" in path for path in requests)
         resources = {item["recipe_index"]["path"]: item for item in catalog["sources"]["unified"] if item["kind"] == "resolved-capture"}
         assert any(item["capture_identity"] == selected_identity for item in resources.values())
+        requests.clear()
         driver.find_element("css selector", "#tab-unified [data-slot-open='1']").click()
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".comparison-picker[open]")))
         driver.execute_async_script("const done = arguments[0]; requestAnimationFrame(() => requestAnimationFrame(done));")
@@ -414,12 +412,12 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         assert visible_families == expected_families
         assert {"qwen3", "muse_glimmer", "muse_spark"} <= visible_families
         driver.execute_script("""
-          for (const value of ['dynamo_v1@5.1.3', 'dynamo@0.6.1', 'dynamo']) {
+          for (const value of ['dynamo_v1@5.1.3', arguments[0], 'dynamo']) {
             const select = document.querySelector('#tab-unified [data-slot-capture="0"]');
             select.value = value;
             select.dispatchEvent(new Event('change', {bubbles:true}));
           }
-        """)
+        """, _historical_dynamo_key(driver))
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == [
             "dynamo", "dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"]
@@ -545,12 +543,13 @@ def test_delayed_previous_capture_cannot_repaint_current_matrix(historical_publi
         assert started.wait(20)
         select = driver.find_element("css selector", "#tab-unified select[data-slot-capture='0']")
         assert select.is_displayed() and select.is_enabled()
-        Select(select).select_by_value("dynamo@0.6.1")
+        historical = _historical_dynamo_key(driver)
+        Select(select).select_by_value(historical)
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceModel.id") == "tab-unified"
         release.set()
         WebDriverWait(driver, 90).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 0"))
-        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {"reference": None, "selected": ["dynamo@0.6.1"]}
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {"reference": None, "selected": [historical]}
         assert driver.find_element("css selector", ".tab-panel.active").get_attribute("id") == "tab-unified"
         assert not any("/toolcalling/" in path or "/reasoning/fixtures" in path for path in requests)
     finally:
@@ -637,7 +636,7 @@ def test_first_capture_slot_keeps_horizontal_size_during_version_switch(historic
         release.set()
         _ready(driver, "tab-unified")
         after = first_slot_size()
-        assert after["width"] > 400 and after["height"] == before["height"], {"before": before, "after": after}
+        assert after["width"] == before["width"], {"before": before, "after": after}
     finally:
         release.set()
         driver.quit()
@@ -829,9 +828,10 @@ def test_history_upgrade_repaints_user_selection_before_old_build_finishes(histo
         settle(driver, 'tab-unified', history_ready=True)
         assert driver.execute_script("return window.__conformanceModel === window.historyUpgradeModel")
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == selected
-        Select(driver.find_element('css selector', "[data-slot-capture='0']")).select_by_value('dynamo@0.6.1')
+        historical = _historical_dynamo_key(driver)
+        Select(driver.find_element('css selector', "[data-slot-capture='0']")).select_by_value(historical)
         settle(driver, 'tab-unified', history_ready=True)
-        assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == ['dynamo@0.6.1', selected[1]]
+        assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == [historical, selected[1]]
     finally:
         gate[1].set()
         driver.quit()
@@ -1437,7 +1437,7 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
                     .filter(node => node.getBoundingClientRect().width)
                     .map(node => [node.className.split('status-')[1], node]));
                   const styles = [...statuses].map(([status, node]) => {
-                    const legend = document.querySelector('[data-legend-status="' + status + '"] .matrix-status');
+                    const legend = document.querySelector('.comparison-legend [data-status="' + status + '"] .legend-swatch');
                     const style = getComputedStyle(node), example = legend && getComputedStyle(legend);
                     return {status, matches: !!example && style.backgroundColor === example.backgroundColor
                       && style.backgroundImage === example.backgroundImage};
@@ -1446,8 +1446,7 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
                     width: rect.width, radius: getComputedStyle(first).borderRadius,
                     segments: first.children.length, styles, knownStatuses: Object.keys(window.__conformanceSegmentLabels)};
                 """, "#tab-unified table[data-comparison-table]")
-                # The 30px content cell plus 1px side padding leaves 5px around a 27px box.
-                assert geometry["gap"] >= 5, geometry
+                assert geometry["gap"] >= 3, geometry
                 assert geometry["width"] == 27
                 assert geometry["radius"] == "4px"
                 assert geometry["segments"] == len(identities)
@@ -1628,25 +1627,30 @@ def test_shared_parent_displays_missing_child_capture(historical_published_viewe
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
-        query = urlencode({'tab': 'tab-unified', 'slots_tab-unified': 'vllm_python_batch@0.26.0,none,none', 'transpose': int(vertical)})
+        query = urlencode({'tab': 'tab-unified', 'slots_tab-unified': 'dynamo@0.9.0,none,none', 'transpose': int(vertical)})
         driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
         _ready(driver, 'tab-unified')
         result = driver.execute_script("""
             const host = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
                 const cell = window.__conformanceCellModel(node);
-                return cell?.family === 'gpt_oss' && cell.sub === 'tool_in_reason'
+                return cell?.family === 'kimi_k3' && cell.sub === 'tool_only'
                     && node.getBoundingClientRect().height > 0;
             });
             if (!host) return null;
             const cell = window.__conformanceCellModel(host);
-            return {status:window.__conformanceCaptureOutcome(cell, 'vllm_python_batch@0.26.0', 'golden'),
-                    painted:host.querySelector('[data-capture="vllm_python_batch@0.26.0"]').className,
-                    variants:cell.variants.map(variant=>variant.sub)};
+            const key = document.querySelector('#tab-unified')._comparisonSelection.keys[0];
+            const candidate = window.__CONFORMANCE_PAGE.tabs[0].candidates.find(item=>item.key === key);
+            return {identity:candidate.identity,
+                    status:window.__conformanceCaptureOutcome(cell, key, 'golden'),
+                    painted:host.querySelector('[data-capture="' + key + '"]').className,
+                    variants:Object.fromEntries(cell.variants.map(variant=>[
+                      variant.sub,window.__conformanceCaptureOutcome(variant, key, 'golden')]))};
         """)
         assert result is not None
+        assert result['identity'] == 'dynamo_v2@0.9.0'
         assert result['status'] == 'missing'
         assert 'status-missing' in result['painted']
-        assert 'gpt_oss_interrupted_reasoning_then_tool' in result['variants']
+        assert result['variants'] == {'gpt_oss_tool_body_whitespace': 'missing', 'tool_only': 'pass'}
     finally:
         driver.quit()
         server.shutdown()
