@@ -481,6 +481,165 @@
           }
         }
       ]
+    },
+    "beam": {
+      "input_chunks": [
+        "<|start|>assistant to=f<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"a\">\n1\n</rfl:parameter><|call|><|start|>assistant to=",
+        "g<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"b\">\n2\n</rfl:parameter><|call|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "gpt_oss": {
+      "input_chunks": [
+        "<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"a\": \"1\"}<|call|><|start|>assistant<|channel|>commentary to=functions.",
+        "g <|constrain|>json<|message|>{\"b\": \"2\"}<|call|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "minimax_m3": {
+      "input_chunks": [
+        "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[<a>1]<]minimax[>[</a>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"",
+        "g\">]<]minimax[>[<b>2]<]minimax[>[</b>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
     }
   },
   "three_calls_partial_header": {
@@ -1089,6 +1248,231 @@
         "",
         "<tool_call>\n<function=f>\n<parameter=x>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun",
         "ction=g>\n<parameter=x>\n2\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=h>\n<parameter=x>\n3\n</parameter>\n</function>\n</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "beam": {
+      "input_chunks": [
+        "<|start|>assistant to=f<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"x\">\n1\n</rfl:parameter><|call|><|start|>assistant to=",
+        "g<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"x\">\n2\n</rfl:parameter><|call|><|start|>assistant to=",
+        "h<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"x\">\n3\n</rfl:parameter><|call|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "gpt_oss": {
+      "input_chunks": [
+        "<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"1\"}<|call|><|start|>assistant<|channel|>commentary to=functions.",
+        "g <|constrain|>json<|message|>{\"x\": \"2\"}<|call|><|start|>assistant<|channel|>commentary to=functions.",
+        "h <|constrain|>json<|message|>{\"x\": \"3\"}<|call|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "minimax_m3": {
+      "input_chunks": [
+        "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"",
+        "g\">]<]minimax[>[<x>2]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"",
+        "h\">]<]minimax[>[<x>3]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>",
         ""
       ],
       "tools": [

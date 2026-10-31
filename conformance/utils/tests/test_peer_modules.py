@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 from types import ModuleType, SimpleNamespace
+from dataclasses import make_dataclass
 import pytest
 import peer_modules
 import capture_unified_batch
@@ -9,6 +10,25 @@ from types import SimpleNamespace
 import capture_peer_unified_versions as peers
 from peer_modules import AdapterContractError, parser_error_detail, peer_call
 import peer_modules as compat
+
+
+def test_parser_context_preserves_empty_offers_without_serving_validation():
+    class PublishedRequest:
+        def __init__(self, **fields):
+            if fields["tools"] == []:
+                raise ValueError("serving rejects an empty tools array")
+
+        @classmethod
+        def model_construct(cls, **fields):
+            return SimpleNamespace(**fields)
+
+    fields = {"messages": [{"role": "user", "content": "x"}], "tools": [], "tool_choice": "auto"}
+    with pytest.raises(ValueError, match="empty tools array"):
+        PublishedRequest(**fields)
+    context = peer_modules.parser_only_request(PublishedRequest, tool_type=SimpleNamespace, **fields)
+    assert vars(context) == fields
+    assert context.tools == []
+    assert context.tool_choice == "auto"
 
 
 @pytest.mark.parametrize("engine,capability,paths", [
@@ -391,3 +411,131 @@ def test_stream_only_supervisor_does_not_run_or_report_batch(tmp_path, monkeypat
     status = json.loads((tmp_path / "worker-status.json").read_bytes())
     assert set(status) == {"stream"}
     assert not (tmp_path / "batch.log").exists()
+
+
+
+@pytest.mark.parametrize("state", ["None", "Reasoning", "Response"])
+def test_sglang_native_request_guard_uses_mode_specific_public_registration(state):
+    class Reasoner:
+        DetectorMap = {"qwen3": object}
+
+        def __init__(self, force_reasoning=False):
+            pass
+
+    class Tools:
+        ToolCallParserEnum = {"qwen3_coder": object}
+
+    init = {"starting_state": state, "tool_output_mode": "Native", "named_tool": None}
+    assert peer_modules.sglang_native_request_unavailable(Reasoner, Tools, ("qwen3", "qwen3_coder"), init) is None
+    result = peer_modules.sglang_native_request_unavailable(None, Tools, ("missing", "qwen3_coder"), init)
+    assert (result is None) == (state == "Response")
+
+
+@pytest.mark.parametrize("name", ["muse", "gpt-oss"])
+def test_sglang_channel_tool_parser_without_response_switch_stays_unsupported(name):
+    class Tools:
+        ToolCallParserEnum = {name: object}
+
+    init = {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None}
+    result = peer_modules.sglang_native_request_unavailable(None, Tools, ("missing", name), init)
+    assert result[0] == "sglang_starting_state_unsupported"
+
+
+def test_sglang_missing_force_reasoning_api_is_an_adapter_blocker():
+    class Reasoner:
+        DetectorMap = {"qwen3": object}
+
+        def __init__(self):
+            pass
+
+    class Tools:
+        ToolCallParserEnum = {"qwen3_coder": object}
+
+    init = {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
+    result = peer_modules.sglang_native_request_unavailable(Reasoner, Tools, ("qwen3", "qwen3_coder"), init)
+    assert result[0] == "sglang_starting_state_unsupported"
+
+
+@pytest.mark.parametrize('state,expected', [('None',{}),('Reasoning',{'thinking':True,'enable_thinking':True}),('Response',{'thinking':False,'enable_thinking':False})])
+def test_native_defaults_are_not_replaced_by_an_adapter_default(state,expected):
+    assert peer_modules.vllm_initialization_kwargs({'starting_state':state})==expected
+
+@pytest.mark.parametrize('engine,skip,expected', [(False,False,None),(True,True,None),(True,False,'unsupported_request_mode')])
+def test_response_requires_persistent_public_disable_for_engine_owner(engine,skip,expected):
+    attrs={'engine_based_streaming':engine}
+    if skip:attrs['skip_reasoning_parsing']=property(lambda self:False)
+    cls=type('PublicToolParser',(),attrs)
+    class Reasoning:
+        reasoning_parsers={}
+    class Tools:
+        tool_parsers={'tool':cls}
+        @classmethod
+        def get_tool_parser(cls,name):return cls.tool_parsers[name]
+    actual=peer_modules.vllm_native_request_unavailable(Reasoning,Tools,('absent','tool'),{'starting_state':'Response'})
+    assert (actual[0] if actual else None)==expected
+    actual=peer_modules.vllm_native_request_unavailable(Reasoning,Tools,('absent','tool'),{'starting_state':'None'})
+    assert actual[0]=='vllm_parser_not_registered'
+
+
+@pytest.mark.parametrize("reasoning_engine,tool_engine,expected", [(True,True,True),(None,True,True),(False,True,False),(True,False,False)])
+def test_public_delegating_components_own_token_delta_contract(published_api,reasoning_engine,tool_engine,expected):
+    native,_calls=published_api
+    old_init=native.__init__
+    def initialize(self,*args,**kwargs):
+        old_init(self,*args,**kwargs)
+        self.reasoning_parser=None if reasoning_engine is None else SimpleNamespace(engine_based_streaming=reasoning_engine)
+        self.tool_parser=SimpleNamespace(engine_based_streaming=tool_engine)
+    native.__init__=initialize
+    native.parse_delta=lambda *args,finished,**kwargs:None
+    parser=compat.ModernServingParser(native,object(),tools=[{}])
+    assert parser.token_engine is expected
+
+
+@pytest.mark.parametrize("tool_name,mode,supported", [("glm47","Native",True),("kimi_k2","Native",True),("qwen3_coder","Native",False),("glm47","GuidedJson",False)])
+def test_older_response_uses_only_a_qualified_public_constructor(monkeypatch,tool_name,mode,supported):
+    engine=type("PublishedEngine",(),{})
+    module=SimpleNamespace(Glm47MoeParser=engine,KimiK2Parser=engine)
+    monkeypatch.setattr(peer_modules.importlib,"import_module",lambda name:module)
+    class Reasoning:
+        reasoning_parsers={}
+    class Tools:
+        tool_parsers={tool_name:type("PublishedTool",(),{"engine_based_streaming":True})}
+        @classmethod
+        def get_tool_parser(cls,name):return cls.tool_parsers[name]
+    unavailable=peer_modules.vllm_native_request_unavailable(Reasoning,Tools,("absent",tool_name),{"starting_state":"Response","tool_output_mode":mode})
+    assert (unavailable is None) is supported
+    if supported:assert peer_modules.vllm_response_constructor_class(tool_name) is engine
+
+
+@pytest.mark.parametrize("state,expected", [("None",{}),("Reasoning",{"thinking":True,"enable_thinking":True,"thinking_mode":"enabled"}),("Response",{"thinking":False,"enable_thinking":False,"thinking_mode":"disabled"})])
+def test_minimax_public_constructor_gets_its_prefill_mode(state,expected):
+    assert peer_modules.vllm_initialization_kwargs({"starting_state":state},"minimax_m3")==expected
+
+
+def test_gemma_batch_prefill_has_a_public_configurable_engine():
+    class Reasoning:
+        reasoning_parsers={"gemma4":object}
+    class Tools:
+        tool_parsers={"gemma4":type("Tool",(),{"engine_based_streaming":True,"skip_reasoning_parsing":False})}
+        @classmethod
+        def get_tool_parser(cls,name):return cls.tool_parsers[name]
+    init={"starting_state":"Reasoning","tool_output_mode":"Native"}
+    assert peer_modules.vllm_native_request_unavailable(Reasoning,Tools,("gemma4","gemma4"),init,streaming=False) is None
+    assert peer_modules.vllm_native_request_unavailable(Reasoning,Tools,("gemma4","gemma4"),init,streaming=True) is None
+
+
+@pytest.mark.parametrize("takes_thinking", [False,True])
+def test_public_gemma_config_initialization_does_not_mutate_cached_native_default(monkeypatch,takes_thinking):
+    Config=make_dataclass("PublishedConfig",[("initial_state",str),("native_grammar",str)],frozen=True)
+    native=Config("CONTENT","gemma4")
+    def current_factory(thinking=False):
+        assert thinking is True
+        return native
+    def retained_factory():
+        return native
+    modules={"vllm.parser.gemma4":SimpleNamespace(gemma4_config=current_factory if takes_thinking else retained_factory),"vllm.parser.engine.parser_engine_config":SimpleNamespace(ParserState=SimpleNamespace(REASONING="REASONING"))}
+    monkeypatch.setattr(peer_modules.importlib,"import_module",lambda name:modules[name])
+    configured=peer_modules.vllm_public_engine_config("gemma4",{"starting_state":"Reasoning","tool_output_mode":"Native"})
+    assert configured.initial_state=="REASONING" and configured.native_grammar=="gemma4"
+    assert native.initial_state=="CONTENT"
+    assert peer_modules.vllm_public_engine_config("gemma4",{"starting_state":"None","tool_output_mode":"Native"}) is None

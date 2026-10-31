@@ -13,6 +13,7 @@ const { validateUnifiedCapture } = await import('./resources.js');
 const { resolveUnified } = await import('./model.js');
 const { tabCandidates, sourceCapturesFamily } = await import('./model.js');
 const { selectedCaptureOutcome } = await import('./model.js');
+const { buildStatus } = await import('./qualification.js');
 
 
 const toolOnlyCell = (panel, family = panel.rows[0].family) => leafCells(panel.rows.find(row => row.family === family)).get('tool_only');
@@ -219,6 +220,46 @@ assert.equal(selectedCaptureOutcome(scopedCell, 'dynamo_v1@1.0.0'), 'unsupported
 assert.deepEqual(scopedCell.tooltip.candidates.find(({ key }) => key === 'dynamo_v1@1.0.0').block, {
   unavailable: 'Not applicable to qwen3', unavailable_code: 'scenario_not_applicable',
 });
+
+for (const requested of ['qwen3', 'glm47']) {
+  const reads = [];
+  const requestedReader = {
+    unifiedInputs: async family => {
+      assert.equal(family, requested, 'unrequested authored family must not be opened');
+      reads.push(`inputs:${family}`);
+      return scopedReader.unifiedInputs(family);
+    },
+    unified: async (family, ...args) => {
+      assert.equal(family, requested, 'unrequested captured family must not be opened');
+      reads.push(`capture:${family}`);
+      return scopedReader.unified(family, ...args);
+    },
+  };
+  const requestedPanel = await unifiedPanel(scopedCatalog, requestedReader, {
+    selected: ['dynamo', 'dynamo_v1@1.0.0'], reference: null, families: [requested],
+  });
+  assert.ok(reads.length > 1);
+  const states = panel => [...leafCells(panel.rows.find(row => row.family === requested))].map(([sub, cell]) => ({
+    sub, status: cell.status, cmp: cell.cmp, candidates: cell.tooltip.candidates,
+  }));
+  assert.deepEqual(states(requestedPanel), states(scopedPanel));
+  assert.deepEqual(buildStatus({}, [requestedPanel], [requested]), buildStatus({}, [scopedPanel], [requested]),
+    'requested status retains global columns, not-applicable cells, and every comparison');
+}
+await assert.rejects(unifiedPanel(scopedCatalog, scopedReader, { families: ['unknown'] }), /unknown Unified family/);
+const omittedInventory = structuredClone(scopedCatalog);
+omittedInventory.metadata.unified_presentation.authored_scenarios = [];
+const omittedFull = await unifiedPanel(omittedInventory, scopedReader, {
+  selected: ['dynamo', 'dynamo_v1@1.0.0'], reference: null,
+});
+const omittedScoped = await unifiedPanel(omittedInventory, scopedReader, {
+  selected: ['dynamo', 'dynamo_v1@1.0.0'], reference: null, families: ['glm47'],
+});
+const missingStatus = buildStatus({}, [omittedFull], ['glm47']);
+assert.equal(missingStatus.reports[0].cells, 1);
+assert.equal(missingStatus.reports[0].empty, 1);
+assert.deepEqual(buildStatus({}, [omittedScoped], ['glm47']), missingStatus,
+  'a metadata omission cannot hide a loaded authored case or turn its missing capture green');
 
 const inventoryCatalog = structuredClone(scopedCatalog);
 inventoryCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2').capture_families.push('qwen3');

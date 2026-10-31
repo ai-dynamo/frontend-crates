@@ -43,13 +43,32 @@ def test_dotted_names_share_exact_oracle_and_tools(family, scenario, calls, grou
 def test_dotted_name_scope_covers_native_tool_families():
     expected = frozenset({
         "beam", "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
-        "kimi_k2", "kimi_k3", "muse_glimmer", "muse_spark", "nemotron_v3", "qwen3",
+        "kimi_k2", "kimi_k3", "minimax_m3", "muse_glimmer", "muse_spark", "nemotron_v3", "qwen3",
     })
     assert generator.DOTTED_NAME_FAMILIES == expected
     assert generator.scenario_families("dotted_name_minimal") == expected
     for family in expected:
         assert all(f"UNIFIED.{scenario}.{family}" in generator.build_cases(family)
                    for scenario in generator.DOTTED_NAME_SCENARIOS)
+
+
+def test_dotted_name_scope_rejects_omitting_supported_minimax(monkeypatch):
+    monkeypatch.setattr(generator, "DOTTED_NAME_FAMILIES", generator.DOTTED_NAME_FAMILIES - {"minimax_m3"})
+    with pytest.raises(AssertionError):
+        test_dotted_name_scope_covers_native_tool_families()
+
+
+@pytest.mark.parametrize("scenario,calls,_group", DOTTED_CASES)
+def test_minimax_dotted_names_keep_native_invocation_and_field_bytes(scenario, calls, _group):
+    case = generator.build_cases("minimax_m3")[f"UNIFIED.{scenario}.minimax_m3"]
+    marker = "]<]minimax[>["
+    expected = ""
+    for name, arguments in calls:
+        expected += marker + '<tool_call>' + marker + f'<invoke name="{name}">'
+        for key, value in arguments.items():
+            expected += marker + f'<{key}>' + value + marker + f'</{key}>'
+        expected += marker + '</invoke>' + marker + '</tool_call>'
+    assert case["input"] == expected
 
 
 @pytest.mark.parametrize("family,opener", [

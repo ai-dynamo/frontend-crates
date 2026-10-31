@@ -30,7 +30,7 @@ def test_batch_cli_emits_bound_requests_and_golden(monkeypatch, capsys):
 def test_existing_family_job_is_stable_and_preserves_request_shape():
     job = capture_unified_job.build_job(ROOT, "gemma4")
     assert job["family"] == "gemma4"
-    assert len(job["cases"]) == 279
+    assert len(job["cases"]) == 302
     assert {
         f"UNIFIED.{scenario}.gemma4"
         for scenario in (
@@ -96,8 +96,8 @@ cases:
         capture_unified_job.build_job(tmp_path, "gemma4")
 
 
-def test_capture_registry_keeps_historical_pipeline_names_and_jail_scope():
-    assert impls.VLLM_UNIFIED_PIPELINES["deepseek_v41"] == ("deepseek_v4", "deepseek_v4")
+def test_capture_registry_selects_exact_current_grammar_and_jail_scope():
+    assert impls.VLLM_UNIFIED_PIPELINES["deepseek_v41"] == ("deepseek_v41", "deepseek_v41")
     assert impls.SGLANG_UNIFIED_PIPELINES["deepseek_v41"] == ("deepseek-v41", "deepseekv41")
     assert impls.DYNAMO_UNIFIED_PIPELINES["glm47"] == ("glm45", "glm47")
     assert "muse_glimmer" not in impls.DYNAMO_UNIFIED_PIPELINES

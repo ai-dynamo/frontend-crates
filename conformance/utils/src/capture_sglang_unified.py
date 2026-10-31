@@ -15,7 +15,7 @@ import yaml
 from capture_stimulus import capture_peer_results, validate_family_scoped_cases
 from unified_tools import unified_tools
 
-from peer_modules import resolve_peer_module, sglang_reasoning_kwargs, parser_error_detail, peer_call
+from peer_modules import resolve_peer_module, sglang_reasoning_kwargs, sglang_native_request_unavailable, parser_error_detail, peer_call
 
 protocol = resolve_peer_module("sglang", "protocol")
 Function, Tool = protocol.Function, protocol.Tool
@@ -24,7 +24,7 @@ ReasoningParser = resolve_peer_module("sglang", "reasoning").ReasoningParser
 
 # family -> (reasoning model_type, tool_call_parser). Kimi K2.5 uses <think>; SGLang's
 # `kimi_k2` reasoning detector matches the golden corpus.
-from impls import SGLANG_UNIFIED_PIPELINES as FAMILY_PARSERS
+from impls import SGLANG_UNIFIED_PIPELINES as FAMILY_PARSERS, unified_starts_in_reasoning
 
 TOOL_SCHEMAS = unified_tools()
 
@@ -40,15 +40,8 @@ def _tool_stream_delta(item):
 def _registration_unavailable(case):
     if case.get("finish_reason", "stop") not in {"stop", "length"}:
         return "peer_termination_unsupported", "SGLang harness supports serving stop/length termination only"
-    rname, tname = FAMILY_PARSERS[case["family"]]
-    missing = []
-    if rname not in ReasoningParser.DetectorMap:
-        missing.append(f"ReasoningParser {rname}")
-    if tname not in FunctionCallParser.ToolCallParserEnum:
-        missing.append(f"FunctionCallParser {tname}")
-    if missing:
-        return "peer_detector_unavailable", "SGLang " + version("sglang") + " does not register " + ", ".join(missing)
-    return None
+    return sglang_native_request_unavailable(
+        ReasoningParser, FunctionCallParser, FAMILY_PARSERS[case["family"]], case.get("init"))
 
 
 def _remaining_tool_args(fp):
@@ -74,11 +67,14 @@ def _remaining_tool_args(fp):
     return [{"kind": "tool_call", "name": None, "arguments": remaining}] if remaining else []
 
 
-def _stream_chunks(family, chunks, *, terminal_step=False, tools=TOOL_SCHEMAS, rows=None):
+def _stream_chunks(family, chunks, *, terminal_step=False, tools=TOOL_SCHEMAS, rows=None, init=None):
     rname, tname = FAMILY_PARSERS[family]
-    # A native/default request has no template forcing reasoning. Serving passes
-    # False explicitly rather than using family detector constructor defaults.
-    rp = peer_call(ReasoningParser, model_type=rname, **sglang_reasoning_kwargs(ReasoningParser, streaming=True))
+    starting_state = (init or {}).get("starting_state", "None")
+    # Serving can bypass reasoning extraction while retaining the tool detector.
+    rp = (None if starting_state == "Response" else peer_call(
+        ReasoningParser, model_type=rname, **sglang_reasoning_kwargs(
+            ReasoningParser, streaming=True,
+            force_reasoning=unified_starts_in_reasoning(family, starting_state))))
     fp = peer_call(FunctionCallParser,
         tools=[Tool(type="function", function=Function(**tool)) for tool in tools],
         tool_call_parser=tname,
@@ -88,8 +84,8 @@ def _stream_chunks(family, chunks, *, terminal_step=False, tools=TOOL_SCHEMAS, r
     for index, ch in enumerate(schedule):
         final = index == len(schedule) - 1
         # The authored terminal row is a serving boundary, not model text.
-        rd, nd = ("", "") if terminal_step and final else peer_call(rp.parse_stream_chunk, ch)
-        if final and hasattr(rp, "parse_stream_end"):
+        rd, nd = ("", "") if terminal_step and final else (("", ch) if rp is None else peer_call(rp.parse_stream_chunk, ch))
+        if final and rp is not None and hasattr(rp, "parse_stream_end"):
             end_rd, end_nd = peer_call(rp.parse_stream_end)
             rd = (rd or "") + (end_rd or "")
             nd = (nd or "") + (end_nd or "")
@@ -117,7 +113,7 @@ def _capture_cases(cases):
         entry = {"parser": "SGLang Python " + version("sglang") + " (stream, reasoning + tool detectors)"}
         partial_rows = []
         try:
-            entry["chunks"] = _stream_chunks(fam, case.get("chunks") or [], terminal_step=case.get("terminal_step", False), tools=case.get("tools", TOOL_SCHEMAS), rows=partial_rows)
+            entry["chunks"] = _stream_chunks(fam, case.get("chunks") or [], terminal_step=case.get("terminal_step", False), tools=case.get("tools", TOOL_SCHEMAS), rows=partial_rows, init=case.get("init"))
         except Exception as exc:  # noqa: BLE001 — record per-case, keep the batch going
             entry["partial_chunks"] = partial_rows
             entry["error"] = parser_error_detail(exc)
@@ -135,7 +131,7 @@ def main():
         results.update(capture_peer_results(
             [case], FAMILY_PARSERS, _capture_cases, tools=case["tools"],
             unsupported_reason=_registration_unavailable,
-            supports_finish=True,
+            supports_finish=True, supports_init=True,
         ))
     # YAML to match the conformance fixture corpus. Container stdout is log-polluted,
     # so a recapture writes this to a file (or strips lines before the first top-level

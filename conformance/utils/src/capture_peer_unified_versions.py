@@ -8,6 +8,7 @@ import ast
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 import importlib
+import peer_modules
 import importlib.metadata
 import io
 import json
@@ -182,8 +183,8 @@ def worker(target_path, jobs, output, mode):
                            observation=True, capture=request_for_case(case)) for case in job["cases"]}}
         elif mode == "batch":
             capture = {"version": expected_version, "results": adapter.capture_cases(
-                job, *pipeline, supports_reasoning_init=engine == "sglang" and adapter.sglang_supports_reasoning_init())}
-        elif job["family"] not in stream_module.FAMILY_PARSERS:
+                job, *pipeline, supports_reasoning_init=engine == "vllm" or adapter.sglang_supports_reasoning_init(), supports_response_init=True, case_override=(lambda case: peer_modules.capture_vllm_harmony(case["family"], case["request"])) if engine == "vllm" else None)}
+        elif job["family"] not in stream_module.FAMILY_PARSERS and not (engine == "vllm" and stream_module.vllm_harmony_family(job["family"])):
             detail = f"The shared {engine} stream adapter has no registered pipeline for {job['family']}"
             capture = {engine + "_version": expected_version, "results": {
                 case["id"]: unavailable_result("peer_detector_unavailable", detail, observation=True,

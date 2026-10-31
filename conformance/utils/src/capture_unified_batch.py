@@ -12,14 +12,14 @@ from pathlib import Path
 
 import peer_modules
 from capture_stimulus import batch_final_events, unavailable_result, validate_family_scoped_cases
-from impls import SGLANG_UNIFIED_PIPELINES, VLLM_UNIFIED_PIPELINES, parser_families_path
-from peer_modules import VllmTextTokenizer, resolve_peer_module, sglang_reasoning_kwargs, sglang_supports_reasoning_init, parser_error_detail, peer_call
+from impls import SGLANG_UNIFIED_PIPELINES, VLLM_UNIFIED_PIPELINES, parser_families_path, unified_starts_in_reasoning
+from peer_modules import VllmTextTokenizer, resolve_peer_module, sglang_reasoning_kwargs, sglang_native_request_unavailable, sglang_supports_reasoning_init, vllm_initialization_kwargs, vllm_native_request_unavailable, parser_error_detail, peer_call, parser_only_request
 
 
 from tables.common import decode_arguments
 
 
-def capture_cases(job, pipeline, registrations, execute, *, supports_reasoning_init=False):
+def capture_cases(job, pipeline, registrations, execute, request_guard=None, *, supports_reasoning_init=False, supports_response_init=False, case_override=None):
     validate_family_scoped_cases(job["cases"])
     results = {}
     for case in job["cases"]:
@@ -27,16 +27,23 @@ def capture_cases(job, pipeline, registrations, execute, *, supports_reasoning_i
         if request["init"].get("structural_tag") is not None:
             results[case["id"]] = unavailable_result("unsupported_request_mode", "Parser-only batch capture does not execute structural-tag generation constraints.", capture=request, observation=True)
             continue
+        override = case_override(case) if case_override is not None else None
+        if override is not None:
+            results[case["id"]] = override
+            continue
         names = pipeline.get(case["family"])
-        if names is None or not registrations(names):
+        reason = request_guard(names, request) if names is not None and request_guard is not None else None
+        if reason is not None:
+            result = unavailable_result(*reason, capture=request, observation=True)
+        elif names is None or not registrations(names):
             result = unavailable_result("unsupported_family", "No registered reasoning + batch tool parser for this family", capture=request, observation=True)
-        elif request["init"] not in [{"starting_state": state, "tool_output_mode": "Native", "named_tool": None} for state in (("None", "Reasoning") if supports_reasoning_init else ("None",))] or request["finish_reason"] not in {"stop", "length"}:
+        elif request["init"] not in [{"starting_state": state, "tool_output_mode": "Native", "named_tool": None} for state in (("None",) + (("Reasoning",) if supports_reasoning_init else ()) + (("Response",) if supports_response_init else ()))] or request["finish_reason"] not in {"stop", "length"}:
             result = unavailable_result("unsupported_request_mode", "Legacy batch API cannot apply this authored initialization or finish reason", capture=request, observation=True)
         else:
             # Parser exceptions are observations. Import/setup failures are fatal and
             # must be handled by the producer launcher, not disguised as parser errors.
             try:
-                final = execute(names, request)
+                final = execute(names, request, family=case["family"])
                 result = {"assembled": batch_final_events(final), "batch_final": final, "capture_input": request}
             except (ValueError, TypeError, KeyError, RuntimeError, IndexError, AssertionError, AttributeError) as error:
                 detail = parser_error_detail(error)
@@ -51,18 +58,23 @@ def sglang_pipeline():
     tool_parser = resolve_peer_module("sglang", "tools").FunctionCallParser
 
     def registered(names):
-        return names[0] in reasoning.DetectorMap and names[1] in tool_parser.ToolCallParserEnum
+        return names[1] in tool_parser.ToolCallParserEnum
 
-    def execute(names, request):
-        kwargs = sglang_reasoning_kwargs(reasoning, streaming=False, force_reasoning=request["init"]["starting_state"] == "Reasoning")
-        parser = peer_call(reasoning, model_type=names[0], **kwargs)
-        reasoning_text, content = peer_call(parser.parse_non_stream, request["input"])
+    def request_guard(names, request):
+        return sglang_native_request_unavailable(reasoning, tool_parser, names, request["init"])
+
+    def execute(names, request, *, family):
+        reasoning_text, content = "", request["input"]
+        if request["init"]["starting_state"] != "Response":
+            kwargs = sglang_reasoning_kwargs(reasoning, streaming=False, force_reasoning=unified_starts_in_reasoning(family, request["init"]["starting_state"]))
+            parser = peer_call(reasoning, model_type=names[0], **kwargs)
+            reasoning_text, content = peer_call(parser.parse_non_stream, request["input"])
         tools = [protocol.Tool(type="function", function=protocol.Function(**(tool.get("function") or tool))) for tool in request["tools"]]
         parser = peer_call(tool_parser, tools=tools, tool_call_parser=names[1])
         normal_text, calls = peer_call(parser.parse_non_stream, content)
         return {"reasoning_text": reasoning_text or "", "normal_text": normal_text or "", "calls": [{"name": call.name, "arguments": decode_arguments(call.parameters)} for call in calls]}
 
-    return SGLANG_UNIFIED_PIPELINES, registered, execute
+    return SGLANG_UNIFIED_PIPELINES, registered, execute, request_guard
 
 
 def vllm_pipeline():
@@ -71,21 +83,38 @@ def vllm_pipeline():
     protocol = resolve_peer_module("vllm", "protocol")
 
     def registered(names):
-        return (names[0] in reasoning_manager.reasoning_parsers or names[0] in reasoning_manager.__dict__.get("lazy_parsers", {})) and (names[1] in tool_manager.tool_parsers or names[1] in tool_manager.__dict__.get("lazy_parsers", {}))
+        return names[1] in tool_manager.tool_parsers or names[1] in tool_manager.__dict__.get("lazy_parsers", {})
 
-    def execute(names, request):
-        tools = [protocol.ChatCompletionToolsParam.model_validate(tool if "function" in tool else {"type": "function", "function": tool}) for tool in request["tools"]]
-        req = protocol.ChatCompletionRequest.model_construct(model="parser-only-capture", messages=[], tools=tools, tool_choice="auto" if tools else "none")
-        parser = peer_modules._vllm_reasoning_parser(names[0], {})
-        reasoning_method = parser.extract_reasoning if hasattr(parser, "extract_reasoning") else parser.extract_reasoning_content
-        reasoning_text, content = peer_call(reasoning_method, request["input"], req)
+    def request_guard(names, request):
+        return vllm_native_request_unavailable(reasoning_manager, tool_manager, names, request["init"], streaming=False)
+
+    def execute(names, request, *, family):
+        req = parser_only_request(protocol.ChatCompletionRequest, tool_type=protocol.ChatCompletionToolsParam,
+                                  model="parser-only-capture", messages=[], tools=request["tools"],
+                                  tool_choice="auto" if request["tools"] else "none",
+                                  chat_template_kwargs=vllm_initialization_kwargs(request["init"], family) or None)
+        tools = req.tools
+        config = peer_modules.vllm_public_engine_config(family, request["init"])
+        if config is not None:
+            parser = peer_call(peer_modules.vllm_public_engine_class(), tokenizer=peer_modules._vllm_mock_tokenizer(), tools=tools, parser_engine_config=config)
+            reasoning_text, content, calls = peer_call(parser.parse, request["input"], req, enable_auto_tools=True)
+            return {"reasoning_text": reasoning_text or "", "normal_text": content or "", "calls": [{"name": call.name, "arguments": decode_arguments(call.arguments)} for call in calls or []]}
+        reasoning_text, content = "", request["input"]
+        if request["init"]["starting_state"] != "Response":
+            parser = peer_modules._vllm_reasoning_parser(names[0], {"chat_template_kwargs": vllm_initialization_kwargs(request["init"], family)}, native_defaults=True)
+            reasoning_method = parser.extract_reasoning if hasattr(parser, "extract_reasoning") else parser.extract_reasoning_content
+            reasoning_text, content = peer_call(reasoning_method, request["input"], req)
         cls = tool_manager.get_tool_parser(names[1])
         kwargs = {"tools": tools} if "tools" in inspect.signature(cls.__init__).parameters else {}
+        if request["init"]["starting_state"] == "Response" and cls.engine_based_streaming and not hasattr(cls, "skip_reasoning_parsing"):
+            kwargs["chat_template_kwargs"] = vllm_initialization_kwargs(request["init"], family)
         parser = peer_call(cls, tokenizer=VllmTextTokenizer(), **kwargs)
+        if request["init"]["starting_state"] == "Response" and hasattr(parser, "skip_reasoning_parsing"):
+            parser.skip_reasoning_parsing = True
         result = peer_call(parser.extract_tool_calls, content or "", req)
         return {"reasoning_text": reasoning_text or "", "normal_text": result.content or "", "calls": [{"name": call.function.name, "arguments": decode_arguments(call.function.arguments)} for call in result.tool_calls]}
 
-    return VLLM_UNIFIED_PIPELINES, registered, execute
+    return VLLM_UNIFIED_PIPELINES, registered, execute, request_guard
 
 
 def source_identity_root(engine, root, version):
@@ -123,7 +152,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     for path in sorted(args.jobs.glob("*.json")):
         job = json.loads(path.read_text())
-        result = {"version": before["version"], "results": capture_cases(job, *pipeline, supports_reasoning_init=args.engine == "sglang" and sglang_supports_reasoning_init()),
+        result = {"version": before["version"], "results": capture_cases(job, *pipeline, supports_reasoning_init=args.engine == "vllm" or sglang_supports_reasoning_init(), supports_response_init=True, case_override=(lambda case: peer_modules.capture_vllm_harmony(case["family"], case["request"])) if args.engine == "vllm" else None),
                   "provenance": {"implementation": args.engine + "_python_batch", "version": before["version"], "source_sha256": before["source_sha256"], "adapter_sha256": before["adapter_sha256"], "job_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}}
         (args.output / path.name).write_text(json.dumps(result, ensure_ascii=False))
     if before != source_identity(args.engine):

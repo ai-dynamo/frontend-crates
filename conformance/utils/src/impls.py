@@ -39,6 +39,14 @@ def parser_families_path() -> Path:
 _REGISTRY = yaml.safe_load(parser_families_path().read_text())
 
 
+def unified_starts_in_reasoning(family: str, starting_state: str = "None") -> bool:
+    """Resolve authored initialization against the existing family default."""
+    return starting_state == "Reasoning" or (
+        starting_state in {"None", ""}
+        and _REGISTRY["unified"].get(family, {}).get("default_reasoning", False)
+    )
+
+
 @dataclass(frozen=True)
 class ImplSpec:
     key: str                 # canonical fixture/render key

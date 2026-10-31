@@ -523,64 +523,41 @@ def _index_unified_families(store: unified_history.Store, candidates: list[dict]
     captured_results = {}
     native_presence = {}
     for identity, history in sorted(store.histories.items()):
-        states = {}
-        captured = set()
-        parser_paths = {}
         native_checkpoints = []
         checkpoints = []
         result_checkpoints = []
-        needed = {capture_id for capture_id, capture in history.captures.items()
-                  if any("verified_recapture" in metadata for metadata in capture["metadata_changes"].values())}
-        resolved = iter(history.iter_resolved_snapshots(needed)) if needed else iter(())
-        for capture_id in history.ordered_capture_ids():
+        # The resolver owns inheritance and complete-snapshot boundaries. Sparse
+        # change maps are empty after source-preserving imports freeze a view.
+        for capture_id, snapshot in history.iter_resolved_snapshots():
             capture = history.captures[capture_id]
-            for case_id, change in capture["changes"].items():
-                if change == {"absent": True}:
-                    states.pop(case_id, None)
-                    captured.discard(case_id)
-                    parser_paths.pop(case_id, None)
-                elif "observation" in change:
-                    observation = change["observation"]
-                    states[case_id] = observation.get("unavailable", {}).get("code")
-                    if "value" in observation or "error" in observation:
-                        captured.add(case_id)
-                    else:
-                        captured.discard(case_id)
-                    path = parser_paths.setdefault(case_id, {})
-                    path["observation"] = observation.get("value", {}).get("parser_path")
-                    path["document"] = capture.get("document", {}).get("parser_path")
-            # Execution metadata is a replacement and persists through sparse observations.
-            # It records the selected release's actual route, unlike today's registry.
-            for case_id, metadata in capture["metadata_changes"].items():
-                parser_paths.setdefault(case_id, {})["metadata"] = metadata.get("parser_path")
-            for case_id, override in capture.get("document_overrides", {}).items():
-                if "parser_path" in override:
-                    parser_paths.setdefault(case_id, {})["override"] = override["parser_path"]
-            routes = {
-                path.get("metadata") or path.get("observation")
-                or (path["override"] if "override" in path else path.get("document"))
-                for path in parser_paths.values()
-            }
-            native_checkpoints.append((unified_history._capture_release_sort_key(capture["runtime_version"]),
-                                       "unified" in routes and "split" not in routes))
-            selected_states = dict(states)
-            if capture_id in needed:
-                resolved_id, snapshot = next(resolved)
-                if resolved_id != capture_id:
-                    raise ValueError("catalog checkpoint resolution order differs")
-                for case_id, change in snapshot.items():
-                    record, metadata = unified_history.materialized_record(history.family.cases[case_id], change)
-                    record.update(metadata.get("record_metadata", {}))
+            selected_states = {}
+            captured = False
+            routes = set()
+            for case_id, change in snapshot.items():
+                document = change["document"]
+                metadata = document.get("record_metadata", {})
+                observation = change["observation"]
+                route = metadata.get("parser_path") or observation.get("value", {}).get("parser_path") or document.get("parser_path")
+                if "verified_recapture" in metadata:
+                    record, _document = unified_history.materialized_record(history.family.cases[case_id], change)
+                    record.update(metadata)
                     selected = select_peer_observation(record, history.family.cases[case_id]["request"],
                                                        implementation=history.implementation, version=capture["runtime_version"])
-                    observation = selected.get("capture_observation", {})
-                    selected_states[case_id] = observation.get("unavailable", {}).get("code")
+                    _stimulus, observation, _metadata = unified_history._legacy_state(
+                        selected, b"", case_id, {}, history.family.cases[case_id]["request"],
+                    )
+                    route = selected.get("parser_path") or route
+                selected_states[case_id] = observation.get("unavailable", {}).get("code")
+                captured |= "value" in observation or "error" in observation
+                routes.add(route)
+            native_checkpoints.append((unified_history._capture_release_sort_key(capture["runtime_version"]),
+                                       "unified" in routes and "split" not in routes))
             # Missing expected results stay visible; registration failures do not.
             checkpoints.append((unified_history._capture_release_sort_key(capture["runtime_version"]),
                                 not selected_states or any(code is None for code in selected_states.values())
                                 or not any(code in unsupported for code in selected_states.values())))
             result_checkpoints.append((unified_history._capture_release_sort_key(capture["runtime_version"]),
-                                       bool(captured)))
+                                       captured))
         presence[identity] = checkpoints
         captured_results[identity] = result_checkpoints
         native_presence[identity] = native_checkpoints

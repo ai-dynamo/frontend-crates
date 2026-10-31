@@ -258,21 +258,51 @@ def test_wrong_producer_request_or_stale_receipt_cannot_be_imported(v2_capture, 
     assert "verified_recapture" not in result["document"].get("record_metadata", {})
 
 
-def test_catalog_uses_fresh_family_evidence_and_keeps_missing_history_visible(v2_capture):
+@pytest.mark.parametrize("representation", ["sparse", "complete"])
+def test_catalog_uses_fresh_family_evidence_and_keeps_missing_history_visible(v2_capture, representation):
     store, job, capture, payload = v2_capture
     change = _change()
     change["observation"] = {"unavailable": {"code": "unsupported_family", "detail": "original adapter"}}
-    _write_capture(store, "0.7.24", {"text_only": change}, implementation="dynamo_v2")
+    _write_capture(store, "0.7.24", {"text_only": change}, implementation="dynamo_v2",
+                   document_overrides={"text_only": {"parser_path": "split"}})
+    _write_capture(store, "0.7.25", {}, implementation="dynamo_v2")
+    payload["results"]["UNIFIED.text_only.gemma4"]["parser_path"] = "unified"
+    payload["provenance"]["results_sha256"] = hashlib.sha256(json.dumps(payload["results"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    capture.write_text(json.dumps(payload))
     import_capture(store, job, capture, payload["provenance"], implementation="dynamo_v2")
     loaded = unified_history.load_store(store)
+    history = loaded.histories["gemma4", "dynamo_v2"]
+    if representation == "sparse":
+        snapshots = list(history.iter_resolved_snapshots())
+        history.resolved_snapshots.clear()
+        history.snapshot_members.clear()
+        history.snapshot_suppressed_inheritance.clear()
+        cursor = unified_history._HistoryCursor(history)
+        previous = {}
+        for identity, records in snapshots:
+            unified_history._set_capture_snapshot(history, identity, records, previous, cursor=cursor)
+            previous = records
+        assert dict(history.iter_resolved_snapshots()) == dict(snapshots)
     candidates = [{"mode": "unified", "implementation": implementation, "version": "0.7.24"}
                   for implementation in ("dynamo_v2", "missing_engine")]
     _index_unified_families(loaded, candidates)
     assert all(candidate["capture_families"] == ["gemma4"] for candidate in candidates)
-    _write_capture(store, "0.7.25", {}, implementation="dynamo_v2")
+    assert candidates[0]["has_captured_results"]
+    assert candidates[0]["native_unified_families"] == ["gemma4"]
+    assert not candidates[1]["has_captured_results"]
     later = {"mode": "unified", "implementation": "dynamo_v2", "version": "0.7.25"}
-    _index_unified_families(unified_history.load_store(store), [later])
+    _index_unified_families(loaded, [later])
     assert later["capture_families"] == []
+    assert not later["has_captured_results"]
+    assert later["native_unified_families"] == []
+    if representation == "complete":
+        history.resolved_snapshots["dynamo_v2-0.7.24"]["text_only"]["document"]["record_metadata"].pop("verified_recapture")
+    else:
+        history.captures["dynamo_v2-0.7.24"]["metadata_changes"]["text_only"].pop("verified_recapture")
+    _index_unified_families(loaded, [candidates[0]])
+    assert candidates[0]["capture_families"] == []
+    assert not candidates[0]["has_captured_results"]
+    assert candidates[0]["native_unified_families"] == []
 
 
 @pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
@@ -356,9 +386,18 @@ def test_legacy_stream_record_keeps_its_contract_inside_batch_checkpoint(v2_capt
     preserved["text_only"]["document"].pop("record_metadata", None)
     assert preserved == before
     assert "capture_origin" not in current["text_only"]["document"]
-    history.captures[identity]["document_overrides"].pop("text_only")
-    with pytest.raises(ValueError, match="batch observation does not match its final fields"):
-        history.resolve(identity)
+    if history.resolved_snapshots:
+        snapshot = history.complete_snapshot(identity)
+        document = snapshot["records"]["text_only"]["value"]["document"]
+        document["captured_with"] = {implementation: "0.7.24"}
+        document["capture_origin"] = origin
+        history.capture_path(identity).write_text(unified_history.dump_yaml(snapshot))
+        with pytest.raises(ValueError, match="batch observation does not match its final fields"):
+            unified_history.load_store(store)
+    else:
+        history.captures[identity]["document_overrides"].pop("text_only")
+        with pytest.raises(ValueError, match="batch observation does not match its final fields"):
+            history.resolve(identity)
 
 
 def test_grouped_batch_and_jail_import_is_atomic_and_matches_separate_histories(v2_capture, tmp_path):

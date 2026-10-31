@@ -1,3 +1,4 @@
+schema_version: 2
 provenance:
   status: captured
   origin:
@@ -6,198 +7,4519 @@ provenance:
     git_commit: 4a221009296ad06e435745552069a43c53381d26
 document:
   mode: unified
-changes:
+records:
+  adjacent_calls_partial_header:
+    value:
+      case_key: adjacent_calls_partial_header
+      stimulus:
+        ref: current
+        semantic_sha256: f85d8a38f7c90244734c06f536a1a02e3edb8a0923110df01a6db588b9f01892
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+          adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+          job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+            adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+            job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 0207595aa708f5989701639433b00b5d725d311aa170b00befc8e87cd69cc963
+            cargo_lock_sha256: e1934eba060382e2f099bb0a9da6a2eba07c37796e1b5437354b1f379ed8aa4b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
   arg_json_null_ref:
-    case_key: UNIFIED.7-arg_json_null_ref
-    stimulus:
-      ref: current
-      semantic_sha256: 00a1097e5baecc5f47d3afffaec0b6cdef844a17ffa1898e0a239cc95348b815
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    value:
+      case_key: UNIFIED.7-arg_json_null_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 00a1097e5baecc5f47d3afffaec0b6cdef844a17ffa1898e0a239cc95348b815
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
   arg_null_mixed_labels:
-    case_key: UNIFIED.7-arg_null_mixed_labels
-    stimulus:
-      ref: current
-      semantic_sha256: 7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    value:
+      case_key: UNIFIED.7-arg_null_mixed_labels
+      stimulus:
+        ref: current
+        semantic_sha256: 7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
   arg_string_null_ref:
-    case_key: UNIFIED.7-arg_string_null_ref
-    stimulus:
-      ref: current
-      semantic_sha256: ab2b3f7100b13704b5814b71e121aae23785c4f2488127c27ad1206e30f924d3
-    observation:
-      value:
-        assembled: []
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+    value:
+      case_key: UNIFIED.7-arg_string_null_ref
+      stimulus:
+        ref: current
+        semantic_sha256: ab2b3f7100b13704b5814b71e121aae23785c4f2488127c27ad1206e30f924d3
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+  deepseek_v41_json_invocation_body:
+    value:
+      case_key: deepseek_v41_json_invocation_body
+      stimulus:
+        ref: current
+        semantic_sha256: df9110bde4d7bcbacde1edbef458e50c9a4de9c0a437b0b5ce031c12c0097ca6
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: done
+            - arguments: '{}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
   dotted_name_minimal:
-    case_key: UNIFIED.1-dotted_name_minimal
-    stimulus:
-      ref: current
-      semantic_sha256: 5e3d1179397e5450e167e41b649d3f9b910667860ac2a472ce4ae6f77cf74a5f
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: a.b
-          arguments: {}
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.1-dotted_name_minimal
+      stimulus:
+        ref: current
+        semantic_sha256: 5e3d1179397e5450e167e41b649d3f9b910667860ac2a472ce4ae6f77cf74a5f
+      observation:
+        value:
+          assembled:
           - kind: tool_call
             name: a.b
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{}'
-            complete: true
-        - expected: []
+            arguments: {}
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: a.b
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
   dotted_name_mixed_punctuation:
-    case_key: UNIFIED.1-dotted_name_mixed_punctuation
-    stimulus:
-      ref: current
-      semantic_sha256: 1c6c59687e13f5a62160ba5ce791db8832c8ac482a43bb4d053d123327dbbe48
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: my-tool.v2
-          arguments:
-            location: Beijing
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.1-dotted_name_mixed_punctuation
+      stimulus:
+        ref: current
+        semantic_sha256: 1c6c59687e13f5a62160ba5ce791db8832c8ac482a43bb4d053d123327dbbe48
+      observation:
+        value:
+          assembled:
           - kind: tool_call
             name: my-tool.v2
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
+            arguments:
+              location: Beijing
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: my-tool.v2
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"location":"Beijing"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
   dotted_name_multiple_segments:
-    case_key: UNIFIED.1-dotted_name_multiple_segments
-    stimulus:
-      ref: current
-      semantic_sha256: ece2bfb20932e8163f5a5b84f0ced28236540b1a5ad67c883a89fdde70eda642
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.tools.weather
-          arguments:
-            location: Beijing
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.1-dotted_name_multiple_segments
+      stimulus:
+        ref: current
+        semantic_sha256: ece2bfb20932e8163f5a5b84f0ced28236540b1a5ad67c883a89fdde70eda642
+      observation:
+        value:
+          assembled:
           - kind: tool_call
             name: server.tools.weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
+            arguments:
+              location: Beijing
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: server.tools.weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"location":"Beijing"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
   dotted_name_shared_prefix:
-    case_key: UNIFIED.2-dotted_name_shared_prefix
-    stimulus:
-      ref: current
-      semantic_sha256: 075aa1795ac22e25e7ea371f5f6544dd78076474b8cc1b98f0e70417062c8401
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.weather
-          arguments:
-            location: Beijing
-        - kind: tool_call
-          name: server.time
-          arguments:
-            timezone: Asia/Shanghai
-        chunks:
-        - expected:
+    value:
+      case_key: UNIFIED.2-dotted_name_shared_prefix
+      stimulus:
+        ref: current
+        semantic_sha256: 075aa1795ac22e25e7ea371f5f6544dd78076474b8cc1b98f0e70417062c8401
+      observation:
+        value:
+          assembled:
           - kind: tool_call
             name: server.weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"location":"Beijing"}'
-            complete: true
+            arguments:
+              location: Beijing
           - kind: tool_call
             name: server.time
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"timezone":"Asia/Shanghai"}'
-            complete: true
-        - expected: []
-metadata_changes:
-  arg_json_null_ref:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_null_mixed_labels:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_ref:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_minimal:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_mixed_punctuation:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_multiple_segments:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_shared_prefix:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-document_overrides: {}
+            arguments:
+              timezone: Asia/Shanghai
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: server.weather
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"location":"Beijing"}'
+              complete: true
+            - kind: tool_call
+              name: server.time
+              arguments: ''
+              complete: false
+            - kind: tool_call
+              name: null
+              arguments: '{"timezone":"Asia/Shanghai"}'
+              complete: true
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+  glm47_parameterless_call_shape_inside_argument:
+    value:
+      case_key: glm47_parameterless_call_shape_inside_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 1d345e03c99efd26082f8e5cb04fad2edf4b51551cac33aeb9efdc20fd13a2c3
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+          job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+            job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 34a1acc69d17acb4f95459b84dff3693dda96d337aba40fa00dd8a7595adef19
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  glm47_reference_type_intersection:
+    value:
+      case_key: glm47_reference_type_intersection
+      stimulus:
+        ref: current
+        semantic_sha256: d0beaf02b0def119100268a29ee1f746f84c816c187d158273953085851dedd6
+      observation:
+        value:
+          assembled:
+          - arguments: '{"payload":"{\"x\":1}","count":42}'
+            kind: tool_call
+            name: capture_payload
+          chunks:
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: capture_payload
+            - arguments: '{"payload":"{\"x\":1}","count":42}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+          adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+          job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+            adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+            job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 0207595aa708f5989701639433b00b5d725d311aa170b00befc8e87cd69cc963
+            cargo_lock_sha256: e1934eba060382e2f099bb0a9da6a2eba07c37796e1b5437354b1f379ed8aa4b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  interrupted_reasoning_then_response:
+    value:
+      case_key: interrupted_reasoning_then_response
+      stimulus:
+        ref: current
+        semantic_sha256: b407c1a6992e417f86d3fb7fd63c9189814aea2342deb88a558c9f369a6c8d3b
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+          adapter_sha256: 873df2881c2274d924148f19563fb5cdd51edd5e3e6581d91659c3de88596881
+          job_sha256: 770cc408d044fdde9863a1bca3f5f78e5f6ffab0ef191cadeccadd1942f69c4c
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+            adapter_sha256: 873df2881c2274d924148f19563fb5cdd51edd5e3e6581d91659c3de88596881
+            job_sha256: 770cc408d044fdde9863a1bca3f5f78e5f6ffab0ef191cadeccadd1942f69c4c
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 689637ecaeabb3d97e9980875c8af7f930b096eb851bbdf7f90ce35ebeeb56d4
+            cargo_lock_sha256: e1934eba060382e2f099bb0a9da6a2eba07c37796e1b5437354b1f379ed8aa4b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_k3_malformed_call_then_valid:
+    value:
+      case_key: kimi_k3_malformed_call_then_valid
+      stimulus:
+        ref: current
+        semantic_sha256: 0093e7fd4e6e98d7337f9ee23bb76811accfeaacb9296ab599d60977f74c9cf4
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: g
+            - arguments: '{"y":"2"}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_k3_typed_argument_values:
+    value:
+      case_key: kimi_k3_typed_argument_values
+      stimulus:
+        ref: current
+        semantic_sha256: f19a0ceeea100458b36853e2f7dba35631eaedec3cadf1569e7e44325ed40c9a
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+          job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+            job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 34a1acc69d17acb4f95459b84dff3693dda96d337aba40fa00dd8a7595adef19
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_k3_typed_json_marker_payload:
+    value:
+      case_key: kimi_k3_typed_json_marker_payload
+      stimulus:
+        ref: current
+        semantic_sha256: 9a26f899fdda3804c60a149defc0ddcafc23c33a87336e78683113f50229967f
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+          job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+            job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 34a1acc69d17acb4f95459b84dff3693dda96d337aba40fa00dd8a7595adef19
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_native_incompatible_string_recovery:
+    value:
+      case_key: kimi_native_incompatible_string_recovery
+      stimulus:
+        ref: current
+        semantic_sha256: e0f9e0531e45783242a54008bc9f1b6fe760fa787fb367912bee9e6a01c01465
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_native_incremental_interfield_whitespace:
+    value:
+      case_key: kimi_native_incremental_interfield_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: c11847f9c9259818871b05099819b44575219c6eaeb48ef7203e61d02320a586
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_native_k2_count_content_chunk1024:
+    value:
+      case_key: kimi_native_k2_count_content_chunk1024
+      stimulus:
+        ref: current
+        semantic_sha256: b0f6a64afea18ca9ed3769c945637cac5d2c017706003f0db5f281e29e97d3f6
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_native_k2_count_content_chunk7:
+    value:
+      case_key: kimi_native_k2_count_content_chunk7
+      stimulus:
+        ref: current
+        semantic_sha256: bdfd7f661e804f6d280a853ff07795afbb357eb294ea61db8dd7bf733d479d10
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_native_trailing_syntax_whitespace:
+    value:
+      case_key: kimi_native_trailing_syntax_whitespace
+      stimulus:
+        ref: current
+        semantic_sha256: 59aba168cc91d5d92b7b56639e02e008ce2143b475ec3f174a8fbc771482de2b
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_native_valid_object_trailing_garbage:
+    value:
+      case_key: kimi_native_valid_object_trailing_garbage
+      stimulus:
+        ref: current
+        semantic_sha256: 10137e1dfd0a66e4ff222d3d211f596b77de93401eb8329fdc577b5de54cd622
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  muse_opaque_declared_invoke:
+    value:
+      case_key: muse_opaque_declared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: 8803e50bf67fd301704017fc64345889d2167fd39a0ed3f303a0dfad70ab05b3
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: get_weather
+            - arguments: '{\"city\": \"Paris"}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  muse_opaque_undeclared_invoke:
+    value:
+      case_key: muse_opaque_undeclared_invoke
+      stimulus:
+        ref: current
+        semantic_sha256: a7f0229f7cf75c7ee2737585443b2afa576e649b4b8b7c10bfeb455030595487
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: rm_rf
+            - arguments: '{\"path\": \"/"}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  muse_quoted_reserved_eom_argument:
+    value:
+      case_key: muse_quoted_reserved_eom_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 40115ff5f99b9966cbbbb3052472bbb0ee7199ed833eaba334fec37b39467390
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: split capture cannot apply the requested initialization
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+          job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: Response
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+            job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 34a1acc69d17acb4f95459b84dff3693dda96d337aba40fa00dd8a7595adef19
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  muse_quoted_reserved_eot_argument:
+    value:
+      case_key: muse_quoted_reserved_eot_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 2806fbc2a86ce957e44907f399dd475674e758c6e3baa4a4f684e12469a57232
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: split capture cannot apply the requested initialization
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+          job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: Response
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+            job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 34a1acc69d17acb4f95459b84dff3693dda96d337aba40fa00dd8a7595adef19
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  muse_quoted_reserved_start_argument:
+    value:
+      case_key: muse_quoted_reserved_start_argument
+      stimulus:
+        ref: current
+        semantic_sha256: 2b0b8a4f5a77bf87a5930ba5a9f409e65e9d525f68d4b874d6e86a70d00399d0
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: split capture cannot apply the requested initialization
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+          job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: Response
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 33142ae38fb32ec8dac393a0d70e12e23a7085b2c7e4e74218fc893a3de628cd
+            job_sha256: 138657b1176773a81ae0d05551a578e423f117f1ded591dc834bdbd58be9d78a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 34a1acc69d17acb4f95459b84dff3693dda96d337aba40fa00dd8a7595adef19
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  muse_recovery_second_parameter:
+    value:
+      case_key: muse_recovery_second_parameter
+      stimulus:
+        ref: current
+        semantic_sha256: 59a5b02ed1d8240df6d5b893232d544c242e5b9be5fec385e333cff0846598c5
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: get_weather
+            - arguments: '{\"city\": \"Paris"}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  muse_unterminated_parameter_then_empty_call:
+    value:
+      case_key: muse_unterminated_parameter_then_empty_call
+      stimulus:
+        ref: current
+        semantic_sha256: bd277894a55de1aef858a6e80b5477beede3323fc2b76808b6d9a5f4511dcac2
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: f
+            - arguments: '{}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+          adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+          job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: f7026ea3b0328e28ca28545da3cfcd4813877eb77c0556f2f96c32a154184d55
+            adapter_sha256: 437fccfde7eb7b7b33caf1bc868d220203f4dff1abe98859cff13528e9de461b
+            job_sha256: ade8d9d575120dcd402fe4c0bec5b7ca419a628baa843f42166349857cbbb220
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: b717451a35028b96b692c2ed933317a283c4202ed890f80720029706a495b5ba
+            cargo_lock_sha256: b77015d4a2af73186db43a4df3206d5d53d68f9b9d976b2898d9b0be5008edca
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  reason_markup_in_arg_consistent:
+    value:
+      case_key: reason_markup_in_arg_consistent
+      stimulus:
+        ref: current
+        semantic_sha256: 6fa35eb281f363e72214dc26bd47b0b43d95b94cc4b707db3743eeb438ec9259
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: reconsider
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+          adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+          job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+            adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+            job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 0207595aa708f5989701639433b00b5d725d311aa170b00befc8e87cd69cc963
+            cargo_lock_sha256: e1934eba060382e2f099bb0a9da6a2eba07c37796e1b5437354b1f379ed8aa4b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  reason_markup_in_arg_with_text_consistent:
+    value:
+      case_key: reason_markup_in_arg_with_text_consistent
+      stimulus:
+        ref: current
+        semantic_sha256: 0a4415d75a8c5461fd5255f795baaba42ac5151cf0c1e9aef3d999a83e9a26d6
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: 'Logging now: assistant to=functions.log'
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+          adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+          job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+            adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+            job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 0207595aa708f5989701639433b00b5d725d311aa170b00befc8e87cd69cc963
+            cargo_lock_sha256: e1934eba060382e2f099bb0a9da6a2eba07c37796e1b5437354b1f379ed8aa4b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  three_calls_partial_header:
+    value:
+      case_key: three_calls_partial_header
+      stimulus:
+        ref: current
+        semantic_sha256: 2ba381aecf159f6774e38c8ca7d8871f88716f35dcad8440f0a25a07c18919f8
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+          adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+          job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 85671577202fb0d592d904a1cbdca2e7e669b37c23b1522ddcaad84ca2bee012
+            adapter_sha256: 472d9a85f9223b73beb7e46ee1effdb9d0861b1b042785fc87c4c48b3ff9ec2b
+            job_sha256: 8a4bd618c60f9a25e3fef66e51996d18bb52d6d337c63d4a810700682592da5a
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: 0207595aa708f5989701639433b00b5d725d311aa170b00befc8e87cd69cc963
+            cargo_lock_sha256: e1934eba060382e2f099bb0a9da6a2eba07c37796e1b5437354b1f379ed8aa4b
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.7.22.yaml
+    suppress_inherited_from: true
+  kimi_k3_json_marker_then_long_field:
+    value:
+      case_key: kimi_k3_json_marker_then_long_field
+      stimulus:
+        ref: current
+        semantic_sha256: 113eb284f442478af66ff5875fd95931d5d733973039b10bf685d9361fe6c877
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 39e3caea9d48020094fc55cf7df89448e310d83c73bd8b0b8261a6b3c50b34e5
+            adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+            job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: e4b46f06c2be90c531e00780af7fc90452504873dd0ba7f32ad8a009c5f8ba5d
+            cargo_lock_sha256: 50fe2fca4ba230ce198bb271905f21d05ef458ddb25cafe1ccc6cc71aa5009f9
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 39e3caea9d48020094fc55cf7df89448e310d83c73bd8b0b8261a6b3c50b34e5
+          adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+          job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.1.23.yaml
+    suppress_inherited_from: true
+  kimi_k3_typed_response_then_call:
+    value:
+      case_key: kimi_k3_typed_response_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: b6c996ab9bede6e4a6e9b284dc13fcceefbf6a6857a012b546bca3ee3c9b67bc
+      observation:
+        value:
+          assembled: []
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 39e3caea9d48020094fc55cf7df89448e310d83c73bd8b0b8261a6b3c50b34e5
+            adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+            job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: e4b46f06c2be90c531e00780af7fc90452504873dd0ba7f32ad8a009c5f8ba5d
+            cargo_lock_sha256: 50fe2fca4ba230ce198bb271905f21d05ef458ddb25cafe1ccc6cc71aa5009f9
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 39e3caea9d48020094fc55cf7df89448e310d83c73bd8b0b8261a6b3c50b34e5
+          adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+          job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.1.23.yaml
+    suppress_inherited_from: true
+  kimi_k3_direct_typed_response_recovery:
+    value:
+      case_key: kimi_k3_direct_typed_response_recovery
+      stimulus:
+        ref: current
+        semantic_sha256: a54b346d3c3760509f79f3af9b3b709d87db685b309ab4d7a8abcbf2046d44f2
+      observation:
+        unavailable:
+          code: unsupported_request_mode
+          detail: split capture cannot apply the requested initialization
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.7.22
+        record_metadata:
+          parser_path: split
+          init:
+            named_tool: null
+            starting_state: Response
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.7.22
+            git_commit: 4a221009296ad06e435745552069a43c53381d26
+            source_sha256: 39e3caea9d48020094fc55cf7df89448e310d83c73bd8b0b8261a6b3c50b34e5
+            adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+            job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+            crate_checksum: a266eebd5342a8b7db48224dec4ee1d84b01499a97ccc50332f15284901bbda9
+            reasoning_version: 10.0.2
+            results_sha256: e4b46f06c2be90c531e00780af7fc90452504873dd0ba7f32ad8a009c5f8ba5d
+            cargo_lock_sha256: 50fe2fca4ba230ce198bb271905f21d05ef458ddb25cafe1ccc6cc71aa5009f9
+        capture_origin:
+          crate_version: 0.7.22
+          source_sha256: 39e3caea9d48020094fc55cf7df89448e310d83c73bd8b0b8261a6b3c50b34e5
+          adapter_sha256: 55d8516e7485a06e2001a78070f9acc136fef053b0a79685f574ccddf5db1ab9
+          job_sha256: c7681daafc11749e8670489c69f671cd3fd040b496b0e3b4b2d7904bd4182550
+          git_commit: 4a221009296ad06e435745552069a43c53381d26
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.1.23.yaml
+    suppress_inherited_from: true

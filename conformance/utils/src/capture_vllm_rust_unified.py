@@ -23,6 +23,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass, replace
+import hashlib
 import json
 import os
 import re
@@ -34,23 +36,56 @@ from pathlib import Path
 
 from capture_stimulus import capture_input, capture_peer_results, unavailable_result, validate_family_scoped_cases
 from dynamo_version import git_subprocess_env
+from impls import unified_starts_in_reasoning
 from unified_tools import SCHEMA_PATH
 
-# Family parser wiring for the released 0.25.1 capture.
+@dataclass(frozen=True)
+class ParserProfile:
+    unified: str | None = None
+    reasoning: str | None = None
+    reasoning_fallbacks: tuple[str, ...] = ()
+    tool: str | None = None
+    markers: tuple[str, ...] = ("<think>", "</think>")
+    special: bool = False
+    reasoning_suffix: str = ""
+
+    @property
+    def reasoning_prompt(self):
+        return self.markers[0] + self.reasoning_suffix
+
+    @property
+    def response_prompt(self):
+        # CombinedParser supports persistent Response by omitting its optional
+        # reasoner. K3 instead exposes the mode through its native prompt header.
+        if self.unified == "KimiK3UnifiedParser":
+            return self.markers[0] + "response" + self.markers[2]
+        if self.unified is None and self.tool is not None:
+            return ""
+        return None
+
+
+# One owner generates both the public factory and its prompt-tokenizer context.
 FAMILY_PARSERS = {
-    "gemma4": ("unified", None, None),
-    "deepseek_v4": ("combined", "DeepSeekV4ReasoningParser", "DeepSeekV4ToolParser"),
-    "deepseek_v41": ("combined", "DeepSeekV4ReasoningParser", "DeepSeekV4ToolParser"),
-    "glm47": ("combined", "Glm45ReasoningParser", "Glm47MoeToolParser"),
-    "qwen3": ("combined", "Qwen3ReasoningParser", "Qwen3CoderToolParser"),
-    "nemotron_v3": ("combined", "NemotronV3ReasoningParser", "Qwen3CoderToolParser"),
-    "kimi_k2": ("combined", "KimiReasoningParser", "KimiK2ToolParser"),
+    "gemma4": ParserProfile(unified="Gemma4UnifiedParser", markers=("<|channel>", "<channel|>"), special=True, reasoning_suffix="thought\n"),
+    "kimi_k3": ParserProfile(unified="KimiK3UnifiedParser", markers=("<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"), special=True, reasoning_suffix="think<|sep|>"),
+    "deepseek_v4": ParserProfile(reasoning="DeepSeekV4ReasoningParser", tool="DeepSeekV4ToolParser"),
+    "deepseek_v41": ParserProfile(reasoning="DeepSeekV41ReasoningParser", tool="DeepSeekV41ToolParser"),
+    "glm47": ParserProfile(reasoning="Glm47ReasoningParser", reasoning_fallbacks=("Glm45ReasoningParser",), tool="Glm47MoeToolParser"),
+    "qwen3": ParserProfile(reasoning="Qwen3ReasoningParser", tool="Qwen3CoderToolParser"),
+    "nemotron_v3": ParserProfile(reasoning="NemotronV3ReasoningParser", tool="Qwen3CoderToolParser", reasoning_suffix="\n"),
+    "kimi_k2": ParserProfile(reasoning="KimiK2ReasoningParser", tool="KimiK2ToolParser"),
+    "minimax_m3": ParserProfile(reasoning="MiniMaxM3ReasoningParser", tool="MinimaxM3ToolParser", markers=("<mm:think>", "</mm:think>")),
 }
 
 
 def _unsupported_request(case: dict) -> tuple[str, str] | None:
     """Classify request state the Rust parser API cannot receive."""
     init = case.get("init") or {}
+    if init.get("structural_tag") is not None:
+        return (
+            "peer_request_unsupported",
+            "Parser-only vLLM Rust capture does not execute structural-tag generation constraints.",
+        )
     if init.get("tool_output_mode", "Native") == "GuidedJson":
         return (
             "vllm_rust_guided_json_unsupported",
@@ -62,12 +97,13 @@ def _unsupported_request(case: dict) -> tuple[str, str] | None:
             "vLLM Rust UnifiedParser has no named-tool request API.",
         )
     starting_state = init.get("starting_state", "None")
-    if starting_state == "Response":
+    profile = FAMILY_PARSERS.get(case.get("family"))
+    if starting_state == "Response" and (profile is None or profile.response_prompt is None):
         return (
             "vllm_rust_starting_state_unsupported",
-            "vLLM Rust UnifiedParser has no request-prefilled Response starting-state API.",
+            "This public vLLM Rust parser cannot keep reasoning markers literal after Response prefill.",
         )
-    if starting_state not in {"None", "Reasoning"}:
+    if starting_state not in {"None", "Reasoning", "Response"}:
         return (
             "vllm_rust_starting_state_unsupported",
             f"vLLM Rust UnifiedParser capture does not recognize starting_state={starting_state!r}.",
@@ -81,10 +117,10 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use vllm_parser::reasoning::{Qwen3ReasoningParser, ReasoningParser};
-use vllm_parser::tool::{DeepSeekV4ToolParser, Glm47MoeToolParser, KimiK2ToolParser, Qwen3CoderToolParser, Tool, ToolParser};
+use vllm_parser::reasoning::ReasoningParser;
+use vllm_parser::tool::{Tool, ToolParser};
 use vllm_parser::unified::{
-    CombinedParser, Gemma4UnifiedParser, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput,
+    CombinedParser, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput,
 };
 use vllm_tokenizer::test_utils::TestTokenizer;
 use vllm_tokenizer::DynTokenizer;
@@ -122,54 +158,19 @@ struct CaseOut {
     error: Option<String>,
 }
 
-fn make_parser(family: &str, tools: &[Tool]) -> (Box<dyn UnifiedParser>, String) {
-    if family == "gemma4" {
-        let tok: DynTokenizer = Arc::new(
-            TestTokenizer::new()
-                .with_special_token("<|channel>", 256)
-                .with_special_token("<channel|>", 257),
-        );
-        return (
-            Gemma4UnifiedParser::create(tools, tok).expect("gemma4 unified create"),
-            "vLLM Rust (UnifiedParser)".to_string(),
-        );
+fn make_parser(family: &str, tools: &[Tool], starting_state: &str) -> (Box<dyn UnifiedParser>, String, DynTokenizer) {
+    match family {
+        __FACTORY_ARMS__
+        other => panic!("no public vLLM Rust unified mapping for `{other}`"),
     }
-    let tokenizer = if family == "kimi_k2" {
-        TestTokenizer::new()
-            .with_special_token("<think>", 256)
-            .with_special_token("</think>", 257)
-    } else {
-        TestTokenizer::new()
-            .with_regular_token("<think>", 256)
-            .with_regular_token("</think>", 257)
-    };
-    let reasoning = Qwen3ReasoningParser::create(Arc::new(tokenizer))
-        .expect("standard think reasoning parser");
-    let tool = match family {
-        "qwen3" | "nemotron_v3" => Qwen3CoderToolParser::create(tools),
-        "kimi_k2" => KimiK2ToolParser::create(tools),
-        "deepseek_v4" | "deepseek_v41" => DeepSeekV4ToolParser::create(tools),
-        "glm47" => Glm47MoeToolParser::create(tools),
-        other => panic!("no vLLM Rust unified mapping for family `{other}`"),
-    }.expect("registered tool parser");
-    (
-        Box::new(CombinedParser::new(Some(reasoning), Some(tool))),
-        "vLLM Rust (CombinedParser)".to_string(),
-    )
 }
 
-fn prompt_token_ids(case: &Case) -> Vec<u32> {
-    if case.init.starting_state != "Reasoning" {
-        return Vec::new();
-    }
-    match case.family.as_str() {
-        // These IDs match the TestTokenizer profiles in make_parser(). The
-        // parser only needs the open-reasoning marker to detect the prompt's
-        // initial state; generated text still supplies the closing marker.
-        "gemma4" => vec![256],
-        "qwen3" | "nemotron_v3" | "kimi_k2" | "deepseek_v4" | "deepseek_v41" | "glm47" => vec![256],
-        other => panic!("no prompt marker profile for family `{other}`"),
-    }
+fn prompt_token_ids(case: &Case, tokenizer: &DynTokenizer) -> Vec<u32> {
+    let prompt = match case.family.as_str() {
+        __PROMPT_ARMS__
+        other => panic!("no prompt marker profile for `{other}`"),
+    };
+    tokenizer.encode(prompt, false).expect("encode parser prompt context")
 }
 
 /// Coalesce an ordered event list into JSON [reasoning|text|tool_call], merging
@@ -201,7 +202,9 @@ fn events_to_json(events: &[UnifiedParserEvent]) -> Vec<Value> {
         let args: Value = if raw.trim().is_empty() {
             json!({})
         } else {
-            serde_json::from_str(&raw).unwrap_or(Value::String(raw))
+            // Keep the producer's raw JSON argument tokens. Parsing them into
+            // an ordinary serde_json::Value can round decimals in the adapter.
+            Value::String(raw)
         };
         out[*pos] = json!({"kind":"tool_call","name":name,"arguments":args});
     }
@@ -229,10 +232,10 @@ fn main() {
     let mut results: BTreeMap<String, CaseOut> = BTreeMap::new();
 
     for case in &job.cases {
-        let (mut p, parser) = make_parser(&case.family, &case.tools);
+        let (mut p, parser, tokenizer) = make_parser(&case.family, &case.tools, &case.init.starting_state);
         let mut error: Option<String> = None;
 
-        let prompt_ids = prompt_token_ids(case);
+        let prompt_ids = prompt_token_ids(case, &tokenizer);
         if !prompt_ids.is_empty() {
             if let Err(e) = p.initialize(&prompt_ids) {
                 error = Some(format!("UnifiedParserError::{e:?}"));
@@ -257,7 +260,7 @@ fn main() {
         let assembled = events_to_json(&out.events);
 
         // Streaming: fresh parser, per-chunk deltas.
-        let (mut ps, _) = make_parser(&case.family, &case.tools);
+        let (mut ps, _, _) = make_parser(&case.family, &case.tools, &case.init.starting_state);
         if !prompt_ids.is_empty() {
             if let Err(e) = ps.initialize(&prompt_ids) {
                 error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
@@ -330,9 +333,53 @@ def _vllm_rust_version(vllm_rust_source: Path, parser_crate: Path) -> str:
     )
 
 
-def rust_main(version: str, unified_api: str) -> str:
+def public_profiles(vllm_rust_source: Path) -> dict[str, ParserProfile]:
+    api_root = vllm_rust_source / "src/parser/src"
+    exports = {}
+    for module in ("unified", "reasoning", "tool"):
+        api = (api_root / module / "mod.rs").read_text()
+        public = " ".join(re.findall(r"\bpub\s+use\b[^;]+;|\bpub\s+(?:type|struct)\s+\w+", api, re.S))
+        exports[module] = set(re.findall(r"\b[A-Za-z_]\w*\b", public))
+    profiles = {}
+    for family, profile in FAMILY_PARSERS.items():
+        if profile.reasoning is not None:
+            reasoning = next((name for name in (profile.reasoning, *profile.reasoning_fallbacks)
+                              if name in exports["reasoning"]), None)
+            if reasoning is None:
+                continue
+            profile = replace(profile, reasoning=reasoning)
+        if all(name is None or name in exports[module] for module, name in (
+            ("unified", profile.unified), ("tool", profile.tool),
+        )):
+            profiles[family] = profile
+    return profiles
+
+
+def rust_main(version: str, unified_api: str, profiles: dict[str, ParserProfile] | None = None) -> str:
+    profiles = FAMILY_PARSERS if profiles is None else profiles
+    factories, prompts = [], []
+    for family, profile in profiles.items():
+        tokenizer = "TestTokenizer::new()" + "".join(
+            f'.with_{"special" if profile.special else "regular"}_token({json.dumps(marker)}, {256 + index})'
+            for index, marker in enumerate(profile.markers)
+        )
+        if profile.unified is not None:
+            factory = f'vllm_parser::unified::{profile.unified}::create(tools, tokenizer.clone()).expect("public unified create")'
+            label = "vLLM Rust (UnifiedParser)"
+        else:
+            factory = (f'Box::new(CombinedParser::new(if starting_state == "Response" {{ None }} else {{ Some(vllm_parser::reasoning::{profile.reasoning}::create(tokenizer.clone()).expect("public reasoning create")) }}, '
+                       f'Some(vllm_parser::tool::{profile.tool}::create(tools).expect("public tool create"))))')
+            label = "vLLM Rust (CombinedParser)"
+        factories.append(f'{json.dumps(family)} => {{ let tokenizer: DynTokenizer = Arc::new({tokenizer}); '
+                         f'let parser: Box<dyn UnifiedParser> = {factory}; (parser, {json.dumps(label)}.to_string(), tokenizer) }},')
+        response = (f'"Response" => {json.dumps(profile.response_prompt)},' if profile.response_prompt is not None else "")
+        default_prompt = profile.reasoning_prompt if unified_starts_in_reasoning(family) else ""
+        prompts.append(f'{json.dumps(family)} => match case.init.starting_state.as_str() {{ '
+                       f'"Reasoning" => {json.dumps(profile.reasoning_prompt)}, {response} '
+                       f'"None" | "" => {json.dumps(default_prompt)}, other => panic!("unsupported prompt state {{other}}"), }},')
     source = RUST_MAIN.replace('"vllm_rust_version": "0.25.1"',
                                f'"vllm_rust_version": {json.dumps(version)}')
+    source = source.replace("__FACTORY_ARMS__", "\n".join(factories)).replace("__PROMPT_ARMS__", "\n".join(prompts))
     # Newer releases carry token attribution with decoded reasoning text. The
     # authored corpus supplies text, so use the released unattributed constructor.
     if re.search(r"fn\s+parse_into\s*\([^)]*\bdelta:\s*DecodedText\b", unified_api):
@@ -373,8 +420,11 @@ serde_json = "1"
 
 [workspace]
 ''')
-        (crate / "src/main.rs").write_text(rust_main(version, unified_api))
+        (crate / "src/main.rs").write_text(rust_main(version, unified_api, public_profiles(vllm_rust_source)))
         subprocess.run(["cargo", "fmt"], cwd=crate, check=True, capture_output=True, text=True)
+        workspace_lock = vllm_rust_source / "Cargo.lock"
+        if workspace_lock.is_file():
+            (crate / "Cargo.lock").write_bytes(workspace_lock.read_bytes())
         build = subprocess.run(
             ["cargo", "build", "--quiet"],
             cwd=crate, capture_output=True, text=True)
@@ -388,6 +438,19 @@ serde_json = "1"
             input=job_json, capture_output=True, text=True)
         if run.returncode != 0:
             sys.exit(f"capture run failed:\n{run.stderr}")
+        evidence_root = os.environ.get("DYN_CAPTURE_EVIDENCE")
+        if evidence_root is not None:
+            evidence = Path(evidence_root) / hashlib.sha256(job_json.encode()).hexdigest()
+            evidence.mkdir(parents=True, exist_ok=False)
+            for name in ("Cargo.toml", "Cargo.lock", "src/main.rs"):
+                (evidence / Path(name).name).write_bytes((crate / name).read_bytes())
+            (evidence / "job.json").write_text(job_json)
+            executable = target / "debug" / package_name
+            (evidence / "execution.json").write_text(json.dumps({
+                "binary_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
+                "stdout_sha256": hashlib.sha256(run.stdout.encode()).hexdigest(),
+                "exit_code": run.returncode,
+            }, sort_keys=True))
         return run.stdout
 
 
@@ -396,10 +459,11 @@ def capture_job(vllm_rust_source, job):
     feed = {}
     schema_bytes = SCHEMA_PATH.read_bytes()
     version = _vllm_rust_version(vllm_rust_source, vllm_rust_source / "src/parser")
+    profiles = public_profiles(vllm_rust_source)
 
     unsupported = {}
     for case in job.get("cases", []):
-        if case["family"] in FAMILY_PARSERS:
+        if case["family"] in profiles:
             continue
         request = capture_input({**case, "chunks": [{"delta_text": chunk} for chunk in case.get("chunks", [])]})
         detail = f"No vLLM Rust Unified parser is registered for {case['family']} at {version}."
@@ -410,7 +474,7 @@ def capture_job(vllm_rust_source, job):
             observation=True,
         )
 
-    if unsupported and all(case["family"] not in FAMILY_PARSERS for case in job.get("cases", [])):
+    if unsupported and all(case["family"] not in profiles for case in job.get("cases", [])):
         return {
             "vllm_rust_version": version,
             "results": unsupported,
@@ -422,7 +486,7 @@ def capture_job(vllm_rust_source, job):
 
     results = capture_peer_results(
         job.get("cases", []),
-        FAMILY_PARSERS,
+        profiles,
         capture,
         tools=json.loads(schema_bytes),
         supports_finish=True,

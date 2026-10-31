@@ -30,12 +30,14 @@ import vllm
 import yaml
 
 from capture_stimulus import batch_final_events, capture_input, unavailable_result, validate_family_scoped_cases
+from numeric_cases import decode_arguments as _tool_args_json
 from unified_tools import openai_tools
 
-from peer_modules import AdapterContractError, resolve_peer_module, vllm_parser_factory, vllm_stream_is_legacy, parser_error_detail
-from peer_modules import capture_parser
+from peer_modules import AdapterContractError, resolve_peer_module, vllm_parser_factory, vllm_stream_is_legacy, vllm_initialization_kwargs, vllm_native_request_unavailable, vllm_response_constructor_class, parser_error_detail
+from peer_modules import capture_parser, parser_only_request, capture_vllm_harmony, vllm_harmony_family
 
-ChatCompletionRequest = resolve_peer_module("vllm", "protocol").ChatCompletionRequest
+protocol = resolve_peer_module("vllm", "protocol")
+ChatCompletionRequest = protocol.ChatCompletionRequest
 _PARSER_FACTORY = vllm_parser_factory()
 
 # family -> (reasoning_parser_name, tool_parser_name) for the released Python
@@ -143,15 +145,6 @@ def _fn(tc):
     return getattr(tc, "function", tc)
 
 
-def _tool_args_json(args):
-    if not args:
-        return {}
-    try:
-        return json.loads(args)
-    except (ValueError, TypeError):
-        return args
-
-
 def _assembled_events(reasoning, content, tool_calls):
     """Project vLLM's (reasoning, content, tool_calls) final message to events."""
     calls = []
@@ -203,16 +196,11 @@ def _request(case):
             tool_choice = "required"
     else:
         tool_choice = "auto"
-    thinking_enabled = init.get("starting_state") != "Response"
-    # The prompt already opened the visible response channel for Response rows.
-    # Pass both spellings because Kimi K3 reads ``thinking`` while the other
-    # engine adapters read ``enable_thinking``.
-    chat_template_kwargs = {
-        "thinking": thinking_enabled,
-        "enable_thinking": thinking_enabled,
-    }
+    chat_template_kwargs = vllm_initialization_kwargs(init, case["family"])
     tools = openai_tools(case.get("tools"))
-    return ChatCompletionRequest(
+    return parser_only_request(ChatCompletionRequest,
+        tool_type=protocol.ChatCompletionToolsParam,
+        named_choice_type=protocol.ChatCompletionNamedToolChoiceParam,
         messages=[{"role": "user", "content": "x"}],
         tools=tools,
         tool_choice=tool_choice,
@@ -222,18 +210,14 @@ def _request(case):
 
 def _prompt_token_ids(case, family):
     init = case.get("init") or {}
+    if init.get("starting_state") == "Response":
+        # Public composition checks prompt context before entering its tool phase.
+        return []
     if init.get("starting_state") != "Reasoning":
         return None
     markers = VLLM_TOKENIZER_MARKERS[family]
     tokenizer = StubTokenizer(family)
-    if family == "kimi_k3":
-        marker = "<|open|>think<|sep|>"
-    elif family == "gemma4":
-        marker = "<|channel>"
-    else:
-        marker = "<think>"
-    if marker not in markers:
-        raise ValueError(f"missing reasoning marker profile for {family}")
+    marker = markers[0]
     return tokenizer.encode(marker, add_special_tokens=False)
 
 
@@ -278,9 +262,20 @@ def _capture_cases(cases):
         if fam not in FAMILY_PARSERS:
             continue
         rn, tn = FAMILY_PARSERS[fam]
+        init = case.get("init") or {}
+        guard = vllm_native_request_unavailable(
+            resolve_peer_module("vllm", "reasoning").ReasoningParserManager,
+            resolve_peer_module("vllm", "tools").ToolParserManager, (rn, tn), init)
+        if guard is not None:
+            results[case["id"]] = unavailable_result(*guard, observation=True)
+            continue
         try:
-            cls = _PARSER_FACTORY(tool_parser_name=tn, reasoning_parser_name=rn,
-                                 enable_auto_tools=True, model_name=fam)
+            tool_cls = resolve_peer_module("vllm", "tools").ToolParserManager.get_tool_parser(tn)
+            if init.get("starting_state") == "Response" and tool_cls.engine_based_streaming and not hasattr(tool_cls, "skip_reasoning_parsing"):
+                cls = vllm_response_constructor_class(tn)
+            else:
+                cls = _PARSER_FACTORY(tool_parser_name=tn, reasoning_parser_name=None if init.get("starting_state") == "Response" else rn,
+                                     enable_auto_tools=True, model_name=fam)
         except (KeyError, TypeError) as error:
             # Published managers can wrap a lazy dependency failure as a
             # registration error; it still blocks execution of the release.
@@ -344,8 +339,8 @@ def _capture_cases(cases):
             if (case.get("init") or {}).get("starting_state") == "Reasoning":
                 assembled = _assembled_from_chunks(per_chunk)
             else:
-                # Batch: the real final-message fields, projected to an ordered
-                # list. Response-prefilled rows are represented by request kwargs.
+                # Project the final fields from the same public parser composition
+                # used for the stream, including tool-only Response initialization.
                 reasoning, content, tool_calls = parser.parse(case["input"], req, True)
                 assembled = _assembled_events(reasoning, content, tool_calls)
             results[case["id"]] = {"assembled": assembled, "chunks": per_chunk}
@@ -382,6 +377,10 @@ def main():
         if case.get("finish_reason", "stop") not in {"stop", "length"}:
             results[case["id"]] = unavailable_for(case, "peer_termination_unsupported",
                 "Published parser capture supports serving stop/length termination only")
+            continue
+        harmony = capture_vllm_harmony(case["family"], request_binding(case), streaming=True, delta_events=_delta_events)
+        if harmony is not None:
+            results[case["id"]] = harmony
             continue
         if case["family"] not in FAMILY_PARSERS:
             results[case["id"]] = unavailable_result(

@@ -12,7 +12,63 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from capture_vllm_rust_unified import _vllm_rust_version, rust_main
+from impls import unified_starts_in_reasoning
+from capture_vllm_rust_unified import _unsupported_request, _vllm_rust_version, public_profiles, rust_main
+
+
+@pytest.mark.parametrize("modern", [False, True])
+def test_public_family_aliases_and_release_specific_glm_reasoner(tmp_path, modern):
+    api = tmp_path / "src/parser/src"
+    exports = {
+        "unified": "",
+        "tool": "pub use parsers::{KimiK2ToolParser, Qwen3CoderToolParser, Glm47MoeToolParser};",
+        "reasoning": "pub type KimiK2ReasoningParser = Shared; pub type NemotronV3ReasoningParser = Shared; "
+                     + ("pub type Glm47ReasoningParser = Shared;" if modern else "pub type Glm45ReasoningParser = Shared;"),
+    }
+    for module, source in exports.items():
+        path = api / module / "mod.rs"
+        path.parent.mkdir(parents=True)
+        path.write_text(source)
+    profiles = public_profiles(tmp_path)
+    generated = rust_main("0.31.0" if modern else "0.25.1", "", profiles)
+    assert set(profiles) == {"kimi_k2", "nemotron_v3", "glm47"}
+    assert "reasoning::KimiK2ReasoningParser::create" in generated
+    assert "reasoning::NemotronV3ReasoningParser::create" in generated
+    assert f'reasoning::{"Glm47" if modern else "Glm45"}ReasoningParser::create' in generated
+    assert "reasoning::KimiReasoningParser::create" not in generated
+    assert '.with_regular_token("<think>"' in generated
+
+
+def test_response_prefill_uses_public_optional_reasoner_or_persistent_native_mode():
+    for family in ("kimi_k2", "qwen3", "glm47", "nemotron_v3", "deepseek_v4", "deepseek_v41", "minimax_m3", "kimi_k3"):
+        assert _unsupported_request({"family": family, "init": {"starting_state": "Response"}}) is None
+    for family in ("gemma4", "unknown"):
+        assert _unsupported_request({"family": family, "init": {"starting_state": "Response"}}) is not None
+
+
+def test_generated_public_context_preserves_defaults_and_response_for_both_schedules():
+    assert unified_starts_in_reasoning("nemotron_v3")
+    assert not unified_starts_in_reasoning("qwen3")
+    assert unified_starts_in_reasoning("qwen3", "Reasoning")
+    assert not unified_starts_in_reasoning("nemotron_v3", "Response")
+    generated = rust_main("0.31.0", "")
+    nemotron = generated.split('"nemotron_v3" => match case.init.starting_state.as_str()', 1)[1].split('},', 1)[0]
+    qwen = generated.split('"qwen3" => match case.init.starting_state.as_str()', 1)[1].split('},', 1)[0]
+    assert '\"None\" | \"\" => \"<think>\\n\"' in nemotron
+    assert '\"None\" | \"\" => \"\"' in qwen
+    assert 'CombinedParser::new(if starting_state == "Response" { None } else { Some(' in generated
+    assert generated.count('make_parser(&case.family, &case.tools, &case.init.starting_state)') == 2
+
+
+def test_native_parser_output_cannot_qualify_a_generation_schema():
+    native = {"input": '{"answer":42}', "init": {"tool_output_mode": "Native"}}
+    assert _unsupported_request(native) is None
+    constrained = {**native, "init": {**native["init"], "structural_tag": {
+        "schema": {"type": "object"}, "rejected": ["[]"],
+    }}}
+    code, reason = _unsupported_request(constrained)
+    assert code == "peer_request_unsupported"
+    assert "generation constraints" in reason
 
 
 @pytest.mark.parametrize("dirname", ["vllm-99.88.77", "source"])
@@ -74,7 +130,8 @@ def test_streaming_peer_failures_are_preserved_for_both_terminal_schedules(tmp_p
 type Value = String;
 #[derive(Default)]
 struct UnifiedParserOutput { events: Vec<String> }
-struct Case { family: String, tools: Vec<String>, chunks: Vec<String>, terminal_step: bool }
+struct Init { starting_state: String }
+struct Case { family: String, tools: Vec<String>, chunks: Vec<String>, terminal_step: bool, init: Init }
 struct Parser { fail_finish: bool }
 impl Parser {
     fn initialize(&mut self, _ids: &[u32]) -> Result<(), &'static str> { Ok(()) }
@@ -87,8 +144,8 @@ impl Parser {
         else { Ok(UnifiedParserOutput { events: vec!["finished".into()] }) }
     }
 }
-fn make_parser(family: &str, _tools: &[String]) -> (Parser, ()) {
-    (Parser { fail_finish: family == "fail_finish" }, ())
+fn make_parser(family: &str, _tools: &[String], _starting_state: &str) -> (Parser, (), ()) {
+    (Parser { fail_finish: family == "fail_finish" }, (), ())
 }
 fn deltas_to_json(events: &[String]) -> Vec<Value> { events.to_vec() }
 fn run(case: Case, mut error: Option<String>) -> (Option<String>, Vec<Vec<Value>>) {
@@ -102,6 +159,7 @@ fn main() {
             for fail_finish in [false, true] {
                 let case = || Case {
                     family: if fail_finish { "fail_finish" } else { "ok" }.into(),
+                    init: Init { starting_state: "None".into() },
                     tools: Vec::new(),
                     chunks: vec![if fail_push { "bad" } else { "good" }.into()],
                     terminal_step,

@@ -168,9 +168,19 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == [hidden]
         originals = catalog["sources"]["original_unified"]
         authored = next(item for item in source_catalog["sources"]["unified"] if item["kind"] == "inputs-and-golden")
-        resource = next(item for item in originals if item["kind"] == "history")
+        current_by_source = {item["source"]: item for item in catalog["capture_generation"]["current"]}
+        retained_prefix = "conformance/history-datasets/"
+        resource = next(item for item in originals if item["kind"] == "history"
+                        and item["path"].startswith(retained_prefix)
+                        and item["path"][len(retained_prefix):].split("/", 1)[1] in current_by_source)
+        # Runtime descriptors keep the scoped route; its suffix is the original
+        # member path, while the unscoped versioned alias belongs to current YAML.
+        source_path = resource["path"][len(retained_prefix):].split("/", 1)[1]
+        retained_bytes = historical_source_bytes(history_source, source_path)
+        current_bytes = (ROOT / current_by_source[source_path]["yaml_path"]).read_bytes()
+        assert hashlib.sha256(retained_bytes).hexdigest() != hashlib.sha256(current_bytes).hexdigest()
         probes = [(authored["path"], (ROOT / authored["path"]).read_bytes()),
-                  (resource["path"], historical_source_bytes(history_source, resource["path"]))]
+                  (resource["path"], retained_bytes), (source_path, current_bytes)]
         # Sparse originals retain manifests and receipts as separate downloads.
         for kind in ("execution", "receipt"):
             resources = [item for item in inventory["files"]

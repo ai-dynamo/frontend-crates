@@ -74,24 +74,67 @@ fn index_version_archive(
     Ok(resources)
 }
 
-fn observation_code(value: &Node) -> Result<Value> {
-    let recapture = value
-        .field("document")?
-        .get("record_metadata")
+struct ObservationSummary<'a> {
+    code: Value,
+    has_results: bool,
+    route: Option<&'a Node>,
+    route_recorded: bool,
+}
+
+fn observation_summary(value: &Node) -> Result<ObservationSummary<'_>> {
+    let document = value.field("document")?;
+    let metadata = document.get("record_metadata");
+    let original = value.field("observation")?;
+    let result = metadata
         .and_then(|metadata| metadata.get("verified_recapture"))
-        .filter(|recapture| **recapture != Node::Null);
-    // Availability follows the selected checkpoint result, including its absent
-    // typed observation. Archived plural proofs never select an observation.
-    let observation = match recapture {
-        Some(recapture) => recapture.field("result")?.get("capture_observation"),
-        None => Some(value.field("observation")?),
+        .filter(|recapture| **recapture != Node::Null)
+        .map(|recapture| recapture.field("result"))
+        .transpose()?;
+    // The selected execution owns availability, result presence and route
+    // together. A missing typed observation never revives the original result.
+    let observation = match result {
+        Some(result) => result.get("capture_observation"),
+        None => Some(original),
     };
-    Ok(observation
+    let code = observation
         .and_then(|observation| observation.get("unavailable"))
         .and_then(|unavailable| unavailable.get("code"))
         .map(Node::string)
         .transpose()?
-        .map_or(Value::Null, |code| json!(code)))
+        .map_or(Value::Null, |code| json!(code));
+    let has_results = match result {
+        Some(result) => {
+            result.get("unavailable").is_none()
+                && observation.is_none_or(|observation| observation.get("unavailable").is_none())
+                && (result.get("chunks").is_some()
+                    || result.get("assembled").is_some()
+                    || result.get("error").is_some()
+                    || observation.is_some_and(|observation| {
+                        observation.get("value").is_some() || observation.get("error").is_some()
+                    }))
+        }
+        None => original.get("value").is_some() || original.get("error").is_some(),
+    };
+    let routes = [
+        result.and_then(|result| result.get("parser_path")),
+        metadata.and_then(|metadata| metadata.get("parser_path")),
+        original
+            .get("value")
+            .and_then(|value| value.get("parser_path")),
+        document.get("parser_path"),
+    ];
+    let route = routes[..3]
+        .iter()
+        .flatten()
+        .copied()
+        .find(|route| crate::history::truthy(route))
+        .or(routes[3]);
+    Ok(ObservationSummary {
+        code,
+        has_results,
+        route,
+        route_recorded: routes.iter().any(Option::is_some),
+    })
 }
 
 pub(crate) fn record_summary(records: &Node) -> Result<Value> {
@@ -102,32 +145,12 @@ pub(crate) fn record_summary(records: &Node) -> Result<Value> {
     let mut route_recorded = false;
     for (case, wrapped) in records.mapping()? {
         let value = wrapped.field("value")?;
-        let observation = value.field("observation")?;
-        codes.insert(case.string()?.to_string(), observation_code(value)?);
-        has_results |= observation.get("value").is_some() || observation.get("error").is_some();
-        let document = value.field("document")?;
-        route_recorded |= document
-            .get("record_metadata")
-            .and_then(|n| n.get("parser_path"))
-            .is_some()
-            || observation
-                .get("value")
-                .and_then(|n| n.get("parser_path"))
-                .is_some()
-            || document.get("parser_path").is_some();
-        let route = document
-            .get("record_metadata")
-            .and_then(|n| n.get("parser_path"))
-            .filter(|n| crate::history::truthy(n))
-            .or_else(|| {
-                observation
-                    .get("value")
-                    .and_then(|n| n.get("parser_path"))
-                    .filter(|n| crate::history::truthy(n))
-            })
-            .or_else(|| document.get("parser_path"));
-        unified |= route == Some(&Node::Str("unified".into()));
-        split |= route == Some(&Node::Str("split".into()));
+        let selected = observation_summary(value)?;
+        codes.insert(case.string()?.to_string(), selected.code);
+        has_results |= selected.has_results;
+        route_recorded |= selected.route_recorded;
+        unified |= selected.route == Some(&Node::Str("unified".into()));
+        split |= selected.route == Some(&Node::Str("split".into()));
     }
     Ok(
         json!({"codes":codes,"has_results":has_results,"native":unified && !split,
@@ -363,7 +386,10 @@ pub fn index_cached(root: &Path, workers: &str, cache: Option<&Path>) -> Result<
         }
     }
     let context_path = root.join("conformance/catalog-conversion-context.json");
-    if snapshots.is_empty() && context_path.is_file() {
+    if context_path.is_file() {
+        // History readers require fragments for every checkpoint, including
+        // sparse siblings of complete snapshots that already have summaries.
+        snapshots.clear();
         let context: Value = serde_json::from_slice(&source::read(
             &root,
             "conformance/catalog-conversion-context.json",
@@ -516,6 +542,112 @@ mod tests {
     use super::*;
     use std::{sync::mpsc, time::Duration};
 
+    fn context_indexes_complete_and_sparse(sparse_sibling: bool) -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let cache = tempfile::tempdir()?;
+        let family = root.path().join(STORE).join("families/sample");
+        fs::create_dir_all(&family)?;
+        let request =
+            json!({"input":"sample", "init":{}, "finish_reason":"stop", "tools":[], "chunks":[]});
+        let authored = json!({"input_document":{"family":"sample"},"golden_document":{"family":"sample"},
+            "cases":{"id":{"lifecycle":"active","scenario":"sample","description":"sample","policy":[],
+                "display_id":"UNIFIED.1","historical_ids":[],"request":request,"golden":{"assembled":[]}}}});
+        fs::write(
+            family.join("inputs_and_golden.yaml"),
+            serde_json::to_vec(&authored)?,
+        )?;
+        let member = format!("{STORE}/families/sample/dynamo_v2-1.0.0.yaml");
+        let records = json!({"id":{"member":member,"suppress_inherited_from":true,"value":{
+            "case_key":"UNIFIED.1","stimulus":{"ref":"current"},
+            "observation":{"value":{"assembled":[{"kind":"text","text":"preserved"}]}},
+            "document":{"mode":"unified","captured_with":{"dynamo_v2":"1.0.0"},
+                "record_metadata":{"verified_recapture":{"result":{"chunks":[]},
+                    "provenance":{"version":"1.0.0","results_sha256":"a".repeat(64)}}}}}}});
+        let complete = json!({"schema_version":2,"provenance":{"status":"legacy","captured_with":{"dynamo_v2":"1.0.0"}},
+            "document":{"mode":"unified"},"records":records});
+        fs::write(
+            family.join("dynamo_v2-1.0.0.yaml"),
+            serde_json::to_vec(&complete)?,
+        )?;
+        if sparse_sibling {
+            let sparse = json!({"provenance":{"status":"legacy","captured_with":{"sglang_python":"1.0.0"}},
+                "document":{"mode":"unified"},"changes":{"id":{"case_key":"UNIFIED.1","stimulus":{"ref":"current"},
+                    "observation":{"value":{"assembled":[{"kind":"text","text":"sparse"}]}}}},
+                "metadata_changes":{},"document_overrides":{}});
+            fs::write(
+                family.join("sglang_python-1.0.0.yaml"),
+                serde_json::to_vec(&sparse)?,
+            )?;
+        }
+        let direct = index_cached(root.path(), "1", Some(cache.path()))?;
+        assert_eq!(direct["snapshots"].as_array().unwrap().len(), 1);
+        assert!(direct["snapshots"][0].get("fragment").is_none());
+        fs::write(
+            root.path()
+                .join("conformance/catalog-conversion-context.json"),
+            serde_json::to_vec(&json!({"dataset":"retained","metadata":{"unified_aliases":{}}}))?,
+        )?;
+        let converted = index_cached(root.path(), "1", Some(cache.path()))?;
+        let snapshots = converted["snapshots"].as_array().unwrap();
+        assert_eq!(snapshots.len(), if sparse_sibling { 2 } else { 1 });
+        let identities = snapshots
+            .iter()
+            .map(|row| {
+                (
+                    row["implementation"].as_str().unwrap(),
+                    row["version"].as_str().unwrap(),
+                )
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(identities.len(), snapshots.len());
+        for row in snapshots {
+            let key = row["fragment"]
+                .as_str()
+                .context("checkpoint has no history fragment")?;
+            let fragment = crate::conversion_cache::read(cache.path(), key)
+                .context("missing history fragment")?;
+            let actual = Node::from_typed(&fragment)?;
+            if row["implementation"] == "dynamo_v2" {
+                let mut expected = records.clone();
+                expected["id"]["value"]["stimulus"] = json!({"inline":request});
+                assert_eq!(
+                    actual.typed(),
+                    yaml::load_str(&serde_json::to_string(&expected)?)?.typed()
+                );
+                for field in ["provenance", "document"] {
+                    assert_eq!(
+                        row["capture"][field],
+                        yaml::load_str(&serde_json::to_string(&complete[field])?)?.typed()
+                    );
+                }
+            } else {
+                assert_eq!(
+                    actual
+                        .field("id")?
+                        .field("value")?
+                        .field("observation")?
+                        .field("value")?
+                        .field("assembled")?
+                        .array()?[0]
+                        .field("text")?
+                        .string()?,
+                    "sparse"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn conversion_context_indexes_complete_snapshots_as_history_fragments() -> Result<()> {
+        context_indexes_complete_and_sparse(false)
+    }
+
+    #[test]
+    fn conversion_context_keeps_sparse_siblings_and_unique_complete_snapshots() -> Result<()> {
+        context_indexes_complete_and_sparse(true)
+    }
+
     #[test]
     fn authenticated_malformed_document_metadata_is_a_cache_miss() -> Result<()> {
         for (name, bytes) in [
@@ -584,36 +716,89 @@ mod tests {
     }
 
     #[test]
+    fn singular_recapture_owns_result_presence_and_route_with_its_availability() -> Result<()> {
+        for (original, metadata, expected_code, expected_results, expected_native) in [
+            (
+                json!({"unavailable":{"code":"unsupported_family"}}),
+                json!({"verified_recapture":{"result":{"assembled":[],"parser_path":"unified"}}}),
+                Value::Null,
+                true,
+                true,
+            ),
+            (
+                json!({"value":{}}),
+                json!({"verified_recapture":{"result":{"error":"raw error\n  detail ","parser_path":"unified"}}}),
+                Value::Null,
+                true,
+                true,
+            ),
+            (
+                json!({"value":{}}),
+                json!({"verified_recapture":{"result":{"unavailable":"unsupported request","parser_path":"split","capture_observation":{"unavailable":{"code":"unsupported_family"}}}}}),
+                json!("unsupported_family"),
+                false,
+                false,
+            ),
+            (
+                json!({"value":{}}),
+                json!({"verified_recapture":null,"verified_recaptures":[{"result":{"assembled":[],"parser_path":"unified"}}]}),
+                Value::Null,
+                true,
+                false,
+            ),
+        ] {
+            let records = json!({"active":{"value":{"observation":original,
+                "document":{"parser_path":"split","record_metadata":metadata}}}});
+            let records = yaml::load_str(&records.to_string())?;
+            let before = records.typed();
+            let summary = record_summary(&records)?;
+            assert_eq!(summary["codes"]["active"], expected_code);
+            assert_eq!(summary["has_results"], expected_results);
+            assert_eq!(summary["native"], expected_native);
+            assert_eq!(summary["route_recorded"], true);
+            assert_eq!(records.typed(), before);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn checkpoint_codes_select_only_singular_recaptures() -> Result<()> {
         let rows = [
-            (json!({}), json!("unsupported_family")),
+            (json!({}), json!("unsupported_family"), false),
             (
                 json!({"verified_recapture":null}),
                 json!("unsupported_family"),
+                false,
             ),
             (
                 json!({"verified_recaptures":[{"result":{"chunks":[]}}]}),
                 json!("unsupported_family"),
+                false,
             ),
             (
                 json!({"verified_recapture":{"result":{"chunks":[]}}}),
                 Value::Null,
+                true,
             ),
             (
                 json!({"verified_recapture":{"result":{"error":"failure"}}}),
                 Value::Null,
+                true,
             ),
             (
                 json!({"verified_recapture":{"result":{"unavailable":"unsupported request","capture_stimulus":{}}}}),
                 Value::Null,
+                false,
             ),
             (
                 json!({"verified_recapture":{"result":{"capture_observation":{"unavailable":{"code":"unsupported_family"}}}}}),
                 json!("unsupported_family"),
+                false,
             ),
             (
                 json!({"verified_recapture":{"result":{"capture_observation":{"unavailable":{"code":""}}}}}),
                 json!(""),
+                false,
             ),
         ];
         for implementation in [
@@ -623,7 +808,7 @@ mod tests {
             "dynamo_v2",
             "sglang_python_batch",
         ] {
-            for (metadata, expected) in &rows {
+            for (metadata, expected, has_results) in &rows {
                 let value = json!({"document":{"parser_path":"unified","record_metadata":metadata},
                     "observation":{"unavailable":{"code":"unsupported_family"}}});
                 let bytes = serde_json::to_vec(
@@ -635,14 +820,14 @@ mod tests {
                 )?;
                 let snapshot = snapshot.unwrap();
                 assert_eq!(&snapshot["codes"]["active"], expected);
-                assert_eq!(snapshot["has_results"], false);
+                assert_eq!(snapshot["has_results"], *has_results);
                 assert_eq!(snapshot["native"], true);
             }
         }
         let malformed = yaml::load_str(
             "document: {record_metadata: {verified_recapture: {}}}\nobservation: {}\n",
         )?;
-        assert!(observation_code(&malformed).is_err());
+        assert!(observation_summary(&malformed).is_err());
         Ok(())
     }
 

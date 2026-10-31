@@ -40,11 +40,18 @@ def _probe_job(job: dict, jail_buffer: bool = False) -> dict:
     if family not in pipelines and family not in yaml.safe_load(parser_families_path().read_text())["unified"]:
         raise ValueError(f"no Dynamo v1 batch pipeline registered for family {family!r}")
     reasoning_parser, tool_parser = pipelines.get(family, ("", ""))
-    return {
-        "reasoning_parser": reasoning_parser,
-        "tool_parser": tool_parser,
-        "job": job,
-    }
+    probe = {"reasoning_parser": reasoning_parser, "tool_parser": tool_parser, "job": job}
+    if family == "deepseek_v41" and not jail_buffer:
+        # The public generic DSML API accepts the exact spaced grammar as data;
+        # the registered deepseek_v4 factory alone uses different native markers.
+        probe["tool_config"] = {"parser_config": {
+            "type": "dsml",
+            "block_start": "<｜DSML｜ calls>", "block_end": "</｜DSML｜ calls>",
+            "invoke_start_prefix": "<｜DSML｜ invoke name=", "invoke_end": "</｜DSML｜ invoke>",
+            "parameter_prefix": "<｜DSML｜ parameter name=", "parameter_end": "</｜DSML｜ parameter>",
+            "allow_eof_recovery": True,
+        }}
+    return probe
 
 
 def _crate_checksum(lock_path: Path, version: str) -> str:

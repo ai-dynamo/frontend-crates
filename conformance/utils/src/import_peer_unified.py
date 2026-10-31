@@ -195,6 +195,11 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
             if batch and before is not None and typed_equal(before["stimulus"], stimulus) and typed_equal(before["observation"], observation) and typed_equal(original_metadata, metadata):
                 continue
             document["record_metadata"] = metadata if batch and implementation not in {"dynamo_v1", "dynamo_v1_jail"} else {**metadata, f"{implementation.removesuffix("_python")}_capture_provenance": provenance}
+            if (batch and implementation not in {"dynamo_v1", "dynamo_v1_jail"}
+                    and "results_sha256" in provenance):
+                # Bind each observation to its frozen job so future fixture
+                # additions cannot change this execution's request membership.
+                document["record_metadata"] = {**metadata, "capture_provenance": provenance}
             if origin is not None:
                 document["capture_origin"] = origin
             after = {"case_key": case_id, "stimulus": stimulus, "observation": observation, "document": document}
@@ -227,6 +232,8 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
             return
         if history is None:
             history = store.history_for_capture(family, implementation)
+        else:
+            history.preserve_snapshot_members()
         if capture_id not in history.captures:
             history.captures[capture_id] = {
                 "provenance": {"status": "legacy", "captured_with": {implementation: version}},

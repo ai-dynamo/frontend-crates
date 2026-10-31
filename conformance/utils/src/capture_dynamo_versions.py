@@ -38,7 +38,7 @@ def freeze_adapters(work: Path) -> str:
             entries.append({"path": relative, "sha256": hashlib.sha256(value).hexdigest()})
         included = {relative for relative, _value in contents}
         support = []
-        for path in (ROOT / "conformance/utils/src/capture_stimulus.py", ROOT / "conformance/utils/src/impls.py"):
+        for path in (ROOT / "conformance/utils/src/capture_stimulus.py", ROOT / "conformance/utils/src/impls.py", ROOT / "conformance/utils/src/numeric_cases.py"):
             relative = str(path.relative_to(ROOT))
             if relative in included:
                 continue
@@ -70,6 +70,12 @@ def validate_frozen_adapters(work: Path, result: dict) -> dict:
             raise ValueError("symbolic frozen adapter bundle directory")
         if validate_adapter_bundle(work / directory, bundle) != digest:
             raise ValueError("frozen adapter bundle digest mismatch")
+        support_files = {Path(entry["path"]).name: entry for entry in bundle.get("support_files", [])}
+        stimulus = support_files.get("capture_stimulus.py")
+        if stimulus is not None:
+            source = (work / directory / stimulus["path"]).read_bytes()
+            if b"from numeric_cases import " in source and "numeric_cases.py" not in support_files:
+                raise ValueError("frozen adapter omits lossless argument projection dependency")
     for key in ("implementations", "captures"):
         if not isinstance(manifest.get(key), dict) or any(value not in manifest["bundles"] for value in manifest[key].values()):
             raise ValueError("invalid frozen adapter binding")
@@ -88,7 +94,12 @@ def validate_adapter_binding(manifest: dict, identity: str, relative: str) -> st
     support = {Path(item["path"]).name for item in bundle.get("support_files", [])}
     required = {"legacy_batch_probe.rs", "parser_families.yaml"}
     if identity == "dynamo_v2":
-        required = {path.name for path in capture_dynamo_unified.adapter_files()}
+        verifier = {path.name for path in capture_dynamo_unified.STRUCTURAL_VERIFIER_FILES}
+        required = {path.name for path in capture_dynamo_unified.adapter_files()} - verifier
+        # Earlier adapters recorded checker failures; retain that original
+        # evidence while binding both verifier files in adapters that supply it.
+        if names & verifier:
+            required.update(verifier)
     elif identity == "dynamo_v1_jail":
         required.add("legacy_jail_probe.rs")
     if not required <= names or "capture_dynamo_unified_batch.py" not in names | support or not {"capture_stimulus.py", "impls.py"} <= support:

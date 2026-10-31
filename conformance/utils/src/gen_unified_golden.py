@@ -33,7 +33,9 @@ from schema_cases import (
     CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, schema_description, schema_tools,
     unified_schema_cases,
 )
-from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, numbered_id
+from unified_taxonomy import (
+    GPT_OSS_PR424_REQUEST_VARIANTS, K3_RESPONSE_COUNTERPART_FAMILIES, RETIRED_SCENARIOS, numbered_id,
+)
 from numeric_cases import (
     NUMERIC_DESCRIPTIONS,
     NUMERIC_VARIANTS,
@@ -50,6 +52,7 @@ from impls import VLLM_UNIFIED_PIPELINES
 from schema_cases import native_call_wire
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 from unified_taxonomy import V1_SPLIT_SCENARIOS
+from unified_tools import unified_tools
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -75,6 +78,7 @@ DOTTED_NAME_FAMILIES = frozenset({
     "gpt_oss",
     "kimi_k2",
     "kimi_k3",
+    "minimax_m3",
     "muse_glimmer",
     "muse_spark",
     "nemotron_v3",
@@ -596,6 +600,18 @@ def control_tokens(fam):
     return reason_open, reason_close, tool_open, tokens[-1]
 
 
+def native_message_boundary(family, boundary):
+    """Markers owned by the registered assistant-message grammar, not tool closers."""
+    if family in MUSE_FAMILIES:
+        return {"eom": "<|eom|>", "eot": "<|eot|>", "start": "<|start|>"}[boundary]
+    if family in {"beam", "gpt_oss"}:
+        return {"eom": "<|end|>", "eot": "<|return|>", "start": "<|start|>"}[boundary]
+    if family == "kimi_k3":
+        return {"eom": k3_close("message"), "eot": "<|end_of_msg|>",
+                "start": k3_open("message", [("role", "assistant")])}[boundary]
+    raise ValueError(f"{family}: registered parser has no assistant-message boundary")
+
+
 def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     if fam == "gpt_oss":
@@ -615,6 +631,20 @@ def invoke_header_prefix(fam):
     # header. Every other family's first `NAMEX` already follows the opener, so the
     # anchor changes nothing for them.
     return rendered[len(outer):rendered.index("NAMEX", len(outer))].lstrip()
+
+
+def guided_message_end_chunks(family):
+    prefix = ("<|start|>assistant to=functions." if family == "gpt_oss"
+              else invoke_header_prefix(family))
+    return [prefix + "x" + native_message_boundary(family, "eom"),
+            '[{"name":"f","arguments":{}}]']
+
+
+# This scenario's authored native requests share the same two delivery steps.
+_MESSAGE_END_HEADER_CHUNKS = {
+    family: guided_message_end_chunks(family)
+    for family in ("beam", "gpt_oss", "kimi_k3", *MUSE_FAMILIES)
+}
 
 
 def guided_invoke_prefix(fam):
@@ -657,7 +687,10 @@ def r_bare_tool(fam, name, key, value, index):
 
 
 def native_body_in_guided_reasoning(fam, value):
-    return r_reason(fam, "before " + r_bare_tool(fam, "f", "x", value, 0) + " after") + GUIDED_ONE_CALL
+    # GLM has no inner invoke fence: removing tool_call leaves ordinary text.
+    native = (r_tool(fam, "f", "x", value, 0) if fam == "glm47"
+              else r_bare_tool(fam, "f", "x", value, 0))
+    return r_reason(fam, "before " + native + " after") + GUIDED_ONE_CALL
 
 
 def guided_surroundings(render, dynamo_note, fill=None):
@@ -898,31 +931,31 @@ EDGE = [
     # Phase-preserving output is opt-in and Spark-specific: other current
     # families do not reserve a distinct commentary recipient.
     ("muse_unterminated_reasoning_native",
-     "Native Muse reasoning preserves an unterminated invocation header as literal prose. Guided JSON treats the same native prefix as stray control syntax (see the paired guided case).",
+     "Where an unfinished native invocation prefix is ordinary reasoning prose, native mode preserves that prefix literally before Done. Guided JSON strips the native prefix in the paired case. Reserved structural prefixes cannot substitute for ordinary prose.",
      ["I5"],
      [{"kind":"reasoning","text":'Maybe <atem:invoke name="x and more thought'}, {"kind":"text","text":"Done."}],
      {"starting_state":"None","tool_output_mode":"Native","named_tool":None},
      OnlyFamilies({family: ('<|start|>assistant to=self<|message|>Maybe <atem:invoke name="x and more thought<|eom|><|start|>assistant to=user<|message|>Done.<|eot|>', V_MUSE, M) for family in MUSE_FAMILIES})),
     ("muse_unterminated_reasoning_guided",
-     "JSON-guided Muse reasoning strips an unterminated native invoke-start marker while preserving its following prose; this intentional guided/native distinction is chunk invariant.",
+     "Named JSON-guided reasoning strips an unfinished native invocation prefix while preserving x and more thought, then parses get_weather(city=Paris). Native marker literals vary by grammar; the schema, initialization, and visible prose remain fixed.",
      ["I5"],
      [{"kind":"reasoning","text":"Maybe x and more thought"}, {"kind":"tool_call","name":"get_weather","arguments":{"city":"Paris"}}],
      {"starting_state":"None","tool_output_mode":"GuidedJson","named_tool":"get_weather"},
      OnlyFamilies({family: ('<|start|>assistant to=self<|message|>Maybe <atem:invoke name="x and more thought<|eom|>{"city":"Paris"}', V_MUSE, M) for family in MUSE_FAMILIES})),
     ("muse_opaque_undeclared_invoke",
-     "Muse arguments own invocation-shaped text naming an undeclared tool. A complete outer string must not become an undeclared call during recovery.",
+     "A complete native outer string owns invocation-shaped text naming an undeclared tool. Preserve its native invocation/parameter prefix as data rather than manufacturing an unknown call.",
      ["I5", "I7"],
      [{"kind":"tool_call","name":"f","arguments":{"x":'doc: </atem:invoke><atem:invoke name="rm_rf"><atem:parameter name="path">/'}}],
      {"starting_state":"None","tool_output_mode":"Native","named_tool":None},
      OnlyFamilies({family: ('<|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">doc: </atem:invoke><atem:invoke name="rm_rf"><atem:parameter name="path">/</atem:parameter></atem:invoke><|eot|>', V_MUSE, M) for family in MUSE_FAMILIES})),
     ("muse_opaque_declared_invoke",
-     "Muse arguments own invocation-shaped text even when the embedded tool is declared. The complete outer argument remains data instead of dispatching the embedded call.",
+     "A complete native outer string owns invocation-shaped text naming a declared tool. Preserve the inner native invocation/parameter prefix as data rather than dispatching it.",
      ["I5", "I7"],
      [{"kind":"tool_call","name":"f","arguments":{"x":'doc: </atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris'}}],
      {"starting_state":"None","tool_output_mode":"Native","named_tool":None},
      OnlyFamilies({family: ('<|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">doc: </atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter></atem:invoke><|eot|>', V_MUSE, M) for family in MUSE_FAMILIES})),
     ("muse_recovery_second_parameter",
-     "A later Muse parameter owns its bytes through its closer. Declared invocation-shaped content inside it must not be promoted to an executable call.",
+     "A later native string parameter owns invocation-shaped text through its closer, after x=done. Preserve the declared inner invocation as data; the original open schema permits the later y field.",
      ["I5", "I7"],
      [{"kind":"tool_call","name":"f","arguments":{"x":"done","y":'broken</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris'}}],
      {"starting_state":"None","tool_output_mode":"Native","named_tool":None},
@@ -932,7 +965,7 @@ EDGE = [
     # the ambiguous invocation; a later closer completes the outer value rather
     # than proving a new executable call (PR #450 review).
     ("muse_unterminated_parameter_then_empty_call",
-     "Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.",
+     "A native outer parameter is unfinished before a parameterless declared invocation-shaped candidate. Keep native EOF policy explicit: Muse emits nothing after discarding the ambiguous outer invocation; Qwen/GLM repair the missing value closer; K2/M3/V4 apply empty-call recovery; strict framed readers recover only the following complete call.",
      ["P2"],
      [],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -956,7 +989,7 @@ EDGE = [
          V_MUSE, M,
      )})),
     ("gpt_oss_channel_header_variants",
-     "A `redacted` channel stays withheld in reasoning, while a commentary tool recipient and final channel keep their event order.",
+     "Native reasoning, tool-recipient, and final channels retain event order: check reasoning, lookup weather, then found visible text.",
      ["I1", "I2", "I6"],
      [
          {"kind": "reasoning", "text": "check"},
@@ -1061,19 +1094,21 @@ EDGE = [
      })),
 
     ("glm47_parameterless_call_shape_inside_argument",
-     "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
+     "An offered parameterless-call shape appears inside an open argument value. Each family uses its native closing marker and nested call; preserve the complete outer argument instead of dispatching a second call.",
      ["I7"],
      [{"kind": "tool_call", "name": "run", "arguments": {
          "cmd": "before </tool_call><tool_call>get_weather</tool_call> after",
      }}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
      OnlyFamilies({
          "glm47": (
              "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>",
              D("UNSUPPORTED", "no released vLLM UnifiedParser capture for GLM 5"),
              M,
          ),
-     })),
+     }),
+     unified_tools()),
 
     ("truncated_tool_eof",
      "Stream ends mid tool call (no close marker). Policy P2 — drop the incomplete call, keep valid preceding output, no error, no leaked markup.",
@@ -1806,15 +1841,18 @@ EDGE = [
     ),
 ]
 
+KIMI_TYPED_ARGUMENT_VALUES = {
+    "cmd": "echo ok", "count": 2, "force": True,
+    "options": {"cwd": "/tmp"}, "tags": ["a", "b"], "note": None,
+}
+
 EDGE += [
     ("kimi_k3_typed_argument_values",
-     "Kimi K3 native XTML carries each argument in its own typed channel. String, number, boolean, object, array, and null values must preserve their JSON types instead of being coerced to strings.",
+     "Native argument syntax preserves string, number, boolean, object, array, and null values, including properties without schema type hints. Families need explicit native types or a complete JSON object to preserve these values.",
      ["I7"],
-     [{"kind": "tool_call", "name": "run", "arguments": {
-         "cmd": "echo ok", "count": 2, "force": True,
-         "options": {"cwd": "/tmp"}, "tags": ["a", "b"], "note": None,
-     }}],
+     [{"kind": "tool_call", "name": "run", "arguments": KIMI_TYPED_ARGUMENT_VALUES}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
      OnlyFamilies({
          "kimi_k3": (
              k3_tools(k3_call("run", 1, "".join([
@@ -1827,7 +1865,7 @@ EDGE += [
              ]))),
              M, M,
          ),
-     })),
+     }), unified_tools()),
 
     ("kimi_k3_raw_json_arguments",
      "Kimi K3 can carry the complete argument object in a raw JSON channel. Nested values and marker-looking strings remain JSON data until that channel's own closer.",
@@ -1886,12 +1924,14 @@ EDGE += [
          ),
      })),
 
-    ("kimi_k3_malformed_call_then_valid",
-     "A malformed Kimi K3 call body followed by a complete call resynchronizes at the later call. The malformed prefix neither leaks as text nor costs the valid call.",
-     ["P2"],
-     [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({
+    (
+        "kimi_k3_malformed_call_then_valid",
+        "An unclosed native invocation containing keyless prose reaches another call. Preserve native first-invocation ownership, strict body rejection or restart boundaries, including exact call names and argument types. The DeepSeek V4.1 oracle emits no events; its strict decoder reports a parse error.",
+        ["P2"],
+        [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({
          "kimi_k3": (
              k3_open("tools")
              + k3_open("call", [("tool", "bad"), ("index", "1")]) + "not-an-argument"
@@ -1899,7 +1939,9 @@ EDGE += [
              + k3_close("tools"),
              M, M,
          ),
-     })),
+     }),
+        unified_tools(),
+    ),
 
     ("kimi_k3_raw_json_eof",
      "EOF inside Kimi K3's raw JSON argument channel drops the incomplete call and emits nothing, without leaking the partial JSON as visible text.",
@@ -1915,17 +1957,18 @@ EDGE += [
      })),
 
     ("kimi_k3_guided_native_wrapper",
-     "Guided Kimi K3 output may arrive inside a native XTML tools/call/argument wrapper. The wrapper is stripped and the guided JSON payload still dispatches exactly once.",
+     "A complete native call precedes a guided JSON payload. Guided-only families suppress the native wrapper and dispatch the payload; MiniMax M3 deliberately retains its native fallback and treats the following JSON as text.",
      ["I3"],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {"finish_reason": "stop"},
      OnlyFamilies({
          "kimi_k3": (
              k3_tools(k3_call("ignored", 1, k3_argument("quoted", "string", "literal")))
              + GUIDED_ONE_CALL,
              GUIDED_UNSUPPORTED, M,
          ),
-     })),
+     }), unified_tools()),
 ]
 
 
@@ -2063,15 +2106,13 @@ EDGE += _guided_product()
 
 EDGE += [
     ("qwen3_guided_non_ascii_header_in_truncated_reasoning",
-     "Guided Qwen reasoning ends inside an unfinished function header with a non-ASCII name. "
-     "The control prefix is stripped at EOF, but the remaining reasoning bytes survive without a call or visible text.",
+     "Guided reasoning ends inside an unfinished native tool-name header carrying UTF-8 text. Preserve native header ownership at EOF; no call dispatches. DeepSeek V4, Kimi K3, and MiniMax M3 emit no events for this unresolved header.",
      ["I3", "P2"],
      [{"kind": "reasoning", "text": "éaaaaaaaaax"}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      OnlyFamilies({"qwen3": ("<think><function=éaaaaaaaaax", GUIDED_UNSUPPORTED, M)})),
     ("qwen3_guided_non_ascii_header_in_closed_reasoning",
-     "Guided Qwen reasoning contains a malformed non-ASCII function header closed by its function terminator. "
-     "That control span is stripped, the thought closes, and the following guided call dispatches.",
+     "A malformed native tool-name header carries UTF-8 text and reaches its invocation closer. Preserve grammar-specific name and closer text, close the actual thought, and dispatch the following guided Paris call.",
      ["I3"],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
@@ -2093,7 +2134,6 @@ EDGE += [
              lambda fam: native_body_in_guided_reasoning(fam, "é🙂<par{value}"),
              "native body is suppressed",
          ).items()
-         if family != "glm47"
      })),
     ("guided_json_reasoning_markers_inside_native_parameter",
      "Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family's reasoning markers. "
@@ -2109,7 +2149,6 @@ EDGE += [
              lambda fam: native_body_in_guided_reasoning(fam, r_reason(fam, "quoted")),
              "parameter markers remain data",
          ).items()
-         if family != "glm47"
      })),
 ]
 
@@ -2223,22 +2262,24 @@ for _shape, _body in (
 
 EDGE += [
     ("qwen3_guided_reasoning_opener_inside_native_header",
-     "Qwen guided output with no prefilled channel has a reasoning opener inside an unfinished native function header. "
-     "The reasoning opener wins: without a reasoning closer, the function terminator and following JSON remain reasoning, not a dispatched call.",
+     "A native thought opener interrupts an unfinished native tool-name header, with no thought closer afterward. Preserve native header and closer recovery, including JSON that remains reasoning; committed control markup must not become visible text.",
      ["I3", "I5"],
      [{"kind": "reasoning", "text": 'x</function>[{"name":"f","arguments":{}}]'}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      OnlyFamilies({"qwen3": ('<function=<think>x</function>[{"name":"f","arguments":{}}]', GUIDED_UNSUPPORTED, M)})),
     ("muse_glimmer_guided_message_end_inside_native_header",
-     "Muse guided output with no prefilled channel has a message-end marker inside an unfinished native invoke header. "
-     "The native prefix is stripped, its remaining x is visible text, and the following guided call dispatches without leaking the header.",
+     "Guided output with no prefilled channel has a native assistant message-end marker inside an unfinished invocation header. "
+     "Strip the framing, preserve the pending name x as text, and dispatch the following guided f call with empty arguments.",
      ["I3", "I5"],
      [{"kind": "text", "text": "x"}, {"kind": "tool_call", "name": "f", "arguments": {}}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     OnlyFamilies({"muse_glimmer": ('<atem:invoke name="x<|eom|>[{"name":"f","arguments":{}}]', GUIDED_UNSUPPORTED, M)})),
+     {"finish_reason": "stop", "input_chunks": _MESSAGE_END_HEADER_CHUNKS,
+      "finish_step": {family: family in {"beam", "gpt_oss", "kimi_k3"} for family in FAMILIES}},
+     OnlyFamilies({family: ("".join(chunks), GUIDED_UNSUPPORTED, M)
+                   for family, chunks in _MESSAGE_END_HEADER_CHUNKS.items()}),
+     unified_tools()),
     ("deepseek_v4_guided_reasoning_opener_inside_native_body",
-     "DeepSeek V4 Reasoning-prefilled guided output has a repeated reasoning opener inside a native invoke without parameters. "
-     "The competing opener prevents whole-invocation suppression: the native prefix is stripped, f\">x remains reasoning, and the following guided call dispatches.",
+     "A Reasoning-prefilled guided stream places a repeated reasoning opener inside a native invocation body without parameters. Preserve each grammar's ownership of the following bytes. Kimi K3 emits no events because its bare frame has neither typed arguments nor a raw JSON body, and no tools fence for recovery.",
      ["I3", "I5"],
      [{"kind": "reasoning", "text": 'f">x'}, {"kind": "tool_call", "name": "f", "arguments": {}}],
      {"starting_state": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": None},
@@ -2472,6 +2513,41 @@ EDGE.append((
     )}),
 ))
 
+HARMONY_CONSISTENT_MARKER_CASES = ("reason_markup_in_arg", "reason_markup_in_arg_with_text")
+for _parent in HARMONY_CONSISTENT_MARKER_CASES:
+    _events = [{"kind": "tool_call", "name": "log", "arguments": {
+        "note": HARMONY_EDGE_GOLDEN_VALUES[_parent].replace(">secret<", ">reconsider<"),
+    }}]
+    if _parent.endswith("_with_text"):
+        _events = [{"kind": "text", "text": "Logging now: "}, *_events,
+                   {"kind": "text", "text": " done."}]
+    EDGE.append((
+        _parent + "_consistent",
+        "Native reasoning markers inside a tool argument remain literal data. Reuse the shared reconsider prose while preserving the original Harmony markers and surrounding narration.",
+        ["I7"], _events,
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"gpt_oss": (
+            HARMONY_EDGE_INPUTS[_parent].replace(">secret<", ">reconsider<"),
+            D("UNSUPPORTED", "No peer capture recorded for this request."), M,
+        )}),
+        [],
+    ))
+
+EDGE.append((
+    "interrupted_reasoning_then_response",
+    "An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and following visible answer. Paired-tag grammars without an independent response header cannot express this transition.",
+    ["I1", "I3"],
+    [{"kind": "reasoning", "text": "let me think"},
+     {"kind": "text", "text": "The answer is 42."}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    OnlyFamilies({family: (
+        r_reason(family, "let me think").removesuffix(control_tokens(family)[1])
+        + r_text(family, "The answer is 42."),
+        D("UNSUPPORTED", "No peer capture recorded for this request."), M,
+    ) for family in ("beam", "gpt_oss", "kimi_k3", "muse_glimmer")}),
+))
+
 
 EDGE += [
     ("guided_json_native_markup_only",
@@ -2507,20 +2583,23 @@ EDGE += [
 ]
 
 
-# M3 alone opts into native recovery after JSON guidance. Keep the live M3
-# regression in this conversion; existing families retain their authored corpus.
+# Native fallback is an M3 policy; the same request in sibling grammars
+# suppresses the native control span after preserving the prefilled reasoning.
 for _named in [False, True]:
     _reason = [{"kind":"reasoning","text":"Check."}]
     EDGE.append((
         "guided_native_after_prefilled_reasoning_" + ("named" if _named else "required"),
-        "M3 emits a native call after closing prompt-prefilled reasoning despite JSON guidance. The parser recovers the call and emits the reasoning exactly once.",
+        "A native call follows prompt-prefilled reasoning despite JSON guidance. Preserve the reasoning exactly once. M3 explicitly recovers the native call; other families suppress the native control span.",
         ["I6", "I7"], _reason + [{"kind":"tool_call","name":"get_weather","arguments":{"city":"Paris"}}],
         {"starting_state":"Reasoning", "tool_output_mode":"GuidedJson", "named_tool":"get_weather" if _named else None},
         {"finish_reason":"stop"},
-        OnlyFamilies({"minimax_m3": (
-            "Check.</mm:think>" + r_tool("minimax_m3", "get_weather", "city", "Paris", 0),
+        OnlyFamilies({family: (
+            "Check." + control_tokens(family)[1] + r_tool(family, "get_weather", "city", "Paris", 0),
             D("UNSUPPORTED", "vLLM base case does not use GuidedJson"), M,
-        )}),
+            _reason + ([{"kind":"tool_call","name":"get_weather","arguments":{"city":"Paris"}}]
+                       if family == "minimax_m3" else []),
+        ) for family in FAMILIES}),
+        unified_tools(),
     ))
 
 # A control marker in a response that the prompt already opened is text, not structure.
@@ -2532,7 +2611,7 @@ QUOTED_BARE_HEADER = [
     ("guided_json_quoted_bare_header_in_answer", "self",
      "A `to=self` header QUOTED inside the visible answer, after the turn has already been routed to the user. The words are the model's prose and only the marker is structural, so the answer stays one run. Promoting the quote opened a real THOUGHT and split the answer in two, which reaches the client as an answer plus chain-of-thought the model never meant to expose."),
     ("guided_json_quoted_bare_tool_header_in_answer", "get_weather",
-     "Muse's quoted TOOL-recipient header remains visible answer text. Promoting it deletes the `to=…` words instead of splitting the answer. Only Muse has this recipient boundary; changing a word inside another family's reasoning envelope duplicates `35-1`."),
+     "A bare native tool-recipient header appears inside a prompt-prefilled visible response. Preserve native literal-marker and prose ownership, then dispatch only the following guided Paris call. Invocation attributes and thought-body words are different owners."),
 ]
 
 # The scope siblings: turn position and open channel are independent axes, and the
@@ -2578,7 +2657,9 @@ for _family, _scenario, _header in (
         [{"kind": "text", "text": _visible},
          {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
         {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
+        {"finish_reason": "stop"},
         OnlyFamilies({_family: (_markup.removesuffix(GUIDED_ONE_CALL) + _header + GUIDED_ONE_CALL, GUIDED_UNSUPPORTED, M)}),
+        unified_tools(),
     ))
 
 
@@ -2777,7 +2858,7 @@ for form, (family, prefix, value_close, call_close, section_close) in KIMI_PROGR
                   for offset in range(0, len(stage), chunk_size)]
         EDGE.append((
             f"kimi_native_{form}_count_content_chunk{chunk_size}",
-            f"Native Kimi {form} count-before-content call with {chunk_size}-byte delivery. Pause after 3072 q characters, after 1024 more, and after value, call, and section closure. Release stable identity and numeric count before closure; completion requires the native call boundary. Other families cannot express this Kimi native envelope and ID grammar.",
+            f"Native count-before-content call with {chunk_size}-character delivery (ASCII payload uses {chunk_size}-byte chunks). Pause after 3072 q characters, after 1024 more, and after value, invocation, and outer-envelope closure where present. Release one stable local call identity, numeric count, and known string bytes before closure. Family-native envelopes retain the same schema and pause contract.",
             ["I3", "I5", "I7"],
             [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": "q" * 4096}}],
             {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -2788,8 +2869,8 @@ for form, (family, prefix, value_close, call_close, section_close) in KIMI_PROGR
 
 
 for scenario, description, payload, arguments in (
-    ("kimi_native_trailing_syntax_whitespace", "Malformed K2 JSON ends after an argument colon and syntax whitespace. One-character native delivery must match buffered malformed recovery and must not retract released bytes. The existing Unified assembler warns and projects malformed completed arguments to an empty object.", '{"count":7,"content": \t\n', {}),
-    ("kimi_native_valid_object_trailing_garbage", "Valid K2 JSON is followed by garbage before the native call closer. One-character native delivery must retain only the valid object and must not append the garbage.", '{"count":7,"content":"q"} trailing', {"count": 7, "content": "q"}),
+    ("kimi_native_trailing_syntax_whitespace", "A native argument object ends after a value separator and syntax whitespace. One-character delivery preserves native malformed-input policy: K2 and V4 recover an empty call. The Harmony, K3, Gemma, and V4.1 oracles emit no events; V4.1 records a strict JSON error. Do not retract bytes already emitted.", '{"count":7,"content": \t\n', {}),
+    ("kimi_native_valid_object_trailing_garbage", "A complete native argument object is followed by garbage before the call closer. One-character delivery preserves native recovery policy: K2 keeps the valid object and V4 recovers an empty call. The Harmony, K3, Gemma, and V4.1 oracles emit no events; V4.1 records a strict JSON error.", '{"count":7,"content":"q"} trailing', {"count": 7, "content": "q"}),
 ):
     native = '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>' + payload + '<|tool_call_end|><|tool_calls_section_end|>'
     EDGE.append((
@@ -2805,7 +2886,7 @@ for scenario, description, payload, arguments in (
 KIMI_UNTERMINATED_NATIVE = '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"x":"abc <|tool_call_end|><|tool_calls_section_end|>'
 EDGE.append((
     "kimi_native_incompatible_string_recovery",
-    "An unterminated K2 JSON string ends with whitespace before native closers. Hold unresolved closers and trailing whitespace during one-character delivery so EOF recovery preserves the buffered malformed fallback without retracting arguments or leaking markers. The Unified assembler projects the recovered malformed arguments to an empty object.",
+    "An unterminated native argument string ends in whitespace before native closers. One-character delivery preserves K2 completed-malformed empty-call recovery. The DeepSeek, Gemma, GPT-OSS, and Kimi K3 oracles emit no events for the unvalidated call. Preserve pending boundary bytes without leaking them as visible text or retracting emitted arguments.",
     ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {}}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop", "input_chunks": {"kimi_k2": list(KIMI_UNTERMINATED_NATIVE)}},
@@ -2820,7 +2901,7 @@ KIMI_TYPED_SPACED = KIMI_PROGRESS_FORMS["k3_typed"][1].replace(
 ) + "q" + "".join(KIMI_PROGRESS_FORMS["k3_typed"][2:])
 EDGE.append((
     "kimi_native_incremental_interfield_whitespace",
-    "A valid native typed K3 call has 4096 spaces between count and content fields. Seven-character delivery must retain unresolved lookahead and scan each whitespace byte once while preserving numeric count and the completed call.",
+    "A native call has 4096 ASCII syntax spaces between count and content fields. Seven-character delivery retains unresolved lookahead across the gap and must release one stable local call identity and numeric count after the following field header completes, before the value or call closes. Preserve the completed call and scan each whitespace byte once. The gap belongs outside field values.",
     ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": "q"}}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop", "input_chunks": {"kimi_k3": [KIMI_TYPED_SPACED[offset:offset + 7] for offset in range(0, len(KIMI_TYPED_SPACED), 7)]}},
@@ -2833,7 +2914,7 @@ KIMI_REJECTED_HEADER_CONTENT = "head<|close|>argument<|sep|> <|open|>argument gi
 KIMI_REJECTED_HEADER_STAGES = [KIMI_PROGRESS_FORMS["k3_typed"][1] + KIMI_REJECTED_HEADER_CONTENT, *KIMI_PROGRESS_FORMS["k3_typed"][2:]]
 EDGE.append((
     "kimi_native_rejected_next_header_progress",
-    "A native typed K3 string includes a literal argument closer followed by a complete invalid next header and 3072 q characters. Seven-character delivery must reject that header as syntax and resume literal string progress before the real value closer.",
+    "A declared native string contains its own argument closer followed by a complete invalid next-argument header and 3072 q characters. Seven-character delivery must reject the invalid header as syntax, retain every literal byte and numeric count, and continue string progress before the real value closer.",
     ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "write_file", "arguments": {"count": 7, "content": KIMI_REJECTED_HEADER_CONTENT}}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop", "input_chunks": {"kimi_k3": [stage[offset:offset + 7] for stage in KIMI_REJECTED_HEADER_STAGES for offset in range(0, len(stage), 7)]}},
@@ -2842,13 +2923,25 @@ EDGE.append((
 ))
 
 
-KIMI_QUOTED_BOUNDARY_ARGUMENTS = {
-    "x": {"inner": '<|close|>argument<|sep|><|open|>argument<|sep|>'}, "y": "OK",
+NATIVE_ARGUMENT_BOUNDARIES = {
+    "beam": '</rfl:parameter><rfl:parameter name=',
+    "deepseek_v4": '</｜DSML｜parameter><｜DSML｜parameter name=',
+    "deepseek_v41": '</｜DSML｜ parameter><｜DSML｜ parameter name=',
+    "gemma4": '},y:',
+    "glm47": '</arg_value><arg_key>',
+    "gpt_oss": '<|call|><|start|>assistant',
+    "kimi_k2": '<|tool_call_end|><|tool_call_begin|>',
+    "kimi_k3": '<|close|>argument<|sep|><|open|>argument<|sep|>',
+    "minimax_m3": ']<]minimax[>[</x>]<]minimax[>[<y>',
+    "muse_glimmer": '</atem:parameter><atem:parameter name=',
+    "muse_spark": '</atem:parameter><atem:parameter name=',
+    "qwen3": '</parameter><parameter=',
 }
+KIMI_QUOTED_BOUNDARY_ARGUMENTS = {"x": {"inner": NATIVE_ARGUMENT_BOUNDARIES["kimi_k3"]}, "y": "OK"}
 KIMI_QUOTED_BOUNDARY_INPUT = r_tool_arguments("kimi_k3", "inspect", KIMI_QUOTED_BOUNDARY_ARGUMENTS, 0)
 EDGE.append((
     "kimi_k3_typed_json_marker_payload",
-    "Native K3 with no prefilled state: a typed object field contains a quoted argument close and next-header marker, followed by a string field. One-character delivery must preserve the nested JSON and complete one call. Other families lack K3's typed XTML argument-boundary grammar; shared marker-in-string cases cover their native envelopes.",
+    "A typed object field contains a literal native argument-close and next-header marker, followed by a string field. One-character delivery preserves the nested object and completes one call; M3 uses native nested field tags with a schema-declared inner string.",
     ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "inspect", "arguments": KIMI_QUOTED_BOUNDARY_ARGUMENTS}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": list(KIMI_QUOTED_BOUNDARY_INPUT)}},
@@ -2896,14 +2989,71 @@ K3_RESPONSE_CASES = [
      k3_call("lookup", 1, k3_json('{"q":"first"}'), close=False) + r_text("kimi_k3", "recovered"),
      [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}}, {"kind": "text", "text": "recovered"}]),
 ]
+
+
+def _native_response_counterparts(scenario):
+    if scenario not in {
+        "kimi_k3_json_marker_then_long_field", "kimi_k3_typed_response_then_call",
+        "kimi_k3_direct_typed_response_recovery",
+    }:
+        return {}
+    variants = {}
+    for family in K3_RESPONSE_COUNTERPART_FAMILIES:
+        if scenario == "kimi_k3_json_marker_then_long_field":
+            arguments = {"q": r_text(family, "literal"), "content": "x" * 4096}
+            wire = r_tool_arguments(family, "lookup", arguments, 0)
+            expected = [{"kind": "tool_call", "name": "lookup", "arguments": arguments}]
+            description = (
+                "A native response header stays literal in the first string argument before a long second field. "
+                "Preserve both values through 64-byte delivery; the native producer's partial-argument or whole-invoke progress remains observable."
+            )
+        else:
+            wire = r_tool(family, "lookup", "q", "first", 0)
+            if family in MUSE_FAMILIES:
+                if scenario == "kimi_k3_direct_typed_response_recovery":
+                    wire = wire.replace("<atem:function_calls>\n", "", 1)
+                # An unclosed invoke is not a complete Muse call, even when its
+                # parameter closed. Keep that policy separate from K3 recovery.
+                wire = wire[:wire.index("</atem:parameter>") + len("</atem:parameter>")] + "\n"
+            else:
+                wire = wire.removesuffix(control_tokens(family)[3])
+            response = r_text(family, "recovered")
+            expected = [{"kind": "text", "text": "recovered"}]
+            if scenario == "kimi_k3_typed_response_then_call":
+                if family in {"beam", "gpt_oss"}:
+                    # This response continues the turn rather than terminating it.
+                    response = response.removesuffix("<|return|>") + "<|end|>"
+                wire += response + r_tool_arguments(family, "next", {"n": 7}, 1)
+                expected.append({"kind": "tool_call", "name": "next", "arguments": {"n": 7}})
+                description = (
+                    "A native call has a closed argument but lacks its call/invoke terminator, then a response and another valid call. "
+                    "Drop the incomplete first call, preserve the response, and keep the later call's argument close with that call."
+                )
+            else:
+                wire += response
+                description = (
+                    "Starting in Response, a direct native call has a closed argument but lacks its call/invoke terminator. "
+                    "Drop the incomplete call and recover the framed response without leaking native headers."
+                )
+        variants[family] = wire, expected, description
+    return variants
+
+
 for scenario, description, native, golden in K3_RESPONSE_CASES:
+    counterparts = _native_response_counterparts(scenario)
+    inputs = {"kimi_k3": (native, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}
+    inputs.update({family: (wire, D("UNSUPPORTED", "No peer capture recorded."), M, expected)
+                   for family, (wire, expected, _description) in counterparts.items()})
     EDGE.append((
         scenario, description, ["I3", "I5", "I7"], golden,
         {"starting_state": "Response" if scenario in {
             "kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery",
         } else "None", "tool_output_mode": "Native", "named_tool": None},
-        {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": [native[offset:offset + 64] for offset in range(0, len(native), 64)]}},
-        OnlyFamilies({"kimi_k3": (native, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}),
+        {"finish_reason": "stop", "finish_step": True,
+         "input_chunks": {family: [entry[0][offset:offset + 64] for offset in range(0, len(entry[0]), 64)]
+                          for family, entry in inputs.items()},
+         "description_by_family": {family: details[2] for family, details in counterparts.items()}},
+        OnlyFamilies(inputs),
         [{"name": "lookup", "parameters": {"type": "object", "properties": {
             "q": {"type": "string"}, "content": {"type": "string"}}, "required": ["q"]}},
          {"name": "next", "parameters": {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}}],
@@ -3210,16 +3360,16 @@ _DS41_JSON_BODY_ARGS = {
 }
 _DS41_JSON_BODY = json.dumps(_DS41_JSON_BODY_ARGS, ensure_ascii=False)
 EDGE.append((
-    "deepseek_v41_json_invocation_body",
-    "PR #250: DeepSeek V4.1 accepts a JSON object as the invocation body and preserves marker-looking text inside its string values.",
-    ["I7"],
-    [
+        "deepseek_v41_json_invocation_body",
+        "A native JSON invocation body preserves Unicode, native boundary markers inside strings, entity text, escaping and nested argument types. A following empty done call remains separate.",
+        ["I7"],
+        [
         {"kind": "tool_call", "name": "inspect", "arguments": _DS41_JSON_BODY_ARGS},
         {"kind": "tool_call", "name": "done", "arguments": {}},
     ],
-    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-    {"finish_reason": "stop"},
-    OnlyFamilies({"deepseek_v41": (
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"deepseek_v41": (
         '<｜DSML｜ calls>\n'
         '<｜DSML｜ invoke name="inspect">\n'
         + _DS41_JSON_BODY
@@ -3227,7 +3377,7 @@ EDGE.append((
         '<｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>\n'
         '</｜DSML｜ calls>', M, M,
     )}),
-    {"deepseek_v41": [
+        [
         {"name": "inspect", "parameters": {
             "type": "object",
             "properties": {
@@ -3237,8 +3387,8 @@ EDGE.append((
             "required": ["value", "nested"],
         }},
         {"name": "done", "parameters": {"type": "object"}},
-    ]},
-))
+    ],
+    ))
 
 _GLM_REFERENCE_TOOLS = [{"name": "capture_payload", "parameters": {
     "type": "object",
@@ -3255,20 +3405,19 @@ _GLM_REFERENCE_TOOLS = [{"name": "capture_payload", "parameters": {
 }}]
 EDGE.append((
     "glm47_reference_type_intersection",
-    "PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.",
+    "Resolve local reference chains before interpreting string and integer arguments. Preserve the JSON-looking payload as a string and count as an integer. This case does not distinguish sibling type intersections.",
     ["I7"],
     [{"kind": "tool_call", "name": "capture_payload", "arguments": {
         "payload": '{"x":1}', "count": 42,
     }}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop"},
-    OnlyFamilies({"glm47": (
-        '<tool_call>capture_payload'
-        '<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value>'
-        '<arg_key>count</arg_key><arg_value>42</arg_value></tool_call>', M,
-        M,
-    )}),
-    {"glm47": _GLM_REFERENCE_TOOLS},
+    OnlyFamilies({family: (
+        r_tool_arguments(family, "capture_payload", {"payload": '{"x":1}', "count": 42}, 0).removeprefix(
+            "<|start|>assistant" if family == "gpt_oss" else ""),
+        VLLM_UNCAPTURABLE.get(family, M), M,
+    ) for family in FAMILIES}),
+    {family: _GLM_REFERENCE_TOOLS for family in FAMILIES},
 ))
 
 
@@ -3421,7 +3570,7 @@ EDGE += list(_native_quoted_control_cases())
 
 EDGE.append((
     "guided_response_rejected_header_quote_ownership",
-    "DeepSeek V4 prefilled guided Response rejects an incomplete invoke header, then strips its parameter markup; the rejected attribute quote cannot become a prose quote and protect that markup.",
+    "A Response-prefilled guided stream places a quoted invoke-name closer before the guided payload. Preserve quote ownership and each native grammar's header recovery. The DeepSeek V4.1 and Kimi K3 oracles emit no events.",
     ["P2"],
     [{"kind": "text", "text": 'f"x'}, {"kind": "tool_call", "name": "f", "arguments": {"x": "ok"}}],
     {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
@@ -3471,15 +3620,18 @@ for _named in (False, True):
     ))
 
 
-for _suffix, _marker in (("eom", "<|eom|>"), ("eot", "<|eot|>"), ("start", "<|start|>")):
+for _suffix in ("eom", "eot", "start"):
+    _marker = native_message_boundary("muse_glimmer", _suffix)
     _value = f'a"{_marker}"b'
     EDGE.append((
         f"muse_quoted_reserved_{_suffix}_argument",
-        "A balanced quotation in a Muse parameter value names a reserved channel token; preserve that literal value and the real call.",
+        "A balanced quotation in a native argument names a reserved message or turn boundary; preserve that literal value and the real call.",
         ["I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": _value}}],
         {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
         OnlyFamilies({"muse_glimmer": (r_tool("muse_glimmer", "get_weather", "city", _value, 0), V_MUSE, M)}),
+        unified_tools(),
     ))
 
 
@@ -3712,16 +3864,33 @@ for _schema_probe in CONFORMANCE_CASES:
 
 
 for _probe in XML_COMPATIBILITY_CASES:
+    _families = (TEMPLATE_FAMILIES if _probe["schema"]["type"] == "string" else
+                 ["qwen3", "glm47", *MUSE_FAMILIES]
+                 if _probe["name"] == "xml_custom_type_double_quoted_object" else ["qwen3"])
+    # GLM and ATEM accept raw JSON in this custom-type parameter. Retain the
+    # original newline-delimited body instead of injecting a native object.
+    _inputs = {
+        family: r_tool_arguments(family, "schema_probe", {"value": _probe["value"]}, 0,
+                                 {"value": "\n" + _probe["raw"] + "\n"
+                                  if family != "qwen3" and _probe["schema"]["type"] == "custom"
+                                  else _probe["raw"]})
+        for family in _families
+    }
+    _stream = {"finish_reason": "stop"}
+    if _probe["name"] == "xml_custom_type_double_quoted_object":
+        _stream.update(finish_step={family: family in _inputs and family != "qwen3" for family in FAMILIES}, input_chunks={
+            family: [part for part in re.split(r"(<[^>]*>)", wire) if part]
+            for family, wire in _inputs.items()
+        })
     EDGE.append((
         _probe["name"], schema_description(_probe), ["I7"],
         [{"kind": "tool_call", "name": "schema_probe", "arguments": {"value": _probe["value"]}}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-        {"finish_reason": "stop"},
+        _stream,
         OnlyFamilies({_family: (
-            r_tool_arguments(_family, "schema_probe", {"value": _probe["value"]}, 0,
-                             {"value": _probe["raw"]}),
+            _inputs[_family],
             D("UNSUPPORTED", "No peer capture recorded for this quote compatibility probe."), M,
-        ) for _family in (TEMPLATE_FAMILIES if _probe["schema"]["type"] == "string" else ["qwen3"])}),
+        ) for _family in _families}),
         schema_tools(_probe),
     ))
 
@@ -3842,10 +4011,11 @@ DEFAULT_REASONING_CASES = [
 # Any turn with visible text keeps every whitespace byte, and whitespace with no
 # call is visible content, for every family.
 # Inputs render each whitespace run as the family's own visible-text segment.
-# Excluded: DeepSeek V4/V4.1 own their call framing (the `dsml-*` cases above keep
-# non-separator whitespace as content). GPT-OSS renders each run as a `final` message.
+# DeepSeek V4/V4.1 consume their existing two-LF call separator; their rows use
+# that grammar contract rather than excluding applicable native inputs. GPT-OSS
+# renders each run as a `final` message.
 _BLANK_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
-_BLANK_FAMILIES = [f for f in TEMPLATE_FAMILIES if f not in ("deepseek_v4", "deepseek_v41")]
+_BLANK_FAMILIES = TEMPLATE_FAMILIES
 _BLANK_CALL = ("tool", "get_weather", "city", "Paris")
 _BLANK_SECOND_CALL = ("tool", "get_weather", "city", "Tokyo")
 BLANK_FRAMING = [
@@ -3879,22 +4049,42 @@ BLANK_FRAMING = [
 # (scenario, family) -> that family's golden. Keep it to measured, scoped rules.
 INHERITED_GOLDEN = {}
 for _scenario, _description, _policy, _segments, _nemotron_golden, _stream, _families in BLANK_FRAMING:
+    _per_family = {f: (render_input(f, _segments), M, M) for f in _families}
+    for _family in _DSML_FAMILIES:
+        if _family not in _per_family:
+            continue
+        # The DSML encoder owns exactly two LFs before a native call. This is
+        # the same contract as DSML_FRAMING, including between-call separators.
+        _dsml_segments = []
+        for _index, _segment in enumerate(_segments):
+            if (_segment[0] == "text" and _segment[1].endswith("\n\n")
+                    and _index + 1 < len(_segments) and _segments[_index + 1][0] == "tool"):
+                if _segment[1][:-2]:
+                    _dsml_segments.append(("text", _segment[1][:-2]))
+            else:
+                _dsml_segments.append(_segment)
+        _per_family[_family] = (*_per_family[_family], golden_of(_dsml_segments))
     EDGE.append((
         _scenario, _description, _policy, golden_of(_segments), _BLANK_INIT, _stream,
-        OnlyFamilies({f: (render_input(f, _segments), M, M) for f in _families}),
+        OnlyFamilies(_per_family),
     ))
     if golden_of(_nemotron_golden) != golden_of(_segments):
         INHERITED_GOLDEN[(_scenario, "nemotron_v3")] = golden_of(_nemotron_golden)
 
-# A framing newline before a call that never completes: no completed call, so the
-# whitespace is visible content for every family, Nemotron V3 included. Scoped to
-# the Qwen3 grammar (Nemotron inherits it): Qwen3 is the negative control and
-# Nemotron the family whose rule must not fire.
+# P2 preserves preceding visible text and drops an unrecoverable call at EOF.
+# Author each native call independently, then stop inside its city argument,
+# before any parameter, invocation, or message closer can complete that call.
+_blank_incomplete_inputs = {}
+for _family in TEMPLATE_FAMILIES:
+    _wire = render_input(_family, [("text", "\n"), _BLANK_CALL])
+    if _wire.count("Paris") != 1:
+        raise ValueError(f"{_family}: incomplete-call input needs exactly one city value")
+    _blank_incomplete_inputs[_family] = (_wire[:_wire.index("Paris") + len("Par")], M, M)
 EDGE.append((
     "blank_framing_incomplete_call",
     "A framing newline, then a call cut off mid-parameter at EOF. The call never completes, so the newline is kept as text and the partial call is dropped, for Nemotron V3 as for Qwen3.",
     ["P8", "P2"], golden_of([("text", "\n")]), _BLANK_INIT, {"finish_reason": "stop"},
-    OnlyFamilies({"qwen3": ("\n<tool_call>\n<function=get_weather>\n<parameter=city>\nPar", M, M)}),
+    OnlyFamilies(_blank_incomplete_inputs),
 ))
 
 
@@ -3956,16 +4146,20 @@ def _structured_response_case():
     reason = "Check London météo🙂 before answering; this is prose, not JSON."
     inputs, initializations = {}, {}
     unsupported = D("UNSUPPORTED", "Parser-only peer capture does not execute structural-tag generation constraints.")
-    for family in ("gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark"):
+    for family in ("beam", "gpt_oss", "qwen3", "glm47", "deepseek_v4", "deepseek_v41",
+                   "kimi_k2", "kimi_k3", "minimax_m3", "muse_spark"):
         if family == "muse_spark":
             prefix = reason + "<|eom|><|start|>assistant to=user<|message|>"
             suffix, state, visible_prefix = "", "Reasoning", ""
         elif family == "gpt_oss":
             prefix = r_reason(family, reason).removeprefix("<|start|>assistant") + r_text(family, "").removesuffix("<|return|>")
             suffix, state, visible_prefix = "<|return|>", "None", ""
+        elif family == "beam":
+            prefix = r_reason(family, reason).removeprefix("<|start|>assistant") + r_text(family, "").removesuffix("<|return|>")
+            suffix, state, visible_prefix = "", "None", ""
         else:
             visible_prefix = "\n\n" if family == "qwen3" else ""
-            prefix = reason + "</think>" + visible_prefix
+            prefix = reason + control_tokens(family)[1] + visible_prefix
             suffix, state = "", "Reasoning"
         rejected = [prefix + invalid + suffix for invalid in (
             "[]", '{"location":',
@@ -3985,7 +4179,7 @@ def _structured_response_case():
         ])
     return (
         "structured_response_after_reasoning",
-        "No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.",
+        "No-tools response_format schema with free reasoning before the constrained JSON response. Beam and GPT-OSS emit native reasoning and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.",
         ["P5", "I5"], [], OnlyFamilies(initializations), {"finish_reason": "stop"},
         OnlyFamilies(inputs, inherit_grammar=False), [],
     )
@@ -3995,13 +4189,13 @@ EDGE.append(_structured_response_case())
 
 
 _GPT_OSS_REVIEW_CASES = (
-    ("gpt_oss_tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
-     '<|start|>assistant<|channel|>commentary to=functions.lookup <|constrain|>json<|message|> \n\t{"q":"x"}<|call|>',
-     [{"kind":"tool_call", "name":"lookup", "arguments":{"q":"x"}}]),
+    ("tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
+     '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{"city":"Paris"}<|call|>',
+     [{"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
     ("gpt_oss_constrained_final_header", "Harmony final header has a content type and no recipient. The JSON body stays visible response content; it is not a routed tool message.",
      '<|start|>assistant<|channel|>final <|constrain|>json<|message|>{"a":1}<|return|>',
      [{"kind":"text", "text":'{"a":1}'}]),
-    ("gpt_oss_implicit_recipient_first_header", "Harmony generated suffix begins with the recipient before its channel, without prompt token IDs. Hold the header until its message marker and dispatch the native call without leaking the recipient.",
+    ("gpt_oss_implicit_recipient_first_header", "A native generated suffix begins with the recipient after the prompt-consumed assistant role. Hold the remaining header until its message marker and dispatch the native call without leaking the recipient.",
      ' to=functions.lookup<|channel|>commentary <|constrain|>json<|message|>{"q":"x"}<|call|>',
      [{"kind":"tool_call", "name":"lookup", "arguments":{"q":"x"}}]),
     ("gpt_oss_quoted_truncated_tool_then_final", "A malformed native argument body precedes a complete visible-response message. At EOF discard the malformed call and recover the response without leaking its argument body.",
@@ -4022,8 +4216,573 @@ def _dsml_json_tool(family, name, body):
     )
 
 
+def _native_count_content_stages(fam):
+    """Split the shared native renderer at value, call, and envelope boundaries; an absent outer envelope keeps an empty final stage."""
+    wire = default_response_prefix(fam) + r_tool_arguments(fam, 'write_file', {'count': 7, 'content': 'q' * 4096}, 0)
+    at = wire.index('q' * 4096)
+    prefix = wire[:at]
+    suffix = wire[at + 4096:]
+    grammar = unified_grammar_family(fam)
+    ends = {'beam': ('\n</rfl:parameter>', '<|call|>', ''), 'gpt_oss': ('"}', '<|call|>', ''), 'gemma4': ('<|"|>}', '<tool_call|>', ''), 'glm47': ('</arg_value>', '</tool_call>', ''), 'qwen3': ('\n</parameter>\n', '</function>\n', '</tool_call>'), 'kimi_k2': ('"}', '<|tool_call_end|>', '<|tool_calls_section_end|>'), 'kimi_k3': ('<|close|>argument<|sep|>', '<|close|>call<|sep|>', '<|close|>tools<|sep|>'), 'minimax_m3': (']<]minimax[>[</content>', ']<]minimax[>[</invoke>', ']<]minimax[>[</tool_call>'), 'muse_glimmer': ('</atem:parameter>\n', '</atem:invoke>\n', '</atem:function_calls><|eom|>'), 'muse_spark': ('</atem:parameter>\n', '</atem:invoke>\n', '</atem:function_calls><|eom|>')}
+    if grammar in ('deepseek_v4', 'deepseek_v41'):
+        gap = ' ' if grammar == 'deepseek_v41' else ''
+        envelope = 'calls' if gap else 'tool_calls'
+        end = (f'</｜DSML｜{gap}parameter>', f'</｜DSML｜{gap}invoke>', f'</｜DSML｜{gap}{envelope}>')
+    else:
+        end = ends[grammar]
+    assert ''.join(end) == suffix, (fam, repr(suffix), repr(end))
+    return [prefix + 'q' * 3072, 'q' * 1024, *end]
+
+NATIVE_PROGRESS_SCENARIOS = frozenset({
+    *(f"kimi_native_{form}_count_content_chunk{size}"
+      for form in KIMI_PROGRESS_FORMS for size in (7, 1024)),
+    "kimi_native_trailing_syntax_whitespace", "kimi_native_valid_object_trailing_garbage",
+    "kimi_native_incompatible_string_recovery", "kimi_native_incremental_interfield_whitespace",
+    "kimi_native_rejected_next_header_progress",
+})
+
+
+def _native_progress_probe(scenario, family):
+    """Native counterparts preserve schema/delivery; no observed output is an oracle."""
+    if scenario not in NATIVE_PROGRESS_SCENARIOS:
+        return None
+    grammar = unified_grammar_family(family)
+    count_content = {"count": 7, "content": "q"}
+    if "_count_content_chunk" in scenario:
+        form, size = scenario.removeprefix("kimi_native_").split("_count_content_chunk")
+        # Typed/raw XTML are distinct native forms only for K3. Other families
+        # exercise one canonical native representation through the shared K2 row.
+        if form != "k2":
+            return None
+        if grammar == KIMI_PROGRESS_FORMS[form][0]:
+            return None
+        stages = _native_count_content_stages(family)
+        chunks = [stage[at:at + int(size)] for stage in stages
+                  for at in range(0, len(stage), int(size))]
+        return "".join(stages), chunks, [{"kind": "tool_call", "name": "write_file",
+                                         "arguments": {"count": 7, "content": "q" * 4096}}]
+    if scenario == "kimi_native_incremental_interfield_whitespace":
+        if grammar == "kimi_k3":
+            return None
+        wire = r_tool_arguments(family, "write_file", count_content, 0)
+        starts = {
+            "gpt_oss": '"content"', "kimi_k2": '"content"', "gemma4": "content:",
+            "beam": '<rfl:parameter name="content"', "qwen3": "<parameter=content>",
+            "glm47": "<arg_key>content", "minimax_m3": "]<]minimax[>[<content>",
+            "muse_glimmer": '<atem:parameter name="content"',
+            "muse_spark": '<atem:parameter name="content"',
+            "deepseek_v4": '<｜DSML｜parameter name="content"',
+            "deepseek_v41": '<｜DSML｜ parameter name="content"',
+        }
+        at = wire.index(starts[grammar])
+        wire = default_response_prefix(family) + wire[:at] + " " * 4096 + wire[at:]
+        return wire, [wire[at:at + 7] for at in range(0, len(wire), 7)], [
+            {"kind": "tool_call", "name": "write_file", "arguments": count_content}]
+    if scenario == "kimi_native_rejected_next_header_progress":
+        if grammar != "beam":
+            return None
+        value = "head</rfl:parameter> <rfl:parameter gibberish>" + "q" * 3072
+        arguments = {"count": 7, "content": value}
+        wire = r_tool_arguments(family, "write_file", arguments, 0)
+        return wire, [wire[at:at + 7] for at in range(0, len(wire), 7)], [
+            {"kind": "tool_call", "name": "write_file", "arguments": arguments}]
+    if grammar not in {"gpt_oss", "kimi_k3", "deepseek_v4", "deepseek_v41", "gemma4"}:
+        return None
+    payload = {
+        "kimi_native_trailing_syntax_whitespace": '{"count":7,"content": \t\n',
+        "kimi_native_valid_object_trailing_garbage": '{"count":7,"content":"q"} trailing',
+        "kimi_native_incompatible_string_recovery": '{"x":"abc ',
+    }[scenario]
+    # Harmony and K3 require a valid whole JSON object; Gemma requires balanced
+    # native braces followed immediately by its closer. Their malformed calls
+    # are dropped, unlike K2's completed-malformed {} recovery.
+    golden = []
+    if grammar == "gemma4":
+        payload = {
+            "kimi_native_trailing_syntax_whitespace": "{count:7,content: \t\n",
+            "kimi_native_valid_object_trailing_garbage": '{count:7,content:<|"|>q<|"|>} trailing',
+            "kimi_native_incompatible_string_recovery": '{x:<|"|>abc ',
+        }[scenario]
+        wire = "<|tool_call>call:write_file" + payload + "<tool_call|>"
+    elif grammar.startswith("deepseek_"):
+        wire = _dsml_json_tool(grammar, "write_file", payload)
+        # V4's permissive parameter decoder falls back to {}; V4.1's JSON
+        # invocation decoder is strict and may return a recorded parse error.
+        if grammar == "deepseek_v4" and scenario != "kimi_native_incompatible_string_recovery":
+            golden = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    elif grammar == "kimi_k3":
+        wire = k3_raw_tool("write_file", payload)
+    else:
+        wire = r_tool_arguments(family, "write_file", {}, 0).replace("{}", payload, 1)
+    wire = default_response_prefix(family) + wire
+    return wire, list(wire), golden
+
+
+
+GUIDED_HEADER_REVIEW_SCENARIOS = frozenset({
+    "qwen3_guided_non_ascii_header_in_truncated_reasoning",
+    "qwen3_guided_non_ascii_header_in_closed_reasoning",
+    "qwen3_guided_reasoning_opener_inside_native_header",
+    "guided_json_quoted_bare_tool_header_in_answer",
+    "prefilled_response_guided_pending_invoke_header",
+    "gemma4_guided_reasoning_opener_after_call_prefix",
+    "gemma4_guided_response_extra_body_opener",
+    "deepseek_v4_guided_reasoning_opener_inside_native_body",
+    "guided_response_rejected_header_quote_ownership",
+    "guided_json_quoted_bare_header_after_payload_pr424",
+    "guided_json_quoted_bare_header_in_answer_pr424",
+})
+
+
+def _keyless_native_body(family, name):
+    """Return a native invocation header/body boundary without inserting a parameter."""
+    grammar = unified_grammar_family(family)
+    wire = r_tool_arguments(family, name, {}, 0)
+    if grammar in {"deepseek_v4", "deepseek_v41", "muse_glimmer", "muse_spark", "minimax_m3"}:
+        opener = re.search(r'(?:\]<\]minimax\[>\[)?<[^<>]*invoke name="[^"]*">', wire).group()
+        closer = re.search(r'(?:\]<\]minimax\[>\[)?</[^<>]*invoke>', wire).group()
+        return opener, closer
+    if grammar == "qwen3":
+        return re.search(r'<function=[^>]*>', wire).group(), "</function>"
+    if grammar == "glm47":
+        return wire.removesuffix("</tool_call>"), "</tool_call>"
+    if grammar == "gemma4":
+        return wire.removeprefix("<|tool_call>").removesuffix("}<tool_call|>"), "}<tool_call|>"
+    if grammar == "kimi_k3":
+        return k3_call(name, 0, "", close=False), k3_close("call")
+    if grammar == "kimi_k2":
+        return wire.split("{}", 1)[0].removeprefix("<|tool_calls_section_begin|>"), "<|tool_call_end|>"
+    if grammar == "gpt_oss":
+        return wire.split("{}", 1)[0], "<|call|>"
+    if grammar == "beam":
+        return wire.removesuffix("<|call|>"), "<|call|>"
+    raise KeyError(f"no native keyless body boundary for {family}")
+
+
+def _unfinished_native_header(family):
+    """A name has started, but neither its header nor an argument body has closed."""
+    prefix = guided_invoke_prefix(family) or r_tool(family, "NAMEX", "KEYX", "VALX", 0).split("NAMEX", 1)[0]
+    # Gemma has no body brace yet. Its brace belongs only to a complete header.
+    closer = "<tool_call|>" if family == "gemma4" else _keyless_native_body(family, "f")[1]
+    return prefix, closer
+
+
+def _guided_header_review_variants(scenario):
+    """Family-native header ownership, with schema and cadence supplied by the EDGE owner."""
+    if scenario not in GUIDED_HEADER_REVIEW_SCENARIOS:
+        return {}
+    variants = {}
+    weather = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
+    empty_f = {"kind": "tool_call", "name": "f", "arguments": {}}
+    empty_payload = '[{"name":"f","arguments":{}}]'
+    if scenario in {"qwen3_guided_non_ascii_header_in_truncated_reasoning", "qwen3_guided_non_ascii_header_in_closed_reasoning"}:
+        truncated = "truncated" in scenario
+        name = "éaaaaaaaaax"
+        for family in TEMPLATE_FAMILIES:
+            if family == "qwen3":
+                continue
+            prefix, invoke_close = _unfinished_native_header(family)
+            reason_open, reason_close, _tool_open, _tool_close = control_tokens(family)
+            wire = reason_open + prefix + name
+            if truncated:
+                # Quoted pending names remain header-owned to EOF in these
+                # grammars. They are not released as unquoted Qwen name prose.
+                golden = ([] if family in {"deepseek_v4", "kimi_k3", "minimax_m3"}
+                          else [{"kind": "reasoning", "text": ("call:" if family == "gemma4" else "") + name}])
+            else:
+                wire += invoke_close + reason_close + GUIDED_ONE_CALL
+                retained_close = invoke_close if family in {"beam", "deepseek_v41", "minimax_m3", "muse_glimmer"} else ""
+                text = ("call:" if family == "gemma4" else "") + name + retained_close
+                golden = [{"kind": "reasoning", "text": text}, weather]
+            variants[family] = (wire, golden, M)
+    elif scenario == "qwen3_guided_reasoning_opener_inside_native_header":
+        for family in TEMPLATE_FAMILIES:
+            if family == "qwen3":
+                continue
+            prefix, invoke_close = _unfinished_native_header(family)
+            wire = prefix + control_tokens(family)[0] + "x" + invoke_close + empty_payload
+            if family in {"deepseek_v4", "gemma4", "glm47", "gpt_oss", "kimi_k3"}:
+                golden = [{"kind": "reasoning", "text": "x"}, empty_f]
+            elif family == "kimi_k2":
+                golden = [empty_f]
+            else:
+                golden = [{"kind": "reasoning", "text": "x" + ("" if family == "muse_spark" else invoke_close) + empty_payload}]
+            dynamo = (D("LOSS", "A competing thought opener leaks the native prefix during character streaming and loses its reasoning on a whole-input push.")
+                      if family == "glm47" else M)
+            variants[family] = (wire, golden, dynamo)
+    elif scenario == "guided_json_quoted_bare_tool_header_in_answer":
+        # Both grammars have a bare recipient-first message header. A tool name
+        # inside another family's thought or argument is a different owner.
+        for family, header in (
+            ("beam", "to=get_weather<|channel|>analysis <|constrain|>xml<|message|>literal<|call|>"),
+            ("gpt_oss", "to=functions.get_weather<|channel|>commentary <|constrain|>json<|message|>literal<|call|>"),
+        ):
+            prose = "I mean " + header
+            variants[family] = (prose + GUIDED_ONE_CALL, [{"kind": "text", "text": prose}, weather], M)
+    elif scenario == "prefilled_response_guided_pending_invoke_header":
+        for family in TEMPLATE_FAMILIES:
+            if family == "deepseek_v41":
+                continue
+            markup, visible = _guided_response_markup(family, "self")
+            prefix, _invoke_close = _unfinished_native_header(family)
+            wire = markup.removesuffix(GUIDED_ONE_CALL) + prefix + GUIDED_ONE_CALL
+            visible += prefix if family == "gemma4" else ""
+            variants[family] = (wire, [{"kind": "text", "text": visible}, weather], M)
+    elif scenario == "gemma4_guided_reasoning_opener_after_call_prefix":
+        for family in TEMPLATE_FAMILIES:
+            if family == "gemma4":
+                continue
+            prefix, _invoke_close = _unfinished_native_header(family)
+            opener, closer, _tool_open, _tool_close = control_tokens(family)
+            variants[family] = (prefix + opener + "x" + closer + empty_payload,
+                                [{"kind": "reasoning", "text": "x"}, empty_f], M)
+    elif scenario == "gemma4_guided_response_extra_body_opener":
+        for family in TEMPLATE_FAMILIES:
+            if family == "gemma4":
+                continue
+            prefix, _closer = _keyless_native_body(family, "get_weather")
+            if family == "kimi_k3":
+                prefix += k3_open("json")
+            # Keyless JSON after these headers is a guided wrapper: the extra
+            # brace stays prose. Native body ownership elsewhere retains it to EOF.
+            if family in {"beam", "muse_glimmer", "muse_spark", "qwen3"}:
+                golden = [{"kind": "text", "text": "é {"}, weather]
+            elif family == "kimi_k2":
+                golden = [{"kind": "text", "text": "é "}, weather]
+            else:
+                golden = [{"kind": "text", "text": "é "}]
+            variants[family] = ("é " + prefix + "{" + GUIDED_ONE_CALL, golden, M)
+    elif scenario == "deepseek_v4_guided_reasoning_opener_inside_native_body":
+        for family in TEMPLATE_FAMILIES:
+            if family == "deepseek_v4":
+                continue
+            prefix, closer = _keyless_native_body(family, "f")
+            wire = prefix + control_tokens(family)[0] + "x" + closer + empty_payload
+            # An invocation close is not a thought close in these grammars.
+            # Spark's reasoning filter alone strips the unmatched ATEM close.
+            if family == "deepseek_v41":
+                golden = [{"kind": "reasoning", "text": 'f">x' + closer + empty_payload}]
+            elif family in {"beam", "muse_glimmer", "qwen3"}:
+                golden = [{"kind": "reasoning", "text": "x" + closer + empty_payload}]
+            elif family == "muse_spark":
+                golden = [{"kind": "reasoning", "text": "x" + empty_payload}]
+            elif family == "glm47":
+                golden = [{"kind": "reasoning", "text": "fx"}, empty_f]
+            elif family == "gpt_oss":
+                golden = [{"kind": "reasoning", "text": "x"}, empty_f]
+            elif family == "kimi_k3":
+                # A thought opener is not a typed argument or raw-JSON body;
+                # this exact bare call has no tools fence for malformed recovery.
+                golden = []
+            else:
+                golden = [empty_f]
+            variants[family] = (wire, golden, M)
+    elif scenario == "guided_response_rejected_header_quote_ownership":
+        for family in ("deepseek_v41", "minimax_m3", "kimi_k3", "muse_glimmer", "muse_spark"):
+            prefix = guided_invoke_prefix(family)
+            if family == "kimi_k3":
+                invoke = '<|open|>call tool="f"'
+                parameter = k3_open("argument", [("key", "x"), ("type", "string")])
+                golden = []
+            else:
+                invoke = prefix + 'f"'
+                native = r_tool(family, "f", "x", "SENTINEL", 0)
+                at = native.index(prefix) + len(prefix) + len('f"')
+                end = native.index(">", at)
+                parameter = native[end + 1:native.index("SENTINEL")].lstrip()
+                if family == "deepseek_v41":
+                    golden = []
+                else:
+                    # ATEM owns through the next >. M3 dynamic parameter names
+                    # have no standalone global marker outside a native body.
+                    text = 'f"' + parameter + "x" if family == "minimax_m3" else "x"
+                    golden = [{"kind": "text", "text": text},
+                              {"kind": "tool_call", "name": "f", "arguments": {"x": "ok"}}]
+            wire = invoke + parameter + 'x[{"name":"f","arguments":{"x":"ok"}}]'
+            variants[family] = (wire, golden, M)
+    else:
+        for family in ("muse_glimmer", "muse_spark"):
+            prose = "I mean " + r_reason(family, "self literal")
+            text = {"kind": "text", "text": "I mean assistant to=selfself literal"}
+            after = "after_payload" in scenario
+            wire = GUIDED_ONE_CALL + prose if after else prose + GUIDED_ONE_CALL
+            variants[family] = (wire, [weather, text] if after else [text, weather], M)
+    return variants
+
+
+def _native_unclosed_body_then_call(family):
+    """Keep the original invocation's outer context while a later call arrives."""
+    bad = r_tool_arguments(family, "bad", {}, 1)
+    good = r_tool_arguments(family, "g", {"y": "2"}, 2)
+    if family in {"gpt_oss", "kimi_k2"}:
+        prefix = bad.split("{}", 1)[0]
+    elif family == "gemma4":
+        prefix = bad.removesuffix("}<tool_call|>")
+    elif family == "beam":
+        prefix = bad.removesuffix("<|call|>")
+    else:
+        header, _closer = _keyless_native_body(family, "bad")
+        prefix = bad[:bad.index(header) + len(header)]
+    if family in {"beam", "gpt_oss", "gemma4"}:
+        following = good
+    elif family == "kimi_k2":
+        following = good[good.index("<|tool_call_begin|>"):]
+    else:
+        header, _closer = _keyless_native_body(family, "g")
+        following = good[good.index(header):]
+    return default_response_prefix(family) + prefix + "not-an-argument" + following
+
+
+MUSE_NATIVE_REVIEW_SCENARIOS = frozenset({
+    "muse_opaque_declared_invoke", "muse_opaque_undeclared_invoke",
+    "muse_recovery_second_parameter", "muse_unterminated_parameter_then_call",
+    "muse_unterminated_parameter_then_empty_call", "muse_unterminated_reasoning_native",
+    "muse_unterminated_reasoning_guided",
+})
+
+
+def _native_invocation_fragment(family, name, key, value, index=1):
+    """One rendered invoke/parameter prefix, retaining native marker bytes."""
+    grammar = unified_grammar_family(family)
+    before = r_tool(family, name, key, "MUSE_VALUE", index).split("MUSE_VALUE", 1)[0]
+    prefix = invoke_header_prefix(grammar)
+    if prefix:
+        before = before[before.index(prefix):]
+    close = _keyless_native_body(family, name)[1]
+    if grammar == "qwen3":
+        close += "\n"
+    return close + before + value
+
+
+def _muse_native_probe(scenario, family):
+    """Native sibling contracts; EOF repair policies are deliberate differences."""
+    if scenario not in MUSE_NATIVE_REVIEW_SCENARIOS:
+        return None
+    grammar = unified_grammar_family(family)
+    if grammar in MUSE_FAMILIES:
+        return None
+    if scenario in {"muse_opaque_declared_invoke", "muse_opaque_undeclared_invoke", "muse_recovery_second_parameter"}:
+        # A complete outer value cannot own its own unescapable delimiter.
+        # M3 known string paths own other namespace tags; an undeclared y is
+        # buffered as nested native values rather than a schema-known string.
+        if grammar == "gemma4" or (grammar == "minimax_m3" and scenario == "muse_recovery_second_parameter"):
+            return None
+        declared = scenario != "muse_opaque_undeclared_invoke"
+        name, key, value = ("get_weather", "city", "Paris") if declared else ("rm_rf", "path", "/")
+        prefix = "broken" if scenario == "muse_recovery_second_parameter" else "doc: "
+        literal = prefix + _native_invocation_fragment(family, name, key, value)
+        arguments = ({"x": "done", "y": literal} if scenario == "muse_recovery_second_parameter" else {"x": literal})
+        # K3's public native grammar also offers whole JSON objects. That form
+        # preserves nested XTML headers without changing the offered schema.
+        wire = (k3_raw_tool("f", json.dumps(arguments, ensure_ascii=False)) if grammar == "kimi_k3"
+                else r_tool_arguments(family, "f", arguments, 0))
+        golden = [{"kind": "tool_call", "name": "f", "arguments": arguments}]
+    elif scenario == "muse_unterminated_parameter_then_call":
+        # The Muse aggregate recipient is distinct from its direct-f recipient.
+        # Other families' single route is covered by opaque_declared_invoke.
+        return None
+    elif scenario == "muse_unterminated_parameter_then_empty_call":
+        before, after = r_tool(family, "get_weather", "city", "MUSE_VALUE", 0).split("MUSE_VALUE", 1)
+        close = _keyless_native_body(family, "get_weather")[1]
+        if grammar == "qwen3":
+            close += "\n"
+        elif grammar == "gemma4":
+            close = control_tokens(family)[3]
+        suffix = after[after.rfind(close) + len(close):]
+        inner = r_tool_arguments(family, "f", {}, 1)
+        if grammar in {"deepseek_v4", "deepseek_v41", "qwen3", "kimi_k2", "kimi_k3", "minimax_m3"}:
+            begin, end = control_tokens(family)[2:]
+            inner = inner.removeprefix(begin).removesuffix(end).lstrip()
+        if grammar == "qwen3":
+            inner = inner.replace(">\n\n</function>", ">\n</function>", 1)
+        wire = before + "bad" + close + inner + suffix
+        following = {"kind": "tool_call", "name": "f", "arguments": {}}
+        # Explicit native EOF contracts: Qwen/GLM permit a missing parameter
+        # closer, V4 falls back to {}, K2 repairs malformed JSON, strict framed
+        # readers discard the outer call and recover the following complete call.
+        if grammar in {"qwen3", "glm47"}:
+            golden = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "bad"}}, following]
+        elif grammar in {"kimi_k2", "minimax_m3"}:
+            golden = [{"kind": "tool_call", "name": "get_weather", "arguments": {}}, following]
+        elif grammar == "deepseek_v4":
+            golden = [{"kind": "tool_call", "name": "get_weather", "arguments": {}}]
+        else:
+            golden = [following]
+    else:
+        if scenario == "muse_unterminated_reasoning_native" and grammar != "gemma4":
+            # These families reserve the incomplete invoke prefix as control
+            # syntax even in reasoning; Muse ATEM/Gemma bare-call prose differs.
+            return None
+        prefix = ("<|start|>assistant to=functions." if grammar == "gpt_oss"
+                  else _unfinished_native_header(grammar)[0])
+        text = "Maybe " + prefix + "x and more thought"
+        wire = r_reason(family, text)
+        if scenario == "muse_unterminated_reasoning_native":
+            wire += r_text(family, "Done.")
+            golden = [{"kind": "reasoning", "text": text}, {"kind": "text", "text": "Done."}]
+        else:
+            wire += '{"city":"Paris"}'
+            golden = [{"kind": "reasoning", "text": "Maybe x and more thought"},
+                      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+    return default_response_prefix(family) + wire, golden
+
+
+
 def _native_review_variants(scenario):
-    arguments = {"q": "x"}
+    if scenario in MUSE_NATIVE_REVIEW_SCENARIOS:
+        variants = {}
+        for family in TEMPLATE_FAMILIES:
+            probe = _muse_native_probe(scenario, family)
+            if probe is not None:
+                wire, golden = probe
+                variants[family] = (wire, golden, M)
+        return variants
+    guided = _guided_header_review_variants(scenario)
+    if guided:
+        return guided
+    if scenario == "deepseek_v41_json_invocation_body":
+        variants = {}
+        for family in ("deepseek_v4", "gpt_oss", "kimi_k2", "kimi_k3"):
+            invoke_close = _keyless_native_body(family, "inspect")[1]
+            outer_open, outer_close = control_tokens(family)[2:]
+            arguments = deepcopy(_DS41_JSON_BODY_ARGS)
+            arguments["value"] = arguments["value"].replace("</｜DSML｜ invoke>", invoke_close).replace("</｜DSML｜ calls>", outer_close)
+            body = json.dumps(arguments, ensure_ascii=False)
+            if family == "deepseek_v4":
+                wire = (_dsml_json_tool(family, "inspect", body).removesuffix(outer_close)
+                        + _dsml_json_tool(family, "done", "{}").removeprefix(outer_open))
+            elif family == "kimi_k3":
+                wire = k3_tools(k3_call("inspect", 1, k3_json(body)) + k3_call("done", 2, k3_json("{}")))
+            else:
+                first = r_tool_arguments(family, "inspect", arguments, 1)
+                second = r_tool_arguments(family, "done", {}, 2)
+                wire = first + second if family == "gpt_oss" else first.removesuffix(outer_close) + second.removeprefix(outer_open)
+            variants[family] = (wire, [
+                {"kind": "tool_call", "name": "inspect", "arguments": arguments},
+                {"kind": "tool_call", "name": "done", "arguments": {}},
+            ], M)
+        return variants
+    if scenario == "kimi_k3_malformed_call_then_valid":
+        variants = {}
+        for family in (*TEMPLATE_FAMILIES, "nemotron_v3"):
+            # GLM's name runs to arg_key, so keyless prose changes its name;
+            # there is no independent header/body boundary for this request.
+            if family in {"kimi_k3", "glm47"}:
+                continue
+            wire = _native_unclosed_body_then_call(family)
+            dynamo = M
+            if family in {"deepseek_v4", "qwen3", "nemotron_v3", "muse_glimmer", "muse_spark"}:
+                golden = [{"kind": "tool_call", "name": "bad", "arguments": {"y": "2"}}]
+            elif family == "minimax_m3":
+                golden = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
+            elif family == "deepseek_v41":
+                golden = []
+                dynamo = D("ERROR", "Strict native parameter-body validation rejects the first body before another call can emit.")
+            else:
+                golden = [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}]
+                if family == "kimi_k2":
+                    dynamo = D("LOSS", "An unprotected later call_start is a new invoke, but malformed-body recovery loses its complete g call.")
+            variants[family] = (wire, golden, dynamo)
+        return variants
+    if scenario == "gpt_oss_channel_header_variants":
+        return {"beam": (r_reason("beam", "check") + r_tool_arguments("beam", "lookup", {"q": "weather"}, 0)
+                         + r_text("beam", "found"),
+                         [{"kind": "reasoning", "text": "check"},
+                          {"kind": "tool_call", "name": "lookup", "arguments": {"q": "weather"}},
+                          {"kind": "text", "text": "found"}], M)}
+    if scenario in NATIVE_PROGRESS_SCENARIOS:
+        variants = {}
+        for family in TEMPLATE_FAMILIES:
+            probe = _native_progress_probe(scenario, family)
+            if probe is not None:
+                wire, _chunks, golden = probe
+                variants[family] = (wire, golden, M)
+        return variants
+    if scenario == "kimi_k3_typed_argument_values":
+        return {family: (
+            r_tool_arguments(family, "run", KIMI_TYPED_ARGUMENT_VALUES, 0),
+            [{"kind": "tool_call", "name": "run", "arguments": KIMI_TYPED_ARGUMENT_VALUES}], M,
+        ) for family in ("deepseek_v4", "deepseek_v41", "gemma4", "gpt_oss", "kimi_k2", *MUSE_FAMILIES)}
+    if scenario == "kimi_k3_guided_native_wrapper":
+        variants = {}
+        for family in TEMPLATE_FAMILIES:
+            if family == "kimi_k3":
+                continue
+            golden = ([{"kind": "tool_call", "name": "ignored", "arguments": {"quoted": "literal"}},
+                       {"kind": "text", "text": GUIDED_ONE_CALL}]
+                      if family == "minimax_m3" else
+                      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}])
+            variants[family] = (
+                r_tool(family, "ignored", "quoted", "literal", 0) + GUIDED_ONE_CALL, golden, M,
+            )
+        return variants
+    if scenario == "kimi_k3_typed_json_marker_payload":
+        variants = {}
+        for family, marker in NATIVE_ARGUMENT_BOUNDARIES.items():
+            if family == "kimi_k3":
+                continue
+            arguments = {"x": {"inner": marker}, "y": "OK"}
+            variants[family] = (
+                r_tool_arguments(
+                    family, "inspect", arguments, 0,
+                    raw_arguments={"x": "]<]minimax[>[<inner>" + marker + "]<]minimax[>[</inner>", "y": "OK"}
+                    if family == "minimax_m3" else None,
+                ),
+                [{"kind": "tool_call", "name": "inspect", "arguments": arguments}], M,
+            )
+        return variants
+    if scenario == "prefilled_response_guided_closer_inside_invoke_quote":
+        headers = {
+            "deepseek_v4": '<｜DSML｜invoke name="</｜DSML｜invoke>',
+            "deepseek_v41": '<｜DSML｜ invoke name="</｜DSML｜ invoke>',
+            "minimax_m3": ']<]minimax[>[<invoke name="]<]minimax[>[</invoke>',
+            "kimi_k3": '<|open|>call tool="<|close|>call<|sep|>',
+        }
+        variants = {}
+        for family, header in headers.items():
+            markup, visible = _guided_response_markup(family, "self")
+            variants[family] = (
+                markup.removesuffix(GUIDED_ONE_CALL) + header + GUIDED_ONE_CALL,
+                [{"kind": "text", "text": visible},
+                 {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}], M,
+            )
+        return variants
+    if scenario == "gpt_oss_complete_alternate_message_ends":
+        golden = [{"kind": "tool_call", "name": "lookup", "arguments": {"q": value}}
+                  for value in ("end", "return")]
+        return {family: (
+            r_tool(family, "lookup", "q", "end", 0)
+            + r_tool(family, "lookup", "q", "return", 1).removesuffix("<|eom|>") + "<|eot|>",
+            golden, M,
+        ) for family in MUSE_FAMILIES}
+    if scenario == "glm47_parameterless_call_shape_inside_argument":
+        variants = {}
+        for family in TEMPLATE_FAMILIES:
+            if family == "glm47":
+                continue
+            value = ("before " + control_tokens(family)[3]
+                     + r_tool_arguments(family, "get_weather", {}, 0) + " after")
+            variants[family] = (
+                r_tool(family, "run", "cmd", value, 0),
+                [{"kind": "tool_call", "name": "run", "arguments": {"cmd": value}}], M,
+            )
+        return variants
+    if scenario.startswith("muse_quoted_reserved_"):
+        boundary = scenario.removeprefix("muse_quoted_reserved_").removesuffix("_argument")
+        variants = {}
+        for family in ("beam", "gpt_oss", "kimi_k3"):
+            marker = native_message_boundary(family, boundary)
+            value = f'a"{marker}"b'
+            variants[family] = (
+                r_tool(family, "get_weather", "city", value, 0),
+                [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}], M,
+            )
+        return variants
+    if scenario == "gpt_oss_implicit_recipient_first_header":
+        return {family: (
+            r_tool(family, "lookup", "q", "x", 0).removeprefix("<|start|>assistant"),
+            [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "x"}}], M,
+        ) for family in ("beam", "muse_glimmer", "muse_spark")}
     if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
         variants = {}
         for family in TEMPLATE_FAMILIES:
@@ -4037,13 +4796,15 @@ def _native_review_variants(scenario):
         return variants
     if scenario == "gpt_oss_control_marker_inside_argument_string":
         variants = {}
-        for family in ("deepseek_v4", "deepseek_v41", "kimi_k2", "kimi_k3"):
+        for family in ("deepseek_v4", "deepseek_v41", "kimi_k2", "kimi_k3", "beam", "muse_glimmer", "muse_spark"):
             frames = r_reason(family, "") + r_text(family, "") + r_tool(family, "lookup", "q", "x", 0)
             markers = re.findall(r"<[^<>]*>", frames) + _MANIFEST[family].get("leak_markers", [])
             payload = "".join(dict.fromkeys(markers))
             arguments = {"markers": payload}
             if family.startswith("deepseek_"):
                 native_input = _dsml_json_tool(family, "lookup", json.dumps(arguments))
+            elif family in {"muse_glimmer", "muse_spark"}:
+                native_input = r_tool(family, "lookup", "markers", payload, 0).replace(payload, json.dumps(payload), 1)
             elif family == "kimi_k3":
                 native_input = k3_raw_tool("lookup", json.dumps(arguments))
             else:
@@ -4084,19 +4845,23 @@ def _native_review_variants(scenario):
         golden = [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}]
         return {family: (r_reason(family, "checking").removesuffix(control_tokens(family)[1])
                          + r_text(family, "done"), golden, M) for family in ("beam", "muse_glimmer")}
-    if scenario == "gpt_oss_tool_body_whitespace":
-        golden = [{"kind": "tool_call", "name": "lookup", "arguments": arguments}]
+    if scenario == "tool_body_whitespace":
+        arguments = {"city": "Paris"}
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}]
         return {
+            "deepseek_v4": (_dsml_json_tool("deepseek_v4", "get_weather", ' \n\t{"city":"Paris"}'), golden, M),
+            "deepseek_v41": (_dsml_json_tool("deepseek_v41", "get_weather", ' \n\t{"city":"Paris"}'), golden, M),
             "kimi_k2": (
-                r_tool_arguments("kimi_k2", "lookup", arguments, 0).replace(
+                r_tool_arguments("kimi_k2", "get_weather", arguments, 0).replace(
                     "<|tool_call_argument_begin|>", "<|tool_call_argument_begin|> \n\t", 1
                 ), golden, M,
             ),
-            "kimi_k3": (k3_raw_tool("lookup", ' \n\t{"q":"x"}'), golden, M),
+            "kimi_k3": (k3_raw_tool("get_weather", ' \n\t{"city":"Paris"}'), golden, M),
         }
     if scenario == "gpt_oss_quoted_truncated_tool_then_final":
         golden = [{"kind": "text", "text": "Answer"}]
         return {
+            "beam": ('<|start|>assistant to=lookup<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="q">\nabc<|call|><|start|>assistant<|channel|>final<|message|>Answer<|return|>', golden, M),
             "muse_glimmer": (
                 '<|start|>assistant to=lookup<|message|><atem:invoke name="lookup">'
                 '<atem:parameter name="q">abc<|eom|>' + r_text("muse_glimmer", "Answer"),
@@ -4109,13 +4874,13 @@ def _native_review_variants(scenario):
         }
     if scenario == "gpt_oss_quoted_message_header_literal":
         variants = {}
-        for family in ("muse_glimmer", "kimi_k3"):
-            closer = "<|eom|>" if family == "muse_glimmer" else k3_close("call")
+        for family in ("muse_glimmer", "kimi_k3", "beam"):
+            closer = control_tokens(family)[3] if family != "kimi_k3" else k3_close("call")
             payload = closer + r_text(family, "literal")
             arguments = {"q": payload}
             native_input = (
                 r_tool_arguments(family, "lookup", arguments, 0)
-                if family == "muse_glimmer"
+                if family != "kimi_k3"
                 else k3_raw_tool("lookup", json.dumps(arguments))
             )
             variants[family] = (native_input, [
@@ -4130,14 +4895,35 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
     _inputs = OnlyFamilies({"gpt_oss": (_input, D("UNSUPPORTED", VLLM_UNCAPTURABLE["gpt_oss"]), M)})
     _inputs.update({family: (native_input, D("UNSUPPORTED", "No peer capture recorded."), dynamo, golden)
                     for family, (native_input, golden, dynamo) in _variants.items()})
-    _tools = {"gpt_oss": [], **{family: [{"name": "lookup", "parameters": {
-        "type": "object", "properties": {"q": {"type": "string"}},
+    _tool_name, _parameter = (("get_weather", "city") if _name == "tool_body_whitespace" else ("lookup", "q"))
+    _tools = {"gpt_oss": [], **{family: [{"name": _tool_name, "parameters": {
+        "type": "object", "properties": {_parameter: {"type": "string"}},
     }}] for family in _variants}}
+    # New counterparts retain the original empty-tool request contract; historical
+    # counterparts keep their published schema bindings.
+    if _name == "gpt_oss_control_marker_inside_argument_string":
+        _tools.update({family: [] for family in ("beam", "muse_glimmer", "muse_spark")})
+    if _name in {"gpt_oss_quoted_message_header_literal", "gpt_oss_quoted_truncated_tool_then_final"}:
+        _tools["beam"] = []
+    if _name in {"gpt_oss_implicit_recipient_first_header", "gpt_oss_complete_alternate_message_ends"}:
+        _tools = {family: [] for family in _inputs}
     EDGE.append((
         _name, _description, ["I3", "I5", "I7"], _golden,
         {"starting_state":"None", "tool_output_mode":"Native", "named_tool":None},
         {"finish_reason": "stop"}, _inputs, _tools,
     ))
+
+for _scenario in ("guided_json_quoted_bare_header_after_payload_pr424", "guided_json_quoted_bare_header_in_answer_pr424"):
+    _base = _scenario.removesuffix("_pr424")
+    _parent = next(edge for edge in EDGE if edge[0] == _base)
+    _wire, _golden, _dynamo = _guided_header_review_variants(_scenario)["muse_glimmer"]
+    # GPT's retained child still resolves through its historical owner below;
+    # the native framed counterpart shares its scenario identity.
+    EDGE.append((_scenario, _parent[1], _parent[2], _parent[3], _parent[4],
+                 {"finish_reason": "tool_calls", "input_chunks": {"muse_glimmer": list(_wire)}},
+                 OnlyFamilies({"muse_glimmer": (_wire, M, _dynamo, _golden)}),
+                 {"muse_glimmer": []}))
+
 
 _TEMPLATE_FAMILIES = tuple(FAMILIES)
 _TEMPLATE_EDGE_NAMES = frozenset(spec[0] for spec in EDGE)
@@ -4297,9 +5083,24 @@ for _index, _edge in enumerate(EDGE):
     _parts = list(_edge)
     if len(_parts) == 6:
         _parts.insert(5, {"finish_reason": "stop"})
+    _guided = _edge[0] in GUIDED_HEADER_REVIEW_SCENARIOS
+    _muse = _edge[0] in MUSE_NATIVE_REVIEW_SCENARIOS
     if len(_parts) == 7:
-        _parts.append({"gpt_oss": []})
-    _parts[-1].update({family: [] for family in _new})
+        _parts.append(unified_tools() if _guided or _muse else {"gpt_oss": []})
+    if isinstance(_parts[-1], dict):
+        _source_tools = (unified_tools() if _muse else
+                         next(iter(_parts[-1].values())) if _guided else [])
+        _parts[-1].update({family: _source_tools for family in _new})
+    if "input_chunks" not in _parts[5]:
+        _parts[5]["input_chunks"] = {family: [variant[0]] for family, variant in _inputs.items()}
+    if _muse:
+        _parts[5].setdefault("input_chunks", {family: [variant[0]] for family, variant in _inputs.items()})
+    if "input_chunks" in _parts[5]:
+        _parts[5]["input_chunks"].update({
+            family: (_native_progress_probe(_edge[0], family)[1]
+                     if _edge[0] in NATIVE_PROGRESS_SCENARIOS else list(variant[0]))
+            for family, variant in _new.items()
+        })
     EDGE[_index] = tuple(_parts)
 
 
@@ -4322,6 +5123,18 @@ def build_cases(fam):
                 case["input"] = default_response_prefix(fam) + case["input"]
                 if "input_chunks" in case:
                     case["input_chunks"][0] = default_response_prefix(fam) + case["input_chunks"][0]
+            progress_probe = _native_progress_probe(scenario, fam)
+            if progress_probe is not None:
+                case["input"], case["input_chunks"], case["golden"] = progress_probe
+            native_variant = _native_review_variants(scenario).get(fam)
+            if native_variant is not None:
+                case["input"], case["golden"], _dynamo = native_variant
+                case["input_chunks"] = list(case["input"])
+                case["expect"]["dynamo"] = _entry(_dynamo, fam)
+            muse_probe = _muse_native_probe(scenario, fam)
+            if muse_probe is not None:
+                case["input"], case["golden"] = muse_probe
+                case["input_chunks"] = list(case["input"])
             cases[key.rsplit(".", 1)[0] + "." + fam] = case
         cases.update(_build_edge_cases(fam, DEFAULT_REASONING_CASES))
         _apply_numeric_tool_schemas(cases, fam)
@@ -4394,6 +5207,8 @@ def _build_cases(fam):
     _preserve_historical_requests(cases, fam)
     if fam == "gpt_oss":
         _preserve_gpt_oss_historical_oracle(cases)
+        for parent in HARMONY_CONSISTENT_MARKER_CASES:
+            cases.pop(f"UNIFIED.{parent}.{fam}")
     return _apply_unified_numeric_goldens(cases, fam)
 
 
@@ -4419,7 +5234,7 @@ def _preserve_historical_requests(cases, family):
             continue
         case = cases_by_scenario.get(scenario)
         if case is None:
-            if old_case.get("lifecycle") != "active":
+            if old_case.get("lifecycle") != "active" or scenario in RETIRED_SCENARIOS:
                 continue
             raise KeyError(f"historical {family} case disappeared: {scenario}")
         # Validation callers mutate returned cases; isolate the cached canonical record.
@@ -4582,7 +5397,7 @@ def _build_edge_cases(fam, specs):
                 "`init` and cannot honour this request mode",
             )
         case = {
-            "description": desc,
+            "description": stream_config.get("description_by_family", {}).get(fam, desc),
             "policy": policy,
             "input": inp,
             "golden": g,
@@ -4600,7 +5415,7 @@ def _build_edge_cases(fam, specs):
             if not all(isinstance(chunk, str) for chunk in chunks) or "".join(chunks) != inp:
                 raise ValueError(f"{cid}: authored input_chunks must concatenate to input")
             case["input_chunks"] = list(chunks)
-        if stream_config.get("finish_step"):
+        if _entry(stream_config.get("finish_step", False), fam):
             case["finish_step"] = True
         if case_tools is not None:
             if isinstance(case_tools, dict) and fam == "muse_spark" and fam not in case_tools:
@@ -4624,7 +5439,9 @@ def _template_scenario_families(scenario):
         return frozenset()
     original = scenario.removesuffix("_pr424")
     if original != scenario and original in GPT_OSS_PR424_REQUEST_VARIANTS:
-        return frozenset({"gpt_oss"}) if GPT_OSS_PR424_REQUEST_VARIANTS[original] else frozenset()
+        retained = {"gpt_oss"} if GPT_OSS_PR424_REQUEST_VARIANTS[original] else set()
+        retained.update(_guided_header_review_variants(scenario))
+        return frozenset(retained)
     if scenario in DOTTED_NAME_SCENARIOS:
         return DOTTED_NAME_FAMILIES
     if scenario in V1_SPLIT_SCENARIOS:
@@ -4650,6 +5467,9 @@ def _template_scenario_families(scenario):
             families.intersection_update(GUIDED_FAMILIES)
         if not isinstance(per_fam, OnlyFamilies) or per_fam.inherit_grammar:
             families.update(f for f in FAMILIES if _MANIFEST[f].get("grammar") in families)
+        if name in HARMONY_CONSISTENT_MARKER_CASES:
+            # This request was replaced by a distinct consistent-prose identity.
+            families.discard("gpt_oss")
         return frozenset(families)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 

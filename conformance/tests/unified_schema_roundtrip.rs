@@ -147,18 +147,16 @@ fn every_case_is_well_formed() {
             // the parser genuinely produces no events. Require the description to SAY
             // so, else a reader cannot tell a deliberate no-op from a missing one.
             if case.golden.is_empty() {
+                let description = case.description.to_ascii_lowercase();
                 assert!(
-                    case.description
-                        .to_ascii_lowercase()
-                        .contains("emits nothing")
-                        || case
-                            .description
-                            .to_ascii_lowercase()
-                            .contains("nothing is emitted")
-                        || case
-                            .description
-                            .to_ascii_lowercase()
-                            .contains("emits no events"),
+                    [
+                        "emits nothing",
+                        "nothing is emitted",
+                        "emits no events",
+                        "emit no events"
+                    ]
+                    .iter()
+                    .any(|phrase| description.contains(phrase)),
                     "{path}: `{id}` has an empty golden but its description does not say \
                      the turn emits nothing"
                 );

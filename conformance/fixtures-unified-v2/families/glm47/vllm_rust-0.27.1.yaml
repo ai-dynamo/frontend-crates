@@ -1,0 +1,285 @@
+schema_version: 2
+provenance:
+  status: legacy
+  captured_with:
+    vllm_rust: 0.27.1
+document:
+  mode: unified
+records:
+  native_quoted_control_in_response:
+    value:
+      case_key: native_quoted_control_in_response
+      stimulus:
+        ref: current
+        semantic_sha256: 16b96b5e7e55d3c91d8a89585d6fe816904a3652c26191ee2c3a8e96143ce361
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete GLM MoE tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: 6bd6c12244a4580ff152a21ed09076293967025915f2b8348cb8555116c48c6b
+            results_sha256: 8238c964002e101812967aa9d2137976d9752ffb4642cc0b34a7de68a78c63a1
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml
+  native_quoted_control_then_call:
+    value:
+      case_key: native_quoted_control_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: 983cdad8610eda343c560bbb7f92af9d01c757677580d17c03c84edf39071db3
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "near \"\\\" marker is part of the explanation.<tool_call>get_weather<arg_key>city</arg_key\": " })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal "
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: 6bd6c12244a4580ff152a21ed09076293967025915f2b8348cb8555116c48c6b
+            results_sha256: 8238c964002e101812967aa9d2137976d9752ffb4642cc0b34a7de68a78c63a1
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml
+  native_quoted_incomplete_header:
+    value:
+      case_key: native_quoted_incomplete_header
+      stimulus:
+        ref: current
+        semantic_sha256: c2a59cca4c231bd09e69d87547d000d6fb2b841475fb3dadbda67f2835dc4185
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete GLM MoE tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: The literal `
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: 6bd6c12244a4580ff152a21ed09076293967025915f2b8348cb8555116c48c6b
+            results_sha256: 8238c964002e101812967aa9d2137976d9752ffb4642cc0b34a7de68a78c63a1
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml
+  native_single_quote_contraction_response:
+    value:
+      case_key: native_single_quote_contraction_response
+      stimulus:
+        ref: current
+        semantic_sha256: 7373efc5089a145deed48da5bdd5db9ed31aff4081263066bfab7e804cff0022
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete GLM MoE tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''doesn''t '
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: 6bd6c12244a4580ff152a21ed09076293967025915f2b8348cb8555116c48c6b
+            results_sha256: 8238c964002e101812967aa9d2137976d9752ffb4642cc0b34a7de68a78c63a1
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml
+  native_single_quoted_word_control:
+    value:
+      case_key: native_single_quoted_word_control
+      stimulus:
+        ref: current
+        semantic_sha256: f3155d7b41c6e17e2d7255aef81ca5625a8f81a6334756236720d4f28ee84b35
+      observation:
+        error:
+          code: peer_parser_error
+          detail: 'UnifiedParserError::Tool(ParsingFailed { message: "incomplete GLM MoE tool call" })'
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          partial_chunks:
+          - expected:
+            - kind: text
+              text: 'The literal ''example '
+          - expected: []
+          - expected: []
+          - expected: []
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: 6bd6c12244a4580ff152a21ed09076293967025915f2b8348cb8555116c48c6b
+            results_sha256: 8238c964002e101812967aa9d2137976d9752ffb4642cc0b34a7de68a78c63a1
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml
+  native_unmatched_quote_then_call:
+    value:
+      case_key: native_unmatched_quote_then_call
+      stimulus:
+        ref: current
+        semantic_sha256: ebd81df32e315bbb3f664102fd81753c8d31d6ed70f5e64d1c984a40b6a92b0f
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: He said "maybe
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: 6bd6c12244a4580ff152a21ed09076293967025915f2b8348cb8555116c48c6b
+            results_sha256: 8238c964002e101812967aa9d2137976d9752ffb4642cc0b34a7de68a78c63a1
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: d5e070ab61010a8589f9d0d28a48d42b5b84aa9480a47031daa769c3ba6ec418
+      observation:
+        value:
+          assembled:
+          - kind: text
+            text: <think>literal</think> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments:
+              city: Paris
+          chunks:
+          - expected:
+            - kind: text
+              text: <think>
+          - expected:
+            - kind: text
+              text: literal
+          - expected:
+            - kind: text
+              text: </think>
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - arguments: '{"city":"Paris"}'
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          vllm_rust: 0.27.1
+        record_metadata:
+          parser: vLLM Rust (CombinedParser)
+          vllm_rust_capture_provenance:
+            adapter_sha256: 57581cefe4ff28c3f184ab5d1a785a7a5f0e6448c7c95ae244c6223b1430d917
+            git_commit: 6e448d0ea9bf3d88d898b65449ca6dc2aec170ac
+            implementation: vllm_rust
+            job_sha256: 6bd6c12244a4580ff152a21ed09076293967025915f2b8348cb8555116c48c6b
+            results_sha256: 8238c964002e101812967aa9d2137976d9752ffb4642cc0b34a7de68a78c63a1
+            source_sha256: f1bf545322f9947273f0c1fda55dee86a6bb8d4627ab024ad8c7ec8e882a5017
+            version: 0.27.1
+    member: conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.27.1.yaml

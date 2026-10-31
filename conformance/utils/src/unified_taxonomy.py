@@ -42,6 +42,7 @@ UNIFIED_TAX = {
 
     # Group 1 — Single call
     "tool_only": (1, "1"),
+    "tool_body_whitespace": (1, "7"),
     "dotted_name_minimal": (1, "3"),
     "dotted_name_mixed_punctuation": (1, "4"),
     "dotted_name_multiple_segments": (1, "5"),
@@ -410,10 +411,13 @@ for _scenario, _active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
 
 # Assign new numeric IDs after historical variants so their published ranks do not move.
 UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12")
+UNIFIED_TAX["interrupted_reasoning_then_response"] = (10, "7")
+UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "5")
+UNIFIED_TAX["reason_markup_in_arg_with_text_consistent"] = (12, "6")
 
 
 # Historical requests remain separate executions, but share one semantic heading.
-RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped"})
+RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace", "gpt_oss_interrupted_reasoning_then_response", "kimi_k3_elided_think_close_to_response"})
 
 
 class CaseVariant(NamedTuple):
@@ -421,9 +425,17 @@ class CaseVariant(NamedTuple):
     label: str
     # Visual folding alone cannot qualify a new semantic axis for other families.
     coverage_parent: str | None = None
+    family_coverage_parents: dict[str, str] | None = None
+
+
+# Proven counterparts for the K3 response ownership/recovery fixture group.
+# This scope does not declare general family capabilities.
+K3_RESPONSE_COUNTERPART_FAMILIES = ("beam", "gpt_oss", "muse_glimmer", "muse_spark")
 
 
 SHARED_CASE_VARIANTS = {
+    "reason_markup_in_arg_consistent": CaseVariant("reason_markup_in_arg", "Consistent example prose", "reason_markup_in_arg"),
+    "reason_markup_in_arg_with_text_consistent": CaseVariant("reason_markup_in_arg_with_text", "Consistent example prose", "reason_markup_in_arg_with_text"),
     **{scenario + "_pr424": CaseVariant(scenario, "Retained #424 delivery / input", scenario)
        for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items() if active},
     **{scenario: CaseVariant(scenario.removeprefix("harmony_"), "Harmony partial header", scenario.removeprefix("harmony_"))
@@ -438,8 +450,18 @@ SHARED_CASE_VARIANTS = {
     "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call"),
     "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call"),
     "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
+    "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
+    "interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Elided reasoning close"),
     "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response"),
     "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header"),
+    "kimi_k3_json_marker_then_long_field": CaseVariant("arg_marker_in_string", "Response marker before a long field"),
+    "kimi_k3_typed_response_then_call": CaseVariant("tool_no_close", "Response then following call"),
+    "kimi_k3_direct_typed_response_recovery": CaseVariant("tool_no_close", "Direct native call before response"),
+    "kimi_k3_direct_json_response_recovery": CaseVariant(
+        "kimi_k3_direct_json_response_recovery", "K3 raw JSON channel",
+        family_coverage_parents={family: "kimi_k3_direct_typed_response_recovery"
+                                 for family in K3_RESPONSE_COUNTERPART_FAMILIES},
+    ),
 }
 _SHARED_VARIANT_PARENTS = {variant.parent for variant in SHARED_CASE_VARIANTS.values()}
 
@@ -450,8 +472,11 @@ def case_fold(scenario):
             or ((scenario, "Standard") if scenario in _SHARED_VARIANT_PARENTS else None))
 
 
-def coverage_case(scenario):
+def coverage_case(scenario, family=None):
+    """Evidence-facing coverage identity; it does not change viewer selection."""
     variant = SHARED_CASE_VARIANTS.get(scenario)
+    if variant and variant.family_coverage_parents and family in variant.family_coverage_parents:
+        return variant.family_coverage_parents[family]
     return (variant.coverage_parent if variant else None) or scenario
 
 

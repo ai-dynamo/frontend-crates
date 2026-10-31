@@ -47,8 +47,11 @@ export function columnKeysFor(metadata) {
 
 const missingCapture = { unavailable: 'Output not yet captured', unavailable_code: 'missing_capture' };
 
+export function unifiedFamilyIdentity(family) {
+  return { family, model_label: family, model_label_html: family };
+}
 
-export async function unifiedPanel(catalog, reader, { selected = null, reference = undefined } = {}) {
+export async function unifiedPanel(catalog, reader, { selected = null, reference = undefined, families: familySelection = null } = {}) {
   const metadata = catalog.metadata;
   const spec = metadata.tabs.find((tab) => tab.id === 'tab-unified');
   const descriptors = tabCandidates(catalog, spec);
@@ -61,8 +64,10 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
   const descriptions = new Map();
   const histories = new Map();
   const visibleFamilies = selectedUnifiedFamilies(catalog, chosen);
+  const loadedFamilies = familySelection === null ? visibleFamilies : new Set(familySelection);
+  for (const family of loadedFamilies) if (!visibleFamilies.has(family)) throw new Error(`unknown Unified family: ${family}`);
   const capturesFamily = unifiedDisplayFamilyPredicate(catalog, chosen);
-  for (const family of [...visibleFamilies].sort(compareText)) {
+  for (const family of [...loadedFamilies].sort(compareText)) {
     const { value: document } = await reader.unifiedInputs(family);
     const cases = new Map();
     const activeAliases = new Map();
@@ -107,10 +112,14 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
     }
   }
   const missingScenarios = metadata.unified_presentation.authored_scenarios.filter(scenario =>
-    metadata.unified_presentation.scenario_families[scenario]?.some(family => visibleFamilies.has(family)) && !descriptions.has(scenario));
+    metadata.unified_presentation.scenario_families[scenario]?.some(family => loadedFamilies.has(family)) && !descriptions.has(scenario));
   if (missingScenarios.length) throw new Error(`Unified fixture inputs are missing authored scenario(s): ${missingScenarios.sort(compareText).join(', ')}`);
   const families = [...byFamily.keys()];
-  const scenarios = [...descriptions.keys()];
+  // A scoped status keeps the full table's columns and not-applicable cells,
+  // while opening only the requested families' authored and captured records.
+  const scenarios = familySelection === null ? [...descriptions.keys()]
+    : [...new Set([...descriptions.keys(), ...metadata.unified_presentation.authored_scenarios.filter(scenario =>
+      metadata.unified_presentation.scenario_families[scenario]?.some(family => visibleFamilies.has(family)))])];
   for (const scenario of scenarios) if (!Object.hasOwn(metadata.unified_taxonomy, scenario)) throw new Error(`unknown Unified scenario: ${scenario}`);
   const ordered = [...scenarios].sort((a, b) => metadata.unified_taxonomy[a].display_order - metadata.unified_taxonomy[b].display_order);
   const band = (scenario) => { const group = metadata.unified_taxonomy[scenario].display_group; return `case-band-${typeof group === 'number' && group % 2 === 0 ? 1 : 0}`; };
@@ -202,8 +211,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
             : { key: control.key, label: control.label, impl: control.impl, version: control.version, parse_mode: 'unified', leak: results.get(control.key).verdict === 'LEAK', block: results.get(control.key).block }),
           baseline: null, reasons, dynamo_notes: [], refs: [], leak_note: null, na_note: null } };
     }
-    const modelLabel = family;
-    rows.push({ family, model_label: modelLabel, model_label_html: modelLabel, section: null, parser: null, cells });
+    rows.push({ ...unifiedFamilyIdentity(family), section: null, parser: null, cells });
   }
   for (const column of columns) {
     const configs = rows.map((row) => row.cells[column.sub]).filter((cell) => cell.status !== 'na').map((cell) => cell.tooltip.init);

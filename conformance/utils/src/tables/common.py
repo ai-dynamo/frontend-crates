@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from typing import Any
+from numeric_cases import decode_arguments
 
 
 
@@ -128,25 +129,6 @@ def canonical(d: dict[str, Any]) -> str:
     if "reasoning_text" in d:
         d = {**d, "reasoning_text": _normalize_normal_text(d["reasoning_text"])}
     return json.dumps(d, sort_keys=True, separators=(",", ":"))
-
-
-def decode_arguments(args: Any) -> Any:
-    """Decode a tool-call `arguments` field to a comparable Python value.
-
-    Parsers surface `arguments` slightly differently: JSON-encoded
-    string (Dynamo, vLLM), already-parsed dict (some SGLang paths),
-    or the truncated raw string verbatim on malformed input. Decode
-    JSON if it parses; otherwise return as-is so the canonical-diff
-    surfaces the mismatch rather than swallowing it.
-    """
-    if not args:
-        return {}
-    if not isinstance(args, str):
-        return args
-    try:
-        return json.loads(args)
-    except (json.JSONDecodeError, TypeError):
-        return args
 
 
 def decode_stream_calls(

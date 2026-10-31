@@ -220,13 +220,71 @@ def test_original_source_precedence_keeps_dataset_order_and_current_override():
     assert _source_capture(stores, "sample", "dynamo_v2", "0.1.0")[0] == ""
 
 
+def _raw_history_owners(source, datasets):
+    retained = [(index, dataset["root"], unified_history._load_store_unlocked(source / dataset["root"] / capture_sources.STORE))
+                for index, dataset in enumerate(datasets)]
+    root = source / capture_sources.STORE
+    families = unified_history._load_families_unlocked(root)
+    histories = {}
+    for family in families.values():
+        external = {capture_id for _priority, _prefix, store in retained
+                    for (name, _implementation), history in store.histories.items() if name == family.name
+                    for capture_id in history.captures}
+        _name, updates, _capture_owners, _resources = unified_history._load_family(
+            (root, family), external_captures=external,
+        )
+        histories.update(updates)
+    current = unified_history.Store(root, families, histories)
+    return [(len(datasets), "", current), *retained]
+
+
+def _assert_raw_member_available(owners, family, implementation, prefix, member):
+    capture_id = Path(member).stem
+    assert member == f"{capture_sources.STORE}/families/{family}/{capture_id}.yaml"
+    assert any(capture_id in history.captures
+               for _priority, owner_prefix, store in owners
+               if not prefix or prefix == owner_prefix
+               if (history := store.histories.get((family, implementation))) is not None), member
+
+
+@pytest.mark.parametrize("fault", [None, "missing", "too_new", "wrong_family"])
+def test_raw_history_oracle_validates_current_members_against_original_datasets(tmp_path, fault):
+    source = tmp_path / "source"
+    datasets = [{"id": "retained", "root": "conformance/history-datasets/retained"}]
+    retained = _store(source / datasets[0]["root"] / capture_sources.STORE)
+    store = unified_history._load_store_unlocked(retained)
+    history = store.histories["gemma4", "dynamo_v2"]
+    snapshot = history.complete_snapshot("dynamo_v2-0.5.2")
+    current = source / capture_sources.STORE / "families/gemma4"
+    current.mkdir(parents=True)
+    shutil.copyfile(retained / "families/gemma4/inputs_and_golden.yaml", current / "inputs_and_golden.yaml")
+    member = snapshot["records"]["text_only"]["member"]
+    assert member.endswith("dynamo_v2-0.5.0.yaml")
+    if fault == "missing":
+        snapshot["records"]["text_only"]["member"] = member.replace("0.5.0", "0.5.1")
+    elif fault == "too_new":
+        snapshot["records"]["text_only"]["member"] = member.replace("0.5.0", "0.5.3")
+    elif fault == "wrong_family":
+        snapshot["records"]["text_only"]["member"] = member.replace("gemma4", "other")
+    (current / "dynamo_v2-0.5.2.yaml").write_text(unified_history.dump_yaml(snapshot))
+    if fault:
+        with pytest.raises(ValueError, match="snapshot source member"):
+            _raw_history_owners(source, datasets)
+    else:
+        owners = _raw_history_owners(source, datasets)
+        prefix, _store_owner, current_history, identity = _source_capture(owners, "gemma4", "dynamo_v2", "0.5.2")
+        assert prefix == ""
+        assert current_history.complete_snapshot(identity)["records"]["text_only"]["member"] == member
+        _assert_raw_member_available(owners, "gemma4", "dynamo_v2", prefix, member)
+        with pytest.raises(AssertionError):
+            _assert_raw_member_available(owners[:1], "gemma4", "dynamo_v2", prefix, member)
+
+
 def _assert_routed_history_parity(source, site, published):
     # Read original YAML directly. Routed load_store consumes publisher-created
     # fragments and would make the expected result circular with the publication.
     datasets = json.loads((source / capture_sources.DATASETS).read_bytes())
-    owners = [(len(datasets), "", unified_history._load_store_unlocked(source / capture_sources.STORE))]
-    owners.extend((index, dataset["root"], unified_history._load_store_unlocked(source / dataset["root"] / capture_sources.STORE))
-                  for index, dataset in enumerate(datasets))
+    owners = _raw_history_owners(source, datasets)
     resources = ci_coverage.select_resources([row for row in published["sources"]["unified"]
                                              if row["kind"] == "resolved-capture"])
     checked = 0
@@ -247,7 +305,9 @@ def _assert_routed_history_parity(source, site, published):
                     value["stimulus"]["inline"] = deepcopy(store.families[family].cases[case]["request"])
                 assert typed_equal(records[case]["value"], value), (family, resource["version"], case)
                 expected_member = f"{prefix}/{members[case]}" if prefix else members[case]
-                assert (source / expected_member).is_file(), expected_member
+                # A current record can retain a bare older member whose bytes
+                # live in a retained dataset (or archive), not its current tree.
+                _assert_raw_member_available(owners, family, resource["implementation"], prefix, members[case])
                 assert records[case]["member"] == expected_member
                 checked += 1
     assert checked > 0

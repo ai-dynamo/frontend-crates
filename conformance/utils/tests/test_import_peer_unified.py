@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import unified_history
 import import_peer_unified as importer
-from capture_stimulus import select_peer_observation
+from capture_stimulus import capture_input, select_peer_observation
 from capture_unified_job import build_job
 from import_peer_unified import digest, import_capture, import_capture_groups, main
 from capture_stimulus import assemble_stream
@@ -42,6 +42,76 @@ def _receipted_jobs(store, root, implementation, mode, versions=("0.25.1", "0.26
         capture.write_text(json.dumps({field: version, "results": results, "provenance": provenance}))
         rows.append((job, capture, provenance))
     return rows
+
+
+@pytest.mark.parametrize("implementation,mode", [("sglang_python", "unified"), ("sglang_python_batch", "batch")])
+@pytest.mark.parametrize("transition,grouped", [("earlier_identical", False), ("earlier_identical", True), ("gap_restoration", False), ("metadata_only", False), ("metadata_only", True)])
+@pytest.mark.parametrize("original_suppressed", [False, True])
+def test_import_preserves_original_observation_members(tmp_path, implementation, mode, transition, grouped, original_suppressed):
+    store = tmp_path / "store"
+    _write_family(store)
+    original = _change("0.25.1")
+    if mode == "batch":
+        original["observation"]["value"].pop("chunks")
+    _write_capture(store, "0.26.0", {"text_only": original}, implementation=implementation,
+                   metadata_changes={"text_only": {"batch_final": {"normal_text": "0.25.1", "reasoning_text": "", "calls": []}}} if mode == "batch" else {},
+                   document_overrides={"text_only": {"capture_provenance": {"captured_with": {implementation: "0.26.0"}, "capture_origin": None, "inherited_from": None}}} if original_suppressed else {})
+    _write_capture(store, "0.28.0", {}, implementation=implementation)
+    history = unified_history.load_store(store).histories["gemma4", implementation]
+    before = dict(history.iter_resolved_snapshots(include_members=True))
+    members = copy.deepcopy(history.snapshot_members)
+    suppressed = copy.deepcopy(history.snapshot_suppressed_inheritance)
+    assert all(("text_only" in suppressed[identity]) == original_suppressed for identity in before)
+    derived = {identity: history.resolve(identity, view_capture_id=f"{implementation}-0.29.0") for identity in before}
+    roots = {identity: {key: copy.deepcopy(capture[key]) for key in ("provenance", "document")}
+             for identity, capture in history.captures.items()}
+    version = "0.25.1" if transition == "earlier_identical" else "0.26.0" if transition == "metadata_only" else "0.27.0"
+    rows = _receipted_jobs(store, tmp_path / "captures", implementation, mode, versions=(version,))
+    selected = None
+    if transition == "gap_restoration":
+        _add_backfill_case(store)
+        job, capture, provenance = rows[0]
+        job_document = build_job(store / "families", "gemma4", mode=mode)
+        job.write_text(json.dumps(job_document))
+        captured = json.loads(capture.read_text())
+        template = next(iter(captured["results"].values()))
+        captured["results"] = {
+            case["id"]: {**copy.deepcopy(template), "capture_input": case["request"] if mode == "batch" else capture_input({**case, "chunks": [{"delta_text": text} for text in case["chunks"]]})}
+            for case in job_document["cases"]
+        }
+        provenance.update(job_sha256=digest(job), results_sha256=hashlib.sha256(json.dumps(captured["results"], sort_keys=True, ensure_ascii=False).encode()).hexdigest())
+        captured["provenance"] = provenance
+        capture.write_text(json.dumps(captured))
+        selected = {"new_case"}
+    if grouped:
+        import_capture_groups(store, {implementation: rows})
+    else:
+        import_capture(store, *rows[0], implementation=implementation, selected_cases=selected)
+    loaded = unified_history.load_store(store)
+    history = loaded.histories["gemma4", implementation]
+    after = dict(history.iter_resolved_snapshots(include_members=True))
+    for identity, records in before.items():
+        if transition == "metadata_only" and identity == f"{implementation}-0.26.0":
+            actual = copy.deepcopy(after[identity])
+            metadata = actual["text_only"]["document"]["record_metadata"]
+            assert metadata.pop("verified_recapture")["provenance"] == rows[0][2]
+            if not metadata:
+                actual["text_only"]["document"].pop("record_metadata")
+            assert actual == records
+        else:
+            assert after[identity] == records
+        assert history.snapshot_members[identity] == members[identity]
+        assert history.snapshot_suppressed_inheritance.get(identity, set()) == suppressed.get(identity, set())
+        assert history.resolve(identity, view_capture_id=f"{implementation}-0.29.0") == derived[identity]
+        assert {key: history.captures[identity][key] for key in ("provenance", "document")} == roots[identity]
+    # The persisted reader must keep every original source anchor across a rewrite.
+    unified_history.rewrite_store(store)
+    history = unified_history.load_store(store).histories["gemma4", implementation]
+    dict(history.iter_resolved_snapshots(include_members=True))
+    for identity in before:
+        assert history.snapshot_members[identity] == members[identity]
+        assert history.snapshot_suppressed_inheritance.get(identity, set()) == suppressed.get(identity, set())
+        assert history.resolve(identity, view_capture_id=f"{implementation}-0.29.0") == derived[identity]
 
 
 def test_grouped_expected_jobs_are_owned_by_each_history_and_transaction(tmp_path, monkeypatch):

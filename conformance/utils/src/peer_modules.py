@@ -3,11 +3,15 @@
 """Resolve parser APIs from the installed published package, preserving import errors."""
 
 import importlib
+from dataclasses import replace
 import inspect
 import sys
 from pathlib import Path
 import ast
 import json
+
+from capture_stimulus import _without_synthetic_finish_step, batch_final_events, unavailable_result
+from numeric_cases import decode_arguments
 
 
 MODULE_PATHS = {
@@ -30,6 +34,26 @@ MODULE_PATHS = {
 
 class AdapterContractError(RuntimeError):
     """The capture adapter cannot represent the published call contract."""
+
+
+def parser_tools(tool_type, tools):
+    return [tool_type.model_validate(tool if "function" in tool else {"type": "function", "function": tool})
+            if isinstance(tool, dict) else tool for tool in tools] if tools is not None else None
+
+
+def parser_only_request(request_type, *, tool_type, named_choice_type=None, **fields):
+    """Keep parser probes independent of serving validation of offered tools.
+
+    An empty tools list deliberately tests unoffered native calls. Serving may
+    reject that request, while the public parser still accepts its context.
+    """
+    if "tools" in fields:
+        fields["tools"] = parser_tools(tool_type, fields["tools"])
+    if isinstance(fields.get("tool_choice"), dict):
+        if named_choice_type is None:
+            raise AdapterContractError("A named tool choice requires its public protocol model")
+        fields["tool_choice"] = named_choice_type.model_validate(fields["tool_choice"])
+    return request_type.model_construct(**fields)
 
 
 def peer_call(function, /, *args, **kwargs):
@@ -94,9 +118,88 @@ def sglang_reasoning_kwargs(parser, *, streaming, force_reasoning=False):
     return kwargs
 
 
+def sglang_native_request_unavailable(reasoning_parser, tool_parser, names, init=None):
+    """Qualify native initialization through the same public APIs in both modes."""
+    init = init or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    states = ("None", "Reasoning", "Response")
+    if init not in [{"starting_state": state, "tool_output_mode": "Native", "named_tool": None} for state in states]:
+        return "peer_request_unsupported", "SGLang parser capture cannot apply this authored output mode, named-tool choice, or initialization."
+    rname, tname = names
+    missing = []
+    if tname not in tool_parser.ToolCallParserEnum:
+        missing.append(f"FunctionCallParser {tname}")
+    if init["starting_state"] != "Response" and (reasoning_parser is None or rname not in reasoning_parser.DetectorMap):
+        missing.append(f"ReasoningParser {rname}")
+    if missing:
+        return "peer_detector_unavailable", "SGLang does not register " + ", ".join(missing)
+    if init["starting_state"] == "Response":
+        # These tool detectors independently consume reasoning/channel frames and
+        # expose no persistent Response switch. Omitting ReasoningParser is insufficient.
+        if tname in {"muse", "gpt-oss"}:
+            return "sglang_starting_state_unsupported", "This public SGLang tool detector owns reasoning channel frames and has no persistent Response initialization."
+        return None
+    if init["starting_state"] == "Reasoning" and "force_reasoning" not in inspect.signature(reasoning_parser.__init__).parameters:
+        return "sglang_starting_state_unsupported", "This public SGLang reasoning API cannot initialize forced reasoning."
+    return None
+
+
 def sglang_supports_reasoning_init():
     parser = resolve_peer_module("sglang", "reasoning").ReasoningParser
     return "force_reasoning" in inspect.signature(parser.__init__).parameters
+
+
+def vllm_initialization_kwargs(init, family=None):
+    """Leave native defaults intact; only explicit prefill selects a context."""
+    state = init.get("starting_state", "None")
+    if state == "None":
+        return {}
+    kwargs = {"thinking": state == "Reasoning", "enable_thinking": state == "Reasoning"}
+    if family == "minimax_m3":
+        kwargs["thinking_mode"] = "enabled" if state == "Reasoning" else "disabled"
+    return kwargs
+
+
+def vllm_public_engine_class():
+    return importlib.import_module("vllm.parser.engine.parser_engine").ParserEngine
+
+
+def vllm_public_engine_config(family, init):
+    """Apply initialization through the released public grammar configuration."""
+    if family == "gemma4" and init.get("starting_state") == "Reasoning" and init.get("tool_output_mode", "Native") == "Native":
+        factory = importlib.import_module("vllm.parser.gemma4").gemma4_config
+        kwargs = {"thinking": True} if "thinking" in inspect.signature(factory).parameters else {}
+        state = importlib.import_module("vllm.parser.engine.parser_engine_config").ParserState
+        return replace(factory(**kwargs), initial_state=state.REASONING)
+    return None
+
+
+def vllm_response_constructor_class(tool_name):
+    # These released public configs remove reasoning terminals when thinking is
+    # disabled. Other engines merely change the starting/wait state, so that
+    # constructor flag cannot represent persistent Response for them.
+    if tool_name == "glm47":
+        return importlib.import_module("vllm.parser.glm47_moe").Glm47MoeParser
+    if tool_name == "kimi_k2":
+        return importlib.import_module("vllm.parser.kimi_k2").KimiK2Parser
+    return None
+
+
+def vllm_native_request_unavailable(reasoning_manager, tool_manager, names, init, *, streaming=True):
+    def registered(manager, name, table):
+        return name in manager.__dict__.get(table, {}) or name in manager.__dict__.get("lazy_parsers", {})
+
+    if not registered(tool_manager, names[1], "tool_parsers") or (
+        init.get("starting_state") != "Response"
+        and not registered(reasoning_manager, names[0], "reasoning_parsers")
+    ):
+        return "vllm_parser_not_registered", "No registered public parser for the authored initialization"
+    if init.get("starting_state") == "Response":
+        cls = tool_manager.get_tool_parser(names[1])
+        if cls.engine_based_streaming and not hasattr(cls, "skip_reasoning_parsing"):
+            constructor = vllm_response_constructor_class(names[1]) if init.get("tool_output_mode", "Native") == "Native" else None
+            if constructor is None:
+                return "unsupported_request_mode", "Public tool engine consumes reasoning markers and has no persistent reasoning-disable API"
+    return None
 
 
 def vllm_stream_is_legacy():
@@ -194,6 +297,11 @@ class ModernServingParser:
         self.tokenizer = tokenizer
         self.parser = peer_call(parser_class, tokenizer, tools=tools, chat_template_kwargs=chat_template_kwargs)
         self.token_engine = any(base.__module__ == "vllm.parser.engine.parser_engine" for base in parser_class.__mro__)
+        if not self.token_engine and hasattr(self.parser, "reasoning_parser") and hasattr(self.parser, "tool_parser"):
+            # DelegatingParser forwards incremental token-engine deltas only when
+            # both public components use that contract; mixed parsers accumulate.
+            self.token_engine = all(component is None or component.engine_based_streaming
+                                    for component in (self.parser.reasoning_parser, self.parser.tool_parser))
         self.protocol = resolve_peer_module("vllm", "protocol")
         self.has_finished = "finished" in inspect.signature(self.parser.parse_delta).parameters
         package = importlib.import_module("vllm")
@@ -418,14 +526,109 @@ def _vllm_chat_template_kwargs(parser_name, case):
     return kwargs
 
 
-def _vllm_reasoning_parser(parser_name, case):
+def _vllm_reasoning_parser(parser_name, case, *, native_defaults=False):
     ReasoningParserManager = resolve_peer_module(
         "vllm", "reasoning"
     ).ReasoningParserManager
 
     cls = ReasoningParserManager.get_reasoning_parser(parser_name)
-    kwargs = _vllm_chat_template_kwargs(parser_name, case)
+    kwargs = (case.get("chat_template_kwargs") or {}) if native_defaults else _vllm_chat_template_kwargs(parser_name, case)
     tok = _vllm_mock_tokenizer()
     if kwargs:
         return cls(tok, chat_template_kwargs=kwargs)
     return cls(tok)
+
+
+class VllmHarmonyTokenizer:
+    """Use the released Harmony encoding, including its actual control IDs."""
+    def __init__(self, encoding):
+        self.encoding = encoding
+        self.vocab = {token: encoding.encode(token, allowed_special=encoding.special_tokens_set)[0]
+                      for token in encoding.special_tokens_set}
+
+    def get_vocab(self):
+        return self.vocab
+
+    def encode(self, text, **kwargs):
+        return self.encoding.encode(text, allowed_special=self.encoding.special_tokens_set)
+
+    def decode(self, tokens, **kwargs):
+        return self.encoding.decode(tokens)
+
+
+def vllm_harmony_family(family):
+    return family == "gpt_oss"
+
+
+def capture_vllm_harmony(family, request, *, streaming=False, delta_events=None):
+    """Capture the public parser's prefilled assistant-header contract unchanged."""
+    if not vllm_harmony_family(family):
+        return None
+    if (request["init"] != {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+            or request["tools"] != [] or not request["input"].startswith(" to=functions.")
+            or request["finish_reason"] not in {"stop", "length"}):
+        return unavailable_result("vllm_harmony_request_unsupported",
+            "The public Harmony parser starts inside an assistant header. This capture qualifies the original recipient-first Native/None request with empty offered tools; full assistant headers and Response initialization are not substituted.",
+            capture=request, observation=True)
+    package = importlib.import_module("vllm")
+    if not (Path(package.__file__).parent / "parser/parser_manager.py").is_file():
+        return unavailable_result("vllm_harmony_api_unavailable", "This release has no public Harmony ParserManager API.", capture=request, observation=True)
+    manager = resolve_peer_module("vllm", "combined").ParserManager
+    if "is_harmony" not in inspect.signature(manager.get_parser).parameters:
+        return unavailable_result("vllm_harmony_api_unavailable", "This public parser factory has no Harmony route.", capture=request, observation=True)
+    utilities = importlib.import_module("vllm.entrypoints.openai.parser.harmony_utils")
+    responses = importlib.import_module("vllm.entrypoints.openai.responses.protocol")
+    harmony = importlib.import_module("openai_harmony")
+    # Loading an unavailable encoding/dependency is a launcher blocker, not a
+    # parser failure. Keep setup outside the observed parser-call boundary.
+    tokenizer = VllmHarmonyTokenizer(utilities.get_encoding())
+    protocol_request = responses.ResponsesRequest(model="parser-only-capture", input=[], tools=[])
+    factory = manager.get_parser(tool_parser_name="openai", reasoning_parser_name="openai_gptoss",
+                                 enable_auto_tools=True, is_harmony=True)
+    parser = factory(tokenizer, tools=protocol_request.tools)
+    tokens = tokenizer.encode(request["input"])
+    if tokenizer.decode(tokens) != request["input"]:
+        raise AdapterContractError("Harmony encoding did not preserve the original input")
+    chunks = []
+    if streaming:
+        text_request = _without_synthetic_finish_step(request)
+        texts = [chunk["delta_text"] for chunk in text_request["chunks"]]
+        if "".join(texts) != request["input"] or not request["input"].isascii():
+            return unavailable_result("vllm_harmony_chunk_schedule_unsupported", "The qualified Harmony bridge requires literal ASCII chunks and the original finish step.", capture=request, observation=True)
+        pieces = [tokenizer.decode([token]) for token in tokens]
+        if "".join(pieces) != request["input"]:
+            return unavailable_result("vllm_harmony_chunk_schedule_unsupported", "Native token boundaries do not preserve the original chunk text.", capture=request, observation=True)
+        ends, cursor = [], 0
+        for piece in pieces:
+            cursor += len(piece)
+            ends.append(cursor)
+        schedule, cursor, token_at = [], 0, 0
+        for text in texts:
+            cursor += len(text)
+            if cursor not in ends:
+                return unavailable_result("vllm_harmony_chunk_schedule_unsupported", "An original chunk ends inside a native token; the capture does not change delivery boundaries.", capture=request, observation=True)
+            end = ends.index(cursor) + 1
+            schedule.append((text, tokens[token_at:end]))
+            token_at = end
+        if delta_events is None:
+            raise AdapterContractError("Harmony streaming requires the shared vLLM delta projection")
+    try:
+        if not streaming:
+            reasoning, content, calls = parser.parse(request["input"], protocol_request,
+                enable_auto_tools=True, model_output_token_ids=tokens)
+            final = {"reasoning_text": reasoning or "", "normal_text": content or "",
+                     "calls": [{"name": call.name, "arguments": decode_arguments(call.arguments)} for call in calls or []]}
+            return {"assembled": batch_final_events(final), "batch_final": final,
+                    "capture_input": request, "parser": "vllm.parser.harmony.HarmonyParser"}
+        for text, delta_tokens in schedule:
+            chunks.append(delta_events(parser.parse_delta(text, delta_tokens, protocol_request, finished=False)))
+        finish = delta_events(parser.parse_delta("", [], protocol_request, finished=True))
+        if len(texts) != len(request["chunks"]):
+            chunks.append(finish)
+        elif finish:
+            chunks[-1].extend(finish)
+        return {"chunks": chunks, "capture_input": request, "parser": "vllm.parser.harmony.HarmonyParser"}
+    except harmony.HarmonyError as error:
+        detail = parser_error_detail(error)
+        return {"error": detail, "partial_chunks": chunks, "capture_input": request,
+                "capture_observation": {"error": {"code": "parser_exception", "detail": detail}}}

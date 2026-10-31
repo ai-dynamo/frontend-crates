@@ -29,6 +29,11 @@ def test_interleaved_release_builds_execute_their_own_binary(tmp_path, monkeypat
         unified = source / "src/parser/src/unified"
         unified.mkdir(parents=True)
         (unified / "mod.rs").write_text("trait UnifiedParser { fn parse_into(&mut self, delta: &str); }\n")
+        # Public API discovery reads these modules even when a job needs no family.
+        for module in ("reasoning", "tool"):
+            api = source / "src/parser/src" / module
+            api.mkdir()
+            (api / "mod.rs").write_text("")
         sources[version] = source
     monkeypatch.setattr(capture, "_vllm_rust_version", lambda source, _parser: source.parent.name)
     if target_mode == "absolute":

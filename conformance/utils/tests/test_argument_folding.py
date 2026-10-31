@@ -27,10 +27,12 @@ def test_exact_fold_dimensions_and_section_order():
         assert parent in {scenario for scenario, _ in children}
     ordered = sorted((scenario for scenario in taxonomy.UNIFIED_TAX if taxonomy.display_tax(scenario)[0] == 7),
                      key=taxonomy.display_sort_key)
-    assert len(ordered) == 170
+    assert len(ordered) == 179
     assert {f"arg_numeric_overflow_siblings_{variant}" for variant in ("finite", "positive", "negative")} <= set(ordered)
     assert taxonomy.case_fold("gpt_oss_quoted_message_header_literal")[0] == "arg_marker_in_string"
     assert "gpt_oss_quoted_message_header_literal" in ordered
+    assert taxonomy.case_fold("kimi_k3_json_marker_then_long_field")[0] == "arg_marker_in_string"
+    assert "kimi_k3_json_marker_then_long_field" in ordered
     assert list(dict.fromkeys(argument_section((taxonomy.case_fold(s) or (s, ""))[0]) for s in ordered)) == list(ARGUMENT_SECTIONS)
 
 
