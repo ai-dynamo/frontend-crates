@@ -530,6 +530,8 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         assert len(driver.find_elements("css selector", ".capture-slot")) == 3
         assert len(driver.find_elements("css selector", ".tabs .tab-button")) == 0
         sha = driver.find_element("css selector", ".source-commit")
+        assert driver.find_element("css selector", "#viewer > h1").text == "Parser Conformance"
+        assert driver.find_elements("css selector", ".generated .source-commit") == [sha]
         assert re.fullmatch(r"[a-f0-9]{12}", sha.text)
         assert sha.get_attribute("title") in sha.get_attribute("href")
         assert sha.get_attribute("title") in sha.get_attribute("aria-label")
@@ -556,6 +558,38 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         """)
         for card in driver.find_elements("css selector", ".capture-slot"):
             assert card.rect["width"] <= 480
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+def test_source_sha_appears_once_on_second_line(published_viewer):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/")
+        _ready(driver, "tab-unified")
+        source = driver.find_element("css selector", ".source-commit").get_attribute("title")
+        for generated in (None, source, 'a' * 40 if source != 'a' * 40 else 'b' * 40):
+            if generated:
+                driver.execute_script("""
+                    window.ConformanceView.updateGeneration(document.getElementById('viewer'), {
+                      revision: arguments[0], generated_revision: arguments[1],
+                      generated_on: '2026-10-30 12:00 PDT', command: 'conformance-publish', output: 'site'
+                    });
+                """, source, generated)
+            heading = driver.find_element("css selector", "#viewer > h1")
+            line = driver.find_element("css selector", "#viewer > .generated")
+            assert heading.text == 'Parser Conformance'
+            assert re.findall(r'\b[a-f0-9]{12}\b', line.text) == [source[:12]]
+            assert line.rect['y'] >= heading.rect['y'] + heading.rect['height']
+            assert len(driver.find_elements("css selector", ".source-commit")) == 1
+            link = line.find_element("css selector", ".source-commit")
+            assert link.get_attribute('href').endswith(source)
+            assert source in link.get_attribute('aria-label')
+            if generated:
+                assert generated in line.get_attribute('title')
+            else:
+                assert line.text == 'Source commit ' + source[:12]
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 

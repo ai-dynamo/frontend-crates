@@ -55,19 +55,18 @@ def _published_capture_index(site, implementation=None, version=None):
 def _assert_generation_provenance(driver, metadata):
     # The UI abbreviates commit labels to 12 characters; links must retain full IDs.
     generated_revision = metadata.get("generated_revision", metadata["revision"])
-    identity = (f"from working tree {metadata['candidate_tree'][:12]} based on commit"
-                if metadata.get("candidate_tree") else "on commit")
+    identity = " on commit " if generated_revision == metadata["revision"] and not metadata.get("candidate_tree") else "; source commit "
     label = "Catalog generated on" if metadata.get("source_checkout") else "Generated on"
-    expected = f"{label} {metadata['generated_on']} {identity} {generated_revision[:12]}"
-    revisions = [generated_revision]
-    if generated_revision != metadata["revision"]:
-        expected += f" (source links use commit {metadata['revision'][:12]})"
-        revisions.append(metadata["revision"])
+    expected = f"{label} {metadata['generated_on']}{identity}{metadata['revision'][:12]}"
     generated = WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", ".generated")
         if "generated on" in page.find_element("css selector", ".generated").text.lower() else False)
     assert generated.text == expected
     assert [link.get_attribute("href").rsplit("/", 1)[-1]
-            for link in generated.find_elements(By.TAG_NAME, "a")] == revisions
+            for link in generated.find_elements(By.TAG_NAME, "a")] == [metadata["revision"]]
+    assert generated_revision in generated.get_attribute("title")
+    if metadata.get("candidate_tree"):
+        assert metadata["candidate_tree"] in generated.get_attribute("title")
+    assert not driver.find_elements("css selector", "h1 .source-commit")
     return generated
 
 
@@ -353,7 +352,6 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         generated = _assert_generation_provenance(driver, provenance)
         assert provenance["command"] not in generated.text
         assert provenance["output"] not in generated.text
-        assert driver.find_element('css selector', 'h1 .source-commit').get_attribute('href').endswith(provenance['revision'])
         driver.find_element("css selector", "[data-view-detailed]").click()
         assert not any(node.is_displayed() for node in driver.find_elements('css selector', '.generated-command'))
         assert driver.find_element('css selector', '.case-descriptions').is_displayed()

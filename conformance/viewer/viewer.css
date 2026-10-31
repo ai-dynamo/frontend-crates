@@ -13,7 +13,6 @@
 /* The capture picker and comparison cards share one selection owner. */
 body { background: var(--page-bg); color: var(--ink); }
 #viewer > h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 8px; font-size: 25px; }
-.source-commit { padding: 4px 9px; border: 1px solid var(--line); border-radius: 20px; background: var(--panel-bg); color: var(--ink-muted); font: 12px ui-monospace,monospace; }
 .capture-slot-controls { display: grid; width: 100%; grid-template-columns: repeat(3,minmax(0,1fr)); }
 .capture-slots { display: grid; grid-template-columns: minmax(0,3fr) minmax(320px,1fr); align-items: stretch; }
 .capture-slots > .capture-slots-notice { grid-column: 1 / -1; }
