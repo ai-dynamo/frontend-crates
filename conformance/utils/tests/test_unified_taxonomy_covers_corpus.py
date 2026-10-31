@@ -3559,6 +3559,14 @@ def test_gpt_oss_variants_use_shared_parents_or_explicit_header_grammar(scenario
     assert taxonomy.scenario_for_label(numbered_id(scenario), scenario=scenario) == scenario
 
 
+def test_native_channel_header_variants_share_the_interleaving_section():
+    scenario = "gpt_oss_channel_header_variants"
+    assert G.scenario_families(scenario) == {"beam", "gpt_oss"}
+    assert taxonomy.case_fold(scenario) is None
+    assert taxonomy.display_tax(scenario) == (11, "1")
+    assert scenario not in GPT_OSS_STANDALONE_HEADER_SCENARIOS
+
+
 @pytest.mark.parametrize(("scenario", "parent", "families"), [
     ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3", "deepseek_v4", "deepseek_v41"}),
     ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"beam", "gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),

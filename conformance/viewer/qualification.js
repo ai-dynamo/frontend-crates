@@ -669,7 +669,7 @@ async function checkRebaseContracts(tab, reader) {
   }
   const groups = new Map(tab.column_groups.map(group => [group.key, group]));
   const argumentGroups = tab.column_groups.filter(group => group.key.startsWith('unified_g7_'));
-  assert.deepEqual(argumentGroups.map(group => group.span), [5, 7, 12, 6, 10, 17, 14]);
+  assert.deepEqual(argumentGroups.map(group => group.span), [6, 7, 14, 6, 10, 17, 19]);
   const argumentColumns = tab.columns.filter(column => column.group_key.startsWith('unified_g7_'));
   const numericColumns=tab.columns.filter(column=>['7-17','7-19','7-18'].includes(column.label));
   assert.deepEqual(numericColumns.map(column=>column.label),['7-17','7-19','7-18']);
@@ -681,8 +681,8 @@ async function checkRebaseContracts(tab, reader) {
     assert.equal(cell.variants.length,{'7-17':9,'7-19':3,'7-18':7}[column.label]);
     assert.equal(cell.status==='na',column.label==='7-19'&&!catalog.metadata.folds.numeric_applicability['7-14.string'].includes(row.family));
   }
-  assert.equal(argumentColumns.length, 71);
-  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: 71 }, (_, index) => index + 1));
+  assert.equal(argumentColumns.length, 79);
+  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: 79 }, (_, index) => index + 1));
   for (const row of tab.rows.filter(row => !row.section)) {
     for (const [scenario, cell] of leafCells(row)) {
       if (!['arg_object_quoted_parameter_close', 'arg_array_quoted_parameter_close'].includes(scenario)
@@ -695,14 +695,17 @@ async function checkRebaseContracts(tab, reader) {
   for (const quotes of ['single', 'double']) {
     const custom = columns.get(`xml_custom_type_${quotes}_quoted_object`);
     const string = columns.get(`xml_string_type_${quotes}_quoted_object`);
-    assert.equal(custom.group_key, 'unified_gqwen3');
-    assert.ok(custom.label.startsWith('qwen3-'));
+    assert.equal(custom.group_key, quotes === 'double' ? 'unified_g7_declared' : 'unified_gqwen3');
+    assert.ok(custom.label.startsWith(quotes === 'double' ? '7-' : 'qwen3-'));
     assert.equal(string.group_key, 'unified_g7_declared');
+    const customFamilies = quotes === 'double'
+      ? ['qwen3', 'nemotron_v3', 'glm47', 'muse_glimmer', 'muse_spark']
+      : ['qwen3', 'nemotron_v3'];
     for (const row of tab.rows.filter(row => !row.section)) {
       const cell = leafCells(row).get(custom.sub);
       assert.equal(cell.case_id, `UNIFIED.7-${custom.sub}`);
-      assert.equal(cell.status === 'na', !['qwen3', 'nemotron_v3'].includes(row.family));
-      if (['qwen3', 'nemotron_v3'].includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
+      assert.equal(cell.status === 'na', !customFamilies.includes(row.family));
+      if (customFamilies.includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
     }
   }
   assert.equal(columns.get('arg_marker_in_string').group_key, 'unified_g7_text');
@@ -854,19 +857,33 @@ function checkDottedNameContracts(tab, loadedKeys) {
           assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}: refreshed capture is retained`);
           assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family',
             `${family}/${scenario}/${other.key}: ${JSON.stringify(other.block)}`);
+        } else if (family === 'deepseek_v41' && descriptor.source.implementation === 'dynamo_v1'
+            && descriptor.source.version === '3.0.0') {
+          // The oldest verified v1 producer executed these four original requests.
+          assert.deepEqual(canonicalUnifiedEvents(other.block.events), canonicalUnifiedEvents(expected), `${family}/${scenario}/${other.key}: exact retained producer observation`);
+          assert.equal(other.block.verdict, 'MATCH');
+        } else if (family === 'deepseek_v41' && descriptor.source.implementation === 'dynamo_v1_jail'
+            && descriptor.source.version === '5.0.1') {
+          assert.deepEqual(other.block, {
+            unavailable: 'The public jail only accepts registered parser names; its DSv4 factory cannot receive the spaced DSv4.1 config.',
+            unavailable_code: 'unsupported_family',
+          }, `${family}/${scenario}/${other.key}: exact retained public-API blocker`);
         } else {
-          assert.equal(other.block.unavailable_code, 'missing_capture');
+          assert.equal(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}/${other.key}: retained historical dotted-name capture`);
           assert.equal(Object.hasOwn(other.block, 'events'), false);
         }
       }
       if (family === 'gpt_oss') {
         assert.equal(candidate.parse_mode, 'unified');
         assert.ok(candidate.label.includes('UnifiedParser'));
-        for (const [key, mode] of [['dynamo@0.7.27', 'split'], ['dynamo@0.7.28', 'unified']]) {
+        // Historical candidate labels describe the retained snapshot rather
+        // than assigning one parser route to all of its inherited members.
+        for (const version of ['0.7.27', '0.7.28']) {
+          const key = `dynamo@${version}`;
           if (!loadedKeys.has(key)) continue;
           const historical = cell.tooltip.candidates.find(item => item.key === key);
-          assert.equal(historical.parse_mode, mode);
-          assert.ok(historical.label.includes(mode === 'split' ? 'split' : 'UnifiedParser'));
+          assert.equal(historical.parse_mode, 'unified');
+          assert.equal(historical.label, `Dynamo v2 Rust ${version} (stream, recorded history)`);
         }
       }
     }
