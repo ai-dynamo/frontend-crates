@@ -7,6 +7,7 @@ import argparse
 import sys
 import base64
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 import gzip
 import hashlib
@@ -14,6 +15,8 @@ import json
 from pathlib import Path
 import re
 import time
+from urllib.parse import quote, urlsplit
+from urllib.request import Request, urlopen
 import zlib
 
 
@@ -46,6 +49,31 @@ def read(root, relative):
     resources = embedded_publication(root)["resources"]
     require(relative in resources, f"resource is not embedded: {relative}")
     return resources[relative]
+
+
+def verify_http_publication(root, base_url):
+    parsed = urlsplit(base_url)
+    require(parsed.scheme in {"http", "https"} and parsed.netloc and not parsed.username
+            and not parsed.query and not parsed.fragment, "publication URL must be an HTTP directory")
+    root = Path(root).resolve(strict=True)
+    require((root / "index.html").is_file(), "qualified publication lacks index.html")
+    paths = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
+    def check(relative):
+        expected = read(root, relative)
+        request = Request(f"{base_url.rstrip('/')}/{quote(relative)}", headers={"Accept-Encoding": "identity"})
+        with urlopen(request, timeout=30) as response:
+            require(response.status == 200, f"publication HTTP failure: {relative}")
+            actual = response.read(len(expected) + 1)
+        try:
+            identity(actual, digest(expected), len(expected))
+        except ValueError as error:
+            raise ValueError(f"published resource differs from qualified artifact: {relative}") from error
+        return len(expected)
+
+    # Bound fanout while avoiding hundreds of sequential TLS handshakes for history.
+    with ThreadPoolExecutor(max_workers=8) as workers:
+        total = sum(workers.map(check, paths))
+    return {"resources": len(paths), "bytes": total}
 
 
 def decompress(data, limit):

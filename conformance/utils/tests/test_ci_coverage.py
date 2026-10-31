@@ -431,7 +431,10 @@ def test_browser_collection_declares_latest_and_history_dependencies(tmp_path, i
     assert result.returncode in (0, 5), result.stdout + result.stderr
     receipts = list(tmp_path.glob("*.json"))
     assert len(receipts) == 1
-    selected = {node.split("::")[-1] for node in json.loads(receipts[0].read_bytes())["selected"]}
+    receipt = json.loads(receipts[0].read_bytes())
+    assert receipt["include_history"] is include_history
+    assert receipt["coverage"] == "exhaustive"
+    selected = {node.split("::")[-1] for node in receipt["selected"]}
     latest = {"test_original_yaml_view_and_blob_download_preserve_source_bytes",
               "test_muse_spark_popup_preserves_message_phases"}
     history = {"test_original_archive_view_and_blob_download_preserve_source_bytes",
@@ -444,9 +447,11 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
     jobs = workflow["jobs"]
-    conformance_filter = next(step["with"]["filters"] for step in jobs["changes"]["steps"]
-                              if step.get("id") == "filter")
-    assert "- '.gitattributes'" in conformance_filter
+    assert jobs["conformance-table"]["if"] == "${{ always() }}"
+    for name, job in jobs.items():
+        if name not in {"conformance-table", "deploy-pages"}:
+            assert "if" not in job, name
+    assert workflow["env"] == {"CONFORMANCE_INCLUDE_HISTORY": "true", "CONFORMANCE_COVERAGE": "exhaustive"}
     assert jobs["pages-build"]["env"]["CONFORMANCE_PUBLICATION_POLICY"] == "native-history-context-v4"
     identity_step = next(step for step in jobs["pages-build"]["steps"] if step.get("id") == "identity")
     assert "--publication-policy \"$CONFORMANCE_PUBLICATION_POLICY\"" in identity_step["run"]
@@ -463,7 +468,7 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     assert "--include-history" in identity_step["run"]
     assert "${{ github.ref }}" in restore["with"]["key"]
 
-    assert jobs["conformance-fixtures"]["needs"] == "changes"
+    assert jobs["conformance-fixtures"]["needs"] == "prepare"
     assert jobs["rust"].get("needs") is None
     required = set(jobs["conformance-table"]["needs"])
     for name, job in jobs.items():
@@ -474,10 +479,10 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     assert "snapshot_parity" not in publication
     assert "pytest" not in "\n".join(step.get("run", "") for step in jobs["pages-build"]["steps"] if "pip" not in step.get("run", ""))
     qualification = jobs["conformance-qualification"]
-    assert qualification["strategy"]["matrix"]["shard"] == "${{ fromJSON(needs.changes.outputs.qualification_matrix) }}"
+    assert qualification["strategy"]["matrix"]["shard"] == "${{ fromJSON(needs.prepare.outputs.qualification_matrix) }}"
     assert qualification["env"]["CONFORMANCE_PARITY_SHARDS"] == "${{ strategy.job-total }}"
-    assert jobs["changes"]["outputs"]["qualification_matrix"] == "${{ steps.qualification.outputs.matrix }}"
-    step = next(step for step in jobs["changes"]["steps"] if step.get("id") == "qualification")
+    assert jobs["prepare"]["outputs"]["qualification_matrix"] == "${{ steps.qualification.outputs.matrix }}"
+    step = next(step for step in jobs["prepare"]["steps"] if step.get("id") == "qualification")
     assert "verify_ci_selection.py --shard-matrix" in step["run"]
     result = subprocess.run([sys.executable, str(root / "conformance/utils/src/verify_ci_selection.py"), "--shard-matrix"],
                             capture_output=True, text=True, check=True)
@@ -516,6 +521,69 @@ def test_ci_accounting_rejects_lost_tests_and_incomplete_qualification(fault):
             verify_ci_selection.verify(baseline, assignments)
     else:
         assert verify_ci_selection.verify(baseline, assignments)["unique_tests"] == 2 + len(qualification)
+
+
+def test_publication_gate_rejects_missing_skipped_failed_or_unrequired_jobs():
+    root = Path(__file__).resolve().parents[3]
+    jobs = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())["jobs"]
+    results = {name: {"result": "success"} for name in jobs["conformance-table"]["needs"]}
+    assert set(verify_ci_selection.verify_jobs(results, jobs)["validation_jobs"]) == set(results)
+    for name in results:
+        for status in ("skipped", "failure", "cancelled", None):
+            with pytest.raises(ValueError, match="did not succeed"):
+                verify_ci_selection.verify_jobs({**results, name: {"result": status}}, jobs)
+        with pytest.raises(ValueError, match="every validation job"):
+            verify_ci_selection.verify_jobs({key: value for key, value in results.items() if key != name}, jobs)
+        altered = json.loads(json.dumps(jobs))
+        altered["conformance-table"]["needs"].remove(name)
+        with pytest.raises(ValueError, match="every validation job"):
+            verify_ci_selection.verify_jobs(results, altered)
+
+
+@pytest.mark.parametrize("fault", [None, "latest", "missing-mode", "reduced", "filtered-baseline", "scoped-baseline", "grouped-baseline"])
+def test_publication_accounting_requires_complete_exhaustive_history(fault):
+    mode = {"include_history": True, "coverage": "exhaustive"}
+    baseline = [{**mode, "scope": None, "group": None, "eligible": ["one", "two"], "selected": ["one", "two"]}]
+    assignments = [{**mode, "selected": [name]} for name in baseline[0]["selected"]]
+    if fault == "latest":
+        assignments[0]["include_history"] = False
+    elif fault == "missing-mode":
+        del baseline[0]["include_history"]
+    elif fault == "reduced":
+        assignments[0]["coverage"] = "latest-two"
+    elif fault == "filtered-baseline":
+        baseline[0]["eligible"].append("omitted")
+    elif fault == "scoped-baseline":
+        baseline[0]["scope"] = "publication"
+    elif fault == "grouped-baseline":
+        baseline[0]["group"] = "0/2"
+    if fault:
+        with pytest.raises(ValueError, match="publication"):
+            verify_ci_selection.verify(baseline, assignments, require_history=True)
+    else:
+        assert verify_ci_selection.verify(baseline, assignments, require_history=True)["unique_tests"] == 2
+
+
+@pytest.mark.parametrize("fault", [None, "wrong-commit", "latest", "missing-mode", "short-revision"])
+def test_publication_gate_binds_history_artifact_to_current_commit(monkeypatch, fault):
+    revision = "a" * 40
+    metadata = {"revision": revision, "generated_revision": "b" * 40}
+    catalog = {"capture_generation": {"mode": "history"}}
+    if fault == "wrong-commit":
+        metadata["revision"] = "c" * 40
+    elif fault == "latest":
+        catalog["capture_generation"]["mode"] = "latest"
+    elif fault == "missing-mode":
+        catalog.clear()
+    elif fault == "short-revision":
+        revision = "main"
+    monkeypatch.setattr(verify_ci_selection, "publication_metadata", lambda _site: metadata)
+    monkeypatch.setattr(verify_ci_selection, "runtime_catalog", lambda _site: catalog)
+    if fault:
+        with pytest.raises(ValueError, match="publication"):
+            verify_ci_selection.verify_publication(Path("unused"), revision)
+    else:
+        assert verify_ci_selection.verify_publication(Path("unused"), revision)["source_revision"] == revision
 
 
 def _context_repo(tmp_path):
@@ -615,15 +683,31 @@ def test_catalog_check_receives_selected_mode(tmp_path, include_history):
 def test_only_history_can_replace_public_main_site():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
-    mode = workflow["env"]["CONFORMANCE_INCLUDE_HISTORY"]
-    assert "github.event_name == 'push' && github.ref == 'refs/heads/main'" in mode
-    assert "github.event.inputs.include-history" in mode
+    assert workflow["env"]["CONFORMANCE_INCLUDE_HISTORY"] == "true"
+    assert workflow["env"]["CONFORMANCE_COVERAGE"] == "exhaustive"
     jobs = workflow["jobs"]
-    deployment_guard = "${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}"
+    deployment_guard = "${{ github.ref == 'refs/heads/main' }}"
     assert jobs["deploy-pages"]["if"] == deployment_guard
     for step in jobs["conformance-table"]["steps"]:
-        if "Pages" in step.get("name", "") or step.get("name") == "Restore qualified Pages directory":
+        if "Pages" in step.get("name", ""):
             assert step["if"] == deployment_guard
+    gate_steps = jobs["conformance-table"]["steps"]
+    restore = next(i for i, step in enumerate(gate_steps) if step.get("uses") == "./.github/actions/conformance-publication")
+    accounting = next(i for i, step in enumerate(gate_steps) if "--baseline" in step.get("run", ""))
+    upload = next(i for i, step in enumerate(gate_steps) if "Upload GitHub Pages artifact" == step.get("name"))
+    assert restore < accounting < upload
+    assert all(flag in gate_steps[accounting]["run"] for flag in ("--require-history", "--publication", "--revision"))
+    deploy_steps = jobs["deploy-pages"]["steps"]
+    deployment = next(i for i, step in enumerate(deploy_steps) if step.get("id") == "deployment")
+    smoke = next(i for i, step in enumerate(deploy_steps) if "--publication-url" in step.get("run", ""))
+    assert deployment < smoke
+    assert deploy_steps[smoke]["env"]["PUBLICATION_URL"] == "${{ steps.deployment.outputs.page_url }}"
+    assert jobs["deploy-pages"]["concurrency"]["cancel-in-progress"] is False
+    for job_name, target in (("prepare", "--shard-matrix"), ("conformance-table", "--job-results")):
+        steps = jobs[job_name]["steps"]
+        install = next(i for i, step in enumerate(steps) if "-r conformance/utils/publication-requirements.in" in step.get("run", ""))
+        invocation = next(i for i, step in enumerate(steps) if target in step.get("run", ""))
+        assert install < invocation
 
 
 def test_publication_identification_bootstraps_without_site_packages():

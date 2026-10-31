@@ -173,6 +173,7 @@ def pytest_addoption(parser):
                      help="qualify bundled sparse historical data explicitly")
     parser.addoption("--conformance-scope", choices=("fixtures", "publication"))
     parser.addoption("--conformance-group", help="disjoint sorted test assignment I/N, zero-based")
+    parser.addoption("--publication-url", help="verify the qualified artifact at its deployed HTTP URL")
 
 
 def needs_publication(item):
@@ -208,6 +209,7 @@ def pytest_collection_modifyitems(config, items):
         destination = Path(directory)
         destination.mkdir(parents=True, exist_ok=True)
         document = {"scope": scope, "group": group, "job": os.environ.get("GITHUB_JOB"),
+                    "include_history": include_history, "coverage": os.environ.get("CONFORMANCE_COVERAGE", "exhaustive"),
                     "eligible": sorted(item.nodeid for item in eligible),
                     "selected": sorted(item.nodeid for item in selected)}
         (destination / f"{uuid.uuid4().hex}.json").write_text(json.dumps(document, sort_keys=True))
