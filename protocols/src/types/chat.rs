@@ -36,7 +36,7 @@ pub use async_openai::types::chat::{
     ChatCompletionRequestSystemMessageContentPart, ChatCompletionResponseMessageAudio, Choice,
     CompletionFinishReason, CompletionTokensDetails, CompletionUsage, ImageDetail, InputAudio,
     InputAudioFormat, Logprobs, PredictionContent, PredictionContentContent, Prompt,
-    PromptTokensDetails, ResponseFormat, ResponseFormatJsonSchema, Role, ServiceTier, TopLogprobs,
+    PromptTokensDetails, ResponseFormat, ResponseFormatJsonSchema, Role, ServiceTier,
     WebSearchContextSize, WebSearchLocation, WebSearchOptions, WebSearchUserLocation,
     WebSearchUserLocationType,
 };
@@ -414,6 +414,22 @@ pub struct ChatChoiceLogprobs {
     pub refusal: Option<Vec<ChatCompletionTokenLogprob>>,
 }
 
+/// Top logprob candidate with an optional backend vocabulary ID.
+///
+/// Different vocabulary IDs may render to the same token string. Retain IDs
+/// supplied by the backend without adding them to ordinary OpenAI responses.
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::TopLogprobs))]
+pub struct TopLogprobs {
+    pub token: String,
+    pub logprob: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_id: Option<u32>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
+    pub bytes: Option<Vec<u8>>,
+}
+
 /// Token logprob entry with optional backend token ID.
 ///
 /// Some inference backends can report both the rendered token string and its
@@ -429,7 +445,6 @@ pub struct ChatCompletionTokenLogprob {
     pub token_id: Option<u32>,
     #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub bytes: Option<Vec<u8>>,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = Vec<crate::schema::TopLogprobs>))]
     pub top_logprobs: Vec<TopLogprobs>,
 }
 

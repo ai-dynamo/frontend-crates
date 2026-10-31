@@ -810,7 +810,10 @@
       if (cell && cell.case_id && !caseId) { caseId = cell.case_id; }
       const parentTip = cell && cell.tooltip;
       const variantTips = parentTip && parentTip.variants ? parentTip.variants : [parentTip];
-      variantTips.forEach(tip => {
+      variantTips.forEach((tip, variantIndex) => {
+      const leaf = cell && cell.variants ? cell.variants[variantIndex] : cell;
+      const familySuffix = ' — ' + (row.family || '');
+      const variantHead = tip && tip.head || '';
       var text = caseInputText(tip);
       // An input that EXISTS but is empty is not the same as a missing one — case 9.a
       // ("Empty model text") is empty on purpose, and calling that "no input recorded"
@@ -840,7 +843,9 @@
       var inp = (tip && tip.input) || {};
       rows.push({
         family: row.family || '',
-        label: (row.model_label || row.family || '') + (variantTips.length > 1 ? ' — ' + tip.head : ''),
+        label: row.model_label || row.family || '',
+        variantKey: leaf && leaf.sub || col.sub,
+        variantHead: variantHead.endsWith(familySuffix) ? variantHead.slice(0, -familySuffix.length) : variantHead,
         init: tip ? tip.init : null,
         description: variantTips.length > 1 && tip ? tip.description : null,
         text: text ? text : null,
@@ -851,9 +856,15 @@
       });
       });
     });
+    // Compare one scenario across families before moving to the next scenario.
+    // The leaf identity survives folding; display labels and family order do not
+    // reliably identify the same test across rows.
+    const variants = [...new Set(rows.map(row => row.variantKey))];
+    variants.sort((a, b) => Number(b === col.sub) - Number(a === col.sub));
+    const groupedRows = variants.flatMap(key => rows.filter(row => row.variantKey === key));
     const caseHead = caseId || fullCaseId(tab, col);
     return { head: caseHead, popupCase: col, desc: col.desc || '', init: col.init,
-             grammar: rows, cands: colDefs || [] };
+             grammar: groupedRows, cands: colDefs || [] };
   }
 
   // The header shows the FULL case id, matching the cell popups and the fixture YAML, so
@@ -878,7 +889,34 @@
     h += buildConfigHtml(m.init);
     var cands = m.cands || [];
     var body = '';
-    (m.grammar || []).forEach(function (r) {
+    const grouped = new Set((m.grammar || []).map(row => row.variantKey)).size > 1;
+    const descriptionCounts = new Map();
+    const variantDescriptions = new Map();
+    for (const row of m.grammar || []) {
+      // NA notes and unique family explanations belong beside that family's input.
+      if (row.text === null || !row.description) continue;
+      if (!descriptionCounts.has(row.variantKey)) descriptionCounts.set(row.variantKey, new Map());
+      const counts = descriptionCounts.get(row.variantKey);
+      counts.set(row.description, (counts.get(row.description) || 0) + 1);
+    }
+    for (const [key, counts] of descriptionCounts) {
+      const repeated = [...counts].sort((a, b) => b[1] - a[1])[0];
+      if (repeated[1] > 1) variantDescriptions.set(key, repeated[0]);
+    }
+    let currentVariant;
+    (m.grammar || []).forEach(function (r, rowIndex) {
+      const variantDescription = grouped ? variantDescriptions.get(r.variantKey) : null;
+      if (rowIndex === 0 || r.variantKey !== currentVariant) {
+        if (rowIndex) body += '</tbody>';
+        body += '<tbody data-variant="' + escapeAttr(r.variantKey || '') + '">';
+        if (grouped) {
+          body += '<tr class="gr-variant-heading"><th scope="rowgroup" colspan="' + (2 + cands.length) + '">'
+            + escapeHtml(r.variantHead || r.variantKey)
+            + (variantDescription ? '<div class="ttip-head-desc">' + codeSpans(escapeHtml(variantDescription)) + '</div>' : '')
+            + '</th></tr>';
+        }
+        currentVariant = r.variantKey;
+      }
       var cls = r.text ? '' : ' class="gr-na"';
       var cell, outCell;
       // ONE context per row, seeded from that row's input: every family has its own
@@ -933,7 +971,7 @@
         ? '<span class="grfam">' + escapeHtml(r.family) + '</span>' : '';
       const config = m.init ? '' : buildConfigHtml(r.init);
       body += '<tr' + cls + '><td class="grf">' + escapeHtml(r.label || r.family)
-        + fam + config + (r.description ? '<div class="ttip-head-desc">' + codeSpans(escapeHtml(r.description)) + '</div>' : '') + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
+        + fam + config + (r.description && r.description !== variantDescription ? '<div class="ttip-head-desc">' + codeSpans(escapeHtml(r.description)) + '</div>' : '') + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
     });
     // One output header per candidate; applyCtl shows golden + the active columns,
     // flags the Reference (★) and orders golden -> REF -> rest.
@@ -942,7 +980,7 @@
         + (c.pin ? ' data-cand-pin="1"' : '') + '>' + escapeHtml(c.label) + '</th>';
     }).join('');
     return h + '<table class="ttip-chunks ttip-grammar"><thead><tr><th>model</th>'
-      + '<th>input</th>' + header + '</tr></thead><tbody>' + body + '</tbody></table>';
+      + '<th>input</th>' + header + '</tr></thead>' + (body || '<tbody>') + '</tbody></table>';
   }
 
   function schemaIndicatorHtml(column) {

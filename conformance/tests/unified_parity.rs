@@ -270,6 +270,53 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
     ]
 }
 
+fn extended_splittings(input: &str) -> Vec<(String, Vec<String>)> {
+    const MAX_TWO_PART: usize = 24;
+    const RANDOM_SPLITS: u64 = 4;
+    let bounds: Vec<usize> = (1..input.len())
+        .filter(|offset| input.is_char_boundary(*offset))
+        .collect();
+    let mut out = Vec::new();
+    for &b in bounds
+        .iter()
+        .step_by(bounds.len().div_ceil(MAX_TWO_PART).max(1))
+    {
+        out.push((
+            format!("split@{b}"),
+            vec![input[..b].into(), input[b..].into()],
+        ));
+    }
+    let markers = chunk_markers(input);
+    for k in [2, 4, 8] {
+        let grouped = markers.chunks(k).map(|c| c.concat()).collect();
+        out.push((format!("marker-aligned-x{k}"), grouped));
+    }
+    if bounds.len() >= 2 {
+        let mut state = input.len() as u64 ^ 0x9e37_79b9_7f4a_7c15;
+        let mut next = |n: usize| {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            (state >> 33) as usize % n
+        };
+        for seed in 0..RANDOM_SPLITS {
+            let mut cuts: Vec<usize> = (0..2 + next(5))
+                .map(|_| bounds[next(bounds.len())])
+                .collect();
+            cuts.sort_unstable();
+            cuts.dedup();
+            let mut chunks = Vec::new();
+            let mut start = 0;
+            for end in cuts.into_iter().chain(std::iter::once(input.len())) {
+                chunks.push(input[start..end].to_string());
+                start = end;
+            }
+            out.push((format!("random-{seed}"), chunks));
+        }
+    }
+    out
+}
+
 /// Quote-looking strings must survive every possible two-chunk boundary,
 /// including boundaries inside their native escaping and framing.
 #[test]
@@ -465,7 +512,10 @@ fn unified_parser_is_chunk_invariant() {
                 &case.init,
                 &case_tools,
             );
-            for (label, chunks) in splittings(&case.input) {
+            let schedules = splittings(&case.input)
+                .into_iter()
+                .chain(extended_splittings(&case.input));
+            for (label, chunks) in schedules {
                 let got = events(&file.family, &chunks, &case.init, &case_tools);
                 if got != baseline {
                     match divergences::expected(

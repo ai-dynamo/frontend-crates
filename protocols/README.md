@@ -12,6 +12,25 @@ Request/response types for OpenAI- and Anthropic-compatible inference servers. B
 - **Anthropic Messages** — fully owned (no upstream equivalent).
 - **Embeddings**, **Images** — re-exported.
 
+## Anthropic image sources and thinking display
+
+`AnthropicImageSource` distinguishes the `Base64 { media_type, data }` and
+`Url { url }` source variants. Both ordinary image blocks and image-bearing tool
+results preserve their source when serialized. The serving layer owns URL policy,
+fetching, and image validation; parsing a URL source does not fetch it.
+
+`ThinkingConfig.display` preserves `ThinkingDisplay::Summarized`,
+`ThinkingDisplay::Omitted`, and the beta `ThinkingDisplay::Updates`. Omission remains
+unset. The serving layer must gate beta support, validate combinations with the
+thinking mode, and apply the display policy. Parsing does not implement progress updates.
+File sources are outside this subset. Non-null, non-boolean `tool_result.is_error` values are
+rejected during deserialization.
+
+Rust callers migrating from the previous image-source struct must construct an
+enum variant and match on it instead of accessing `source_type`, `media_type`, or
+`data` directly. Existing `ThinkingConfig` literals need `display: None` to retain
+their previous behavior.
+
 ## Optional protocol schemas
 
 The `protocol-schema` feature is disabled by default. When enabled, it supplies utoipa 5 `ToSchema`
@@ -104,6 +123,11 @@ A few fields extend the upstream `async-openai` schema:
 - `mm_processor_kwargs` on chat-completion requests (vLLM multimodal)
 - `continuous_usage_stats` on chat stream options
 - `FunctionCall.arguments` accepts both string and object forms
+- Optional `token_id` on selected tokens and `top_logprobs` candidates, preserving
+  vocabulary IDs even when different candidates render to the same text. The
+  locally owned `TopLogprobs` type keeps the upstream fields and adds
+  `token_id: Option<u32>`; Rust callers constructing candidates must set it
+  to `None` when the backend does not supply an ID.
 
 ## Request compatibility and serving policy
 

@@ -586,6 +586,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
             })
+        if family == "kimi_k3":
+            extra.update({"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"})
         if family == "deepseek_v4":
             extra.add("guided_response_rejected_header_quote_ownership")
         if family == "deepseek_v41":
@@ -627,6 +629,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 marker = "<think>"
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
+            elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
+                marker = '<|open|>call tool="lookup"'
             elif scenario == "guided_response_rejected_header_quote_ownership":
                 marker = '<｜DSML｜invoke'
             elif scenario == "gemma4_guided_response_extra_body_opener":
@@ -972,7 +976,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 256 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
+    assert len(UNIFIED_TAX) == 256 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1818,6 +1822,11 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                 arguments[key] = value if kind == "string" else json.loads(
                     value, parse_float=Decimal if exact_numbers else float
                 )
+            if not arguments and not re.search(r'<\|close\|>\s*call\s*<\|sep\|>', body):
+                response_terminated = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+                                       r'<\|close\|>\s*argument\s*<\|sep\|>(?=\s*<\|open\|>\s*response\s*<\|sep\|>)')
+                for key, kind, value in re.findall(response_terminated, body, re.S):
+                    arguments[key] = value if kind == "string" else json.loads(value)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
                 values = _json_values(body, exact_numbers=exact_numbers)
                 if values:
@@ -2191,7 +2200,7 @@ def _assert_cross_family_contract(corpus):
             if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
                 following = [{"kind": "text", "text": "recovered"}]
                 assert events == ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
-                                  if family in {"muse_glimmer", "muse_spark"} else []) + following
+                                  if family in {"muse_glimmer", "muse_spark", "kimi_k3"} else []) + following
                 events = following
             if scenario == "gpt_oss_quoted_truncated_tool_then_final":
                 assert events == [{"kind": "text", "text": "Answer"}], (family, scenario, "missing recovered answer")
@@ -2555,6 +2564,22 @@ def test_second_pass_reference_goldens_satisfy_the_authored_schema(family, scena
     assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
 
 
+def test_k3_response_recovery_oracle_requires_complete_json_and_preserved_text():
+    cases = build_cases("kimi_k3")
+    recovered = cases["UNIFIED.gpt_oss_truncated_tool_resynchronizes_at_next_message.kimi_k3"]
+    raw = recovered["input"].split('<|open|>json type="object"<|sep|>', 1)[1].split('<|close|>json<|sep|>', 1)[0]
+    assert json.loads(raw) == {"q": "unfinished"}
+    assert recovered["golden"] == [
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}},
+        {"kind": "text", "text": "recovered"},
+    ]
+    malformed = cases["UNIFIED.gpt_oss_quoted_truncated_tool_then_final.kimi_k3"]
+    raw = malformed["input"].split('<|open|>json type="object"<|sep|>', 1)[1].split('<|close|>json<|sep|>', 1)[0]
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(raw)
+    assert malformed["golden"] == [{"kind": "text", "text": "Answer"}]
+
+
 def test_kimi_display_sections_match_their_applicable_family():
     labels = taxonomy.display_case_labels(UNIFIED_TAX)
     for scenario in UNIFIED_TAX:
@@ -2637,7 +2662,7 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
             else:
                 assert '{"q":"abc<|close|>json<|sep|>' in case["input"]
                 assert '<|open|>response<|sep|>Answer<|close|>response<|sep|>' in case["input"]
-                assert case["expect"]["dynamo"]["class"] == "LOSS"
+                assert case["expect"]["dynamo"]["verdict"] == "match"
         else:
             event = case["golden"][0]
             assert event["name"] == "lookup"
