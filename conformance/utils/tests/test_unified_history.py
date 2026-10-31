@@ -2250,7 +2250,6 @@ def test_routed_sparse_history_keeps_requests_precedence_and_lazy_fragments(tmp_
     monkeypatch.setattr(capture_sources, "history_view", retained_view)
     monkeypatch.setattr(capture_sources, "verify", lambda *_: {"files": []})
     monkeypatch.setattr(capture_sources, "history_pin", lambda *_: {})
-    monkeypatch.setattr(migrate_capture_sources, "convert", lambda *_args, **_kwargs: {"rows": []})
     retained_history = tmp_path / "history"
     (retained_history / capture_sources.DATASETS).parent.mkdir(parents=True)
     (retained_history / capture_sources.DATASETS).write_bytes(capture_sources.encoded([]))

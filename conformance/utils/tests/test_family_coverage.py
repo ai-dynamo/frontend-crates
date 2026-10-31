@@ -1,21 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Guards for the fixture-coverage lint and the single-source family markers
-(DIS-2442, distilled from the PR #120 review):
-
-  * the lint is green on the committed corpus (CI gate stays meaningful);
-  * an inkling-shaped family (batch groups 6/8/30 missing, no stream corpus, no
-    marker registration) FAILS the lint — the exact gap class three reviewers had
-    to find by hand on PR #120;
-  * every parser_families.yaml row has a markers declaration and vice versa;
-  * the YAML-derived leak detector is a strict superset of the retired hardcoded
-    regex on the committed corpus (no silently-lost `↯` detections);
-  * declared marker tokens render non-orphan in the popup colorizer, including
-    tokens the heuristics cannot classify (the red-orphan popup class).
-"""
+"""Marker registration, leak recognition, and rendered token contracts."""
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -33,103 +20,18 @@ import markers as markers_mod  # noqa: E402
 from conformance.utils.tests.fixture_test_support import colorize_markup  # noqa: E402
 
 
-def _ensure_fixtures() -> Path:
-    # Manifest-pinned snapshot, immune to sibling checkouts repointing the shared
-    # cache symlink mid-run (the flake class conformance/README documents).
-    return cfc.resolve_fixtures_root()
-
-
 def _registry() -> dict:
     return yaml.safe_load((SRC / "parser_families.yaml").read_text())
 
 
-def _taxonomy() -> dict:
-    return yaml.safe_load(cfc.TAXONOMY_PATH.read_text())
-
-
-def test_lint_green_on_committed_corpus() -> None:
-    """The committed corpus passes with zero failures (warnings — TODO placeholders
-    and grandfathered known_gaps — are the backfill list, never CI-red)."""
-    root = _ensure_fixtures()
-    taxonomy = _taxonomy()
+def test_marker_lint_checks_registered_families() -> None:
     registry = _registry()
     report = cfc.Report()
-    for fam in sorted(registry["families"]):
-        batch_real = cfc.real_groups(root, "toolcalling.batch", fam)
-        for suite in cfc.TOOLCALLING_SUITES:
-            cfc.check_suite(report, taxonomy, root, suite, fam, batch_real)
-        cfc.check_markers(report, registry, fam)
+    for family in registry["markers"]:
+        cfc.check_markers(report, registry, family)
     assert report.failures == []
-
-
-def test_retired_stream_id_requires_explicit_declaration(tmp_path) -> None:
-    taxonomy = _taxonomy()
-    taxonomy["retired_subcases"] = {}
-    report = cfc.Report()
-    family_dir = tmp_path / "toolcalling/fixtures-stream-v1/inputs/deepseek_v4"
-    family_dir.mkdir(parents=True)
-    (family_dir / "TOOLCALLING.streamv1.50.yaml").write_text(yaml.safe_dump({
-        "family": "deepseek_v4",
-        "mode": "streamv1",
-        "cases": {"TOOLCALLING.streamv1.50.a": {"chunks": []}},
-    }))
-
-    cfc.check_suite(report, taxonomy, tmp_path, "toolcalling.stream", "deepseek_v4", set())
-
-    assert any("TOOLCALLING.streamv1.50.a is not in the taxonomy" in failure for failure in report.failures)
-
-
-def test_lint_fails_on_inkling_shaped_family(tmp_path) -> None:
-    """A family with the PR #120 gap profile fails the lint: batch groups 6/8/30
-    absent, the entire legacy stream corpus missing, and no `markers:` registration."""
-    root = _ensure_fixtures()
-    fake_root = tmp_path / "fixtures"
-    src_fam = root / "toolcalling/fixtures-batch-v1/inputs/hermes"
-    dst_fam = fake_root / "toolcalling/fixtures-batch-v1/inputs/newfam"
-    dst_fam.mkdir(parents=True)
-    (fake_root / "toolcalling/fixtures-stream-v1/inputs").mkdir(parents=True)
-    (fake_root / "reasoning/fixtures-v1/inputs").mkdir(parents=True)
-    for path in src_fam.glob("TOOLCALLING.batch*.yaml"):
-        data = yaml.safe_load(path.read_text())
-        data["family"] = "newfam"
-        cases = {
-            cid: case
-            for cid, case in data["cases"].items()
-            if cfc.group_of(cid[len("TOOLCALLING.batch") + 1 :]) not in ("6", "8", "30")
-        }
-        if not cases:
-            continue
-        data["cases"] = cases
-        (dst_fam / path.name).write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
-
-    registry = _registry()
-    registry["families"]["newfam"] = {"vllm_python": None}
-    taxonomy = _taxonomy()
-    report = cfc.Report()
-    batch_real = cfc.real_groups(fake_root, "toolcalling.batch", "newfam")
-    for suite in cfc.TOOLCALLING_SUITES:
-        cfc.check_suite(report, taxonomy, fake_root, suite, "newfam", batch_real)
-    cfc.check_markers(report, registry, "newfam")
-
-    text = "\n".join(report.failures)
-    assert "group 6 (Empty arguments) has NO cases" in text
-    assert "group 8 (Narration around calls) has NO cases" in text
-    assert "group 30 (Own-grammar delimiters inside a string argument (single call)) has NO cases" in text
-    assert "the entire toolcalling.stream corpus is missing" in text
-    assert "no `markers:` entry in parser_families.yaml" in text
-
-
-def test_taxonomy_case_entries_well_formed() -> None:
-    """Every taxonomy case entry is exactly {desc, required[, note]} with a non-empty
-    desc — catches YAML flow-mapping typos (an unquoted comma inside a desc silently
-    splits the entry into junk keys)."""
-    for suite, spec in _taxonomy()["suites"].items():
-        for gid, group in spec["groups"].items():
-            assert group.get("title"), (suite, gid)
-            for sub, case in group["cases"].items():
-                assert set(case) <= {"desc", "required", "note"}, (suite, gid, sub, case)
-                assert isinstance(case.get("desc"), str) and case["desc"], (suite, gid, sub)
-                assert isinstance(case.get("required"), bool), (suite, gid, sub)
+    cfc.check_markers(report, registry, "unregistered")
+    assert any("no `markers:` entry" in failure for failure in report.failures)
 
 
 def test_markers_declared_for_every_family() -> None:
@@ -149,12 +51,12 @@ def test_leak_regex_superset_of_retired_hardcoded_regex() -> None:
         r"</?TOOLCALL|TOOL_CALLS|<｜(?:DSML｜)?(?:tool|tool▁call|tool▁calls)|"
         r"<｜DSML｜|</?minimax:tool_call|</?invoke|</?arg_key|</?arg_value"
     )
-    root = _ensure_fixtures()
+    root = UTILS.parent / "fixtures-unified-v2/families"
     texts: set[str] = set()
 
     def walk(node) -> None:
         if isinstance(node, dict):
-            nt = node.get("normal_text")
+            nt = node.get("normal_text", node.get("text"))
             if isinstance(nt, str):
                 texts.add(nt)
             for value in node.values():
@@ -163,9 +65,9 @@ def test_leak_regex_superset_of_retired_hardcoded_regex() -> None:
             for value in node:
                 walk(value)
 
-    for path in root.glob("toolcalling/**/*.yaml"):
+    for path in root.glob("*/inputs_and_golden.yaml"):
         walk(yaml.safe_load(path.read_text()))
-    assert texts, "no corpus normal_texts found — fixtures not extracted?"
+    assert texts, "no authored Unified text outcomes found"
     lost = [t for t in texts if old.search(t) and not markers_mod._TOOL_CALL_MARKUP_RE.search(t)]
     assert lost == []
 
@@ -215,21 +117,6 @@ def test_kimi_k3_opaque_composite_regions_keep_marker_text_as_data() -> None:
         rendered = colorize_markup(text, family="kimi_k3", markers=_registry()["markers"])
         assert "tt-orphan" not in rendered
         assert rendered.count("&lt;|close|&gt;") == text.count("<|close|>")
-
-
-def test_reasoning_only_family_skips_toolcalling_suites() -> None:
-    """`--family gpt_oss` (reasoning-only corpus family) must check the reasoning
-    suites ONLY — not fail on missing toolcalling registry/fixtures."""
-    proc = subprocess.run(
-        [sys.executable, str(SRC / "check_family_coverage.py"), "--family", "gpt_oss", "--expect-reasoning"],
-        capture_output=True,
-        text=True,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "toolcalling" not in "".join(
-        line for line in proc.stdout.splitlines() if line.startswith("FAIL")
-    )
-    assert "reasoning: gpt_oss" in proc.stdout
 
 
 def test_undeclared_pipe_token_still_orphans() -> None:

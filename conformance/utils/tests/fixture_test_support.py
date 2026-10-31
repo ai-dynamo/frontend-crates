@@ -84,7 +84,7 @@ def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *,
             manifest_path = view / "conformance/fixtures-manifest.json"
             manifest_bytes = manifest_path.read_bytes()
             manifest = json.loads(manifest_bytes)
-            archives = viewer_catalog._archive_records(manifest, view)
+            archives = []
             catalog = fixture_catalog(view, {"capture_generation": generation,
                 "metadata": copy.deepcopy(metadata or {"unified_capture_policy": {"dynamo_v2": {"mode": "stream"}}}),
                 "sources": {"archives": archives, "lineage": generation["lineage"], "candidates": [
@@ -360,10 +360,6 @@ def historical_source_bytes(root: Path, path: str) -> bytes:
     inventory = capture_sources.verify(root)
     member_path = (path.removeprefix(capture_sources.STORE + "/")
                    if path.startswith(capture_sources.STORE + "/") else path.removeprefix("conformance/"))
-    for archive in inventory["files"]:
-        prefix = archive["path"].removeprefix("conformance/fixtures/").removesuffix(".tar.gz")
-        if archive["path"].endswith(".tar.gz") and "members" not in archive and member_path.startswith(prefix + "/"):
-            archive["members"] = capture_sources.archive_members(root / archive["path"])
     matches = [(archive, member) for archive in inventory["files"]
                for member in archive.get("members", []) if member["path"] in {path, member_path}]
     if len(matches) != 1:

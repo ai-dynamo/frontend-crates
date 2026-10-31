@@ -12,7 +12,6 @@
 #![allow(unexpected_cfgs)]
 
 pub mod authored;
-pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
 pub mod unified_capture;
 
@@ -608,10 +607,8 @@ pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
     serde_json::from_slice(&output.stdout).expect("Dynamo capture provenance JSON")
 }
 
-/// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
-/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v1), ASCENDING by
-/// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
-/// readers fold them ascending so the latest capture wins per case.
+/// Version-sorted capture directories for one implementation prefix, ascending
+/// by numeric version. Later historical captures override earlier records.
 pub type VersionCaptureSortKey = (Vec<u64>, bool, String);
 
 pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
