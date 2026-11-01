@@ -110,6 +110,9 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
         "conformance/utils/publication-requirements.in",
         ".gitattributes",
         "conformance/README.md",
+        "conformance/utils/src/unified_history.py",
+        "conformance/utils/src/ci_plan.py",
+        "conformance/utils/ci-requirements.in",
         "conformance/utils/ci-lanes.json",
         ".github/workflows/ci.yml",
         "README.md",
@@ -166,7 +169,7 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
     monkeypatch.setattr(ci_publication_cache.platform, "python_version", lambda: "test-runtime")
     assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
     monkeypatch.setattr(ci_publication_cache.platform, "python_version", python_version)
-    for path in paths[:6]:
+    for path in paths[:9]:
         source = tmp_path / path
         source.write_bytes(b"changed")
         assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
@@ -176,7 +179,7 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
     source.write_bytes(b"changed")
     assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
     source.write_bytes(b"original")
-    for path in paths[6:]:
+    for path in paths[9:]:
         source = tmp_path / path
         source.write_bytes(b"changed")
         assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") == original
