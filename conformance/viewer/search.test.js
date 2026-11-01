@@ -28,6 +28,7 @@ test('Google-style words, phrases, alternatives, exclusions and explicit scopes'
     ['call', ['recall'], [], false],
     ['numeric', ['arg_numeric_14'], [], true],
     ['guided decoding', ['Guided argument fidelity', 'Decoding tests'], [], true],
+    ['guided-decoding', ['Guided-decoding tests'], [], true],
     ['"guided decoding"', ['Guided argument fidelity', 'Decoding tests'], [], false],
     ['"guided decoding"', ['Guided decoding tests'], [], true],
     ['"call"', ['calls'], [], false],
@@ -61,6 +62,11 @@ test('Google-style words, phrases, alternatives, exclusions and explicit scopes'
   assert.equal(search('leak', [], [], ['markup leak']), false);
   assert.equal(search('description:leak', [], [], ['markup leak']), true);
   assert.equal(search('description:"markup leak"', [], [], ['markup leak']), true);
+  for (const query of ['description:UTF-8', 'description:"UTF-8"']) {
+    assert.equal(search(query, [], [], ['Spaces, UTF-8, literal plus']), true, query);
+    assert.equal(search(`-${query}`, [], [], ['Spaces, UTF-8, literal plus']), false, query);
+  }
+  assert.equal(compileSearch('parser:qwen-3', {families: ['qwen-3']})([], ['qwen-3']), true);
   for (const query of ['"', '"unterminated', '""', '()', '(call', 'call)', 'AND call', 'call OR',
     'call AND OR blah', 'parser:', 'parser: AND call', 'model:(beam OR qwen)', '-', 'beam -', 'col:"']) {
     assert.throws(() => compileSearch(query, context), SyntaxError, query);
@@ -99,6 +105,33 @@ test('shared canonical queries survive numbering, group prefixes, ordering and f
   assert.equal(compileSearch('7-17', newContext)(['other_case']), false);
 });
 
+test('compact family references resolve through the same numbered-case aliases', () => {
+  for (const [prefix, family] of [['7', '7'], ['ds4', 'deepseek_v4'], ['ds41', 'deepseek_v41'], ['kimi_k3', 'kimi_k3']]) {
+    const stable = `${family}-guided_literal`;
+    const tab = {columns: [{compact_prefix: prefix, display_number: 3, case_id: `UNIFIED.${stable}`, sub: 'guided_literal'}], rows: []};
+    const context = searchContext(tab, ['beam', family]);
+    for (const [query, canonical] of [
+      [`${prefix}-3`, stable], [`"${prefix}-3"`, `"${stable}"`],
+      [`col:UNIFIED.${prefix}-3`, `col:${stable}`],
+      [`beam (${prefix}-3 OR missing)`, `beam (${stable} OR missing)`],
+    ]) {
+      const match = compileSearch(query, context);
+      assert.equal(match.canonicalQuery, canonical, query);
+      assert.equal(match([`UNIFIED.${stable}`], ['beam']), true, query);
+      assert.equal(match([`${stable}_extra`], ['beam']), false, query);
+      assert.equal(compileSearch(canonical, searchContext({...tab, columns: []}, ['beam', family]))([`UNIFIED.${stable}`], ['beam']), true, query);
+      assert.deepEqual(match.notices, []);
+    }
+    const unknown = compileSearch(`${prefix}-999`, context);
+    assert.equal(unknown([`${prefix}-999`]), false);
+    assert.deepEqual(unknown.notices, [`Case ${prefix}-999 is not numbered in this report.`]);
+    assert.equal(compileSearch(`parser:${prefix}-3`, context).canonicalQuery, `parser:${prefix}-3`);
+    assert.equal(compileSearch(`-${prefix}-3`, context)([`UNIFIED.${stable}`]), false);
+    assert.equal(compileSearch(`${prefix}-3`, context)([`${prefix}-3`]), false);
+    assert.equal(searchContext({...tab, columns: [{...tab.columns[0], case_id: `${prefix}-9`}]}).aliases.size, 0);
+  }
+});
+
 test('Boolean laws hold across family/case combinations and negation', () => {
   for (const family of ['beam','glm47','qwen3']) for (const column of ['TC Truncation','Guided Decoding','Other']) {
     const a = search('beam', [column], [family]), b = search('TC', [column], [family]);
@@ -106,5 +139,33 @@ test('Boolean laws hold across family/case combinations and negation', () => {
     assert.equal(search('beam TC', [column], [family]), a && b);
     assert.equal(search('-(beam OR TC)', [column], [family]), !a && !b);
     assert.equal(search('beam OR (beam TC)', [column], [family]), a);
+  }
+});
+
+test('canonical case namespaces retain exact matching independently of parser family names', () => {
+  for (const prefix of ['muse', 'gemma', 'glm5', 'dsml', 'v1_split']) {
+    const context = searchContext({columns: [{compact_prefix: prefix, display_number: 3,
+      case_id: `UNIFIED.${prefix}-guided_literal`, sub: 'guided_literal'}], rows: []}, ['beam']);
+    const canonical = compileSearch(`${prefix}-3`, context).canonicalQuery;
+    const match = compileSearch(canonical, context);
+    assert.equal(match([`UNIFIED.${prefix}-guided_literal`]), true);
+    assert.equal(match([`UNIFIED.${prefix}-guided_literal_extra`]), false);
+  }
+});
+
+test('numbered case references take precedence over implicit parser-name matching', () => {
+  const context = searchContext({columns: [{compact_prefix: 'gemma', display_number: 4,
+    case_id: 'UNIFIED.gemma-guided_response_extra_body_opener', sub: 'guided_response_extra_body_opener'}], rows: []}, ['gemma4']);
+  for (const query of ['gemma-4', 'col:gemma-4', 'UNIFIED.gemma-4', '"gemma-4"']) {
+    const match = compileSearch(query, context);
+    assert.equal(match(['UNIFIED.gemma-guided_response_extra_body_opener'], ['beam']), true, query);
+    assert.equal(match(['other_case'], ['gemma4']), false, query);
+    assert.match(match.canonicalQuery, /gemma-guided_response_extra_body_opener/);
+  }
+  for (const scope of ['parser', 'model']) {
+    const match = compileSearch(`${scope}:gemma-4`, context);
+    assert.equal(match(['other_case'], ['gemma4']), true);
+    assert.equal(match(['UNIFIED.gemma-guided_response_extra_body_opener'], ['beam']), false);
+    assert.equal(match.canonicalQuery, `${scope}:gemma-4`);
   }
 });
