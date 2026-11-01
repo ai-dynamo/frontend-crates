@@ -1,0 +1,75 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.4
+    source_sha256: 338d826f501fc1fdae865bc0c7fe29dc76c815b75b29334cc9f03a5fa3d4b747
+    adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+    job_sha256: 012080df0fcc6f1c477066fbed35c2ca98c8657956788e41c64c406911c03f56
+    git_commit: ca17bb58efd655d289fda1043ec91b4eb63407d8
+document:
+  mode: unified
+changes:
+  interrupted_reasoning_then_response:
+    case_key: interrupted_reasoning_then_response
+    stimulus:
+      semantic_sha256: 15a4e262035ce31e1d851e1cae1b8d8c846659a8751512ec3c36e4e936f8954e
+      inline:
+        input: <|start|>assistant to=self<|message|>let me think<|start|>assistant to=user<|message|>The answer is 42.<|eom|>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools: []
+        chunks:
+        - delta_text: <|start|>
+        - delta_text: assistant to=self
+        - delta_text: <|message|>
+        - delta_text: let me think
+        - delta_text: <|start|>
+        - delta_text: assistant to=user
+        - delta_text: <|message|>
+        - delta_text: The answer is 42.
+        - delta_text: <|eom|>
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: let me think
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+        - expected: []
+metadata_changes:
+  interrupted_reasoning_then_response:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+    dynamo_v2_capture_provenance:
+      implementation: dynamo_v2
+      version: 0.9.4
+      git_commit: ca17bb58efd655d289fda1043ec91b4eb63407d8
+      source_sha256: 338d826f501fc1fdae865bc0c7fe29dc76c815b75b29334cc9f03a5fa3d4b747
+      adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+      job_sha256: 012080df0fcc6f1c477066fbed35c2ca98c8657956788e41c64c406911c03f56
+      crate_checksum: null
+      reasoning_version: 10.2.4
+      results_sha256: f211d75ef64f35f38d7a3d2033c6facc923f48f51cf91db9b168af0f6dfea1d2
+      cargo_lock_sha256: 47bb5ec2466bdc24cf2ac9360b9115b60a370b14f5b73311ecfd13005288abaf
+document_overrides: {}

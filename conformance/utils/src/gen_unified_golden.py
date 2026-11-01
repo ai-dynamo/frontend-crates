@@ -50,6 +50,7 @@ from impls import VLLM_UNIFIED_PIPELINES
 from schema_cases import native_call_wire
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 from unified_taxonomy import V1_SPLIT_SCENARIOS
+from unified_tools import unified_tools
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -2473,6 +2474,46 @@ EDGE.append((
 ))
 
 
+HARMONY_CONSISTENT_MARKER_CASES = ("reason_markup_in_arg", "reason_markup_in_arg_with_text")
+for _parent in HARMONY_CONSISTENT_MARKER_CASES:
+    _events = [{"kind": "tool_call", "name": "log", "arguments": {
+        "note": HARMONY_EDGE_GOLDEN_VALUES[_parent].replace(">secret<", ">reconsider<"),
+    }}]
+    if _parent.endswith("_with_text"):
+        _events = [{"kind": "text", "text": "Logging now: "}, *_events,
+                   {"kind": "text", "text": " done."}]
+    EDGE.append((
+        _parent + "_consistent",
+        "Native reasoning markers inside a tool argument remain literal data. Reuse the shared reconsider prose while preserving the original Harmony markers and surrounding narration.",
+        [], _events,
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"gpt_oss": (
+            HARMONY_EDGE_INPUTS[_parent].replace(">secret<", ">reconsider<"),
+            D("UNSUPPORTED", "No peer capture recorded for this request."), M,
+        )}),
+        [],
+    ))
+
+_response_segments = next(case[3] for case in CLEAN if case[0] == "reason_then_content")
+
+EDGE.append((
+    "interrupted_reasoning_then_response",
+    "An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and following visible answer with the existing native response-header cases.",
+    {"beam": ["I1", "I3"], "gpt_oss": ["I1", "I3"],
+     "kimi_k3": ["P2"], "muse_glimmer": ["I1", "I3"]},
+    golden_of(_response_segments),
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({family: (
+        r_reason(family, _response_segments[0][1]).removesuffix(control_tokens(family)[1])
+        + r_text(family, _response_segments[1][1]),
+        D("UNSUPPORTED", "No peer capture recorded for this request."), M,
+    ) for family in ("beam", "gpt_oss", "kimi_k3", "muse_glimmer")}),
+    {"beam": [], "gpt_oss": [], "kimi_k3": unified_tools(), "muse_glimmer": []},
+))
+
+
 EDGE += [
     ("guided_json_native_markup_only",
      "Guided decoding receives one complete native tool call instead of bare JSON. The whole turn is control markup, so it emits no events. Every stream split must match the whole-input result; consuming the invoke header before its terminator leaks the parameter body as user-visible text (`I6`).",
@@ -3995,9 +4036,9 @@ EDGE.append(_structured_response_case())
 
 
 _GPT_OSS_REVIEW_CASES = (
-    ("gpt_oss_tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
-     '<|start|>assistant<|channel|>commentary to=functions.lookup <|constrain|>json<|message|> \n\t{"q":"x"}<|call|>',
-     [{"kind":"tool_call", "name":"lookup", "arguments":{"q":"x"}}]),
+    ("tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
+     '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{"city":"Paris"}<|call|>',
+     [{"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
     ("gpt_oss_constrained_final_header", "Harmony final header has a content type and no recipient. The JSON body stays visible response content; it is not a routed tool message.",
      '<|start|>assistant<|channel|>final <|constrain|>json<|message|>{"a":1}<|return|>',
      [{"kind":"text", "text":'{"a":1}'}]),
@@ -4023,7 +4064,6 @@ def _dsml_json_tool(family, name, body):
 
 
 def _native_review_variants(scenario):
-    arguments = {"q": "x"}
     if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
         variants = {}
         for family in TEMPLATE_FAMILIES:
@@ -4084,15 +4124,16 @@ def _native_review_variants(scenario):
         golden = [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}]
         return {family: (r_reason(family, "checking").removesuffix(control_tokens(family)[1])
                          + r_text(family, "done"), golden, M) for family in ("beam", "muse_glimmer")}
-    if scenario == "gpt_oss_tool_body_whitespace":
-        golden = [{"kind": "tool_call", "name": "lookup", "arguments": arguments}]
+    if scenario == "tool_body_whitespace":
+        arguments = {"city": "Paris"}
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}]
         return {
             "kimi_k2": (
-                r_tool_arguments("kimi_k2", "lookup", arguments, 0).replace(
+                r_tool_arguments("kimi_k2", "get_weather", arguments, 0).replace(
                     "<|tool_call_argument_begin|>", "<|tool_call_argument_begin|> \n\t", 1
                 ), golden, M,
             ),
-            "kimi_k3": (k3_raw_tool("lookup", ' \n\t{"q":"x"}'), golden, M),
+            "kimi_k3": (k3_raw_tool("get_weather", ' \n\t{"city":"Paris"}'), golden, M),
         }
     if scenario == "gpt_oss_quoted_truncated_tool_then_final":
         golden = [{"kind": "text", "text": "Answer"}]
@@ -4130,8 +4171,9 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
     _inputs = OnlyFamilies({"gpt_oss": (_input, D("UNSUPPORTED", VLLM_UNCAPTURABLE["gpt_oss"]), M)})
     _inputs.update({family: (native_input, D("UNSUPPORTED", "No peer capture recorded."), dynamo, golden)
                     for family, (native_input, golden, dynamo) in _variants.items()})
-    _tools = {"gpt_oss": [], **{family: [{"name": "lookup", "parameters": {
-        "type": "object", "properties": {"q": {"type": "string"}},
+    _tool_name, _parameter = (("get_weather", "city") if _name == "tool_body_whitespace" else ("lookup", "q"))
+    _tools = {"gpt_oss": [], **{family: [{"name": _tool_name, "parameters": {
+        "type": "object", "properties": {_parameter: {"type": "string"}},
     }}] for family in _variants}}
     EDGE.append((
         _name, _description, ["I3", "I5", "I7"], _golden,
@@ -4394,6 +4436,8 @@ def _build_cases(fam):
     _preserve_historical_requests(cases, fam)
     if fam == "gpt_oss":
         _preserve_gpt_oss_historical_oracle(cases)
+        for parent in HARMONY_CONSISTENT_MARKER_CASES:
+            cases.pop(f"UNIFIED.{parent}.{fam}")
     return _apply_unified_numeric_goldens(cases, fam)
 
 
@@ -4419,7 +4463,7 @@ def _preserve_historical_requests(cases, family):
             continue
         case = cases_by_scenario.get(scenario)
         if case is None:
-            if old_case.get("lifecycle") != "active":
+            if old_case.get("lifecycle") != "active" or scenario in RETIRED_SCENARIOS:
                 continue
             raise KeyError(f"historical {family} case disappeared: {scenario}")
         # Validation callers mutate returned cases; isolate the cached canonical record.
@@ -4583,7 +4627,7 @@ def _build_edge_cases(fam, specs):
             )
         case = {
             "description": desc,
-            "policy": policy,
+            "policy": _entry(policy, fam),
             "input": inp,
             "golden": g,
             "expect": {"vllm": _vllm_entry_for_init(vllm, fam, init), "dynamo": dynamo},
@@ -4650,6 +4694,8 @@ def _template_scenario_families(scenario):
             families.intersection_update(GUIDED_FAMILIES)
         if not isinstance(per_fam, OnlyFamilies) or per_fam.inherit_grammar:
             families.update(f for f in FAMILIES if _MANIFEST[f].get("grammar") in families)
+        if name in HARMONY_CONSISTENT_MARKER_CASES:
+            families.discard("gpt_oss")
         return frozenset(families)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
