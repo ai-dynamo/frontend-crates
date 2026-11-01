@@ -17,6 +17,7 @@ use std::io::{BufRead, BufWriter, Write};
 use std::panic::catch_unwind;
 
 use anyhow::{Context, Result, anyhow, ensure};
+use dynamo_parsers_v2::unified::MessagePhase;
 use dynamo_parsers_v2::{
     Tool, UnifiedEvent, UnifiedParserInit, UnifiedParserOutput, UnifiedParserStartingState,
     assemble_with_tool_indices, builtin_unified_families, canonical_unified_family,
@@ -80,6 +81,11 @@ struct Job {
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 enum Event {
+    /// Opens a visible message addressed to `phase` (Muse, GPT-OSS, Beam).
+    MessageStart {
+        phase: MessagePhase,
+    },
+    MessageEnd,
     Reasoning {
         text: String,
     },
@@ -175,6 +181,8 @@ fn parse(job: &Job) -> Result<Parsed<'_>> {
     let events = assemble_with_tool_indices(&output.events)
         .into_iter()
         .map(|(index, event)| match event {
+            UnifiedEvent::MessageStart { phase } => Ok(Event::MessageStart { phase }),
+            UnifiedEvent::MessageEnd => Ok(Event::MessageEnd),
             UnifiedEvent::Reasoning { text } => Ok(Event::Reasoning { text }),
             UnifiedEvent::Text { text } => Ok(Event::Text { text }),
             UnifiedEvent::ToolCall { name, .. } => {
