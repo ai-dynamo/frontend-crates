@@ -380,6 +380,7 @@ pub enum ChatCompletionRequestToolMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::CustomContentPart))]
     Custom(CustomModalityPart),
 }
 
@@ -931,6 +932,7 @@ pub enum ChatCompletionRequestUserMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::CustomContentPart))]
     Custom(CustomModalityPart),
     #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestMessageContentPartAudio))]
     InputAudio(ChatCompletionRequestMessageContentPartAudio),
