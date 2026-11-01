@@ -10,3 +10,5 @@
 
 - Contributors edit parsers and independently authored inputs/GOLDEN, recapture affected latest Dynamo v2 snapshots, run tests, and inspect the report. CI replays current native Dynamo v2 cases: GOLDEN differences warn; differences from recorded latest YAML fail. Capture changes use normal PR review. Preserve historical evidence and request/provenance bindings; historical and peer captures are not replayed against current parser code.
 - Back-capture is useful but optional; no need to back-capture every historical version. Follow the [historical back-capture policy](conformance/README.md#historical-back-captures) and state which versions were actually run.
+
+- For a new family, compare equivalent existing report columns and make a best effort to reuse their incidental function names, parameter names/values, prose, output style, and formatting. Preserve native grammar, argument types, marker literals, malformed-input recovery, request modes, and intentional whitespace and chunk-boundary probes; keep correct GOLDEN when a parser disagrees.
