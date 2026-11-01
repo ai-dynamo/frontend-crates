@@ -185,10 +185,10 @@ fields map under `multi_modal_data[kind]`; it does not select `fields[kind]`.
 Unknown top-level modality tags remain rejected; use the explicit custom envelope.
 
 Adding enum variants still breaks exhaustive Rust matches. This branch prepares
-protocols **9.0.0**, renderer **9.0.0**, and parsers **11.0.0**; the latter two
+protocols **10.0.0**, renderer **10.0.0**, and parsers **11.0.0**; the latter two
 expose protocol types and require coordinated publication. These remain major
 bumps relative to current upstream releases. Tokenizers stays at upstream
-**3.1.2**. These versions are not release qualification or publication.
+**4.1.1**. These versions are not release qualification or publication.
 
 When rendering chat templates, Custom parts retain their content-array positions
 as `{"type":"custom","kind":"chemistry"}` with `fields` omitted. The consumer's
@@ -197,3 +197,8 @@ marker in text. The renderer preserves Custom arrays even for templates with
 string and array branches, and removes payload fields from typed template inputs.
 HTTP parsing still requires `fields`; the payload-free view is internal template
 input, not an alternate HTTP content schema.
+
+With `protocol-schema`, user and tool Custom variants use a schema-only
+`CustomContentPart` containing `type`, `kind`, and `fields`. This keeps the enum's
+discriminator valid under the closed schema; runtime parsing still uses
+`CustomModalityPart`.
