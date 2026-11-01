@@ -501,6 +501,46 @@ def test_token_id_fields_are_validated(
 
 
 @pytest.mark.parametrize(
+    "prompt", [[1], {"token_ids": "1"}], ids=["not-an-object", "not-token-ids"]
+)
+def test_prompt_token_ids_are_validated(prompt: Any) -> None:
+    generation = {"output_token_ids": [1], "finish_reason": "stop"}
+    obj = {"schema": SCHEMA, "id": "c", "request": {"messages": []}}
+    with pytest.raises(TraceError):
+        parse_case({**obj, "generation": generation, "prompt": prompt})
+
+
+def prompt_ids(bundle: Bundle, request: dict[str, Any]) -> list[int]:
+    prompt = bundle.render_request(request, True)
+    return list(bundle.tokenizer.encode(prompt, add_special_tokens=False))
+
+
+def test_a_recorded_prompt_the_template_reproduces_is_judged(bundle: Bundle) -> None:
+    obj = trace(bundle, "Hi.", enable_thinking=False)
+    obj["prompt"] = {"token_ids": prompt_ids(bundle, obj["request"])}
+    job = prepared(bundle, parse_case(obj))
+    assert job.job["starting_state"] == "none"
+    assert judge(job, bundle, answer(text("Hi.")))["verdict"] == "pass"
+
+
+def test_a_prompt_rendered_without_a_server_default_is_skipped(bundle: Bundle) -> None:
+    # The server applied enable_thinking=False itself, so the request lacks it.
+    # Rendered from the request alone, the prompt would leave <think> unclosed.
+    obj = trace(bundle, "Hi.", enable_thinking=False)
+    served = prompt_ids(bundle, obj["request"])
+    del obj["request"]["chat_template_kwargs"]
+    rendered = prompt_ids(bundle, obj["request"])
+    obj["prompt"] = {"token_ids": served}
+    result = prepare(parse_case(obj), bundle, "qwen3")
+    assert result == {
+        "id": obj["id"],
+        "verdict": "skip:prompt-mismatch",
+        "detail": f"token {len(rendered)} of {len(served)}: "
+        "recorded '</think>', rendered ''",
+    }
+
+
+@pytest.mark.parametrize(
     ("family", "kwargs", "disabled"),
     [
         ("deepseek_v4", {}, False),

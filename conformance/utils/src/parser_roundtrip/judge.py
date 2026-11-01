@@ -20,7 +20,7 @@ from .bundle import Bundle, template_kwargs
 from .driver import PARSER_COMMAND, run_parser
 from .folds import PROBE_CONTENT, fold, shape_for
 from .message import assistant_turn, message_from_events, representable
-from .prompt import generation_prompt
+from .prompt import PromptMismatch, generation_prompt
 from .serving import (
     FAMILY_ALIASES,
     function_tools,
@@ -59,6 +59,10 @@ def prepare(case: Case, bundle: Bundle, family: str) -> Prepared | dict[str, Any
         return skip(case, reason)
     try:
         prompt = generation_prompt(bundle, case)
+    except PromptMismatch as exc:
+        # Judged against this prompt, the parser would face a situation the model
+        # was never in.
+        return skip(case, "prompt-mismatch", str(exc))
     except Exception as exc:  # the reference template cannot render the request
         return skip(case, "template-error", type(exc).__name__)
     output = case.output_token_ids

@@ -3,7 +3,9 @@
 
 """The `dynamo-replay-trace/v1` subset the round trip reads: one JSONL line per
 case with `schema`, `id`, `request`, `generation.output_token_ids` (including
-the stop token) and `generation.finish_reason`."""
+the stop token) and `generation.finish_reason`, plus the engine's
+`prompt.token_ids` when recorded. Other fields are ignored. README.md in this
+directory documents each field."""
 
 from __future__ import annotations
 
@@ -29,6 +31,8 @@ class Case:
     finish_reason: str
     # Declared terminal suffix; empty means it is inferred.
     terminal_token_ids: list[int]
+    # The prompt the engine tokenized; None when the trace did not record it.
+    prompt_token_ids: list[int] | None = None
 
     def terminal(self, eos_token_ids: Collection[int]) -> list[int]:
         """The declared terminal suffix, else the last ID when it is an EOS ID
@@ -70,7 +74,13 @@ def parse_case(obj: Any) -> Case:
     terminal = [] if terminal is None else token_ids(terminal, "terminal_token_ids")
     if terminal and output[-len(terminal) :] != terminal:
         raise TraceError("terminal_token_ids are not the output suffix")
-    return Case(identifier, request, output, finish, terminal)
+    prompt = obj.get("prompt")
+    if prompt is not None and not isinstance(prompt, dict):
+        raise TraceError("prompt must be an object")
+    prompt_ids = (prompt or {}).get("token_ids")
+    if prompt_ids is not None:
+        token_ids(prompt_ids, "prompt.token_ids")
+    return Case(identifier, request, output, finish, terminal, prompt_ids)
 
 
 def load(path: Path) -> list[Case]:
