@@ -528,24 +528,24 @@ The check is the count: if a review round produced N defects the corpus missed a
 
 **A duplicate is worse than a gap.** Before adding, normalize `(input, init, golden)` across the corpus and drop any crossing that already exists. A generated product once recreated three hand-authored scenarios — 9 cases across families — inflating the count while testing nothing new, and leaving two names for one behaviour to drift apart. `test_no_two_scenarios_have_identical_behaviour` now enforces this.
 
-## Shared schema conformance probes
+## Shared schema conformance probes: 7-tool-argument-interpretation
 
 Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Each authored schema probe has its own displayed column. Display numbers are ranks; historical IDs remain aliases.
 
 | Behavior section | Separate case columns |
 |---|---:|
-| Text preservation | 7 |
-| Declared types and enums | 12 |
-| Type arrays and null interpretation | 19 |
-| String constants | 40 |
-| Unions, intersections, and ambiguous values | 53 |
-| References and schema IDs | 14 |
+| `7-tool-argument-text-preservation` | 7 |
+| `7-tool-argument-declared-types` | 12 |
+| `7-tool-argument-nullability` | 19 |
+| `7-tool-argument-constants` | 40 |
+| `7-tool-argument-unions-and-intersections` | 53 |
+| `7-tool-argument-schema-references` | 14 |
 
 String constants expose Direct, Explicit string type, allOf, and Reference as separate cases with shared name prefixes. anyOf and oneOf expose each alternative type, String / Typed value choice, and Forward / Reversed branch order separately. Null and numeric variants likewise have one case per column. A case popup shows only that case across applicable families; parser failures and missing captures remain attached to their exact request.
 
 Detailed matrix labels show a small `{}` when the case has an explicit schema. Overview hides it. Hover or focus the existing label to open the popup (tap on touch devices). Its `{ } Schema` disclosure expands inline, using more width when space allows and scrolling within the available viewport height. Identical schema JSON appears once with every applicable family for that case. Shared fallback schemas do not get an indicator.
 
-Historical schema-subgroup aliases below retain their original meaning. Active IDs use the probe name directly, for example `UNIFIED.7-declared_array` and `UNIFIED.7-const_array_allof`; subgroup headings and ordering remain separate metadata.
+Historical schema-subgroup aliases below retain their original meaning. Active IDs use the behavior prefix and probe name, for example `UNIFIED.7-tool-argument-declared-types-declared_array` and `UNIFIED.7-tool-argument-constants-const_array_allof`; subgroup headings and ordering remain separate metadata.
 
 - **`UNIFIED.7-17.*`** Declared JSON argument types.
 - **`UNIFIED.7-18.*`** String constants retain their literal spelling.

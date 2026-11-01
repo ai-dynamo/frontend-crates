@@ -14,6 +14,7 @@ import pytest
 import yaml
 import viewer_catalog
 import unified_history
+from gen_unified_golden import r_reason
 
 import unified_archives
 import migrate_capture_sources
@@ -242,7 +243,7 @@ def test_materialized_unavailable_reimport_does_not_add_view_metadata(tmp_path):
 
 def _change(text: str = "hello") -> dict:
     return {
-        "case_key": "UNIFIED.1-1",
+        "case_key": "UNIFIED.3-1",
         "stimulus": {"ref": "current"},
         "observation": {
             "value": {
@@ -267,7 +268,7 @@ def _write_family(root: Path) -> None:
                         "scenario": "text_only",
                         "description": "plain text",
                         "policy": [],
-                        "display_id": "UNIFIED.1-1",
+                        "display_id": "UNIFIED.3-1",
                         "historical_ids": [],
                         "request": _request(),
                         "golden": {"assembled": [{"kind": "text", "text": "hello"}]},
@@ -385,6 +386,7 @@ def test_current_materialization_excludes_v1_only_cases_only_for_v2(tmp_path, im
     authored = root / "families/gemma4/inputs_and_golden.yaml"
     document = unified_history.load_yaml(authored)
     document["cases"]["text_only"]["scenario"] = "v1_split_parallel_tool_calls"
+    document["cases"]["text_only"]["display_id"] = "UNIFIED.v1_split-parallel_tool_calls"
     authored.write_text(unified_history.dump_yaml(document))
     capture = _write_capture(root, "0.26.0", {"text_only": _change()}, implementation=implementation)
     original = capture.read_bytes()
@@ -518,7 +520,7 @@ def test_first_capture_for_existing_family_is_published_and_idempotent(tmp_path)
     path.write_text(unified_history.dump_yaml({
         "family": "gemma4", "mode": "unified",
         "captured_with": {"dynamo_v2": "0.7.27"},
-        "cases": {"UNIFIED.1-1": {"assembled": [{"kind": "text", "text": "hello"}]}},
+        "cases": {"UNIFIED.3-1": {"assembled": [{"kind": "text", "text": "hello"}]}},
     }))
     changed = unified_history.update_from_loose(root, loose)
     capture_path = root / "families/gemma4/dynamo_v2-0.7.27.yaml"
@@ -584,13 +586,13 @@ def test_first_capture_creates_a_new_implementation_history(tmp_path):
     _write_family(root)
     _write_capture(root, "0.5.14", {"text_only": _change()}, implementation="sglang_python")
     loose = tmp_path / "loose"
-    path = loose / "dynamo_v2-0.26.0/gemma4/UNIFIED.1-1.yaml"
+    path = loose / "dynamo_v2-0.26.0/gemma4/UNIFIED.3-1.yaml"
     path.parent.mkdir(parents=True)
     events = [{"kind": "text", "text": "hello"}]
     path.write_text(unified_history.dump_yaml({
         "family": "gemma4", "mode": "unified",
         "captured_with": {"dynamo_v2": "0.26.0"},
-        "cases": {"UNIFIED.1-1": {
+        "cases": {"UNIFIED.3-1": {
             "capture_input": _request(), "assembled": events,
             "chunks": [{"expected": events}],
         }},
@@ -617,11 +619,11 @@ def test_correcting_older_placeholder_preserves_later_observation(tmp_path, late
     history = unified_history.load_store(store).histories[("gemma4", "vllm_python")]
     later = history.resolve("vllm_python-0.26.0")
     loose = tmp_path / "loose"
-    path = loose / "vllm_python-0.25.1/gemma4/UNIFIED.1-1.yaml"
+    path = loose / "vllm_python-0.25.1/gemma4/UNIFIED.3-1.yaml"
     path.parent.mkdir(parents=True)
     path.write_text(unified_history.dump_yaml({
         "family": "gemma4", "mode": "unified", "captured_with": {"vllm_python": "0.25.1"},
-        "cases": {"UNIFIED.1-1": {
+        "cases": {"UNIFIED.3-1": {
             "capture_input": _request(), "assembled": [{"kind": "text", "text": "new capture"}],
             "chunks": [{"expected": [{"kind": "text", "text": "new capture"}]}],
         }},
@@ -690,16 +692,16 @@ def test_input_only_materialization_preserves_default_input_and_golden_bytes(tmp
 def _add_backfill_case(root: Path) -> None:
     path = root / "families/gemma4/inputs_and_golden.yaml"
     document = unified_history.load_yaml(path)
-    request = _request("new")
+    request = _request(r_reason("gemma4", "new"))
     document["cases"]["new_case"] = {
         "lifecycle": "active",
-        "scenario": "new_case",
+        "scenario": "reason_only",
         "description": "new case",
         "policy": [],
-        "display_id": "UNIFIED.1-2",
+        "display_id": "UNIFIED.10-reason_only",
         "historical_ids": [],
         "request": request,
-        "golden": {"assembled": [{"kind": "text", "text": "new"}]},
+        "golden": {"assembled": [{"kind": "reasoning", "text": "new"}]},
     }
     path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
 
@@ -707,12 +709,12 @@ def _add_backfill_case(root: Path) -> None:
 def _add_loose_backfill_record(
     loose: Path, version: str, output: str, *, implementation: str = "dynamo_v2"
 ) -> None:
-    request = _request("new")
+    request = _request(r_reason("gemma4", "new"))
     event = {"kind": "text", "text": output}
-    path = loose / f"{implementation}-{version}/gemma4/UNIFIED.1-2.yaml"
-    document = unified_history.load_yaml(path.parent / "UNIFIED.1-1.yaml")
+    path = loose / f"{implementation}-{version}/gemma4/UNIFIED.10-reason_only.yaml"
+    document = unified_history.load_yaml(path.parent / "UNIFIED.3-1.yaml")
     document["cases"] = {
-        "UNIFIED.1-2": {
+        "UNIFIED.10-reason_only": {
             "capture_input": unified_history.capture_stimulus.capture_input(request),
             "assembled": [event],
             "chunks": [{"expected": [event]}],
@@ -749,7 +751,7 @@ def test_legacy_checkpoint_appends_bound_case_with_matching_source_origin(tmp_pa
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
     _add_loose_backfill_record(loose, "0.5.0", "captured")
-    path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-2.yaml"
+    path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.10-reason_only.yaml"
     document = unified_history.load_yaml(path)
     document["capture_provenance"] = {
         "kind": "unpublished",
@@ -783,7 +785,7 @@ def test_source_capture_origin_is_pinned_for_an_inherited_unchanged_observation(
     loose = tmp_path / "loose" / "dynamo_v2-0.5.1" / "gemma4"
     loose.mkdir(parents=True)
     document = unified_history.load_yaml(
-        before / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+        before / "dynamo_v2-0.5.0/gemma4/UNIFIED.3-1.yaml"
     )
     document["captured_with"] = {"dynamo_v2": "0.5.1"}
     document["capture_provenance"] = {
@@ -794,7 +796,7 @@ def test_source_capture_origin_is_pinned_for_an_inherited_unchanged_observation(
         "git_commit": "b" * 40,
         "label": "0.5.1+source." + "a" * 64,
     }
-    (loose / "UNIFIED.1-1.yaml").write_text(
+    (loose / "UNIFIED.3-1.yaml").write_text(
         unified_history.dump_yaml(document), encoding="utf-8"
     )
 
@@ -816,7 +818,7 @@ def test_sparse_historical_insertion_keeps_unchanged_sibling_inherited(tmp_path,
     root = tmp_path / "store"
     _write_family(root)
     _add_backfill_case(root)
-    sibling = {**_change("new"), "case_key": "UNIFIED.1-2"}
+    sibling = {**_change("new"), "case_key": "UNIFIED.10-reason_only"}
     _write_capture(root, "0.5.0", {"text_only": _change(), "new_case": sibling})
     _write_capture(root, "0.5.2", {"new_case": {"absent": True}} if later_absent else {})
     history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
@@ -827,13 +829,13 @@ def test_sparse_historical_insertion_keeps_unchanged_sibling_inherited(tmp_path,
     loose = tmp_path / "loose"
     middle = loose / "dynamo_v2-0.5.1/gemma4"
     middle.mkdir(parents=True)
-    document = unified_history.load_yaml(source / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml")
+    document = unified_history.load_yaml(source / "dynamo_v2-0.5.0/gemma4/UNIFIED.3-1.yaml")
     document["captured_with"] = {"dynamo_v2": "0.5.1"}
-    document["cases"]["UNIFIED.1-1"]["assembled"] = [{"kind": "text", "text": "middle"}]
-    document["cases"]["UNIFIED.1-1"]["chunks"] = [
+    document["cases"]["UNIFIED.3-1"]["assembled"] = [{"kind": "text", "text": "middle"}]
+    document["cases"]["UNIFIED.3-1"]["chunks"] = [
         {"expected": [{"kind": "text", "text": "middle"}]}
     ]
-    (middle / "UNIFIED.1-1.yaml").write_text(unified_history.dump_yaml(document))
+    (middle / "UNIFIED.3-1.yaml").write_text(unified_history.dump_yaml(document))
 
     unified_history.update_store_from_loose(root, loose, complete_snapshot=False)
 
@@ -857,13 +859,13 @@ def test_history_partial_new_peer_capture_inherits_omitted_rows(tmp_path):
     new_capture.mkdir(parents=True)
     for path in prior_capture.glob("*.yaml"):
         (new_capture / path.name).write_bytes(path.read_bytes())
-    (new_capture / "UNIFIED.1-2.yaml").unlink()
-    path = new_capture / "UNIFIED.1-1.yaml"
+    (new_capture / "UNIFIED.10-reason_only.yaml").unlink()
+    path = new_capture / "UNIFIED.3-1.yaml"
     document = unified_history.load_yaml(path)
-    document["cases"]["UNIFIED.1-1"]["assembled"] = [
+    document["cases"]["UNIFIED.3-1"]["assembled"] = [
         {"kind": "text", "text": "updated"}
     ]
-    document["cases"]["UNIFIED.1-1"]["chunks"] = [
+    document["cases"]["UNIFIED.3-1"]["chunks"] = [
         {"expected": [{"kind": "text", "text": "updated"}]}
     ]
     path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
@@ -887,7 +889,7 @@ def test_history_rejects_excluded_capture_with_unrecorded_case(tmp_path):
     unified_history.materialize_store(root, loose)
     omitted = loose / "dynamo_v2-0.5.1/gemma4"
     omitted.mkdir(parents=True)
-    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.3-1.yaml"
     (omitted / prior.name).write_bytes(prior.read_bytes())
     _add_loose_backfill_record(loose, "0.5.1", "captured")
 
@@ -906,7 +908,7 @@ def test_history_excludes_sparse_capture_against_latest_prior_checkpoint(tmp_pat
     unified_history.materialize_store(root, loose)
     omitted = loose / "dynamo_v2-0.5.1/gemma4"
     omitted.mkdir(parents=True)
-    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.3-1.yaml"
     (omitted / prior.name).write_bytes(prior.read_bytes())
 
     unified_history.update_store_from_loose(
@@ -928,12 +930,12 @@ def test_history_excluded_capture_keeps_yaml_result_for_known_case(tmp_path):
     _write_capture(root, "0.5.0", {"text_only": _change()}, implementation="vllm_python")
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
-    path = loose / "vllm_python-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    path = loose / "vllm_python-0.5.0/gemma4/UNIFIED.3-1.yaml"
     document = unified_history.load_yaml(path)
-    document["cases"]["UNIFIED.1-1"]["assembled"] = [
+    document["cases"]["UNIFIED.3-1"]["assembled"] = [
         {"kind": "text", "text": "new local output"}
     ]
-    document["cases"]["UNIFIED.1-1"]["chunks"] = [
+    document["cases"]["UNIFIED.3-1"]["chunks"] = [
         {"expected": [{"kind": "text", "text": "new local output"}]}
     ]
     path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
@@ -955,9 +957,9 @@ def test_history_excluded_capture_does_not_parse_capture_stimulus(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
-    path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.3-1.yaml"
     document = unified_history.load_yaml(path)
-    document["cases"]["UNIFIED.1-1"]["capture_stimulus"] = {"invalid": {}}
+    document["cases"]["UNIFIED.3-1"]["capture_stimulus"] = {"invalid": {}}
     path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
 
     unified_history.update_store_from_loose(
@@ -979,11 +981,11 @@ def test_history_imports_explicit_partial_capture_stimulus(tmp_path):
     unified_history.materialize_store(root, loose)
     new_capture = loose / "dynamo_v2-0.5.1/gemma4"
     new_capture.mkdir(parents=True)
-    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    prior = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.3-1.yaml"
     path = new_capture / prior.name
     path.write_bytes(prior.read_bytes())
     document = unified_history.load_yaml(path)
-    record = document["cases"]["UNIFIED.1-1"]
+    record = document["cases"]["UNIFIED.3-1"]
     record["capture_input"] = {"input": "older request"}
     record["capture_stimulus"] = {"partial": {"input": "older request"}}
     path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
@@ -1003,7 +1005,7 @@ def test_history_complete_peer_snapshot_rejects_omitted_recorded_active_rows(tmp
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
     _add_loose_backfill_record(loose, "0.5.0", "captured", implementation="vllm_python")
-    (loose / "vllm_python-0.5.0/gemma4/UNIFIED.1-1.yaml").unlink()
+    (loose / "vllm_python-0.5.0/gemma4/UNIFIED.3-1.yaml").unlink()
 
     with pytest.raises(ValueError, match="missing previously recorded active cases: gemma4/text_only"):
         unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
@@ -1133,13 +1135,13 @@ def test_snapshot_migration_preserves_observation_member_after_provenance_overri
 
 def test_history_partial_case_key_change_inherits_the_observation(tmp_path):
     root = _store(tmp_path)
-    _write_capture(root, "0.5.2", {"text_only": {"case_key": "UNIFIED.1-2"}})
+    _write_capture(root, "0.5.2", {"text_only": {"case_key": "UNIFIED.10-reason_only"}})
 
     resolved = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve(
         "dynamo_v2-0.5.2"
     )["text_only"]
 
-    assert resolved["case_key"] == "UNIFIED.1-2"
+    assert resolved["case_key"] == "UNIFIED.10-reason_only"
     assert resolved["observation"] == _change()["observation"]
     assert resolved["document"]["inherited_from"] == "0.5.0"
 
@@ -1147,12 +1149,12 @@ def test_history_partial_case_key_change_inherits_the_observation(tmp_path):
 def test_history_delta_omits_an_unchanged_observation():
     before = _change()
     after = _change()
-    after["case_key"] = "UNIFIED.1-2"
+    after["case_key"] = "UNIFIED.10-reason_only"
     after["stimulus"]["semantic_sha256"] = "a" * 64
 
     assert unified_history._capture_changes(
         {"text_only": before}, {"text_only": after}
-    ) == {"text_only": {"case_key": "UNIFIED.1-2", "stimulus": after["stimulus"]}}
+    ) == {"text_only": {"case_key": "UNIFIED.10-reason_only", "stimulus": after["stimulus"]}}
 
 
 def test_history_preserves_version_specific_unregistered_peer_detail():
@@ -1191,9 +1193,9 @@ def test_history_reingestion_rejects_changed_unavailable_evidence(tmp_path):
     _write_capture(root, "0.25.1", {"text_only": change}, implementation="vllm_rust")
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
-    path = loose / "vllm_rust-0.25.1/gemma4/UNIFIED.1-1.yaml"
+    path = loose / "vllm_rust-0.25.1/gemma4/UNIFIED.3-1.yaml"
     document = unified_history.load_yaml(path)
-    record = document["cases"]["UNIFIED.1-1"]
+    record = document["cases"]["UNIFIED.3-1"]
     record["unavailable"] = "different explanation"
     record["capture_observation"]["unavailable"]["detail"] = "different explanation"
     path.write_text(unified_history.dump_yaml(document))
@@ -1204,7 +1206,7 @@ def test_history_reingestion_rejects_changed_unavailable_evidence(tmp_path):
 def test_history_rejects_a_partial_first_observation(tmp_path):
     root = tmp_path
     _write_family(root)
-    _write_capture(root, "0.5.0", {"text_only": {"case_key": "UNIFIED.1-1"}})
+    _write_capture(root, "0.5.0", {"text_only": {"case_key": "UNIFIED.3-1"}})
 
     with pytest.raises(ValueError, match="first capture change must provide a complete record"):
         unified_history.load_store(root)
@@ -1330,8 +1332,8 @@ def test_history_bound_addition_preserves_later_snapshots_and_new_metadata(tmp_p
     history = unified_history.load_store(tmp_path).histories[("gemma4", "vllm_rust")]
     before = {capture_id: history.resolve(capture_id) for capture_id in history.ordered_capture_ids()}
     record = _change("new")
-    record["case_key"] = "UNIFIED.1-2"
-    record["stimulus"]["semantic_sha256"] = unified_history._request_digest(_request("new"))
+    record["case_key"] = "UNIFIED.10-reason_only"
+    record["stimulus"]["semantic_sha256"] = unified_history._request_digest(_request(r_reason("gemma4", "new")))
     record["document"] = {"mode": "unified", "captured_with": {"vllm_rust": "0.25.1"},
                           "record_metadata": {"attempt": 1}, "parser_path": "Combined"}
     assert unified_history._add_bound_legacy_cases(
@@ -1406,7 +1408,7 @@ def test_history_keeps_the_first_origin_when_an_unchanged_capture_is_rerun(tmp_p
     before = (root / "families/gemma4/dynamo_v2-0.5.3.yaml").read_bytes()
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
-    path = loose / "dynamo_v2-0.5.3/gemma4/UNIFIED.1-1.yaml"
+    path = loose / "dynamo_v2-0.5.3/gemma4/UNIFIED.3-1.yaml"
     document = unified_history.load_yaml(path)
     document["capture_origin"] = {
         "crate_version": "0.5.3",
@@ -1428,7 +1430,7 @@ def test_history_keeps_the_first_origin_when_an_unchanged_capture_is_rerun(tmp_p
     assert unified_history.update_store_from_loose(root, loose, complete_snapshot=True) == []
     assert capture_path.read_bytes() == before
 
-    document["cases"]["UNIFIED.1-1"]["assembled"] = [{"kind": "text", "text": "changed"}]
+    document["cases"]["UNIFIED.3-1"]["assembled"] = [{"kind": "text", "text": "changed"}]
     path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
     with pytest.raises(ValueError, match="capture is immutable"):
         unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
@@ -1453,17 +1455,17 @@ def test_schema_v3_backfills_an_older_capture_without_changing_later_results(tmp
     loose.mkdir(parents=True)
     source = tmp_path / "before" / "dynamo_v2-0.5.0"
     unified_history.materialize_store(root, tmp_path / "before", include_current_inputs=False)
-    document = unified_history.load_yaml(source / "gemma4/UNIFIED.1-1.yaml")
+    document = unified_history.load_yaml(source / "gemma4/UNIFIED.3-1.yaml")
     document["captured_with"] = {"dynamo_v2": "0.5.1"}
     document["capture_origin"] = {
         "crate_version": "0.5.1",
         "source_sha256": "a" * 64,
         "git_commit": "b" * 40,
     }
-    document["cases"]["UNIFIED.1-1"]["assembled"] = [
+    document["cases"]["UNIFIED.3-1"]["assembled"] = [
         {"kind": "text", "text": "middle"}
     ]
-    (loose / "UNIFIED.1-1.yaml").write_text(
+    (loose / "UNIFIED.3-1.yaml").write_text(
         unified_history.dump_yaml(document), encoding="utf-8"
     )
 
@@ -1493,17 +1495,17 @@ def test_schema_v3_new_observation_drops_inherited_capture_provenance_override(t
     loose.mkdir(parents=True)
     source = tmp_path / "before" / "dynamo_v2-0.5.0"
     unified_history.materialize_store(root, tmp_path / "before", include_current_inputs=False)
-    document = unified_history.load_yaml(source / "gemma4/UNIFIED.1-1.yaml")
+    document = unified_history.load_yaml(source / "gemma4/UNIFIED.3-1.yaml")
     document["captured_with"] = {"dynamo_v2": "0.5.1"}
     document["capture_origin"] = {
         "crate_version": "0.5.1",
         "source_sha256": "a" * 64,
         "git_commit": "b" * 40,
     }
-    document["cases"]["UNIFIED.1-1"]["assembled"] = [
+    document["cases"]["UNIFIED.3-1"]["assembled"] = [
         {"kind": "text", "text": "middle"}
     ]
-    (loose / "UNIFIED.1-1.yaml").write_text(
+    (loose / "UNIFIED.3-1.yaml").write_text(
         unified_history.dump_yaml(document), encoding="utf-8"
     )
     unified_history.update_store_from_loose(root, tmp_path / "loose", complete_snapshot=False)
@@ -1545,14 +1547,14 @@ def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path):
     loose.mkdir(parents=True)
     source = tmp_path / "before" / "dynamo_v2-0.5.0"
     unified_history.materialize_store(root, tmp_path / "before", include_current_inputs=False)
-    document = unified_history.load_yaml(source / "gemma4/UNIFIED.1-1.yaml")
+    document = unified_history.load_yaml(source / "gemma4/UNIFIED.3-1.yaml")
     document["captured_with"] = {"dynamo_v2": "0.5.3"}
     document["capture_origin"] = {
         "crate_version": "0.5.3",
         "source_sha256": "c" * 64,
         "git_commit": "d" * 40,
     }
-    (loose / "UNIFIED.1-1.yaml").write_text(
+    (loose / "UNIFIED.3-1.yaml").write_text(
         unified_history.dump_yaml(document), encoding="utf-8"
     )
 
@@ -1566,7 +1568,7 @@ def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path):
     assert history.ordered_capture_ids() == ["dynamo_v2-0.5.0", "dynamo_v2-0.5.2"]
     output = tmp_path / "after"
     unified_history.materialize_store(root, output, derived_release_versions={"dynamo_v2": "0.5.3"})
-    inherited = unified_history.load_yaml(output / "dynamo_v2-0.5.3/gemma4/UNIFIED.1-1.yaml")
+    inherited = unified_history.load_yaml(output / "dynamo_v2-0.5.3/gemma4/UNIFIED.3-1.yaml")
     assert inherited["cases"] == document["cases"]
     assert inherited["inherited_from"] == "0.5.0"
     assert inherited["captured_with"] == {"dynamo_v2": "0.5.0"}
@@ -1686,7 +1688,7 @@ def test_history_materializes_a_derived_release_view_without_a_checkpoint(tmp_pa
     )
 
     assert not (root / "families/gemma4/dynamo_v2-0.6.1.yaml").exists()
-    document = unified_history.load_yaml(loose / "dynamo_v2-0.6.1/gemma4/UNIFIED.1-1.yaml")
+    document = unified_history.load_yaml(loose / "dynamo_v2-0.6.1/gemma4/UNIFIED.3-1.yaml")
     assert document["capture_provenance"] == {"format": "unified_history"}
     assert document["captured_with"] == {"dynamo_v2": "0.5.0"}
     assert document["inherited_from"] == "0.5.0"
@@ -1718,7 +1720,7 @@ def test_extraction_tracks_crate_release_without_repackaging(tmp_path, monkeypat
     crate.write_text('[package]\nversion = "0.5.2"\n')
     extract_fixtures.main()
     original = Path(capsys.readouterr().out.strip())
-    prior = original / "unified/dynamo_v2-0.5.2/gemma4/UNIFIED.1-1.yaml"
+    prior = original / "unified/dynamo_v2-0.5.2/gemma4/UNIFIED.3-1.yaml"
     prior_bytes = prior.read_bytes()
 
     crate.write_text('[package]\nversion = "0.6.1"\n')
@@ -1726,7 +1728,7 @@ def test_extraction_tracks_crate_release_without_repackaging(tmp_path, monkeypat
     current = Path(capsys.readouterr().out.strip())
     assert current != original
     document = unified_history.load_yaml(
-        current / "unified/dynamo_v2-0.6.1/gemma4/UNIFIED.1-1.yaml"
+        current / "unified/dynamo_v2-0.6.1/gemma4/UNIFIED.3-1.yaml"
     )
     assert document["inherited_from"] == "0.5.0"
     assert prior.read_bytes() == prior_bytes
@@ -1743,8 +1745,8 @@ def test_history_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_path
     loose = tmp_path / "loose"
     family_path = root / "families/gemma4/inputs_and_golden.yaml"
     family = unified_history.load_yaml(family_path)
-    family["cases"]["text_only"]["display_id"] = "UNIFIED.1-2"
-    family["cases"]["text_only"]["historical_ids"] = ["UNIFIED.1-1"]
+    family["cases"]["text_only"]["display_id"] = "UNIFIED.3-text_only"
+    family["cases"]["text_only"]["historical_ids"] = ["UNIFIED.3-1"]
     family["cases"]["text_only"]["request"]["init"] = {
         "starting_state": "None",
         "tool_output_mode": "Native",
@@ -1782,9 +1784,9 @@ def test_history_request_rewrite_directs_contributors_to_latest_tests(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
-    input_path = loose / "inputs/gemma4/UNIFIED.1-1.yaml"
+    input_path = loose / "inputs/gemma4/UNIFIED.3-1.yaml"
     document = unified_history.load_yaml(input_path)
-    document["cases"]["UNIFIED.1-1"]["input"] = "changed request"
+    document["cases"]["UNIFIED.3-1"]["input"] = "changed request"
     input_path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
 
     with pytest.raises(ValueError, match="Run latest parser tests.*recapture the affected latest snapshot"):
@@ -1974,8 +1976,8 @@ def test_restore_historical_snapshot_preserves_later_execution_and_additions(tmp
     _add_backfill_case(tmp_path)
     history.family = unified_history.load_store(tmp_path).families["gemma4"]
     addition = _change("new")
-    addition["case_key"] = "UNIFIED.1-2"
-    addition["stimulus"]["semantic_sha256"] = unified_history._request_digest(_request("new"))
+    addition["case_key"] = "UNIFIED.10-reason_only"
+    addition["stimulus"]["semantic_sha256"] = unified_history._request_digest(history.family.cases["new_case"]["request"])
     addition["document"] = {"mode": "unified", "captured_with": {implementation: "0.25.1"}}
     execution["new_case"] = addition
     unified_history._replace_capture_snapshot(history, f"{implementation}-0.25.1", execution)

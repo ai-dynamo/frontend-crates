@@ -2,6 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 
+await test('columns cannot omit, duplicate, replace, or combine authored cases', async () => {
+  const { default: assert }=await import('node:assert/strict');
+  const { validateCaseColumns }=await import('./model.js');
+  const id='UNIFIED.1-tool_only',events=[{kind:'tool_call',name:'a',arguments:{}},{kind:'tool_call',name:'b',arguments:{}}];
+  const authored=new Map([['sample',new Map([['one',{case_id:id,request:{input:'input',init:{},finish_reason:'stop',tools:[],chunks:[]},golden:events}]])]]);
+  const tab={columns:[{sub:'one',case_id:id}],rows:[{family:'sample',cells:{one:{kind:'cell',sub:'one',family:'sample',case_id:id,status:'ok',
+    tooltip:{input:{text:'input',chunks:[]},init:{starting_state:'None',tool_output_mode:'Native',named_tool:null},finish_reason:'stop',candidates:[{key:'golden',block:{events}}]}}}}]};
+  validateCaseColumns(tab,authored);
+  for(const mutate of [
+    t=>{t.columns=[];},t=>{t.columns.push({...t.columns[0]});},
+    t=>{t.columns[0].sub='extra';},t=>{t.rows[0].cells.one.case_id='different';},
+    t=>{t.rows[0].cells.one.variants=[];},t=>{t.rows[0].cells.one.tooltip.variants=[];},
+    t=>{t.columns[0].schemas=[{cases:[]}];},t=>{t.rows[0].cells.one.tooltip.input.text='other input';},
+    t=>{t.rows[0].cells.one.tooltip.candidates[0].block.events=[];},
+    t=>{t.rows[0].cells.one.sub='other';},t=>{t.rows[0].cells.one.family='other';},
+    t=>{t.rows[0].cells.one.tooltip.candidates.push({key:'golden',block:{events:[]}});},
+    t=>{t.columns[0].schemas=[{families:['sample'],tools:[{name:'wrong',parameters:{}}]}];},
+    t=>{t.rows=[];},t=>{t.rows[0].cells.one.status='na';},
+  ]){const bad=structuredClone(tab);mutate(bad);assert.throws(()=>validateCaseColumns(bad,authored));}
+});
+
 await test('numeric contracts', async () => {
 const savedGlobals = Object.getOwnPropertyDescriptors(globalThis);
 try {

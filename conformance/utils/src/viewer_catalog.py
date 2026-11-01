@@ -428,26 +428,9 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
                 )
             },
             "owner_families": {
-                scenario: family
-                for scenario in unified_taxonomy.UNIFIED_TAX
-                if (
-                    family := next(
-                        (
-                            name
-                            for name in sorted(
-                                {
-                                    owner
-                                    for owner, _label in unified_taxonomy.FAMILY_LEGACY_CASE_LABELS
-                                },
-                                key=len,
-                                reverse=True,
-                            )
-                            if scenario.startswith(name + "_")
-                        ),
-                        None,
-                    )
-                )
-                is not None
+                scenario: next(iter(families))
+                for scenario, families in scenario_families.items()
+                if len(families) == 1
             },
         },
         "source_hashes": {

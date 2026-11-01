@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
     ("interrupted_reasoning_then_response", "10-interrupted_reasoning_then_response", "10-reason_then_content_interrupted"),
     ("tool_body_whitespace", "1-tool_body_whitespace", "1-tool_only_leading_json_body_whitespace"),
     ("gpt_oss_interrupted_reasoning_then_tool", "gpt_oss-interrupted_reasoning_then_tool", "12-tool_in_reason_interrupted_harmony_reasoning"),
-    ("gpt_oss_quoted_message_header_literal", "gpt_oss-quoted_message_header_literal", "7-arg_marker_in_string_quoted_closer_and_response_header"),
+    ("gpt_oss_quoted_message_header_literal", "gpt_oss-quoted_message_header_literal", "7-tool-argument-text-preservation-arg_marker_in_string_quoted_closer_and_response_header"),
 ])
 def test_related_case_names_preserve_previous_aliases(scenario, previous, expected):
     assert taxonomy.case_label(scenario) == expected

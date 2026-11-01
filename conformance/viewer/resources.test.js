@@ -18,9 +18,46 @@ await test('historical popup identities use current aliases', async () => {
       assert.equal(canonicalUnifiedPopupKey(JSON.stringify(normalized), aliases), JSON.stringify(normalized));
     }
   }
+  const shared = 'deepseek_v41_mixed_control_text_in_string';
+  for (const family of ['beam','deepseek_v4','gemma4','glm47','kimi_k2','kimi_k3','muse_glimmer','qwen3']) {
+    for (const old of ['7-3','7-deepseek_v41_mixed_control_text_in_string',aliases.canonical[shared]]) {
+      const key = ['cell','tab-unified','UNIFIED.'+old,family];
+      assert.equal(JSON.parse(canonicalUnifiedPopupKey(JSON.stringify(key),aliases))[2], 'UNIFIED.'+aliases.canonical[shared]);
+    }
+  }
   for (const value of ['invalid', 'null', '{}', '["cell","other","old","gpt_oss"]']) {
     assert.equal(canonicalUnifiedPopupKey(value, aliases), value);
   }
+});
+
+await test('one request and GOLDEN per active identity', async () => {
+  const { default: assert } = await import('node:assert/strict');
+  const { validateUnifiedInputs } = await import('./resources.js');
+  const request = {input:'one input',init:{},finish_reason:'stop',tools:[],chunks:[]};
+  const base = {input_document:{family:'sample'},golden_document:{family:'sample'},cases:{one:{
+    lifecycle:'active',scenario:'tool_only',description:'one',policy:[],display_id:'UNIFIED.1-tool_only',
+    historical_ids:[],request,golden:{assembled:[]}}}};
+  const aliases = {canonical:{tool_only:'1-tool_only',reason_only:'10-reason_only'},families:{},
+    owners:{'1-tool_only':['tool_only'],'10-reason_only':['reason_only']}};
+  validateUnifiedInputs(base,'sample','inputs',aliases);
+  for (const mutate of [
+    c => {c.display_id='UNIFIED.10-reason_only';},
+    c => {c.historical_ids=['UNIFIED.10-reason_only'];},
+    c => {c.golden.variants=[{assembled:[]}];},
+    c => {c.golden={};},
+    c => {c.golden.assembled=[[{kind:'text',text:'second case'}]];},
+    c => {c.request=[c.request,structuredClone(c.request)];},
+    c => {c.variants=[structuredClone(c)];},
+  ]) {
+    const value=structuredClone(base);mutate(value.cases.one);
+    assert.throws(()=>validateUnifiedInputs(value,'sample','inputs',aliases));
+  }
+  const duplicate=structuredClone(base);
+  duplicate.cases.two={...structuredClone(duplicate.cases.one),display_id:'UNIFIED.unknown'};
+  assert.throws(()=>validateUnifiedInputs(duplicate,'sample','inputs'),/duplicate active scenario/);
+  const multiple=structuredClone(base);
+  multiple.cases.one.golden.assembled=[{kind:'tool_call',name:'a',arguments:{}},{kind:'tool_call',name:'b',arguments:{}}];
+  validateUnifiedInputs(multiple,'sample','inputs',aliases);
 });
 
 await test('resources contracts', async () => {
@@ -127,9 +164,13 @@ const sourceReads = [];
 const checkoutStore = { demand() {}, async read(resource) { sourceReads.push(resource.path); return new Uint8Array([1]); } };
 const directReader = new FixtureResources({
   sources: { unified: [inputSource, latestSource], original_unified: [latestSource] },
-  metadata: { unified_aliases: null, unified_capture_policy: { dynamo_v2: { mode: 'stream' } } },
+  metadata: { unified_aliases: {canonical:{sample:'1'},owners:{'1':['sample']},families:{}}, unified_capture_policy: { dynamo_v2: { mode: 'stream' } } },
 }, checkoutStore, { parseYaml: async (_bytes, { path }) => path.endsWith('inputs_and_golden.yaml') ? inputDocument : snapshotSource });
 const selectionDescriptor = { source: { implementation: 'dynamo_v2', version: '0.2.0', mode: 'unified', native_unified_families: ['sample'] } };
+for (const canonical of [null, {}, [], 'invalid', {sample:['1']}]) {
+  const invalid = new FixtureResources({...directReader.catalog,metadata:{...directReader.catalog.metadata,unified_aliases:{canonical}}},checkoutStore,directReader.parser);
+  await assert.rejects(invalid.unifiedInputs('sample'), /missing canonical Unified case owners/);
+}
 await directReader.prepareUnified([selectionDescriptor]);
 const directResult = await directReader.unified('sample', 'dynamo_v2', '0.2.0');
 assert.equal(directResult.records.size, 1);
@@ -501,6 +542,7 @@ const timestampRequest = structuredClone(inputs);
 timestampRequest.cases.id.request.init = new Date();
 assert.throws(() => validateUnifiedInputs(timestampRequest, 'sample', 'inputs.yaml'), /mapping/);
 const duplicateAlias = structuredClone(inputs);
+duplicateAlias.cases.id.scenario = 'tool_only';
 duplicateAlias.cases.id.display_id = 'UNIFIED.1-tool_only';
 duplicateAlias.cases.other = { ...duplicateAlias.cases.id, display_id: 'UNIFIED.1.a' };
 const aliases = { owners: { '1-tool_only': ['tool_only'], '1.a': ['tool_only'] }, canonical: { tool_only: '1-tool_only' }, families: {} };

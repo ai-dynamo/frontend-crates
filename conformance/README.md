@@ -48,6 +48,16 @@ Current native tests discover versionless latest files through the shared resolv
 
 Local generation remains latest-only by default. Every CI run, including PR mirrors and manual runs, generates and qualifies full history with exhaustive coverage. The same publication mode runs before merge and on `main`; a latest-only artifact cannot pass the publication gate. Publication identification freezes parser source identity, release-tag context, and generation mode in the sealed source-catalog artifact. Generation, cache admission, and qualification use that context while checking current source bytes and catalog freshness. Qualification covers cold and warm cache equivalence, independent family conversion, corrupt-entry recovery, and Chromium release selection, comparison, reload, and downloads. Latest generation must leave capture YAML unchanged and work when historical access and network sockets are denied.
 
+## One case per column
+
+Each active case has one scenario, one request object, and one GOLDEN mapping containing one ordered `assembled` event list. A list may contain zero events, several tool calls, or reasoning and text; these remain one test of the same request. Native input spelling and tool schemas may differ across families, and different producer versions may have separate observations of that request.
+
+A different input, initialization, schema, chunk schedule, or oracle needs a distinct scenario and ID. Nested case/variant lists, multiple request objects, extra GOLDEN alternatives, duplicate active scenarios, and aliases belonging to another scenario are invalid. Python store loading, browser YAML/JSON loading, and native publication enforce this contract; native conversion-cache admission repeats the same source validation. Publication cannot bypass the checks by restoring a sealed but semantically invalid cache entry.
+
+The shared table constructor validates the exact case/column set against a snapshot of validated authored inputs. It rejects hidden, extra, duplicate, or aggregated columns, a mismatched cell ID, changed input/oracle, or a missing family row. Case-schema differences across families remain attached to that single case. Qualification and browser tests exercise these production guards with invalid mutations, including old and current popup URLs.
+
+Group 7 is `7-tool-argument-interpretation`. Its subsections and case IDs use the shared `7-tool-argument-*` prefixes for text preservation, numeric precision, declared types, nullability, constants, unions/intersections, and schema references. For example, `UNIFIED.7-tool-argument-constants-const_array_allof` identifies one case. Previous descriptive and numeric IDs remain aliases; requests, GOLDEN, and historical capture observations are not rewritten by a naming migration.
+
 ## Case applicability
 
 A case or rendered column that is applicable to only one parser family must NEVER appear in a generic section. Put it in a named family-specific section, including after variant aggregation. Before classifying a case as family-specific, inspect every registered family and add native inputs and independent expected outputs wherever the behavior applies. Missing captures do not make an applicable family inapplicable; retain them as missing evidence. Preserve published case IDs when changing display placement.

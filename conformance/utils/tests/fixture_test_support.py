@@ -153,6 +153,20 @@ def fixture_catalog(root, catalog):
     catalog["sources"]["unified"] = viewer_catalog._unified_records(root)
     catalog.setdefault("metadata", {}).setdefault("tabs", [])
     catalog["metadata"].setdefault("source_hashes", {})
+    if "unified_aliases" not in catalog["metadata"]:
+        aliases = {"canonical": {}, "owners": {}, "families": {}}
+        for path in sorted(store.glob("families/*/inputs_and_golden.yaml")):
+            for case in unified_history.load_yaml(path)["cases"].values():
+                if case["lifecycle"] != "active":
+                    continue
+                scenario = case["scenario"]
+                aliases["canonical"][scenario] = case["display_id"].removeprefix("UNIFIED.")
+                for label in [case["display_id"], *case["historical_ids"]]:
+                    owners = aliases["owners"].setdefault(label.removeprefix("UNIFIED."), [])
+                    if scenario not in owners:
+                        owners.append(scenario)
+        catalog["metadata"]["unified_aliases"] = aliases
+
     catalog.pop("revision", None)
     catalog["revision"] = hashlib.sha256(
         json.dumps(catalog, sort_keys=True, separators=(",", ":")).encode()

@@ -33,6 +33,7 @@ from capture_versions import provenance_release_version, UNIFIED_VERSION_PATTERN
 import impls
 import fixture_disposition
 import execution_manifests
+import unified_taxonomy
 import unified_archives
 import generation_workers
 from viewer_codec import canonical_typed, decode_typed, typed_equal
@@ -522,6 +523,22 @@ class PublicationCommitIndeterminate(OSError):
     """The new generation is installed, but its commit marker was not durably synced."""
 
 
+def _validate_golden(value: Any, where: str) -> None:
+    golden = _mapping(value, where)
+    _require_keys(golden, {"assembled"}, {"assembled"}, where)
+    if not isinstance(golden["assembled"], list):
+        raise ValueError(f"{where}.assembled must be an event list")
+    for event in golden["assembled"]:
+        if not isinstance(event, dict) or not isinstance(event.get("kind"), str):
+            raise ValueError(f"{where}.assembled needs event mappings with string kinds")
+    capture_stimulus.validate_events(golden["assembled"])
+    for event in golden["assembled"]:
+        fields = {"tool_call": {"kind", "name", "arguments"}, "text": {"kind", "text"},
+                  "reasoning": {"kind", "text"}, "message_start": {"kind", "phase"},
+                  "message_end": {"kind"}}[event["kind"]]
+        _require_keys(event, fields, fields, where + ".assembled")
+
+
 def _validate_family(path: Path, document: dict) -> Family:
     _require_keys(document, FAMILY_KEYS, FAMILY_KEYS, str(path))
     family = path.parent.name
@@ -536,6 +553,7 @@ def _validate_family(path: Path, document: dict) -> Family:
         if metadata["family"] != family:
             raise ValueError(f"{field} family differs from directory: {path}")
     cases = _mapping(document["cases"], f"{path}.cases")
+    active_scenarios: set[str] = set()
     display_ids: set[str] = set()
     aliases: set[str] = set()
     canonical_owners: dict[str, tuple[str, str]] = {}
@@ -584,8 +602,18 @@ def _validate_family(path: Path, document: dict) -> Family:
         if case["lifecycle"] == "active":
             if display_id is None or not isinstance(case["scenario"], str):
                 raise ValueError(f"active case needs display_id and scenario: {path}:{case_id}")
+            scenario = case["scenario"]
+            if scenario in active_scenarios:
+                raise ValueError(f"duplicate active scenario in {path}: {scenario}")
+            active_scenarios.add(scenario)
+            if scenario not in unified_taxonomy.UNIFIED_TAX:
+                raise ValueError(f"unknown active scenario: {scenario}")
+            for alias in [display_id, *historical_ids]:
+                owner = unified_taxonomy.scenario_for_label(alias, family=family, scenario=scenario)
+                if owner != scenario:
+                    raise ValueError(f"case ID does not own scenario {scenario}: {alias}")
             _validate_request(case["request"], f"{path}:{case_id}.request")
-            _mapping(case["golden"], f"{path}:{case_id}.golden")
+            _validate_golden(case["golden"], f"{path}:{case_id}.golden")
         elif case["request"] is not None:
             _validate_request(case["request"], f"{path}:{case_id}.request")
     return Family(family, document, path)

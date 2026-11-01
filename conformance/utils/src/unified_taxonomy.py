@@ -348,7 +348,7 @@ def display_case_labels(scenarios, scenario_families=None):
         full_prefix, compact_prefix = DISPLAY_PREFIXES.get(group, (str(group), str(group)))
         counts[compact_prefix] = counts.get(compact_prefix, 0) + 1
         labels[scenario] = {
-            "label": f"{full_prefix}-{case_description(scenario)}",
+            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{case_description(scenario)}",
             "compact_prefix": compact_prefix,
             "display_number": counts[compact_prefix],
         }
@@ -510,12 +510,20 @@ def case_description(scenario):
     return original_case_description(scenario)
 
 
-def case_label(scenario):
+def previous_case_label(scenario):
     variant = SHARED_CASE_VARIANTS.get(scenario)
     group = tax(scenario)[0]
     if variant and scenario not in RETIRED_SCENARIOS:
-        group = case_label(variant.parent).split("-", 1)[0]
+        group = previous_case_label(variant.parent).split("-", 1)[0]
     return f"{group}-{case_description(scenario)}"
+
+
+def case_label(scenario):
+    previous = previous_case_label(scenario)
+    if previous.startswith("7-"):
+        related = (case_fold(scenario) or (scenario, ""))[0]
+        return f"{ARGUMENT_SECTIONS[argument_section(related)]}-{previous[2:]}"
+    return previous
 
 
 def numbered_id(scenario):
@@ -592,6 +600,16 @@ LEGACY_CASE_LABELS = {
 }
 
 
+LEGACY_CASE_LABELS.update({
+    "6-empty_args_no_close": "empty_args_no_close",
+    "6-optional_args_no_close": "optional_args_no_close",
+    "32-guided_native_after_prefilled_reasoning_named": "guided_native_after_prefilled_reasoning_named",
+    "32-guided_native_after_prefilled_reasoning_required": "guided_native_after_prefilled_reasoning_required",
+    "8-commentary_then_tool": "commentary_then_tool",
+})
+LEGACY_CASE_LABELS.update({previous_case_label(scenario): scenario for scenario in UNIFIED_TAX})
+
+
 # Historical YAML and shared links keep their original descriptive identities.
 LEGACY_CASE_LABELS.update({
     f"{tax(scenario)[0]}-{original_case_description(scenario)}": scenario
@@ -656,11 +674,6 @@ def scenario_for_label(label, family=None, scenario=None):
     if len(owners) > 1:
         raise ValueError(f"conflicting Unified alias ownership: {label}: {sorted(owners)}")
     owner = next(iter(owners), None)
-    if owner is not None and family:
-        family_names = sorted({name for name, _label in FAMILY_LEGACY_CASE_LABELS}, key=len, reverse=True)
-        owner_family = next((name for name in family_names if owner.startswith(f"{name}_")), None)
-        if owner_family is not None and owner_family != family:
-            return None
     return owner
 
 

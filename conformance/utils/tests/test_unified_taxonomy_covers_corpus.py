@@ -82,7 +82,7 @@ def test_descriptive_ids_and_all_published_aliases():
     assert len(set(labels)) == len(labels)
     for scenario in UNIFIED_TAX:
         label = case_label(scenario)
-        assert re.fullmatch(r"[\w]+-[\w]+", label), label
+        assert re.fullmatch(r"[\w]+(?:-[\w]+)+", label), label
         legacy = taxonomy.legacy_case_label(scenario)
         if len(taxonomy._LABEL_OWNERS[legacy]) > 1:
             with pytest.raises(ValueError, match="conflicting Unified alias ownership"):
@@ -97,7 +97,7 @@ def test_descriptive_ids_and_all_published_aliases():
     for alias, scenario in taxonomy.LEGACY_CASE_LABELS.items():
         assert historical_case_label(alias) == case_label(scenario)
     for probe in CONFORMANCE_CASES:
-        assert case_label("schema_" + probe["name"]) == "7-" + probe["name"]
+        assert case_label("schema_" + probe["name"]) == taxonomy.ARGUMENT_SECTIONS[taxonomy.argument_section("schema_" + probe["name"])] + "-" + probe["name"]
     assert historical_case_label("31-29", family="gemma4") == case_label(
         "gemma4_guided_json_visible_call_prose_before_reasoning")
     assert historical_case_label("31.a") == case_label("guided_json_invalid_call")
@@ -768,9 +768,9 @@ def test_schema_null_cases_keep_their_native_inputs_and_history():
     assert "<arg_value>null</arg_value>" in glm["input"]
     assert glm["tools"] == string["tools"]
     assert glm["golden"] == string["golden"]
-    assert numbered_id("arg_string_null") == "UNIFIED.7-arg_string_null"
-    assert numbered_id("arg_json_null") == "UNIFIED.7-arg_json_null"
-    assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-arg_json_null"
+    assert numbered_id("arg_string_null") == "UNIFIED.7-tool-argument-nullability-arg_string_null"
+    assert numbered_id("arg_json_null") == "UNIFIED.7-tool-argument-nullability-arg_json_null"
+    assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-tool-argument-nullability-arg_json_null"
 
 
 @pytest.mark.parametrize("family", NATIVE_FAMILIES)
@@ -904,7 +904,7 @@ def test_deepseek_mixed_control_string_preserves_the_historical_id():
     assert value == G._DS41_MIXED_STRING
     assert "<think>quoted</think>" in value
     assert '&amp; "x"' + "\\" + "\n" in value
-    assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-deepseek_v41_mixed_control_text_in_string"
+    assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string"
 
 
 @pytest.mark.parametrize("family", NATIVE_FAMILIES)
@@ -1250,11 +1250,11 @@ def test_reference_backfills_require_request_bound_version_receipts(authored_uni
         snapshots += 1
         family = authored_unified_store.families[resource["family"]]
         version = resource["version"]
-        introduced = {"UNIFIED.7-unused_reference_graph_parameter_types", "UNIFIED.7-nullable_reference_alias_literals", "UNIFIED.7-local_schema_id_preserves_type"}
+        introduced = {numbered_id(name) for name in ("unused_reference_graph_parameter_types", "nullable_reference_alias_literals", "local_schema_id_preserves_type")}
         if family.name != "glm47":
-            introduced |= {f"UNIFIED.7-glm_ref_{suffix}" for suffix in ("object", "encoded_targets", "json_looking_strings", "scalar_types")}
+            introduced |= {numbered_id(f"glm_ref_{suffix}") for suffix in ("object", "encoded_targets", "json_looking_strings", "scalar_types")}
         if family.name == "qwen3":
-            introduced.add("UNIFIED.7-arg_string_null_ref")
+            introduced.add(numbered_id("arg_string_null_ref"))
         introduced_at = (0, 7, 29) if family.name == "beam" else (0, 7, 18)
         if tuple(int(part) for part in version.split(".")) >= introduced_at:
             measured = {family.cases[key]["display_id"] for key in document["records"]}

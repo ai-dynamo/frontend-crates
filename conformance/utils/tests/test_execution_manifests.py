@@ -249,8 +249,8 @@ def proof_store(tmp_path, *, extra_unsupported=False):
         path = store / "families/gemma4/inputs_and_golden.yaml"
         document = unified_history.load_yaml(path)
         case = copy.deepcopy(document["cases"]["text_only"])
-        case["scenario"] = "extra"
-        case["display_id"] = "extra"
+        case["scenario"] = "reason_only"
+        case["display_id"] = "UNIFIED.10-reason_only"
         case["historical_ids"] = []
         document["cases"]["extra"] = case
         path.write_text(unified_history.dump_yaml(document))
@@ -263,7 +263,7 @@ def proof_store(tmp_path, *, extra_unsupported=False):
         result["assembled"] = [{"kind": "text", "text": "same"}]
         result["batch_final"]["normal_text"] = "same"
         if extra_unsupported:
-            value["results"]["UNIFIED.extra.gemma4"] = {"capture_input": _request(), "unavailable": "unsupported"}
+            value["results"]["UNIFIED.reason_only.gemma4"] = {"capture_input": _request(), "unavailable": "unsupported"}
         receipt["results_sha256"] = hashlib.sha256(json.dumps(value["results"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         value["provenance"] = receipt
         path.write_text(json.dumps(value))
@@ -394,8 +394,12 @@ def test_receipts_shared_by_subsets_and_two_checkpoints_have_one_global_body(tmp
     family_path = store / "families/gemma4/inputs_and_golden.yaml"
     family = unified_history.load_yaml(family_path)
     template = family["cases"].pop("text_only")
-    family["cases"] = {name: {**copy.deepcopy(template), "display_id": f"UNIFIED.1-{index}", "scenario": name}
-                       for index, name in enumerate(("a", "b", "c"), 1)}
+    family["cases"] = {
+        name: {**copy.deepcopy(template), "display_id": display_id, "scenario": scenario, "historical_ids": []}
+        for name, scenario, display_id in (("a", "tool_only", "UNIFIED.1-tool_only"),
+                                           ("b", "text_only", "UNIFIED.3-text_only"),
+                                           ("c", "reason_only", "UNIFIED.10-reason_only"))
+    }
     family_path.write_text(unified_history.dump_yaml(family))
     first_receipt = {"version": "0.1.0", "job_sha256": "a" * 64, "adapter_sha256": "b" * 64}
     second_receipt = {**first_receipt, "job_sha256": "c" * 64}

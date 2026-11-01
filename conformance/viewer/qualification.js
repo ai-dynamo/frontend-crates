@@ -12,7 +12,7 @@ initializeDevelopmentParser();
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
 import { selectedCellOutcome } from './model.js';
-import { leafCells, isApplicableCell } from './model.js';
+import { leafCells, isApplicableCell, validateCaseCell } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
 const execFileAsync = promisify(execFile);
@@ -500,13 +500,6 @@ async function checkPageOrchestration() {
 await checkPageOrchestration();
 const columnKeys = new Set(columnKeysFor(catalog.metadata));
 let cells = 0, leaves = 0;
-function singleCaseLeaf(cell, column) {
-  const list = [...leafCells({ cells: { selected: cell } }).values()];
-  assert.equal(list.length, 1, `${cell.family}:${column.sub}: one case per displayed cell`);
-  assert.equal(cell.case_id, column.case_id, `${column.sub}: heading owns exactly its case`);
-  return list;
-}
-
 function validateTab(tab, loadedKeys = null) {
   const spec = catalog.metadata.tabs.find(spec => spec.id === tab.id);
   const descriptors = tabCandidates(catalog, spec, { golden: tab.candidates.some(candidate => candidate.key === 'golden') });
@@ -550,7 +543,7 @@ function validateTab(tab, loadedKeys = null) {
         for (const field of ['na', 'err', 'leak']) assert.ok([0, 1].includes(value[field]));
         assert.ok(Object.hasOwn(value, 'sig'));
       }
-      const list = singleCaseLeaf(cell, column); leaves += list.length;
+      const list = validateCaseCell(cell, column); leaves += list.length;
       const ids = list.filter(cell => cell.case_id).map(cell => cell.case_id);
       assert.equal(new Set(ids).size, ids.length, `${tab.id}:${row.family}:${column.sub}: repeated case`);
       for (const leaf of list) {
@@ -662,7 +655,7 @@ async function checkRebaseContracts(tab, reader) {
   const [first, second] = tab.columns;
   const merged = { ...row, cells: { ...row.cells,
     [first.sub]: { ...row.cells[first.sub], variants: [row.cells[first.sub], row.cells[second.sub]] } } };
-  assert.throws(() => singleCaseLeaf(merged.cells[first.sub], first),
+  assert.throws(() => validateCaseCell(merged.cells[first.sub], first),
     /one case per displayed cell/, 'reintroducing a combined cell must fail');
 
   for (const column of columns.values()) {
@@ -701,7 +694,7 @@ async function checkRebaseContracts(tab, reader) {
     assert.equal(string.group_key, 'unified_g7_declared');
     for (const row of tab.rows.filter(row => !row.section)) {
       const cell = leafCells(row).get(custom.sub);
-      assert.equal(cell.case_id, `UNIFIED.7-${custom.sub}`);
+      assert.equal(cell.case_id, `UNIFIED.7-tool-argument-declared-types-${custom.sub}`);
       assert.equal(cell.status === 'na', !['qwen3', 'nemotron_v3'].includes(row.family));
       if (['qwen3', 'nemotron_v3'].includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
     }

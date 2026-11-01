@@ -77,6 +77,95 @@ export function leafCells(row) {
   return leaves;
 }
 
+export function explicitSchemas(tools) {
+  if (!Array.isArray(tools)) return null;
+  const schemas = tools.filter((tool) => typeof getField(tool, 'name') === 'string' && hasField(tool, 'parameters') && getField(tool, 'parameters') !== null)
+    .map((tool) => ({ name: getField(tool, 'name'), parameters: getField(tool, 'parameters') }));
+  return schemas.length ? schemas : null;
+}
+
+export function caseSchemas(authored, scenario, sharedTools = []) {
+  const shared = explicitSchemas(sharedTools) || [];
+  const variants = [];
+  for (const [family, cases] of authored) {
+    const tools = explicitSchemas(cases.get(scenario)?.request.tools);
+    if (!tools || sameValue(tools, shared)) continue;
+    let variant = variants.find(entry => sameValue(entry.tools, tools));
+    if (!variant) { variant = {families:[],tools}; variants.push(variant); }
+    variant.families.push(family);
+  }
+  return variants;
+}
+
+export function validateCaseCell(cell, column) {
+  if (!cell || Object.hasOwn(cell, 'variants') || Object.hasOwn(cell.tooltip || {}, 'variants')) {
+    throw new Error(`${column.sub}: one case per displayed cell; nested variants are forbidden`);
+  }
+  if (cell.case_id !== column.case_id) throw new Error(`${column.sub}: heading owns exactly its case`);
+  return [cell];
+}
+
+export function validateCaseColumns(tab, authored, sharedTools = []) {
+  const expected = new Map();
+  for (const cases of authored.values()) for (const [scenario, input] of cases) {
+    const prior = expected.get(scenario);
+    if (prior && prior !== input.case_id) throw new Error(`${scenario}: conflicting case identity across families`);
+    expected.set(scenario, input.case_id);
+  }
+  const columns = new Map(), ids = new Set();
+  if (tab.columns.length !== expected.size) throw new Error('every authored case needs exactly one column');
+  for (const column of tab.columns) {
+    if (columns.has(column.sub) || ids.has(column.case_id) || expected.get(column.sub) !== column.case_id) {
+      throw new Error(`${column.sub}: duplicate, extra, or conflicting case column`);
+    }
+    if (['variants','variant_parent','variant_labels'].some(key => Object.hasOwn(column, key))
+        || (column.schemas || []).some(schema => Object.hasOwn(schema, 'cases'))) {
+      throw new Error(`${column.sub}: aggregated case columns are forbidden`);
+    }
+    if (!sameValue(column.schemas || [], caseSchemas(authored, column.sub, sharedTools))) {
+      throw new Error(`${column.sub}: displayed schemas differ from the authored request tools`);
+    }
+    columns.set(column.sub, column); ids.add(column.case_id);
+  }
+  const families = new Set();
+  for (const row of tab.rows) {
+    if (families.has(row.family) || !authored.has(row.family)) throw new Error('duplicate or extra family row');
+    families.add(row.family);
+    if (Object.keys(row.cells).length !== columns.size) throw new Error(`${row.family}: incomplete case cells`);
+    const cases = authored.get(row.family);
+    for (const [scenario, column] of columns) {
+      const cell = row.cells[scenario];
+      validateCaseCell(cell, column);
+      if (cell.kind !== 'cell' || cell.sub !== scenario || cell.family !== row.family) {
+        throw new Error(`${row.family}/${scenario}: misplaced case cell identity`);
+      }
+      const input = cases.get(scenario);
+      if (!input) {
+        if (isApplicableCell(cell)) throw new Error(`${row.family}/${scenario}: unexpected applicable case`);
+        continue;
+      }
+      if (!isApplicableCell(cell)) throw new Error(`${row.family}/${scenario}: authored case is hidden`);
+      const candidates = cell.tooltip?.candidates || [];
+      const oracles = candidates.filter(candidate => candidate.key === 'golden');
+      if (oracles.length !== 1 || new Set(candidates.map(candidate => candidate.key)).size !== candidates.length) {
+        throw new Error(`${row.family}/${scenario}: exactly one GOLDEN and one observation per producer selection are required`);
+      }
+      const oracle = oracles[0].block?.events;
+      const init = {starting_state:'None',tool_output_mode:'Native',named_tool:null,...Object.fromEntries(mappingEntries(input.request.init))};
+      const chunks = (cell.tooltip?.input?.chunks || []).map(chunk => getField(chunk, 'delta_text', ''));
+      if (!sameValue(cell.tooltip?.init, init) || cell.tooltip?.finish_reason !== (input.request.finish_reason || 'stop')
+          || !sameValue(chunks, input.request.chunks.map(chunk => getField(chunk, 'delta_text', '')))) {
+        throw new Error(`${row.family}/${scenario}: column must retain its one authored request configuration`);
+      }
+      if (cell.tooltip?.input?.text !== input.request.input || !sameValue(oracle, input.golden)) {
+        throw new Error(`${row.family}/${scenario}: column must retain its one authored input and GOLDEN`);
+      }
+    }
+  }
+  if (families.size !== authored.size) throw new Error('every authored family needs exactly one row');
+  return tab;
+}
+
 export function rankUnifiedColumns(tab, metadata) {
   if (tab.id !== 'tab-unified') return;
   const counts = new Map();
