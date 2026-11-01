@@ -662,32 +662,40 @@ def _set_schema_view(driver, transposed):
 
 
 @pytest.mark.parametrize("transposed", [False, True])
-def test_recovery_popup_has_contiguous_variant_blocks(driver, viewer_url, transposed):
+def test_recovery_cases_have_independent_popups(driver, viewer_url, transposed):
     saved_url = driver.current_url
     try:
         _navigate(driver, f"{viewer_url}?tab=tab-unified&view=details&transpose={int(transposed)}")
-        header = driver.find_element(By.CSS_SELECTOR, '#tab-unified .matrix-case-heading[aria-label="UNIFIED.5-tool_no_close"]')
-        tip = _open_schema_popup(driver, header)
-        groups = _script(driver, """
-            return [...arguments[0].querySelectorAll('.ttip-grammar tbody')].map(group => ({
-              key: group.dataset.variant,
-              headings: group.querySelectorAll('th[scope="rowgroup"]').length,
-              heading: group.querySelector('th[scope="rowgroup"]')?.textContent,
-              families: [...group.querySelectorAll('td.grf')].map(cell => cell.firstChild.textContent),
-              outputs: [...group.querySelectorAll('tr:not(.gr-variant-heading)')]
-                .map(row => row.querySelectorAll('td.gro').length),
-            }));
-            """, tip)
-        assert [group['key'] for group in groups] == [
-            'tool_no_close', 'gpt_oss_quoted_truncated_tool_then_final',
-            'gpt_oss_truncated_tool_resynchronizes_at_next_message',
-        ]
         families = _script(driver, "return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label || row.family)")
-        for group in groups:
-            assert group['headings'] == 1
-            assert 'Not applicable to' not in group['heading']
+        for scenario, identity in (
+            ('tool_no_close', 'UNIFIED.5-tool_no_close'),
+            ('gpt_oss_quoted_truncated_tool_then_final', 'UNIFIED.5-tool_no_close_malformed_argument_then_visible_response'),
+            ('gpt_oss_truncated_tool_resynchronizes_at_next_message', 'UNIFIED.5-tool_no_close_next_message_recovery'),
+        ):
+            headers = driver.find_elements(By.CSS_SELECTOR, f'#tab-unified .matrix-case-heading[aria-label="{identity}"]')
+            assert len(headers) == 1, identity
+            tip = _open_schema_popup(driver, headers[0])
+            headings = tip.find_elements(By.CSS_SELECTOR, '.ttip-head')
+            assert len(headings) == 1
+            assert headings[0].find_element(By.CSS_SELECTOR, 'span[title]').get_attribute('title') == identity
+            assert 'Not applicable to' not in headings[0].text
+            short = _script(driver, "const c=window.__conformanceTooltipModel(arguments[0]).popupCase; return c.compact_prefix+'-'+c.display_number", headers[0])
+            _assert_case_popup_heading(driver, headers[0], headings[0], identity.removeprefix('UNIFIED.'), short)
+            groups = _script(driver, """
+                return [...arguments[0].querySelectorAll('.ttip-grammar tbody')].map(group => ({
+                  key: group.dataset.variant,
+                  headings: group.querySelectorAll('th[scope="rowgroup"]').length,
+                  families: [...group.querySelectorAll('td.grf')].map(cell => cell.firstChild.textContent),
+                  outputs: [...group.querySelectorAll('tr')]
+                    .map(row => row.querySelectorAll('td.gro').length),
+                }));
+                """, tip)
+            assert [group['key'] for group in groups] == [scenario]
+            group = groups[0]
+            assert group['headings'] == 0
             assert group['families'] == families
             assert len(set(group['outputs'])) == 1
+            assert all(count > 0 for count in group['outputs'])
     finally:
         _navigate(driver, saved_url)
 
@@ -712,24 +720,18 @@ def test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose(drive
                         const tab = window.__conformanceModel;
                         const id = arguments[0].getAttribute('aria-label');
                         const column = tab.columns.find(item => (item.case_id || tab.case_prefix + item.label) === id);
-                        const groups = new Map();
-                        tab.rows.filter(row => !row.section).forEach(row => {
+                        const expected = tab.rows.filter(row => !row.section).map(row => {
                           const cell = row.cells[column.sub];
-                          const variants = cell?.variants || [cell];
-                          variants.forEach(variant => {
-                            const key = variant?.sub || column.sub;
-                            if (!groups.has(key)) groups.set(key, []);
-                            groups.get(key).push([key, row.model_label || row.family]);
-                          });
+                          if (!cell || Object.hasOwn(cell, 'variants') || cell.sub !== column.sub)
+                            throw new Error('schema popup must own exactly one case per family');
+                          return [column.sub, row.model_label || row.family];
                         });
-                        const keys = [...groups.keys()].sort((a, b) => Number(b === column.sub) - Number(a === column.sub));
-                        const expected = keys.flatMap(key => groups.get(key));
-                        const rows = [...arguments[1].querySelectorAll('.ttip-grammar tbody tr:not(.gr-variant-heading)')];
+                        const rows = [...arguments[1].querySelectorAll('.ttip-grammar tbody tr')];
                         return {expected, actual: rows.flatMap(row => [...row.querySelectorAll('td.grf')]
                           .map(cell => [row.parentElement.dataset.variant, cell.firstChild.textContent])),
                           haveCells: rows.length > 0 && rows.every(row => row.querySelector('td'))};
                         """, header, tip)
-                    assert rows['actual'] == rows['expected'], "schema popup must retain every selected family's folded variants"
+                    assert rows['actual'] == rows['expected'], "schema popup must retain its one case for every selected family"
                     assert rows['haveCells']
                     disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
                     summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
@@ -842,32 +844,37 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, viewer_url, transposed
 
 
 def test_popup_headings_include_compact_references(driver, viewer_url):
-    for transpose in ('0', '1'):
-        _navigate(driver, f"{viewer_url}?transpose={transpose}")
-        for prefix in ('1-', None, '7-arg_json_null'):
-            header = _script(driver, r"""
-                return [...document.querySelectorAll('.matrix-case-heading')].find(header => {
-                  const column=window.__conformanceTooltipModel(header).popupCase;
-                  return arguments[0] === null ? !/^\d+-/.test(column.label) : column.label.startsWith(arguments[0]);
-                });
-            """, prefix)
-            assert header is not None, prefix
-            column = _script(driver, 'return window.__conformanceTooltipModel(arguments[0]).popupCase', header)
-            short = f"{column['compact_prefix']}-{column['display_number']}" if column.get('display_number') is not None else column['label']
-            cell = _script(driver, """
-                return [...document.querySelectorAll('.matrix-cell[data-ttip-id]')].find(cell => {
-                  const model=window.__conformanceCellModel(cell);
-                  return model?.sub===arguments[0] || model?.case_id===arguments[1];
-                });
-            """, column['sub'], column.get('case_id'))
-            assert cell is not None
-            for target in (header, cell):
-                _dismiss_visible_tooltips(driver)
-                target.send_keys(Keys.ENTER)
-                popup = driver.find_element(By.CSS_SELECTOR, '.ttip-pinned')
-                _assert_case_popup_heading(driver, target, popup.find_element(By.CSS_SELECTOR, '.ttip-head'), column['label'], short)
-                assert popup.find_element(By.CSS_SELECTOR, '.ttip-head span[title]').get_attribute('title').startswith('UNIFIED.')
-                _dismiss_visible_tooltips(driver)
+    saved_url = driver.current_url
+    try:
+        for transpose in ('0', '1'):
+            _navigate(driver, f"{viewer_url}?transpose={transpose}")
+            for prefix in ('1-', None, '7-tool-argument-nullability-arg_json_null'):
+                header = _script(driver, r"""
+                    return [...document.querySelectorAll('.matrix-case-heading')].find(header => {
+                      const column=window.__conformanceTooltipModel(header).popupCase;
+                      return arguments[0] === null ? !/^\d+-/.test(column.label) : column.label.startsWith(arguments[0]);
+                    });
+                """, prefix)
+                assert header is not None, prefix
+                column = _script(driver, 'return window.__conformanceTooltipModel(arguments[0]).popupCase', header)
+                short = f"{column['compact_prefix']}-{column['display_number']}" if column.get('display_number') is not None else column['label']
+                cell = _script(driver, """
+                    return [...document.querySelectorAll('.matrix-cell[data-ttip-id]')].find(cell => {
+                      const model=window.__conformanceCellModel(cell);
+                      return model?.sub===arguments[0] || model?.case_id===arguments[1];
+                    });
+                """, column['sub'], column.get('case_id'))
+                assert cell is not None
+                for target in (header, cell):
+                    _dismiss_visible_tooltips(driver)
+                    _script(driver, "arguments[0].scrollIntoView({block:'center',inline:'center'});", target)
+                    target.send_keys(Keys.ENTER)
+                    popup = WebDriverWait(driver, 5).until(lambda d: _script(d, "const t=arguments[0]._ttip; return t && t.classList.contains('ttip-pinned') ? t : null", target))
+                    _assert_case_popup_heading(driver, target, popup.find_element(By.CSS_SELECTOR, '.ttip-head'), column['label'], short)
+                    assert popup.find_element(By.CSS_SELECTOR, '.ttip-head span[title]').get_attribute('title').startswith('UNIFIED.')
+                    _dismiss_visible_tooltips(driver)
+    finally:
+        _navigate(driver, saved_url)
 
 
 def test_three_cards_and_toolbar_do_not_overlap(driver, viewer_url):
