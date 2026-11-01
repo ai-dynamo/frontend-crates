@@ -60,7 +60,7 @@ from gen_unified_golden import (  # noqa: E402
     control_tokens,
     invoke_header_prefix,
 )
-from numeric_cases import NUMERIC_VARIANTS, applicable as numeric_applicable, canonical_events, numeric_expected, unified_numeric_expected
+from numeric_cases import NUMERIC_VARIANTS, OVERFLOW_SIBLING_VARIANTS, applicable as numeric_applicable, canonical_events, numeric_expected, unified_numeric_expected
 from unified_taxonomy import (  # noqa: E402
     historical_case_label,
     UNIFIED_GROUP_LABEL,
@@ -101,6 +101,31 @@ def test_descriptive_ids_and_all_published_aliases():
     assert historical_case_label("31-29", family="gemma4") == case_label(
         "gemma4_guided_json_visible_call_prose_before_reasoning")
     assert historical_case_label("31.a") == case_label("guided_json_invalid_call")
+
+
+def test_numeric_taxonomy_ordinals_have_one_owner():
+    owners = defaultdict(list)
+    for scenario, (group, ordinal) in UNIFIED_TAX.items():
+        if isinstance(group, int):
+            owners[(group, ordinal)].append(scenario)
+    conflicts = {key: scenarios for key, scenarios in owners.items() if len(scenarios) > 1}
+    assert not conflicts, conflicts
+
+
+def test_reasoning_payload_variants_preserve_historical_aliases():
+    scenarios = (
+        ("12-5", "default_reasoning_tool_without_closer"),
+        ("12-6", "reason_markup_in_arg_consistent"),
+        ("12-7", "reason_markup_in_arg_with_text_consistent"),
+    )
+    for alias, scenario in scenarios:
+        assert historical_case_label(alias) == case_label(scenario)
+    assert historical_unified_case_key("nemotron_v3", "UNIFIED.12-5") == (
+        "UNIFIED.12-default_reasoning_tool_without_closer"
+    )
+    keys = [taxonomy_sort_key(scenario) for _, scenario in scenarios]
+    assert keys == sorted(keys)
+    assert len(set(keys)) == len(keys)
 
 
 def test_alias_conflicts_and_wrong_scenario_ownership_are_rejected(monkeypatch):
@@ -586,6 +611,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
             })
+        if family == "kimi_k3":
+            extra.update({"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"})
         if family == "deepseek_v4":
             extra.add("guided_response_rejected_header_quote_ownership")
         if family == "deepseek_v41":
@@ -627,6 +654,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 marker = "<think>"
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
+            elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
+                marker = '<|open|>call tool="lookup"'
             elif scenario == "guided_response_rejected_header_quote_ownership":
                 marker = '<｜DSML｜invoke'
             elif scenario == "gemma4_guided_response_extra_body_opener":
@@ -972,7 +1001,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 255 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
+    assert len(UNIFIED_TAX) == 262 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 5
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1818,6 +1847,11 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                 arguments[key] = value if kind == "string" else json.loads(
                     value, parse_float=Decimal if exact_numbers else float
                 )
+            if not arguments and not re.search(r'<\|close\|>\s*call\s*<\|sep\|>', body):
+                response_terminated = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+                                       r'<\|close\|>\s*argument\s*<\|sep\|>(?=\s*<\|open\|>\s*response\s*<\|sep\|>)')
+                for key, kind, value in re.findall(response_terminated, body, re.S):
+                    arguments[key] = value if kind == "string" else json.loads(value)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
                 values = _json_values(body, exact_numbers=exact_numbers)
                 if values:
@@ -2120,6 +2154,7 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             "deepseek_v4_guided_reasoning_opener_inside_native_body",
             "kimi_k3_elided_think_close_to_response",
             "gpt_oss_interrupted_reasoning_then_response",
+            "interrupted_reasoning_then_response",
         }
         if scenario.removesuffix("_pr424") not in unclosed:
             assert control_tokens(family)[1] in raw, (family, scenario, "missing reasoning closer")
@@ -2191,7 +2226,7 @@ def _assert_cross_family_contract(corpus):
             if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
                 following = [{"kind": "text", "text": "recovered"}]
                 assert events == ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
-                                  if family in {"muse_glimmer", "muse_spark"} else []) + following
+                                  if family in {"muse_glimmer", "muse_spark", "kimi_k3"} else []) + following
                 events = following
             if scenario == "gpt_oss_quoted_truncated_tool_then_final":
                 assert events == [{"kind": "text", "text": "Answer"}], (family, scenario, "missing recovered answer")
@@ -2318,17 +2353,29 @@ def _assert_cross_family_contract(corpus):
                     for call in suppressed:
                         if isinstance(call["arguments"]["x"], str):
                             call["arguments"]["x"] = json.loads(call["arguments"]["x"])
-            by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
+            policy = case["policy"]
+            if scenario == "interrupted_reasoning_then_response":
+                assert policy == (["P2"] if family == "kimi_k3" else ["I1", "I3"])
+                policy = []
+            by_scenario[scenario][family] = (events, init, case["finish_reason"], policy, suppressed)
     assert set(by_scenario) == set(NATIVE_UNIFIED_TAX)
     _assert_generic_cases_span_families(by_scenario)
+    assert all(family in by_scenario.get(scenario, {}) for scenario, family in G.INHERITED_GOLDEN), "INHERITED_GOLDEN names a case that does not exist"
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         # Beam authors its own golden where its grammar changes the outcome (its parameter
         # tags are plain text outside a routed header; its reasoning markers are special
         # tokens), so it stands outside the shared contract for those scenarios only.
+        # A family-scoped parser rule declares its own golden in `INHERITED_GOLDEN`
+        # (Nemotron V3's tool-only-turn whitespace, issue #406); that cell is checked
+        # against the declaration instead of the shared contract.
+        for family in families:
+            if (scenario, family) in G.INHERITED_GOLDEN:
+                assert families[family][0] == G.INHERITED_GOLDEN[(scenario, family)], (scenario, family, "inherited golden")
         contracts = [
             (family, contract) for family, contract in families.items()
             if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS | BEAM_NUMERIC_STRING_SCENARIOS)
+            and (scenario, family) not in G.INHERITED_GOLDEN
         ]
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:
@@ -2348,13 +2395,18 @@ def test_gpt_oss_numeric_input_oracle_preserves_exact_decimal_values():
 @pytest.mark.parametrize("scenario", ["reason_only", "reason_markup_in_arg"])
 def test_cross_family_contract_rejects_nemotron_only_generic_reasoning(scenario, monkeypatch):
     corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    variants = {name for name in NATIVE_UNIFIED_TAX if taxonomy.coverage_case(name) == scenario}
     for family, cases in corpus.items():
         if family != "nemotron_v3":
-            del cases[f"UNIFIED.{scenario}.{family}"]
+            for name in variants:
+                cases.pop(f"UNIFIED.{name}.{family}", None)
+    monkeypatch.setitem(globals(), "NATIVE_UNIFIED_TAX", {name: entry for name, entry in NATIVE_UNIFIED_TAX.items()
+                                                              if name not in variants or name == scenario})
     scenario_families = G.scenario_families
     monkeypatch.setattr(
         G, "scenario_families",
-        lambda name: frozenset({"nemotron_v3"}) if name == scenario else scenario_families(name),
+        lambda name: (frozenset({"nemotron_v3"}) if name == scenario else frozenset())
+        if name in variants else scenario_families(name),
     )
     with pytest.raises(AssertionError, match="single-family generic cases"):
         _assert_cross_family_contract(corpus)
@@ -2555,6 +2607,22 @@ def test_second_pass_reference_goldens_satisfy_the_authored_schema(family, scena
     assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
 
 
+def test_k3_response_recovery_oracle_requires_complete_json_and_preserved_text():
+    cases = build_cases("kimi_k3")
+    recovered = cases["UNIFIED.gpt_oss_truncated_tool_resynchronizes_at_next_message.kimi_k3"]
+    raw = recovered["input"].split('<|open|>json type="object"<|sep|>', 1)[1].split('<|close|>json<|sep|>', 1)[0]
+    assert json.loads(raw) == {"q": "unfinished"}
+    assert recovered["golden"] == [
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}},
+        {"kind": "text", "text": "recovered"},
+    ]
+    malformed = cases["UNIFIED.gpt_oss_quoted_truncated_tool_then_final.kimi_k3"]
+    raw = malformed["input"].split('<|open|>json type="object"<|sep|>', 1)[1].split('<|close|>json<|sep|>', 1)[0]
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(raw)
+    assert malformed["golden"] == [{"kind": "text", "text": "Answer"}]
+
+
 def test_kimi_display_sections_match_their_applicable_family():
     labels = taxonomy.display_case_labels(UNIFIED_TAX)
     for scenario in UNIFIED_TAX:
@@ -2616,7 +2684,7 @@ def test_gpt_oss_variants_use_shared_parents_or_explicit_header_grammar(scenario
 
 
 @pytest.mark.parametrize(("scenario", "parent", "families"), [
-    ("gpt_oss_tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3"}),
+    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3"}),
     ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
     ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
 ])
@@ -2637,14 +2705,14 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
             else:
                 assert '{"q":"abc<|close|>json<|sep|>' in case["input"]
                 assert '<|open|>response<|sep|>Answer<|close|>response<|sep|>' in case["input"]
-                assert case["expect"]["dynamo"]["class"] == "LOSS"
+                assert case["expect"]["dynamo"]["verdict"] == "match"
         else:
             event = case["golden"][0]
-            assert event["name"] == "lookup"
+            assert event["name"] == ("get_weather" if parent == "tool_only" else "lookup")
             assert matches_schema(event["arguments"], case["tools"][0]["parameters"])
             if parent == "tool_only":
-                assert ' \n\t{"q":' in case["input"]
-                assert event["arguments"] == {"q": "x"}
+                assert ' \n\t{"city":' in case["input"]
+                assert event["arguments"] == {"city": "Paris"}
             else:
                 payload = event["arguments"]["q"]
                 assert payload in case["input"]
@@ -2670,6 +2738,42 @@ def test_preserved_requests_and_goldens_are_independent_across_builds():
     changed["golden"][0]["arguments"]["city"] = "changed"
     changed["init"]["starting_state"] = "Reasoning"
     assert build_cases("gpt_oss")[case_id] == expected
+
+
+def test_single_call_variants_keep_the_shared_weather_example():
+    assert historical_case_label("1-3") == "1-dotted_name_minimal"
+    expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+    source = next(case for case in G._GPT_OSS_REVIEW_CASES if case[0] == "tool_body_whitespace")
+    assert source[3] == expected
+    assert ' \n\t{"city":"Paris"}' in source[2]
+    for family, (raw, golden, _) in G._native_review_variants("tool_body_whitespace").items():
+        assert golden == expected, family
+        assert ' \n\t{"city":' in raw, family
+    for family in G.UNIFIED_FAMILIES:
+        cases = build_cases(family)
+        assert cases[f"UNIFIED.tool_only.{family}"]["golden"] == expected, family
+        variant = cases.get(f"UNIFIED.tool_body_whitespace.{family}")
+        if variant is None:
+            continue
+        assert variant["golden"] == expected, family
+        assert ' \n\t{"city":' in variant["input"], family
+        assert taxonomy.case_fold("tool_body_whitespace")[0] == "tool_only"
+
+
+@pytest.mark.parametrize("family", ["gpt_oss", "kimi_k2", "kimi_k3"])
+def test_retired_whitespace_request_preserves_lookup_history(family):
+    path = SRC.parents[2] / f"conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
+    cases = yaml.safe_load(path.read_text())["cases"]
+    retained = cases["gpt_oss_tool_body_whitespace"]
+    assert retained["lifecycle"] == "retired"
+    assert retained["display_id"] is None
+    assert "UNIFIED.gpt_oss-tool_body_whitespace" in retained["historical_ids"]
+    assert retained["golden"]["assembled"] == [
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "x"}},
+    ]
+    assert "lookup" in retained["request"]["input"]
+    assert not G.scenario_families("gpt_oss_tool_body_whitespace")
+    assert "tool_body_whitespace" in cases
 
 
 def test_retired_harmony_eof_case_keeps_its_history_and_shared_contract():

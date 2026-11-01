@@ -155,12 +155,24 @@ impl ParsedValue {
     }
 
     pub(crate) fn to_value(&self) -> Value {
-        serde_json::from_str(
-            &self
-                .json_text()
-                .expect("ParsedValue must serialize as JSON"),
-        )
-        .expect("ParsedValue serialization must be valid JSON")
+        match self {
+            Self::Json(value) => value.clone(),
+            // Value cannot hold an out-of-range number without arbitrary_precision.
+            // Preserve its token as a string rather than losing the enclosing object.
+            Self::RawNumber(raw) => serde_json::from_str(raw.get())
+                .unwrap_or_else(|_| Value::String(raw.get().to_string())),
+            Self::RawJson(raw) => parsed_json_literal(raw.get())
+                .expect("ParsedValue must contain bounded valid JSON")
+                .to_value(),
+            Self::Array(items) => Value::Array(items.iter().map(Self::to_value).collect()),
+            Self::Object(fields) => Value::Object(
+                fields
+                    .keys
+                    .keys()
+                    .map(|key| (key.clone(), fields.values[key].to_value()))
+                    .collect(),
+            ),
+        }
     }
 
     pub(crate) fn as_object(&self) -> Option<&BTreeMap<String, ParsedValue>> {

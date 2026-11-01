@@ -85,7 +85,7 @@ for (const [expected,actual,verdict] of [
   numericDocument.cases.id.golden.assembled=[golden];
   const delta={kind:'tool_call',name:'f',arguments:`{"value":${actual}}`,complete:true};
   const capture={provenance:{status:'captured',origin:{crate_version:'1.0.0',source_sha256:'a'.repeat(64)}},document:{},
-    changes:{id:{case_key:input.display_id,stimulus:{ref:'current'},observation:{value:{assembled:[golden],chunks:[{expected:[delta]}]}}}},metadata_changes:{},document_overrides:{}};
+    changes:{id:{case_key:input.display_id,stimulus:{ref:'current'},observation:{value:{assembled:[{kind:delta.kind,name:delta.name,arguments:delta.arguments}],chunks:[{expected:[delta]}]}}}},metadata_changes:{},document_overrides:{}};
   await validateUnifiedCapture(capture,numericDocument,identity);
   const reader={unifiedInputs:async()=>({value:numericDocument}),unified:async()=>({records:resolveUnified([{...identity,document:capture}],'1.0.0')})};
   const numericPanel=await unifiedPanel(catalog,reader), cell=toolOnlyCell(numericPanel);

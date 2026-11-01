@@ -6912,12 +6912,13 @@ cases:
       - kind: text
         text: done
   reason_markup_in_arg:
-    lifecycle: active
+    lifecycle: retired
     scenario: reason_markup_in_arg
     description: '''Tool call contains reasoning'' — a reasoning-channel marker sits inside a QUOTED tool-arg value. This is NOT a leak: a leak is control markup surfacing in visible content or reasoning, but here the markup is a tool ARGUMENT VALUE (data bound for the function, inside the grammar''s string delimiters), so by I7 the parser preserves it byte-exact. The gemma4 native UnifiedParser confirms this golden exactly. Failure mode: a reasoning-first pipeline extracts the `<think>`/`<|channel>` from inside the arg BEFORE tool parsing, hoisting it into a spurious reasoning event and corrupting the arg to empty.'
     policy: []
-    display_id: UNIFIED.12-reason_markup_in_arg
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.12-reason_markup_in_arg
     request:
       input: <|start|>assistant to=functions.log<|channel|>commentary <|message|>{"note":"<|start|>assistant<|channel|>analysis<|message|>secret<|end|>"}<|call|>
       init:
@@ -6950,12 +6951,13 @@ cases:
         arguments:
           note: <|start|>assistant<|channel|>analysis<|message|>secret<|end|>
   reason_markup_in_arg_with_text:
-    lifecycle: active
+    lifecycle: retired
     scenario: reason_markup_in_arg_with_text
     description: 'reason_markup_in_arg (tool arg value contains reasoning markup, I7 data) WITH visible narration before and after the call. All three channels at once: leading text -> tool call whose arg holds reasoning markup -> trailing text. Golden keeps the visible text as text, the call as a call, and the markup byte-exact in the arg. A reasoning-first pipeline both corrupts the arg (extracting the embedded reasoning) and can reorder/misroute the surrounding text.'
     policy: []
-    display_id: UNIFIED.12-reason_markup_in_arg_with_text
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.12-reason_markup_in_arg_with_text
     request:
       input: '<|start|>assistant<|channel|>final<|message|>Logging now: <|start|>assistant to=functions.log<|channel|>commentary <|message|>{"note":"<|start|>assistant<|channel|>analysis<|message|>secret<|end|>"}<|call|><|start|>assistant<|channel|>final<|message|> done.<|return|>'
       init:
@@ -8848,14 +8850,15 @@ cases:
         arguments:
           city: Paris
   gpt_oss_interrupted_reasoning_then_response:
-    lifecycle: active
+    lifecycle: retired
     scenario: gpt_oss_interrupted_reasoning_then_response
     description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
     policy:
     - I1
     - I3
-    display_id: UNIFIED.gpt_oss-interrupted_reasoning_then_response
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.gpt_oss-interrupted_reasoning_then_response
     request:
       input: <|start|>assistant<|channel|>analysis<|message|>checking<|start|>assistant<|channel|>final<|message|>done<|return|>
       init:
@@ -9640,15 +9643,16 @@ cases:
       - kind: text
         text: Answer
   gpt_oss_tool_body_whitespace:
-    lifecycle: active
+    lifecycle: retired
     scenario: gpt_oss_tool_body_whitespace
     description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
     policy:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-tool_body_whitespace
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.gpt_oss-tool_body_whitespace
     request:
       input: "<|start|>assistant<|channel|>commentary to=functions.lookup <|constrain|>json<|message|> \n\t{\"q\":\"x\"}<|call|>"
       init:
@@ -9674,6 +9678,41 @@ cases:
         name: lookup
         arguments:
           q: x
+  tool_body_whitespace:
+    lifecycle: active
+    scenario: tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.1-tool_body_whitespace
+    historical_ids: []
+    request:
+      input: "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{\"city\":\"Paris\"}<|call|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: " \n\t{\"city\":\"Paris\"}"
+      - delta_text: <|call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   xml_string_type_double_quoted_object:
     lifecycle: active
     scenario: xml_string_type_double_quoted_object
@@ -10701,3 +10740,603 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  blank_framing_tool_only:
+    lifecycle: active
+    scenario: blank_framing_tool_only
+    description: A tool-only turn frames its call with a newline on each side, as Nemotron emits it. The tag-aligned schedule delivers each newline in its own chunk. Nemotron V3 emits no text; every other family keeps the newlines.
+    policy:
+    - P8
+    - I5
+    display_id: UNIFIED.8-blank_framing_tool_only
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_between_calls_single_chunk:
+    lifecycle: active
+    scenario: blank_framing_between_calls_single_chunk
+    description: Two calls framed by newlines before, between, and after them, delivered in one push. Nemotron V3 emits no text; every other family keeps the newlines.
+    policy:
+    - P8
+    - I6
+    display_id: UNIFIED.8-blank_framing_between_calls_single_chunk
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Tokyo"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: '<|start|>assistant<|channel|>final<|message|>
+
+          <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+
+          <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Tokyo"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+          <|return|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Tokyo
+      - kind: text
+        text: '
+
+          '
+  blank_framing_with_prose:
+    lifecycle: active
+    scenario: blank_framing_with_prose
+    description: 'Visible prose before the call: the turn has visible text, so every whitespace byte, including the newline after the call, is kept by every family.'
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_with_prose
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>Pressing it now.
+
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: 'Pressing it now.
+
+
+          '
+      - delta_text: <|return|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_after_reasoning:
+    lifecycle: active
+    scenario: blank_framing_after_reasoning
+    description: 'Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive. Nemotron V3 emits no framing text; every other family keeps it.'
+    policy:
+    - P8
+    - I2
+    display_id: UNIFIED.11-blank_framing_after_reasoning
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>final<|message|>
+
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: analysis
+      - delta_text: <|message|>
+      - delta_text: Check weather.
+      - delta_text: <|end|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+
+          '
+      - delta_text: <|return|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: text
+        text: '
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_prose_after_call:
+    lifecycle: active
+    scenario: blank_framing_prose_after_call
+    description: 'Framing newline, a call, then visible prose: the turn has visible text, so every whitespace byte is kept. Nemotron V3 holds the leading newline and releases it in front of the prose, so its text follows the call; every other family keeps it before the call.'
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_prose_after_call
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        Done.<|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          Done.'
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          Done.'
+  blank_output_without_call:
+    lifecycle: active
+    scenario: blank_output_without_call
+    description: Whitespace-only output with no call is visible content and is kept unchanged by every family.
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.3-blank_output_without_call
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>
+
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+  arg_numeric_overflow_siblings_finite:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_finite
+    description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_finite
+    historical_ids: []
+    request:
+      input: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1.5}<|call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1.5}<|call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1.5}'
+  arg_numeric_overflow_siblings_positive:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_positive
+    description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_positive
+    historical_ids: []
+    request:
+      input: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1e400}<|call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":1e400}<|call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1e400}'
+  arg_numeric_overflow_siblings_negative:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_negative
+    description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_negative
+    historical_ids: []
+    request:
+      input: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":-1E+400}<|call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":-1E+400}<|call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":-1E+400}'
+  interrupted_reasoning_then_response:
+    lifecycle: active
+    scenario: interrupted_reasoning_then_response
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
+    policy:
+    - I1
+    - I3
+    display_id: UNIFIED.10-interrupted_reasoning_then_response
+    historical_ids: []
+    request:
+      input: <|start|>assistant<|channel|>analysis<|message|>let me think<|start|>assistant<|channel|>final<|message|>The answer is 42.<|return|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: analysis
+      - delta_text: <|message|>
+      - delta_text: let me think
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: The answer is 42.
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: let me think
+      - kind: text
+        text: The answer is 42.
+  reason_markup_in_arg_consistent:
+    lifecycle: active
+    scenario: reason_markup_in_arg_consistent
+    description: '''Tool call contains reasoning'' — a reasoning-channel marker sits inside a QUOTED tool-arg value. This is NOT a leak: a leak is control markup surfacing in visible content or reasoning, but here the markup is a tool ARGUMENT VALUE (data bound for the function, inside the grammar''s string delimiters), so by I7 the parser preserves it byte-exact. The gemma4 native UnifiedParser confirms this golden exactly. Failure mode: a reasoning-first pipeline extracts the `<think>`/`<|channel>` from inside the arg BEFORE tool parsing, hoisting it into a spurious reasoning event and corrupting the arg to empty.'
+    policy: []
+    display_id: UNIFIED.12-reason_markup_in_arg_consistent
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=functions.log<|channel|>commentary <|message|>{"note":"<|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>"}<|call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=functions.log
+      - delta_text: <|channel|>
+      - delta_text: 'commentary '
+      - delta_text: <|message|>
+      - delta_text: '{"note":"'
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: analysis
+      - delta_text: <|message|>
+      - delta_text: reconsider
+      - delta_text: <|end|>
+      - delta_text: '"}'
+      - delta_text: <|call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: log
+        arguments:
+          note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
+  reason_markup_in_arg_with_text_consistent:
+    lifecycle: active
+    scenario: reason_markup_in_arg_with_text_consistent
+    description: 'reason_markup_in_arg (tool arg value contains reasoning markup, I7 data) WITH visible narration before and after the call. All three channels at once: leading text -> tool call whose arg holds reasoning markup -> trailing text. Golden keeps the visible text as text, the call as a call, and the markup byte-exact in the arg. A reasoning-first pipeline both corrupts the arg (extracting the embedded reasoning) and can reorder/misroute the surrounding text.'
+    policy: []
+    display_id: UNIFIED.12-reason_markup_in_arg_with_text_consistent
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>Logging now: <|start|>assistant to=functions.log<|channel|>commentary <|message|>{"note":"<|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>"}<|call|><|start|>assistant<|channel|>final<|message|> done.<|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: 'Logging now: '
+      - delta_text: <|start|>
+      - delta_text: assistant to=functions.log
+      - delta_text: <|channel|>
+      - delta_text: 'commentary '
+      - delta_text: <|message|>
+      - delta_text: '{"note":"'
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: analysis
+      - delta_text: <|message|>
+      - delta_text: reconsider
+      - delta_text: <|end|>
+      - delta_text: '"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: ' done.'
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Logging now: '
+      - kind: tool_call
+        name: log
+        arguments:
+          note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
+      - kind: text
+        text: ' done.'

@@ -21089,66 +21089,804 @@ cases:
         name: not_offered
         arguments:
           x: '2'
-  narrated_bare_invoke_in_unterminated_thought:
+  blank_framing_tool_only:
     lifecycle: active
-    scenario: narrated_bare_invoke_in_unterminated_thought
-    description: 'ai-dynamo/dynamo#17663: a thought that never closes narrates the same bare `<function=…>` invoke three times, the shape of a model looping until `max_tokens`. A bare invoke header inside an open thought is narration on this grammar: its `<function=…>` and `</function>` markers are stripped and nothing dispatches. Treating each narration as a call returned 19 duplicate `tool_calls` from one looping thought.'
+    scenario: blank_framing_tool_only
+    description: A tool-only turn frames its call with a newline on each side, as Nemotron emits it. The tag-aligned schedule delivers each newline in its own chunk. Nemotron V3 emits no text; every other family keeps the newlines.
     policy:
-    - I3
-    display_id: UNIFIED.qwen3-narrated_bare_invoke_in_unterminated_thought
+    - P8
+    - I5
+    display_id: UNIFIED.8-blank_framing_tool_only
     historical_ids: []
     request:
-      input: '</think><think>Plan: <function=queue_label_print_job>label_count=48</function> Done. Proceeds. <function=queue_label_print_job>label_count=48</function> matches. <function=queue_label_print_job>label_count=48</function>'
+      input: '</think>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        '
       init:
         starting_state: None
         tool_output_mode: Native
         named_tool: null
-      finish_reason: length
+      finish_reason: stop
       tools:
-      - name: queue_label_print_job
+      - name: get_weather
         parameters:
           type: object
           properties:
-            label_count:
-              type: integer
-          required:
-          - label_count
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: </think>
+      - delta_text: '
+
+          '
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=city>
+      - delta_text: '
+
+          Paris
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  blank_framing_between_calls_single_chunk:
+    lifecycle: active
+    scenario: blank_framing_between_calls_single_chunk
+    description: Two calls framed by newlines before, between, and after them, delivered in one push. Nemotron V3 emits no text; every other family keeps the newlines.
+    policy:
+    - P8
+    - I6
+    display_id: UNIFIED.8-blank_framing_between_calls_single_chunk
+    historical_ids: []
+    request:
+      input: '</think>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=city>
+
+        Tokyo
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '</think>
+
+          <tool_call>
+
+          <function=get_weather>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          </function>
+
+          </tool_call>
+
+
+          <tool_call>
+
+          <function=get_weather>
+
+          <parameter=city>
+
+          Tokyo
+
+          </parameter>
+
+          </function>
+
+          </tool_call>
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Tokyo
+  blank_framing_with_prose:
+    lifecycle: active
+    scenario: blank_framing_with_prose
+    description: 'Visible prose before the call: the turn has visible text, so every whitespace byte, including the newline after the call, is kept by every family.'
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_with_prose
+    historical_ids: []
+    request:
+      input: '</think>Pressing it now.
+
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: </think>
+      - delta_text: 'Pressing it now.
+
+
+          '
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=city>
+      - delta_text: '
+
+          Paris
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_after_reasoning:
+    lifecycle: active
+    scenario: blank_framing_after_reasoning
+    description: 'Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive. Nemotron V3 emits no framing text; every other family keeps it.'
+    policy:
+    - P8
+    - I2
+    display_id: UNIFIED.11-blank_framing_after_reasoning
+    historical_ids: []
+    request:
+      input: '</think><think>Check weather.</think>
+
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
       chunks:
       - delta_text: </think>
       - delta_text: <think>
-      - delta_text: 'Plan: '
-      - delta_text: <function=queue_label_print_job>
-      - delta_text: label_count=48
+      - delta_text: Check weather.
+      - delta_text: </think>
+      - delta_text: '
+
+
+          '
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=city>
+      - delta_text: '
+
+          Paris
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
       - delta_text: </function>
-      - delta_text: ' Done. Proceeds. '
-      - delta_text: <function=queue_label_print_job>
-      - delta_text: label_count=48
-      - delta_text: </function>
-      - delta_text: ' matches. '
-      - delta_text: <function=queue_label_print_job>
-      - delta_text: label_count=48
-      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: '
+
+          '
       - delta_text: ‹finish›
     golden:
       assembled:
       - kind: reasoning
-        text: 'Plan: label_count=48 Done. Proceeds. label_count=48 matches. label_count=48'
-  narrated_bare_invoke_then_wrapped_call:
+        text: Check weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  blank_framing_prose_after_call:
     lifecycle: active
-    scenario: narrated_bare_invoke_then_wrapped_call
-    description: 'ai-dynamo/dynamo#17663: a bare invoke narrated inside a closed thought, then the real call arrives wrapped in `<tool_call>` after the thought closes. The narration''s markers are stripped from the thought and exactly one call dispatches, from the wrapped envelope. Contrast with `12-tool_in_reason`, where the envelope INSIDE the thought is wrapped and therefore structural.'
+    scenario: blank_framing_prose_after_call
+    description: 'Framing newline, a call, then visible prose: the turn has visible text, so every whitespace byte is kept. Nemotron V3 holds the leading newline and releases it in front of the prose, so its text follows the call; every other family keeps it before the call.'
     policy:
-    - I3
-    display_id: UNIFIED.qwen3-narrated_bare_invoke_then_wrapped_call
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_prose_after_call
     historical_ids: []
     request:
-      input: '</think><think>plan <function=queue_label_print_job>label_count=48</function> more</think><tool_call>
+      input: '</think>
 
-        <function=queue_label_print_job>
+        <tool_call>
 
-        <parameter=label_count>
+        <function=get_weather>
 
-        48
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        Done.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: </think>
+      - delta_text: '
+
+          '
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=city>
+      - delta_text: '
+
+          Paris
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: '
+
+          Done.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+
+          Done.'
+  blank_output_without_call:
+    lifecycle: active
+    scenario: blank_output_without_call
+    description: Whitespace-only output with no call is visible content and is kept unchanged by every family.
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.3-blank_output_without_call
+    historical_ids: []
+    request:
+      input: '</think>
+
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: </think>
+      - delta_text: '
+
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+  blank_framing_incomplete_call:
+    lifecycle: active
+    scenario: blank_framing_incomplete_call
+    description: A framing newline, then a call cut off mid-parameter at EOF. The call never completes, so the newline is kept as text and the partial call is dropped, for Nemotron V3 as for Qwen3.
+    policy:
+    - P8
+    - P2
+    display_id: UNIFIED.5-blank_framing_incomplete_call
+    historical_ids: []
+    request:
+      input: '</think>
+
+        <tool_call>
+
+        <function=get_weather>
+
+        <parameter=city>
+
+        Par'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: </think>
+      - delta_text: '
+
+          '
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=get_weather>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=city>
+      - delta_text: '
+
+          Par'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+  arg_numeric_overflow_siblings_finite:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_finite
+    description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_finite
+    historical_ids: []
+    request:
+      input: '</think><tool_call>
+
+        <function=echo>
+
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        <parameter=value>
+
+        1.5
 
         </parameter>
 
@@ -21161,52 +21899,179 @@ cases:
         named_tool: null
       finish_reason: stop
       tools:
-      - name: queue_label_print_job
+      - name: echo
         parameters:
           type: object
           properties:
-            label_count:
-              type: integer
+            city:
+              type: string
+            value:
+              type: number
           required:
-          - label_count
+          - city
+          - value
       chunks:
-      - delta_text: </think>
-      - delta_text: <think>
-      - delta_text: 'plan '
-      - delta_text: <function=queue_label_print_job>
-      - delta_text: label_count=48
-      - delta_text: </function>
-      - delta_text: ' more'
-      - delta_text: </think>
-      - delta_text: <tool_call>
-      - delta_text: '
+      - delta_text: '</think><tool_call>
 
-          '
-      - delta_text: <function=queue_label_print_job>
-      - delta_text: '
+          <function=echo>
 
-          '
-      - delta_text: <parameter=label_count>
-      - delta_text: '
+          <parameter=city>
 
-          48
+          Paris
 
-          '
-      - delta_text: </parameter>
-      - delta_text: '
+          </parameter>
 
-          '
-      - delta_text: </function>
-      - delta_text: '
+          <parameter=value>
 
-          '
-      - delta_text: </tool_call>
-      - delta_text: ‹finish›
+          1.5
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
     golden:
       assembled:
-      - kind: reasoning
-        text: plan label_count=48 more
       - kind: tool_call
-        name: queue_label_print_job
-        arguments:
-          label_count: 48
+        name: echo
+        arguments: '{"city":"Paris","value":1.5}'
+  arg_numeric_overflow_siblings_positive:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_positive
+    description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_positive
+    historical_ids: []
+    request:
+      input: '</think><tool_call>
+
+        <function=echo>
+
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        <parameter=value>
+
+        1e400
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: '</think><tool_call>
+
+          <function=echo>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          <parameter=value>
+
+          1e400
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1e400}'
+  arg_numeric_overflow_siblings_negative:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_negative
+    description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_negative
+    historical_ids: []
+    request:
+      input: '</think><tool_call>
+
+        <function=echo>
+
+        <parameter=city>
+
+        Paris
+
+        </parameter>
+
+        <parameter=value>
+
+        -1E+400
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: '</think><tool_call>
+
+          <function=echo>
+
+          <parameter=city>
+
+          Paris
+
+          </parameter>
+
+          <parameter=value>
+
+          -1E+400
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":-1E+400}'

@@ -646,7 +646,7 @@ assert.equal(Object.hasOwn(derivedSelection.get('suppressed').value.document, 'i
   assert.equal(assembleStream(malformed)[0].arguments, '{');
   assert.equal(assembleStream(malformed, [{ kind: 'tool_call', name: 'different', arguments: {} }])[0].arguments, '{');
   assert.equal(assembleStream(malformed, [])[0].arguments, '{');
-  assert.equal(assembleStream([[{ kind: 'tool_call', name: 'f', arguments: '"literal"', complete: true }]], [{ kind: 'tool_call', name: 'f', arguments: {} }])[0].arguments, 'literal');
+  assert.deepEqual(assembleStream([[{ kind: 'tool_call', name: 'f', arguments: '"literal"', complete: true }]], [{ kind: 'tool_call', name: 'f', arguments: {} }])[0].arguments, {});
 
 }
 

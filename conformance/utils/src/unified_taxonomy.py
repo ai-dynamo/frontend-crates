@@ -25,7 +25,7 @@ from typing import NamedTuple
 from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
 from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group, schema_case_label
-from numeric_cases import NUMERIC_VARIANTS
+from numeric_cases import NUMERIC_VARIANTS, OVERFLOW_SIBLING_VARIANTS
 
 UNIFIED_TAX = {
     "default_reasoning_without_opener": (10, "6"),
@@ -42,6 +42,7 @@ UNIFIED_TAX = {
 
     # Group 1 — Single call
     "tool_only": (1, "1"),
+    "tool_body_whitespace": (1, "7"),
     "dotted_name_minimal": (1, "3"),
     "dotted_name_mixed_punctuation": (1, "4"),
     "dotted_name_multiple_segments": (1, "5"),
@@ -72,6 +73,8 @@ UNIFIED_TAX = {
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_numeric_nested_exact": (7, "20.nested_exact"),
+    **{f"arg_numeric_overflow_siblings_{variant}": (7, f"29.{variant}")
+       for variant, _ in OVERFLOW_SIBLING_VARIANTS},
     "arg_json_null_ref": (7, "4.ref"),
     "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),
@@ -152,6 +155,13 @@ UNIFIED_TAX = {
     "kimi_native_incremental_interfield_whitespace": ("kimi", "18"),
     "kimi_native_rejected_next_header_progress": ("kimi", "19"),
     "kimi_k3_typed_json_marker_payload": ("kimi", "20"),
+    "kimi_k3_typed_response_marker_payload": ("kimi", "21"),
+    "kimi_k3_json_missing_close_literal_response": ("kimi", "22"),
+    "kimi_k3_json_marker_then_long_field": ("kimi", "23"),
+    "kimi_k3_typed_response_then_call": ("kimi", "24"),
+    "kimi_k3_typed_response_argument_literal": ("kimi", "25"),
+    "kimi_k3_direct_typed_response_recovery": ("kimi", "26"),
+    "kimi_k3_direct_json_response_recovery": ("kimi", "27"),
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),
@@ -257,6 +267,14 @@ UNIFIED_TAX = {
     # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases). Completed below with family-scoped aliases.
     "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
     "prefilled_response_guided_closer_inside_invoke_quote": ("muse", "6"),
+    # Issue #406 — whitespace-only text in a tool-only turn is call framing.
+    "blank_framing_tool_only": (8, "12"),
+    "blank_framing_between_calls_single_chunk": (8, "13"),
+    "blank_framing_with_prose": (8, "14"),
+    "blank_output_without_call": (3, "2"),
+    "blank_framing_after_reasoning": (11, "11"),
+    "blank_framing_prose_after_call": (8, "15"),
+    "blank_framing_incomplete_call": (5, "5"),
     # DeepSeek V4 and V4.1 — DSML tool-call separator framing.
     **{scenario: ("dsml", str(index)) for index, scenario in enumerate([
         "dsml_separator_two_lf", "dsml_separator_four_lf", "dsml_no_separator",
@@ -396,9 +414,12 @@ for _scenario, _active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
 # Assign new numeric IDs after historical variants so their published ranks do not move.
 UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12")
 
+UNIFIED_TAX["interrupted_reasoning_then_response"] = (10, "7")
+UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "6")
+UNIFIED_TAX["reason_markup_in_arg_with_text_consistent"] = (12, "7")
 
 # Historical requests remain separate executions, but share one semantic heading.
-RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped"})
+RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace", "gpt_oss_interrupted_reasoning_then_response", "kimi_k3_elided_think_close_to_response"})
 
 
 class CaseVariant(NamedTuple):
@@ -409,6 +430,9 @@ class CaseVariant(NamedTuple):
 
 
 SHARED_CASE_VARIANTS = {
+    "interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Elided reasoning close"),
+    "reason_markup_in_arg_consistent": CaseVariant("reason_markup_in_arg", "Consistent example prose", "reason_markup_in_arg"),
+    "reason_markup_in_arg_with_text_consistent": CaseVariant("reason_markup_in_arg_with_text", "Consistent example prose", "reason_markup_in_arg_with_text"),
     **{scenario + "_pr424": CaseVariant(scenario, "Retained #424 delivery / input", scenario)
        for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items() if active},
     **{scenario: CaseVariant(scenario.removeprefix("harmony_"), "Harmony partial header", scenario.removeprefix("harmony_"))
@@ -423,6 +447,7 @@ SHARED_CASE_VARIANTS = {
     "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call"),
     "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call"),
     "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
+    "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
     "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response"),
     "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header"),
 }

@@ -49,6 +49,7 @@
 //! divergence is stated at the item.
 
 pub mod beam;
+mod blank_tool_turn;
 pub mod deepseek_v4;
 pub mod deepseek_v41;
 pub mod gemma4;
@@ -750,6 +751,9 @@ pub fn tool_arguments_raw(deltas: &[UnifiedParserEvent]) -> BTreeMap<usize, Stri
 /// call's position at its FIRST delta so order survives fragmentation. Empty or
 /// unparseable arguments become `{}` (policy P3) rather than an error, because a
 /// malformed argument payload must not take down the rest of the turn.
+/// Without `arbitrary-precision`, out-of-range numeric tokens become strings in
+/// this projection, preserving sibling values. Raw argument deltas and
+/// [`tool_arguments_raw`] retain the original numeric JSON tokens.
 pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
     assemble_with_tool_indices(deltas)
         .into_iter()
@@ -821,17 +825,23 @@ pub fn assemble_with_tool_indices(
             // Best-effort (P3): a malformed payload must not take down the turn, but
             // it is NOT discarded silently — `{}` alone is indistinguishable from a
             // genuine no-arg call, so a corrupted argument would look like a clean parse.
-            *arguments = serde_json::from_str(&raw).unwrap_or_else(|e| {
-                if !raw.trim().is_empty() {
-                    tracing::warn!(
-                        why = "unified_unparseable_tool_arguments",
-                        error = %e,
-                        argument_bytes = raw.len(),
-                        "tool-call arguments did not parse as JSON; emitting an empty object"
-                    );
-                }
-                serde_json::json!({})
-            });
+            *arguments = serde_json::from_str(&raw)
+                .or_else(|error| {
+                    parsed_json_literal(&raw)
+                        .map(|value| value.to_value())
+                        .ok_or(error)
+                })
+                .unwrap_or_else(|e| {
+                    if !raw.trim().is_empty() {
+                        tracing::warn!(
+                            why = "unified_unparseable_tool_arguments",
+                            error = %e,
+                            argument_bytes = raw.len(),
+                            "tool-call arguments did not parse as JSON; emitting an empty object"
+                        );
+                    }
+                    serde_json::json!({})
+                });
         }
     }
     incomplete_positions.sort_unstable_by(|left, right| right.cmp(left));
@@ -6587,9 +6597,10 @@ macro_rules! unified_registry {
         /// Create the unified parser for a family.
         ///
         /// A vendor registration wins over the built-in of the same name — see
-        /// [`register_unified_parser`]. Both branches return the parser directly:
-        /// there is no unified debug wrapper (the only `DebugToolParser` wraps the
-        /// separate tool-only trait). Selection is observable through the
+        /// [`register_unified_parser`]. For Nemotron V3, both branches apply the
+        /// tool-only-turn whitespace rule (issue #406): whitespace-only text is dropped
+        /// from a turn that calls tools and shows no visible text. Other families are
+        /// returned unwrapped. Selection is observable through the
         /// `tracing::debug!` event emitted here, and it reports vendor and built-in
         /// on the same terms.
         pub fn create_unified_parser_for_family(
@@ -6598,7 +6609,9 @@ macro_rules! unified_registry {
         ) -> Result<Box<dyn UnifiedParser>> {
             if let Some(factory) = vendor_factory(family) {
                 let key = canonical_unified_family(family).unwrap_or(family);
-                let parser = factory(tools)?;
+                // A vendor parser for Nemotron V3 gets the same tool-only-turn rule as
+                // the built-in it may shadow, so routing never decides the answer.
+                let parser = blank_tool_turn::wrap(key, factory(tools)?);
                 tracing::debug!(
                     target: "dynamo_parsers_v2",
                     family = key,
@@ -6631,6 +6644,10 @@ macro_rules! unified_registry {
             // arm per family plus an `unreachable!` that existed only because the compiler
             // cannot see that the `bail!` above already returned.
             let canonical = canonical_unified_family(family).unwrap_or(family);
+            // Applied here rather than in the scanner: whether whitespace is call
+            // framing depends on the rest of the turn. Only Nemotron V3 is wrapped;
+            // see `blank_tool_turn` for why.
+            let parser = blank_tool_turn::wrap(canonical, parser);
 
             // Parser construction happens per request, so keep the selection signal
             // at debug level. Operators can enable the target when diagnosing routing
@@ -8414,6 +8431,44 @@ mod tests {
                 UnifiedEvent::Text { text: "mid".into() },
             ]
         );
+    }
+
+    // Overflow must not erase siblings at any depth in the Value projection.
+    #[test]
+    fn assemble_out_of_range_numbers_preserves_nested_siblings() {
+        let raw = r#"{"before":true,"nested":{"value":1e400,"city":"Paris"},"items":[-1e400,1.5,null],"after":"ok"}"#;
+        let projected = |raw: &str| {
+            serde_json::from_str::<serde_json::Value>(raw)
+                .unwrap_or_else(|_| serde_json::Value::String(raw.into()))
+        };
+        let expected = vec![UnifiedEvent::ToolCall {
+            name: "f".into(),
+            arguments: serde_json::json!({
+                "before":true, "nested":{"value":projected("1e400"),"city":"Paris"},
+                "items":[projected("-1e400"),1.5,null], "after":"ok"
+            }),
+        }];
+        let split = raw.find("1e400").unwrap() + 2;
+        assert_eq!(
+            assemble(&[
+                call(0, Some("f"), &raw[..split]),
+                call(0, None, &raw[split..]),
+            ]),
+            expected
+        );
+        for malformed in [
+            r#"{"value":1e400,"broken":}"#,
+            r#"{"value":1e400} trailing"#,
+            r#"{"value":1e+}"#,
+        ] {
+            assert_eq!(
+                assemble(&[call(0, Some("f"), malformed)]),
+                vec![UnifiedEvent::ToolCall {
+                    name: "f".into(),
+                    arguments: serde_json::json!({}),
+                }]
+            );
+        }
     }
 
     #[test]

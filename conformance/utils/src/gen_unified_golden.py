@@ -37,6 +37,7 @@ from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, 
 from numeric_cases import (
     NUMERIC_DESCRIPTIONS,
     NUMERIC_VARIANTS,
+    OVERFLOW_SIBLING_VARIANTS,
     SCHEMA_DIRECTED_FAMILIES,
     NumericLiteral,
     applicable,
@@ -49,6 +50,7 @@ from impls import VLLM_UNIFIED_PIPELINES
 from schema_cases import native_call_wire
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 from unified_taxonomy import V1_SPLIT_SCENARIOS
+from unified_tools import unified_tools
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -2472,6 +2474,46 @@ EDGE.append((
 ))
 
 
+HARMONY_CONSISTENT_MARKER_CASES = ("reason_markup_in_arg", "reason_markup_in_arg_with_text")
+for _parent in HARMONY_CONSISTENT_MARKER_CASES:
+    _events = [{"kind": "tool_call", "name": "log", "arguments": {
+        "note": HARMONY_EDGE_GOLDEN_VALUES[_parent].replace(">secret<", ">reconsider<"),
+    }}]
+    if _parent.endswith("_with_text"):
+        _events = [{"kind": "text", "text": "Logging now: "}, *_events,
+                   {"kind": "text", "text": " done."}]
+    EDGE.append((
+        _parent + "_consistent",
+        "Native reasoning markers inside a tool argument remain literal data. Reuse the shared reconsider prose while preserving the original Harmony markers and surrounding narration.",
+        [], _events,
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({"gpt_oss": (
+            HARMONY_EDGE_INPUTS[_parent].replace(">secret<", ">reconsider<"),
+            D("UNSUPPORTED", "No peer capture recorded for this request."), M,
+        )}),
+        [],
+    ))
+
+_response_segments = next(case[3] for case in CLEAN if case[0] == "reason_then_content")
+
+EDGE.append((
+    "interrupted_reasoning_then_response",
+    "An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and following visible answer with the existing native response-header cases.",
+    {"beam": ["I1", "I3"], "gpt_oss": ["I1", "I3"],
+     "kimi_k3": ["P2"], "muse_glimmer": ["I1", "I3"]},
+    golden_of(_response_segments),
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({family: (
+        r_reason(family, _response_segments[0][1]).removesuffix(control_tokens(family)[1])
+        + r_text(family, _response_segments[1][1]),
+        D("UNSUPPORTED", "No peer capture recorded for this request."), M,
+    ) for family in ("beam", "gpt_oss", "kimi_k3", "muse_glimmer")}),
+    {"beam": [], "gpt_oss": [], "kimi_k3": unified_tools(), "muse_glimmer": []},
+))
+
+
 EDGE += [
     ("guided_json_native_markup_only",
      "Guided decoding receives one complete native tool call instead of bare JSON. The whole turn is control markup, so it emits no events. Every stream split must match the whole-input result; consuming the invoke header before its terminator leaks the parameter body as user-visible text (`I6`).",
@@ -2857,6 +2899,56 @@ EDGE.append((
         "y": {"type": "string"},
     }, "required": ["x", "y"]}}],
 ))
+
+
+K3_RESPONSE_LITERAL = k3_close("argument") + r_text("kimi_k3", "literal") + "after"
+K3_MARKER_PROGRESS_ARGUMENTS = {"q": r_text("kimi_k3", "literal"), "content": "x" * 4096}
+K3_RESPONSE_CASES = [
+    ("kimi_k3_typed_response_marker_payload",
+     "Native K3 typed string contains an apparent argument close and a framed response before its real argument close. The response stays literal argument data.",
+     r_tool_arguments("kimi_k3", "lookup", {"q": K3_RESPONSE_LITERAL}, 0),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": K3_RESPONSE_LITERAL}}]),
+    ("kimi_k3_json_missing_close_literal_response",
+     "Native K3 raw JSON contains a closed quoted response marker, but its JSON-channel close is missing. Recover the complete object without exposing the quoted response as text.",
+     k3_tools(k3_call("lookup", 1, k3_json(json.dumps({"q": r_text("kimi_k3", "literal")})).removesuffix(k3_close("json")))),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": r_text("kimi_k3", "literal")}}]),
+    ("kimi_k3_json_marker_then_long_field",
+     "Native K3 raw JSON has a literal response marker in the first field followed by a long second field. Settled marker ownership must allow second-field progress before native call closure.",
+     k3_tools(k3_call("lookup", 1, k3_json(json.dumps(K3_MARKER_PROGRESS_ARGUMENTS)))),
+     [{"kind": "tool_call", "name": "lookup", "arguments": K3_MARKER_PROGRESS_ARGUMENTS}]),
+    ("kimi_k3_typed_response_then_call",
+     "Native K3 has a closed typed value with missing call/tools closes, then a response and another valid call. The later call must not lend its argument close to the first call.",
+     k3_tools(k3_call("lookup", 1, k3_argument("q", "string", "first"), close=False), close=False)
+     + r_text("kimi_k3", "recovered") + r_tool_arguments("kimi_k3", "next", {"n": 7}, 1),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}},
+      {"kind": "text", "text": "recovered"}, {"kind": "tool_call", "name": "next", "arguments": {"n": 7}}]),
+    ("kimi_k3_typed_response_argument_literal",
+     "Native K3 typed string contains an apparent argument close, response opener, and later literal argument opener. The original typed value owns the later close at EOF.",
+     r_tool_arguments("kimi_k3", "lookup", {"q": "a" + k3_close("argument") + k3_open("response")
+                      + k3_argument("x", "string", "z").removesuffix(k3_close("argument"))}, 0),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "a" + k3_close("argument") + k3_open("response")
+                                                           + k3_argument("x", "string", "z").removesuffix(k3_close("argument"))}}]),
+    ("kimi_k3_direct_typed_response_recovery",
+     "Native K3 starts in Response with a direct typed call missing its call close. Recover the call and consume the following response header without exposing XTML as visible text.",
+     k3_call("lookup", 1, k3_argument("q", "string", "first"), close=False) + r_text("kimi_k3", "recovered"),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}}, {"kind": "text", "text": "recovered"}]),
+    ("kimi_k3_direct_json_response_recovery",
+     "Native K3 starts in Response with a direct raw-JSON call missing its call close. Recover the object and consume the following response header without exposing XTML as visible text.",
+     k3_call("lookup", 1, k3_json('{"q":"first"}'), close=False) + r_text("kimi_k3", "recovered"),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}}, {"kind": "text", "text": "recovered"}]),
+]
+for scenario, description, native, golden in K3_RESPONSE_CASES:
+    EDGE.append((
+        scenario, description, ["I3", "I5", "I7"], golden,
+        {"starting_state": "Response" if scenario in {
+            "kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery",
+        } else "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": [native[offset:offset + 64] for offset in range(0, len(native), 64)]}},
+        OnlyFamilies({"kimi_k3": (native, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}),
+        [{"name": "lookup", "parameters": {"type": "object", "properties": {
+            "q": {"type": "string"}, "content": {"type": "string"}}, "required": ["q"]}},
+         {"name": "next", "parameters": {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}}],
+    ))
 
 
 DEEPSEEK_V41_SCENARIOS = {
@@ -3315,6 +3407,32 @@ EDGE.append((
     ) for family in FAMILIES}),
     {family: _NESTED_NUMERIC_SCHEMA for family in FAMILIES},
 ))
+
+
+OVERFLOW_SIBLING_CASES = []
+for variant, token in OVERFLOW_SIBLING_VARIANTS:
+    arguments = {"city": "Paris", "value": NumericLiteral(token)}
+    golden = '{"city":"Paris","value":' + token + '}'
+    tools = [{"name": "echo", "parameters": {
+        "type": "object", "properties": {
+            "city": {"type": "string"}, "value": {"type": "number"},
+        },
+        "required": ["city", "value"],
+    }}]
+    OVERFLOW_SIBLING_CASES.append((
+        f"arg_numeric_overflow_siblings_{variant}",
+        f"Numeric token {token} preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.",
+        ["I7"], [{"kind": "tool_call", "name": "echo", "arguments": golden}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({family: (
+            r_tool_arguments(family, "echo", arguments, 0),
+            VLLM_UNCAPTURABLE.get(family, M), M,
+            [{"kind": "tool_call", "name": "echo", "arguments": golden}],
+        ) for family in FAMILIES}),
+        {family: tools for family in FAMILIES},
+    ))
+EDGE.extend(OVERFLOW_SIBLING_CASES)
 
 
 _NATIVE_QUOTED_CONTROL = {
@@ -3798,6 +3916,73 @@ DEFAULT_REASONING_CASES = [
 ]
 
 
+# Issue #406: whitespace-only text in a Nemotron V3 turn that calls tools and shows no
+# visible text is call framing (P8). Nemotron frames each Qwen3-Coder call with a
+# newline on both sides, and its chat template renders assistant content as
+# `content | trim`, so dropping that whitespace re-renders the same prompt tokens.
+# Only `nemotron_v3` gets the rule: a template that renders content verbatim would
+# lose prefix-cache reuse at that turn, so every other family keeps its output, and
+# the case golden is that unchanged output. Nemotron inherits Qwen3's rows (input
+# bytes unchanged), and `INHERITED_GOLDEN` gives it its own golden.
+# Any turn with visible text keeps every whitespace byte, and whitespace with no
+# call is visible content, for every family.
+# Inputs render each whitespace run as the family's own visible-text segment.
+# Excluded: DeepSeek V4/V4.1 own their call framing (the `dsml-*` cases above keep
+# non-separator whitespace as content). GPT-OSS renders each run as a `final` message.
+_BLANK_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+_BLANK_FAMILIES = [f for f in TEMPLATE_FAMILIES if f not in ("deepseek_v4", "deepseek_v41")]
+_BLANK_CALL = ("tool", "get_weather", "city", "Paris")
+_BLANK_SECOND_CALL = ("tool", "get_weather", "city", "Tokyo")
+BLANK_FRAMING = [
+    ("blank_framing_tool_only",
+     "A tool-only turn frames its call with a newline on each side, as Nemotron emits it. The tag-aligned schedule delivers each newline in its own chunk. Nemotron V3 emits no text; every other family keeps the newlines.",
+     ["P8", "I5"], [("text", "\n"), _BLANK_CALL, ("text", "\n")],
+     [_BLANK_CALL], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_framing_between_calls_single_chunk",
+     "Two calls framed by newlines before, between, and after them, delivered in one push. Nemotron V3 emits no text; every other family keeps the newlines.",
+     ["P8", "I6"], [("text", "\n"), _BLANK_CALL, ("text", "\n\n"), _BLANK_SECOND_CALL, ("text", "\n")],
+     [_BLANK_CALL, _BLANK_SECOND_CALL], {"finish_reason": "stop", "single_chunk": True}, _BLANK_FAMILIES),
+    ("blank_framing_with_prose",
+     "Visible prose before the call: the turn has visible text, so every whitespace byte, including the newline after the call, is kept by every family.",
+     ["P8", "I1"], [("text", "Pressing it now.\n\n"), _BLANK_CALL, ("text", "\n")],
+     [("text", "Pressing it now.\n\n"), _BLANK_CALL, ("text", "\n")], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_framing_after_reasoning",
+     "Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive. Nemotron V3 emits no framing text; every other family keeps it.",
+     ["P8", "I2"], [("reason", "Check weather."), ("text", "\n\n"), _BLANK_CALL, ("text", "\n")],
+     [("reason", "Check weather."), _BLANK_CALL], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_framing_prose_after_call",
+     "Framing newline, a call, then visible prose: the turn has visible text, so every whitespace byte is kept. Nemotron V3 holds the leading newline and releases it in front of the prose, so its text follows the call; every other family keeps it before the call.",
+     ["P8", "I1"], [("text", "\n"), _BLANK_CALL, ("text", "\nDone.")],
+     [_BLANK_CALL, ("text", "\n\nDone.")], {"finish_reason": "stop"}, _BLANK_FAMILIES),
+    ("blank_output_without_call",
+     "Whitespace-only output with no call is visible content and is kept unchanged by every family.",
+     ["P8", "I1"], [("text", "\n\n")],
+     [("text", "\n\n")], {"finish_reason": "stop"}, TEMPLATE_FAMILIES),
+]
+# A family that inherits a grammar copies that grammar's built cases (`build_cases`),
+# so a behavior that differs only in the inheriting family's parser is declared here:
+# (scenario, family) -> that family's golden. Keep it to measured, scoped rules.
+INHERITED_GOLDEN = {}
+for _scenario, _description, _policy, _segments, _nemotron_golden, _stream, _families in BLANK_FRAMING:
+    EDGE.append((
+        _scenario, _description, _policy, golden_of(_segments), _BLANK_INIT, _stream,
+        OnlyFamilies({f: (render_input(f, _segments), M, M) for f in _families}),
+    ))
+    if golden_of(_nemotron_golden) != golden_of(_segments):
+        INHERITED_GOLDEN[(_scenario, "nemotron_v3")] = golden_of(_nemotron_golden)
+
+# A framing newline before a call that never completes: no completed call, so the
+# whitespace is visible content for every family, Nemotron V3 included. Scoped to
+# the Qwen3 grammar (Nemotron inherits it): Qwen3 is the negative control and
+# Nemotron the family whose rule must not fire.
+EDGE.append((
+    "blank_framing_incomplete_call",
+    "A framing newline, then a call cut off mid-parameter at EOF. The call never completes, so the newline is kept as text and the partial call is dropped, for Nemotron V3 as for Qwen3.",
+    ["P8", "P2"], golden_of([("text", "\n")]), _BLANK_INIT, {"finish_reason": "stop"},
+    OnlyFamilies({"qwen3": ("\n<tool_call>\n<function=get_weather>\n<parameter=city>\nPar", M, M)}),
+))
+
+
 # Inherited grammars expose their authored rows to applicability and schema consumers too.
 for _spec in EDGE:
     _policy = _edge_case_family_policy(_spec)
@@ -3895,9 +4080,9 @@ EDGE.append(_structured_response_case())
 
 
 _GPT_OSS_REVIEW_CASES = (
-    ("gpt_oss_tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
-     '<|start|>assistant<|channel|>commentary to=functions.lookup <|constrain|>json<|message|> \n\t{"q":"x"}<|call|>',
-     [{"kind":"tool_call", "name":"lookup", "arguments":{"q":"x"}}]),
+    ("tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
+     '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{"city":"Paris"}<|call|>',
+     [{"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
     ("gpt_oss_constrained_final_header", "Harmony final header has a content type and no recipient. The JSON body stays visible response content; it is not a routed tool message.",
      '<|start|>assistant<|channel|>final <|constrain|>json<|message|>{"a":1}<|return|>',
      [{"kind":"text", "text":'{"a":1}'}]),
@@ -3923,7 +4108,6 @@ def _dsml_json_tool(family, name, body):
 
 
 def _native_review_variants(scenario):
-    arguments = {"q": "x"}
     if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
         variants = {}
         for family in TEMPLATE_FAMILIES:
@@ -3977,24 +4161,23 @@ def _native_review_variants(scenario):
             else:
                 native_input = r_tool(family, "lookup", "q", "unfinished", 0).removesuffix(control_tokens(family)[3])
             golden = ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
-                      if family == "muse_glimmer" else []) + [{"kind": "text", "text": "recovered"}]
-            dynamo = (D("LOSS", "An unclosed tool call swallows the later response; retain the visible-answer oracle.")
-                      if family == "kimi_k3" else M)
-            variants[family] = (native_input + r_text(family, "recovered"), golden, dynamo)
+                      if family in {"muse_glimmer", "kimi_k3"} else []) + [{"kind": "text", "text": "recovered"}]
+            variants[family] = (native_input + r_text(family, "recovered"), golden, M)
         return variants
     if scenario == "gpt_oss_interrupted_reasoning_then_response":
         golden = [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}]
         return {family: (r_reason(family, "checking").removesuffix(control_tokens(family)[1])
                          + r_text(family, "done"), golden, M) for family in ("beam", "muse_glimmer")}
-    if scenario == "gpt_oss_tool_body_whitespace":
-        golden = [{"kind": "tool_call", "name": "lookup", "arguments": arguments}]
+    if scenario == "tool_body_whitespace":
+        arguments = {"city": "Paris"}
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}]
         return {
             "kimi_k2": (
-                r_tool_arguments("kimi_k2", "lookup", arguments, 0).replace(
+                r_tool_arguments("kimi_k2", "get_weather", arguments, 0).replace(
                     "<|tool_call_argument_begin|>", "<|tool_call_argument_begin|> \n\t", 1
                 ), golden, M,
             ),
-            "kimi_k3": (k3_raw_tool("lookup", ' \n\t{"q":"x"}'), golden, M),
+            "kimi_k3": (k3_raw_tool("get_weather", ' \n\t{"city":"Paris"}'), golden, M),
         }
     if scenario == "gpt_oss_quoted_truncated_tool_then_final":
         golden = [{"kind": "text", "text": "Answer"}]
@@ -4006,7 +4189,7 @@ def _native_review_variants(scenario):
             ),
             "kimi_k3": (
                 k3_raw_tool("lookup", '{"q":"abc') + r_text("kimi_k3", "Answer"),
-                golden, D("LOSS", "An unterminated raw JSON string swallows the later response; retain the visible-answer oracle."),
+                golden, M,
             ),
         }
     if scenario == "gpt_oss_quoted_message_header_literal":
@@ -4032,8 +4215,9 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
     _inputs = OnlyFamilies({"gpt_oss": (_input, D("UNSUPPORTED", VLLM_UNCAPTURABLE["gpt_oss"]), M)})
     _inputs.update({family: (native_input, D("UNSUPPORTED", "No peer capture recorded."), dynamo, golden)
                     for family, (native_input, golden, dynamo) in _variants.items()})
-    _tools = {"gpt_oss": [], **{family: [{"name": "lookup", "parameters": {
-        "type": "object", "properties": {"q": {"type": "string"}},
+    _tool_name, _parameter = (("get_weather", "city") if _name == "tool_body_whitespace" else ("lookup", "q"))
+    _tools = {"gpt_oss": [], **{family: [{"name": _tool_name, "parameters": {
+        "type": "object", "properties": {_parameter: {"type": "string"}},
     }}] for family in _variants}}
     EDGE.append((
         _name, _description, ["I3", "I5", "I7"], _golden,
@@ -4216,6 +4400,8 @@ def build_cases(fam):
             if fam not in scenario_families(scenario):
                 continue
             case = json.loads(json.dumps(original))
+            if (scenario, fam) in INHERITED_GOLDEN:
+                case["golden"] = json.loads(json.dumps(INHERITED_GOLDEN[(scenario, fam)]))
             # Shared Qwen scenarios begin outside reasoning; Ultra's empty thought
             # closes that default channel without disabling later reasoning markers.
             if (case.get("init") or {}).get("starting_state", "None") == "None":
@@ -4238,7 +4424,18 @@ def build_cases(fam):
 def _build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     if _MANIFEST[fam].get("scenario_profile") == "native":
-        return _registered_native_cases(fam)
+        cases = _registered_native_cases(fam)
+        if fam in UNIFIED_FAMILIES:
+            grammar = next(
+                shared for shared in FAMILIES
+                if _MANIFEST[shared].get("registry") == _MANIFEST[fam].get("registry")
+                and _MANIFEST[shared].get("native")
+            )
+            cases.update({
+                key.rsplit(".", 1)[0] + "." + fam: case
+                for key, case in _build_edge_cases(grammar, OVERFLOW_SIBLING_CASES).items()
+            })
+        return cases
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
         inp, state = (_deepseek_v41_input(segs) if fam == "deepseek_v41"
@@ -4283,6 +4480,8 @@ def _build_cases(fam):
     _preserve_historical_requests(cases, fam)
     if fam == "gpt_oss":
         _preserve_gpt_oss_historical_oracle(cases)
+        for parent in HARMONY_CONSISTENT_MARKER_CASES:
+            cases.pop(f"UNIFIED.{parent}.{fam}")
     return _apply_unified_numeric_goldens(cases, fam)
 
 
@@ -4308,7 +4507,7 @@ def _preserve_historical_requests(cases, family):
             continue
         case = cases_by_scenario.get(scenario)
         if case is None:
-            if old_case.get("lifecycle") != "active":
+            if old_case.get("lifecycle") != "active" or scenario in RETIRED_SCENARIOS:
                 continue
             raise KeyError(f"historical {family} case disappeared: {scenario}")
         # Validation callers mutate returned cases; isolate the cached canonical record.
@@ -4472,7 +4671,7 @@ def _build_edge_cases(fam, specs):
             )
         case = {
             "description": desc,
-            "policy": policy,
+            "policy": _entry(policy, fam),
             "input": inp,
             "golden": g,
             "expect": {"vllm": _vllm_entry_for_init(vllm, fam, init), "dynamo": dynamo},
@@ -4539,6 +4738,8 @@ def _template_scenario_families(scenario):
             families.intersection_update(GUIDED_FAMILIES)
         if not isinstance(per_fam, OnlyFamilies) or per_fam.inherit_grammar:
             families.update(f for f in FAMILIES if _MANIFEST[f].get("grammar") in families)
+        if name in HARMONY_CONSISTENT_MARKER_CASES:
+            families.discard("gpt_oss")
         return frozenset(families)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
@@ -4589,9 +4790,15 @@ def emit_yaml(fam):
         # was measuring a different input than the one authored. `2` is the content
         # indentation relative to this mapping node. Chomping follows the authored
         # newline suffix so truncated payloads can retain their final newline.
-        chomping = "+" if c["input"].endswith("\n\n") else "" if c["input"].endswith("\n") else "-"
+        text = c["input"]
+        # Clip chomping discards all-empty blocks. Keep their newlines explicitly,
+        # and do not emit split()'s final sentinel as an extra physical line.
+        chomping = "+" if text.endswith("\n\n") or text == "\n" else "" if text.endswith("\n") else "-"
         lines.append(f"    input: |2{chomping}")
-        for ln in c["input"].split("\n"):
+        input_lines = text.split("\n")
+        if text.endswith("\n"):
+            input_lines.pop()
+        for ln in input_lines:
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")
         lines.append(f"    expect: {json.dumps(c['expect'], ensure_ascii=False)}")

@@ -857,6 +857,38 @@ def _set_schema_view(driver, transposed):
         """, transposed))
 
 
+@pytest.mark.parametrize("transposed", [False, True])
+def test_recovery_popup_has_contiguous_variant_blocks(driver, viewer_url, transposed):
+    saved_url = driver.current_url
+    try:
+        _navigate(driver, f"{viewer_url}?tab=tab-unified&view=details&transpose={int(transposed)}")
+        table = 'table[data-transpose-table]' if transposed else 'table[data-parity-table]'
+        header = driver.find_element(By.CSS_SELECTOR, f'#tab-unified {table} th:has(a[aria-label="UNIFIED.5-tool_no_close"])')
+        tip = _open_schema_popup(driver, header)
+        groups = _script(driver, """
+            return [...arguments[0].querySelectorAll('.ttip-grammar tbody')].map(group => ({
+              key: group.dataset.variant,
+              headings: group.querySelectorAll('th[scope="rowgroup"]').length,
+              heading: group.querySelector('th[scope="rowgroup"]')?.textContent,
+              families: [...group.querySelectorAll('td.grf')].map(cell => cell.firstChild.textContent),
+              outputs: [...group.querySelectorAll('tr:not(.gr-variant-heading)')]
+                .map(row => row.querySelectorAll('td.gro').length),
+            }));
+            """, tip)
+        assert [group['key'] for group in groups] == [
+            'tool_no_close', 'gpt_oss_quoted_truncated_tool_then_final',
+            'gpt_oss_truncated_tool_resynchronizes_at_next_message',
+        ]
+        families = _script(driver, "return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label || row.family)")
+        for group in groups:
+            assert group['headings'] == 1
+            assert 'Not applicable to' not in group['heading']
+            assert group['families'] == families
+            assert len(set(group['outputs'])) == 1
+    finally:
+        _navigate(driver, saved_url)
+
+
 def test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose(driver, viewer_url):
     saved_url = driver.current_url
     saved_size = driver.get_window_size()
@@ -877,15 +909,21 @@ def test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose(drive
                         const tab = window.__conformanceModel;
                         const id = arguments[0].querySelector('a[aria-label]').getAttribute('aria-label');
                         const column = tab.columns.find(item => (item.case_id || tab.case_prefix + item.label) === id);
-                        const expected = tab.rows.filter(row => !row.section).flatMap(row => {
+                        const groups = new Map();
+                        tab.rows.filter(row => !row.section).forEach(row => {
                           const cell = row.cells[column.sub];
                           const variants = cell?.variants || [cell];
-                          return variants.map(variant => (row.model_label || row.family)
-                            + (variants.length > 1 ? ' — ' + variant.tooltip.head : ''));
+                          variants.forEach(variant => {
+                            const key = variant?.sub || column.sub;
+                            if (!groups.has(key)) groups.set(key, []);
+                            groups.get(key).push([key, row.model_label || row.family]);
+                          });
                         });
-                        const rows = [...arguments[1].querySelectorAll('.ttip-grammar tbody tr')];
+                        const keys = [...groups.keys()].sort((a, b) => Number(b === column.sub) - Number(a === column.sub));
+                        const expected = keys.flatMap(key => groups.get(key));
+                        const rows = [...arguments[1].querySelectorAll('.ttip-grammar tbody tr:not(.gr-variant-heading)')];
                         return {expected, actual: rows.flatMap(row => [...row.querySelectorAll('td.grf')]
-                          .map(cell => cell.firstChild.textContent)),
+                          .map(cell => [row.parentElement.dataset.variant, cell.firstChild.textContent])),
                           haveCells: rows.length > 0 && rows.every(row => row.querySelector('td'))};
                         """, header, tip)
                     assert rows['actual'] == rows['expected'], "schema popup must retain every selected family's folded variants"

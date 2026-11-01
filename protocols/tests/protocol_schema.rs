@@ -53,6 +53,15 @@ fn request_roots_are_distinct_from_upstream_and_have_real_fields() {
 }
 
 #[test]
+fn embeds_only_completion_requests_match_the_generated_schema() {
+    let input = json!({"model":"test","prompt_embeds":"synthetic"});
+    let schema = validator::<CreateCompletionRequest>();
+    let errors: Vec<_> = schema.iter_errors(&input).map(|e| e.to_string()).collect();
+    assert!(errors.is_empty(), "{input}: {errors:?}");
+    canonical::<CreateCompletionRequest>(input);
+}
+
+#[test]
 fn component_graph_resolves_every_reference() {
     fn walk(value: &Value, root: &Value) {
         match value {
@@ -308,7 +317,9 @@ fn token_logprobs_require_nullable_bytes_but_not_token_id() {
         &["/token_id"],
     );
     for bytes in [json!(null), json!([]), json!([97])] {
-        let token = json!({"token":"a","logprob":-0.5,"bytes":bytes,"top_logprobs":[]});
+        let token = json!({"token":"a","logprob":-0.5,"bytes":bytes,"top_logprobs":[
+            {"token":"a","token_id":115,"logprob":-0.5,"bytes":bytes}
+        ]});
         canonical::<ChatCompletionTokenLogprob>(token.clone());
         let logprobs = json!({"content":[token.clone()],"refusal":[token]});
         canonical::<CreateChatCompletionResponse>(json!({
@@ -320,4 +331,25 @@ fn token_logprobs_require_nullable_bytes_but_not_token_id() {
             "choices":[{"index":0,"delta":{},"logprobs":logprobs}]
         }));
     }
+}
+
+#[test]
+fn top_logprobs_use_local_candidate_schema() {
+    let doc = document();
+    let schemas = &doc["components"]["schemas"];
+    let token = &schemas[ChatCompletionTokenLogprob::name().as_ref()];
+    assert_eq!(
+        token["properties"]["top_logprobs"]["items"]["$ref"],
+        "#/components/schemas/dynamo_protocols.chat.TopLogprobs"
+    );
+    assert!(
+        schemas["dynamo_protocols.chat.TopLogprobs"]["properties"]
+            .get("token_id")
+            .is_some()
+    );
+    required_nullable_output::<ChatCompletionTokenLogprob>(
+        json!({"token":"a","logprob":-0.5,"top_logprobs":[{"token":"a","logprob":-0.5}]}),
+        &[("/top_logprobs/0", "bytes")],
+        &["/top_logprobs/0/token_id"],
+    );
 }

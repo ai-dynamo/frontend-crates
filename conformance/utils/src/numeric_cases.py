@@ -25,6 +25,12 @@ NUMERIC_DESCRIPTIONS = {
 # Unified cases named 7-14 and 7-15. The captured leaf IDs remain unchanged.
 NUMERIC_DISPLAY_LABELS = {"7-14": "7-17", "7-14.string": "7-19", "7-15": "7-18"}
 
+OVERFLOW_SIBLING_VARIANTS = (
+    ("finite", "1.5"),
+    ("positive", "1e400"),
+    ("negative", "-1E+400"),
+)
+
 # (variant, schema, input token, expected JSON token). Expectations are decimal
 # arithmetic, independent of parser output; the spelling also drives unit tests.
 INTEGRAL_VARIANTS = [
