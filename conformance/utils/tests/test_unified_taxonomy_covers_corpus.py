@@ -103,6 +103,31 @@ def test_descriptive_ids_and_all_published_aliases():
     assert historical_case_label("31.a") == case_label("guided_json_invalid_call")
 
 
+def test_numeric_taxonomy_ordinals_have_one_owner():
+    owners = defaultdict(list)
+    for scenario, (group, ordinal) in UNIFIED_TAX.items():
+        if isinstance(group, int):
+            owners[(group, ordinal)].append(scenario)
+    conflicts = {key: scenarios for key, scenarios in owners.items() if len(scenarios) > 1}
+    assert not conflicts, conflicts
+
+
+def test_reasoning_payload_variants_preserve_historical_aliases():
+    scenarios = (
+        ("12-5", "default_reasoning_tool_without_closer"),
+        ("12-6", "reason_markup_in_arg_consistent"),
+        ("12-7", "reason_markup_in_arg_with_text_consistent"),
+    )
+    for alias, scenario in scenarios:
+        assert historical_case_label(alias) == case_label(scenario)
+    assert historical_unified_case_key("nemotron_v3", "UNIFIED.12-5") == (
+        "UNIFIED.12-default_reasoning_tool_without_closer"
+    )
+    keys = [taxonomy_sort_key(scenario) for _, scenario in scenarios]
+    assert keys == sorted(keys)
+    assert len(set(keys)) == len(keys)
+
+
 def test_alias_conflicts_and_wrong_scenario_ownership_are_rejected(monkeypatch):
     with pytest.raises(ValueError, match="conflicting Unified scenario ownership"):
         historical_case_label("7-1", scenario="arg_marker_in_string")

@@ -413,8 +413,8 @@ for _scenario, _active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
 UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12")
 
 UNIFIED_TAX["interrupted_reasoning_then_response"] = (10, "7")
-UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "5")
-UNIFIED_TAX["reason_markup_in_arg_with_text_consistent"] = (12, "6")
+UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "6")
+UNIFIED_TAX["reason_markup_in_arg_with_text_consistent"] = (12, "7")
 
 # Historical requests remain separate executions, but share one semantic heading.
 RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace", "gpt_oss_interrupted_reasoning_then_response", "kimi_k3_elided_think_close_to_response"})
