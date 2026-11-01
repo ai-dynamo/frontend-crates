@@ -44,19 +44,6 @@ class Lane:
     partition: str = "none"
 
 
-# Counts and process limits preserve the existing runner workloads, not model or
-# release counts. Browser lanes remain separate machines from CPU-heavy checks.
-LANES = (
-    Lane("core", processes=4, bundler=True),
-    Lane("qualification", count=8, processes=3, partition="resources"),
-    Lane("native-browser", bundler=True),
-    Lane("browser", count=2, partition="tests"),
-    Lane("viewer", count=3, bundler=True, partition="tests"),
-    Lane("first-matrix"),
-)
-FIXTURES = Lane("fixtures", processes=4)
-
-
 def qualification_nodes():
     return QUALIFICATION_NODES
 
@@ -77,6 +64,26 @@ def plan(lanes=None):
     if len({item["id"] for item in result}) != len(result):
         raise ValueError("CI plan contains duplicate worker identities")
     return result
+
+
+def load_lanes(path=ROOT / "conformance/utils/ci-lanes.json"):
+    # Fixed workloads preserve runner budgets, independently of model/release
+    # counts. Scheduling changes must still invalidate execution receipts.
+    rows = json.loads(Path(path).read_bytes())
+    if not isinstance(rows, list):
+        raise ValueError("CI plan requires a list of lanes")
+    try:
+        lanes = tuple(Lane(**row) for row in rows)
+    except TypeError as error:
+        raise ValueError("CI plan requires valid Lane fields") from error
+    plan(lanes)
+    fixtures = tuple(lane for lane in lanes if lane.name == "fixtures")
+    if len(fixtures) != 1 or fixtures[0].count != 1 or fixtures[0].partition != "none":
+        raise ValueError("CI plan requires one unpartitioned fixtures worker")
+    return tuple(lane for lane in lanes if lane.name != "fixtures"), fixtures[0]
+
+
+LANES, FIXTURES = load_lanes()
 
 
 def entry(lane, index=0, count=None):

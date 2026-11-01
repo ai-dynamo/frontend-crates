@@ -312,3 +312,29 @@ def test_custom_local_resource_partitions_cover_corpus_once(monkeypatch):
         observed.extend(row["path"] for row in ci_coverage.select_resources(resources, profile="exhaustive",
             shard=int(environment["CONFORMANCE_PARITY_SHARD"]), shards=int(environment["CONFORMANCE_PARITY_SHARDS"])))
     assert sorted(observed) == sorted(row["path"] for row in resources)
+
+
+@pytest.mark.parametrize("fault", ["unknown-field", "bad-count", "duplicate", "missing-fixtures", "partitioned-fixtures"])
+def test_lane_file_uses_plan_validation(tmp_path, fault):
+    rows = json.loads((ci_plan.ROOT / "conformance/utils/ci-lanes.json").read_bytes())
+    if fault == "unknown-field":
+        rows[0]["unknown"] = 1
+    elif fault == "bad-count":
+        rows[0]["count"] = True
+    elif fault == "duplicate":
+        rows.append(rows[0])
+    elif fault == "missing-fixtures":
+        rows.pop()
+    else:
+        rows[-1]["partition"] = "tests"
+    path = tmp_path / "lanes.json"
+    path.write_text(json.dumps(rows))
+    with pytest.raises(ValueError, match="CI plan"):
+        ci_plan.load_lanes(path)
+
+
+def test_lane_file_preserves_all_worker_defaults():
+    lanes, fixtures = ci_plan.load_lanes()
+    assert lanes == ci_plan.LANES
+    assert fixtures == ci_plan.FIXTURES
+    assert len(ci_plan.plan()) == 16

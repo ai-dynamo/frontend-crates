@@ -59,7 +59,7 @@ def input_identity(path):
 
 
 def is_publication_input(name):
-    if name.startswith("conformance/fixtures/"):
+    if name == "conformance/utils/ci-lanes.json" or name.startswith("conformance/fixtures/"):
         return False
     if name.startswith("conformance/fixtures-unified-v2/"):
         # Historical bytes participate only in the explicit history identity.

@@ -110,6 +110,7 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
         "conformance/utils/publication-requirements.in",
         ".gitattributes",
         "conformance/README.md",
+        "conformance/utils/ci-lanes.json",
         ".github/workflows/ci.yml",
         "README.md",
         "conformance/utils/tests/test_ci_coverage.py",
