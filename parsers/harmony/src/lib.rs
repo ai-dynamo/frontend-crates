@@ -377,6 +377,76 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn subprocess_real_encoding_helper() -> Result<()> {
+        let Some(directory) = std::env::var_os("DYNAMO_HARMONY_REAL_VOCAB_TEST") else {
+            return Ok(());
+        };
+        let directory = PathBuf::from(directory);
+        let worker = std::env::var("DYNAMO_HARMONY_REAL_WORKER")?;
+        fs::write(directory.join(format!("{worker}.ready")), b"ready")?;
+        wait_for_file(&directory.join("release"));
+
+        let encoding = super::harmony_gpt_oss_encoding()
+            .as_ref()
+            .map_err(|error| anyhow::anyhow!("{error:#}"))?;
+        let text = "hello from Harmony";
+        let tokens = encoding.tokenizer().encode_ordinary(text);
+        assert_eq!(encoding.tokenizer().decode_utf8(&tokens)?, text);
+        fs::write(directory.join(format!("{worker}.complete")), b"complete")?;
+        Ok(())
+    }
+
+    #[test]
+    #[ignore = "downloads the Harmony vocabulary; run explicitly with network access"]
+    fn concurrent_real_loader_initializes_an_empty_cache() -> Result<()> {
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+        assert_eq!(fs::read_dir(&cache)?.count(), 0);
+
+        let mut children = Vec::new();
+        for worker in 0..6 {
+            let log = fs::File::create(directory.path().join(format!("{worker}.log")))?;
+            children.push(ChildGuard(
+                test_subprocess("tests::subprocess_real_encoding_helper")?
+                    .env("DYNAMO_HARMONY_REAL_VOCAB_TEST", directory.path())
+                    .env("DYNAMO_HARMONY_REAL_WORKER", worker.to_string())
+                    .env("TIKTOKEN_RS_CACHE_DIR", &cache)
+                    .stdout(Stdio::from(log.try_clone()?))
+                    .stderr(Stdio::from(log))
+                    .spawn()?,
+            ));
+        }
+        for worker in 0..children.len() {
+            wait_for_file(&directory.path().join(format!("{worker}.ready")));
+        }
+        fs::write(directory.path().join("release"), b"release")?;
+
+        let deadline = Instant::now() + Duration::from_secs(120);
+        for (worker, child) in children.iter_mut().enumerate() {
+            let status = loop {
+                if let Some(status) = child.try_wait()? {
+                    break status;
+                }
+                assert!(Instant::now() < deadline, "real-loader worker timed out");
+                thread::yield_now();
+            };
+            assert!(
+                status.success(),
+                "real-loader worker {worker} failed: {}",
+                fs::read_to_string(directory.path().join(format!("{worker}.log")))?,
+            );
+            assert!(directory.path().join(format!("{worker}.complete")).exists());
+        }
+        assert!(super::matches_vocab_checksum(
+            &mut fs::File::open(cache.join(VOCAB_CACHE_KEY))?,
+            super::VOCAB_SHA256,
+        )?);
+        assert!(cache.join("harmony-vocab.lock").exists());
+        Ok(())
+    }
+
     fn test_subprocess(test: &str) -> Result<Command> {
         let mut command = Command::new(std::env::current_exe()?);
         command
