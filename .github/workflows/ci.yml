@@ -85,10 +85,15 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: ${{ runner.os }}-workspace-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+            target/debug/.fingerprint
+            target/debug/build
+            target/debug/deps
+            target/release/.fingerprint
+            target/release/build
+            target/release/deps
+          key: ${{ runner.os }}-workspace-v2-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-workspace-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+            ${{ runner.os }}-workspace-v2-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
 
       - name: Rust checks
         id: rust
