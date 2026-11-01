@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { compileSearch, searchContext } from './search.js';
+import { rankUnifiedColumns } from './model.js';
 
 const context = {families: ['beam', 'glm47', 'qwen3', 'qwen3_coder', 'deepseek_v4'],
   aliases: new Map([['7-17','7-arg_numeric_14_const_decimal'], ['5-2','5-tool_no_close']])};
@@ -129,6 +130,39 @@ test('compact family references resolve through the same numbered-case aliases',
     assert.equal(compileSearch(`-${prefix}-3`, context)([`UNIFIED.${stable}`]), false);
     assert.equal(compileSearch(`${prefix}-3`, context)([`${prefix}-3`]), false);
     assert.equal(searchContext({...tab, columns: [{...tab.columns[0], case_id: `${prefix}-9`}]}).aliases.size, 0);
+  }
+});
+
+test('compact references remain unique across display groups sharing a prefix', () => {
+  for (const prefix of ['ds41', '7']) {
+    const taxonomy = {
+      first: {display_group: 'deepseek', compact_prefix: prefix, display_order: 0, label: 'first case'},
+      other: {display_group: 'other', compact_prefix: 'other', display_order: 1, label: 'other case'},
+      second: {display_group: 'deepseek_v41', compact_prefix: prefix, display_order: 2, label: 'second case'},
+      third: {display_group: 'deepseek_v41', compact_prefix: prefix, display_order: 3, label: 'third case'},
+    };
+    for (const order of [['first', 'other', 'second', 'third'], ['third', 'second', 'other', 'first']]) {
+      for (let mask = 1; mask < 16; mask++) {
+        const visible = order.filter((_, index) => mask & (1 << index));
+        const tab = {id: 'tab-unified', columns: visible.map(sub => ({sub, label: `${prefix}-${sub}`})), rows: []};
+        rankUnifiedColumns(tab, {unified_taxonomy: taxonomy});
+        const expected = Object.keys(taxonomy).filter(sub => visible.includes(sub));
+        const context = searchContext(tab);
+        assert.equal(context.aliases.size, tab.columns.length);
+        for (const sub of expected) {
+          const column = tab.columns.find(item => item.sub === sub);
+          const peers = expected.filter(item => taxonomy[item].compact_prefix === taxonomy[sub].compact_prefix);
+          assert.equal(column.display_number, peers.indexOf(sub) + 1);
+          const alias = `${column.compact_prefix}-${column.display_number}`;
+          for (const query of [alias, `col:${alias}`, `"${alias}"`]) {
+            const match = compileSearch(query, context);
+            assert.deepEqual(tab.columns.filter(item => match([item.case_id])).map(item => item.sub), [sub], query);
+            assert.deepEqual(match.notices, []);
+            assert.equal(compileSearch(match.canonicalQuery, context)([column.case_id]), true);
+          }
+        }
+      }
+    }
   }
 });
 

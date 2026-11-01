@@ -249,12 +249,12 @@ export function rankUnifiedColumns(tab, metadata) {
   const columns = [...tab.columns].sort((a, b) => metadata.unified_taxonomy[a.sub].display_order - metadata.unified_taxonomy[b.sub].display_order);
   for (const column of columns) {
     const taxonomy = metadata.unified_taxonomy[column.sub];
-    const group = taxonomy.display_group;
-    counts.set(group, (counts.get(group) || 0) + 1);
+    const prefix = taxonomy.compact_prefix;
+    counts.set(prefix, (counts.get(prefix) || 0) + 1);
     const label = column.grouped_display_label || taxonomy.label;
     labels.set(column.label, label);
     column.case_id = `UNIFIED.${column.label}`;
-    Object.assign(column, { label, compact_prefix: taxonomy.compact_prefix, display_number: counts.get(group) });
+    Object.assign(column, { label, compact_prefix: prefix, display_number: counts.get(prefix) });
   }
   for (const group of tab.glossary || []) group.rows = group.rows.map(([label, description]) => [labels.get(label) || label, description]);
 }
