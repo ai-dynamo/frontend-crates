@@ -239,6 +239,12 @@ def test_starting_state_follows_the_generation_prompt(
         ("kimi_k3", "<|open|> think <|sep|>\n", False, "reasoning"),
         ("muse_glimmer", "<|start|>assistant to=self<|message|>", False, "reasoning"),
         ("muse_glimmer", "<|start|>assistant<think>", False, "none"),
+        ("minimax_m3", "]~b]ai\n<mm:think>", False, "reasoning"),
+        ("minimax_m3", "]~b]ai\n</mm:think>", True, "response"),
+        ("minimax_m3", "]~b]ai\n", False, "none"),
+        ("minimax_m3", "]~b]ai\n<think>", False, "none"),
+        ("nemotron_v3", "<|im_start|>assistant\n", False, "reasoning"),
+        ("nemotron_v3", "<|im_start|>assistant\n<think></think>", True, "response"),
     ],
     ids=[
         "disabled-keeps-an-opened-thought",
@@ -247,6 +253,12 @@ def test_starting_state_follows_the_generation_prompt(
         "kimi-k3-spaced",
         "muse",
         "muse-not-think",
+        "m3-opened",
+        "m3-closed",
+        "m3-adaptive",
+        "m3-not-think",
+        "nemotron-implicit-thought",
+        "nemotron-off",
     ],
 )
 def test_each_family_has_its_reasoning_opener(
@@ -500,6 +512,14 @@ def test_token_id_fields_are_validated(
         parse_case(obj)
 
 
+def test_the_readme_example_trace_parses() -> None:
+    readme = (SRC / "parser_roundtrip" / "README.md").read_text()
+    block = readme.split("```json\n", 1)[1].split("\n```", 1)[0]
+    case = parse_case(json.loads(block))
+    assert (case.id, case.finish_reason) == ("hello-1", "stop")
+    assert case.prompt_token_ids == [248045, 846, 198]
+
+
 @pytest.mark.parametrize(
     "prompt", [[1], {"token_ids": "1"}], ids=["not-an-object", "not-token-ids"]
 )
@@ -570,7 +590,32 @@ def test_a_prompt_rendered_without_a_server_default_is_skipped(bundle: Bundle) -
 def test_reasoning_disabled_mirrors_dynamo(
     family: str, kwargs: dict[str, Any], disabled: bool
 ) -> None:
-    assert reasoning_disabled(family, kwargs) is disabled
+    assert reasoning_disabled(family, kwargs, "") is disabled
+
+
+@pytest.mark.parametrize(
+    ("family", "kwargs", "prompt", "disabled"),
+    [
+        ("minimax_m3", {"thinking_mode": "disabled"}, "]~b]ai\n</mm:think>", True),
+        ("minimax_m3", {"thinking_mode": "disabled"}, "]~b]ai\n", False),
+        ("minimax_m3", {"thinking_mode": "enabled"}, "]~b]ai\n<mm:think>", False),
+        ("nemotron_v3", {"enable_thinking": False}, "", True),
+        ("muse_spark", {"enable_thinking": False}, "", False),
+        ("gpt_oss", {"thinking": False}, "", False),
+    ],
+    ids=[
+        "m3-closed-by-prompt",
+        "m3-template-ignores-mode",
+        "m3-enabled",
+        "nemotron-off",
+        "muse-spark-always-on",
+        "gpt-oss-always-on",
+    ],
+)
+def test_newer_families_disable_reasoning_as_dynamo_does(
+    family: str, kwargs: dict[str, Any], prompt: str, disabled: bool
+) -> None:
+    assert reasoning_disabled(family, kwargs, prompt) is disabled
 
 
 @pytest.mark.parametrize(
@@ -601,7 +646,70 @@ def test_reasoning_disabled_mirrors_dynamo(
 def test_flags_dynamo_rewrites_are_unmodeled(
     kwargs: dict[str, Any], unmodeled: bool
 ) -> None:
-    assert unmodeled_thinking_flag(kwargs) is unmodeled
+    assert unmodeled_thinking_flag("qwen3", kwargs) is unmodeled
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "unmodeled"),
+    [
+        ({}, False),
+        ({"thinking_mode": "enabled"}, False),
+        ({"thinking_mode": "adaptive"}, False),
+        ({"enable_thinking": True}, True),
+        ({"thinking": False, "thinking_mode": "disabled"}, True),
+        ({"thinking_mode": True}, True),
+        ({"thinking_mode": "on"}, True),
+    ],
+    ids=["none", "enabled", "adaptive", "bool", "bool-first", "mode-bool", "mode-word"],
+)
+def test_minimax_m3_renders_only_its_native_thinking_mode(
+    kwargs: dict[str, Any], unmodeled: bool
+) -> None:
+    assert unmodeled_thinking_flag("minimax_m3", kwargs) is unmodeled
+
+
+@pytest.mark.parametrize(
+    ("family", "request_fields", "verdict"),
+    [
+        ("harmony", {}, "skip:unmodeled-family"),
+        ("beam", {}, "skip:unmodeled-family"),
+        (
+            "minimax-m3",
+            {"response_format": {"type": "json_object"}},
+            "skip:unmodeled-thinking-flag",
+        ),
+        ("minimax_m3", {"guided_json": {}}, "skip:unmodeled-thinking-flag"),
+        (
+            "minimax_m3",
+            {"chat_template_kwargs": {"enable_thinking": True}},
+            "skip:unmodeled-thinking-flag",
+        ),
+    ],
+    ids=["gpt-oss-alias", "beam", "m3-structured", "m3-guided", "m3-bool-flag"],
+)
+def test_requests_the_round_trip_cannot_model_are_skipped(
+    bundle: Bundle, family: str, request_fields: dict[str, Any], verdict: str
+) -> None:
+    obj = trace(bundle, "Hi.", enable_thinking=None)
+    obj["request"].update(request_fields)
+    case = parse_case(obj)
+    assert prepare(case, bundle, family) == {"id": case.id, "verdict": verdict}
+
+
+def test_minimax_m3_with_its_native_thinking_mode_is_judged(bundle: Bundle) -> None:
+    obj = trace(bundle, "Hi.", enable_thinking=None)
+    obj["request"]["chat_template_kwargs"] = {"thinking_mode": "enabled"}
+    obj["request"]["response_format"] = {"type": "json_object"}
+    assert prepared(bundle, parse_case(obj), "minimax-m3").job["family"] == "minimax_m3"
+
+
+def test_message_boundaries_carry_no_text(bundle: Bundle) -> None:
+    start = {"kind": "message_start", "phase": "final_answer"}
+    events = [start, text("Hi."), {"kind": "message_end"}]
+    assert message_from_events(events, False) == message_from_events([text("Hi.")], False)
+    job = prepared(bundle, parse_case(trace(bundle, "Hi.")))
+    commentary = answer({**start, "phase": "commentary"}, text("Hi."))
+    assert judge(job, bundle, commentary)["verdict"] == "skip:commentary-message"
 
 
 def test_cli_writes_private_results(

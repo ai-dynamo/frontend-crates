@@ -8,4 +8,5 @@ require the rendered turn to reproduce x.
 
 Unlike the rest of conformance/, the CLI reads a recorded trace and a model's
 tokenizer and chat template from outside the repository. Its unit tests build
-a toy model in a temporary directory, so they stay hermetic."""
+a toy model in a temporary directory, so they stay hermetic. README.md
+documents the trace format, capture, and what each verdict means."""

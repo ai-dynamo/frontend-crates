@@ -54,7 +54,7 @@ def prepare(case: Case, bundle: Bundle, family: str) -> Prepared | dict[str, Any
         return skip(case, "incomplete")
     request = case.request
     kwargs = template_kwargs(request)
-    reason = unserved_reason(request, kwargs)
+    reason = unserved_reason(family, request, kwargs)
     if reason:
         return skip(case, reason)
     try:
@@ -68,7 +68,7 @@ def prepare(case: Case, bundle: Bundle, family: str) -> Prepared | dict[str, Any
     output = case.output_token_ids
     terminal = case.terminal(bundle.eos_token_ids)
     text = bundle.decode(output[: len(output) - len(terminal)])
-    disabled = reasoning_disabled(family, kwargs)
+    disabled = reasoning_disabled(family, kwargs, prompt)
     job = {
         "id": case.id,
         "text": text,
@@ -113,6 +113,10 @@ def judge(prepared: Prepared, bundle: Bundle, parsed: dict[str, Any]) -> dict[st
             "signature": "parser_error",
             "detail": str(parsed["error"])[:200],
         }
+    if any(event.get("phase") == "commentary" for event in parsed["events"]):
+        # A visible message addressed as commentary is not the final answer the
+        # template renders as content.
+        return {**result, **skip(case, "commentary-message")}
     message, order = message_from_events(parsed["events"], prepared.reasoning_disabled)
     result["order"] = order
     result["incomplete_calls"] = parsed.get("incomplete_calls", 0)

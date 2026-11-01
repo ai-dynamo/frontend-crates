@@ -11,6 +11,8 @@ from typing import Any
 
 # The event kinds the parser_roundtrip example writes.
 KINDS = ("reasoning", "text", "tool_call")
+# Boundaries of a visible message (Muse); its text events carry the content.
+BOUNDARIES = ("message_start", "message_end")
 
 
 def message_from_events(
@@ -24,6 +26,8 @@ def message_from_events(
     kinds: list[str] = []
     for event in events:
         kind = event["kind"]
+        if kind in BOUNDARIES:
+            continue
         if kind not in KINDS:
             raise ValueError(f"unknown event kind {kind!r}")
         if kind == "reasoning" and disabled:
