@@ -22666,8 +22666,8 @@ cases:
     description: 'ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number; an integer `if` with a numeric `else` keeps 37 an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-conditional_schema_number_types
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
+    historical_ids: [UNIFIED.7-conditional_schema_number_types]
     request:
       input: '<tool_call>
 
@@ -22761,8 +22761,8 @@ cases:
     description: 'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-not_keyword_type_complement
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
+    historical_ids: [UNIFIED.7-not_keyword_type_complement]
     request:
       input: '<tool_call>
 
@@ -22847,8 +22847,8 @@ cases:
     description: 'ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` all keep their JSON types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-reference_object_recursive_and_composed_types
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
+    historical_ids: [UNIFIED.7-reference_object_recursive_and_composed_types]
     request:
       input: '<tool_call>
 

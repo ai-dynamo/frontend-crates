@@ -139,9 +139,9 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-tool
 - **`7-nullable_reference_alias_literals`** (`nullable_reference_alias_literals`) Nullable aliases to string `const: "null"` and `enum: ["null"]` retain the schema-valid string null values.
 - **`7-local_schema_id_preserves_type`** (`local_schema_id_preserves_type`) A local `$id` disables unsupported reference traversal without discarding a directly declared integer type.
 - **`7-arg_numeric_nested_exact`** (`arg_numeric_nested_exact`) Nested objects and arrays preserve a large fractional number, an underflow-sized exponent, and positive and negative integers beyond the exact binary64 range.
-- **`7-not_keyword_type_complement`** (`not_keyword_type_complement`) Shared-family regression for [ai-dynamo/dynamo#17662](https://github.com/ai-dynamo/dynamo/issues/17662): a `not` keyword constrains the argument to the complement of the negated type. `not string` makes bare `-2500` an integer; `not integer` keeps bare `42` the string `"42"`. Schema-driven grammars (Qwen3, Nemotron v3, GLM, MiniMax) must infer the type; explicitly typed grammars carry it on the wire.
-- **`7-conditional_schema_number_types`** (`conditional_schema_number_types`) Shared-family regression for ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number (`21.5`); an integer `if` with a numeric `else` keeps `37` an integer.
-- **`7-reference_object_recursive_and_composed_types`** (`reference_object_recursive_and_composed_types`) Shared-family regression for ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` keep their JSON types instead of degenerating to strings.
+- **`7-tool-argument-unions-and-intersections-not_keyword_type_complement`** (`not_keyword_type_complement`) Shared-family regression for [ai-dynamo/dynamo#17662](https://github.com/ai-dynamo/dynamo/issues/17662): a `not` keyword constrains the argument to the complement of the negated type. `not string` makes bare `-2500` an integer; `not integer` keeps bare `42` the string `"42"`. Schema-driven grammars (Qwen3, Nemotron v3, GLM, MiniMax) must infer the type; explicitly typed grammars carry it on the wire.
+- **`7-tool-argument-unions-and-intersections-conditional_schema_number_types`** (`conditional_schema_number_types`) Shared-family regression for ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number (`21.5`); an integer `if` with a numeric `else` keeps `37` an integer.
+- **`7-tool-argument-schema-references-reference_object_recursive_and_composed_types`** (`reference_object_recursive_and_composed_types`) Shared-family regression for ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` keep their JSON types instead of degenerating to strings.
 - **`7-arg_numeric_overflow_siblings_{finite,positive,negative}`** A finite `1.5` control and signed overflow tokens `1e400` / `-1E+400` accompany `city: "Paris"` in every applicable native grammar. Raw deltas preserve the numeric token; the default typed batch projection may stringify overflow but must retain the city and value fields. Capture reconstruction restores exact numeric text only when the assembled field structure and scalar values survive, so an older assembler returning `{}` remains visible as a failure.
 
 ### Group 8 — TC Content / narration position (TOOLCALLING.streamv1.8)
@@ -539,8 +539,8 @@ Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`,
 | `7-tool-argument-declared-types` | 12 |
 | `7-tool-argument-nullability` | 19 |
 | `7-tool-argument-constants` | 40 |
-| `7-tool-argument-unions-and-intersections` | 53 |
-| `7-tool-argument-schema-references` | 14 |
+| `7-tool-argument-unions-and-intersections` | 55 |
+| `7-tool-argument-schema-references` | 15 |
 
 String constants expose Direct, Explicit string type, allOf, and Reference as separate cases with shared name prefixes. anyOf and oneOf expose each alternative type, String / Typed value choice, and Forward / Reversed branch order separately. Null and numeric variants likewise have one case per column. A case popup shows only that case across applicable families; parser failures and missing captures remain attached to their exact request.
 
