@@ -16,13 +16,5 @@ deepseek_v41: {}
 glm47: {}
 deepseek_v4: {}
 kimi_k2: {}
-nemotron_v3:
-  UNIFIED.7-enum_contradicting_declared_type:
-    golden:
-      note: "FIXME (v2 defect): the Qwen-family XML resolver still intersects the declared type with contradicting enum literals, so the array and integer stay text; fixed by #527."
-      actual: 'tool_call(capture_payload, {"metrics":"[\"temperature\",\"humidity\"]","count":"5"})'
-qwen3:
-  UNIFIED.7-enum_contradicting_declared_type:
-    golden:
-      note: "FIXME (v2 defect): the Qwen-family XML resolver still intersects the declared type with contradicting enum literals, so the array and integer stay text; fixed by #527."
-      actual: 'tool_call(capture_payload, {"metrics":"[\"temperature\",\"humidity\"]","count":"5"})'
+nemotron_v3: {}
+qwen3: {}
