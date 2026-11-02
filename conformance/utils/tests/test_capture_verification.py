@@ -49,10 +49,10 @@ def test_required_rust_job_publishes_executed_comparisons_even_after_failure():
     assert upload["if"] == "${{ !cancelled() && steps.rust.outputs.capture_report_directory != '' }}"
     assert upload["with"]["path"] == "${{ steps.rust.outputs.capture_report_directory }}/*.json"
     assert upload["with"]["if-no-files-found"] == "error"
-    detect = next(step for step in workflow["jobs"]["changes"]["steps"] if step.get("id") == "filter")
-    filters = yaml.safe_load(detect["with"]["filters"])
-    assert "ci/**" in filters["conformance"]
-    assert "ci/**" in filters["structural-tag"]
+    # These job IDs own executed receipts and grammar compatibility; changes to
+    # their scripts must run both checks without path-based admission.
+    for name in ("rust", "structural-tag-compat"):
+        assert "if" not in workflow["jobs"][name]
     assert not (root / ".github/workflows/capture-approval.yml").exists()
 
 

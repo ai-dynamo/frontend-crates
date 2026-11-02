@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k2","implementation":"sglang_python","lineage":[{"family":"kimi_k2","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"bfef9471ff0f30241493a249ae9e93c59886b4ef389b06e363a57943b32bc019","source":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"kimi_k2","implementation":"sglang_python","lineage":[{"family":"kimi_k2","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"b27ee53602b2e9ecb62a9dbf9c6efd20a6e23fb671be9cbd9aa10019850e0a4a","source":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
 document:
   mode: unified
 provenance:
@@ -283,6 +283,7 @@ records:
         semantic_sha256: 16f0af420f5cf20f4599be8f75fb76dfb9c7b27220466aea3583dc164573be83
   arg_marker_in_string:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_marker_in_string
       document:
@@ -879,6 +880,7 @@ records:
         semantic_sha256: 4eab2521a0881f99a4083eaa8c1baf957ae70d2cd55dfe8fe23b8cc592150bbc
   arg_unicode:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_unicode
       document:
@@ -981,6 +983,7 @@ records:
         semantic_sha256: ee45b41d8ccbc3e610debc8a4c1f1cd395dfeba63858642a4f158c712442ad79
   content_then_reason:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: content_then_reason
       document:
@@ -1081,6 +1084,7 @@ records:
         semantic_sha256: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
   content_then_reason_then_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: content_then_reason_then_tool
       document:
@@ -1344,6 +1348,7 @@ records:
         semantic_sha256: a27329512418077440ae487d97b5e72525a84485b7318966542f6d70d2383466
   empty_args:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: empty_args
       document:
@@ -1766,6 +1771,7 @@ records:
         semantic_sha256: 78b6dcc7423ac720120817b4072861093666cbdab98c0283cdfd30b74c366fbe
   guided_json_after_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_after_reasoning
       document:
@@ -1847,6 +1853,7 @@ records:
         semantic_sha256: 9348dd38350a4606e62d922ab84c2d0e4771c2274c64cd683bc8dd3b7465d48b
   guided_json_array_argument:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_array_argument
       document:
@@ -2007,6 +2014,7 @@ records:
         semantic_sha256: 8465686ffe7e0b8e49370c5207cb31707115fc3011514b59ad1e884483d5f45e
   guided_json_escaped_string_args:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_escaped_string_args
       document:
@@ -2085,6 +2093,7 @@ records:
         semantic_sha256: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
   guided_json_gt_in_argument_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_bare_opener
       document:
@@ -2164,6 +2173,7 @@ records:
         semantic_sha256: 38eeb95dc5f0dfda4ad1904666efe26b007d9967c374cccee8235b038e3f4dd3
   guided_json_gt_in_argument_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_trailing_close
       document:
@@ -2243,6 +2253,7 @@ records:
         semantic_sha256: 04e215118491aed329ad2bf86a1c3c1d5a853f828f2a6f76e7a11dcd00cf14d1
   guided_json_gt_in_argument_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_wrapped
       document:
@@ -2323,6 +2334,7 @@ records:
         semantic_sha256: d823199a7572d44b1d36e421866a9235c33e02f3cf4e1c90c8cdaa3769584cb2
   guided_json_invalid_call:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_invalid_call
       document:
@@ -2401,6 +2413,7 @@ records:
         semantic_sha256: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
   guided_json_list_with_broken_element:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_list_with_broken_element
       document:
@@ -2479,6 +2492,7 @@ records:
         semantic_sha256: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
   guided_json_malformed_json:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_malformed_json
       document:
@@ -2557,6 +2571,7 @@ records:
         semantic_sha256: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
   guided_json_marker_inside_argument:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_marker_inside_argument
       document:
@@ -2637,6 +2652,7 @@ records:
         semantic_sha256: ca789bd52e78fed52bfd5121d5635d208d5c53561d5803dd3cb0d3d5d2cf36fe
   guided_json_named_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_named_tool
       document:
@@ -2715,6 +2731,7 @@ records:
         semantic_sha256: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
   guided_json_narrated_invoke_in_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_invoke_in_reasoning
       document:
@@ -2798,6 +2815,7 @@ records:
         semantic_sha256: 08a2995339b309e79a0fef36a1400bc78e5dcb0fd3e7290e8562b02ba0fc8fda
   guided_json_narrated_prefix_inside_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_prefix_inside_reasoning
       document:
@@ -2966,6 +2984,7 @@ records:
         semantic_sha256: f940413c79d5058b40dcaff1b63550df50d18b72be77cc9ac0c88170065cd8e3
   guided_json_orphan_reason_close_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_reason_close_before_payload
       document:
@@ -3045,6 +3064,7 @@ records:
         semantic_sha256: a5500df8d15d33e91db98982739fcd3dcee56713895c983c78a2a684b68cc26c
   guided_json_orphan_tool_close_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_tool_close_before_payload
       document:
@@ -3124,6 +3144,7 @@ records:
         semantic_sha256: 7aa1b51108e27e29abfd212e088a036e8bfaf27b9f7a769614d91f08c10b5e13
   guided_json_partial_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_partial_calls
       document:
@@ -3202,6 +3223,7 @@ records:
         semantic_sha256: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
   guided_json_prose_before_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_prose_before_reasoning
       document:
@@ -3449,6 +3471,7 @@ records:
         semantic_sha256: 0b98d9ea003826c68b37d3ed9503a5992495030bc5bd1a15bc963b89892623d6
   guided_json_required_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_required_tool
       document:
@@ -3527,6 +3550,7 @@ records:
         semantic_sha256: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
   guided_json_schema_error_nameless_element_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_bare_opener
       document:
@@ -3606,6 +3630,7 @@ records:
         semantic_sha256: 8110a010e469cf72d8e62a168a7c1c30cf16f60bfd2b04a06c535590d6535929
   guided_json_schema_error_nameless_element_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_trailing_close
       document:
@@ -3685,6 +3710,7 @@ records:
         semantic_sha256: 222efbb34fbc62d10da22f68d08995b3a078f106cc5c758ee4837e8e289b83f2
   guided_json_schema_error_nameless_element_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_wrapped
       document:
@@ -3765,6 +3791,7 @@ records:
         semantic_sha256: dd816dc928c97132713482f19b5bd37d5ae42ef0ad57c067eccd0f1d2c9160f3
   guided_json_schema_error_not_a_call_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_bare_opener
       document:
@@ -3844,6 +3871,7 @@ records:
         semantic_sha256: 98bd0c8de421a2b3ad4f4903d5a22445bd800d015e220e9abaa309383cfb7693
   guided_json_schema_error_not_a_call_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_trailing_close
       document:
@@ -3923,6 +3951,7 @@ records:
         semantic_sha256: 7ed1bbcd3fcb5b6e1deed43261e878a768bfdce2f390234914bff1b63bc9f164
   guided_json_schema_error_not_a_call_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_wrapped
       document:
@@ -4003,6 +4032,7 @@ records:
         semantic_sha256: 0d0781f8db1e27dc45e6101c279547c5dc73bf8f619b5668a24c07da9ae46b4f
   guided_json_stray_prefix_before_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_stray_prefix_before_reasoning
       document:
@@ -4086,6 +4116,7 @@ records:
         semantic_sha256: 199123dbf11f20aaefa7f319ef7780b17ac0914bd949a5075d0714a3466a1d57
   guided_json_syntax_error_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_bare_opener
       document:
@@ -4165,6 +4196,7 @@ records:
         semantic_sha256: 536c3e858b00d771291c4a3791bda79d34e640f43dd46d83934af3a42648737f
   guided_json_syntax_error_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_trailing_close
       document:
@@ -4244,6 +4276,7 @@ records:
         semantic_sha256: 9570637832542076623fe320be3ab8209ff191ce898f42b6e4fea5743a7053cd
   guided_json_syntax_error_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_wrapped
       document:
@@ -4324,6 +4357,7 @@ records:
         semantic_sha256: 3f815315ac0836505faae024f381415b8b8371cc68492e0139efffd2b523238b
   guided_json_tool_close_after_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_close_after_payload
       document:
@@ -4403,6 +4437,7 @@ records:
         semantic_sha256: acb99b79ec03ba642aea527f59fa527e2273e0dbcb1da8816676ed844a2b7b4f
   guided_json_tool_open_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_open_before_payload
       document:
@@ -4482,6 +4517,7 @@ records:
         semantic_sha256: 8027b78447877aefea8aadd138a849b8de12eea9507dec7c166ca55bf5c3daca
   guided_json_two_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_two_calls
       document:
@@ -4643,6 +4679,7 @@ records:
         semantic_sha256: 65a9ebb9d180764d60a1b48b1b9594dfad152552ece903f2f264a726aaee6c75
   guided_json_wrapped_in_tool_markup:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_wrapped_in_tool_markup
       document:
@@ -5051,6 +5088,7 @@ records:
         semantic_sha256: 20075f699d058614361a8ff03dbdf7a832c2477246c30aeb253bcd45c5e8513d
   interstitial_text:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: interstitial_text
       document:
@@ -5310,6 +5348,7 @@ records:
         semantic_sha256: 666722533692b40bd0c3c91ad00937a8189aac7dbe6d1989c32e4490d9c7823c
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: narrated_calls
       document:
@@ -6219,6 +6258,7 @@ records:
         semantic_sha256: d6a8f0c6b74114b236cb02a3c723328368d2ce0f851b12e03f5a1a0295e0040a
   orphan_close_after_prose:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: orphan_close_after_prose
       document:
@@ -6305,6 +6345,7 @@ records:
         semantic_sha256: ae48231edad7d7b785c97b98eed4fc1c15c20121968458ec49bb8d9be357421c
   prefilled_reasoning_redundant_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_redundant_opener
       document:
@@ -6392,6 +6433,7 @@ records:
         semantic_sha256: 09eb0a0100143237a576ee889812c74ed941ffaaa153992af6cef9b144ab4999
   prefilled_reasoning_then_text:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_then_text
       document:
@@ -6472,6 +6514,7 @@ records:
         semantic_sha256: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
   prefilled_reasoning_then_text_then_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_then_text_then_tool
       document:
@@ -6559,6 +6602,7 @@ records:
         semantic_sha256: 71b8667e122e35f2d3fcb031d9c3b859626c6872da6bbdf94edaa9d2ed06b371
   prefilled_reasoning_truncated:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_truncated
       document:
@@ -6643,6 +6687,7 @@ records:
         semantic_sha256: ccdfbec1624bd05340e970a8aead2aa224eb1841681c0f2c6a42b044e85917ff
   prefilled_reasoning_with_guided_json:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_with_guided_json
       document:
@@ -6723,6 +6768,7 @@ records:
         semantic_sha256: f8be7bfb62ba76e8388e3debc3e1558ccf2d7bf01a54c46375a8e3b86f60032e
   prefilled_reasoning_with_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_with_tool
       document:
@@ -6809,6 +6855,7 @@ records:
         semantic_sha256: 4784fefcfc12f363575697385596623bc77da869fb10432acd8f0f6bd48a998e
   prefilled_response_reasoning_markers_literal:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_response_reasoning_markers_literal
       document:
@@ -6966,6 +7013,7 @@ records:
         semantic_sha256: 75f5a4ae417384d04da1c04240c8fdbba6b428b6faf807a49bca5bc251020a60
   reason_after_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_after_tool
       document:
@@ -7096,6 +7144,7 @@ records:
         semantic_sha256: 89c8ebf04631e4af7ce9e569cb79b2c57c080dcb6c6f7b5a1a76b632ecf65b86
   reason_between_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_between_calls
       document:
@@ -7232,6 +7281,7 @@ records:
         semantic_sha256: dc5d9c2bc8408a7a24c00a67e18c23cdd7b5187372a88422323282b54452be29
   reason_interleaved:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_interleaved
       document:
@@ -7382,6 +7432,7 @@ records:
         semantic_sha256: 131c41167248835ef876a5ffde416bfa00d81ddbaa8e736f62f5eedc13916133
   reason_markup_in_arg:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_markup_in_arg
       document:
@@ -7498,6 +7549,7 @@ records:
         semantic_sha256: 86092167bc0afc2ed79dee9a19ed62e613b032fd1b16c4cc10e0bbc104b6df26
   reason_markup_in_arg_with_text:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_markup_in_arg_with_text
       document:
@@ -7626,6 +7678,7 @@ records:
         semantic_sha256: 546a5e26a91ce2a4678638dfb29053d6894c0fe7645948ca40be6656e84212a6
   reason_only:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_only
       document:
@@ -7714,6 +7767,7 @@ records:
         semantic_sha256: b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5
   reason_then_content:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_then_content
       document:
@@ -7808,6 +7862,7 @@ records:
         semantic_sha256: 1d265326d010d8b480499269e4a6c9d37589d7b90f257fecbe845e9f9ae9a947
   reason_then_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_then_tool
       document:
@@ -7920,6 +7975,7 @@ records:
         semantic_sha256: 1b1f7686f66b3ab75367c952fef9b11037e82d337ceef3228fab1b87758217bf
   reason_tool_reason_tool_reason:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_tool_reason_tool_reason
       document:
@@ -8084,6 +8140,7 @@ records:
         semantic_sha256: 0665a15855c21c14b320df29af2c14e5728c8c1d81a3fb8a5419448123091901
   reason_tool_text_reason_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_tool_text_reason_tool
       document:
@@ -8238,6 +8295,7 @@ records:
         semantic_sha256: 8d6e921ece5ccd14242dfd58d05d8954a26e503239c2051d3128b97d8c38374b
   reason_unterminated:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_unterminated
       document:
@@ -17019,6 +17077,7 @@ records:
         semantic_sha256: 4953af575babca402fa8063e939246d8d0f655b4817ce19842283c6e49311c2f
   text_before_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_before_tool
       document:
@@ -17127,6 +17186,7 @@ records:
         semantic_sha256: c4512cac1954019e598de1821fd0069d25bbbd5f8c6424f673462e40d4d405e8
   text_between_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_between_calls
       document:
@@ -17259,6 +17319,7 @@ records:
         semantic_sha256: 700e8ec57bd49dfc3722514e58cb33afbe59f9fbca51d03d45053a135cf84859
   text_only:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_only
       document:
@@ -17343,6 +17404,7 @@ records:
         semantic_sha256: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
   text_reason_tool_text_reason_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_reason_tool_text_reason_tool
       document:
@@ -17503,6 +17565,7 @@ records:
         semantic_sha256: 7de8d8cba1570c9e50dd062fa7bdc658d8653d7ed335e2a46320b1df2f487dc7
   text_sandwich:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_sandwich
       document:
@@ -17617,6 +17680,7 @@ records:
         semantic_sha256: 44fff81211c2b2951a37082a6bfdc0d9204a4cbf66427c99111c6d0ebfbe30ee
   tool_block_never_closed_then_text:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_block_never_closed_then_text
       document:
@@ -17773,6 +17837,7 @@ records:
         semantic_sha256: f7437618d3c75155981fc5928365bf43792d99cd211a97123d415adf53408ed6
   tool_in_reason:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_in_reason
       document:
@@ -17893,6 +17958,7 @@ records:
         semantic_sha256: f784b9faba0feefc5060d750e490cab999c80f02b0db8e38f8813a8c0f12e839
   tool_in_reason_with_text:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_in_reason_with_text
       document:
@@ -18023,6 +18089,7 @@ records:
         semantic_sha256: ce739746bf940b3ed7a2d20e11c8ee3736facea7029f09d1a31227fa9d5f784c
   tool_markup_only_emits_nothing:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_markup_only_emits_nothing
       document:
@@ -18103,6 +18170,7 @@ records:
         semantic_sha256: c208f212d4e9af751d43b668461c16f7a01c53b6de6671e3ae013a7af4f54afd
   tool_no_close:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_no_close
       document:
@@ -18201,6 +18269,7 @@ records:
         semantic_sha256: 640462e15b52c18446fc42a149a1d809a12b7cf55400afac83bf365783efbf65
   tool_only:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_only
       document:
@@ -18303,6 +18372,7 @@ records:
         semantic_sha256: d3eb0373fcab5690b0e58dc3a1ea632504ae409bd77c2facb162cfcf74dd41a5
   trailing_text_after_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: trailing_text_after_tool
       document:
@@ -18411,6 +18481,7 @@ records:
         semantic_sha256: 1c948928376e477a85a2cc447fa8fc8a2666feed4b7e4a676984a17f98c96553
   truncated_tool_eof:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: truncated_tool_eof
       document:
@@ -18633,6 +18704,7 @@ records:
         semantic_sha256: e3ee307214ba9614e2905612a2d4d90cf08d1589d7dfa821915934f730bd48cf
   two_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls
       document:
@@ -18759,6 +18831,7 @@ records:
         semantic_sha256: cedae3e2633fefcad0017d9e79a7934da90df4b83c60248f8426c30678631565
   two_calls_same_name:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls_same_name
       document:
@@ -18885,6 +18958,7 @@ records:
         semantic_sha256: b9eef05d6760bbde3814d00bd130d448373b60d0b16c45958f8270b15a7fc8de
   two_reason_spans:
     member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_reason_spans
       document:

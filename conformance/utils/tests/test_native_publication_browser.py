@@ -12,6 +12,7 @@ import re
 import shutil
 import tarfile
 import threading
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 import pytest
@@ -21,13 +22,95 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from browser_helpers import raw_view_download, settle
 
-from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine
+from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine, _assert_generation_provenance
+from verify_publication_transport import publication_metadata, runtime_catalog, verify_http_publication
 from unified_archives import read_source
 from fixture_test_support import capture_releases, historical_source_bytes
 from fixture_test_support import prepare_isolated_publication
 from fixture_test_support import publish
 from test_capture_sources import native_publisher, split_evidence, pin_history
 import capture_sources
+from capture_versions import capture_release_sort_key
+
+
+def test_publication_delivery_matches_qualified_artifact(historical_published_viewer, request):
+    site = historical_published_viewer
+    configured = request.config.getoption("--publication-url")
+    server = None
+    if configured:
+        base = configured.rstrip("/")
+    else:
+        server, _requests = _server(prefix="/frontend-crates", root=site)
+        base = f"http://127.0.0.1:{server.server_port}/frontend-crates"
+    driver = None
+    try:
+        # Compare the qualified bytes, including all history sidecars, rather than
+        # trusting a successful HTTP response or a revision label on an older site.
+        verify_http_publication(site, base)
+        driver = _driver()
+        driver.get(f"{base}/index.html?tab=tab-unified")
+        settle(driver, "tab-unified", history_ready=True)
+        assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == "true"
+        _assert_generation_provenance(driver, publication_metadata(site))
+        # Use an offered comparison, never a pinned model or release. A catalog
+        # with only one selectable capture still has a valid initial matrix.
+        comparison = driver.execute_script("""
+          const tab = window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === 'tab-unified');
+          const select = document.querySelector('[data-slot-capture="0"]');
+          const option = [...select.options].find(option => !option.disabled && option.value
+            && option.value !== 'none' && option.value !== select.value
+            && tab.candidates.some(candidate => candidate.identity
+              && (candidate.identity === option.value || candidate.key === option.value)));
+          const candidate = option && tab.candidates.find(candidate => candidate.identity === option.value || candidate.key === option.value);
+          return candidate ? {identity: candidate.identity, key: candidate.key} : null;
+        """)
+        catalog = runtime_catalog(site)
+        producer = catalog["metadata"]["selection_policy"]["unified"]["reference"]
+        candidates = [source for source in catalog["sources"]["candidates"] if source["implementation"] == producer]
+        current = max(candidates, key=lambda source: capture_release_sort_key(source["version"]))
+        native = set(current["native_unified_families"])
+        eligible = {source["version"] for source in candidates if not source.get("source_blocker")
+                    and source.get("has_captured_results") is not False
+                    and set(source["capture_families"]) & native}
+        if len(eligible) > 1:
+            assert comparison is not None, "qualified history offers older captures but the browser does not"
+        if comparison:
+            driver.get(f"{base}/index.html?" + urlencode({"tab": "tab-unified", "slots_tab-unified": f"{comparison['identity']},none,none"}))
+            for reload in (False, True):
+                if reload:
+                    driver.refresh()
+                settle(driver, "tab-unified", history_ready=True)
+                assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == "true"
+                assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == [comparison["key"]]
+                assert parse_qs(urlsplit(driver.current_url).query)["slots_tab-unified"][0].split(",")[0] == comparison["identity"]
+    finally:
+        if driver:
+            driver.quit()
+        if server:
+            server.shutdown()
+            server.server_close()
+
+
+@pytest.mark.parametrize("fault", [None, "stale", "missing"])
+def test_http_delivery_checks_qualified_bytes_and_rejects_bad_sidecars(tmp_path, fault):
+    (tmp_path / "index.html").write_bytes(b"qualified index")
+    resource = tmp_path / "history with spaces.json.gz"
+    resource.write_bytes(gzip.compress(b'{"history":true}'))
+    server, _requests = _server(root=tmp_path,
+        fault={"path": "history%20with%20spaces.json.gz", "kind": "corrupt", "used": False} if fault == "stale" else None,
+        missing_paths=("/history%20with%20spaces.json.gz",) if fault == "missing" else ())
+    try:
+        if fault == "stale":
+            with pytest.raises(ValueError, match="differs from qualified artifact"):
+                verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        elif fault == "missing":
+            with pytest.raises(HTTPError):
+                verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        else:
+            assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")["resources"] == 2
+    finally:
+        server.shutdown()
+        server.server_close()
 
 
 @pytest.mark.parametrize("mode", ["latest", "history"])

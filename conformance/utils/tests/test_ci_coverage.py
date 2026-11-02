@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 import json
+from dataclasses import replace
 import os
 import platform
 import re
@@ -14,6 +15,7 @@ import pytest
 import yaml
 
 import ci_coverage
+import ci_plan
 import ci_publication_cache
 import unified_history
 import verify_ci_selection
@@ -42,7 +44,7 @@ def test_structural_changes_cannot_select_the_smaller_profile(status):
 
 
 @pytest.mark.parametrize("profile", ["exhaustive", "latest-two"])
-@pytest.mark.parametrize("shard_count", [4, verify_ci_selection.QUALIFICATION_SHARDS])
+@pytest.mark.parametrize("shard_count", [4, sum(item["lane"] == "qualification" for item in ci_plan.plan())])
 def test_capture_shards_have_exact_disjoint_union_and_newest_versions(profile, shard_count):
     rows = [{"path": f"{implementation}/{mode}/{family}/{version}", "implementation": implementation,
              "mode": mode, "family": family, "version": version}
@@ -108,6 +110,10 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
         "conformance/utils/publication-requirements.in",
         ".gitattributes",
         "conformance/README.md",
+        "conformance/utils/src/unified_history.py",
+        "conformance/utils/src/ci_plan.py",
+        "conformance/utils/ci-requirements.in",
+        "conformance/utils/ci-lanes.json",
         ".github/workflows/ci.yml",
         "README.md",
         "conformance/utils/tests/test_ci_coverage.py",
@@ -163,7 +169,7 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
     monkeypatch.setattr(ci_publication_cache.platform, "python_version", lambda: "test-runtime")
     assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
     monkeypatch.setattr(ci_publication_cache.platform, "python_version", python_version)
-    for path in paths[:6]:
+    for path in paths[:9]:
         source = tmp_path / path
         source.write_bytes(b"changed")
         assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
@@ -173,7 +179,7 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
     source.write_bytes(b"changed")
     assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
     source.write_bytes(b"original")
-    for path in paths[6:]:
+    for path in paths[9:]:
         source = tmp_path / path
         source.write_bytes(b"changed")
         assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") == original
@@ -405,16 +411,16 @@ def test_cache_identity_does_not_follow_tracked_directory_links(tmp_path):
     assert ci_publication_cache.input_identity(link) != before
 
 
-@pytest.mark.parametrize("job_name", ["conformance-core", "conformance-native-browser", "conformance-viewer"])
-def test_qualification_jobs_that_publish_install_the_locked_bundler(job_name):
+def test_qualification_matrix_installs_the_bundler_before_execution():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
-    steps = workflow["jobs"][job_name]["steps"]
+    steps = workflow["jobs"]["conformance-check"]["steps"]
     installation = next(index for index, step in enumerate(steps)
                         if step.get("uses") == "./.github/actions/conformance-viewer-build")
-    qualification = next(index for index, step in enumerate(steps)
-                         if "conformance/utils/check.sh ci" in step.get("run", ""))
-    assert installation < qualification
+    execution = next(index for index, step in enumerate(steps)
+                     if "--run" in step.get("run", ""))
+    assert installation < execution
+    assert "matrix.bundler" in steps[installation]["if"]
 
 
 @pytest.mark.parametrize("include_history", [False, True])
@@ -431,7 +437,10 @@ def test_browser_collection_declares_latest_and_history_dependencies(tmp_path, i
     assert result.returncode in (0, 5), result.stdout + result.stderr
     receipts = list(tmp_path.glob("*.json"))
     assert len(receipts) == 1
-    selected = {node.split("::")[-1] for node in json.loads(receipts[0].read_bytes())["selected"]}
+    receipt = json.loads(receipts[0].read_bytes())
+    assert receipt["include_history"] is include_history
+    assert receipt["coverage"] == "exhaustive"
+    selected = {node.split("::")[-1] for node in receipt["selected"]}
     latest = {"test_original_yaml_view_and_blob_download_preserve_source_bytes",
               "test_muse_spark_popup_preserves_message_phases"}
     history = {"test_original_archive_view_and_blob_download_preserve_source_bytes",
@@ -444,49 +453,36 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
     jobs = workflow["jobs"]
-    conformance_filter = next(step["with"]["filters"] for step in jobs["changes"]["steps"]
-                              if step.get("id") == "filter")
-    assert "- '.gitattributes'" in conformance_filter
-    assert jobs["pages-build"]["env"]["CONFORMANCE_PUBLICATION_POLICY"] == "native-history-context-v4"
-    identity_step = next(step for step in jobs["pages-build"]["steps"] if step.get("id") == "identity")
-    assert "--publication-policy \"$CONFORMANCE_PUBLICATION_POLICY\"" in identity_step["run"]
-    catalog_step = next(step for step in jobs["pages-build"]["steps"]
-                        if step.get("name") == "Generate source catalog inputs")
-    dependency_step = next(step for step in jobs["pages-build"]["steps"]
-                           if step.get("name") == "Install publication identity dependencies")
-    assert "-r conformance/utils/publication-requirements.in" in dependency_step["run"]
-    assert jobs["pages-build"]["steps"].index(dependency_step) < jobs["pages-build"]["steps"].index(identity_step)
-    assert '"$CONFORMANCE_PYTHON" conformance/utils/src/ci_publication_cache.py identify' in identity_step["run"]
-    restore = next(step for step in jobs["pages-build"]["steps"] if step.get("name") == "Restore compatible family conversion fragments")
-    assert jobs["pages-build"]["steps"].index(restore) < jobs["pages-build"]["steps"].index(catalog_step)
-    assert "--include-history" in catalog_step["run"]
-    assert "--include-history" in identity_step["run"]
-    assert "${{ github.ref }}" in restore["with"]["key"]
-
-    assert jobs["conformance-fixtures"]["needs"] == "changes"
-    assert jobs["rust"].get("needs") is None
-    required = set(jobs["conformance-table"]["needs"])
+    assert jobs["conformance-table"]["if"] == "${{ always() }}"
     for name, job in jobs.items():
-        if name.startswith("conformance-") and name != "conformance-table":
-            assert name in required
-            assert job["timeout-minutes"] == 20
+        if name not in {"conformance-table", "deploy-pages"}:
+            assert "if" not in job, name
+    assert workflow["env"] == {"CONFORMANCE_INCLUDE_HISTORY": "true", "CONFORMANCE_COVERAGE": "exhaustive"}
+    assert jobs["conformance-fixtures"]["needs"] == "prepare"
+    assert jobs["rust"].get("needs") is None
+    matrix = jobs["conformance-check"]
+    assert set(matrix["needs"]) == {"prepare", "pages-build"}
+    assert matrix["strategy"]["fail-fast"] is False
+    assert matrix["strategy"]["matrix"] == {"include": "${{ fromJSON(needs.prepare.outputs.validation_matrix) }}"}
+    assert matrix["runs-on"] == "ubuntu-24.04"
+    assert matrix["permissions"] == {"contents": "read"}
+    assert "conformance-check" in jobs["conformance-table"]["needs"]
+    assert all("strategy.job-total" not in step.get("run", "") for step in matrix["steps"])
+    execute = next(step for step in matrix["steps"] if "--run" in step.get("run", ""))
+    assert execute["env"] == {f"PLAN_{name.upper()}": "${{ matrix." + name + " }}" for name in ("lane", "index", "count")}
+    assert all(f'"$PLAN_{name.upper()}"' in execute["run"] for name in ("lane", "index", "count"))
+    prepare = jobs["prepare"]
+    assert any("ci_plan.py --matrix" in step.get("run", "") for step in prepare["steps"])
     publication = json.dumps(jobs["pages-build"])
     assert "snapshot_parity" not in publication
-    assert "pytest" not in "\n".join(step.get("run", "") for step in jobs["pages-build"]["steps"] if "pip" not in step.get("run", ""))
-    qualification = jobs["conformance-qualification"]
-    assert qualification["strategy"]["matrix"]["shard"] == "${{ fromJSON(needs.changes.outputs.qualification_matrix) }}"
-    assert qualification["env"]["CONFORMANCE_PARITY_SHARDS"] == "${{ strategy.job-total }}"
-    assert jobs["changes"]["outputs"]["qualification_matrix"] == "${{ steps.qualification.outputs.matrix }}"
-    step = next(step for step in jobs["changes"]["steps"] if step.get("id") == "qualification")
-    assert "verify_ci_selection.py --shard-matrix" in step["run"]
-    result = subprocess.run([sys.executable, str(root / "conformance/utils/src/verify_ci_selection.py"), "--shard-matrix"],
-                            capture_output=True, text=True, check=True)
-    assert json.loads(result.stdout) == list(range(verify_ci_selection.QUALIFICATION_SHARDS))
-    assert verify_ci_selection.QUALIFICATION_SHARDS == 8
-    check_script = (root / "conformance/utils/check.sh").read_text()
-    qualification = check_script.split("    qualification)", 1)[1].split("    native-browser)", 1)[0]
-    configured = set(re.findall(r"::(test_[A-Za-z0-9_]+)", qualification))
-    assert configured == verify_ci_selection.QUALIFICATION
+    # Source-owned phases can evolve; GitHub continues to own cache transfer order.
+    steps = jobs["pages-build"]["steps"]
+    phase = lambda name: next(index for index, step in enumerate(steps)
+                             if f"ci_publication.py {name}" in step.get("run", ""))
+    assert phase("configure") < phase("identify") < phase("restore") < phase("stamp") < phase("package") < phase("seal")
+    conversion = next(index for index, step in enumerate(steps)
+                      if step.get("name") == "Restore compatible family conversion fragments")
+    assert conversion < phase("catalog") < phase("publish") < phase("verify")
 
 
 @pytest.mark.parametrize("arguments", [[], ["--baseline", "."], ["--shard-matrix", "--selections", "."]])
@@ -499,10 +495,10 @@ def test_ci_accounting_cli_rejects_incomplete_or_mixed_modes(arguments):
 
 @pytest.mark.parametrize("fault", [None, "missing", "duplicate", "missing-shard", "extra"])
 def test_ci_accounting_rejects_lost_tests_and_incomplete_qualification(fault):
-    qualification = sorted(verify_ci_selection.QUALIFICATION)
+    qualification = sorted(ci_plan.qualification_nodes())
     baseline = [{"selected": ["fixture", "browser", *qualification]}]
     assignments = [{"selected": ["fixture"]}, {"selected": ["browser"]}]
-    assignments.extend({"selected": qualification} for _ in range(verify_ci_selection.QUALIFICATION_SHARDS))
+    assignments.extend({"selected": qualification} for _ in range(sum(item["lane"] == "qualification" for item in ci_plan.plan())))
     if fault == "missing":
         assignments.pop(0)
     elif fault == "duplicate":
@@ -516,6 +512,147 @@ def test_ci_accounting_rejects_lost_tests_and_incomplete_qualification(fault):
             verify_ci_selection.verify(baseline, assignments)
     else:
         assert verify_ci_selection.verify(baseline, assignments)["unique_tests"] == 2 + len(qualification)
+
+
+def test_publication_gate_rejects_missing_skipped_failed_or_unrequired_jobs():
+    root = Path(__file__).resolve().parents[3]
+    jobs = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())["jobs"]
+    results = {name: {"result": "success"} for name in jobs["conformance-table"]["needs"]}
+    assert set(verify_ci_selection.verify_jobs(results, jobs)["validation_jobs"]) == set(results)
+    for name in results:
+        for status in ("skipped", "failure", "cancelled", None):
+            with pytest.raises(ValueError, match="did not succeed"):
+                verify_ci_selection.verify_jobs({**results, name: {"result": status}}, jobs)
+        with pytest.raises(ValueError, match="every validation job"):
+            verify_ci_selection.verify_jobs({key: value for key, value in results.items() if key != name}, jobs)
+        altered = json.loads(json.dumps(jobs))
+        altered["conformance-table"]["needs"].remove(name)
+        with pytest.raises(ValueError, match="every validation job"):
+            verify_ci_selection.verify_jobs(results, altered)
+
+
+def _plan_receipts():
+    # Synthetic test IDs exercise accounting without depending on live model or
+    # release counts. Resource tests retain their real IDs to test that contract.
+    revision = "a" * 40
+    entries = [ci_plan.entry("fixtures", 0, 1), *ci_plan.plan()]
+    inventory = {item["lane"]: ([*ci_plan.qualification_nodes()] if item["lane"] == "qualification"
+                                 else [f"{item['lane']}::test_{index}" for index in range(5)])
+                 for item in entries}
+    mode = {"include_history": True, "coverage": "exhaustive", "revision": revision}
+    whole = sorted({node for nodes in inventory.values() for node in nodes})
+    baseline = [{**mode, "scope": None, "group": None, "eligible": whole, "selected": whole}]
+    assignments = []
+    for item in entries:
+        eligible = inventory[item["lane"]]
+        group = ci_plan.test_group(item)
+        selected = [node for index, node in enumerate(sorted(eligible))
+                    if not group or index % item["count"] == item["index"]]
+        assignments.append({**mode, "eligible": eligible, "selected": selected, "group": group,
+                            "resource_shard": ci_plan.resource_shard(item),
+                            "plan": {"id": ci_plan.plan_digest(), "entry": item["id"], "lane": item["lane"],
+                                     "index": item["index"], "count": item["count"]}})
+    return revision, baseline, assignments
+
+
+@pytest.mark.parametrize("partition", ["tests", "resources"])
+def test_source_owned_group_counts_change_execution_and_accounting_without_workflow_edits(monkeypatch, partition):
+    workflow = Path(__file__).resolve().parents[3] / ".github/workflows/ci.yml"
+    before_workflow = workflow.read_bytes()
+    before_plan = ci_plan.plan()
+    before_digest = ci_plan.plan_digest()
+    lane = next(lane for lane in ci_plan.LANES if lane.partition == partition)
+    monkeypatch.setattr(ci_plan, "LANES", tuple(replace(item, count=item.count + 1) if item == lane else item
+                                              for item in ci_plan.LANES))
+    assert len(ci_plan.plan()) == len(before_plan) + 1
+    assert ci_plan.plan_digest() != before_digest
+    revision, baseline, assignments = _plan_receipts()
+    result = verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)
+    assert result["unique_tests"] == len(baseline[0]["selected"])
+    assert workflow.read_bytes() == before_workflow
+
+
+@pytest.mark.parametrize("fault", [None, "latest", "missing-mode", "reduced", "filtered-baseline", "scoped-baseline", "grouped-baseline"])
+def test_publication_accounting_requires_complete_exhaustive_history(fault):
+    revision, baseline, assignments = _plan_receipts()
+    if fault == "latest":
+        assignments[0]["include_history"] = False
+    elif fault == "missing-mode":
+        del baseline[0]["include_history"]
+    elif fault == "reduced":
+        assignments[0]["coverage"] = "latest-two"
+    elif fault == "filtered-baseline":
+        baseline[0]["eligible"] = [*baseline[0]["eligible"], "omitted"]
+    elif fault == "scoped-baseline":
+        baseline[0]["scope"] = "publication"
+    elif fault == "grouped-baseline":
+        baseline[0]["group"] = "0/2"
+    if fault:
+        with pytest.raises(ValueError, match="publication"):
+            verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)
+    else:
+        assert verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)["unique_tests"] == len(baseline[0]["selected"])
+
+
+@pytest.mark.parametrize("fault", ["missing-entry", "duplicate-entry", "unknown-entry", "stale-plan", "wrong-revision",
+                                  "repeat-resource-shard", "wrong-resource-count", "wrong-test-group", "incomplete-group",
+                                  "omitted-test", "missing-qualification", "boolean-coordinate"])
+def test_publication_plan_rejects_incomplete_or_misidentified_execution(fault):
+    revision, baseline, assignments = _plan_receipts()
+    qualification = [item for item in assignments if item["plan"]["lane"] == "qualification"]
+    grouped = next(item for item in assignments if item["group"])
+    if fault == "missing-entry":
+        assignments.pop()
+    elif fault == "duplicate-entry":
+        assignments.append(assignments[0])
+    elif fault == "unknown-entry":
+        assignments[0]["plan"]["entry"] = "unknown"
+    elif fault == "stale-plan":
+        assignments[0]["plan"]["id"] = "stale"
+    elif fault == "wrong-revision":
+        assignments[0]["revision"] = "b" * 40
+    elif fault == "repeat-resource-shard":
+        # The old counter admitted shard zero repeated once per planned worker.
+        for item in qualification:
+            item["resource_shard"] = {"index": 0, "count": len(qualification)}
+    elif fault == "wrong-resource-count":
+        qualification[0]["resource_shard"]["count"] += 1
+    elif fault == "wrong-test-group":
+        grouped["group"] = "0/999"
+    elif fault == "incomplete-group":
+        grouped["selected"].pop()
+    elif fault == "omitted-test":
+        baseline[0]["eligible"] = [*baseline[0]["eligible"], "newly_collected::test_unassigned"]
+        baseline[0]["selected"] = baseline[0]["eligible"]
+    elif fault == "boolean-coordinate":
+        qualification[1]["resource_shard"]["index"] = True
+    elif fault == "missing-qualification":
+        qualification[0]["eligible"].pop()
+        qualification[0]["selected"].pop()
+    with pytest.raises(ValueError, match="publication|CI selection mismatch"):
+        verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)
+
+
+@pytest.mark.parametrize("fault", [None, "wrong-commit", "latest", "missing-mode", "short-revision"])
+def test_publication_gate_binds_history_artifact_to_current_commit(monkeypatch, fault):
+    revision = "a" * 40
+    metadata = {"revision": revision, "generated_revision": "b" * 40}
+    catalog = {"capture_generation": {"mode": "history"}}
+    if fault == "wrong-commit":
+        metadata["revision"] = "c" * 40
+    elif fault == "latest":
+        catalog["capture_generation"]["mode"] = "latest"
+    elif fault == "missing-mode":
+        catalog.clear()
+    elif fault == "short-revision":
+        revision = "main"
+    monkeypatch.setattr(verify_ci_selection, "publication_metadata", lambda _site: metadata)
+    monkeypatch.setattr(verify_ci_selection, "runtime_catalog", lambda _site: catalog)
+    if fault:
+        with pytest.raises(ValueError, match="publication"):
+            verify_ci_selection.verify_publication(Path("unused"), revision)
+    else:
+        assert verify_ci_selection.verify_publication(Path("unused"), revision)["source_revision"] == revision
 
 
 def _context_repo(tmp_path):
@@ -598,7 +735,7 @@ def test_publication_context_survives_tag_creation_and_rejects_tampering(tmp_pat
 
 
 @pytest.mark.parametrize("include_history", [False, True])
-def test_catalog_check_receives_selected_mode(tmp_path, include_history):
+def test_local_ci_wrapper_delegates_to_the_shared_runner(tmp_path, include_history):
     root = Path(__file__).resolve().parents[3]
     binary = tmp_path / "python3"
     binary.write_text('#!/bin/sh\nprintf "%s\\n" "$@" >> "$PROBE"\nexit 23\n')
@@ -609,21 +746,37 @@ def test_catalog_check_receives_selected_mode(tmp_path, include_history):
     result = subprocess.run(["bash", str(root / "conformance/utils/check.sh"), "ci"], env=environment)
     assert result.returncode == 23
     arguments = (tmp_path / "arguments.json").read_text().splitlines()
-    assert arguments == [str(root / "conformance/utils/src/viewer_catalog.py"), "--check", *(["--include-history"] if include_history else [])]
+    assert arguments == [str(root / "conformance/utils/src/ci_plan.py"), "--run", "core"]
 
 
 def test_only_history_can_replace_public_main_site():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
-    mode = workflow["env"]["CONFORMANCE_INCLUDE_HISTORY"]
-    assert "github.event_name == 'push' && github.ref == 'refs/heads/main'" in mode
-    assert "github.event.inputs.include-history" in mode
+    assert workflow["env"]["CONFORMANCE_INCLUDE_HISTORY"] == "true"
+    assert workflow["env"]["CONFORMANCE_COVERAGE"] == "exhaustive"
     jobs = workflow["jobs"]
-    deployment_guard = "${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}"
+    deployment_guard = "${{ github.ref == 'refs/heads/main' }}"
     assert jobs["deploy-pages"]["if"] == deployment_guard
     for step in jobs["conformance-table"]["steps"]:
-        if "Pages" in step.get("name", "") or step.get("name") == "Restore qualified Pages directory":
+        if "Pages" in step.get("name", ""):
             assert step["if"] == deployment_guard
+    gate_steps = jobs["conformance-table"]["steps"]
+    restore = next(i for i, step in enumerate(gate_steps) if step.get("uses") == "./.github/actions/conformance-publication")
+    accounting = next(i for i, step in enumerate(gate_steps) if "--baseline" in step.get("run", ""))
+    upload = next(i for i, step in enumerate(gate_steps) if "Upload GitHub Pages artifact" == step.get("name"))
+    assert restore < accounting < upload
+    assert all(flag in gate_steps[accounting]["run"] for flag in ("--require-history", "--publication", "--revision"))
+    deploy_steps = jobs["deploy-pages"]["steps"]
+    deployment = next(i for i, step in enumerate(deploy_steps) if step.get("id") == "deployment")
+    smoke = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py delivery" in step.get("run", ""))
+    assert deployment < smoke
+    assert deploy_steps[smoke]["env"]["PUBLICATION_URL"] == "${{ steps.deployment.outputs.page_url }}"
+    assert jobs["deploy-pages"]["concurrency"]["cancel-in-progress"] is False
+    for job_name, target in (("pages-build", "ci_publication.py identify"), ("conformance-table", "--job-results")):
+        steps = jobs[job_name]["steps"]
+        install = next(i for i, step in enumerate(steps) if "ci_plan.py --setup" in step.get("run", ""))
+        invocation = next(i for i, step in enumerate(steps) if target in step.get("run", ""))
+        assert install < invocation
 
 
 def test_publication_identification_bootstraps_without_site_packages():

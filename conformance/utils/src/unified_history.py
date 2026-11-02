@@ -129,7 +129,10 @@ StrictLoader.add_constructor("tag:yaml.org,2002:value", SafeConstructor.construc
 
 
 def load_yaml(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8")
+    return _parse_yaml(path, path.read_text(encoding="utf-8"))
+
+
+def _parse_yaml(path: Path, text: str | bytes) -> dict:
     try:
         value = yaml.load(text, Loader=StrictLoader)
     except ValueError as exc:
@@ -654,7 +657,7 @@ def _validate_capture_file(
     path: Path,
     document: dict,
     families: dict[str, Family],
-    *, resource_index=None, proof_requests=None,
+    *, resource_index=None, proof_requests=None, read_yaml=load_yaml,
 ) -> tuple[str, str, str, dict]:
     parent = document.get("parent")
     if "parent" in document and parent is None:
@@ -668,7 +671,7 @@ def _validate_capture_file(
         manifest_path = path.parents[2] / execution_manifests.source_reference(execution, "executions")
         if manifest_path.is_symlink():
             raise ValueError(f"execution manifest must be a regular file: {manifest_path}")
-        manifest = load_yaml(manifest_path)
+        manifest = read_yaml(manifest_path)
         if resource_index is not None:
             resource_index[manifest_path.relative_to(path.parents[2]).as_posix()] = {"receipts": sorted(manifest.get("receipts", {}))}
         receipt_documents = {}
@@ -679,7 +682,7 @@ def _validate_capture_file(
             receipt_path = path.parents[2] / execution_manifests.source_reference(digest, "receipts")
             if receipt_path.is_symlink():
                 raise ValueError(f"execution receipt must be a regular file: {receipt_path}")
-            receipt_documents[digest] = load_yaml(receipt_path)
+            receipt_documents[digest] = read_yaml(receipt_path)
             if resource_index is not None:
                 resource_index[digest] = {"receipt_identity": canonical_typed(receipt_documents[digest])}
         expanded = execution_manifests.expand(manifest, family=path.parent.name,
@@ -958,7 +961,7 @@ def _canonical_store_root(root: Path) -> Path:
     return Path(root).resolve(strict=False)
 
 
-def _load_family(item, snapshot_callback=None, *, external_captures=None):
+def _load_family(item, snapshot_callback=None, *, external_captures=None, documents=None):
     root, family = item
     grouped: dict[tuple[str, str], dict[str, dict]] = {}
     grouped_paths: dict[tuple[str, str], dict[str, Path]] = {}
@@ -968,13 +971,15 @@ def _load_family(item, snapshot_callback=None, *, external_captures=None):
     snapshot_members = {}
     snapshot_suppressed_inheritance = {}
     family_name = family.name
-    entries = sorted(family.path.parent.iterdir())
+    read_yaml = load_yaml if documents is None else lambda path: documents[path.relative_to(root).as_posix()]
+    entries = sorted(family.path.parent.iterdir()) if documents is None else sorted(
+        root / name for name in documents if (root / name).parent == family.path.parent)
     for path in entries:
         if path == family.path:
             continue
         if path.is_dir() or path.suffix != ".yaml" or path.name == "index.yaml":
             raise ValueError(f"unknown Unified family file: {path}")
-        document = load_yaml(path)
+        document = read_yaml(path)
         relative = path.relative_to(root).as_posix()
         resources[relative] = {"execution": document.get("execution")}
         if document.get("schema_version") == 2:
@@ -1019,7 +1024,7 @@ def _load_family(item, snapshot_callback=None, *, external_captures=None):
             path,
             document,
             {family.name: family},
-            resource_index=resources,
+            resource_index=resources, read_yaml=read_yaml,
         )
         if capture_family != family_name:
             raise ValueError(f"capture family differs from directory: {path}")
@@ -1053,8 +1058,10 @@ def _load_family(item, snapshot_callback=None, *, external_captures=None):
     return family.name, histories, family_capture_owners, resources
 
 
-def _load_store_unlocked(root: Path) -> Store:
+def _load_store_unlocked(root: Path, selections: dict[tuple[str, str], set[str]] | None = None) -> Store:
     root = _canonical_store_root(root)
+    if selections is not None:
+        return _load_selected_original_store(root, selections)
     with unified_archives.expanded(root) as expanded:
         store = _load_expanded_store_unlocked(expanded)
         if expanded != root:
@@ -1066,6 +1073,96 @@ def _load_store_unlocked(root: Path) -> Store:
                                          for key, path in history.capture_paths.items()}
             store.root = root
         return store
+
+
+def _load_selected_original_store(root: Path, selections: dict[tuple[str, str], set[str]]) -> Store:
+    # Inventory admits archives in full; semantic validation of unselected YAML
+    # belongs to the fixture lane's explicit full-store pass.
+    inventory = {row["path"]: row for row in unified_archives.inventory(root)}
+    histories = {}
+    for name in inventory:
+        identity = CAPTURE_DIRECTORY_RE.fullmatch(Path(name).stem)
+        if name.startswith("families/") and identity is not None:
+            key = Path(name).parent.name, identity["implementation"]
+            histories.setdefault(key, []).append((identity["runtime_version"], name))
+    chosen = set()
+    for key, versions in selections.items():
+        for ceiling in versions:
+            candidates = [(version, name) for version, name in histories.get(key, [])
+                          if _capture_release_sort_key(version) <= _capture_release_sort_key(ceiling)]
+            if candidates:
+                chosen.add(max(candidates, key=lambda item: _capture_release_sort_key(item[0]))[1])
+    chosen.update(f"families/{Path(name).parent.name}/{FAMILY_DOCUMENT_NAME}" for name in tuple(chosen))
+    documents = {}
+    pending = chosen
+    while pending:
+        missing = pending - inventory.keys()
+        if missing:
+            raise ValueError(f"selected source dependency is unavailable: {sorted(missing)}")
+        for row, data in unified_archives.read_sources(root, [inventory[name] for name in sorted(pending)]):
+            documents[row["path"]] = _parse_yaml(root / row["path"], data)
+        dependencies = set()
+        for name in pending:
+            document = documents[name]
+            if name.startswith("families/") and Path(name).name != FAMILY_DOCUMENT_NAME:
+                identity = CAPTURE_DIRECTORY_RE.fullmatch(Path(name).stem)
+                key = Path(name).parent.name, identity["implementation"]
+                if document.get("schema_version") != 2:
+                    dependencies.update(path for version, path in histories[key]
+                                        if _capture_release_sort_key(version) < _capture_release_sort_key(identity["runtime_version"]))
+                parent = document.get("parent")
+                if parent is not None:
+                    if not isinstance(parent, str) or CAPTURE_DIRECTORY_RE.fullmatch(parent) is None:
+                        raise ValueError(f"invalid capture parent in {root / name}")
+                    prior = [item for item in histories[key]
+                             if _capture_release_sort_key(item[0]) < _capture_release_sort_key(identity["runtime_version"])]
+                    if not prior or Path(max(prior, key=lambda item: _capture_release_sort_key(item[0]))[1]).stem != parent:
+                        raise ValueError(f"capture parent is not the preceding checkpoint: {root / name}")
+                    dependencies.add((Path(name).parent / f"{parent}.yaml").as_posix())
+                if "execution" in document:
+                    dependencies.add(execution_manifests.source_reference(document["execution"], "executions"))
+            elif name.startswith("executions/"):
+                memberships = document.get("receipts", {})
+                if not isinstance(memberships, dict):
+                    raise ValueError("execution receipt membership must be a mapping")
+                dependencies.update(execution_manifests.source_reference(value, "receipts") for value in memberships)
+        pending = dependencies - documents.keys()
+    families = {Path(name).parent.name: _validate_family(root / name, document)
+                for name, document in documents.items() if Path(name).name == FAMILY_DOCUMENT_NAME}
+    loaded = {}
+    resources = {}
+    for name, family in families.items():
+        external = {Path(path).stem for key, rows in histories.items() if key[0] == name for _, path in rows}
+        _, family_histories, _, family_resources = _load_family(
+            (root, family), external_captures=external, documents=documents)
+        loaded.update(family_histories)
+        resources.update(family_resources)
+    return Store(root, families, loaded, resources)
+
+
+def original_stores(checkout: Path, selections=None):
+    """Read YAML owners in dataset order, with the current store taking precedence."""
+    datasets_path = checkout / capture_sources.DATASETS
+    datasets = json.loads(datasets_path.read_bytes()) if datasets_path.is_file() else []
+    owners = []
+    locations = [(index, row["root"]) for index, row in enumerate(datasets)]
+    locations.append((len(datasets), ""))
+    for priority, prefix in locations:
+        root = checkout / prefix / capture_sources.STORE
+        with _store_read_lock(root):
+            owners.append((priority, prefix, _load_store_unlocked(root, selections)))
+    return owners
+
+
+def original_capture(owners, family, implementation, version):
+    captures = [(_capture_release_sort_key(capture["runtime_version"]), priority, prefix, store, history, identity)
+                for priority, prefix, store in owners
+                if (history := store.histories.get((family, implementation))) is not None
+                for identity, capture in history.captures.items()
+                if _capture_release_sort_key(capture["runtime_version"]) <= _capture_release_sort_key(version)]
+    if not captures:
+        raise ValueError(f"no original capture for {family}/{implementation}-{version}")
+    return max(captures, key=lambda item: item[:2])[2:]
 
 
 def _load_expanded_store_unlocked(root: Path) -> Store:

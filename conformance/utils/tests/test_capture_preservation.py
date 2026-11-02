@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 """Independent qualification against bundled or explicitly supplied preserved evidence."""
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -21,7 +22,7 @@ import pytest
 import capture_sources as sources
 import ci_publication_cache
 import publish_current_capture
-from test_unified_history import _store
+from test_unified_history import _store, _write_capture
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -129,6 +130,42 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             original = history.complete_snapshot(f"{row['implementation']}-{row['version']}", source_member=row["source"])
             authored = yaml.safe_load(capture_sources.read(view, f"{capture_sources.STORE}/families/{row['family']}/inputs_and_golden.yaml"))
             assert typed_equal(capture_sources.independent_snapshot(original, authored), snapshot), row["path"]
+
+
+@pytest.mark.parametrize("suppressed", [False, True])
+def test_latest_selection_preserves_inheritance_suppression(tmp_path, suppressed):
+    root = _store(tmp_path / "original")
+    overrides = {"text_only": {"capture_provenance": {
+        "captured_with": {"dynamo_v2": "0.5.0"}, "capture_origin": None, "inherited_from": None,
+    }}} if suppressed else {}
+    _write_capture(root, "0.5.2", {}, document_overrides=overrides)
+    history = unified_history.load_store(root).histories["gemma4", "dynamo_v2"]
+    selected = "dynamo_v2-0.5.2"
+    source = f"{sources.STORE}/families/gemma4/{selected}.yaml"
+    snapshot = history.complete_snapshot(selected, source_member=source)
+    row = {"surface": "unified", "mode": "unified", "family": "gemma4",
+           "implementation": "dynamo_v2", "version": "0.5.2", "source": source}
+    expected = sources.independent_snapshot(snapshot, history.family.document)
+    for damaged in (False, True):
+        candidate = copy.deepcopy(snapshot)
+        if damaged:
+            candidate["records"]["text_only"].pop("suppress_inherited_from", None)
+        data = sources.selected_bytes(unified_history.dump_yaml(candidate).encode(), row, [],
+                                      authored=history.family.document)
+        header, payload = data.split(b"\n", 1)
+        assert json.loads(header.removeprefix(b"capture_selection: "))["payload_sha256"] == hashlib.sha256(payload).hexdigest()
+        actual = yaml.safe_load(payload)
+        assert typed_equal(expected, actual) == (not suppressed or not damaged)
+        assert typed_equal(expected["records"]["text_only"]["value"], actual["records"]["text_only"]["value"])
+        exported = tmp_path / f"export-{damaged}"
+        family = exported / "families/gemma4"
+        family.mkdir(parents=True)
+        (family / "inputs_and_golden.yaml").write_bytes(history.family.path.read_bytes())
+        (family / f"{selected}.yaml").write_bytes(payload)
+        restored = unified_history.load_store(exported).histories["gemma4", "dynamo_v2"]
+        derived = restored.resolve(selected, view_capture_id="dynamo_v2-0.5.3")["text_only"]["document"]
+        # A valid checksum cannot replace the provenance flag consumed by later views.
+        assert ("inherited_from" in derived) == (not suppressed or damaged)
 
 
 def test_current_legacy_matches_existing_resolvers(history_source, tmp_path):
