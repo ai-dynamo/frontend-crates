@@ -1075,6 +1075,24 @@ fn fixed_parameter_names_preserve_spaces_and_unicode() {
 }
 
 #[test]
+fn scoped_nullable_schemas_parse_null_at_every_split() {
+    let input = call("]<]minimax[>[<v>null]<]minimax[>[</v>");
+    for kind in ["integer", "null", "boolean", "array", "string"] {
+        let ty = if kind == "null" {
+            json!("null")
+        } else {
+            json!([kind, "null"])
+        };
+        assert_splits(
+            &input,
+            json!({"type":"object","properties":{"v":{"$id":"https://example.com/v","type":ty}}}),
+            UnifiedParserInit::default(),
+            &[expected(json!({"v":null}))],
+        );
+    }
+}
+
+#[test]
 fn literal_constraints_preserve_types_and_numeric_precision() {
     // 2^53 + 1 catches integer rounding through an intermediate f64.
     for value in [json!(false), json!(-0.125), json!(9007199254740993u64)] {
