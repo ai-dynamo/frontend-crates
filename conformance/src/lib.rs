@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Conformance fixtures and normalized storage shared by native readers.
+//! Conformance fixtures, normalized storage and the authored Unified runner.
 
 pub mod normalization;
+mod runner;
+
+pub use runner::{CaseFailure, CaseUnsupported, RunOptions, RunReport, run_unified_family};
