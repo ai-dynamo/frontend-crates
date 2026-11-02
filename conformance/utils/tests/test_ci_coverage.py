@@ -777,6 +777,7 @@ def test_only_history_can_replace_public_main_site():
     assert evidence["if"] == "${{ always() }}"
     assert evidence["with"]["if-no-files-found"] == "error"
     assert deploy_steps[smoke]["env"]["PUBLICATION_URL"] == "${{ steps.deployment.outputs.page_url }}"
+    assert deploy_steps[smoke]["env"]["CONFORMANCE_DELIVERY_REPORT"] == "${{ runner.temp }}/conformance-delivery.json"
     assert jobs["deploy-pages"]["concurrency"]["cancel-in-progress"] is False
     for job_name, target in (("pages-build", "ci_publication.py identify"), ("conformance-table", "--job-results")):
         steps = jobs[job_name]["steps"]

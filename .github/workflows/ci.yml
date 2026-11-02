@@ -322,8 +322,6 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      CONFORMANCE_DELIVERY_REPORT: ${{ runner.temp }}/conformance-delivery.json
     concurrency:
       group: github-pages
       cancel-in-progress: false
@@ -355,6 +353,7 @@ jobs:
         if: ${{ steps.current.outputs.current == 'true' }}
         env:
           PUBLICATION_URL: ${{ steps.deployment.outputs.page_url }}
+          CONFORMANCE_DELIVERY_REPORT: ${{ runner.temp }}/conformance-delivery.json
         run: python3 conformance/utils/src/ci_publication.py delivery --url "$PUBLICATION_URL"
       - name: Retain delivery evidence
         if: ${{ always() }}
