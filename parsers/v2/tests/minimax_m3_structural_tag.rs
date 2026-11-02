@@ -583,7 +583,13 @@ fn ambiguous_string_union_types_select_json_without_changing_the_schema() {
     // M3 XML uses the same bytes for, e.g., the string "42" and the integer 42.
     // Guided JSON preserves the requested type when both are schema-valid.
     let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
-    let mut schemas = vec![json!({"enum":["42",42]})];
+    // The parser types a literal that contradicts its declared type by the
+    // type, while the grammar would force the literal's bytes.
+    let mut schemas = vec![
+        json!({"enum":["42",42]}),
+        json!({"type":"integer","enum":["42"]}),
+        json!({"type":"boolean","enum":["true","false"]}),
+    ];
     for other in ["integer", "number", "boolean", "object", "array", "null"] {
         schemas.push(json!({"type":["string",other]}));
         for keyword in ["anyOf", "oneOf"] {
