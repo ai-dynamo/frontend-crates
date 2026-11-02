@@ -968,9 +968,61 @@ fn exact_schema_types(
 /// Whether numeric text denotes an integral value (`42`, `21.0`, `1e3`), which
 /// a schema that admits only non-integral numbers must not coerce.
 fn is_integral_number_text(value: &str) -> bool {
-    value
-        .parse::<f64>()
-        .is_ok_and(|number| number.is_finite() && number.fract() == 0.0)
+    integral_number_text(value) == Some(true)
+}
+
+/// Whether the text is shaped like a decimal number literal at all.
+fn is_number_text(value: &str) -> bool {
+    integral_number_text(value).is_some()
+}
+
+/// Decide integrality on the literal text, never through `f64`: `Some(true)`
+/// when every digit right of the (exponent-shifted) decimal point is zero,
+/// `Some(false)` for a non-integral number, `None` when the text is not a
+/// decimal literal (`[+-]digits[.digits][e[+-]digits]`). `1.0000000000000001`
+/// and `9007199254740992.5` are non-integral even though they round to whole
+/// `f64`s; `1e-400` is non-integral even though it underflows to `0.0`.
+fn integral_number_text(value: &str) -> Option<bool> {
+    let unsigned = value.strip_prefix(['+', '-']).unwrap_or(value);
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => {
+            let digits = exponent.strip_prefix(['+', '-']).unwrap_or(exponent);
+            if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                return None;
+            }
+            // An exponent too large to parse saturates: it only moves the point
+            // further in the same direction.
+            let magnitude = digits.parse::<i64>().unwrap_or(i64::MAX);
+            (
+                mantissa,
+                if exponent.starts_with('-') {
+                    -magnitude
+                } else {
+                    magnitude
+                },
+            )
+        }
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    if (whole.is_empty() && fraction.is_empty())
+        || !whole
+            .bytes()
+            .chain(fraction.bytes())
+            .all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    // Digits at or beyond the shifted point must all be zero.
+    let digits = format!("{whole}{fraction}");
+    let point = i64::try_from(whole.len()).ok()?.saturating_add(exponent);
+    let fractional_from = usize::try_from(point.max(0)).unwrap_or(usize::MAX);
+    Some(
+        digits
+            .bytes()
+            .skip(fractional_from.min(digits.len()))
+            .all(|byte| byte == b'0'),
+    )
 }
 
 fn complement_types(excluded: &HashSet<SchemaType>) -> HashSet<SchemaType> {
@@ -1024,13 +1076,20 @@ fn coerce_number_value(value: &str) -> Option<ParsedValue> {
     if let Some(integer) = coerce_integer_literal(value) {
         return Some(integer);
     }
-    let float_val = value.parse::<f64>().ok()?;
-    if float_val.fract() == 0.0 && float_val.is_finite() {
+    if integral_number_text(value)? {
+        // `42.0`, `1e3`: whole numbers are stored as integers when they fit.
+        let float_val = value.parse::<f64>().ok()?;
         if let Some(int_val) = float_val.to_i64() {
             return Some(Value::Number(int_val.into()).into());
         }
         return raw_number_literal(value);
     }
+    // A non-integral literal keeps its exact bytes; only a spelling that is
+    // not valid JSON (`.5`, `+1.5`) goes through `f64`.
+    if let Some(raw) = raw_number_literal(value) {
+        return Some(raw);
+    }
+    let float_val = value.parse::<f64>().ok()?;
     serde_json::Number::from_f64(float_val).map(|num| Value::Number(num).into())
 }
 
@@ -1049,7 +1108,10 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
         {
             return json_val.into();
         }
-        if let Ok(json_val) = try_literal_eval(trimmed)
+        // Number-shaped text is decided by the exact numeric branches below,
+        // never by `serde_json`'s f64 storage category.
+        if !is_number_text(trimmed)
+            && let Ok(json_val) = try_literal_eval(trimmed)
             && value_matches(&json_val, allowed)
         {
             return json_val.into();
@@ -2481,6 +2543,60 @@ mod schema_composition_tests {
             json!({"not": {"oneOf": [{"type": "string"}, {"type": "boolean"}]}}),
         );
         assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+    }
+
+    #[test]
+    fn integrality_is_decided_on_the_literal_text() {
+        // `then: string` leaves only non-integral numbers in the else branch.
+        let cfg = one_param(
+            "x",
+            json!({"type": "number", "if": {"type": "integer"}, "then": {"type": "string"}, "else": {"type": "number"}}),
+        );
+        for literal in ["1.0000000000000001", "9007199254740992.5", "1e-400", "2.5"] {
+            assert_eq!(
+                ser(&convert_param_value(literal, "x", &cfg, "f")),
+                literal,
+                "{literal}"
+            );
+        }
+        for literal in ["42", "42.0", "1e3"] {
+            assert_eq!(
+                ser(&convert_param_value(literal, "x", &cfg, "f")),
+                format!("\"{literal}\""),
+                "{literal}"
+            );
+        }
+        // The literal-eval admission under `not integer` uses the same decision.
+        let cfg = one_param("x", json!({"not": {"type": "integer"}}));
+        assert_eq!(
+            ser(&convert_param_value("42.0", "x", &cfg, "f")),
+            "\"42.0\""
+        );
+        assert_eq!(ser(&convert_param_value("1e3", "x", &cfg, "f")), "\"1e3\"");
+        assert_eq!(ser(&convert_param_value("2.5", "x", &cfg, "f")), "2.5");
+        assert_eq!(
+            ser(&convert_param_value("1e-400", "x", &cfg, "f")),
+            "1e-400"
+        );
+    }
+
+    #[test]
+    fn integral_number_text_shapes() {
+        assert_eq!(integral_number_text("42"), Some(true));
+        assert_eq!(integral_number_text("-42.000"), Some(true));
+        assert_eq!(integral_number_text("1e3"), Some(true));
+        assert_eq!(integral_number_text("1.5e1"), Some(true));
+        assert_eq!(integral_number_text("0.0e-5"), Some(true));
+        assert_eq!(integral_number_text("1e99999999999999999999"), Some(true));
+        assert_eq!(integral_number_text("1.5"), Some(false));
+        assert_eq!(integral_number_text("1.0000000000000001"), Some(false));
+        assert_eq!(integral_number_text("9007199254740992.5"), Some(false));
+        assert_eq!(integral_number_text("1e-400"), Some(false));
+        assert_eq!(integral_number_text("15e-1"), Some(false));
+        assert_eq!(integral_number_text("abc"), None);
+        assert_eq!(integral_number_text("1e"), None);
+        assert_eq!(integral_number_text("."), None);
+        assert_eq!(integral_number_text(""), None);
     }
 
     /// Six levels of `$defs`, eight references per level, acyclic: the naive
