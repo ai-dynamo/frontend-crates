@@ -15,6 +15,7 @@ import threading
 import ssl
 import sys
 from contextlib import ExitStack
+from http.client import IncompleteRead
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.error import URLError
@@ -736,10 +737,123 @@ def test_http_delivery_recovery_still_rejects_corruption(tmp_path, delivery_cloc
 
 @pytest.mark.parametrize("error,retryable", [(TimeoutError(), True), (ConnectionResetError(), True),
     (URLError(TimeoutError()), True), (URLError(ConnectionResetError()), True),
+    (IncompleteRead(b"partial", 2), True), (URLError(IncompleteRead(b"partial", 2)), True),
     (ssl.SSLCertVerificationError(), False), (URLError(ssl.SSLCertVerificationError()), False),
     (URLError("name resolution failed"), False), (ValueError("corrupt bytes"), False)])
 def test_http_delivery_transport_error_classification(error, retryable):
     assert transport.transient_http_error(error) is retryable
+
+
+def incomplete_http_responses(data):
+    length = {"Content-Length": str(len(data))}
+    chunked = {"Transfer-Encoding": "chunked"}
+    chunk = f"{len(data):x}\r\n".encode()
+    partial = data[:-1]
+    return {
+        "length-empty": {"headers": length, "body": b""},
+        "length-partial": {"headers": length, "body": partial},
+        "length-complete": {"headers": {"Content-Length": str(len(data) + 1)}, "body": data},
+        "chunked-empty": {"headers": chunked, "body": b""},
+        "chunked-partial": {"headers": chunked, "body": f"{len(partial):x}\r\n".encode() + partial + b"\r\n"},
+        "chunked-complete": {"headers": chunked, "body": chunk + data + b"\r\n"},
+        "chunked-midchunk": {"headers": chunked, "body": chunk + partial},
+    }
+
+
+@pytest.mark.parametrize("framing,completion", [
+    ("length-empty", "correct"), ("length-partial", "correct"),
+    ("length-complete", "correct"),
+    ("chunked-empty", "correct"), ("chunked-partial", "correct"),
+    ("chunked-complete", "correct"), ("chunked-midchunk", "correct"),
+    ("length-partial", "exhausted"), ("chunked-complete", "exhausted"),
+    ("length-partial", "corrupt"), ("chunked-complete", "corrupt"),
+])
+def test_http_delivery_incomplete_framing_retries_only_failed_file(tmp_path, delivery_clock, framing, completion):
+    data = b"qualified"
+    for name in ("index.html", "sidecar.json"):
+        (tmp_path / name).write_bytes(data)
+    partial = incomplete_http_responses(data)[framing]
+    responses = [partial] * 4 if completion == "exhausted" else [partial, "corrupt" if completion == "corrupt" else None]
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": responses})
+    try:
+        if completion == "correct":
+            assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}") == {"resources": 2, "bytes": 18}
+            assert requests.count("/sidecar.json") == 1
+        else:
+            with pytest.raises(IncompleteRead if completion == "exhausted" else ValueError):
+                verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+            assert requests.count("/sidecar.json") <= 1
+        attempts = 4 if completion == "exhausted" else 2
+        assert requests.count("/index.html") == attempts
+        assert delivery_clock["sleeps"] == ([1, 2, 4] if completion == "exhausted" else [1])
+        report = json.loads(delivery_clock["report"].read_bytes())["checks"][0]
+        assert report["success"] == (completion == "correct")
+        assert set(report["resources"]) == {"index.html", "sidecar.json"}
+        resource = report["resources"]["index.html"]
+        assert resource["outcome"] == ("recovered" if completion == "correct" else "failed")
+        assert len(resource["attempts"]) == attempts
+        assert resource["attempts"][0]["error"].startswith("IncompleteRead(")
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("shape", ["short-complete", "short-unframed", "short-chunked", "corrupt", "oversized-length", "oversized-chunked"])
+def test_http_delivery_complete_wrong_bytes_never_retry(tmp_path, delivery_clock, shape):
+    data = b"qualified"
+    (tmp_path / "index.html").write_bytes(data)
+    body = data[:-1] if shape.startswith("short") else data[:-1] + b"X" if shape == "corrupt" else data + b"X" * (1 << 20)
+    headers = {} if shape == "short-unframed" else {"Content-Length": str(len(body))}
+    if shape.endswith("chunked"):
+        headers = {"Transfer-Encoding": "chunked"}
+        body = f"{len(body):x}\r\n".encode() + body + b"\r\n0\r\n\r\n"
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": [{"headers": headers, "body": body}]})
+    try:
+        with pytest.raises(ValueError, match="differs from qualified artifact") as failure:
+            verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        assert requests == ["/index.html"]
+        assert delivery_clock["sleeps"] == []
+        assert len(str(failure.value)) < 16384
+        report = json.loads(delivery_clock["report"].read_bytes())["checks"][0]
+        assert not report["success"] and len(report["resources"]["index.html"]["attempts"]) == 1
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("framing", ["length-partial", "chunked-complete"])
+def test_http_delivery_identity_framing_recovery_does_not_scan_other_resources(tmp_path, delivery_clock, framing):
+    data = b'{"revision":"qualified"}'
+    metadata = tmp_path / "conformance/viewer-publication.json"
+    metadata.parent.mkdir()
+    metadata.write_bytes(data)
+    (tmp_path / "index.html").write_bytes(b"separate resource")
+    server, requests = _server(root=tmp_path, fault={"path": "viewer-publication.json", "responses": [incomplete_http_responses(data)[framing]]})
+    try:
+        assert verify_http_publication_identity(tmp_path, f"http://127.0.0.1:{server.server_port}") == {"resources": 1, "bytes": len(data)}
+        assert requests == ["/conformance/viewer-publication.json"] * 2
+        assert delivery_clock["sleeps"] == [1]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("framing", ["length-partial", "chunked-complete"])
+def test_http_delivery_spawned_process_recovers_incomplete_framing(tmp_path, monkeypatch, framing):
+    data = b"qualified"
+    (tmp_path / "index.html").write_bytes(data)
+    report = tmp_path.parent / (tmp_path.name + "-delivery.json")
+    monkeypatch.setenv("CONFORMANCE_DELIVERY_REPORT", str(report))
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": [incomplete_http_responses(data)[framing]]})
+    try:
+        assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}") == {"resources": 1, "bytes": 9}
+        assert requests == ["/index.html"] * 2
+        resource = json.loads(report.read_bytes())["checks"][0]["resources"]["index.html"]
+        assert resource["outcome"] == "recovered" and len(resource["attempts"]) == 2
+        assert not transport.multiprocessing.active_children()
+    finally:
+        server.shutdown()
+        server.server_close()
 
 
 def test_http_delivery_concurrent_recoveries_account_for_every_file(tmp_path, delivery_clock):

@@ -10,6 +10,7 @@ from collections import OrderedDict
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from email.utils import parsedate_to_datetime
 from functools import lru_cache
+from http.client import IncompleteRead
 import gzip
 import hashlib
 import json
@@ -81,7 +82,7 @@ def transient_http_error(error):
     if isinstance(error, HTTPError):
         return error.code in RETRY_STATUSES
     reason = error.reason if isinstance(error, URLError) else error
-    return isinstance(reason, (TimeoutError, ConnectionResetError)) and not isinstance(reason, ssl.SSLError)
+    return isinstance(reason, (TimeoutError, ConnectionResetError, IncompleteRead)) and not isinstance(reason, ssl.SSLError)
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -133,8 +134,11 @@ def _scan_http_resources(root, base_url, paths, update, deadline=None, timeout=H
                             f"unexpected publication HTTP response: {request.full_url}: {response.status}")
                     emit(relative)
                     actual = response.read(len(expected) + 1)
+                    # Reaching the oversize sentinel remains an integrity failure.
+                    if response.length and len(actual) < len(expected) + 1:
+                        raise IncompleteRead(actual, response.length)
                 require(actual == expected, f"published resource differs from qualified artifact: {request.full_url}")
-            except (HTTPError, URLError, OSError, ValueError) as caught:
+            except (HTTPError, URLError, OSError, ValueError, IncompleteRead) as caught:
                 error = caught
                 entry["error"] = repr(caught)
                 if isinstance(caught, HTTPError):

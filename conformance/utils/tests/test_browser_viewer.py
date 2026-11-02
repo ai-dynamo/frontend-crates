@@ -114,6 +114,18 @@ def _server(prefix: str = "", gate=None, gate_path: str | None = None, fault=Non
                         fault["used"] = True
                         kind = fault["kind"]
             if kind is not None:
+                if isinstance(kind, dict):
+                    self.send_response(200)
+                    self.send_header("Connection", "close")
+                    for name, value in kind["headers"].items():
+                        self.send_header(name, value)
+                    self.end_headers()
+                    try:
+                        self.wfile.write(kind["body"])
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+                    self.close_connection = True
+                    return
                 if kind == "reset":
                     self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
                     self.connection.close()
