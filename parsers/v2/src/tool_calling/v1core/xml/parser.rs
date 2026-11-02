@@ -15,7 +15,8 @@ use super::super::config::XmlParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 use crate::tool_calling::arguments::{
     ParsedValue, coerce_integral_number, has_unsupported_schema_ref_scope,
-    normalize_decimal_spelling, parsed_json_literal, raw_number_literal, resolve_local_schema_ref,
+    literals_contradict_type, normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
+    resolve_local_schema_ref,
 };
 
 /// Build a `<start>name>(body)<end>` regex pattern. When `strict` is false,
@@ -467,6 +468,7 @@ struct SchemaCoercion {
     direct_type: Option<String>,
     allowed_types: HashSet<SchemaType>,
     has_type_constraints: bool,
+    literals_dropped: bool,
 }
 
 impl SchemaCoercion {
@@ -480,6 +482,7 @@ impl SchemaCoercion {
             direct_type,
             allowed_types,
             has_type_constraints,
+            literals_dropped: literals_contradict_type(schema),
         }
     }
 
@@ -612,6 +615,15 @@ fn convert_prepared_param_value(
 
     // Get the type from schema.
     let param_schema = param_config.get(param_name);
+    // Contradicting literals were dropped: coerce like a union of the declared
+    // types, so text that does not fit (`yes` for a boolean) stays text instead
+    // of taking a direct type's legacy fallback.
+    if let Some(schema) = param_schema
+        && schema.literals_dropped
+        && !schema.allowed_types.is_empty()
+    {
+        return coerce_union_value(&param_value, &schema.allowed_types);
+    }
     let direct_type = param_schema
         .and_then(|schema| schema.direct_type.clone())
         .filter(|name| {
@@ -893,11 +905,13 @@ fn collect_type_constraints(
     if !out.is_empty() {
         constraints.push(out);
     }
-    if let Some(value) = schema.get("const") {
+    // Same rule as SchemaFacts: contradicting literals don't narrow the declared type.
+    let own_literals = !literals_contradict_type(schema);
+    if own_literals && let Some(value) = schema.get("const") {
         context.has_type_constraints = true;
         constraints.push(literal_type_constraints(value));
     }
-    if let Some(values) = schema.get("enum").and_then(Value::as_array) {
+    if own_literals && let Some(values) = schema.get("enum").and_then(Value::as_array) {
         context.has_type_constraints = true;
         constraints.push(values.iter().flat_map(literal_type_constraints).collect());
     }
