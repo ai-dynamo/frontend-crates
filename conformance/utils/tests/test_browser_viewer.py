@@ -1677,7 +1677,7 @@ def test_shared_parent_displays_missing_child_capture(historical_published_viewe
         assert result['identity'] == 'dynamo_v2@0.9.0'
         assert result['status'] == 'missing'
         assert 'status-missing' in result['painted']
-        assert result['variants'] == {'gpt_oss_tool_body_whitespace': 'missing', 'tool_only': 'pass'}
+        assert result['variants'] == {'tool_body_whitespace': 'missing', 'tool_only': 'pass'}
     finally:
         driver.quit()
         server.shutdown()
