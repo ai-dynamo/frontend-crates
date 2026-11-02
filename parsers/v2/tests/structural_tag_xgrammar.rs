@@ -886,3 +886,114 @@ fn grammar_negative_schema_is_still_extractable() {
         assert_parser(&case);
     }
 }
+
+/// The guard is a generation restriction, not a parser recovery rule. Literal
+/// markers remain representable when `exclude_special_tokens` is false.
+#[test]
+#[ignore = "requires XGrammar with JSONSchemaFormat.excludes; see #530"]
+fn v41_raw_closing_guard_xgrammar() {
+    let builder = structural_tag_builder_for_family("deepseek_v41").unwrap();
+    let tool = Tool {
+        name: "reply".into(),
+        description: None,
+        strict: Some(true),
+        parameters: json!({"type":"object", "properties":{"text":{"type":"string"}},
+            "required":["text"], "additionalProperties":false}),
+    };
+    let wrap = |text: &str| {
+        format!(
+            "\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"reply\">\n<｜DSML｜ parameter name=\"text\" string=\"true\">{text}</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls>"
+        )
+    };
+    let mut requests = Vec::new();
+    let mut expected = Vec::new();
+    for choice in [
+        StructuralTagToolChoice::Auto,
+        StructuralTagToolChoice::Required,
+        StructuralTagToolChoice::Named("reply"),
+    ] {
+        for guarded in [true, false] {
+            let grammar = builder
+                .build_with_options(
+                    &StructuralTagContext {
+                        tools: std::slice::from_ref(&tool),
+                        tool_choice: choice,
+                        parallel_tool_calls: Some(false),
+                        schema_mode: StructuralTagSchemaMode::Strict,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    },
+                    &StructuralTagOptions {
+                        exclude_special_tokens: Some(guarded),
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+                .unwrap();
+            for (label, text, accepted) in [
+                ("valid-endings", "hello 東京", true),
+                (
+                    "double-space-close",
+                    "hello</｜DSML｜  parameter>world",
+                    !guarded,
+                ),
+                (
+                    "wrong-close-name",
+                    "hello</｜DSML｜ unknown>world",
+                    !guarded,
+                ),
+                ("literal-close", "literal </｜DSML｜ invoke> text", !guarded),
+            ] {
+                let id = format!("{choice:?}/{guarded}/{label}");
+                requests.push(json!({"id":id, "grammar":grammar, "input":wrap(text)}));
+                expected.push(accepted);
+            }
+        }
+    }
+    let results = run_xgrammar(requests);
+    for (result, accepted) in results.iter().zip(expected) {
+        assert_eq!(result["accepted"], accepted, "{result}");
+        assert_eq!(result["complete"], accepted, "{result}");
+    }
+}
+
+/// Merge gate: do not enable the guard with a backend which silently drops
+/// minLength/maxLength when excludes is supplied (xgrammar#912 / #901).
+#[test]
+#[ignore = "requires constraint-preserving XGrammar excludes; see #530"]
+fn v41_raw_closing_guard_preserves_length_constraints_xgrammar() {
+    let builder = structural_tag_builder_for_family("deepseek_v41").unwrap();
+    let tool = Tool {
+        name: "reply".into(),
+        description: None,
+        strict: Some(true),
+        parameters: json!({"type":"object", "properties":{"text":{
+            "type":"string", "minLength":2, "maxLength":3}},
+            "required":["text"], "additionalProperties":false}),
+    };
+    let grammar = builder
+        .build(&StructuralTagContext {
+            tools: std::slice::from_ref(&tool),
+            tool_choice: StructuralTagToolChoice::Required,
+            parallel_tool_calls: Some(false),
+            schema_mode: StructuralTagSchemaMode::Strict,
+            structured_output_schema: None,
+            starts_in_reasoning: false,
+        })
+        .unwrap()
+        .unwrap();
+    let mut requests = Vec::new();
+    for (label, text) in [
+        ("unicode-in-range", "東京"),
+        ("too-short", "a"),
+        ("too-long", "abcd"),
+    ] {
+        requests.push(json!({"id":label, "grammar":grammar, "input":format!(
+            "\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"reply\">\n<｜DSML｜ parameter name=\"text\" string=\"true\">{text}</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls>")}));
+    }
+    let results = run_xgrammar(requests);
+    for (result, accepted) in results.iter().zip([true, false, false]) {
+        assert_eq!(result["accepted"], accepted, "{result}");
+        assert_eq!(result["complete"], accepted, "{result}");
+    }
+}

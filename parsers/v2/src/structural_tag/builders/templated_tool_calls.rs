@@ -163,6 +163,7 @@ impl TemplatedToolCallFormat {
                 style: self.arguments_style,
                 any_order: tool_arguments_any_order,
                 max_whitespace_cnt: None,
+                excludes: Vec::new(),
             })
         };
 

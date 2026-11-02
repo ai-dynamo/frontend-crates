@@ -78,6 +78,7 @@ impl MiniMaxM3 {
                             // between fields indefinitely. String contents remain
                             // unconstrained by this formatting limit.
                             max_whitespace_cnt: Some(1),
+                            excludes: Vec::new(),
                         })),
                         end: INVOKE_END.into(),
                     })

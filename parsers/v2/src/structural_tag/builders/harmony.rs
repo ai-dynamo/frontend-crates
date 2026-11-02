@@ -23,6 +23,7 @@ impl HarmonyGrammar {
                 style: JsonSchemaStyle::Json,
                 any_order: false,
                 max_whitespace_cnt: None,
+                excludes: Vec::new(),
             })),
             // The engine consumes the turn stop after the JSON grammar completes.
             end: String::new(),

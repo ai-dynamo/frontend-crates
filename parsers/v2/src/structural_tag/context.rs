@@ -42,6 +42,10 @@ pub enum ReasoningBoundary {
 #[serde(default, deny_unknown_fields)]
 pub struct StructuralTagOptions {
     /// Overrides whether reasoning and tool-call markers are excluded from free-text regions.
+    /// For DeepSeek V4.1 this also reserves `</｜` inside raw tool-argument strings.
+    /// Set `false` when arguments must contain literal closing-control prefixes.
+    /// V4.1 argument exclusion requires an XGrammar backend that supports
+    /// `JSONSchemaFormat.excludes` while retaining string-length constraints.
     pub exclude_special_tokens: Option<bool>,
     /// Defaults to [`ReasoningBoundary::StructuralTag`].
     pub reasoning_boundary: ReasoningBoundary,
