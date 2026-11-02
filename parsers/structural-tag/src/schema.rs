@@ -95,7 +95,7 @@ impl Survey {
                 continue;
             };
             next += 1;
-            if survey.visited.contains(&target) {
+            if survey.visited.contains(&target) || !is_schema_position(schema, &target) {
                 continue;
             }
             if let Some(node) = node_at(schema, &target)
@@ -129,7 +129,7 @@ impl Survey {
         }
         for (key, child) in map {
             match keyword_kind(key, child) {
-                KeywordKind::Instance => {}
+                KeywordKind::Instance | KeywordKind::Unknown => {}
                 KeywordKind::Schema => {
                     path.push(key.clone());
                     self.walk(child, path, budget)?;
@@ -172,9 +172,13 @@ impl Survey {
 /// How a keyword's value relates to the schema that holds it.
 #[derive(Clone, Copy)]
 enum KeywordKind {
-    /// Instance data or an annotation: never a schema (`const`, `enum`,
-    /// `default`, `examples`, `$ref` itself, unknown keywords).
+    /// Literal instance data: never a schema, even when a `$ref` points into
+    /// it (`const`, `enum`, `default`, `examples`, `$ref` itself).
     Instance,
+    /// A keyword this module does not know (an annotation or an extension).
+    /// Not entered by the keyword walk, but a `$ref` that names a value under
+    /// it is followed, because a grammar backend follows it too.
+    Unknown,
     /// One subschema.
     Schema,
     /// An array of subschemas.
@@ -213,7 +217,8 @@ fn keyword_kind(key: &str, value: &Value) -> KeywordKind {
         | "then"
         | "else"
         | "contentSchema" => KeywordKind::Schema,
-        _ => KeywordKind::Instance,
+        "const" | "enum" | "default" | "examples" | "$ref" => KeywordKind::Instance,
+        _ => KeywordKind::Unknown,
     }
 }
 
@@ -331,7 +336,7 @@ impl Plan {
         }
         for (key, child) in map.iter_mut() {
             match keyword_kind(key, child) {
-                KeywordKind::Instance => {}
+                KeywordKind::Instance | KeywordKind::Unknown => {}
                 KeywordKind::Schema => self.rewrite_refs(child, containers),
                 KeywordKind::SchemaList => {
                     if let Some(items) = child.as_array_mut() {
@@ -406,6 +411,43 @@ fn literal_target(raw: &str, containers: &[(Path, Vec<String>)]) -> Option<(Path
             && keys.iter().any(|key| key == segments[path.len()]))
         .then(|| (path.clone(), segments[path.len()].to_string()))
     })
+}
+
+/// Whether the value at `path` may be read as a schema: the path must not pass
+/// through literal instance data (`const`, `enum`, `default`, `examples`), whose
+/// contents are argument values the model must reproduce, not constraints.
+/// Unknown keywords are passable, because a backend follows a `$ref` into them.
+fn is_schema_position(root: &Value, path: &[String]) -> bool {
+    let mut node = root;
+    let mut index = 0;
+    while index < path.len() {
+        let Value::Object(map) = node else {
+            return false;
+        };
+        let key = &path[index];
+        let Some(child) = map.get(key) else {
+            return false;
+        };
+        match keyword_kind(key, child) {
+            KeywordKind::Instance => return false,
+            KeywordKind::Schema | KeywordKind::Unknown => {
+                node = child;
+                index += 1;
+            }
+            KeywordKind::SchemaList | KeywordKind::SchemaMap => {
+                // The container itself is not a schema; its next segment is.
+                let Some(entry) = path.get(index + 1) else {
+                    return false;
+                };
+                let Some(element) = node_at(child, std::slice::from_ref(entry)) else {
+                    return false;
+                };
+                node = element;
+                index += 2;
+            }
+        }
+    }
+    true
 }
 
 fn node_at<'a>(root: &'a Value, path: &[String]) -> Option<&'a Value> {
@@ -869,6 +911,46 @@ mod tests {
                 "required": ["v"]
             })
         );
+    }
+
+    #[test]
+    fn a_reference_into_literal_data_leaves_the_literal_unchanged() {
+        // PR #516 review: `value.$ref` points INTO `metadata.const`. The const is
+        // the argument the model must reproduce, so the definitions spelled
+        // inside it are data and are not renamed, even though they are reached.
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "metadata": {"const": {"type": "integer", "$defs": {"a b": {"type": "integer"}}}},
+                "value": {"$ref": "#/properties/metadata/const"}
+            },
+            "required": ["metadata", "value"]
+        });
+        assert_eq!(canonicalize_local_refs(schema.clone()), schema);
+
+        // The same holds for a followed target whose own `const`/`enum` carry
+        // schema-looking data, and for references into `enum`/`default`/`examples`.
+        let schema = json!({
+            "$defs": {"x y": {"type": "integer"}},
+            "properties": {
+                "a": {"$ref": "#/x-target"},
+                "b": {"$ref": "#/properties/e/enum/0"},
+                "c": {"$ref": "#/properties/d/default"},
+                "d": {"type": "object", "default": {"$ref": "#/$defs/x y"}},
+                "e": {"enum": [{"$defs": {"p q": true}}]},
+                "f": {"$ref": "#/$defs/x%20y"}
+            },
+            "x-target": {
+                "$ref": "#/$defs/x%20y",
+                "const": {"$defs": {"k l": 1}, "$ref": "#/$defs/x y"},
+                "examples": [{"$ref": "#/$defs/x y"}]
+            }
+        });
+        let mut expected = schema.clone();
+        expected["$defs"] = json!({"x_y": {"type": "integer"}});
+        expected["properties"]["f"] = json!({"$ref": "#/$defs/x_y"});
+        expected["x-target"]["$ref"] = json!("#/$defs/x_y");
+        assert_eq!(canonicalize_local_refs(schema), expected);
     }
 
     #[test]
