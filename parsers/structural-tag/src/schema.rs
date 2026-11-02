@@ -30,6 +30,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;
 
+use crate::format::Format;
+
 /// Keys that hold reusable definitions, at the root or inside a subschema.
 const DEFINITION_KEYS: [&str; 2] = ["$defs", "definitions"];
 
@@ -68,6 +70,13 @@ struct Survey {
     containers: Vec<(Path, Vec<String>)>,
     /// `(raw text, decoded local segments)` for every string `$ref`.
     refs: Vec<(String, Option<Path>)>,
+    /// Schema objects already visited, so a reference target reached twice is
+    /// counted once.
+    visited: BTreeSet<Path>,
+    /// Reference targets that sit outside every schema-valued keyword position
+    /// (under an unknown keyword, say) and were walked because a `$ref` names
+    /// them. The rewrite visits them too.
+    followed: Vec<Path>,
 }
 
 impl Survey {
@@ -76,12 +85,33 @@ impl Survey {
         let mut survey = Self::default();
         let mut budget = MAX_NODES;
         survey.walk(schema, &mut Vec::new(), &mut budget)?;
+        // A grammar backend follows a local `$ref` wherever it points, so a
+        // target under an instance-valued or unknown keyword is a live schema.
+        // Walking a target can surface more references; loop until none is new.
+        let mut next = 0;
+        while next < survey.refs.len() {
+            let Some(target) = survey.refs[next].1.clone() else {
+                next += 1;
+                continue;
+            };
+            next += 1;
+            if survey.visited.contains(&target) {
+                continue;
+            }
+            if let Some(node) = node_at(schema, &target)
+                && node.is_object()
+            {
+                let mut path = target.clone();
+                survey.walk(node, &mut path, &mut budget)?;
+                survey.followed.push(target);
+            }
+        }
         Some(survey)
     }
 
     /// Visit one schema. Only schema-valued keyword positions are entered;
     /// instance data (`const`, `enum`, `default`, `examples`, unknown keywords)
-    /// is never read as a schema.
+    /// is never read as a schema unless a `$ref` names it (see [`Self::collect`]).
     fn walk(&mut self, schema: &Value, path: &mut Path, budget: &mut usize) -> Option<()> {
         if path.len() > MAX_DEPTH {
             return None;
@@ -90,6 +120,9 @@ impl Survey {
         let Value::Object(map) = schema else {
             return Some(());
         };
+        if !self.visited.insert(path.clone()) {
+            return Some(());
+        }
         if let Some(Value::String(reference)) = map.get("$ref") {
             self.refs
                 .push((reference.clone(), decode_local_ref(reference)));
@@ -190,6 +223,8 @@ type Renames = BTreeMap<(Path, String), String>;
 /// What to change, decided before anything is touched.
 struct Plan {
     renames: Renames,
+    /// Reference targets outside schema-valued positions (see [`Survey::followed`]).
+    followed: Vec<Path>,
 }
 
 impl Plan {
@@ -248,7 +283,10 @@ impl Plan {
                 renames.insert((path.clone(), key.clone()), candidate);
             }
         }
-        Some(Self { renames })
+        Some(Self {
+            renames,
+            followed: survey.followed,
+        })
     }
 
     fn apply(&self, schema: &mut Value) {
@@ -260,6 +298,11 @@ impl Plan {
             .into_iter()
             .collect();
         self.rewrite_refs(schema, &containers);
+        for path in &self.followed {
+            if let Some(target) = node_at_mut(schema, path) {
+                self.rewrite_refs(target, &containers);
+            }
+        }
         for path in &containers {
             let Some(Value::Object(definitions)) = node_at_mut(schema, path) else {
                 continue;
@@ -365,12 +408,59 @@ fn literal_target(raw: &str, containers: &[(Path, Vec<String>)]) -> Option<(Path
     })
 }
 
+fn node_at<'a>(root: &'a Value, path: &[String]) -> Option<&'a Value> {
+    path.iter().try_fold(root, |node, segment| match node {
+        Value::Object(map) => map.get(segment),
+        Value::Array(items) => items.get(segment.parse::<usize>().ok()?),
+        _ => None,
+    })
+}
+
 fn node_at_mut<'a>(root: &'a mut Value, path: &[String]) -> Option<&'a mut Value> {
     path.iter().try_fold(root, |node, segment| match node {
         Value::Object(map) => map.get_mut(segment),
         Value::Array(items) => items.get_mut(segment.parse::<usize>().ok()?),
         _ => None,
     })
+}
+
+/// Canonicalize every JSON schema embedded in an already-built format tree.
+///
+/// For a grammar that resolves references itself before emitting JSON schema
+/// nodes (Kimi K3 inlines string arguments from the escaped `$ref` spelling),
+/// the tool schema must reach that grammar as written; only the schemas it
+/// hands on to the backend are canonicalized, here, afterwards.
+pub fn canonicalize_embedded_schemas(format: &mut Format) {
+    match format {
+        Format::JsonSchema(schema) => {
+            let json_schema = std::mem::take(&mut schema.json_schema);
+            schema.json_schema = canonicalize_local_refs(json_schema);
+        }
+        Format::Tag(tag) => canonicalize_embedded_schemas(&mut tag.content),
+        Format::TriggeredTags(tags) => {
+            for tag in &mut tags.tags {
+                canonicalize_embedded_schemas(&mut tag.content);
+            }
+        }
+        Format::TagsWithSeparator(tags) => {
+            for tag in &mut tags.tags {
+                canonicalize_embedded_schemas(&mut tag.content);
+            }
+        }
+        Format::Sequence(sequence) => {
+            for element in &mut sequence.elements {
+                canonicalize_embedded_schemas(element);
+            }
+        }
+        Format::Or(or) => {
+            for element in &mut or.elements {
+                canonicalize_embedded_schemas(element);
+            }
+        }
+        Format::Optional(optional) => canonicalize_embedded_schemas(&mut optional.content),
+        Format::Star(star) => canonicalize_embedded_schemas(&mut star.content),
+        Format::AnyTokens(_) | Format::AnyText(_) | Format::ConstString(_) | Format::Regex(_) => {}
+    }
 }
 
 /// A definition name a grammar backend resolves verbatim and a URI fragment
@@ -756,6 +846,87 @@ mod tests {
                 }
             })
         );
+    }
+
+    #[test]
+    fn a_reference_target_under_an_unknown_keyword_is_followed() {
+        // PR #516 review: XGrammar follows `#/custom` wherever it points, so the
+        // reference inside `custom` is live and must be rewritten with the rename.
+        let schema = json!({
+            "type": "object",
+            "$defs": {"a b": {"type": "integer"}},
+            "properties": {"v": {"$ref": "#/custom"}},
+            "custom": {"$ref": "#/$defs/a b"},
+            "required": ["v"]
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "type": "object",
+                "$defs": {"a_b": {"type": "integer"}},
+                "properties": {"v": {"$ref": "#/custom"}},
+                "custom": {"$ref": "#/$defs/a_b"},
+                "required": ["v"]
+            })
+        );
+    }
+
+    #[test]
+    fn followed_targets_contribute_definitions_and_chained_references() {
+        // The target under `x-extra` holds its own definitions and a second hop;
+        // all of it is schema once referenced. The unreferenced `x-other` is data.
+        let schema = json!({
+            "properties": {"v": {"$ref": "#/x-extra/inner"}},
+            "x-extra": {"inner": {
+                "$defs": {"p q": {"$ref": "#/x-extra/inner/$defs/r~1s"}, "r/s": {"type": "integer"}},
+                "$ref": "#/x-extra/inner/$defs/p%20q"
+            }},
+            "x-other": {"$defs": {"m n": true}, "$ref": "#/x-other/$defs/m%20n"}
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "properties": {"v": {"$ref": "#/x-extra/inner"}},
+                "x-extra": {"inner": {
+                    "$defs": {"p_q": {"$ref": "#/x-extra/inner/$defs/r_s"}, "r_s": {"type": "integer"}},
+                    "$ref": "#/x-extra/inner/$defs/p_q"
+                }},
+                "x-other": {"$defs": {"m n": true}, "$ref": "#/x-other/$defs/m%20n"}
+            })
+        );
+    }
+
+    #[test]
+    fn embedded_schemas_in_a_format_tree_are_canonicalized() {
+        let leaf = |schema: Value| {
+            Format::JsonSchema(crate::format::JsonSchemaFormat {
+                json_schema: schema,
+                style: crate::format::JsonSchemaStyle::Json,
+            })
+        };
+        let mut format = Format::Sequence(crate::format::SequenceFormat {
+            elements: vec![
+                Format::Tag(crate::format::TagFormat {
+                    begin: "<a>".into(),
+                    content: Box::new(leaf(issue_schema())),
+                    end: "</a>".into(),
+                }),
+                Format::Optional(crate::format::OptionalFormat {
+                    content: Box::new(Format::Or(crate::format::OrFormat {
+                        elements: vec![leaf(json!(true)), leaf(issue_schema())],
+                    })),
+                }),
+                Format::ConstString(crate::format::ConstStringFormat { value: "x".into() }),
+            ],
+        });
+        canonicalize_embedded_schemas(&mut format);
+        let text = serde_json::to_string(&format).unwrap();
+        assert_eq!(
+            text.matches("#/$defs/registry_Model_v1_name").count(),
+            2,
+            "{text}"
+        );
+        assert!(!text.contains("registry~1Model"), "{text}");
     }
 
     #[test]

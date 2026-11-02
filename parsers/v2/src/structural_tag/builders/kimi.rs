@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use dynamo_structural_tag::schema::canonicalize_embedded_schemas;
 use dynamo_structural_tag::{Tool, format as native, kimi_k2, kimi_k3};
 use serde_json::Value;
 
 use super::{StructuralTagBuilder, ToolCallGrammar, triggered_calls_format};
 use crate::structural_tag::policy::{
-    ResolvedToolCallingPolicy, ToolCallingMode, resolve_tool_schema,
+    ResolvedToolCallingPolicy, ToolCallingMode, resolve_tool_schema, uses_declared_tool_schema,
 };
 use crate::structural_tag::wire::{self, Format, OrFormat};
 
@@ -15,6 +16,8 @@ pub(crate) const KIMI_K3: StructuralTagBuilder = StructuralTagBuilder::new(&Kimi
 struct KimiK2;
 struct KimiK3;
 
+/// K2 forwards each tool schema to the backend verbatim, so it receives the
+/// canonical (`resolve_tool_schema`) spelling.
 fn with_tools<T>(
     policy: &ResolvedToolCallingPolicy<'_>,
     build: impl FnOnce(&[Tool<'_>]) -> T,
@@ -34,6 +37,31 @@ fn with_tools<T>(
         })
         .collect();
     build(&tools)
+}
+
+/// K3 resolves `$ref`s itself (percent-decoding them) to type its XTML
+/// arguments, so it must see each schema as written; the JSON schemas it hands
+/// on to the backend are canonicalized after it has built.
+fn with_declared_tools(
+    policy: &ResolvedToolCallingPolicy<'_>,
+    build: impl FnOnce(&[Tool<'_>]) -> anyhow::Result<native::StructuralTag>,
+) -> anyhow::Result<native::StructuralTag> {
+    let relaxed = Value::Bool(true);
+    let tools: Vec<_> = policy
+        .tools
+        .iter()
+        .map(|tool| Tool {
+            name: &tool.name,
+            parameters: if uses_declared_tool_schema(tool, policy.schema_mode) {
+                &tool.parameters
+            } else {
+                &relaxed
+            },
+        })
+        .collect();
+    let mut tag = build(&tools)?;
+    canonicalize_embedded_schemas(&mut tag.format);
+    Ok(tag)
 }
 
 fn k2_section(policy: &ResolvedToolCallingPolicy<'_>) -> native::TagFormat {
@@ -129,19 +157,16 @@ impl ToolCallGrammar for KimiK3 {
             }
             native::Format::AnyText(native::AnyTextFormat { excludes })
         };
-        with_tools(policy, |tools| {
-            Ok(wire::import_native(
-                kimi_k3::build(
-                    tools,
-                    policy.mode == ToolCallingMode::Required,
-                    policy.stop_after_first(),
-                    response,
-                    any_order,
-                )?
-                .format,
+        let tag = with_declared_tools(policy, |tools| {
+            kimi_k3::build(
+                tools,
+                policy.mode == ToolCallingMode::Required,
+                policy.stop_after_first(),
+                response,
                 any_order,
-            ))
-        })
+            )
+        })?;
+        Ok(wire::import_native(tag.format, any_order))
     }
 
     fn build_tool_calls_only(
@@ -149,21 +174,18 @@ impl ToolCallGrammar for KimiK3 {
         policy: &ResolvedToolCallingPolicy<'_>,
         any_order: bool,
     ) -> anyhow::Result<Format> {
-        with_tools(policy, |tools| {
-            Ok(wire::import_native(
-                kimi_k3::build(
-                    tools,
-                    true,
-                    policy.stop_after_first(),
-                    native::Format::ConstString(native::ConstStringFormat {
-                        value: String::new(),
-                    }),
-                    any_order,
-                )?
-                .format,
+        let tag = with_declared_tools(policy, |tools| {
+            kimi_k3::build(
+                tools,
+                true,
+                policy.stop_after_first(),
+                native::Format::ConstString(native::ConstStringFormat {
+                    value: String::new(),
+                }),
                 any_order,
-            ))
-        })
+            )
+        })?;
+        Ok(wire::import_native(tag.format, any_order))
     }
 
     fn build_auto_with_structured_output(

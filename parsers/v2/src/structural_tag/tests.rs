@@ -866,6 +866,53 @@ fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
     assert!(!k3.contains("registry~1Model"), "{k3}");
 }
 
+#[test]
+fn kimi_k3_receives_escaped_pointers_intact_and_canonicalizes_what_it_forwards() {
+    // PR #516 review: K3 percent-decodes `#/properties/a%25b` itself; handing it
+    // the pre-decoded `#/properties/a%b` broke its string resolution. The object
+    // argument it forwards as JSON still carries the backend spelling.
+    let tools = [Tool {
+        name: "pick".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object",
+            "properties": {
+                "a%b": {"type": "string"},
+                "copy": {"$ref": "#/properties/a%25b"},
+                "payload": {"$ref": "#/$defs/registry~1Model"}
+            },
+            "$defs": {"registry/Model": {"type": "object", "properties": {"id": {"type": "integer"}}}},
+            "required": ["a%b", "copy", "payload"]
+        }),
+        strict: Some(true),
+    }];
+    for choice in [
+        StructuralTagToolChoice::Required,
+        StructuralTagToolChoice::Auto,
+    ] {
+        let tag = build(
+            &KIMI_K3,
+            choice,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+            false,
+        );
+        let text = tag.to_string();
+        assert_eq!(
+            text.matches(r#"key=\"copy\" type=\"string\""#).count(),
+            1,
+            "{text}"
+        );
+        let schemas = embedded_json_schemas(&tag);
+        assert!(!schemas.is_empty(), "{text}");
+        for schema in schemas {
+            assert!(schema["$defs"]["registry_Model"].is_object(), "{schema}");
+            assert!(!schema.to_string().contains("registry~1Model"), "{schema}");
+        }
+    }
+}
+
 /// Every `json_schema` value embedded anywhere in a structural tag.
 fn embedded_json_schemas(tag: &Value) -> Vec<&Value> {
     let mut found = Vec::new();
