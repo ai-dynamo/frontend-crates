@@ -976,13 +976,10 @@ fn is_number_text(value: &str) -> bool {
     integral_number_text(value).is_some()
 }
 
-/// Decide integrality on the literal text, never through `f64`: `Some(true)`
-/// when every digit right of the (exponent-shifted) decimal point is zero,
-/// `Some(false)` for a non-integral number, `None` when the text is not a
-/// decimal literal (`[+-]digits[.digits][e[+-]digits]`). `1.0000000000000001`
-/// and `9007199254740992.5` are non-integral even though they round to whole
-/// `f64`s; `1e-400` is non-integral even though it underflows to `0.0`.
-fn integral_number_text(value: &str) -> Option<bool> {
+/// A decimal literal split for exact arithmetic: sign, all mantissa digits,
+/// and the exponent-shifted position of the decimal point within them.
+fn decimal_literal(value: &str) -> Option<(bool, String, i64)> {
+    let negative = value.starts_with('-');
     let unsigned = value.strip_prefix(['+', '-']).unwrap_or(value);
     let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
         Some((mantissa, exponent)) => {
@@ -1013,9 +1010,18 @@ fn integral_number_text(value: &str) -> Option<bool> {
     {
         return None;
     }
-    // Digits at or beyond the shifted point must all be zero.
-    let digits = format!("{whole}{fraction}");
     let point = i64::try_from(whole.len()).ok()?.saturating_add(exponent);
+    Some((negative, format!("{whole}{fraction}"), point))
+}
+
+/// Decide integrality on the literal text, never through `f64`: `Some(true)`
+/// when every digit right of the (exponent-shifted) decimal point is zero,
+/// `Some(false)` for a non-integral number, `None` when the text is not a
+/// decimal literal (`[+-]digits[.digits][e[+-]digits]`). `1.0000000000000001`
+/// and `9007199254740992.5` are non-integral even though they round to whole
+/// `f64`s; `1e-400` is non-integral even though it underflows to `0.0`.
+fn integral_number_text(value: &str) -> Option<bool> {
+    let (_, digits, point) = decimal_literal(value)?;
     let fractional_from = usize::try_from(point.max(0)).unwrap_or(usize::MAX);
     Some(
         digits
@@ -1023,6 +1029,44 @@ fn integral_number_text(value: &str) -> Option<bool> {
             .skip(fractional_from.min(digits.len()))
             .all(|byte| byte == b'0'),
     )
+}
+
+/// Exact integer coercion for digit-only (`42`), decimal (`42.0`) and exponent
+/// (`1e3`, `1.5e1`) spellings of a whole number, computed on the text so
+/// `9007199254740993.0` survives. `None` for non-integral or non-numeric text.
+fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
+    if is_integer_literal(value) {
+        return coerce_integer_literal(value);
+    }
+    let (negative, digits, point) = decimal_literal(value)?;
+    let fractional_from = usize::try_from(point.max(0)).unwrap_or(usize::MAX);
+    if !digits
+        .bytes()
+        .skip(fractional_from.min(digits.len()))
+        .all(|byte| byte == b'0')
+    {
+        return None;
+    }
+    let whole = digits[..fractional_from.min(digits.len())].trim_start_matches('0');
+    if whole.is_empty() {
+        return Some(Value::Number(0.into()).into());
+    }
+    // Beyond this many implied zeros the expanded integer is not worth
+    // materializing; keep the author's exact bytes instead.
+    let padding = fractional_from.saturating_sub(digits.len());
+    if padding > 1024 {
+        return raw_number_literal(value);
+    }
+    let mut text = String::with_capacity(whole.len() + padding + 1);
+    if negative {
+        text.push('-');
+    }
+    text.push_str(whole);
+    text.extend(std::iter::repeat_n('0', padding));
+    if let Ok(int_val) = text.parse::<i64>() {
+        return Some(Value::Number(int_val.into()).into());
+    }
+    raw_number_literal(&text)
 }
 
 fn complement_types(excluded: &HashSet<SchemaType>) -> HashSet<SchemaType> {
@@ -1073,16 +1117,13 @@ fn value_matches(v: &Value, allowed: &HashSet<SchemaType>) -> bool {
 /// The `number` coercion shared by the direct-type branch and union coercion:
 /// integral tokens stay exact, whole floats become integers, the rest `f64`.
 fn coerce_number_value(value: &str) -> Option<ParsedValue> {
-    if let Some(integer) = coerce_integer_literal(value) {
+    if let Some(integer) = coerce_integral_number(value) {
         return Some(integer);
     }
+    // Only a decimal literal is a number: `raw_number_literal` accepts any
+    // valid JSON, so a quoted string must never reach it.
     if integral_number_text(value)? {
-        // `42.0`, `1e3`: whole numbers are stored as integers when they fit.
-        let float_val = value.parse::<f64>().ok()?;
-        if let Some(int_val) = float_val.to_i64() {
-            return Some(Value::Number(int_val.into()).into());
-        }
-        return raw_number_literal(value);
+        return None;
     }
     // A non-integral literal keeps its exact bytes; only a spelling that is
     // not valid JSON (`.5`, `+1.5`) goes through `f64`.
@@ -1119,7 +1160,7 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
     }
 
     if allowed.contains(&SchemaType::Integer)
-        && let Some(coerced) = coerce_integer_literal(trimmed)
+        && let Some(coerced) = coerce_integral_number(trimmed)
     {
         return coerced;
     }
@@ -1323,9 +1364,10 @@ fn convert_param_value(
             || t.starts_with("short")
             || t.starts_with("unsigned") =>
         {
-            match param_value.parse::<i64>() {
-                Ok(int_val) => Value::Number(int_val.into()).into(),
-                Err(_) => {
+            // Whole numbers spelled with a decimal point or exponent are integers too.
+            match coerce_integral_number(&param_value) {
+                Some(coerced) => coerced,
+                None => {
                     tracing::warn!(
                         "Parsed value '{}' of parameter '{}' is not an integer in tool '{}', degenerating to string.",
                         param_value,
@@ -1344,14 +1386,8 @@ fn convert_param_value(
         // when they fit in i64. Larger finite whole numbers must not be cast with `as i64`,
         // which saturates to i64::MIN/MAX and corrupts model-emitted arguments.
         t if t.starts_with("num") || t.starts_with("float") => {
-            if is_integer_literal(&param_value) {
-                if let Ok(int_val) = param_value.parse::<i64>() {
-                    Value::Number(int_val.into()).into()
-                } else if let Some(raw) = raw_number_literal(&param_value) {
-                    raw
-                } else {
-                    Value::String(param_value).into()
-                }
+            if let Some(coerced) = coerce_integral_number(&param_value) {
+                coerced
             } else {
                 match param_value.parse::<f64>() {
                     Ok(float_val) => {
@@ -2577,6 +2613,73 @@ mod schema_composition_tests {
         assert_eq!(
             ser(&convert_param_value("1e-400", "x", &cfg, "f")),
             "1e-400"
+        );
+    }
+
+    #[test]
+    fn integral_decimal_and_exponent_spellings_stay_numbers() {
+        // Union alternatives without `number`: the integer alternative admits
+        // every whole-number spelling, normalized to the integer (v1 and v2 agree).
+        let expected = [
+            ("42.0", "42"),
+            ("1e3", "1000"),
+            ("1.5e1", "15"),
+            ("-0.0", "0"),
+            ("9007199254740993.0", "9007199254740993"),
+        ];
+        for schema in [
+            json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"oneOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"type": "integer"}),
+            json!({"type": "number"}),
+        ] {
+            let cfg = one_param("x", schema.clone());
+            for (literal, number) in expected {
+                assert_eq!(
+                    ser(&convert_param_value(literal, "x", &cfg, "f")),
+                    number,
+                    "{literal} under {schema}"
+                );
+            }
+            assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+        }
+        // Only an explicit integer exclusion keeps whole-number spellings as text.
+        let cfg = one_param("x", json!({"not": {"type": "integer"}}));
+        assert_eq!(
+            ser(&convert_param_value("42.0", "x", &cfg, "f")),
+            "\"42.0\""
+        );
+    }
+
+    #[test]
+    fn quoted_text_is_not_a_number_under_numeric_unions() {
+        // A JSON-quoted literal is text: it must keep its quotes wherever the
+        // schema admits no string (v1 and v2 agree), and parse as the JSON
+        // string only where a string alternative exists.
+        for schema in [
+            json!({"not": {"type": "string"}}),
+            json!({"$ref": "#/$defs/Number"}),
+            json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"type": "number"}),
+        ] {
+            let cfg = document_config(json!({
+                "type": "object",
+                "$defs": {"Number": {"type": "number"}},
+                "properties": {"x": schema}
+            }));
+            assert_eq!(
+                ser(&convert_param_value("\"42\"", "x", &cfg, "f")),
+                "\"\\\"42\\\"\"",
+                "{schema}"
+            );
+        }
+        let cfg = one_param(
+            "x",
+            json!({"anyOf": [{"type": "string"}, {"type": "object"}]}),
+        );
+        assert_eq!(
+            ser(&convert_param_value("\"42\"", "x", &cfg, "f")),
+            "\"42\""
         );
     }
 

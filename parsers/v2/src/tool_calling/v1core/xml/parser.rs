@@ -1992,6 +1992,73 @@ mod schema_composition_tests {
     }
 
     #[test]
+    fn integral_decimal_and_exponent_spellings_stay_numbers() {
+        // Union alternatives without `number`: the integer alternative admits
+        // every whole-number spelling, normalized to the integer (v1 and v2 agree).
+        let expected = [
+            ("42.0", "42"),
+            ("1e3", "1000"),
+            ("1.5e1", "15"),
+            ("-0.0", "0"),
+            ("9007199254740993.0", "9007199254740993"),
+        ];
+        for schema in [
+            json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"oneOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"type": "integer"}),
+            json!({"type": "number"}),
+        ] {
+            let cfg = one_param("x", schema.clone());
+            for (literal, number) in expected {
+                assert_eq!(
+                    ser(&convert_param_value(literal, "x", &cfg, "f")),
+                    number,
+                    "{literal} under {schema}"
+                );
+            }
+            assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+        }
+        // Only an explicit integer exclusion keeps whole-number spellings as text.
+        let cfg = one_param("x", json!({"not": {"type": "integer"}}));
+        assert_eq!(
+            ser(&convert_param_value("42.0", "x", &cfg, "f")),
+            "\"42.0\""
+        );
+    }
+
+    #[test]
+    fn quoted_text_is_not_a_number_under_numeric_unions() {
+        // A JSON-quoted literal is text: it must keep its quotes wherever the
+        // schema admits no string (v1 and v2 agree), and parse as the JSON
+        // string only where a string alternative exists.
+        for schema in [
+            json!({"not": {"type": "string"}}),
+            json!({"$ref": "#/$defs/Number"}),
+            json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"type": "number"}),
+        ] {
+            let cfg = document_config(json!({
+                "type": "object",
+                "$defs": {"Number": {"type": "number"}},
+                "properties": {"x": schema}
+            }));
+            assert_eq!(
+                ser(&convert_param_value("\"42\"", "x", &cfg, "f")),
+                "\"\\\"42\\\"\"",
+                "{schema}"
+            );
+        }
+        let cfg = one_param(
+            "x",
+            json!({"anyOf": [{"type": "string"}, {"type": "object"}]}),
+        );
+        assert_eq!(
+            ser(&convert_param_value("\"42\"", "x", &cfg, "f")),
+            "\"42\""
+        );
+    }
+
+    #[test]
     fn integral_number_text_shapes() {
         assert_eq!(integral_number_text("42"), Some(true));
         assert_eq!(integral_number_text("-42.000"), Some(true));
