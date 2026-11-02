@@ -75,6 +75,7 @@ UNIFIED_TAX = {
     "conditional_schema_number_types": (7, "30"),
     "reference_object_recursive_and_composed_types": (7, "31"),
     "arg_array_quoted_parameter_close": (7, "28"),
+    "enum_contradicting_declared_type": (7, "32"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_numeric_nested_exact": (7, "20.nested_exact"),

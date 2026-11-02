@@ -3294,6 +3294,17 @@ _REFERENCE_CASES = (
          "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]},
          "retries": 37, "dry_run": False},
     ),
+    (
+        "enum_contradicting_declared_type",
+        'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer.',
+        {"type": "object", "properties": {
+            "metrics": {"type": "array", "items": {"type": "string"},
+                        "enum": ["temperature", "humidity", "co2"]},
+            "count": {"type": "integer", "enum": ["auto"]},
+        }},
+        {"metrics": '["temperature","humidity"]', "count": "5"},
+        {"metrics": ["temperature", "humidity"], "count": 5},
+    ),
 )
 for scenario, description, parameters, raw_arguments, arguments in _REFERENCE_CASES:
     EDGE.append((

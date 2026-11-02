@@ -28,7 +28,7 @@ def test_exact_fold_dimensions_and_section_order() -> None:
         assert parent in {scenario for scenario, _ in children}
     ordered = sorted((scenario for scenario in taxonomy.UNIFIED_TAX if taxonomy.display_tax(scenario)[0] == 7),
                      key=taxonomy.display_sort_key)
-    assert len(ordered) == 176
+    assert len(ordered) == 177
     assert {f"arg_numeric_overflow_siblings_{variant}" for variant in ("finite", "positive", "negative")} <= set(ordered)
     assert taxonomy.case_fold("gpt_oss_quoted_message_header_literal")[0] == "arg_marker_in_string"
     assert "gpt_oss_quoted_message_header_literal" in ordered
