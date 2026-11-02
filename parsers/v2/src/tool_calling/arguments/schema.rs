@@ -561,7 +561,8 @@ impl<'a> SchemaFacts<'a> {
                 let Some(branches) = schema.get(keyword).and_then(Value::as_array) else {
                     continue;
                 };
-                let mut branch_hint = None;
+                let mut proven = false;
+                let mut unconstrained = false;
                 let mut unknown = false;
                 for branch in branches {
                     if !walker.may_describe_array(branch) {
@@ -569,20 +570,26 @@ impl<'a> SchemaFacts<'a> {
                     }
                     match walker.array_item_null_hint(branch) {
                         Some(Some(true)) => {
-                            branch_hint = Some(true);
+                            proven = true;
                             break;
                         }
                         Some(Some(false)) => {}
-                        Some(None) | None => unknown = true,
+                        Some(None) => unknown = true,
+                        None => unconstrained = true,
                     }
                 }
-                let alternatives = match (branch_hint, unknown) {
-                    (Some(true), _) => Some(true),
-                    (None, true) => None,
-                    (None, false) => Some(false),
-                    (Some(false), _) => Some(false),
+                // An alternative without an item constraint leaves items free, so
+                // the union adds no constraint; an unknown alternative stays unknown.
+                let alternatives = if proven {
+                    Some(Some(true))
+                } else if unconstrained {
+                    None
+                } else if unknown {
+                    Some(None)
+                } else {
+                    Some(Some(false))
                 };
-                hint = intersect_item_null(hint, Some(alternatives));
+                hint = intersect_item_null(hint, alternatives);
             }
             hint
         })
@@ -992,5 +999,33 @@ mod structural_type_tests {
         let unproven = json!({"type": "array", "allOf": [nullable, unknown]});
         assert!(SchemaFacts::new(&proven).array_item_permits_null(&[&proven]));
         assert!(!SchemaFacts::new(&unproven).array_item_permits_null(&[&unproven]));
+
+        // A union alternative without an item constraint adds none; an unknown
+        // alternative keeps the union unknown.
+        let items = json!({"type": ["integer", "null"]});
+        for (schema, permits) in [
+            (
+                json!({"type": "array", "items": items, "anyOf": [{"type": "array"}]}),
+                true,
+            ),
+            (
+                json!({"type": "array", "items": items, "oneOf": [{"type": "array"}]}),
+                true,
+            ),
+            (
+                json!({"type": "array", "anyOf": [{"type": "array"}]}),
+                false,
+            ),
+            (
+                json!({"type": "array", "items": items, "anyOf": [{"items": {"$dynamicRef": "#m"}}]}),
+                false,
+            ),
+        ] {
+            assert_eq!(
+                SchemaFacts::new(&schema).array_item_permits_null(&[&schema]),
+                permits,
+                "{schema}"
+            );
+        }
     }
 }

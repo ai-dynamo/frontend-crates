@@ -1816,6 +1816,24 @@ mod tests {
     }
 
     #[test]
+    fn redundant_array_unions_keep_item_null() {
+        for keyword in ["anyOf", "oneOf"] {
+            let parameters = json!({"type": "object", "properties": {"values": {
+                "type": "array", "items": {"type": ["integer", "null"]},
+                keyword: [{"type": "array"}]
+            }}});
+            assert_eq!(
+                parse_with_parameters(
+                    parameters,
+                    &format!("{TOK}<values>{TOK}<item>null{TOK}</item>{TOK}</values>")
+                ),
+                json!({"values": [null]}),
+                "{keyword}"
+            );
+        }
+    }
+
+    #[test]
     fn scoped_schemas_keep_their_null_facts() {
         // `$id` below the root rebases only the references inside it; its own
         // `type` still decides whether the text `null` is JSON null.
