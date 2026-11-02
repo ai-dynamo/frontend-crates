@@ -12,6 +12,7 @@ import re
 import shutil
 import tarfile
 import threading
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 import pytest
@@ -21,13 +22,97 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from browser_helpers import raw_view_download, settle
 
-from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine
+from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine, _assert_generation_provenance
+from verify_publication_transport import publication_metadata, runtime_catalog, verify_http_publication
 from unified_archives import read_source
-from fixture_test_support import capture_releases, historical_source_bytes
+from fixture_test_support import (assert_viewer_data_matches_history, capture_releases,
+                                  historical_source_bytes, identity_for_key)
 from fixture_test_support import prepare_isolated_publication
 from fixture_test_support import publish
 from test_capture_sources import native_publisher, split_evidence, pin_history
 import capture_sources
+import unified_history
+from capture_versions import capture_release_sort_key
+
+
+def test_publication_delivery_matches_qualified_artifact(historical_published_viewer, request):
+    site = historical_published_viewer
+    configured = request.config.getoption("--publication-url")
+    server = None
+    if configured:
+        base = configured.rstrip("/")
+    else:
+        server, _requests = _server(prefix="/frontend-crates", root=site)
+        base = f"http://127.0.0.1:{server.server_port}/frontend-crates"
+    driver = None
+    try:
+        # Compare the qualified bytes, including all history sidecars, rather than
+        # trusting a successful HTTP response or a revision label on an older site.
+        verify_http_publication(site, base)
+        driver = _driver()
+        driver.get(f"{base}/index.html?tab=tab-unified")
+        settle(driver, "tab-unified", history_ready=True)
+        assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == "true"
+        _assert_generation_provenance(driver, publication_metadata(site))
+        # Use an offered comparison, never a pinned model or release. A catalog
+        # with only one selectable capture still has a valid initial matrix.
+        comparison = driver.execute_script("""
+          const tab = window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === 'tab-unified');
+          const select = document.querySelector('[data-slot-capture="0"]');
+          const option = [...select.options].find(option => !option.disabled && option.value
+            && option.value !== 'none' && option.value !== select.value
+            && tab.candidates.some(candidate => candidate.identity
+              && (candidate.identity === option.value || candidate.key === option.value)));
+          const candidate = option && tab.candidates.find(candidate => candidate.identity === option.value || candidate.key === option.value);
+          return candidate ? {identity: candidate.identity, key: candidate.key} : null;
+        """)
+        catalog = runtime_catalog(site)
+        producer = catalog["metadata"]["selection_policy"]["unified"]["reference"]
+        candidates = [source for source in catalog["sources"]["candidates"] if source["implementation"] == producer]
+        current = max(candidates, key=lambda source: capture_release_sort_key(source["version"]))
+        native = set(current["native_unified_families"])
+        eligible = {source["version"] for source in candidates if not source.get("source_blocker")
+                    and source.get("has_captured_results") is not False
+                    and set(source["capture_families"]) & native}
+        if len(eligible) > 1:
+            assert comparison is not None, "qualified history offers older captures but the browser does not"
+        if comparison:
+            driver.get(f"{base}/index.html?" + urlencode({"tab": "tab-unified", "slots_tab-unified": f"{comparison['identity']},none,none"}))
+            for reload in (False, True):
+                if reload:
+                    driver.refresh()
+                settle(driver, "tab-unified", history_ready=True)
+                assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == "true"
+                assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == [comparison["key"]]
+                assert parse_qs(urlsplit(driver.current_url).query)["slots_tab-unified"][0].split(",")[0] == comparison["identity"]
+    finally:
+        if driver:
+            driver.quit()
+        if server:
+            server.shutdown()
+            server.server_close()
+
+
+@pytest.mark.parametrize("fault", [None, "stale", "missing"])
+def test_http_delivery_checks_qualified_bytes_and_rejects_bad_sidecars(tmp_path, fault):
+    (tmp_path / "index.html").write_bytes(b"qualified index")
+    resource = tmp_path / "history with spaces.json.gz"
+    resource.write_bytes(gzip.compress(b'{"history":true}'))
+    server, _requests = _server(root=tmp_path,
+        fault={"path": "history%20with%20spaces.json.gz", "kind": "corrupt", "used": False} if fault == "stale" else None,
+        missing_paths=("/history%20with%20spaces.json.gz",) if fault == "missing" else ())
+    try:
+        if fault == "stale":
+            with pytest.raises(ValueError, match="differs from qualified artifact"):
+                verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        elif fault == "missing":
+            with pytest.raises(HTTPError):
+                verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        else:
+            assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")["resources"] == 2
+    finally:
+        server.shutdown()
+        server.server_close()
 
 
 @pytest.mark.parametrize("mode", ["latest", "history"])
@@ -125,7 +210,7 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
     server, requests = _server(prefix=prefix, root=historical_published_viewer)
     driver = _driver()
     base = f"http://127.0.0.1:{server.server_port}{prefix}/"
-    catalog = json.loads(gzip.decompress((historical_published_viewer / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
+    catalog = runtime_catalog(historical_published_viewer)
     inventory = capture_sources.verify(history_source)
     assert catalog["transport"]["schema"] == 2
     try:
@@ -133,6 +218,9 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
         _ready(driver, "tab-unified")
         assert not any("/indexes/raw-" in path for path in requests), "default startup must not request original lookup indexes"
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ["dynamo"]
+        assert_viewer_data_matches_history(
+            historical_published_viewer, requests,
+            [identity_for_key(catalog, "dynamo")])
         driver.find_element("css selector", "[data-slot-open='0']").click()
         select = WebDriverWait(driver, 15).until(lambda page: page.find_element("css selector", "[data-slot-capture='0']"))
         choices = [option.get_attribute("value") for option in select.find_elements("tag name", "option")]
@@ -154,7 +242,8 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
         driver.get(base + "?" + urlencode({"tab": "tab-unified", "slots_tab-unified": hidden}))
         _ready(driver, "tab-unified")
         normalized = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
-        assert normalized[0] in choices
+        assert normalized == [hidden]
+        assert driver.find_elements("css selector", f"option[value='{hidden}']")
         driver.refresh()
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == normalized
@@ -168,8 +257,13 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == [hidden]
         originals = catalog["sources"]["original_unified"]
         authored = next(item for item in source_catalog["sources"]["unified"] if item["kind"] == "inputs-and-golden")
-        resource = next(item for item in originals if item["kind"] == "history")
+        resource = min((item for item in originals if item["kind"] == "history"
+                        and item["family"] == "qwen3" and item["implementation"] == "dynamo_v2"),
+                       key=lambda item: unified_history._capture_release_sort_key(item["version"]))
+        current_capture = next(item for item in catalog["capture_generation"]["current"]
+                               if item["family"] == "qwen3" and item["implementation"] == "dynamo_v2")
         probes = [(authored["path"], (ROOT / authored["path"]).read_bytes()),
+                  (current_capture["source"], (ROOT / current_capture["yaml_path"]).read_bytes()),
                   (resource["path"], historical_source_bytes(history_source, resource["path"]))]
         # Sparse originals retain manifests and receipts as separate downloads.
         for kind in ("execution", "receipt"):
@@ -193,7 +287,7 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
             assert not driver.execute_script("return window.__conformanceError || null")
             rendered = driver.find_element("css selector", "#viewer pre").get_property("textContent")
             if path.endswith((".yaml", ".yml", ".json", ".txt")):
-                assert rendered.encode() == expected
+                assert hashlib.sha256(rendered.encode()).hexdigest() == hashlib.sha256(expected).hexdigest(), path
             else:
                 assert rendered == f"Binary resource ({len(expected)} bytes). Use Download to save the original bytes."
             link = driver.find_element("link text", "Download original resource")
@@ -261,6 +355,7 @@ def previous_dynamo_capture(historical_published_viewer):
 
 
 def test_recent_captures_are_embedded_and_older_captures_still_fetch(historical_published_viewer, previous_dynamo_capture):
+    catalog = runtime_catalog(historical_published_viewer)
     html = (historical_published_viewer / 'index.html').read_text()
     payload = json.loads(re.search(r'id="conformance-embedded">(.*?)</script>', html, re.S).group(1))
     embedded_catalog = json.loads(gzip.decompress(base64.b64decode(payload['catalog']['bytes'])))
@@ -285,7 +380,7 @@ def test_recent_captures_are_embedded_and_older_captures_still_fetch(historical_
                   .filter(item => keys.includes(item.key)).map(item => item.identity);
             """)
             assert selected == [identity], (identity, selected)
-            assert not any('/viewer-data/' in path for path in requests), requests
+            assert_viewer_data_matches_history(historical_published_viewer, requests, [identity])
             assert sum(path.endswith('viewer-resolved-catalog.json.gz') for path in requests) == 1
             assert not driver.execute_script('return window.__conformanceError || null')
         requests.clear()
@@ -293,28 +388,37 @@ def test_recent_captures_are_embedded_and_older_captures_still_fetch(historical_
         _ready(driver, 'tab-unified')
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ['dynamo@0.6.1', 'vllm_python@0.31.0']
         assert any('/viewer-data/' in path for path in requests), 'older capture must fetch JSON transport'
-        for version, needs_history in [('0.26.0', True), ('0.27.1', False)]:
-            requests.clear()
-            identity = f'vllm_rust@{version}'
-            driver.get(base + '?' + urlencode({'slots_tab-unified': identity + ',,'}))
-            _ready(driver, 'tab-unified')
-            captured = driver.execute_script("""
-                const row = window.__conformanceModel.rows.find(row => row.family === 'nemotron_v3');
-                const leaves = cell => cell.variants ? cell.variants.flatMap(leaves) : [cell];
-                return Object.values(row.cells).flatMap(leaves).filter(cell => !cell.tooltip?.na_note).map(cell =>
-                    cell.tooltip?.candidates.find(candidate => candidate.key === arguments[0])?.block)
-                    .filter(block => block && block.unavailable_code !== 'missing_capture').length;
-            """, identity)
-            assert captured > 0, 'a partial current-version bundle must not hide the historical Nemotron capture'
-            assert any('/viewer-data/' in path for path in requests) is needs_history, requests
+        identity = 'vllm_rust@0.27.1'
+        requests.clear()
+        driver.get(base + '?' + urlencode({'slots_tab-unified': identity + ',,'}))
+        _ready(driver, 'tab-unified')
+        capture = driver.execute_script("""
+            const panel = document.getElementById('tab-unified');
+            const key = window.__conformanceController.selection(panel).selected[0];
+            const candidate = window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === panel.id)
+              .candidates.find(item => item.key === key);
+            const row = window.__conformanceModel.rows.find(row => row.family === 'nemotron_v3');
+            const leaves = cell => cell.variants ? cell.variants.flatMap(leaves) : [cell];
+            return {key, identity: candidate?.identity, captured: Object.values(row.cells).flatMap(leaves)
+                .filter(cell => !cell.tooltip?.na_note).map(cell =>
+                    cell.tooltip?.candidates.find(item => item.key === key)?.block)
+                .filter(block => block && !block.unavailable && !block.unavailable_code).length};
+        """)
+        assert capture['identity'] == identity, (identity, capture)
+        assert capture['captured'] > 0, (
+            f"retained {identity} must keep its recorded Nemotron results")
+        assert_viewer_data_matches_history(historical_published_viewer, requests, [identity])
         # The second recent patch is selectable through the actual control too.
+        requests.clear()
         driver.get(base)
         _ready(driver, 'tab-unified')
-        requests.clear()
         driver.find_element('css selector', "[data-slot-open='0']").click()
         Select(driver.find_element('css selector', "[data-slot-capture='0']")).select_by_value(previous_dynamo_capture['key'])
         WebDriverWait(driver, 90).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 0 && document.getElementById('tab-unified')._comparisonSelection.keys[0] === arguments[0]", previous_dynamo_capture['key']))
-        assert any('/viewer-data/' in path for path in requests), 'previous release must fetch JSON transport'
+        expected_fetches = assert_viewer_data_matches_history(
+            historical_published_viewer, requests,
+            [identity_for_key(catalog, 'dynamo'), previous_dynamo_capture['identity']])
+        assert expected_fetches, 'previous release must fetch its retained history resources'
     finally:
         driver.quit()
         server.shutdown()
@@ -333,7 +437,7 @@ def test_corrupt_embedded_catalog_fails_without_network_fallback(published_viewe
         WebDriverWait(driver, 30).until(lambda page: page.find_elements('css selector', '#viewer .error'))
         assert 'Unsupported embedded data' in driver.find_element('css selector', '#viewer .error').text
         assert not any('/viewer-data/' in path or 'viewer-resolved-catalog' in path for path in requests)
-        assert not driver.find_elements('css selector', '#tab-unified td.cell')
+        assert not driver.find_elements('css selector', '#tab-unified .matrix-cell')
     finally:
         driver.quit()
         server.shutdown()
@@ -351,12 +455,17 @@ def test_history_discovery_renders_first_and_preserves_selection(historical_publ
         settle(driver, 'tab-unified')
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ['dynamo']
         assert not driver.find_elements('css selector', f"option[value='{previous_dynamo_capture['key']}']")
-        assert not any('/viewer-data/' in path for path in requests)
+        assert not any('/viewer-data/' in path for path in requests), (
+            'history assets must wait until the publication discovery response is released', requests)
         if change_selection:
             _choose_engine(driver, 0, 'vllm', programmatic=True)
             settle(driver, 'tab-unified')
         expected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
-        cell = driver.find_element('css selector', '#tab-unified td.cell[data-ttip-click=pin]')
+        expected_identities = driver.execute_script("""
+            const keys = arguments[0], candidates = window.__CONFORMANCE_PAGE.tabs.find(tab=>tab.id==='tab-unified').candidates;
+            return candidates.filter(candidate=>keys.includes(candidate.key)).map(candidate=>candidate.identity);
+        """, expected)
+        cell = driver.find_element('css selector', '#tab-unified .matrix-cell[data-ttip-click=pin]')
         # Establish retained popup state while history loading blocks user input.
         driver.execute_script("arguments[0].click()", cell)
         WebDriverWait(driver, 10).until(lambda page: page.find_elements('css selector', '.ttip-pinned .ttip-head'))
@@ -366,7 +475,7 @@ def test_history_discovery_renders_first_and_preserves_selection(historical_publ
         assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == 'true'
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == expected
         assert driver.execute_script('return window.__conformanceLoader.generation') > generation
-        assert not any('/viewer-data/' in path for path in requests), 'current selections must still use embedded resources after catalog replacement'
+        assert_viewer_data_matches_history(historical_published_viewer, requests, expected_identities)
         assert driver.execute_script("return window.__CONFORMANCE_PAGE.tabs.find(tab=>tab.id==='tab-unified').candidates.some(candidate=>candidate.key===arguments[0])", previous_dynamo_capture['key'])
         for transposed in (False, True):
             toggle = driver.find_element('css selector', '[data-transpose-toggle]')
@@ -375,7 +484,7 @@ def test_history_discovery_renders_first_and_preserves_selection(historical_publ
             assert driver.find_elements('css selector', '.ttip-pinned .ttip-head')
             missing = driver.execute_script("""return [...document.querySelectorAll('#tab-unified [data-ttip-id]')]
                 .filter(cell => !window.__conformanceTooltipModel(cell)
-                    || (cell.matches('td.cell') && !window.__conformanceCellModel(cell)))
+                    || (cell.matches('.matrix-cell') && !window.__conformanceCellModel(cell)))
                 .map(cell => cell.getAttribute('data-ttip-id'));""")
             assert missing == [], 'replacement and transposed tooltips must retain their registered models'
     finally:
@@ -392,7 +501,7 @@ def test_same_model_replacement_keeps_tooltips_and_retires_old_only_models(publi
         _ready(driver, 'tab-unified')
         driver.execute_script("""
             const panel = document.getElementById('tab-unified');
-            window.previousTooltipCell = panel.querySelector('td.cell[data-ttip-id]');
+            window.previousTooltipCell = panel.querySelector('.matrix-cell[data-ttip-id]');
             for (let index = 0; index < 2; index++) {
                 const commit = window.ConformanceView.prepareUpdate(panel, window.__conformanceModel, window.__CONFORMANCE_PAGE);
                 const pin = window.__conformanceController.disposePanel(panel);
@@ -400,7 +509,7 @@ def test_same_model_replacement_keeps_tooltips_and_retires_old_only_models(publi
                 window.__conformanceController.updatePanel(panel, pin);
             }
         """)
-        cell = driver.find_element('css selector', '#tab-unified td.cell[data-ttip-click=pin]')
+        cell = driver.find_element('css selector', '#tab-unified .matrix-cell[data-ttip-click=pin]')
         cell.click()
         WebDriverWait(driver, 10).until(lambda page: page.find_elements('css selector', '.ttip-pinned .ttip-head'))
         assert driver.execute_script("return Boolean(window.__conformanceCellModel(window.previousTooltipCell))")

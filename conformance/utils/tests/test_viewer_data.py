@@ -14,10 +14,7 @@ import viewer_codec
 ROOT = Path(__file__).resolve().parents[3]
 
 
-@pytest.mark.parametrize("filename", (
-    "values.test.js", "data.test.js", "resources.test.js", "model.test.js",
-    "presentation.test.js", "startup.test.js",
-))
+@pytest.mark.parametrize("filename", sorted(path.name for path in (ROOT / "conformance/viewer").glob("*.test.js")))
 def test_lossless_values_and_unified_contracts(source_catalog, filename):
     run_node_contract(filename)
 

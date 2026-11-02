@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { canonicalArguments, sameValue, isMapping, mappingEntries, getField, hasField, setField, deleteField, mergeMappings, compareText, parseJson } from './values.js';
 
+export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Disagreements',
+  error: 'Parser errors', leak: 'Markup leaks', missing: 'Missing captures', unsupported: 'Unsupported cases',
+  blocked: 'Blocked sources', expected: 'Expected errors', uncompared: 'GOLDEN unavailable'};
+
 const has = hasField;
 const parserError = (value) => /parser not captured|parsing failed|parse error|panicked|exception|traceback/i.test(value);
 
@@ -245,12 +249,12 @@ export function rankUnifiedColumns(tab, metadata) {
   const columns = [...tab.columns].sort((a, b) => metadata.unified_taxonomy[a.sub].display_order - metadata.unified_taxonomy[b.sub].display_order);
   for (const column of columns) {
     const taxonomy = metadata.unified_taxonomy[column.sub];
-    const group = taxonomy.display_group;
-    counts.set(group, (counts.get(group) || 0) + 1);
+    const prefix = taxonomy.compact_prefix;
+    counts.set(prefix, (counts.get(prefix) || 0) + 1);
     const label = column.grouped_display_label || taxonomy.label;
     labels.set(column.label, label);
     column.case_id = `UNIFIED.${column.label}`;
-    Object.assign(column, { label, compact_prefix: taxonomy.compact_prefix, display_number: counts.get(group) });
+    Object.assign(column, { label, compact_prefix: prefix, display_number: counts.get(prefix) });
   }
   for (const group of tab.glossary || []) group.rows = group.rows.map(([label, description]) => [labels.get(label) || label, description]);
 }
@@ -435,7 +439,7 @@ function captureIssue(cell, key) {
 export function selectedCaptureOutcome(cell, key, reference = 'golden') {
   if (cell?.variants) {
     const outcomes = cell.variants.filter(isApplicableCell).map(leaf => selectedCaptureOutcome(leaf, key, reference));
-    return ['error', 'leak', 'diverge', 'missing', 'blocked', 'unsupported', 'uncompared', 'documented', 'pass']
+    return ['error', 'leak', 'diverge', 'expected', 'missing', 'blocked', 'unsupported', 'uncompared', 'documented', 'pass']
       .find(outcome => outcomes.includes(outcome)) || 'unsupported';
   }
   const issue = captureIssue(cell, key);

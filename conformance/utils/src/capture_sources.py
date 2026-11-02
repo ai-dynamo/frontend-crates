@@ -157,11 +157,16 @@ def retained_inventory(root: Path) -> dict:
     """Inventory existing history in place, without expanding or rewriting archives."""
     paths = sorted(path for path in (root / STORE / "families").glob("*/*.yaml")
                    if path.name == "inputs_and_golden.yaml" or "-" in path.stem)
+    has_captures = any("-" in path.stem for path in paths)
+    for directory in ("executions", "receipts"):
+        paths.extend(sorted((root / STORE / directory).glob("*.yaml")))
+    version_archives = unified_archives.paths(root / STORE)
+    paths.extend(version_archives)
     paths.extend(sorted((root / "conformance/fixtures").rglob("*.tar.gz")))
     paths.append(root / "conformance/fixtures-manifest.json")
     rows = [identity(path.relative_to(root).as_posix(), read(root, path.relative_to(root).as_posix()))
             for path in paths]
-    if not any("-" in Path(row["path"]).stem and row["path"].endswith(".yaml") for row in rows):
+    if not version_archives and not has_captures:
         raise ValueError("no retained historical captures")
     return {"schema": 2, "source_revision": "retained-paths", "files": sorted(rows, key=lambda row: row["path"])}
 

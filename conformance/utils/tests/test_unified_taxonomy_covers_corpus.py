@@ -1001,7 +1001,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 263 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 5
+    assert len(UNIFIED_TAX) == 265 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 5
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1131,25 +1131,22 @@ def retained_unified_snapshots(store, *, families=None, source_root=None, resour
         [row for row in resources
          if row["kind"] == "history" and row["implementation"] == "dynamo_v2"
          and (families is None or row["family"] in families)], profile="exhaustive")
-    sparse = any("schema_version" not in yaml.load(retained_source_bytes(root, row), Loader=unified_history.StrictLoader)
-                 for row in resources if "archive" not in row)
-    if sparse or (root.parent.parent / "conformance/history-datasets.json").is_file():
-        resolved = unified_history.load_store(root)
-        selected_histories = {}
-        for resource in resources:
-            capture_id = f"{resource['implementation']}-{resource['version']}"
-            selected_histories.setdefault((resource["family"], resource["implementation"]), {})[capture_id] = resource
-        for key, selected in selected_histories.items():
-            history = resolved.histories[key]
-            for capture_id, records in history.iter_resolved_snapshots(set(selected), include_members=True):
-                yield selected[capture_id], history.complete_snapshot(capture_id, records=records)
-        return
-    selected = [_store_resource(row) for row in resources]
-    with unified_history._store_read_lock(root):
-        for resource, data in unified_archives.read_sources(root, selected):
-            document = yaml.load(data, Loader=unified_history.StrictLoader)
-            assert document["schema_version"] == 2
-            yield resource, document
+    selections = {}
+    for row in resources:
+        selections.setdefault((row["family"], row["implementation"]), set()).add(row["version"])
+    owners = unified_history.original_stores(root.parent.parent, selections)
+    grouped = {}
+    for resource in resources:
+        prefix, _, history, capture_id = unified_history.original_capture(
+            owners, resource["family"], resource["implementation"], resource["version"])
+        key = prefix, resource["family"], resource["implementation"]
+        _, selected = grouped.setdefault(key, (history, {}))
+        selected.setdefault(capture_id, []).append(resource)
+    for history, selected in grouped.values():
+        for capture_id, records in history.iter_resolved_snapshots(set(selected), include_members=True):
+            snapshot = history.complete_snapshot(capture_id, records=records)
+            for resource in selected[capture_id]:
+                yield resource, snapshot
 
 
 def _materialized_unified_root(tmp_path: Path, store) -> Path:

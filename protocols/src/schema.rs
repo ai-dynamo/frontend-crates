@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Schema-only placeholders for async-openai types that lack schema support.
+//! Schema-only adapters and placeholders for protocol types.
 //!
 //! These placeholders let Dynamo-owned types derive `ToSchema` without
 //! requiring `async-openai/protocol-schema`. Field-level `schema(value_type = ...)`
@@ -71,3 +71,13 @@ imports!(
     CompletionUsage,
     Prompt,
 );
+
+/// Includes the enum discriminator so closed schemas accept tagged Custom parts.
+#[derive(utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(as = dynamo_protocols::chat::CustomContentPart)]
+pub struct CustomContentPart {
+    pub r#type: String,
+    pub kind: String,
+    pub fields: serde_json::Map<String, serde_json::Value>,
+}

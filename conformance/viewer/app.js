@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { HttpResourceStore, gunzipSync, sha256, resourceMetrics, boundedGunzip } from './data.js';
 import { rawResource, FixtureResources } from './resources.js';
-import { buildTab, pageMetadata, tabPresentation, columnKeysFor, createSourceLink } from './presentation.js';
-import { tabCandidates, selectedCellOutcome, selectedCaptureOutcome } from './model.js';
+import { buildTab, pageMetadata, tabPresentation, columnKeysFor, createSourceLink, captureSegmentHtml } from './presentation.js';
+import { tabCandidates, selectedCellOutcome, selectedCaptureOutcome, captureStatusLabels } from './model.js';
+import { mountComparison, verticalDefault } from './comparison.js';
 import { stringifyValue } from './values.js';
 
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -172,7 +173,15 @@ export class LoadingOverlay {
   }
 }
 
+export function sourceCommitSha(metadata) {
+  const sha = metadata?.source_commit_sha ?? metadata?.revision ?? null;
+  if (sha !== null && (!/^[0-9a-f]{40}$/.test(sha) || (metadata.revision && sha !== metadata.revision))) throw new Error('Invalid source_commit_sha');
+  return sha;
+}
+
 export async function startApp() {
+  window.__conformanceSegmentLabels = captureStatusLabels;
+  window.__conformanceCaptureSegmentHtml = captureSegmentHtml;
   await import('../utils/src/assets/colorize.js');
   await import('../utils/src/assets/conformance_view.js');
   await import('../utils/src/assets/conformance.js');
@@ -182,6 +191,7 @@ const root = document.querySelector('#viewer');
 const baseUrl = new URL('.', document.baseURI);
 const loading = new LoadingOverlay();
 window.__CONFORMANCE_INITIAL_SEARCH = location.search;
+window.__conformanceVerticalDefault = verticalDefault;
 window.__formatConformanceValue = stringifyValue;
 window.__conformanceCaptureOutcome = selectedCaptureOutcome;
 
@@ -278,7 +288,7 @@ async function initialize() {
   const publicationElement = document.getElementById('conformance-publication');
   let publication = publicationElement ? JSON.parse(publicationElement.textContent) : null;
   let sourceLink = createSourceLink(baseUrl, publication, bootstrapRevision);
-  const page = pageMetadata(catalog, { commitSha: null, sourceLink: path => `source:${path}` });
+  const page = pageMetadata(catalog, { commitSha: sourceCommitSha(publication), sourceLink: path => `source:${path}` });
   page.legacy_candidate_identities = catalog.metadata.legacy_candidate_identities || {};
   window.__PARSER_NI = page.parser_ni;
   page.tabs = catalog.metadata.tabs.map(spec => ({
@@ -307,6 +317,7 @@ async function initialize() {
   root.dataset.catalogRevision = catalog.revision;
   let controller;
   let slotOwner;
+  let comparison;
   const loader = new SelectionLoader({
     async build(tabId, selection) {
       const generation = loader.generation;
@@ -348,6 +359,7 @@ async function initialize() {
       commit();
       resolveSources();
       panel.dataset.hasModel = 'true';
+      comparison.update(model);
       controller.updatePanel(panel, pin);
       window.__conformanceModel = model;
       window.scrollTo(scroll.x, scroll.y);
@@ -368,6 +380,7 @@ async function initialize() {
     if (!slotOwner) return;
     load(panel);
   }, { availableIdentities: historyAvailable ? null : embeddedIdentities });
+  comparison = mountComparison(panel, controller, () => catalog.sources.unified.filter(item => item.kind === 'inputs-and-golden').map(item => item.family));
   const firstLoad = load(controller.activePanel());
   async function discoverOlderResults() {
     await firstLoad;
@@ -393,9 +406,9 @@ async function initialize() {
     }
     else {
       const notice = document.createElement('p');
-      notice.className = 'capture-slots-notice';
-      notice.textContent = `Last captured results only. To show historic results, please run ${window.ConformanceView.historyPublicationCommand}.`;
-      panel.querySelector('.capture-slots').appendChild(notice);
+      notice.className = 'capture-slots-notice publication-history-notice';
+      notice.textContent = 'Latest results are available offline. Older results are not included here.';
+      root.appendChild(notice);
     }
   }
   discoverOlderResults().catch(error => {

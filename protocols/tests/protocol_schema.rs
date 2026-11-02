@@ -190,6 +190,32 @@ fn multimodal_request_and_completion_preserve_native_shapes() {
 }
 
 #[test]
+fn custom_content_schema_preserves_the_tagged_envelope() {
+    let schema = validator::<CreateChatCompletionRequest>();
+    for role in ["user", "tool"] {
+        let mut message = json!({"role":role,"content":[{
+            "type":"custom","kind":"chemistry","fields":{"items":[null,true,3]}
+        }]});
+        if role == "tool" {
+            message["tool_call_id"] = json!("call_1");
+        }
+        let request = json!({"model":"test","messages":[message]});
+        canonical::<CreateChatCompletionRequest>(request.clone());
+
+        let mut unknown = request.clone();
+        unknown["messages"][0]["content"][0]["unexpected"] = json!(true);
+        assert!(!schema.is_valid(&unknown), "{unknown}");
+
+        let mut missing_fields = request;
+        missing_fields["messages"][0]["content"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("fields");
+        assert!(!schema.is_valid(&missing_fields), "{missing_fields}");
+    }
+}
+
+#[test]
 fn unary_and_stream_responses_retain_reasoning_and_usage() {
     canonical::<CreateChatCompletionResponse>(json!({
         "id":"chat-1","object":"chat.completion","created":1,"model":"test",

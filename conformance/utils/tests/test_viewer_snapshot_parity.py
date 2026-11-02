@@ -197,43 +197,33 @@ def test_retained_parity_rejects_wrong_dataset_namespace(fault):
         _assert_retained_dataset_descriptor(datasets)
 
 
-def _source_capture(owners, family, implementation, version):
-    captures = [(unified_history._capture_release_sort_key(capture["runtime_version"]), priority, prefix, store, history, identity)
-                for priority, prefix, store in owners
-                if (history := store.histories.get((family, implementation))) is not None
-                for identity, capture in history.captures.items()
-                if unified_history._capture_release_sort_key(capture["runtime_version"])
-                <= unified_history._capture_release_sort_key(version)]
-    assert captures, (family, version)
-    return max(captures, key=lambda item: item[:2])[2:]
-
-
 def test_original_source_precedence_keeps_dataset_order_and_current_override():
     stores = []
     for priority, prefix in [(0, "first"), (1, "second"), (2, "")]:
         history = SimpleNamespace(captures={"dynamo_v2-0.1.0": {"runtime_version": "0.1.0"}})
         stores.append((priority, prefix, SimpleNamespace(histories={("sample", "dynamo_v2"): history})))
-    assert _source_capture(stores[:2], "sample", "dynamo_v2", "0.1.0")[0] == "second"
-    assert _source_capture(stores, "sample", "dynamo_v2", "0.1.0")[0] == ""
+    assert unified_history.original_capture(stores[:2], "sample", "dynamo_v2", "0.1.0")[0] == "second"
+    assert unified_history.original_capture(stores, "sample", "dynamo_v2", "0.1.0")[0] == ""
     stores[0][2].histories["sample", "dynamo_v2"].captures["dynamo_v2-0.2.0"] = {"runtime_version": "0.2.0"}
-    assert _source_capture(stores, "sample", "dynamo_v2", "0.2.0")[0] == "first"
-    assert _source_capture(stores, "sample", "dynamo_v2", "0.1.0")[0] == ""
+    assert unified_history.original_capture(stores, "sample", "dynamo_v2", "0.2.0")[0] == "first"
+    assert unified_history.original_capture(stores, "sample", "dynamo_v2", "0.1.0")[0] == ""
 
 
 def _assert_routed_history_parity(source, site, published):
     # Read original YAML directly. Routed load_store consumes publisher-created
     # fragments and would make the expected result circular with the publication.
-    datasets = json.loads((source / capture_sources.DATASETS).read_bytes())
-    owners = [(len(datasets), "", unified_history._load_store_unlocked(source / capture_sources.STORE))]
-    owners.extend((index, dataset["root"], unified_history._load_store_unlocked(source / dataset["root"] / capture_sources.STORE))
-                  for index, dataset in enumerate(datasets))
     resources = ci_coverage.select_resources([row for row in published["sources"]["unified"]
                                              if row["kind"] == "resolved-capture"])
+    selections = {}
+    for row in resources:
+        for family in row.get("families", [row.get("family")]):
+            selections.setdefault((family, row["implementation"]), set()).add(row["version"])
+    owners = unified_history.original_stores(source, selections)
     checked = 0
     for resource in resources:
         bundle = decode_typed(json.loads(snapshot_bytes(site, resource))["value"])
         for family in resource.get("families", [resource.get("family")]):
-            prefix, store, history, selected = _source_capture(owners, family, resource["implementation"], resource["version"])
+            prefix, store, history, selected = unified_history.original_capture(owners, family, resource["implementation"], resource["version"])
             requested = f"{resource['implementation']}-{resource['version']}"
             expected = history.resolve(selected, view_capture_id=requested)
             snapshot = history.complete_snapshot(selected)

@@ -19,6 +19,8 @@ const toolOnlyCell = (panel, family = panel.rows[0].family) => leafCells(panel.r
 const catalog = JSON.parse(await readFile(new URL('../viewer-catalog.json', import.meta.url), 'utf8'));
 catalog.capture_generation = { mode: 'history' };
 catalog.metadata.unified_presentation.authored_scenarios = ['tool_only'];
+// Record projection and label checks intentionally use registered Qwen metadata.
+// Coverage relationships below use generated families instead of model names.
 catalog.sources.unified = catalog.sources.unified.filter((source) => source.family === 'qwen3' && source.kind === 'inputs-and-golden');
 catalog.sources.candidates = [{ mode: 'unified', implementation: 'dynamo_v2', version: '1.0.0', source: 'capture.yaml', native_unified_families: ['qwen3'] }];
 for (const kind of ['unpublished', 'release']) {
@@ -186,48 +188,80 @@ await assert.rejects(selectedCell([peerKey], 'dynamo'), /reference is not loaded
 await assert.rejects(selectedCell([peerKey], 'unknown'), /unknown Unified reference/);
 console.log('Unified projected mapping values, recorded errors, and stimulus admission passed');
 
-const unionCatalog = structuredClone(catalog);
-unionCatalog.sources.unified = ['qwen3', 'glm47', 'kimi_k2'].map(family => ({ family, kind: 'inputs-and-golden', path: `${family}/inputs.yaml` }));
-unionCatalog.sources.candidates = [
-  { mode: 'unified', implementation: 'dynamo_v1', version: '1.0.0', capture_families: ['glm47', 'qwen3'] },
-  { mode: 'unified', implementation: 'dynamo_v2', version: '1.0.0', capture_families: ['glm47', 'kimi_k2'], native_unified_families: ['glm47', 'kimi_k2'] },
-];
-const unionReads = [];
-const unionReader = {
-  unifiedInputs: async family => ({ value: { ...structuredClone(document), input_document: { family }, golden_document: { family } } }),
-  unified: async (family, implementation) => { unionReads.push(`${family}:${implementation}`); return { records: new Map() }; },
+const familyName = index => `fixture_family_${index}`;
+// Three families cover the left-only, shared and right-only regions of two sets.
+const coverageFamilies = Array.from({ length: 3 }, (_, index) => familyName(index));
+const coverageFixture = scopes => {
+  const fixtureCatalog = structuredClone(catalog);
+  // Keep authored inventory independent of selections so rendering every family fails.
+  const families = [...coverageFamilies];
+  fixtureCatalog.metadata.unified_presentation.scenario_families.tool_only = families;
+  fixtureCatalog.sources.unified = families.map(family => ({ family, kind: 'inputs-and-golden', path: `${family}/inputs.yaml` }));
+  // These implementation IDs exercise the real v1/v2 routing contract. The synthetic
+  // semver only supplies valid candidate identities; it names no retained release.
+  fixtureCatalog.sources.candidates = scopes.map((families, index) => ({
+    mode: 'unified', implementation: `dynamo_v${index + 1}`, version: '1.0.0', capture_families: [...families],
+    ...(index === 1 ? { native_unified_families: [...families] } : {}),
+  }));
+  const reads = [];
+  const reader = {
+    unifiedInputs: async family => ({ value: { ...structuredClone(document), input_document: { family }, golden_document: { family } } }),
+    unified: async (family, implementation) => { reads.push(`${family}:${implementation}`); return { records: new Map() }; },
+  };
+  const descriptors = tabCandidates(fixtureCatalog, { id: 'tab-unified', mode: 'unified' });
+  const keys = fixtureCatalog.sources.candidates.map(source => descriptors.find(item => item.source.implementation === source.implementation).control.key);
+  return { catalog: fixtureCatalog, reader, reads, keys };
 };
-const unionPanel = await unifiedPanel(unionCatalog, unionReader, { selected: ['dynamo', 'dynamo_v1@1.0.0'], reference: null });
-assert.deepEqual(unionPanel.rows.map(row => row.family), ['glm47', 'kimi_k2', 'qwen3']);
-assert.equal(toolOnlyCell(unionPanel, 'qwen3').cmp.dynamo.na, 1);
-assert.equal(toolOnlyCell(unionPanel, 'kimi_k2').cmp['dynamo_v1@1.0.0'].na, 1);
-assert.equal(selectedCaptureOutcome(toolOnlyCell(unionPanel, 'glm47'), 'dynamo'), 'missing');
-assert.equal(selectedCaptureOutcome(toolOnlyCell(unionPanel, 'qwen3'), 'dynamo'), 'unsupported');
-assert.deepEqual(unionReads.sort(), ['glm47:dynamo_v1', 'glm47:dynamo_v2', 'kimi_k2:dynamo_v2', 'qwen3:dynamo_v1']);
-console.log('A/B plus B/C renders the union once with distinct unsupported and missing-capture segments');
+const familySubsets = Array.from({ length: 2 ** coverageFamilies.length }, (_, mask) =>
+  coverageFamilies.filter((_, index) => mask & (1 << index)));
+for (const left of familySubsets) for (const right of familySubsets) {
+  const scopes = [left, right];
+  for (const reverse of [false, true]) {
+    const fixture = coverageFixture(scopes);
+    const selected = reverse ? [...fixture.keys].reverse() : fixture.keys;
+    const context = JSON.stringify({ scopes, selected });
+    const panel = await unifiedPanel(fixture.catalog, fixture.reader, { selected, reference: null });
+    const expectedFamilies = [...new Set(scopes.flat())].sort();
+    assert.deepEqual(panel.rows.map(row => row.family), expectedFamilies, context);
+    for (const family of expectedFamilies) for (const [index, key] of fixture.keys.entries()) {
+      assert.equal(selectedCaptureOutcome(toolOnlyCell(panel, family), key),
+        scopes[index].includes(family) ? 'missing' : 'unsupported', context);
+    }
+    const expectedReads = scopes.flatMap((families, index) => families.map(family =>
+      `${family}:${fixture.catalog.sources.candidates[index].implementation}`)).sort();
+    assert.deepEqual(fixture.reads.sort(), expectedReads, context);
+  }
+}
+console.log(`${familySubsets.length ** 2 * 2} generated coverage combinations preserve family unions, outcomes and reads`);
+
+const [firstFamily, sharedFamily, lastFamily] = coverageFamilies;
+const { catalog: unionCatalog, reader: unionReader, reads: unionReads } = coverageFixture([
+  [firstFamily, sharedFamily], [sharedFamily, lastFamily],
+]);
 
 const scopedCatalog = structuredClone(unionCatalog);
-scopedCatalog.metadata.unified_presentation.scenario_families.tool_only = ['glm47', 'kimi_k2'];
+scopedCatalog.metadata.unified_presentation.scenario_families.tool_only = [sharedFamily, lastFamily];
 const scopedReader = { ...unionReader, unifiedInputs: async family => {
   const result = await unionReader.unifiedInputs(family);
-  if (family === 'qwen3') result.value.cases = {};
+  if (family === firstFamily) result.value.cases = {};
   return result;
 } };
 const scopedPanel = await unifiedPanel(scopedCatalog, scopedReader, { selected: ['dynamo', 'dynamo_v1@1.0.0'], reference: null });
-const scopedCell = toolOnlyCell(scopedPanel, 'qwen3');
+const scopedCell = toolOnlyCell(scopedPanel, firstFamily);
 assert.equal(selectedCaptureOutcome(scopedCell, 'dynamo_v1@1.0.0'), 'unsupported');
 assert.deepEqual(scopedCell.tooltip.candidates.find(({ key }) => key === 'dynamo_v1@1.0.0').block, {
-  unavailable: 'Not applicable to qwen3', unavailable_code: 'scenario_not_applicable',
+  unavailable: `Not applicable to ${firstFamily}`, unavailable_code: 'scenario_not_applicable',
 });
 
 const inventoryCatalog = structuredClone(scopedCatalog);
-inventoryCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2').capture_families.push('qwen3');
-inventoryCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2').native_unified_families.push('qwen3');
+inventoryCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2').capture_families.push(firstFamily);
+inventoryCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2').native_unified_families.push(firstFamily);
+// Fixed stress size exercises a large inventory without following live release counts.
 for (let index = 0; index < 826; index++) {
-  inventoryCatalog.sources.candidates.push({ mode: 'unified', implementation: 'dynamo_v1', version: `2.0.${index}`, capture_families: ['qwen3', 'glm47'] });
+  inventoryCatalog.sources.candidates.push({ mode: 'unified', implementation: 'dynamo_v1', version: `2.0.${index}`, capture_families: [firstFamily, sharedFamily] });
 }
 for (const implementation of ['sglang_python', 'vllm_python']) {
-  inventoryCatalog.sources.candidates.push({ mode: 'unified', implementation, version: '1.0.0', capture_families: ['qwen3', 'glm47'] });
+  inventoryCatalog.sources.candidates.push({ mode: 'unified', implementation, version: '1.0.0', capture_families: [firstFamily, sharedFamily] });
 }
 const inventoryDescriptors = tabCandidates(inventoryCatalog, { id: 'tab-unified', suite: 'unified', mode: 'unified' });
 for (const options of [
@@ -239,7 +273,7 @@ for (const options of [
   {},
 ]) {
   const panel = await unifiedPanel(inventoryCatalog, scopedReader, options);
-  const cell = toolOnlyCell(panel, 'qwen3');
+  const cell = toolOnlyCell(panel, firstFamily);
   const expected = inventoryDescriptors.filter(item => item.control.key === 'golden'
     || !options.selected || options.selected.includes(item.control.key)).map(item => item.control.key);
   assert.deepEqual(Object.keys(cell.cmp), expected);
@@ -249,23 +283,24 @@ for (const options of [
   for (const key of expected) {
     assert.equal(selectedCaptureOutcome(cell, key), 'unsupported');
     assert.deepEqual(cell.tooltip.candidates.find(item => item.key === key).block, {
-      unavailable: 'Not applicable to qwen3', unavailable_code: 'scenario_not_applicable',
+      unavailable: `Not applicable to ${firstFamily}`, unavailable_code: 'scenario_not_applicable',
     });
   }
 }
 console.log('NA comparisons and popup candidates scale with selection across the full release inventory');
 
 // Historical observations cannot introduce families outside current native support.
+const outsideFamily = familyName(coverageFamilies.length);
 const nativeOnlyCatalog = structuredClone(unionCatalog);
 const v2 = nativeOnlyCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2');
-v2.capture_families.push('qwen3', 'gpt_oss');
-nativeOnlyCatalog.sources.unified.push({ family: 'gpt_oss', kind: 'inputs-and-golden', path: 'gpt_oss/inputs.yaml' });
-assert.equal(sourceCapturesFamily(v2, 'gpt_oss'), false);
-assert.equal(sourceCapturesFamily(v2, 'gpt_oss', { nativeOnly: false }), true, 'archive parity retains split historical records');
+v2.capture_families.push(firstFamily, outsideFamily);
+nativeOnlyCatalog.sources.unified.push({ family: outsideFamily, kind: 'inputs-and-golden', path: `${outsideFamily}/inputs.yaml` });
+assert.equal(sourceCapturesFamily(v2, outsideFamily), false);
+assert.equal(sourceCapturesFamily(v2, outsideFamily, { nativeOnly: false }), true, 'archive parity retains split historical records');
 unionReads.length = 0;
 const nativeOnly = await unifiedPanel(nativeOnlyCatalog, unionReader, { selected: ['dynamo'], reference: null });
-assert.deepEqual(nativeOnly.rows.map(row => row.family), ['glm47', 'kimi_k2']);
-assert.deepEqual(unionReads.sort(), ['glm47:dynamo_v2', 'kimi_k2:dynamo_v2']);
+assert.deepEqual(nativeOnly.rows.map(row => row.family), [sharedFamily, lastFamily]);
+assert.deepEqual(unionReads.sort(), [`${sharedFamily}:dynamo_v2`, `${lastFamily}:dynamo_v2`]);
 v2.native_unified_families = [];
 assert.deepEqual((await unifiedPanel(nativeOnlyCatalog, unionReader, { selected: ['dynamo'], reference: null })).rows, [], 'current native eligibility bounds Dynamo v2 rows');
 delete v2.native_unified_families;
