@@ -22,7 +22,9 @@ from .folds import PROBE_CONTENT, fold, shape_for
 from .message import assistant_turn, message_from_events, representable
 from .prompt import PromptMismatch, generation_prompt
 from .serving import (
+    ARGUMENT_FRAMING,
     FAMILY_ALIASES,
+    RETAIN_STOP_TOKEN_TEXT,
     function_tools,
     reasoning_disabled,
     starting_state,
@@ -71,11 +73,14 @@ def prepare(case: Case, bundle: Bundle, family: str) -> Prepared | dict[str, Any
     disabled = reasoning_disabled(family, kwargs, prompt)
     job = {
         "id": case.id,
-        "text": text,
+        # The parser reads what Dynamo hands it; the round trip still compares x.
+        "text": bundle.decode(output) if family in RETAIN_STOP_TOKEN_TEXT else text,
         "family": family,
         "starting_state": starting_state(family, prompt, disabled),
         "tools": function_tools(request),
     }
+    if family in ARGUMENT_FRAMING:
+        job["argument_framing"] = ARGUMENT_FRAMING[family]
     return Prepared(case, prompt, text, disabled, job)
 
 

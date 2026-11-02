@@ -23,10 +23,17 @@ FAMILY_ALIASES = {
     "muse_spark_open": "muse_spark",
     "harmony": "gpt_oss",
 }
-# Dynamo hands these parsers a prompt prefix or channel state that a whole-text
-# job cannot carry (`prompt_reasoning_prefill_at_boundary` for GPT-OSS,
-# `beam_prompt_open_channel` for Beam), and Beam rejects thinking off.
-UNMODELED_FAMILIES = ("gpt_oss", "beam")
+# Dynamo hands this parser a prompt prefix that a whole-text job cannot carry
+# (`prompt_reasoning_prefill_at_boundary` for GPT-OSS).
+UNMODELED_FAMILIES = ("gpt_oss",)
+# Beam keeps the model's stop-token text (`<|call|>`, `<|return|>`) in the parser's
+# input, because a call completes only at its marker (`retain_model_stop_token_text`).
+RETAIN_STOP_TOKEN_TEXT = ("beam",)
+# How the parser frames native argument values, as Dynamo chooses it per request
+# (`argument_framing` in unified_parser.rs). Beam's default turn grammar types every
+# held tool's arguments, so non-string values own their strings.
+ARGUMENT_FRAMING = {"beam": "schema_constrained"}
+BEAM_HEADER = "<|start|>assistant"
 # Dynamo's reasoning openers by family (`prompt_injected_reasoning_start`);
 # every other family uses `<think>`.
 REASONING_OPENERS = {
@@ -142,6 +149,27 @@ def opens_reasoning(family: str, prompt: str) -> bool:
     return prompt.endswith(REASONING_OPENERS.get(family, ("<think>",)))
 
 
+def beam_open_channel(prompt: str) -> str:
+    """The channel Beam's prompt leaves open after its last `<|start|>assistant`
+    (`beam_prompt_open_channel`): none for the bare header slot, response for an
+    open final message, reasoning for an open analysis message."""
+    at = prompt.rfind(BEAM_HEADER)
+    if at < 0:
+        return "none"
+    tail = prompt[at + len(BEAM_HEADER) :]
+
+    def is_open(opener: str, closers: tuple[str, ...]) -> bool:
+        start = tail.rfind(opener)
+        rest = tail[start + len(opener) :]
+        return start >= 0 and not any(closer in rest for closer in closers)
+
+    if is_open("<|channel|>final<|message|>", ("<|return|>", "<|end|>")):
+        return "response"
+    if is_open("<|channel|>analysis<|message|>", ("<|end|>",)):
+        return "reasoning"
+    return "none"
+
+
 def starting_state(family: str, prompt: str, disabled: bool) -> str:
     """The channel the generation prompt leaves open, as Dynamo infers it
     (`prompt_reasoning_prefill_for_parsers`, then `stream_prefill` and
@@ -149,7 +177,9 @@ def starting_state(family: str, prompt: str, disabled: bool) -> str:
     the prompt ends with the family's opener, even with thinking off. Gemma 4,
     MiniMax M3 and Nemotron 3 with thinking off start in the response channel,
     and Nemotron 3 otherwise always starts in reasoning. Gemma 4's partial
-    thought header is not modeled."""
+    thought header is not modeled. Beam reads its open channel instead."""
+    if family == "beam":
+        return beam_open_channel(prompt)
     if disabled and family in RESPONSE_WHEN_DISABLED:
         return "response"
     if opens_reasoning(family, prompt) or family == "nemotron_v3":

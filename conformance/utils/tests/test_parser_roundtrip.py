@@ -672,7 +672,6 @@ def test_minimax_m3_renders_only_its_native_thinking_mode(
     ("family", "request_fields", "verdict"),
     [
         ("harmony", {}, "skip:unmodeled-family"),
-        ("beam", {}, "skip:unmodeled-family"),
         (
             "minimax-m3",
             {"response_format": {"type": "json_object"}},
@@ -685,7 +684,7 @@ def test_minimax_m3_renders_only_its_native_thinking_mode(
             "skip:unmodeled-thinking-flag",
         ),
     ],
-    ids=["gpt-oss-alias", "beam", "m3-structured", "m3-guided", "m3-bool-flag"],
+    ids=["gpt-oss-alias", "m3-structured", "m3-guided", "m3-bool-flag"],
 )
 def test_requests_the_round_trip_cannot_model_are_skipped(
     bundle: Bundle, family: str, request_fields: dict[str, Any], verdict: str
@@ -694,6 +693,35 @@ def test_requests_the_round_trip_cannot_model_are_skipped(
     obj["request"].update(request_fields)
     case = parse_case(obj)
     assert prepare(case, bundle, family) == {"id": case.id, "verdict": verdict}
+
+
+BEAM_HISTORY = "<|start|>user<|message|>hi<|end|><|start|>assistant"
+
+
+@pytest.mark.parametrize(
+    ("tail", "state"),
+    [
+        ("", "none"),
+        ("<|channel|>analysis<|message|>half", "reasoning"),
+        ("<|channel|>analysis<|message|>done<|end|>", "none"),
+        ("<|channel|>final<|message|>Sure", "response"),
+        ("<|channel|>final<|message|>Sure<|return|>", "none"),
+    ],
+    ids=["bare-header", "open-analysis", "closed-analysis", "open-final", "closed-final"],
+)
+def test_beam_starts_in_the_channel_its_prompt_leaves_open(tail: str, state: str) -> None:
+    assert starting_state("beam", BEAM_HISTORY + tail, False) == state
+
+
+def test_beam_parser_keeps_stop_token_text_and_frames_arguments(bundle: Bundle) -> None:
+    case = parse_case(trace(bundle, "Hi.", enable_thinking=None))
+    beam = prepared(bundle, case, "beam")
+    assert beam.text == "Hi."  # the round trip still compares x
+    assert beam.job["text"] == "Hi.<eos>"
+    assert beam.job["argument_framing"] == "schema_constrained"
+    qwen = prepared(bundle, case, "qwen3")
+    assert qwen.job["text"] == "Hi."
+    assert "argument_framing" not in qwen.job
 
 
 def test_minimax_m3_with_its_native_thinking_mode_is_judged(bundle: Bundle) -> None:

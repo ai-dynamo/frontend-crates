@@ -3,7 +3,8 @@
 
 //! Parse whole model outputs with the v2 Unified parser.
 //!
-//! Reads JSONL jobs on stdin, `{id, text, family, starting_state, tools}`. Writes a
+//! Reads JSONL jobs on stdin, `{id, text, family, starting_state, tools}` plus an
+//! optional `argument_framing`. Writes a
 //! header line naming the linked dynamo-parsers-v2 version, then one JSONL line per
 //! job: its assembled events in model order, or `{id, error}` when the parser fails
 //! or panics. A malformed job or an unknown family stops the run before any job is
@@ -19,9 +20,9 @@ use std::panic::catch_unwind;
 use anyhow::{Context, Result, anyhow, ensure};
 use dynamo_parsers_v2::unified::MessagePhase;
 use dynamo_parsers_v2::{
-    Tool, UnifiedEvent, UnifiedParserInit, UnifiedParserOutput, UnifiedParserStartingState,
-    assemble_with_tool_indices, builtin_unified_families, canonical_unified_family,
-    create_unified_parser_for_family,
+    ArgumentFraming, Tool, ToolCallPolicy, UnifiedEvent, UnifiedParserInit, UnifiedParserOutput,
+    UnifiedParserStartingState, assemble_with_tool_indices, builtin_unified_families,
+    canonical_unified_family, create_unified_parser_for_family,
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Value, json};
@@ -36,6 +37,16 @@ enum StartingStateDef {
     None,
     Reasoning,
     Response,
+}
+
+/// How the parser frames native argument values; the caller mirrors Dynamo's choice
+/// (`argument_framing` in lib/llm/src/protocols/openai/chat_completions/unified_parser.rs).
+#[derive(Deserialize)]
+#[serde(remote = "ArgumentFraming", rename_all = "snake_case")]
+enum ArgumentFramingDef {
+    Lenient,
+    ConstrainedJson,
+    SchemaConstrained,
 }
 
 /// An OpenAI tool object; the parser reads only its function.
@@ -76,6 +87,8 @@ struct Job {
     starting_state: UnifiedParserStartingState,
     #[serde(default, deserialize_with = "function_tools")]
     tools: Vec<Tool>,
+    #[serde(default, with = "ArgumentFramingDef")]
+    argument_framing: ArgumentFraming,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -169,6 +182,13 @@ fn read_jobs(input: impl BufRead) -> Result<Vec<Job>> {
 
 fn parse(job: &Job) -> Result<Parsed<'_>> {
     let mut parser = create_unified_parser_for_family(&job.family, &job.tools)?;
+    // As Dynamo's `apply_argument_framing`: only a non-default framing sets a policy.
+    if job.argument_framing != ArgumentFraming::default() {
+        parser.set_tool_call_policy(ToolCallPolicy {
+            argument_framing: job.argument_framing,
+            ..ToolCallPolicy::default()
+        })?;
+    }
     parser.initialize_request(UnifiedParserInit {
         starting_state: job.starting_state,
         ..UnifiedParserInit::default()
@@ -327,6 +347,29 @@ mod tests {
         ensure!(serde_json::from_str::<Value>(arguments)? == json!({"zeta": 1, "alpha": "x"}));
         let (zeta, alpha) = (arguments.find("zeta"), arguments.find("alpha"));
         ensure!(zeta < alpha, "key order changed: {arguments}");
+        Ok(())
+    }
+
+    #[test]
+    fn schema_constrained_framing_lets_a_json_value_own_its_closer() -> Result<()> {
+        // Beam output after a prompt that ended at `<|start|>assistant`. The object-typed
+        // value holds the parameter closer inside a JSON string.
+        let input = " to=save<|channel|>analysis <|constrain|>xml<|message|>\
+                     <rfl:parameter name=\"doc\">{\"note\":\"a</rfl:parameter>b\"}</rfl:parameter><|call|>";
+        let tools = json!([tool("save", json!({"doc": {"type": "object"}}))]);
+        let mut job = job("beam", "none", input, tools);
+        let lenient = parse(&job)?.events;
+        job.argument_framing = ArgumentFraming::SchemaConstrained;
+        let framed = parse(&job)?.events;
+        let [Event::ToolCall { arguments, .. }] = framed.as_slice() else {
+            anyhow::bail!("expected one call: {framed:?}");
+        };
+        let expected = json!({"doc": {"note": "a</rfl:parameter>b"}});
+        ensure!(
+            serde_json::from_str::<Value>(arguments)? == expected,
+            "{arguments}"
+        );
+        ensure!(lenient != framed, "framing changed nothing: {lenient:?}");
         Ok(())
     }
 
