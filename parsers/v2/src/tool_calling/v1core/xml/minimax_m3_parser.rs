@@ -8,8 +8,8 @@ use serde_json::Value;
 use super::super::ToolDefinition;
 use super::super::config::MiniMaxM3ParserConfig;
 use crate::tool_calling::arguments::{
-    ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number, normalize_decimal_spelling,
-    parsed_json_literal, raw_number_literal, resolve_local_schema_ref,
+    MAX_SCHEMA_DEPTH, ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number,
+    normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
 };
 
 // Builds the marker that introduces an individual function invocation before attributes.
@@ -148,7 +148,7 @@ fn parse_parameters(
 }
 
 fn parameter_schema<'a>(root: &'a Value, name: &str) -> Option<Cow<'a, Value>> {
-    let (required, alternatives) = SchemaWalker::new(root).parameter_schemas(name);
+    let (required, alternatives) = SchemaFacts::new(root).parameter_schemas(name);
     if required.len() > 1 {
         return Some(Cow::Owned(serde_json::json!({"allOf": required})));
     }
@@ -167,12 +167,14 @@ fn parameter_schema<'a>(root: &'a Value, name: &str) -> Option<Cow<'a, Value>> {
 
 /// Native XML does not encode whether a scalar-looking value was a string.
 /// Use the same bounded schema interpretation as the parser when deciding if
-/// guided generation needs JSON to preserve that distinction.
+/// guided generation needs JSON to preserve that distinction. A string whose
+/// null cannot be proven or excluded stays on JSON, since the parser keeps `null`
+/// as text unless null is proven.
 pub(crate) fn native_types_require_json(root: &Value, schema: &Value) -> bool {
-    let mut walker = SchemaWalker::new(root);
+    let mut walker = SchemaFacts::new(root);
     let string = walker.has_type(Some(schema), "string");
     let mixed = string
-        && (walker.permits_null(schema) == Some(true)
+        && (walker.permits_null(schema) != Some(false)
             || ["integer", "number", "boolean", "object", "array"]
                 .iter()
                 .any(|kind| walker.has_type(Some(schema), kind)));
@@ -180,12 +182,13 @@ pub(crate) fn native_types_require_json(root: &Value, schema: &Value) -> bool {
 }
 
 /// Nested XML identifies an object or an array, but not which union alternative
-/// it belongs to. `object_child` types a child only when exactly one alternative
-/// can describe an object, and `array_item` reads the first alternative's
-/// `items`. Report unions the native grammar would render as nested tags but
-/// the parser could not type, so the builder keeps them on the JSON path.
+/// it belongs to. `object_children` types a child through a union only when
+/// exactly one alternative can describe an object, and `array_items` combines the
+/// `items` of every alternative that can describe an array. Report unions the
+/// native grammar would render as nested tags but the parser could not type, so
+/// the builder keeps them on the JSON path.
 pub(crate) fn native_union_children_ambiguous(root: &Value, schema: &Value) -> bool {
-    let mut walker = SchemaWalker::new(root);
+    let mut walker = SchemaFacts::new(root);
     // Empty objects and arrays have identical native tags, including when the
     // alternatives are expressed as a type list or reached through a reference.
     if walker.has_type(Some(schema), "object") && walker.has_type(Some(schema), "array") {
@@ -204,7 +207,7 @@ pub(crate) fn native_union_children_ambiguous(root: &Value, schema: &Value) -> b
             .count();
         let arrays = branches
             .iter()
-            .filter(|branch| walker.array_item(Some(branch)).is_some())
+            .filter(|branch| !walker.array_items(branch).is_empty())
             .count();
         if objects > 1 || arrays > 1 {
             return true;
@@ -253,24 +256,33 @@ fn path_kind(root: &Value, path: &[String]) -> M3ParameterKind {
     let Some(first) = path.first() else {
         return M3ParameterKind::Buffered;
     };
-    let Some(mut schema) = parameter_schema(root, first) else {
+    let Some(schema) = parameter_schema(root, first) else {
         return M3ParameterKind::Buffered;
     };
-    for tag in &path[1..] {
-        let mut walker = SchemaWalker::new(root);
-        let child = if tag == "item" {
-            walker.array_item(Some(&schema))
-        } else {
-            None
-        }
-        .or_else(|| walker.object_child(&schema, tag));
-        let Some(child) = child else {
-            return M3ParameterKind::Buffered;
-        };
-        schema = Cow::Owned(child.clone());
+    if path.len() == 1 {
+        return schema_kind(root, &schema);
     }
-    let schema = schema.as_ref();
-    let mut walker = SchemaWalker::new(root);
+    // Nested tags only decide ownership: a tag owns its text exactly when the
+    // nested parser treats it as a literal string, i.e. some child schema is one.
+    let mut schemas = vec![schema.as_ref()];
+    for tag in &path[1..] {
+        schemas = child_schemas(root, &schemas, tag);
+        if schemas.is_empty() {
+            return M3ParameterKind::Buffered;
+        }
+    }
+    if schemas
+        .iter()
+        .any(|&schema| is_literal_string(Some(schema), root))
+    {
+        M3ParameterKind::LiteralString { streamable: false }
+    } else {
+        M3ParameterKind::Buffered
+    }
+}
+
+fn schema_kind(root: &Value, schema: &Value) -> M3ParameterKind {
+    let mut walker = SchemaFacts::new(root);
     let string = walker.has_type(Some(schema), "string");
     let object = walker.has_type(Some(schema), "object");
     let array = walker.has_type(Some(schema), "array");
@@ -374,7 +386,7 @@ fn parse_parameter_value(
     root_schema: &Value,
     config: &MiniMaxM3ParserConfig,
 ) -> ParsedValue {
-    let mut walker = SchemaWalker::new(root_schema);
+    let mut walker = SchemaFacts::new(root_schema);
     let literal_string = walker.has_type(schema, "string")
         && !walker.has_type(schema, "object")
         && !walker.has_type(schema, "array");
@@ -386,7 +398,7 @@ fn parse_parameter_value(
 }
 
 fn is_literal_string(schema: Option<&Value>, root_schema: &Value) -> bool {
-    let mut walker = SchemaWalker::new(root_schema);
+    let mut walker = SchemaFacts::new(root_schema);
     walker.has_type(schema, "string")
         && !walker.has_type(schema, "object")
         && !walker.has_type(schema, "array")
@@ -468,10 +480,11 @@ fn parse_nested_minimax_xml(
             if tag.is_empty() {
                 continue;
             }
-            let child_schemas = stack
-                .last()
-                .expect("stack has current item")
-                .schema_for_child(tag.as_str());
+            let child_schemas = child_schemas(
+                root_schema,
+                &stack.last().expect("stack has current item").schema,
+                tag.as_str(),
+            );
             let child_value = if SchemaFacts::new(root_schema)
                 .may_describe_array_constraints(&child_schemas)
                 && chunks
@@ -623,26 +636,25 @@ impl<'a> StackItem<'a> {
             self.texts.push(text.to_string());
         }
     }
+}
 
-    // Finds the schema that should be used for a nested child tag.
-    fn schema_for_child(&self, tag: &str) -> Vec<&'a Value> {
-        let mut schemas = SchemaFacts::new(self.root_schema);
-        if tag == "item" {
-            let items = self
-                .schema
-                .iter()
-                .flat_map(|schema| schemas.array_items(schema))
-                .collect::<Vec<_>>();
-            if !items.is_empty() {
-                return items;
-            }
-        }
-
-        self.schema
+// `<item>` reads array items when the parents declare any; other tags read object members.
+fn child_schemas<'a>(root: &'a Value, parents: &[&'a Value], tag: &str) -> Vec<&'a Value> {
+    let mut schemas = SchemaFacts::new(root);
+    if tag == "item" {
+        let items = parents
             .iter()
-            .flat_map(|schema| schemas.object_children(schema, tag))
-            .collect()
+            .flat_map(|schema| schemas.array_items(schema))
+            .collect::<Vec<_>>();
+        if !items.is_empty() {
+            return items;
+        }
     }
+
+    parents
+        .iter()
+        .flat_map(|schema| schemas.object_children(schema, tag))
+        .collect()
 }
 
 // Looks up the selected tool's parameter schema so parsed strings can be type-coerced.
@@ -661,7 +673,7 @@ fn get_arguments_config<'a>(
 // Converts a scalar XML text value into the schema-expected JSON type when possible.
 // Values are literal text: the chat template renders `{{ val }}` unescaped.
 fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) -> ParsedValue {
-    let mut schemas = SchemaWalker::new(root_schema);
+    let mut schemas = SchemaFacts::new(root_schema);
     let value = raw.to_string();
     let trimmed = value.trim();
 
@@ -687,7 +699,7 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) 
             || !["integer", "number", "boolean", "object", "array"]
                 .iter()
                 .any(|kind| schemas.type_constraint(schema, kind, false) == Some(true))))
-        || SchemaFacts::new(root_schema).has_type_constraints(&[schema], "enum")
+        || SchemaFacts::new(root_schema).has_explicit_type(&[schema], "enum")
     {
         return ParsedValue::from(Value::String(value));
     }
@@ -792,461 +804,10 @@ fn convert_scalar_value_with_schemas(
     }
 }
 
-// Bound graph traversal as well as recursion: shared references can expand
-// exponentially even when there are no cycles. Exhaustion preserves untyped output.
-const MAX_SCHEMA_WORK: usize = 1024;
-const MAX_SCHEMA_DEPTH: usize = 64;
-
-// Each lookup tracks its own schema path: recursive schemas may be revisited
-// after consuming another XML child, but reference/composition cycles cannot loop.
-struct SchemaWalker<'a> {
-    root: &'a Value,
-    path: Vec<&'a Value>,
-    remaining_work: usize,
-    exhausted: bool,
-}
-
-impl<'a> SchemaWalker<'a> {
-    fn new(root: &'a Value) -> Self {
-        Self {
-            root,
-            path: Vec::new(),
-            remaining_work: MAX_SCHEMA_WORK,
-            exhausted: false,
-        }
-    }
-
-    fn spend_work(&mut self) -> bool {
-        if self.exhausted || self.remaining_work == 0 {
-            self.exhausted = true;
-            return false;
-        }
-        self.remaining_work -= 1;
-        true
-    }
-
-    // Leave unknown references and cycles untouched; do not discard sibling constraints.
-    fn resolve_ref(&mut self, schema: &'a Value) -> Option<&'a Value> {
-        let mut current = schema;
-        let mut visited = Vec::new();
-        while let Some(reference) = current.get("$ref").and_then(Value::as_str) {
-            if !self.spend_work() {
-                return None;
-            }
-            if current.as_object().is_some_and(|object| {
-                object.keys().any(|key| {
-                    !matches!(
-                        key.as_str(),
-                        "$ref"
-                            | "$defs"
-                            | "definitions"
-                            | "title"
-                            | "description"
-                            | "default"
-                            | "examples"
-                            | "$comment"
-                    )
-                })
-            }) || visited.contains(&reference)
-            {
-                return Some(schema);
-            }
-            let Some(target) = resolve_local_schema_ref(reference, self.root) else {
-                return Some(schema);
-            };
-            visited.push(reference);
-            current = target;
-        }
-        Some(current)
-    }
-
-    fn with_schema<T: Copy>(
-        &mut self,
-        schema: &'a Value,
-        fallback: T,
-        query: impl FnOnce(&mut Self, &'a Value) -> T,
-    ) -> T {
-        if !self.spend_work() || self.path.len() >= MAX_SCHEMA_DEPTH {
-            self.exhausted = true;
-            return fallback;
-        }
-        let Some(schema) = self.resolve_ref(schema) else {
-            return fallback;
-        };
-        if self.path.iter().any(|seen| std::ptr::eq(*seen, schema)) {
-            return fallback;
-        }
-        self.path.push(schema);
-        let result = query(self, schema);
-        self.path.pop();
-        if self.exhausted { fallback } else { result }
-    }
-
-    // Unknown constraints remain possible, preserving object-union ambiguity.
-    fn may_describe_object(&mut self, schema: &'a Value) -> bool {
-        self.with_schema(schema, true, |walker, schema| {
-            if schema == &Value::Bool(false) {
-                return false;
-            }
-            if let Some(ty) = schema.get("type") {
-                let object = ty.as_str() == Some("object")
-                    || ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "object"));
-                if !object {
-                    return false;
-                }
-            }
-            if schema.get("const").is_some_and(|value| !value.is_object())
-                || schema
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(Value::is_object))
-            {
-                return false;
-            }
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let possible = if keyword == "allOf" {
-                        branches
-                            .iter()
-                            .all(|branch| walker.may_describe_object(branch))
-                    } else {
-                        branches
-                            .iter()
-                            .any(|branch| walker.may_describe_object(branch))
-                    };
-                    if !possible {
-                        return false;
-                    }
-                }
-            }
-            true
-        })
-    }
-
-    // Tool parameters may be declared at the root, under allOf, or under anyOf/oneOf
-    // variants. Root and allOf declarations always apply, so they win over variant
-    // declarations; a parameter declared only by several variants is typed by their union.
-    fn parameter_schemas(&mut self, tag: &str) -> (Vec<&'a Value>, Vec<&'a Value>) {
-        let mut required = Vec::new();
-        let mut alternatives = Vec::new();
-        self.collect_parameter_schemas(self.root, tag, false, &mut required, &mut alternatives);
-        if self.exhausted {
-            (Vec::new(), Vec::new())
-        } else {
-            (required, alternatives)
-        }
-    }
-
-    fn collect_parameter_schemas(
-        &mut self,
-        schema: &'a Value,
-        tag: &str,
-        in_variant: bool,
-        required: &mut Vec<&'a Value>,
-        alternatives: &mut Vec<&'a Value>,
-    ) {
-        self.with_schema(schema, (), |walker, schema| {
-            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
-                let declared = if in_variant {
-                    &mut *alternatives
-                } else {
-                    &mut *required
-                };
-                if !declared.contains(&child) {
-                    declared.push(child);
-                }
-            }
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let in_variant = in_variant || keyword != "allOf";
-                    for branch in branches {
-                        walker.collect_parameter_schemas(
-                            branch,
-                            tag,
-                            in_variant,
-                            required,
-                            alternatives,
-                        );
-                    }
-                }
-            }
-        })
-    }
-
-    // Nested XML identifies an object, but does not choose among object variants.
-    fn object_child(&mut self, schema: &'a Value, tag: &str) -> Option<&'a Value> {
-        self.with_schema(schema, None, |walker, schema| {
-            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
-                return Some(child);
-            }
-            if let Some(additional) = schema
-                .get("additionalProperties")
-                .filter(|value| value.is_object())
-            {
-                return Some(additional);
-            }
-            let branches = match (schema.get("anyOf"), schema.get("oneOf")) {
-                (Some(branches), None) | (None, Some(branches)) => branches.as_array()?,
-                _ => return None,
-            };
-            let mut objects = branches
-                .iter()
-                .filter(|branch| walker.may_describe_object(branch));
-            let object = objects.next()?;
-            if objects.next().is_some() {
-                return None;
-            }
-            walker.object_child(object, tag)
-        })
-    }
-
-    fn permits_null(&mut self, schema: &'a Value) -> Option<bool> {
-        self.with_schema(schema, None, |walker, schema| {
-            if let Some(allowed) = schema.as_bool() {
-                return Some(allowed);
-            }
-            if let Some(ty) = schema.get("type") {
-                let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
-                if !nullable
-                    && ty.as_str() != Some("null")
-                    && !ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "null"))
-                {
-                    return Some(false);
-                }
-            }
-            if schema.get("const").is_some_and(|value| !value.is_null())
-                || schema
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(Value::is_null))
-            {
-                return Some(false);
-            }
-            let mut result = match schema.get("$ref") {
-                Some(reference) => reference
-                    .as_str()
-                    .and_then(|reference| resolve_local_schema_ref(reference, walker.root))
-                    .and_then(|target| walker.permits_null(target)),
-                None => Some(true),
-            };
-            if result == Some(false) {
-                return Some(false);
-            }
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let mut matches = 0;
-                    let mut rejects = 0;
-                    let mut unknown = false;
-                    for branch in branches {
-                        match walker.permits_null(branch) {
-                            Some(true) => matches += 1,
-                            Some(false) => rejects += 1,
-                            None => unknown = true,
-                        }
-                    }
-                    let permitted = match keyword {
-                        "allOf" if rejects > 0 => Some(false),
-                        "anyOf" if matches > 0 => Some(true),
-                        "oneOf" if matches > 1 => Some(false),
-                        _ if unknown => None,
-                        "allOf" => Some(true),
-                        "anyOf" => Some(false),
-                        _ => Some(matches == 1),
-                    };
-                    if permitted == Some(false) {
-                        return Some(false);
-                    }
-                    if permitted.is_none() {
-                        result = None;
-                    }
-                }
-            }
-            if let Some(branch) = schema.get("not") {
-                match walker.permits_null(branch) {
-                    Some(true) => return Some(false),
-                    Some(false) => {}
-                    None => result = None,
-                }
-            }
-            result
-        })
-    }
-
-    fn has_type(&mut self, schema: Option<&'a Value>, expected: &str) -> bool {
-        schema.is_some_and(|schema| self.type_constraint(schema, expected, true) == Some(true))
-    }
-
-    // A string literal branch such as `const: "auto"` must not hide a numeric
-    // alternative when the input is "42". Only reject known type/literal
-    // contradictions here; this coercion helper is not a schema validator.
-    fn rejects_string_literal(&mut self, schema: &'a Value, raw: &str) -> bool {
-        self.with_schema(schema, false, |walker, schema| {
-            if schema == &Value::Bool(false) {
-                return true;
-            }
-            if schema.get("type").is_some_and(|ty| {
-                ty.as_str() != Some("string")
-                    && !ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "string"))
-            }) || schema
-                .get("const")
-                .is_some_and(|value| value.as_str() != Some(raw))
-                || schema
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(|value| value.as_str() == Some(raw)))
-            {
-                return true;
-            }
-            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
-                && walker.rejects_string_literal(target, raw)
-            {
-                return true;
-            }
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let rejected = if keyword == "allOf" {
-                        branches
-                            .iter()
-                            .any(|branch| walker.rejects_string_literal(branch, raw))
-                    } else {
-                        branches
-                            .iter()
-                            .all(|branch| walker.rejects_string_literal(branch, raw))
-                    };
-                    if rejected {
-                        return true;
-                    }
-                }
-            }
-            false
-        })
-    }
-
-    // None means no known type constraint; false means this type is excluded.
-    // Sibling keywords and allOf intersect, while anyOf/oneOf combine alternatives.
-    fn type_constraint(
-        &mut self,
-        schema: &'a Value,
-        expected: &str,
-        infer_literals: bool,
-    ) -> Option<bool> {
-        self.with_schema(schema, None, |walker, schema| {
-            if schema == &Value::Bool(false) {
-                return Some(false);
-            }
-            let matches =
-                |name: &str| name == expected || (name == "number" && expected == "integer");
-            let mut constraint = schema.get("type").and_then(|ty| {
-                ty.as_str().map(matches).or_else(|| {
-                    ty.as_array()
-                        .map(|types| types.iter().filter_map(Value::as_str).any(matches))
-                })
-            });
-            // A reference and its sibling constraints apply together. Keep the
-            // sibling node intact and intersect the target's facts with it.
-            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
-                && let Some(permits) = walker.type_constraint(target, expected, infer_literals)
-            {
-                constraint = Some(constraint.unwrap_or(true) && permits);
-            }
-            // A plain negated type can exclude strings without declaring a
-            // positive type. More complex negations do not supply a safe hint.
-            if expected != "enum"
-                && let Some(negated) = schema.get("not").and_then(Value::as_object)
-                && negated.keys().all(|key| {
-                    matches!(
-                        key.as_str(),
-                        "type" | "title" | "description" | "default" | "examples" | "$comment"
-                    )
-                })
-                && let Some(ty) = negated.get("type")
-                && let Some(excluded) = ty.as_str().map(matches).or_else(|| {
-                    ty.as_array()
-                        .map(|types| types.iter().filter_map(Value::as_str).any(matches))
-                })
-            {
-                constraint = Some(constraint.unwrap_or(true) && !excluded);
-            }
-            // Literal constraints can establish a type even without `type`.
-            // Intersect them with explicit types so an enum cannot widen a
-            // sibling constraint. Ambiguous unions still preserve strings.
-            let literal_matches = |value: &Value| match expected {
-                "string" => value.is_string(),
-                "boolean" => value.is_boolean(),
-                "null" => value.is_null(),
-                "object" => value.is_object(),
-                "array" => value.is_array(),
-                "number" => value.is_number(),
-                "integer" => {
-                    value.is_i64()
-                        || value.is_u64()
-                        || value.as_f64().is_some_and(|number| number.fract() == 0.0)
-                }
-                _ => false,
-            };
-            if infer_literals && let Some(value) = schema.get("const") {
-                constraint = Some(constraint.unwrap_or(true) && literal_matches(value));
-            }
-            if infer_literals && let Some(values) = schema.get("enum").and_then(Value::as_array) {
-                constraint = Some(constraint.unwrap_or(true) && values.iter().any(literal_matches));
-            }
-            for key in ["anyOf", "oneOf"] {
-                if let Some(options) = schema.get(key).and_then(Value::as_array) {
-                    // Branches without known type constraints supply no hint.
-                    if let Some(permits) = options
-                        .iter()
-                        .filter_map(|option| {
-                            walker.type_constraint(option, expected, infer_literals)
-                        })
-                        .reduce(|left, right| left || right)
-                    {
-                        constraint = Some(constraint.unwrap_or(true) && permits);
-                    }
-                }
-            }
-            if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
-                for branch in branches {
-                    if let Some(permits) = walker.type_constraint(branch, expected, infer_literals)
-                    {
-                        constraint = Some(constraint.unwrap_or(true) && permits);
-                    }
-                }
-            }
-            constraint
-        })
-    }
-
-    fn array_item(&mut self, schema: Option<&'a Value>) -> Option<&'a Value> {
-        self.with_schema(schema?, None, |walker, schema| {
-            if let Some(items) = schema.get("items") {
-                return Some(items);
-            }
-            for key in ["anyOf", "oneOf"] {
-                if let Some(options) = schema.get(key).and_then(Value::as_array) {
-                    for option in options {
-                        if let Some(items) = walker.array_item(Some(option)) {
-                            return Some(items);
-                        }
-                    }
-                }
-            }
-            None
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tool_calling::arguments::{MAX_SCHEMA_DEPTH, MAX_SCHEMA_WORK};
+    use crate::tool_calling::arguments::MAX_SCHEMA_WORK;
     use serde_json::json;
 
     #[test]
@@ -1790,11 +1351,16 @@ mod tests {
             "bad%0":{"type":"integer"},
             "bad%GG":{"type":"integer"}
         }});
-        let chain = serde_json::json!({"$ref":"#/$defs/alias","description":"value"});
-        assert_eq!(
-            SchemaFacts::new(&root).resolve_ref(&chain).unwrap(),
-            &serde_json::json!({"type":"object"})
-        );
+        // Definition containers beside a reference hold targets, not constraints.
+        for chain in [
+            serde_json::json!({"$ref":"#/$defs/alias","description":"value"}),
+            serde_json::json!({"$ref":"#/$defs/alias","$defs":{},"definitions":{}}),
+        ] {
+            assert_eq!(
+                SchemaFacts::new(&root).resolve_ref(&chain).unwrap(),
+                &serde_json::json!({"type":"object"})
+            );
+        }
         for schema in [
             serde_json::json!({"$ref":"#/$defs/missing"}),
             serde_json::json!({"$ref":"https://example.test/schema"}),
@@ -2196,6 +1762,74 @@ mod tests {
             let args: Value = serde_json::from_str(&arguments).unwrap();
             assert_eq!(args, expected);
         }
+    }
+
+    #[test]
+    fn composed_nested_strings_own_their_close_tags() {
+        // Tag ownership and value conversion read the same child schemas, so a
+        // string reached through `allOf` keeps a parent close tag as its text.
+        for (payload, body, expected) in [
+            (
+                json!({"type": "object", "allOf": [{"properties": {"note": {"type": "string"}}}]}),
+                format!("{TOK}<note>see {TOK}</payload> docs{TOK}</note>"),
+                json!({"note": format!("see {TOK}</payload> docs")}),
+            ),
+            (
+                json!({"allOf": [{"type": "array", "items": {"type": "string"}}]}),
+                format!("{TOK}<item>see {TOK}</payload> docs{TOK}</item>"),
+                json!([format!("see {TOK}</payload> docs")]),
+            ),
+        ] {
+            let tools = vec![ToolDefinition {
+                name: "f".into(),
+                parameters: Some(json!({"type": "object", "properties": {
+                    "payload": payload, "size": {"type": "integer"}
+                }})),
+            }];
+            let wire = format!(
+                "{TOK}<invoke name=\"f\">{TOK}<payload>{body}{TOK}</payload>\
+                 {TOK}<size>2{TOK}</size>{TOK}</invoke>"
+            );
+            let (_, arguments) =
+                parse_minimax_m3_invoke(&wire, &MiniMaxM3ParserConfig::default(), &tools)
+                    .unwrap()
+                    .unwrap();
+            let args: Value = serde_json::from_str(&arguments).unwrap();
+            assert_eq!(args, json!({"payload": expected, "size": 2}));
+        }
+    }
+
+    #[test]
+    fn referenced_union_branches_describe_objects_only_through_their_target() {
+        // A `$ref` with sibling keywords applies both, so a branch whose target
+        // is a string cannot hold nested tags and leaves the union unambiguous.
+        let root = json!({"$defs": {"Text": {"type": "string"}, "Obj": {"type": "object"}}});
+        let union = |target: &str| {
+            json!({"anyOf": [
+                {"$ref": format!("#/$defs/{target}"), "properties": {"a": {"type": "string"}}},
+                {"type": "object", "properties": {"b": {"type": "string"}}}
+            ]})
+        };
+        assert!(!native_union_children_ambiguous(&root, &union("Text")));
+        assert!(native_union_children_ambiguous(&root, &union("Obj")));
+    }
+
+    #[test]
+    fn null_needs_a_proven_match_in_a_scoped_schema() {
+        // `$id` below the root changes the reference scope, so null is not proven
+        // there and the literal text stays a string. The grammar builder keeps
+        // such a string on the JSON path, where null stays distinguishable.
+        let parameters = json!({"type": "object", "properties": {
+            "v": {"$id": "https://example.com/v", "type": ["string", "null"]}
+        }});
+        assert!(native_types_require_json(
+            &parameters,
+            &parameters["properties"]["v"]
+        ));
+        assert_eq!(
+            parse_with_parameters(parameters, &format!("{TOK}<v>null{TOK}</v>")),
+            json!({"v": "null"})
+        );
     }
 
     #[test]
