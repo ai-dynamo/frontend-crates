@@ -1152,6 +1152,39 @@ mod tests {
     }
 
     #[test]
+    fn null_coercion_evaluates_scoped_schemas() {
+        // A nested `$id` rebases only its references; its own keywords still apply.
+        for (parameter, expected) in [
+            (
+                serde_json::json!({"$id": "nested", "type": ["string", "null"]}),
+                Value::Null,
+            ),
+            (
+                serde_json::json!({"$id": "nested", "type": "integer", "nullable": true}),
+                Value::Null,
+            ),
+            (
+                serde_json::json!({"$id": "nested", "enum": ["a", null]}),
+                Value::Null,
+            ),
+            (
+                serde_json::json!({"$id": "nested", "type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"$id": "nested", "anyOf": [{"$ref": "#/$defs/Nullable"}]}),
+                serde_json::json!("null"),
+            ),
+        ] {
+            assert_eq!(
+                parse_null_with_parameters(null_ref_parameters(parameter.clone())),
+                expected,
+                "{parameter}"
+            );
+        }
+    }
+
+    #[test]
     fn null_coercion_combines_unknown_ref_branches() {
         for (parameter, permits_null) in [
             (

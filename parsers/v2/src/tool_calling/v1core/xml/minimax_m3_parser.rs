@@ -167,18 +167,19 @@ fn parameter_schema<'a>(root: &'a Value, name: &str) -> Option<Cow<'a, Value>> {
 
 /// Native XML does not encode whether a scalar-looking value was a string.
 /// Use the same bounded schema interpretation as the parser when deciding if
-/// guided generation needs JSON to preserve that distinction. A string whose
+/// guided generation needs JSON to preserve that distinction. Any schema whose
 /// null cannot be proven or excluded stays on JSON, since the parser keeps `null`
-/// as text unless null is proven.
+/// as text unless null is proven; so does a string that may be null.
 pub(crate) fn native_types_require_json(root: &Value, schema: &Value) -> bool {
     let mut walker = SchemaFacts::new(root);
+    let null = walker.permits_null(schema);
     let string = walker.has_type(Some(schema), "string");
     let mixed = string
-        && (walker.permits_null(schema) != Some(false)
+        && (null != Some(false)
             || ["integer", "number", "boolean", "object", "array"]
                 .iter()
                 .any(|kind| walker.has_type(Some(schema), kind)));
-    mixed || walker.exhausted
+    mixed || null.is_none() || walker.exhausted
 }
 
 /// Nested XML identifies an object or an array, but not which union alternative
@@ -1815,21 +1816,61 @@ mod tests {
     }
 
     #[test]
-    fn null_needs_a_proven_match_in_a_scoped_schema() {
-        // `$id` below the root changes the reference scope, so null is not proven
-        // there and the literal text stays a string. The grammar builder keeps
-        // such a string on the JSON path, where null stays distinguishable.
-        let parameters = json!({"type": "object", "properties": {
-            "v": {"$id": "https://example.com/v", "type": ["string", "null"]}
+    fn scoped_schemas_keep_their_null_facts() {
+        // `$id` below the root rebases only the references inside it; its own
+        // `type` still decides whether the text `null` is JSON null.
+        let id = "https://example.com/v";
+        for schema in [
+            json!({"$id": id, "type": ["integer", "null"]}),
+            json!({"$id": id, "type": "null"}),
+            json!({"$id": id, "type": ["boolean", "null"]}),
+            json!({"$id": id, "type": ["array", "null"]}),
+            json!({"$id": id, "type": ["string", "null"]}),
+            json!({"$id": id, "type": "integer", "nullable": true}),
+            json!({"$id": id, "enum": ["a", null]}),
+        ] {
+            let parameters = json!({"type": "object", "properties": {"v": schema}});
+            assert_eq!(
+                parse_with_parameters(parameters, &format!("{TOK}<v>null{TOK}</v>")),
+                json!({"v": null}),
+                "{schema}"
+            );
+        }
+
+        // A reference inside the resource resolves against its own base, so null
+        // stays unproven there; the grammar keeps such schemas on JSON.
+        let parameters = json!({"type": "object", "$defs": {"N": {"type": ["integer", "null"]}},
+            "properties": {
+                "unknown": {"$id": id, "type": ["integer", "null"], "anyOf": [{"$ref": "#/$defs/N"}]},
+                "proven": {"$id": id, "type": ["integer", "null"]},
+                "text": {"$id": id, "type": ["string", "null"]},
+                "plain": {"$id": id, "type": "string"},
         }});
-        assert!(native_types_require_json(
-            &parameters,
-            &parameters["properties"]["v"]
-        ));
+        let property = |name: &str| &parameters["properties"][name];
+        assert!(native_types_require_json(&parameters, property("unknown")));
+        assert!(native_types_require_json(&parameters, property("text")));
+        assert!(!native_types_require_json(&parameters, property("proven")));
         assert_eq!(
-            parse_with_parameters(parameters, &format!("{TOK}<v>null{TOK}</v>")),
-            json!({"v": "null"})
+            parse_with_parameters(
+                parameters.clone(),
+                &format!("{TOK}<unknown>null{TOK}</unknown>")
+            ),
+            json!({"unknown": "null"})
         );
+
+        // A non-nullable scoped string streams while open; a nullable one waits.
+        let tools = vec![ToolDefinition {
+            name: "f".into(),
+            parameters: Some(parameters.clone()),
+        }];
+        assert!(matches!(
+            parameter_kind("f", "plain", &tools),
+            M3ParameterKind::LiteralString { streamable: true }
+        ));
+        assert!(matches!(
+            parameter_kind("f", "text", &tools),
+            M3ParameterKind::LiteralString { streamable: false }
+        ));
     }
 
     #[test]

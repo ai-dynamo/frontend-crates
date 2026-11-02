@@ -274,7 +274,7 @@ impl<'a> SchemaFacts<'a> {
             MAX_SCHEMA_DEPTH,
             self.remaining_work.min(MAX_NULL_SCHEMA_NODES),
         );
-        let result = walker.matches(schema, 0, 0);
+        let result = walker.matches(schema, 0, 0, false);
         self.remaining_work = walker.remaining;
         if walker.exhausted {
             self.exhausted = true;
@@ -531,29 +531,29 @@ impl<'a> SchemaFacts<'a> {
     pub(crate) fn array_item_permits_null(&mut self, schemas: &[&'a Value]) -> bool {
         let mut hint = None;
         for schema in schemas {
-            hint = intersect_type_hints(hint, self.array_item_null_hint(schema));
-            if hint == Some(false) {
+            hint = intersect_item_null(hint, self.array_item_null_hint(schema));
+            if hint == Some(Some(false)) {
                 return false;
             }
         }
-        hint == Some(true)
+        hint == Some(Some(true))
     }
 
-    fn array_item_null_hint(&mut self, schema: &'a Value) -> Option<bool> {
+    // None when no item constraint applies; Some(None) when one applies but its
+    // null answer is unknown, which an applicable sibling's proof cannot override.
+    fn array_item_null_hint(&mut self, schema: &'a Value) -> Option<Option<bool>> {
         self.with_schema(schema, None, |walker, schema| {
-            let mut hint = schema
-                .get("items")
-                .and_then(|items| walker.permits_null(items));
+            let mut hint = schema.get("items").map(|items| walker.permits_null(items));
 
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
                 && let Some(target) = resolve_local_schema_ref(reference, walker.root)
             {
-                hint = intersect_type_hints(hint, walker.array_item_null_hint(target));
+                hint = intersect_item_null(hint, walker.array_item_null_hint(target));
             }
 
             if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
                 for branch in branches {
-                    hint = intersect_type_hints(hint, walker.array_item_null_hint(branch));
+                    hint = intersect_item_null(hint, walker.array_item_null_hint(branch));
                 }
             }
 
@@ -568,12 +568,12 @@ impl<'a> SchemaFacts<'a> {
                         continue;
                     }
                     match walker.array_item_null_hint(branch) {
-                        Some(true) => {
+                        Some(Some(true)) => {
                             branch_hint = Some(true);
                             break;
                         }
-                        Some(false) => {}
-                        None => unknown = true,
+                        Some(Some(false)) => {}
+                        Some(None) | None => unknown = true,
                     }
                 }
                 let alternatives = match (branch_hint, unknown) {
@@ -582,7 +582,7 @@ impl<'a> SchemaFacts<'a> {
                     (None, false) => Some(false),
                     (Some(false), _) => Some(false),
                 };
-                hint = intersect_type_hints(hint, alternatives);
+                hint = intersect_item_null(hint, Some(alternatives));
             }
             hint
         })
@@ -652,7 +652,17 @@ const MAX_NULL_SCHEMA_NODES: usize = 4096;
 pub(crate) fn schema_permits_null(schema: &Value, root: &Value) -> bool {
     let mut walker =
         NullSchemaWalker::new(root, schema, MAX_NULL_SCHEMA_NODES, MAX_NULL_SCHEMA_NODES);
-    walker.matches(schema, 0, 0) == Some(true)
+    walker.matches(schema, 0, 0, false) == Some(true)
+}
+
+fn intersect_item_null(
+    left: Option<Option<bool>>,
+    right: Option<Option<bool>>,
+) -> Option<Option<bool>> {
+    match (left, right) {
+        (None, other) | (other, None) => other,
+        (Some(left), Some(right)) => Some(intersect_null_matches(left, right)),
+    }
 }
 
 fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<bool> {
@@ -728,7 +738,14 @@ impl<'a> NullSchemaWalker<'a> {
         }
     }
 
-    fn matches(&mut self, schema: &'a Value, ref_depth: usize, depth: usize) -> Option<bool> {
+    // `scoped` marks a node inside a nested `$id` resource in this walk.
+    fn matches(
+        &mut self,
+        schema: &'a Value,
+        ref_depth: usize,
+        depth: usize,
+        scoped: bool,
+    ) -> Option<bool> {
         let Some(work) = self.remaining.checked_sub(1) else {
             self.exhausted = true;
             return None;
@@ -744,14 +761,17 @@ impl<'a> NullSchemaWalker<'a> {
         if !schema.is_object()
             || schema.get("$dynamicRef").is_some()
             || schema.get("$recursiveRef").is_some()
-            || (schema.get("$id").is_some() && !std::ptr::eq(schema, self.root))
         {
             return None;
         }
+        // A nested `$id` rebases the references inside it, not its other keywords:
+        // only a reference within the resource stays unknown.
+        let scoped = scoped || (schema.get("$id").is_some() && !std::ptr::eq(schema, self.root));
         let mut permits = Some(true);
         if let Some(reference) = schema.get("$ref") {
             let target = reference
                 .as_str()
+                .filter(|_| !scoped)
                 .and_then(|reference| resolve_local_schema_ref(reference, self.root));
             permits = if let Some(target) = target
                 && ref_depth < MAX_NULL_SCHEMA_REF_DEPTH
@@ -761,7 +781,7 @@ impl<'a> NullSchemaWalker<'a> {
                     .any(|active| std::ptr::eq(*active, target))
             {
                 self.active_refs.push(target);
-                let result = self.matches(target, ref_depth + 1, depth + 1);
+                let result = self.matches(target, ref_depth + 1, depth + 1, false);
                 self.active_refs.pop();
                 result
             } else {
@@ -792,7 +812,7 @@ impl<'a> NullSchemaWalker<'a> {
                 let mut matches = 0;
                 let mut unknown = 0;
                 for branch in branches {
-                    match self.matches(branch, ref_depth, depth + 1) {
+                    match self.matches(branch, ref_depth, depth + 1, scoped) {
                         Some(true) => matches += 1,
                         Some(false) => {}
                         None => unknown += 1,
@@ -814,7 +834,7 @@ impl<'a> NullSchemaWalker<'a> {
             }
         }
         if let Some(not) = schema.get("not") {
-            let not_match = self.matches(not, ref_depth, depth + 1);
+            let not_match = self.matches(not, ref_depth, depth + 1, scoped);
             permits = intersect_null_matches(permits, not_match.map(|matches| !matches));
         }
         permits
@@ -928,5 +948,49 @@ mod structural_type_tests {
             "items": {"type": "number"}
         });
         assert!(SchemaFacts::new(&unresolved).may_describe_array(&unresolved));
+    }
+
+    #[test]
+    fn nested_ids_scope_only_their_references() {
+        let id = "https://example.com/v";
+        let root = json!({"$defs": {
+            "Nullable": {"type": ["integer", "null"]},
+            "Scoped": {"$id": "https://example.com/t", "type": ["integer", "null"]},
+        }});
+        for (schema, permits) in [
+            (json!({"$id": id, "type": ["integer", "null"]}), Some(true)),
+            (json!({"$id": id, "type": "integer"}), Some(false)),
+            (json!({"$id": id, "$ref": "#/$defs/Nullable"}), None),
+            (
+                json!({"$id": id, "anyOf": [{"$ref": "#/$defs/Nullable"}]}),
+                None,
+            ),
+            (
+                json!({"$id": id, "not": {"$ref": "#/$defs/Nullable"}}),
+                None,
+            ),
+            (json!({"$ref": "#/$defs/Scoped"}), Some(true)),
+            (json!({"$ref": "#/$defs/Nullable"}), Some(true)),
+            (json!({"$dynamicRef": "#/$defs/Nullable"}), None),
+            (json!(true), Some(true)),
+            (json!(false), Some(false)),
+        ] {
+            assert_eq!(
+                SchemaFacts::new(&root).permits_null(&schema),
+                permits,
+                "{schema}"
+            );
+        }
+    }
+
+    #[test]
+    fn array_item_null_needs_every_applicable_constraint() {
+        let nullable =
+            json!({"items": {"$id": "https://example.com/i", "type": ["string", "null"]}});
+        let unknown = json!({"items": {"$dynamicRef": "#meta"}});
+        let proven = json!({"type": "array", "allOf": [nullable.clone()]});
+        let unproven = json!({"type": "array", "allOf": [nullable, unknown]});
+        assert!(SchemaFacts::new(&proven).array_item_permits_null(&[&proven]));
+        assert!(!SchemaFacts::new(&unproven).array_item_permits_null(&[&unproven]));
     }
 }
