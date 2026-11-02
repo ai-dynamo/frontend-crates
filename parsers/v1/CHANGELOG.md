@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.0...dynamo-parsers-v11.0.1) - 2026-11-02
+
+### Bug fixes
+
+- *(parsers)* Resolve XML tool argument types through $ref, allOf, type arrays, not and if/then/else ([#517](https://github.com/ai-dynamo/frontend-crates/pull/517))
+
 ## [10.2.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.3...dynamo-parsers-v10.2.4) - 2026-10-31
 
 ### Bug fixes
