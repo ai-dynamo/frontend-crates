@@ -281,8 +281,11 @@ fn append_message_by_channel(reasoning_text: &mut String, normal_text: &mut Stri
         Some("analysis") | Some("commentary") | None => {}
         // Unknown channel name: a malformed header harmony still parsed. Treat
         // the content as the answer rather than dropping it, matching what the
-        // streaming path recovers via `unattributed_text`.
-        Some(_) => append_text_content(normal_text, &msg.content),
+        // streaming path recovers via `unattributed_text`. A directed message
+        // (`to=...`) is a tool envelope, not prose: drop it, as the
+        // stranded-header path refuses `to=` headers.
+        Some(_) if msg.recipient.is_none() => append_text_content(normal_text, &msg.content),
+        Some(_) => {}
     }
 }
 
@@ -290,6 +293,7 @@ fn append_current_by_channel(
     reasoning_text: &mut String,
     normal_text: &mut String,
     channel: Option<String>,
+    recipient: Option<&str>,
     current: String,
 ) {
     match channel.as_deref() {
@@ -299,7 +303,8 @@ fn append_current_by_channel(
         None => {}
         // See `append_message_by_channel`: an unrecognized channel is a
         // malformed header, not a reason to discard the model's output.
-        Some(_) => append_separated(normal_text, &current),
+        Some(_) if recipient.is_none() => append_separated(normal_text, &current),
+        Some(_) => {}
     }
 }
 
@@ -375,6 +380,21 @@ fn strip_harmony_special_tokens(text: &str) -> String {
     cleaned
 }
 
+/// Whether `<|start|>` opened the stranded header: the token right before the
+/// trailing `header_len` header tokens in the cumulative buffer. `<|start|>`
+/// is not kept in `header_tokens`, so this is the only place it is visible.
+fn header_opened_by_start(parser: &StreamableParser, header_len: usize) -> bool {
+    let Ok(start_token_id) = harmony_start_token_id() else {
+        return false;
+    };
+    let tokens = parser.tokens();
+    tokens
+        .len()
+        .checked_sub(header_len + 1)
+        .and_then(|idx| tokens.get(idx))
+        .is_some_and(|t| *t == start_token_id)
+}
+
 /// Recover the message a malformed harmony header stranded in `StreamState::Header`.
 ///
 /// When a gpt-oss model emits `<|channel|>final` followed by anything other than
@@ -443,11 +463,19 @@ fn recover_stranded_header_text(parser: &StreamableParser) -> Option<ParserResul
             (&decoded[..idx], channel, remainder)
         }
         // No channel marker at all: the header never got past the role name.
+        // A role word is header markup only when `<|start|>` opened this
+        // header. A parser constructed with a role starts in `Header` without
+        // one, so plain output such as `tools are ...` lands here as well and
+        // must not lose its leading word.
         None => {
-            let remainder = HARMONY_ROLE_NAMES
-                .iter()
-                .find_map(|role| decoded.strip_prefix(role))
-                .unwrap_or(decoded.as_str());
+            let remainder = if header_opened_by_start(parser, header_tokens.len()) {
+                HARMONY_ROLE_NAMES
+                    .iter()
+                    .find_map(|role| decoded.strip_prefix(role))
+                    .unwrap_or(decoded.as_str())
+            } else {
+                decoded.as_str()
+            };
             ("", None, remainder)
         }
     };
@@ -579,12 +607,13 @@ impl ReasoningParser for GptOssReasoningParser {
 
         let current = parser.current_content().unwrap_or_default();
         let current_channel = parser.current_channel();
-        if current_channel.as_deref() != Some("commentary") || parser.current_recipient().is_none()
-        {
+        let current_recipient = parser.current_recipient();
+        if current_channel.as_deref() != Some("commentary") || current_recipient.is_none() {
             append_current_by_channel(
                 &mut reasoning_text,
                 &mut normal_text,
                 current_channel,
+                current_recipient.as_deref(),
                 current,
             );
         }
@@ -815,6 +844,9 @@ impl ReasoningParser for GptOssReasoningParser {
                     // mistyped the header (`finalx`) or invented a channel.
                     // Harmony still decoded real content for it, so hold it
                     // and surface it at EOF instead of losing the message.
+                    // A directed one (`to=...`) is a tool envelope, not prose:
+                    // drop it, as the stranded-header path does.
+                    _ if current_recipient.is_some() => {}
                     _ => {
                         self.unattributed_text.push_str(&delta);
                     }
@@ -1632,6 +1664,85 @@ mod tests {
                 finished.normal_text, "",
                 "chunk_size={chunk_size}: stranded tool header must not be recovered as content"
             );
+        }
+    }
+
+    #[test] // issue #237
+    fn test_gpt_oss_unknown_channel_directed_payload_is_not_content() {
+        // A mistyped channel with a `to=functions.*` recipient is a tool
+        // envelope. Recovering it as the answer would hand the client raw tool
+        // arguments, so the unknown-channel path must drop it just as the
+        // stranded-header path refuses `to=` headers.
+        let completed = format!(
+            "{ANALYSIS_PREFIX}<|channel|>finalx to=functions.get_weather <|constrain|>json<|message|>{{\"location\":\"NYC\"}}<|call|>"
+        );
+        let truncated = format!(
+            "{ANALYSIS_PREFIX}<|channel|>finalx to=functions.get_weather <|constrain|>json<|message|>{{\"location\":\"NYC\"}}"
+        );
+        for text in [completed.as_str(), truncated.as_str()] {
+            // Only `finish` is asserted on: a chunk carrying `<|call|>` still
+            // goes through the raw tool-parser handoff, which is unrelated.
+            for chunk_size in [1usize, 20, 0] {
+                let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+                let chars: Vec<char> = text.chars().collect();
+                let step = if chunk_size == 0 {
+                    chars.len()
+                } else {
+                    chunk_size
+                };
+                for chunk in chars.chunks(step) {
+                    let _ = parser.parse_reasoning_streaming_incremental(
+                        &chunk.iter().collect::<String>(),
+                        &[],
+                    );
+                }
+                let finished = parser.finish_reasoning_stream();
+                assert_eq!(
+                    finished.normal_text, "",
+                    "chunk_size={chunk_size}: directed payload under an unknown channel must not become content: {text:?}"
+                );
+            }
+            let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+            let batch = parser.detect_and_parse_reasoning(text, &[]);
+            assert_eq!(
+                batch.normal_text, "",
+                "batch: directed payload under an unknown channel must not become content: {text:?}"
+            );
+            assert_eq!(batch.reasoning_text, EXPECTED_REASONING);
+        }
+    }
+
+    #[test] // issue #237
+    fn test_gpt_oss_recovery_keeps_leading_role_word_without_start() {
+        // The parser is constructed with `Role::Assistant`, so it starts in
+        // `Header` with no `<|start|>`. Plain output that happens to begin with
+        // a role name must come back whole, not with that word stripped.
+        for text in [
+            "tools are configured per request.",
+            "users can override this.",
+            "system prompts are optional.",
+            "developers own the template.",
+        ] {
+            for chunk_size in [1usize, 20, 0] {
+                let (normal, reasoning) = stream_with_finish(text, chunk_size);
+                assert_eq!(normal, text, "chunk_size={chunk_size}");
+                assert_eq!(reasoning, "", "chunk_size={chunk_size}");
+            }
+            let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+            let batch = parser.detect_and_parse_reasoning(text, &[]);
+            assert_eq!(batch.normal_text, text);
+            assert_eq!(batch.reasoning_text, "");
+        }
+    }
+
+    #[test] // issue #237
+    fn test_gpt_oss_recovery_strips_role_after_start() {
+        // After `<|start|>` the role word is header markup, not output.
+        let text = format!("{ANALYSIS_PREFIX}*)__Hello!");
+        for chunk_size in [1usize, 20, 0] {
+            let (normal, reasoning) = stream_with_finish(&text, chunk_size);
+            assert_eq!(normal, "*)__Hello!", "chunk_size={chunk_size}");
+            assert_eq!(reasoning, EXPECTED_REASONING, "chunk_size={chunk_size}");
         }
     }
 
