@@ -70,6 +70,7 @@ UNIFIED_TAX = {
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     "arg_object_quoted_parameter_close": (7, "27"),
     "arg_array_quoted_parameter_close": (7, "28"),
+    "enum_contradicting_declared_type": (7, "32"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_numeric_nested_exact": (7, "20.nested_exact"),
