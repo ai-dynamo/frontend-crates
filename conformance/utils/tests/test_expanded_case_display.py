@@ -44,12 +44,19 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history():
 
 def test_expanded_single_family_cases_have_named_sections():
     metadata = viewer_catalog._source_metadata(ROOT)
+    section_labels = {}
     for scenario, entry in metadata["unified_taxonomy"].items():
+        assert entry["section_label"] == section_labels.setdefault(entry["section"], entry["section_label"])
         families = generator.scenario_families(scenario)
         if len(families) == 1:
             family = next(iter(families))
             assert entry["section"] == f"unified_g{family}"
-            assert entry["section_label"] == f"Family-specific tests: {family}"
+            assert entry["section_label"] == taxonomy.UNIFIED_GROUP_LABEL.get(family, f"Family-specific tests: {family}")
+
+
+def test_family_section_label_falls_back_for_a_new_family():
+    assert taxonomy.display_section("tool_only", {"future_family"}) == (
+        "unified_gfuture_family", "Family-specific tests: future_family")
 
 
 def test_related_shared_case_names_use_the_parent_prefix():
