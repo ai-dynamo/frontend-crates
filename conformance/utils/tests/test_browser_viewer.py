@@ -6,6 +6,8 @@ import gzip
 import json
 import re
 import shutil
+import socket
+import struct
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -99,14 +101,49 @@ def _server(prefix: str = "", gate=None, gate_path: str | None = None, fault=Non
             if should_hold:
                 gate[0].set()
                 assert gate[1].wait(60), "delayed resource was never released"
-            matches_fault = fault and fault["path"] in path
-            if matches_fault and not fault["used"]:
-                fault["used"] = True
-                if fault["kind"] == "missing":
-                    self.send_error(404)
+            with gate_lock:
+                matches_fault = fault and fault["path"] in path
+                kind = None
+                if matches_fault:
+                    if "responses" in fault:
+                        responses = fault["responses"]
+                        if isinstance(responses, dict):
+                            responses = responses.get(resource_path, [])
+                        kind = responses.pop(0) if responses else None
+                    elif not fault["used"]:
+                        fault["used"] = True
+                        kind = fault["kind"]
+            if kind is not None:
+                if kind == "reset":
+                    self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+                    self.connection.close()
+                    return
+                if kind in {"timeout", "trickle"}:
+                    data = Path(self.translate_path(self.path)).read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    try:
+                        if kind == "timeout":
+                            threading.Event().wait(0.15)
+                            self.wfile.write(data)
+                        else:
+                            for byte in data:
+                                self.wfile.write(bytes([byte]))
+                                self.wfile.flush()
+                                threading.Event().wait(0.01)
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+                    return
+                if isinstance(kind, int) or kind == "missing":
+                    self.send_response(kind if isinstance(kind, int) else 404)
+                    self.send_header("X-GitHub-Request-Id", "fixture-request")
+                    if "retry_after" in fault:
+                        self.send_header("Retry-After", fault["retry_after"])
+                    self.end_headers()
                     return
                 data = Path(self.translate_path(self.path)).read_bytes()
-                data = b"version https://git-lfs.github.com/spec/v1\n" if fault["kind"] == "pointer" else data[:-1] + bytes([data[-1] ^ 1])
+                data = b"version https://git-lfs.github.com/spec/v1\n" if kind == "pointer" else data[:-1] + bytes([data[-1] ^ 1])
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write(data)

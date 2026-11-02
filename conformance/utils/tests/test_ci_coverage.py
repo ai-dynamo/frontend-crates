@@ -769,7 +769,13 @@ def test_only_history_can_replace_public_main_site():
     deploy_steps = jobs["deploy-pages"]["steps"]
     deployment = next(i for i, step in enumerate(deploy_steps) if step.get("id") == "deployment")
     smoke = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py delivery" in step.get("run", ""))
-    assert deployment < smoke
+    admission = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py current" in step.get("run", ""))
+    assert admission + 1 == deployment < smoke
+    for index in (deployment, smoke):
+        assert deploy_steps[index]["if"] == "${{ steps.current.outputs.current == 'true' }}"
+    evidence = deploy_steps[-1]
+    assert evidence["if"] == "${{ always() }}"
+    assert evidence["with"]["if-no-files-found"] == "error"
     assert deploy_steps[smoke]["env"]["PUBLICATION_URL"] == "${{ steps.deployment.outputs.page_url }}"
     assert jobs["deploy-pages"]["concurrency"]["cancel-in-progress"] is False
     for job_name, target in (("pages-build", "ci_publication.py identify"), ("conformance-table", "--job-results")):

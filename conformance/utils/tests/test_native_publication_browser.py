@@ -12,6 +12,10 @@ import re
 import shutil
 import tarfile
 import threading
+import ssl
+from pathlib import Path
+from types import SimpleNamespace
+from urllib.error import URLError
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlsplit
 
@@ -23,7 +27,7 @@ from selenium.webdriver.common.keys import Keys
 from browser_helpers import raw_view_download, settle
 
 from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine, _assert_generation_provenance
-from verify_publication_transport import publication_metadata, runtime_catalog, verify_http_publication
+from verify_publication_transport import publication_metadata, runtime_catalog, verify_http_publication, verify_http_publication_identity
 from unified_archives import read_source
 from fixture_test_support import (assert_viewer_data_matches_history, capture_releases,
                                   historical_source_bytes, identity_for_key)
@@ -32,10 +36,16 @@ from fixture_test_support import publish
 from test_capture_sources import native_publisher, split_evidence, pin_history
 import capture_sources
 import unified_history
+import verify_publication_transport as transport
 from capture_versions import capture_release_sort_key
 
 
-def test_publication_delivery_matches_qualified_artifact(historical_published_viewer, request):
+def test_publication_delivery_matches_qualified_artifact(historical_published_viewer, request, monkeypatch, tmp_path):
+    monkeypatch.setenv("CONFORMANCE_DELIVERY_DEADLINE", str(transport.time.monotonic() + transport.HTTP_BUDGET))
+    report_path = tmp_path / "delivery.json"
+    if not os.environ.get("CONFORMANCE_DELIVERY_REPORT"):
+        monkeypatch.setenv("CONFORMANCE_DELIVERY_REPORT", str(report_path))
+    report_path = Path(os.environ["CONFORMANCE_DELIVERY_REPORT"])
     site = historical_published_viewer
     configured = request.config.getoption("--publication-url")
     server = None
@@ -45,10 +55,13 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
         server, _requests = _server(prefix="/frontend-crates", root=site)
         base = f"http://127.0.0.1:{server.server_port}/frontend-crates"
     driver = None
+    journey_passed = False
     try:
         # Compare the qualified bytes, including all history sidecars, rather than
         # trusting a successful HTTP response or a revision label on an older site.
+        verify_http_publication_identity(site, base)
         verify_http_publication(site, base)
+        verify_http_publication_identity(site, base)
         driver = _driver()
         driver.get(f"{base}/index.html?tab=tab-unified")
         settle(driver, "tab-unified", history_ready=True)
@@ -85,7 +98,12 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
                 assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == "true"
                 assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == [comparison["key"]]
                 assert parse_qs(urlsplit(driver.current_url).query)["slots_tab-unified"][0].split(",")[0] == comparison["identity"]
+        verify_http_publication_identity(site, base)
+        journey_passed = True
     finally:
+        evidence = json.loads(report_path.read_bytes()) if report_path.is_file() else {"checks": []}
+        evidence["browser_journey"] = {"success": journey_passed, "publication": publication_metadata(site)}
+        report_path.write_text(json.dumps(evidence, indent=2) + "\n")
         if driver:
             driver.quit()
         if server:
@@ -110,6 +128,19 @@ def test_http_delivery_checks_qualified_bytes_and_rejects_bad_sidecars(tmp_path,
                 verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
         else:
             assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")["resources"] == 2
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_http_delivery_recovers_only_failed_get(tmp_path):
+    (tmp_path / "index.html").write_bytes(b"qualified index")
+    (tmp_path / "history.json").write_bytes(b"qualified history")
+    server, requests = _server(root=tmp_path, fault={"path": "history.json", "responses": [503]})
+    try:
+        assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}") == {"resources": 2, "bytes": 32}
+        assert requests.count("/history.json") == 2
+        assert requests.count("/index.html") == 1
     finally:
         server.shutdown()
         server.server_close()
@@ -521,3 +552,166 @@ def test_same_model_replacement_keeps_tooltips_and_retires_old_only_models(publi
         assert driver.execute_script("return window.__conformanceTooltipModel(window.previousTooltipCell) === undefined")
     finally:
         driver.quit()
+
+
+@pytest.fixture
+def delivery_clock(tmp_path, monkeypatch):
+    clock = {"now": 0.0, "sleeps": []}
+    lock = threading.Lock()
+    def sleep(seconds):
+        with lock:
+            clock["sleeps"].append(seconds)
+            clock["now"] += seconds
+    monkeypatch.setattr(transport, "_run_http_scan", transport._scan_http_resources)
+    monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock["now"], time=lambda: 0, sleep=sleep))
+    monkeypatch.setattr(transport.random, "uniform", lambda low, high: 0)
+    report = tmp_path.parent / (tmp_path.name + "-delivery.json")
+    monkeypatch.setenv("CONFORMANCE_DELIVERY_REPORT", str(report))
+    clock["report"] = report
+    return clock
+
+
+@pytest.mark.parametrize("status", [429, 502, 503, 504, 401, 403, 404, 500])
+def test_http_delivery_status_classification(tmp_path, delivery_clock, status):
+    (tmp_path / "index.html").write_bytes(b"qualified")
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": [status] * 4})
+    try:
+        with pytest.raises(HTTPError) as failure:
+            verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        assert failure.value.code == status
+        retryable = status in {429, 502, 503, 504}
+        assert len(requests) == (4 if retryable else 1)
+        assert delivery_clock["sleeps"] == ([1, 2, 4] if retryable else [])
+        report = json.loads(delivery_clock["report"].read_bytes())["checks"][0]
+        assert not report["success"]
+        resource = report["resources"]["index.html"]
+        assert resource["outcome"] == "failed"
+        assert resource["attempts"][-1]["request_ids"] == {"X-GitHub-Request-Id": "fixture-request"}
+        assert resource["url"].endswith("/index.html")
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("header,delay", [("5", 5), ("Thu, 01 Jan 1970 00:00:09 GMT", 9),
+                                          ("Wed, 31 Dec 1969 23:59:59 GMT", 1), ("nonsense", 1), ("999999", None)])
+def test_http_delivery_retry_after_is_bounded(tmp_path, delivery_clock, header, delay):
+    (tmp_path / "index.html").write_bytes(b"qualified")
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": [503], "retry_after": header})
+    try:
+        if delay is None:
+            with pytest.raises(ValueError, match="budget exhausted"):
+                verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+            assert len(requests) == 1
+            assert delivery_clock["sleeps"] == []
+        else:
+            assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}") == {"resources": 1, "bytes": 9}
+            assert len(requests) == 2
+            assert delivery_clock["sleeps"] == [delay]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_http_delivery_recovery_still_rejects_corruption(tmp_path, delivery_clock):
+    (tmp_path / "index.html").write_bytes(b"qualified")
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": [503, "corrupt"]})
+    try:
+        with pytest.raises(ValueError, match="differs from qualified artifact"):
+            verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        assert len(requests) == 2
+        assert not json.loads(delivery_clock["report"].read_bytes())["checks"][0]["success"]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("error,retryable", [(TimeoutError(), True), (ConnectionResetError(), True),
+    (URLError(TimeoutError()), True), (URLError(ConnectionResetError()), True),
+    (ssl.SSLCertVerificationError(), False), (URLError(ssl.SSLCertVerificationError()), False),
+    (URLError("name resolution failed"), False), (ValueError("corrupt bytes"), False)])
+def test_http_delivery_transport_error_classification(error, retryable):
+    assert transport.transient_http_error(error) is retryable
+
+
+def test_http_delivery_concurrent_recoveries_account_for_every_file(tmp_path, delivery_clock):
+    paths = ["index.html", *[f"history-{i}.json" for i in range(24)]]
+    for path in paths:
+        (tmp_path / path).write_bytes(b"qualified")
+    server, requests = _server(root=tmp_path, fault={"path": "", "responses": {f"/{path}": [503] for path in paths}})
+    try:
+        assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}") == {"resources": len(paths), "bytes": 9 * len(paths)}
+        assert all(requests.count(f"/{path}") == 2 for path in paths)
+        resources = json.loads(delivery_clock["report"].read_bytes())["checks"][0]["resources"]
+        assert set(resources) == set(paths)
+        assert all(row["outcome"] == "recovered" and len(row["attempts"]) == 2 for row in resources.values())
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("responses", [["corrupt"], [None, "corrupt"]])
+def test_http_delivery_rejects_stale_or_changing_identity(tmp_path, delivery_clock, responses):
+    metadata = tmp_path / "conformance/viewer-publication.json"
+    metadata.parent.mkdir()
+    metadata.write_bytes(b'{"source_revision":"qualified"}')
+    server, requests = _server(root=tmp_path, fault={"path": "viewer-publication.json", "responses": responses.copy()})
+    base = f"http://127.0.0.1:{server.server_port}"
+    try:
+        if len(responses) == 2:
+            verify_http_publication_identity(tmp_path, base)
+        with pytest.raises(ValueError, match="identity changed or is stale"):
+            verify_http_publication_identity(tmp_path, base)
+        assert len(requests) == len(responses)
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("fault,persistent", [("timeout", False), ("timeout", True), ("reset", False)])
+def test_http_delivery_real_transport_failures(tmp_path, monkeypatch, fault, persistent):
+    (tmp_path / "index.html").write_bytes(b"qualified")
+    monkeypatch.setattr(transport, "HTTP_TIMEOUT", 0.05)
+    monkeypatch.setattr(transport, "HTTP_BUDGET", 15)
+    report_path = tmp_path.parent / (tmp_path.name + "-report.json")
+    monkeypatch.setenv("CONFORMANCE_DELIVERY_REPORT", str(report_path))
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": [fault] * (4 if persistent else 1)})
+    try:
+        if persistent:
+            with pytest.raises(TimeoutError):
+                verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        else:
+            assert verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")["resources"] == 1
+        assert len(requests) == (4 if persistent else 2)
+        report = json.loads(report_path.read_bytes())["checks"][0]
+        assert report["success"] is not persistent
+        assert len(report["resources"]["index.html"]["attempts"]) == len(requests)
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_http_delivery_hard_deadline_stops_a_trickling_body(tmp_path, monkeypatch):
+    (tmp_path / "index.html").write_bytes(b"x" * 150)
+    monkeypatch.setattr(transport, "HTTP_BUDGET", 0.2)
+    monkeypatch.setattr(transport, "HTTP_TIMEOUT", 0.2)
+    report_path = tmp_path.parent / (tmp_path.name + "-report.json")
+    monkeypatch.setenv("CONFORMANCE_DELIVERY_REPORT", str(report_path))
+    server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": ["trickle"]})
+    before = transport.time.monotonic()
+    try:
+        with pytest.raises(TimeoutError, match="budget"):
+            verify_http_publication(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        assert transport.time.monotonic() - before < 1
+        assert len(requests) == 1
+        data = report_path.read_bytes()
+        report = json.loads(data)["checks"][0]
+        assert not report["success"]
+        assert report["resources"]["index.html"]["attempts"][0]["status"] == 200
+        assert report["resources"]["index.html"]["outcome"] in {"interrupted", "budget-exhausted"}
+        assert not transport.multiprocessing.active_children()
+        threading.Event().wait(0.1)
+        assert report_path.read_bytes() == data
+    finally:
+        server.shutdown()
+        server.server_close()
