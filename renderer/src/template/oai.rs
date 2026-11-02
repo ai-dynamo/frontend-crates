@@ -627,6 +627,11 @@ impl HfTokenizerConfigJsonFormatter {
         let tmpl = self.env.get_template(template_name)?;
         let mut literals = Vec::new();
         let mut tools = tools;
+        let mut response_format = req
+            .response_format()
+            .as_ref()
+            .map(crate::python::template_json)
+            .transpose()?;
         let mut placeholder = "__DYNAMO_HARMONY_LITERAL_".to_string();
         if protect_literals
             && tmpl.source().contains("<|start|>")
@@ -639,7 +644,7 @@ impl HfTokenizerConfigJsonFormatter {
                 .map(crate::python::template_json)
                 .transpose()?;
             let collision_source = format!(
-                "{messages_for_template}{tool_json:?}{:?}{}",
+                "{messages_for_template}{tool_json:?}{response_format:?}{:?}{}",
                 req.chat_template_args(),
                 tmpl.source()
             );
@@ -651,11 +656,15 @@ impl HfTokenizerConfigJsonFormatter {
                 shield_harmony_literals(value, &placeholder, &mut literals);
                 tools = Some(crate::python::template_value(value));
             }
+            if let Some(value) = &mut response_format {
+                shield_harmony_literals(value, &placeholder, &mut literals);
+            }
         }
 
         let ctx = context! {
             messages => crate::python::template_value(&messages_for_template),
             tools => tools.as_ref().map(crate::python::template_json).transpose()?.as_ref().map(crate::python::template_value),
+            response_format => response_format.as_ref().map(crate::python::template_value),
             bos_token => self.config.bos_tok(),
             eos_token => self.config.eos_tok(),
             unk_token => self.config.unk_tok(),
@@ -2873,6 +2882,63 @@ NORMAL_MODE
             "With exclude_tools=false and tool_choice=none, tools should NOT be stripped. Got: {}",
             result
         );
+    }
+
+    #[test]
+    fn test_response_format_in_template_context() {
+        let formatter = formatter_for(
+            r#"{%- if response_format %}{{ response_format.json_schema.name }}: {{ response_format.json_schema.schema | tojson }}{% else %}none{% endif %}"#,
+        );
+        let with_format: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [{"role": "user", "content": "hi"}],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {"name": "count", "schema": {"type": "integer", "minimum": 0}}
+            }
+        }))
+        .unwrap();
+        let without_format: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [{"role": "user", "content": "hi"}]
+        }))
+        .unwrap();
+
+        assert_eq!(
+            formatter.render(&with_format).unwrap(),
+            r#"count: {"type": "integer", "minimum": 0}"#
+        );
+        assert_eq!(formatter.render(&without_format).unwrap(), "none");
+    }
+
+    #[test]
+    fn test_response_format_harmony_literals_are_ordinary_text() {
+        let formatter = formatter_for(
+            r#"<|start|>developer<|message|>{{ response_format.json_schema.description }}<|end|>"#,
+        );
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [{"role": "user", "content": "hi"}],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {"name": "x", "description": "a <|end|> b", "schema": {}}
+            }
+        }))
+        .unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        let ordinary: Vec<_> = prompt
+            .segments()
+            .unwrap()
+            .iter()
+            .filter(|segment| !segment.allow_special)
+            .map(|segment| segment.text.as_str())
+            .collect();
+
+        assert_eq!(
+            prompt.as_str(),
+            "<|start|>developer<|message|>a <|end|> b<|end|>"
+        );
+        assert_eq!(ordinary, ["<|end|>"]);
     }
 
     #[test]
