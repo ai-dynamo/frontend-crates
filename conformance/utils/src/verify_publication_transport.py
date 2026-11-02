@@ -25,7 +25,7 @@ import traceback
 import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 import zlib
 
 
@@ -84,12 +84,27 @@ def transient_http_error(error):
     return isinstance(reason, (TimeoutError, ConnectionResetError)) and not isinstance(reason, ssl.SSLError)
 
 
-def _scan_http_resources(root, base_url, paths, update, deadline=None):
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _http_records(base_url, paths):
+    return {path: {"url": f"{base_url.rstrip('/')}/{quote(path)}", "attempts": [], "outcome": "not-started"} for path in paths}
+
+
+def _http_request_ids(headers):
+    return {key: value for key, value in headers.items()
+            if key.lower() in {"x-github-request-id", "x-request-id", "x-served-by", "x-cache"}}
+
+
+def _scan_http_resources(root, base_url, paths, update, deadline=None, timeout=HTTP_TIMEOUT):
     started = time.monotonic()
     deadline = started + HTTP_BUDGET if deadline is None else deadline
-    records = {path: {"url": f"{base_url.rstrip('/')}/{quote(path)}", "attempts": [], "outcome": "not-started"} for path in paths}
+    records = _http_records(base_url, paths)
+    opener = build_opener(_NoRedirect())
     lock = threading.Lock()
-    failures = []
+    failure = None
     stopped = threading.Event()
 
     def emit(relative):
@@ -111,10 +126,9 @@ def _scan_http_resources(root, base_url, paths, update, deadline=None):
             error = None
             retry_after = None
             try:
-                with urlopen(request, timeout=min(HTTP_TIMEOUT, remaining)) as response:
+                with opener.open(request, timeout=min(timeout, remaining)) as response:
                     entry["status"] = response.status
-                    entry["request_ids"] = {key: value for key, value in response.headers.items()
-                                            if key.lower() in {"x-github-request-id", "x-request-id", "x-served-by", "x-cache"}}
+                    entry["request_ids"] = _http_request_ids(response.headers)
                     require(response.status == 200 and response.url == request.full_url,
                             f"unexpected publication HTTP response: {request.full_url}: {response.status}")
                     emit(relative)
@@ -125,8 +139,7 @@ def _scan_http_resources(root, base_url, paths, update, deadline=None):
                 entry["error"] = repr(caught)
                 if isinstance(caught, HTTPError):
                     entry["status"] = caught.code
-                    entry["request_ids"] = {key: value for key, value in caught.headers.items()
-                                            if key.lower() in {"x-github-request-id", "x-request-id", "x-served-by", "x-cache"}}
+                    entry["request_ids"] = _http_request_ids(caught.headers)
                     retry_after = caught.headers.get("Retry-After")
                     caught.close()
             finally:
@@ -161,9 +174,9 @@ def _scan_http_resources(root, base_url, paths, update, deadline=None):
                 active[workers.submit(check, relative)] = relative
             if not active:
                 break
-            done, _ = wait(active, timeout=max(0, deadline + HTTP_TIMEOUT - time.monotonic()), return_when=FIRST_COMPLETED)
+            done, _ = wait(active, timeout=max(0, deadline + timeout - time.monotonic()), return_when=FIRST_COMPLETED)
             if not done:
-                failures.append(TimeoutError("verification budget and active-request grace exhausted"))
+                failure = failure or TimeoutError("verification budget and active-request grace exhausted")
                 break
             for future in done:
                 relative = active.pop(future)
@@ -174,26 +187,24 @@ def _scan_http_resources(root, base_url, paths, update, deadline=None):
                     # for independent files before propagating the first cause.
                     records[relative]["outcome"] = "failed"
                     records[relative]["error"] = repr(error)
-                    failures.append(error)
+                    failure = failure or error
                     stopped.set()
                     emit(relative)
         for relative, record in records.items():
             if record["outcome"] in {"not-started", "active"}:
                 record["outcome"] = "not-checked" if stopped.is_set() else "budget-exhausted"
                 emit(relative)
-                failures.append(TimeoutError(f"verification budget exhausted: {record['url']}"))
-        if failures:
-            raise failures[0]
+                failure = failure or TimeoutError(f"verification budget exhausted: {record['url']}")
+        if failure:
+            raise failure
         return {"resources": len(paths), "bytes": total}
     finally:
         workers.shutdown(wait=False, cancel_futures=True)
 
 
 def _http_scan_process(connection, root, base_url, paths, deadline, timeout):
-    global HTTP_TIMEOUT
-    HTTP_TIMEOUT = timeout
     try:
-        result = _scan_http_resources(root, base_url, paths, lambda path, record: connection.send(("resource", path, record)), deadline)
+        result = _scan_http_resources(root, base_url, paths, lambda path, record: connection.send(("resource", path, record)), deadline, timeout)
         connection.send(("result", result))
     except Exception as error:
         # Process supervisor preserves the original failure and traceback across IPC.
@@ -239,9 +250,26 @@ def _run_http_scan(root, base_url, paths, update, deadline):
         receiver.close()
 
 
+def update_delivery_report(path, *, check=None, browser_journey=None):
+    failure = sys.exc_info()[1]
+    try:
+        evidence = json.loads(path.read_bytes()) if path.is_file() and path.stat().st_size else {"checks": []}
+        if check is not None:
+            evidence["checks"].append(check)
+        if browser_journey is not None:
+            evidence["browser_journey"] = browser_journey
+        path.write_text(json.dumps(evidence, indent=2) + "\n")
+    except Exception as error:
+        # Reporting must fail CI without replacing the failure it was recording.
+        if failure is not None:
+            raise failure from error
+        raise
+    print(f"delivery report: {path}", flush=True)
+
+
 def _verify_http_resources(root, base_url, paths):
     started = time.monotonic()
-    records = {path: {"url": f"{base_url.rstrip('/')}/{quote(path)}", "attempts": [], "outcome": "not-started"} for path in paths}
+    records = _http_records(base_url, paths)
     report = {"base_url": base_url, "resources": records, "success": False}
     report_path = os.environ.get("CONFORMANCE_DELIVERY_REPORT")
     if report_path is None:
@@ -264,10 +292,7 @@ def _verify_http_resources(root, base_url, paths):
             if record["outcome"] in {"active", "not-started"}:
                 record["outcome"] = "not-checked" if record["outcome"] == "not-started" else "interrupted"
         report["elapsed_seconds"] = time.monotonic() - started
-        previous = json.loads(report_path.read_bytes()) if report_path.is_file() and report_path.stat().st_size else {"checks": []}
-        previous["checks"].append(report)
-        report_path.write_text(json.dumps(previous, indent=2) + "\n")
-        print(f"delivery report: {report_path}", flush=True)
+        update_delivery_report(report_path, check=report)
 
 
 def verify_http_publication(root, base_url):
@@ -284,10 +309,7 @@ def verify_http_publication_identity(root, base_url):
     root = Path(root).resolve(strict=True)
     relative = "conformance/viewer-publication.json"
     require((root / relative).is_file(), "qualified history lacks publication identity")
-    try:
-        return _verify_http_resources(root, base_url, [relative])
-    except ValueError as error:
-        raise ValueError(f"public publication identity changed or is stale: {base_url}") from error
+    return _verify_http_resources(root, base_url, [relative])
 
 
 def decompress(data, limit):

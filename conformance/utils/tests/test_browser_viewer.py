@@ -140,6 +140,8 @@ def _server(prefix: str = "", gate=None, gate_path: str | None = None, fault=Non
                     self.send_header("X-GitHub-Request-Id", "fixture-request")
                     if "retry_after" in fault:
                         self.send_header("Retry-After", fault["retry_after"])
+                    if "location" in fault:
+                        self.send_header("Location", fault["location"])
                     self.end_headers()
                     return
                 data = Path(self.translate_path(self.path)).read_bytes()

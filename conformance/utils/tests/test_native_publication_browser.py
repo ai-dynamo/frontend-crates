@@ -13,6 +13,8 @@ import shutil
 import tarfile
 import threading
 import ssl
+import sys
+from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.error import URLError
@@ -27,7 +29,7 @@ from selenium.webdriver.common.keys import Keys
 from browser_helpers import raw_view_download, settle
 
 from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine, _assert_generation_provenance
-from verify_publication_transport import publication_metadata, runtime_catalog, verify_http_publication, verify_http_publication_identity
+from verify_publication_transport import publication_metadata, runtime_catalog, update_delivery_report, verify_http_publication, verify_http_publication_identity
 from unified_archives import read_source
 from fixture_test_support import (assert_viewer_data_matches_history, capture_releases,
                                   historical_source_bytes, identity_for_key)
@@ -48,13 +50,14 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
     report_path = Path(os.environ["CONFORMANCE_DELIVERY_REPORT"])
     site = historical_published_viewer
     configured = request.config.getoption("--publication-url")
-    server = None
+    cleanup = ExitStack()
     if configured:
         base = configured.rstrip("/")
     else:
         server, _requests = _server(prefix="/frontend-crates", root=site)
+        cleanup.callback(server.server_close)
+        cleanup.callback(server.shutdown)
         base = f"http://127.0.0.1:{server.server_port}/frontend-crates"
-    driver = None
     journey_passed = False
     try:
         # Compare the qualified bytes, including all history sidecars, rather than
@@ -63,6 +66,7 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
         verify_http_publication(site, base)
         verify_http_publication_identity(site, base)
         driver = _driver()
+        cleanup.callback(driver.quit)
         driver.get(f"{base}/index.html?tab=tab-unified")
         settle(driver, "tab-unified", history_ready=True)
         assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == "true"
@@ -101,14 +105,10 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
         verify_http_publication_identity(site, base)
         journey_passed = True
     finally:
-        evidence = json.loads(report_path.read_bytes()) if report_path.is_file() else {"checks": []}
-        evidence["browser_journey"] = {"success": journey_passed, "publication": publication_metadata(site)}
-        report_path.write_text(json.dumps(evidence, indent=2) + "\n")
-        if driver:
-            driver.quit()
-        if server:
-            server.shutdown()
-            server.server_close()
+        try:
+            update_delivery_report(report_path, browser_journey={"success": journey_passed, "publication": publication_metadata(site)})
+        finally:
+            cleanup.close()
 
 
 @pytest.mark.parametrize("fault", [None, "stale", "missing"])
@@ -613,6 +613,114 @@ def test_http_delivery_retry_after_is_bounded(tmp_path, delivery_clock, header, 
         server.server_close()
 
 
+@pytest.mark.parametrize("status", [301, 302, 303, 307, 308])
+@pytest.mark.parametrize("destination_status", [200, 503])
+def test_http_delivery_rejects_redirect_without_requesting_destination(tmp_path, delivery_clock, status, destination_status):
+    qualified, served = tmp_path / "qualified", tmp_path / "served"
+    qualified.mkdir()
+    served.mkdir()
+    for path in (qualified / "index.html", served / "redirected"):
+        path.write_bytes(b"qualified")
+    server, requests = _server(root=served, fault={"path": "", "location": "/redirected",
+        "responses": {"/index.html": [status] * 4, "/redirected": [503] * 4 if destination_status == 503 else []}})
+    try:
+        with pytest.raises(HTTPError) as failure:
+            verify_http_publication(qualified, f"http://127.0.0.1:{server.server_port}")
+        assert failure.value.code == status
+        assert requests == ["/index.html"]
+        assert delivery_clock["sleeps"] == []
+        resource = json.loads(delivery_clock["report"].read_bytes())["checks"][0]["resources"]["index.html"]
+        assert resource["outcome"] == "failed"
+        assert [attempt["status"] for attempt in resource["attempts"]] == [status]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_http_delivery_identity_preserves_budget_failure(tmp_path, monkeypatch):
+    metadata = tmp_path / "conformance/viewer-publication.json"
+    metadata.parent.mkdir()
+    metadata.write_bytes(b'{"source_revision":"qualified"}')
+    report = tmp_path.parent / (tmp_path.name + "-delivery.json")
+    monkeypatch.setenv("CONFORMANCE_DELIVERY_REPORT", str(report))
+    server, requests = _server(root=tmp_path, fault={"path": "viewer-publication.json",
+        "responses": [503], "retry_after": "999999"})
+    try:
+        with pytest.raises(ValueError, match="verification budget exhausted before retry"):
+            verify_http_publication_identity(tmp_path, f"http://127.0.0.1:{server.server_port}")
+        assert requests == ["/conformance/viewer-publication.json"]
+        assert "budget exhausted" in json.loads(report.read_bytes())["checks"][0]["error"]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("report_fault,browser_failure,cleanup_failure", [
+    (None, False, None), (None, True, None),
+    ("malformed", False, None), ("malformed", True, None),
+    ("write", False, None), ("write", True, None),
+    (None, False, "quit"), (None, False, "shutdown"),
+])
+def test_delivery_report_failure_preserves_browser_error_and_cleanup(tmp_path, monkeypatch, report_fault, browser_failure, cleanup_failure):
+    calls = []
+    report = tmp_path / "delivery.json"
+    report.write_bytes(b"{" if report_fault == "malformed" else b'{"checks": []}')
+    monkeypatch.setenv("CONFORMANCE_DELIVERY_REPORT", str(report))
+    module = sys.modules[__name__]
+    def cleanup(name):
+        calls.append(name)
+        if name == cleanup_failure:
+            raise OSError(f"{name} failure")
+    server = SimpleNamespace(shutdown=lambda: cleanup("shutdown"), server_close=lambda: cleanup("close"), server_port=1)
+    driver = SimpleNamespace(get=lambda url: None, quit=lambda: cleanup("quit"),
+        execute_script=lambda script: None if "const tab =" in script else "true")
+    browser_error = RuntimeError("browser failure")
+    def settle_page(*args, **kwargs):
+        if browser_failure:
+            raise browser_error
+    monkeypatch.setattr(module, "_server", lambda **kwargs: (server, []))
+    monkeypatch.setattr(module, "_driver", lambda: driver)
+    monkeypatch.setattr(module, "settle", settle_page)
+    monkeypatch.setattr(module, "_assert_generation_provenance", lambda *args: None)
+    monkeypatch.setattr(module, "publication_metadata", lambda site: {"revision": "qualified"})
+    monkeypatch.setattr(module, "verify_http_publication", lambda *args: None)
+    monkeypatch.setattr(module, "verify_http_publication_identity", lambda *args: None)
+    monkeypatch.setattr(module, "runtime_catalog", lambda site: {
+        "metadata": {"selection_policy": {"unified": {"reference": "dynamo"}}},
+        "sources": {"candidates": [{"implementation": "dynamo", "version": "1.0.0",
+                                   "native_unified_families": ["family"], "capture_families": ["family"]}]}})
+    if report_fault == "write":
+        write_text = Path.write_text
+        def fail_report_write(path, *args, **kwargs):
+            if path == report:
+                raise OSError("report write failure")
+            return write_text(path, *args, **kwargs)
+        monkeypatch.setattr(Path, "write_text", fail_report_write)
+    request = SimpleNamespace(config=SimpleNamespace(getoption=lambda name: None))
+    def journey():
+        test_publication_delivery_matches_qualified_artifact(tmp_path, request, monkeypatch, tmp_path)
+    try:
+        if browser_failure:
+            with pytest.raises(RuntimeError, match="browser failure") as failure:
+                journey()
+            assert failure.value is browser_error
+            if report_fault:
+                assert isinstance(failure.value.__cause__, json.JSONDecodeError if report_fault == "malformed" else OSError)
+        elif cleanup_failure:
+            with pytest.raises(OSError, match=f"{cleanup_failure} failure"):
+                journey()
+        elif report_fault:
+            with pytest.raises(json.JSONDecodeError if report_fault == "malformed" else OSError):
+                journey()
+        else:
+            journey()
+        if report_fault is None:
+            assert json.loads(report.read_bytes())["browser_journey"] == {
+                "success": not browser_failure, "publication": {"revision": "qualified"}}
+    finally:
+        assert calls == ["quit", "shutdown", "close"]
+
+
 def test_http_delivery_recovery_still_rejects_corruption(tmp_path, delivery_clock):
     (tmp_path / "index.html").write_bytes(b"qualified")
     server, requests = _server(root=tmp_path, fault={"path": "index.html", "responses": [503, "corrupt"]})
@@ -660,7 +768,7 @@ def test_http_delivery_rejects_stale_or_changing_identity(tmp_path, delivery_clo
     try:
         if len(responses) == 2:
             verify_http_publication_identity(tmp_path, base)
-        with pytest.raises(ValueError, match="identity changed or is stale"):
+        with pytest.raises(ValueError, match="published resource differs from qualified artifact: .*viewer-publication.json"):
             verify_http_publication_identity(tmp_path, base)
         assert len(requests) == len(responses)
     finally:
