@@ -25,6 +25,14 @@
 //! schema-valued keyword positions are read: an object inside `const`, `enum`,
 //! `default` or `examples` is argument data and is never touched, and a
 //! property named `$ref` or `$defs` is a name, not a keyword.
+//!
+//! Deliberate exception: when a `$ref` points INTO such literal data (a backend
+//! then reads the literal as a schema, including any `$ref` it spells), the
+//! schema is returned exactly as written, even if it also carries unrelated
+//! escaped references. Renaming a definition the literal references would
+//! break the literal's resolution, and rewriting the literal would change the
+//! argument value; neither is acceptable, so the mixed case keeps today's
+//! behaviour and is simply not canonicalized.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -92,12 +100,21 @@ impl Survey {
                 continue;
             };
             next += 1;
-            if survey.visited.contains(&target) || !is_schema_position(schema, &target) {
+            if survey.visited.contains(&target) {
                 continue;
             }
             if let Some(node) = node_at(schema, &target)
                 && node.is_object()
             {
+                // A reference into literal data (`const`, `enum`, `default`,
+                // `examples`) makes that literal a live schema for the backend
+                // while its bytes stay argument data for the model. The two
+                // cannot both hold once anything in the schema is renamed, so
+                // the whole schema is returned as written (deliberate exception;
+                // see the module docs). Proposed by keivenchang on #516.
+                if !is_schema_position(schema, &target) {
+                    return None;
+                }
                 let mut path = target.clone();
                 survey.walk(node, &mut path, &mut budget)?;
             }
@@ -901,14 +918,63 @@ mod tests {
         });
         assert_eq!(canonicalize_local_refs(schema.clone()), schema);
 
-        // The same holds for a followed target whose own `const`/`enum` carry
-        // schema-looking data, and for references into `enum`/`default`/`examples`.
+        // A chained reference into a `default` target, next to an unrelated
+        // escaped reference: the mixed schema is left whole (deliberate exception,
+        // module docs). Renaming `x y` would strand the `$ref` the `default`
+        // literal spells, which the backend reads once `c` points at it. (A
+        // target inside `enum` behaves the same; XGrammar cannot index arrays in
+        // pointers, so that shape is not probed against the backend.)
+        let schema = json!({
+            "type": "object",
+            "$defs": {"x y": {"type": "integer"}},
+            "properties": {
+                "c": {"$ref": "#/properties/d/default"},
+                "d": {"type": "object", "default": {"$ref": "#/$defs/x y"}},
+                "e": {"enum": [{"$defs": {"p q": true}}]},
+                "f": {"$ref": "#/$defs/x%20y"}
+            },
+            "required": ["c", "d", "e"]
+        });
+        assert_eq!(canonicalize_local_refs(schema.clone()), schema);
+        for shape in ["enum", "examples"] {
+            let schema = json!({
+                "$defs": {"x y": {"type": "integer"}},
+                "properties": {
+                    "c": {"$ref": format!("#/properties/d/{shape}/0")},
+                    "d": {shape: [{"$ref": "#/$defs/x y"}]},
+                    "f": {"$ref": "#/$defs/x%20y"}
+                }
+            });
+            assert_eq!(canonicalize_local_refs(schema.clone()), schema, "{shape}");
+        }
+    }
+
+    #[test]
+    fn a_literal_that_references_a_renamed_definition_keeps_the_whole_schema() {
+        // PR #516 review (keivenchang): the literal `$ref` stays unchanged but
+        // its external definition `a b` was renamed, so XGrammar rejected the
+        // result. The schema is now returned as written.
+        let schema = json!({
+            "type": "object",
+            "$defs": {"a b": {"type": "integer"}},
+            "properties": {
+                "metadata": {"const": {"$ref": "#/$defs/a b"}},
+                "value": {"$ref": "#/properties/metadata/const"}
+            },
+            "required": ["metadata", "value"]
+        });
+        assert_eq!(canonicalize_local_refs(schema.clone()), schema);
+    }
+
+    #[test]
+    fn literals_beside_escaped_references_still_canonicalize_when_nothing_points_at_them() {
+        // Counterfactual to the exception: the same literals, but no `$ref`
+        // targets them, so they are plain argument data and the escaped
+        // references around them are canonicalized as usual.
         let schema = json!({
             "$defs": {"x y": {"type": "integer"}},
             "properties": {
                 "a": {"$ref": "#/x-target"},
-                "b": {"$ref": "#/properties/e/enum/0"},
-                "c": {"$ref": "#/properties/d/default"},
                 "d": {"type": "object", "default": {"$ref": "#/$defs/x y"}},
                 "e": {"enum": [{"$defs": {"p q": true}}]},
                 "f": {"$ref": "#/$defs/x%20y"}
