@@ -917,6 +917,39 @@ mod tests {
         assert_eq!(args["precise_count"].get(), "9007199254740993");
     }
 
+    #[test]
+    fn test_declared_type_wins_over_contradicting_literals() {
+        // v1 types by `type` alone; a port of v2's const/enum intersection must keep that.
+        let input = r#"<tool_call>
+<function=read>
+<parameter=metrics>["temperature", "humidity"]</parameter>
+<parameter=count>5</parameter>
+</function>
+</tool_call>"#;
+        let tools = vec![ToolDefinition {
+            name: "read".to_string(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "metrics": {
+                        "type": "array", "items": {"type": "string"},
+                        "enum": ["temperature", "humidity", "co2"]
+                    },
+                    "count": {"type": "integer", "enum": ["auto"]}
+                }
+            })),
+            strict: None,
+        }];
+
+        let (calls, _) =
+            try_tool_call_parse_xml(input, &XmlParserConfig::default(), Some(&tools)).unwrap();
+        let args: serde_json::Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(
+            args,
+            serde_json::json!({"metrics": ["temperature", "humidity"], "count": 5})
+        );
+    }
+
     #[rstest] // helper
     #[case(r#"{"key": "value"}"#, serde_json::json!({"key": "value"}), "JSON object")]
     #[case(r#"[1, 2, 3]"#, serde_json::json!([1, 2, 3]), "JSON array")]

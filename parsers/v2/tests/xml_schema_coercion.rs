@@ -211,3 +211,31 @@ fn reachable_large_self_reference_retains_complete_calls() {
         json!({"p0":"42"}),
     );
 }
+
+#[test]
+fn declared_type_wins_over_contradicting_literals() {
+    // An `enum` written beside `type: array` instead of under `items` cannot hold
+    // an array, so the declared type decides, as stock SGLang does.
+    // Text that does not fit the declared type stays text, as on MiniMax-M3.
+    assert_calls(
+        json!({"type":"object","properties":{
+            "label":{"type":"string","const":null},
+            "metrics":{
+                "type":"array","items":{"type":"string"},"enum":["temperature","humidity","co2"]
+            },
+            "count":{"type":"integer","enum":["auto"]},
+            "mode":{"type":"integer","enum":["auto"]},
+            "flag":{"type":"boolean","enum":["yes","no"]}
+        }}),
+        &[
+            ("label", "null"),
+            ("metrics", "[\"temperature\", \"humidity\"]"),
+            ("count", "5"),
+            ("mode", "auto"),
+            ("flag", "yes"),
+        ],
+        json!({
+            "label":"null","metrics":["temperature","humidity"],"count":5,"mode":"auto","flag":"yes"
+        }),
+    );
+}
