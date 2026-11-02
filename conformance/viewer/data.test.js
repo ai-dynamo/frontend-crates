@@ -374,7 +374,7 @@ const original = { path: 'conformance/fixtures-unified-v2/families/sample/dynamo
 const records = { one: { member: original.path, value: { case_key: 'UNIFIED.1', stimulus: { ref: 'current' }, observation: { value: { assembled: [] } }, document: { captured_with: { dynamo_v2: '1.0.0' } } } } };
 const first = await snapshot('resolved-capture', records, '1.0.0');
 const other = await snapshot('resolved-capture', records, '2.0.0');
-const catalog = { metadata: {}, sources: { unified: [inputs, first, other], original_unified: [original] } };
+const catalog = { metadata: {unified_aliases:{canonical:{one:'1'},owners:{'1':['one']},families:{}}}, sources: { unified: [inputs, first, other], original_unified: [original] } };
 const downloads = [];
 let corrupt = false;
 const store = new HttpResourceStore({ allowSourceFiles: true, baseUrl: 'http://localhost/', fetchImpl: async url => {

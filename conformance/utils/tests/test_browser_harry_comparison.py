@@ -27,11 +27,15 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         _ready(driver, "tab-unified")
         before = counts(driver)
         families = driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)")
-        folded = driver.execute_script("""
+        individual_case = driver.execute_script("""
             const model=window.__conformanceModel;
-            const column=model.columns.find(column=>column.desc&&model.rows.some(row=>row.cells[column.sub]?.variants));
-            return {description:column.desc,id:column.case_id};
+            const column=model.columns.find(column=>column.case_id==='UNIFIED.10-reason_then_content_interrupted');
+            const cells=model.rows.map(row=>row.cells[column.sub]).filter(Boolean);
+            return {description:column.desc,id:column.case_id,
+                independent:cells.length>0&&cells.every(cell=>!cell.variants)};
         """)
+        assert individual_case["description"]
+        assert individual_case["independent"]
 
         def search(value):
             field = driver.find_element("css selector", "[data-case-search]")
@@ -73,7 +77,7 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == query
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         assert counts(driver) == after
-        for value in ["description:" + json.dumps(folded["description"], ensure_ascii=False), folded["id"]]:
+        for value in ["description:" + json.dumps(individual_case["description"], ensure_ascii=False), individual_case["id"]]:
             search(value)
             assert counts(driver)["dynamo"]["total"] > 0
         search('"__no_such_test__"')

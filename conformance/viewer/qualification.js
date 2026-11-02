@@ -12,7 +12,7 @@ initializeDevelopmentParser();
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
 import { selectedCellOutcome } from './model.js';
-import { leafCells, isApplicableCell } from './model.js';
+import { leafCells, isApplicableCell, validateCaseCell } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
 const execFileAsync = promisify(execFile);
@@ -543,9 +543,9 @@ function validateTab(tab, loadedKeys = null) {
         for (const field of ['na', 'err', 'leak']) assert.ok([0, 1].includes(value[field]));
         assert.ok(Object.hasOwn(value, 'sig'));
       }
-      const list = [...leafCells({ cells: { selected: cell } }).values()]; leaves += list.length;
+      const list = validateCaseCell(cell, column); leaves += list.length;
       const ids = list.filter(cell => cell.case_id).map(cell => cell.case_id);
-      assert.equal(new Set(ids).size, ids.length, `${tab.id}:${row.family}:${column.sub}: repeated folded leaf`);
+      assert.equal(new Set(ids).size, ids.length, `${tab.id}:${row.family}:${column.sub}: repeated case`);
       for (const leaf of list) {
         if (loadedKeys) {
           assert.deepEqual(Object.keys(leaf.cmp).sort(), ['golden', ...loadedKeys].sort(), `${leaf.sub}: every loaded leaf comparison`);
@@ -645,10 +645,22 @@ let checkedRebaseContracts = false;
 async function checkRebaseContracts(tab, reader) {
   if (checkedRebaseContracts) return;
   const columns = new Map(tab.columns.map(column => [column.sub, column]));
-  const standalone = tab.columns.filter(column => catalog.metadata.unified_taxonomy[column.sub].display_group === 'gpt_oss');
-  assert.deepEqual(standalone.map(column => column.sub).sort(), modelContracts.gptOssStandaloneHeaderScenarios, 'only the exact standalone Harmony header scenarios retain their own section');
-  for (const [scenario, config] of Object.entries(catalog.metadata.folds.unified)) {
-    if (config.case && config.case[0] !== scenario) assert.equal(columns.has(scenario), false, `shared variant must fold: ${scenario}`);
+  const scenarios = Object.entries(catalog.metadata.unified_presentation.scenario_families)
+    .filter(([, families]) => families.some(family => tab.rows.some(row => row.family === family)))
+    .map(([scenario]) => scenario).sort();
+  assert.deepEqual([...columns.keys()].sort(), scenarios, 'every authored scenario has its own column');
+  const omitted = [...columns.keys()].slice(1).sort();
+  assert.throws(() => assert.deepEqual(omitted, scenarios), 'omitting an authored column must fail');
+  const row = tab.rows.find(item => !item.section);
+  const [first, second] = tab.columns;
+  const merged = { ...row, cells: { ...row.cells,
+    [first.sub]: { ...row.cells[first.sub], variants: [row.cells[first.sub], row.cells[second.sub]] } } };
+  assert.throws(() => validateCaseCell(merged.cells[first.sub], first),
+    /one case per displayed cell/, 'reintroducing a combined cell must fail');
+
+  for (const column of columns.values()) {
+    assert.equal(column.variant_parent, undefined);
+    assert.equal(column.variant_labels, undefined);
   }
   for (const row of tab.rows.filter(row => !row.section)) {
     const leaves = leafCells(row);
@@ -657,32 +669,14 @@ async function checkRebaseContracts(tab, reader) {
       .filter(([, families]) => families.includes(row.family)).map(([scenario]) => scenario).sort();
     assert.deepEqual(actual, expected, `${row.family}: every applicable shared variant remains a leaf`);
   }
-  for (const row of tab.rows.filter(row => !row.section)) {
-    for (const parent of ['arg_json_null', 'arg_string_null']) {
-      const expected = Object.keys(catalog.metadata.folds.unified).filter(scenario => scenario.startsWith(parent));
-      expected.push('arg_null_mixed_labels');
-      assert.deepEqual(row.cells[parent].variants.map(leaf => leaf.sub).sort(), expected.sort(), `${row.family}: complete null fold`);
-    }
-  }
   for (const scenario of ['default_reasoning_without_opener', 'default_reasoning_tool_without_closer']) {
     assert.equal(columns.get(scenario).group_key, 'unified_gnemotron_v3');
   }
   const groups = new Map(tab.column_groups.map(group => [group.key, group]));
   const argumentGroups = tab.column_groups.filter(group => group.key.startsWith('unified_g7_'));
-  assert.deepEqual(argumentGroups.map(group => group.span), [5, 7, 12, 6, 10, 19, 15]);
   const argumentColumns = tab.columns.filter(column => column.group_key.startsWith('unified_g7_'));
-  const numericColumns=tab.columns.filter(column=>['7-17','7-19','7-18'].includes(column.label));
-  assert.deepEqual(numericColumns.map(column=>column.label),['7-17','7-19','7-18']);
-  assert.equal(new Set(numericColumns.map(column=>column.group_key)).size,1);
-  assert.equal(new Set(numericColumns.map(column=>column.band)).size,1);
-  assert.equal(tab.column_groups.find(group=>group.key===numericColumns[0].group_key).label,'TC Argument fidelity');
-  for (const row of tab.rows.filter(row=>!row.section)) for (const column of numericColumns) {
-    const cell=row.cells[column.sub];
-    assert.equal(cell.variants.length,{'7-17':9,'7-19':3,'7-18':7}[column.label]);
-    assert.equal(cell.status==='na',column.label==='7-19'&&!catalog.metadata.folds.numeric_applicability['7-14.string'].includes(row.family));
-  }
-  assert.equal(argumentColumns.length, 74);
-  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: 74 }, (_, index) => index + 1));
+  assert.equal(argumentGroups.reduce((total, group) => total + group.span, 0), argumentColumns.length);
+  assert.deepEqual(argumentColumns.map(column => column.display_number), Array.from({ length: argumentColumns.length }, (_, index) => index + 1));
   for (const row of tab.rows.filter(row => !row.section)) {
     for (const [scenario, cell] of leafCells(row)) {
       if (!['arg_object_quoted_parameter_close', 'arg_array_quoted_parameter_close'].includes(scenario)
@@ -700,22 +694,19 @@ async function checkRebaseContracts(tab, reader) {
     assert.equal(string.group_key, 'unified_g7_declared');
     for (const row of tab.rows.filter(row => !row.section)) {
       const cell = leafCells(row).get(custom.sub);
-      assert.equal(cell.case_id, `UNIFIED.7-${custom.sub}`);
+      assert.equal(cell.case_id, `UNIFIED.7-tool-argument-declared-types-${custom.sub}`);
       assert.equal(cell.status === 'na', !['qwen3', 'nemotron_v3'].includes(row.family));
       if (['qwen3', 'nemotron_v3'].includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
     }
   }
   assert.equal(columns.get('arg_marker_in_string').group_key, 'unified_g7_text');
   assert.equal(columns.get('reason_only').schemas?.length || 0, 0);
-  const toolSchemas = columns.get('tool_only').schemas;
+  assert.equal(columns.get('tool_only').schemas?.length || 0, 0);
+  const toolSchemas = columns.get('tool_body_whitespace').schemas;
   assert.equal(toolSchemas.length, 1);
-  const schema = toolSchemas[0];
-  assert.deepEqual(schema.tools, [{ name: 'get_weather', parameters: { type: 'object', properties: { city: { type: 'string' } } } }]);
-  assert.deepEqual([...schema.families].sort(), ['kimi_k2', 'kimi_k3']);
-  assert.equal(schema.cases.length, 1);
-  assert.equal(schema.cases[0].case_id, 'UNIFIED.1-tool_body_whitespace');
-  assert.equal(schema.cases[0].label, 'Leading JSON body whitespace');
-  assert.deepEqual([...schema.cases[0].families].sort(), ['kimi_k2', 'kimi_k3']);
+  assert.deepEqual(toolSchemas[0].tools, [{ name: 'get_weather', parameters: { type: 'object', properties: { city: { type: 'string' } } } }]);
+  assert.deepEqual([...toolSchemas[0].families].sort(), ['kimi_k2', 'kimi_k3']);
+  assert.equal(toolSchemas[0].cases, undefined, 'schema differences do not fold cases');
   assert.ok(columns.get('schema_declared_integer').schemas.length);
 
   for (const family of ['gpt_oss', 'qwen3', 'glm47', 'deepseek_v4']) {

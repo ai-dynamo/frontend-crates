@@ -569,6 +569,12 @@ fn bundle_assets_with_installation(
 
 fn validate_catalog(catalog: &Value) -> Result<()> {
     ensure!(catalog["schema"] == 1, "unsupported catalog schema");
+    ensure!(
+        catalog["metadata"]["unified_aliases"]["canonical"]
+            .as_object()
+            .is_some_and(|owners| !owners.is_empty() && owners.values().all(Value::is_string)),
+        "missing canonical Unified case owners"
+    );
     let mut identity = catalog.clone();
     let revision = identity
         .as_object_mut()
@@ -1419,6 +1425,20 @@ fn publish_prepared(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canonical_case_owners_are_required_before_publication() {
+        for canonical in [Value::Null, json!({}), json!([]), json!("invalid")] {
+            let catalog =
+                json!({"schema":1,"metadata":{"unified_aliases":{"canonical":canonical}}});
+            assert!(
+                validate_catalog(&catalog)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("missing canonical Unified case owners")
+            );
+        }
+    }
 
     #[test]
     fn source_output_and_cache_aliases_fail_before_preparation() -> Result<()> {

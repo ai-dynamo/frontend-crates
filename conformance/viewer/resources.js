@@ -46,7 +46,7 @@ export function canonicalUnifiedLabel(label, family, metadata) {
   if (!metadata) return label;
   const original = label.replace(/^UNIFIED\./, '');
   let key = original;
-  if (key.endsWith(`.${family}`)) key = key.slice(0, -(family.length + 1));
+  if (family && key.endsWith(`.${family}`)) key = key.slice(0, -(family.length + 1));
   const familyScenario = metadata.family_scenarios?.[family]?.[key];
   if (familyScenario) return `UNIFIED.${metadata.canonical[familyScenario]}`;
   if (Object.hasOwn(metadata.canonical, key)) return `UNIFIED.${metadata.canonical[key]}`;
@@ -56,8 +56,40 @@ export function canonicalUnifiedLabel(label, family, metadata) {
   if (dotted) key = `31-${dotted[1].charCodeAt(0) - 'a'.charCodeAt(0) + 1}`;
   const owners = Object.hasOwn(metadata.owners, key) ? metadata.owners[key] : [];
   if (owners.length > 1) throw new Error(`conflicting Unified alias ownership: ${label}`);
-  if (owners.length && metadata.owner_families?.[owners[0]] && metadata.owner_families[owners[0]] !== family) return `UNIFIED.${original}`;
+  if (family && owners.length && metadata.owner_families?.[owners[0]] && metadata.owner_families[owners[0]] !== family) return `UNIFIED.${original}`;
   return owners.length ? `UNIFIED.${metadata.canonical[owners[0]]}` : `UNIFIED.${original}`;
+}
+
+export function canonicalUnifiedPopupKey(value, metadata) {
+  let parts;
+  try { parts = JSON.parse(value); }
+  catch { return value; }
+  if (!Array.isArray(parts) || !['cell', 'grammar'].includes(parts[0]) || parts[1] !== 'tab-unified'
+      || typeof parts[2] !== 'string' || parts.length !== (parts[0] === 'cell' ? 4 : 3)
+      || parts[0] === 'cell' && typeof parts[3] !== 'string') return value;
+  const family = parts[0] === 'cell' ? parts[3] : '';
+  const owners = metadata?.owners?.[parts[2].replace(/^UNIFIED\./, '')] || [];
+  if (!family && owners.length > 1) return value;
+  parts[2] = canonicalUnifiedLabel(parts[2], family, metadata);
+  return JSON.stringify(parts);
+}
+
+function golden(value, where) {
+  mapping(value, where);
+  const events = getField(value, 'assembled');
+  if (!Array.isArray(events)) throw new Error(`${where} needs an assembled event list`);
+  keys(value, ['assembled'], ['assembled'], where);
+  const fields = {tool_call:['kind','name','arguments'],text:['kind','text'],reasoning:['kind','text'],
+    message_start:['kind','phase'],message_end:['kind']};
+  for (const event of events) {
+    mapping(event, `${where}.assembled event`);
+    const kind = getField(event, 'kind');
+    if (typeof kind !== 'string' || !Object.hasOwn(fields, kind)) throw new Error(`${where} has an invalid event kind`);
+    keys(event, fields[kind], fields[kind], `${where}.assembled event`);
+    if (kind === 'text' || kind === 'reasoning') string(event.text, `${where}.assembled text`);
+    if (kind === 'tool_call' && event.name !== null) string(event.name, `${where}.assembled name`);
+    if (kind === 'message_start' && !['commentary','final_answer'].includes(event.phase)) throw new Error(`${where} has an invalid message phase`);
+  }
 }
 
 export function validateUnifiedInputs(document, family, path, aliasMetadata = null) {
@@ -68,6 +100,7 @@ export function validateUnifiedInputs(document, family, path, aliasMetadata = nu
     if (document[field].family !== family) throw new Error(`${path}.${field} family differs from directory`);
   }
   stringMapping(document.cases, `${path}.cases`);
+  const activeScenarios = new Set();
   const aliases = new Set();
   const canonicalOwners = new Map();
   for (const [caseId, value] of Object.entries(document.cases)) {
@@ -91,9 +124,19 @@ export function validateUnifiedInputs(document, family, path, aliasMetadata = nu
       component(value.display_id, `${where}.display_id`);
       string(value.scenario, `${where}.scenario`);
       request(value.request, `${where}.request`);
-      mapping(value.golden, `${where}.golden`);
-      if (!hasField(value.golden, 'assembled') || !Array.isArray(getField(value.golden, 'assembled'))) throw new Error(`${where}.golden needs an assembled event list`);
-      if (!Array.isArray(getField(value.golden, 'assembled')) && !Array.isArray(getField(value.golden, 'chunks'))) throw new Error(`${where} has no GOLDEN events`);
+      if (activeScenarios.has(value.scenario)) throw new Error(`${where} has duplicate active scenario ${value.scenario}`);
+      activeScenarios.add(value.scenario);
+      if (aliasMetadata?.canonical) {
+        const expected = aliasMetadata.canonical[value.scenario];
+        if (!expected) throw new Error(`${where} has unknown active scenario ${value.scenario}`);
+        for (const alias of [value.display_id, ...value.historical_ids]) {
+          const actual = canonicalUnifiedLabel(alias, family, aliasMetadata);
+          if (actual !== `UNIFIED.${expected}`) {
+            throw new Error(`${where} case ID does not own scenario ${value.scenario}: ${alias}`);
+          }
+        }
+      }
+      golden(value.golden, `${where}.golden`);
     } else if (value.request !== null) request(value.request, `${where}.request`);
   }
   return document;
@@ -619,7 +662,9 @@ export class FixtureResources {
     const parsedInputs = input.format === 'typed-json-v1' ? await this.snapshot(input) : await this.yaml(input, null, true);
     const inputDocument = parsedInputs.value;
     if (!inputDocument) throw new Error(`Unified input and GOLDEN document missing for ${family}`);
-    validateUnifiedInputs(inputDocument, family, input.path, this.catalog.metadata.unified_aliases);
+    const aliases = this.catalog.metadata.unified_aliases;
+    if (!aliases?.canonical || typeof aliases.canonical !== 'object' || Array.isArray(aliases.canonical) || !Object.keys(aliases.canonical).length || Object.values(aliases.canonical).some(value => typeof value !== 'string')) throw new Error('missing canonical Unified case owners');
+    validateUnifiedInputs(inputDocument, family, input.path, aliases);
     return { ...parsedInputs, value: inputDocument, sourceResource: input };
   }
 

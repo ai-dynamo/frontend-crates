@@ -211,12 +211,12 @@ def test_selected_recapture_preserves_other_cases_and_checks_the_full_job(v2_cap
     path = store / "families/gemma4/inputs_and_golden.yaml"
     family = unified_history.load_yaml(path)
     second = copy.deepcopy(family["cases"]["text_only"])
-    second.update(scenario="second", display_id="UNIFIED.1-2", historical_ids=[])
+    second.update(scenario="reason_only", display_id="UNIFIED.10-reason_only", historical_ids=[])
     family["cases"]["second"] = second
     path.write_text(unified_history.dump_yaml(family))
     _write_capture(store, "0.7.24", {"text_only": _change("original"), "second": _change("untouched")})
     job.write_text(json.dumps(build_job(store / "families", "gemma4", mode="stream")))
-    payload["results"]["UNIFIED.second.gemma4"] = copy.deepcopy(payload["results"]["UNIFIED.text_only.gemma4"])
+    payload["results"]["UNIFIED.reason_only.gemma4"] = copy.deepcopy(payload["results"]["UNIFIED.text_only.gemma4"])
     payload["provenance"].update(job_sha256=digest(job), results_sha256=hashlib.sha256(json.dumps(payload["results"], sort_keys=True, ensure_ascii=False).encode()).hexdigest())
     capture.write_text(json.dumps(payload))
     before = unified_history.load_store(store).histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.7.24")
@@ -232,7 +232,7 @@ def test_selected_recapture_preserves_other_cases_and_checks_the_full_job(v2_cap
     unchanged = {p: (p.read_bytes(), p.stat().st_ino) for p in store.rglob("*.yaml")}
     assert import_capture(store, job, capture, payload["provenance"], implementation="dynamo_v2", selected_cases=selection) == []
     assert unchanged == {p: (p.read_bytes(), p.stat().st_ino) for p in store.rglob("*.yaml")}
-    payload["results"]["UNIFIED.second.gemma4"]["capture_input"]["input"] = "unselected but corrupted"
+    payload["results"]["UNIFIED.reason_only.gemma4"]["capture_input"]["input"] = "unselected but corrupted"
     payload["provenance"]["results_sha256"] = hashlib.sha256(json.dumps(payload["results"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     capture.write_text(json.dumps(payload))
     with pytest.raises(ValueError, match="request differs from job"):

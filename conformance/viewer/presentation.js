@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, foldNullVariants, foldSchemaVariants, rankUnifiedColumns } from './model.js';
+import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, rankUnifiedColumns, validateCaseColumns, caseSchemas } from './model.js';
 import { isMapping, hasField, getField, compareText, mappingEntries, mergeMappings, deleteField, sameValue } from './values.js';
 import { materializeUnifiedRecord, canonicalUnifiedLabel } from './resources.js';
 
@@ -73,6 +73,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
     const activeAliases = new Map();
     for (const [id, input] of Object.entries(document.cases).sort(([a], [b]) => compareText(a, b))) {
       if (input.lifecycle !== 'active') continue;
+      if (!metadata.unified_presentation.scenario_families[input.scenario]?.includes(family)) throw new Error(`unexpected authored case applicability: ${family}/${input.scenario}`);
       if (cases.has(input.scenario)) throw new Error(`duplicate active Unified scenario: ${family}/${input.scenario}`);
       cases.set(input.scenario, { id, input });
       for (const alias of [input.display_id, ...input.historical_ids]) activeAliases.set(canonicalUnifiedLabel(alias, family, metadata.unified_aliases), { id, input });
@@ -111,6 +112,11 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       histories.set(`${family}\0${descriptor.control.key}`, captures);
     }
   }
+  const authored = new Map([...byFamily].map(([family, cases]) => [family,
+    new Map([...cases].map(([scenario, {input}]) => [scenario, {
+      case_id: canonicalUnifiedLabel(input.display_id, family, metadata.unified_aliases),
+      request: structuredClone(input.request), golden: structuredClone(input.golden.assembled),
+    }]))]));
   const missingScenarios = metadata.unified_presentation.authored_scenarios.filter(scenario =>
     metadata.unified_presentation.scenario_families[scenario]?.some(family => visibleFamilies.has(family)) && !descriptions.has(scenario));
   if (missingScenarios.length) throw new Error(`Unified fixture inputs are missing authored scenario(s): ${missingScenarios.sort(compareText).join(', ')}`);
@@ -119,11 +125,10 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
   for (const scenario of scenarios) if (!Object.hasOwn(metadata.unified_taxonomy, scenario)) throw new Error(`unknown Unified scenario: ${scenario}`);
   const ordered = [...scenarios].sort((a, b) => metadata.unified_taxonomy[a].display_order - metadata.unified_taxonomy[b].display_order);
   const band = (scenario) => { const group = metadata.unified_taxonomy[scenario].display_group; return `case-band-${typeof group === 'number' && group % 2 === 0 ? 1 : 0}`; };
-  const shared = explicitSchemas(metadata.unified_presentation.shared_tools) || [];
   const columns = ordered.map((scenario) => {
     const taxonomy = metadata.unified_taxonomy[scenario];
-    const column = { sub: scenario, group_key: taxonomy.section, band: band(scenario), label: metadata.folds.unified[scenario].canonical_label, desc: descriptions.get(scenario) || '', init: null };
-    const schemas = schemaVariants(families, byFamily, scenario, shared);
+    const column = { sub: scenario, group_key: taxonomy.section, band: band(scenario), label: metadata.unified_taxonomy[scenario].canonical_label, desc: descriptions.get(scenario) || '', init: null };
+    const schemas = caseSchemas(authored, scenario, metadata.unified_presentation.shared_tools);
     if (schemas.length) column.schemas = schemas;
     return column;
   });
@@ -141,7 +146,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
     for (const scenario of scenarios) {
       const entry = byFamily.get(family).get(scenario);
       const taxonomy = metadata.unified_taxonomy[scenario];
-      const caseId = `UNIFIED.${metadata.folds.unified[scenario].canonical_label}`;
+      const caseId = `UNIFIED.${metadata.unified_taxonomy[scenario].canonical_label}`;
       const applicable = metadata.unified_presentation.scenario_families[scenario];
       const markerFamily = metadata.unified_presentation.marker_families[family] || family;
       if (!entry && !applicable?.includes(family)) {
@@ -197,7 +202,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       const current = results.get('dynamo');
       const reasons = current && ['MERGE', 'ORDER'].includes(current.verdict) ? [{ label: 'stream vs final message', reason: "Final output changes event order or combines separate events." }] : [];
       // Scope applicability stays independent of selection, so an empty Reference
-      // keeps every authored variant available in the folded popup.
+      // keeps every authored case available as its own column.
       cells[scenario] = { kind: 'cell', case_id: caseId, family, sub: scenario, col_group: taxonomy.section, band: band(scenario), status: referenceKey !== null && comparisons[referenceKey]?.err ? 'problem' : 'ok', red_on_diff: true,
         cmp: equivalenceEntries(comparisons), facts: [], tooltip: { head: `${caseId} (${scenario}) — ${family}`, description: input.description + (input.policy.length ? `  [policy: ${input.policy.join(', ')}]` : ''),
           init: { starting_state: 'None', tool_output_mode: 'Native', named_tool: null, ...Object.fromEntries(mappingEntries(init)) }, finish_reason: request.finish_reason || 'stop',
@@ -216,13 +221,11 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
   }
   const all = rows.flatMap((row) => Object.values(row.cells));
   const na = all.filter((cell) => cell.status === 'na').length;
-  const stats = { families: families.length, sub_cases: scenarios.length, slots: all.length, real: all.length - na, parity: 0, dynamo_only: 0, documented: 0, research: 0, errors: 0, na, missing: 0 };
-  const glossary = groups.map((group) => ({ label: group.label, rows: ordered.filter((scenario) => metadata.unified_taxonomy[scenario].section === group.key).map((scenario) => [metadata.folds.unified[scenario].canonical_label, descriptions.get(scenario) || '']) }));
+  const stats = { families: families.length, fixture_cases: all.length - na, sub_cases: scenarios.length, slots: all.length, real: all.length - na, parity: 0, dynamo_only: 0, documented: 0, research: 0, errors: 0, na, missing: 0 };
+  const glossary = groups.map((group) => ({ label: group.label, rows: ordered.filter((scenario) => metadata.unified_taxonomy[scenario].section === group.key).map((scenario) => [metadata.unified_taxonomy[scenario].canonical_label, descriptions.get(scenario) || '']) }));
   const tab = { id: 'tab-unified', kind: 'unified', mode: 'unified', no_parser_col: true, columns, column_groups: groups, rows, stats, glossary, candidates: descriptors.map((descriptor) => descriptor.control) };
-  foldNullVariants(tab, metadata);
-  foldSchemaVariants(tab, metadata);
   rankUnifiedColumns(tab, metadata);
-  return tab;
+  return validateCaseColumns(tab, authored, metadata.unified_presentation.shared_tools);
 }
 
 export async function buildTab(catalog, reader, tabId, options = {}) {
@@ -267,12 +270,6 @@ export function createSourceLink(baseUrl, publication = null, catalogRevision = 
   };
 }
 
-export function explicitSchemas(tools) {
-  if (!Array.isArray(tools)) return null;
-  const schemas = tools.filter((tool) => typeof getField(tool, 'name') === 'string' && hasField(tool, 'parameters') && getField(tool, 'parameters') !== null)
-    .map((tool) => ({ name: getField(tool, 'name'), parameters: getField(tool, 'parameters') }));
-  return schemas.length ? schemas : null;
-}
 
 function requestIdentity(request) {
   return { input: getField(request, 'input', ''), init: getField(request, 'init') || { starting_state: 'None', tool_output_mode: 'Native', named_tool: null },
@@ -292,18 +289,6 @@ export function unifiedComparisonFailure(request, captured) {
   return changed.length ? `Request mismatch (${changed.join(', ')})` : null;
 }
 
-function schemaVariants(families, byFamily, scenario, shared) {
-  const variants = [];
-  for (const family of families) {
-    const input = byFamily.get(family)?.get(scenario)?.input;
-    const tools = explicitSchemas(input?.request.tools);
-    if (!tools || sameValue(tools, shared)) continue;
-    let variant = variants.find((entry) => sameValue(entry.tools, tools));
-    if (!variant) { variant = { families: [], tools }; variants.push(variant); }
-    variant.families.push(family);
-  }
-  return variants;
-}
 
 export function validatePublication(publication, catalogRevision, resolvedCatalogRevision) {
   if (publication?.source_commit_sha !== undefined && (publication.source_commit_sha !== publication.revision || !/^[0-9a-f]{40}$/.test(publication.source_commit_sha))) throw new Error('Invalid source_commit_sha');
