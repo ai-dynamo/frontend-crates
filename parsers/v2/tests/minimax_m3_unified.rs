@@ -1093,6 +1093,28 @@ fn scoped_nullable_schemas_parse_null_at_every_split() {
 }
 
 #[test]
+fn declared_type_wins_over_contradicting_literals_at_every_split() {
+    let input = call(
+        "]<]minimax[>[<metrics>]<]minimax[>[<item>temperature]<]minimax[>[</item>\
+         ]<]minimax[>[<item>humidity]<]minimax[>[</item>]<]minimax[>[</metrics>\
+         ]<]minimax[>[<count>5]<]minimax[>[</count>",
+    );
+    assert_splits(
+        &input,
+        json!({"type":"object","properties":{
+            "metrics":{
+                "type":"array","items":{"type":"string"},"enum":["temperature","humidity","co2"]
+            },
+            "count":{"type":"integer","enum":["auto"]}
+        }}),
+        UnifiedParserInit::default(),
+        &[expected(
+            json!({"metrics":["temperature","humidity"],"count":5}),
+        )],
+    );
+}
+
+#[test]
 fn literal_constraints_preserve_types_and_numeric_precision() {
     // 2^53 + 1 catches integer rounding through an intermediate f64.
     for value in [json!(false), json!(-0.125), json!(9007199254740993u64)] {

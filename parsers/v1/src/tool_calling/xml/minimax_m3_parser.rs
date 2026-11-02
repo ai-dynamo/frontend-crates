@@ -1027,6 +1027,36 @@ NS|</tool_call>"#;
     }
 
     #[test]
+    fn declared_array_type_wins_over_a_misplaced_enum() {
+        // v1 already ignores the enum here; this guards it against drifting to v2's old intersection.
+        let tok = "]<]minimax[>[";
+        let tools = vec![ToolDefinition {
+            name: "read".into(),
+            parameters: Some(serde_json::json!({"type": "object", "properties": {
+                "metrics": {
+                    "type": "array", "items": {"type": "string"},
+                    "enum": ["temperature", "humidity", "co2"]
+                }
+            }})),
+            strict: None,
+        }];
+        let input = format!(
+            "{tok}<tool_call>{tok}<invoke name=\"read\">{tok}<metrics>\
+             {tok}<item>temperature{tok}</item>{tok}<item>humidity{tok}</item>{tok}</metrics>\
+             {tok}</invoke>{tok}</tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_minimax_m3(&input, &MiniMaxM3ParserConfig::default(), Some(&tools))
+                .unwrap();
+        assert_eq!(calls.len(), 1);
+        let (_, args) = call_name_and_args(&calls[0]);
+        assert_eq!(
+            args,
+            serde_json::json!({"metrics": ["temperature", "humidity"]})
+        );
+    }
+
+    #[test]
     fn pretty_printed_nested_array_has_no_spurious_whitespace_item() {
         let tok = "]<]minimax[>[";
         let tools = vec![ToolDefinition {
