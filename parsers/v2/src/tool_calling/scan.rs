@@ -1383,6 +1383,13 @@ pub(crate) trait InvokeBoundary: Send {
     fn unclassified_tail(&self, _candidate: &str) -> usize {
         0
     }
+    /// Whether byte `at` of `candidate` lies inside a parameter VALUE this
+    /// boundary has walked (closed or still open). Marker-looking bytes there
+    /// are data (`I7`), so a scanner narrating the candidate must not read a
+    /// nested `invoke_start` there as a new header.
+    fn owns_value_byte(&self, _candidate: &str, _at: usize) -> bool {
+        false
+    }
     /// A recovery opener can accept malformed prose; quoting shields only grammar-owned headers.
     fn owns_prose_invoke(&self, text: &str, at: usize) -> bool {
         self.opens(text, at)
@@ -2656,21 +2663,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         flush: bool,
     ) -> Option<(usize, InReasoning)> {
         let header_end = self.spec.narrated_invoke_header_end?;
-        let header = self.find_invoke_start(&self.buffer).map(|at| {
-            let limit = closer.unwrap_or(self.buffer.len());
-            let opener = self.spec.invoke_start.len();
-            let len = if limit <= at {
-                opener
-            } else {
-                match self.buffer[at + opener..limit].find(header_end) {
-                    Some(end) => opener + end + 1,
-                    None if closer.is_some() || flush => opener,
-                    None => 0,
-                }
-            };
-            (at, InReasoning::Narrated { len, open: true })
-        });
         let invoke_end = self.spec.invoke_end.len();
+        // The terminator search feeds the body to the boundary first, so the
+        // header search below judges candidates against up-to-date ownership.
         let terminator = if self.narrated_invoke_open {
             let end = match self.narrated_boundary.as_mut() {
                 Some(boundary) => {
@@ -2708,6 +2703,37 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             })
         } else {
             None
+        };
+        // A further `invoke_start` inside a parameter value of the open narrated
+        // invoke is data (`I7`), exactly as its `invoke_end` is: skip it instead
+        // of starting a new narration over it.
+        let consumed = self.narrated_body.len().saturating_sub(self.buffer.len());
+        let opener = self.spec.invoke_start.len();
+        let mut from = 0;
+        let header = loop {
+            let Some(found) = self.find_invoke_start(&self.buffer[from..]) else {
+                break None;
+            };
+            let at = from + found;
+            let owned_value = self.narrated_invoke_open
+                && self.narrated_boundary.as_ref().is_some_and(|boundary| {
+                    boundary.owns_value_byte(&self.narrated_body, at + consumed)
+                });
+            if owned_value {
+                from = at + opener;
+                continue;
+            }
+            let limit = closer.unwrap_or(self.buffer.len());
+            let len = if limit <= at {
+                opener
+            } else {
+                match self.buffer[at + opener..limit].find(header_end) {
+                    Some(end) => opener + end + 1,
+                    None if closer.is_some() || flush => opener,
+                    None => 0,
+                }
+            };
+            break Some((at, InReasoning::Narrated { len, open: true }));
         };
         earliest([header, terminator])
     }

@@ -1458,6 +1458,27 @@ mod tests {
     }
 
     #[test]
+    fn a_nested_narrated_header_inside_a_parameter_value_is_data() {
+        // A further `<function=` inside the narrated invoke's parameter value is
+        // data too (`I7`): it must not start a new narration (which would strip it
+        // and read the inner `</function>` as the terminator). Only the OUTER
+        // markers go. Checked whole, at every two-chunk split, and char by char.
+        let input = "<think><function=run><parameter=a>x<function=run>y</function>z</parameter></function></think>";
+        let expected = [reasoning(
+            "<parameter=a>x<function=run>y</function>z</parameter>",
+        )];
+        at_every_split(input, |out, cut| {
+            assert_eq!(out, &expected, "split at {cut}: {out:?}");
+        });
+        let chars: Vec<&str> = input
+            .char_indices()
+            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+            .collect();
+        let out = events(&narration_tools(), &chars);
+        assert_eq!(out, &expected, "char by char: {out:?}");
+    }
+
+    #[test]
     fn a_bare_invoke_terminator_without_a_narrated_header_stays_literal_in_a_thought() {
         // Only a terminator that closes a narrated header is markup; a stray one
         // is text on both paths (pinned above), and stays so.
