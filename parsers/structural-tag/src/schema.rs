@@ -68,15 +68,12 @@ type Path = Vec<String>;
 struct Survey {
     /// `(path to the definitions map, its keys)`.
     containers: Vec<(Path, Vec<String>)>,
-    /// `(raw text, decoded local segments)` for every string `$ref`.
-    refs: Vec<(String, Option<Path>)>,
+    /// `(path of the object holding the `$ref`, raw text, decoded local
+    /// segments)` for every string `$ref`, each site exactly once.
+    refs: Vec<(Path, String, Option<Path>)>,
     /// Schema objects already visited, so a reference target reached twice is
-    /// counted once.
+    /// surveyed once and its `$ref` site recorded once.
     visited: BTreeSet<Path>,
-    /// Reference targets that sit outside every schema-valued keyword position
-    /// (under an unknown keyword, say) and were walked because a `$ref` names
-    /// them. The rewrite visits them too.
-    followed: Vec<Path>,
 }
 
 impl Survey {
@@ -90,7 +87,7 @@ impl Survey {
         // Walking a target can surface more references; loop until none is new.
         let mut next = 0;
         while next < survey.refs.len() {
-            let Some(target) = survey.refs[next].1.clone() else {
+            let Some(target) = survey.refs[next].2.clone() else {
                 next += 1;
                 continue;
             };
@@ -103,7 +100,6 @@ impl Survey {
             {
                 let mut path = target.clone();
                 survey.walk(node, &mut path, &mut budget)?;
-                survey.followed.push(target);
             }
         }
         Some(survey)
@@ -125,7 +121,7 @@ impl Survey {
         }
         if let Some(Value::String(reference)) = map.get("$ref") {
             self.refs
-                .push((reference.clone(), decode_local_ref(reference)));
+                .push((path.clone(), reference.clone(), decode_local_ref(reference)));
         }
         for (key, child) in map {
             match keyword_kind(key, child) {
@@ -228,8 +224,9 @@ type Renames = BTreeMap<(Path, String), String>;
 /// What to change, decided before anything is touched.
 struct Plan {
     renames: Renames,
-    /// Reference targets outside schema-valued positions (see [`Survey::followed`]).
-    followed: Vec<Path>,
+    /// Every decodable `$ref` site as `(path of the holding object, raw text)`;
+    /// each is rewritten once, from its original spelling.
+    sites: Vec<(Path, String)>,
 }
 
 impl Plan {
@@ -253,10 +250,10 @@ impl Plan {
             let pinned: Vec<(Path, String)> = survey
                 .refs
                 .iter()
-                .filter(|(raw, decoded)| {
+                .filter(|(_, raw, decoded)| {
                     !rewritable(decoded.as_deref(), &survey.containers, &candidates) && raw != "#"
                 })
-                .filter_map(|(raw, _)| literal_target(raw, &survey.containers))
+                .filter_map(|(_, raw, _)| literal_target(raw, &survey.containers))
                 .filter(|target| candidates.contains(target))
                 .collect();
             if pinned.is_empty() {
@@ -288,10 +285,13 @@ impl Plan {
                 renames.insert((path.clone(), key.clone()), candidate);
             }
         }
-        Some(Self {
-            renames,
-            followed: survey.followed,
-        })
+        let sites = survey
+            .refs
+            .into_iter()
+            .filter(|(_, _, decoded)| decoded.is_some())
+            .map(|(site, raw, _)| (site, raw))
+            .collect();
+        Some(Self { renames, sites })
     }
 
     fn apply(&self, schema: &mut Value) {
@@ -302,10 +302,15 @@ impl Plan {
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect();
-        self.rewrite_refs(schema, &containers);
-        for path in &self.followed {
-            if let Some(target) = node_at_mut(schema, path) {
-                self.rewrite_refs(target, &containers);
+        // Each surveyed site is rewritten exactly once from its original text, so
+        // a site reachable through several references (an ancestor target and the
+        // site itself) is never decoded twice.
+        for (site, raw) in &self.sites {
+            let Some(canonical) = self.canonical_ref(raw, &containers) else {
+                continue;
+            };
+            if let Some(Value::Object(map)) = node_at_mut(schema, site) {
+                map.insert("$ref".to_string(), Value::String(canonical));
             }
         }
         for path in &containers {
@@ -320,38 +325,6 @@ impl Plan {
                     .cloned()
                     .unwrap_or(name);
                 definitions.insert(name, definition);
-            }
-        }
-    }
-
-    /// Mirror of [`Survey::walk`]: the same keyword positions, mutably.
-    fn rewrite_refs(&self, schema: &mut Value, containers: &[Path]) {
-        let Value::Object(map) = schema else {
-            return;
-        };
-        if let Some(Value::String(reference)) = map.get_mut("$ref")
-            && let Some(canonical) = self.canonical_ref(reference, containers)
-        {
-            *reference = canonical;
-        }
-        for (key, child) in map.iter_mut() {
-            match keyword_kind(key, child) {
-                KeywordKind::Instance | KeywordKind::Unknown => {}
-                KeywordKind::Schema => self.rewrite_refs(child, containers),
-                KeywordKind::SchemaList => {
-                    if let Some(items) = child.as_array_mut() {
-                        for item in items {
-                            self.rewrite_refs(item, containers);
-                        }
-                    }
-                }
-                KeywordKind::SchemaMap => {
-                    if let Some(entries) = child.as_object_mut() {
-                        for entry in entries.values_mut() {
-                            self.rewrite_refs(entry, containers);
-                        }
-                    }
-                }
             }
         }
     }
@@ -951,6 +924,39 @@ mod tests {
         expected["properties"]["f"] = json!({"$ref": "#/$defs/x_y"});
         expected["x-target"]["$ref"] = json!("#/$defs/x_y");
         assert_eq!(canonicalize_local_refs(schema), expected);
+    }
+
+    #[test]
+    fn a_site_reachable_through_two_references_is_decoded_once() {
+        // PR #516 review: `child` is reachable through `#/custom` and directly
+        // through `#/custom/properties/child`. Rewriting it once per route decoded
+        // `#/x%2520y` twice, to `#/x y` (a string), instead of once, to `#/x%20y`
+        // (the integer the schema declares). The result must not depend on
+        // whether the direct route (`a`) is present.
+        let schema = |with_a: bool| {
+            let mut properties = json!({"b": {"$ref": "#/custom"}});
+            if with_a {
+                properties["a"] = json!({"$ref": "#/custom/properties/child"});
+            }
+            json!({
+                "type": "object",
+                "properties": properties,
+                "custom": {"type": "object", "properties": {"child": {"$ref": "#/x%2520y"}}},
+                "x%20y": {"type": "integer"},
+                "x y": {"type": "string"},
+                "required": ["b"]
+            })
+        };
+        for with_a in [true, false] {
+            let canonical = canonicalize_local_refs(schema(with_a));
+            assert_eq!(
+                canonical["custom"]["properties"]["child"]["$ref"], "#/x%20y",
+                "with_a={with_a}: {canonical}"
+            );
+            let mut expected = schema(with_a);
+            expected["custom"]["properties"]["child"]["$ref"] = json!("#/x%20y");
+            assert_eq!(canonical, expected, "with_a={with_a}");
+        }
     }
 
     #[test]

@@ -109,10 +109,32 @@ pub(crate) fn uses_declared_tool_schema(tool: &Tool, schema_mode: StructuralTagS
     enforce_schema && !tool.parameters.is_null()
 }
 
+/// One tool's argument schema exactly as declared (or `true` when the policy
+/// leaves it unconstrained), for builders that resolve `$ref`s themselves.
+///
+/// Who needs which spelling:
+/// - JSON-forwarding builders hand the schema to the backend verbatim and take
+///   [`resolve_tool_schema`]: every `TemplatedToolCallFormat` (Qwen3-Coder,
+///   GLM-4.7, Harmony, Gemma 4, …), DeepSeek DSML, MiniMax M3 (it validates the
+///   shape with a literal pointer lookup, like the backend), Muse Spark, Kimi K2.
+/// - Self-resolving builders decode `$ref`s while typing arguments and must see
+///   the schema as written, taking this function and canonicalizing only what
+///   they forward afterwards: Kimi K3. (Beam types its XML arguments from
+///   `tool.parameters` directly and does not go through either function.)
+pub(crate) fn declared_tool_schema(tool: &Tool, schema_mode: StructuralTagSchemaMode) -> Value {
+    if uses_declared_tool_schema(tool, schema_mode) {
+        tool.parameters.clone()
+    } else {
+        // xgrammar uses `true` for syntactically valid, schema-unconstrained JSON.
+        json!(true)
+    }
+}
+
 /// A declared schema reaches the grammar backend with its local `$ref` targets
 /// in the literal spelling the backend resolves ([`canonicalize_local_refs`]);
 /// an escaped target such as `#/$defs/registry~1Model~0v1%20name` otherwise
-/// fails to compile and the request is rejected (ai-dynamo/dynamo#17661).
+/// fails to compile and the request is rejected (ai-dynamo/dynamo#17661). See
+/// [`declared_tool_schema`] for the builders that must not take this spelling.
 pub(crate) fn resolve_tool_schema(tool: &Tool, schema_mode: StructuralTagSchemaMode) -> Value {
     if uses_declared_tool_schema(tool, schema_mode) {
         canonicalize_local_refs(tool.parameters.clone())

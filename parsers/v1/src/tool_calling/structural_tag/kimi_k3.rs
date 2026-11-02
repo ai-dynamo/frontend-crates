@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use super::builder::{
-    ToolCallFormatBuildContext, resolve_tools_to_include, uses_declared_tool_schema,
-};
+use super::builder::{ToolCallFormatBuildContext, declared_tool_schema, resolve_tools_to_include};
 use super::format::*;
 use crate::tool_calling::ToolChoice;
 #[cfg(test)]
@@ -20,16 +18,16 @@ pub(crate) fn build_kimi_k3(
     // K3 resolves `$ref`s itself (percent-decoding them) to type its XTML
     // arguments, so it must see the schema as written. Only the JSON schemas it
     // hands on to the backend are canonicalized, below, after it has built.
-    let relaxed = serde_json::Value::Bool(true);
+    let schemas: Vec<_> = tools
+        .iter()
+        .map(|tool| declared_tool_schema(tool, ctx.strict_schema()))
+        .collect();
     let selected: Vec<_> = tools
         .iter()
-        .map(|tool| dynamo_structural_tag::Tool {
+        .zip(&schemas)
+        .map(|(tool, parameters)| dynamo_structural_tag::Tool {
             name: &tool.name,
-            parameters: if uses_declared_tool_schema(tool, ctx.strict_schema()) {
-                tool.parameters.as_ref().unwrap_or(&relaxed)
-            } else {
-                &relaxed
-            },
+            parameters,
         })
         .collect();
     if matches!(ctx.tool_choice, ToolChoice::Auto) {

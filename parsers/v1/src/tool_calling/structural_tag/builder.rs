@@ -95,25 +95,38 @@ pub(crate) fn uses_declared_tool_schema(tool: &ToolDefinition, strict_schema: bo
     strict_schema || tool.strict != Some(false)
 }
 
+/// One tool's argument schema exactly as declared (or `true` when the policy
+/// leaves it unconstrained), for builders that resolve `$ref`s themselves.
+///
+/// Who needs which spelling:
+/// - JSON-forwarding builders hand the schema to the backend verbatim and take
+///   [`resolve_tool_schema`]: `TriggeredTags`, `DsmlToolCalls`, `KimiK2`.
+/// - Self-resolving builders decode `$ref`s (percent + JSON Pointer) while
+///   validating or inlining and must see the schema as written, taking this
+///   function and canonicalizing only what they forward afterwards: `Glm47`
+///   (`glm_schema` inlines annotation-only refs), `KimiK3` (types XTML
+///   arguments from resolved refs).
+pub(crate) fn declared_tool_schema(tool: &ToolDefinition, strict_schema: bool) -> Value {
+    // xgrammar uses `true` for syntactically valid but schema-unconstrained JSON.
+    let default_schema = json!(true);
+
+    if uses_declared_tool_schema(tool, strict_schema) {
+        tool.parameters.clone().unwrap_or(default_schema)
+    } else {
+        default_schema
+    }
+}
+
 /// Resolve one tool's argument schema using Dynamo's generic schema policy.
 ///
 /// A declared schema is handed to the grammar backend with its local `$ref`
 /// targets in the literal spelling the backend resolves
 /// ([`canonicalize_local_refs`]); an escaped target such as
 /// `#/$defs/registry~1Model~0v1%20name` otherwise fails to compile and the
-/// request is rejected (ai-dynamo/dynamo#17661).
+/// request is rejected (ai-dynamo/dynamo#17661). See [`declared_tool_schema`]
+/// for the builders that must not take this spelling.
 pub(crate) fn resolve_tool_schema(tool: &ToolDefinition, strict_schema: bool) -> Value {
-    // xgrammar uses `true` for syntactically valid but schema-unconstrained JSON.
-    let default_schema = json!(true);
-
-    if uses_declared_tool_schema(tool, strict_schema) {
-        tool.parameters
-            .clone()
-            .map(canonicalize_local_refs)
-            .unwrap_or(default_schema)
-    } else {
-        default_schema
-    }
+    canonicalize_local_refs(declared_tool_schema(tool, strict_schema))
 }
 
 /// Builder for model-family-specific tool-call structural tags.
