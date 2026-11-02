@@ -17178,3 +17178,46 @@ cases:
       - kind: tool_call
         name: echo
         arguments: '{"city":"Paris","value":-1E+400}'
+  enum_contradicting_declared_type:
+    lifecycle: active
+    scenario: enum_contradicting_declared_type
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type. The declared type decides, as stock SGLang does: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-enum_contradicting_declared_type
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"metrics": ["temperature", "humidity"], "count": 5}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            metrics:
+              type: array
+              items:
+                type: string
+              enum:
+              - temperature
+              - humidity
+              - co2
+            count:
+              type: integer
+              enum:
+              - auto
+      chunks:
+      - delta_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"metrics": ["temperature", "humidity"], "count": 5}<|tool_call_end|><|tool_calls_section_end|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          metrics:
+          - temperature
+          - humidity
+          count: 5
