@@ -616,7 +616,13 @@ fn convert_prepared_param_value(
         .and_then(|schema| schema.direct_type.clone())
         .filter(|name| {
             categorize_type(name).is_some_and(|category| {
-                param_schema.is_some_and(|schema| schema.allowed_types.contains(&category))
+                param_schema.is_some_and(|schema| {
+                    schema.allowed_types.contains(&category)
+                        // `Number` without `Integer` admits only non-integral
+                        // numbers; the direct `number` branch would coerce `42`.
+                        && (category != SchemaType::Number
+                            || schema.allowed_types.contains(&SchemaType::Integer))
+                })
             })
         })
         // Keep explicit custom types on the legacy literal-eval path when
@@ -972,10 +978,345 @@ fn collect_type_constraints(
             }
         }
     }
+    // `not`: only an EXACT type-level negation (`type`, `$ref`/composition of
+    // such with a decidable type set) excludes whole categories. A value-
+    // sensitive negation (`not: {const: 0}`, bounds) or an inexact one
+    // (overlapping `oneOf`) still admits values of every type and constrains
+    // nothing here. Integer ⊂ Number: `Number` alone means a non-integral
+    // number, so excluding `integer` keeps fractional numbers.
+    if let Some(negated) = schema.get("not")
+        && let Some(excluded) = exact_schema_types(
+            root,
+            negated,
+            depth + 1,
+            remaining,
+            active_refs,
+            &mut HashMap::new(),
+            refs_allowed,
+        )
+    {
+        context.has_type_constraints = true;
+        constraints.push(complement_types(&excluded));
+    }
+    // `if`/`then`/`else`: an exact type-level condition partitions the value
+    // space, (if ∩ then) ∪ (¬if ∩ else); a value-sensitive or inexact condition
+    // cannot be decided from types, so both branches stay possible and only
+    // their union constrains the value. An absent or untyped `else` leaves one
+    // outcome unconstrained, so the keyword then constrains nothing.
+    if let Some(condition) = schema.get("if")
+        && (schema.get("then").is_some() || schema.get("else").is_some())
+    {
+        let then_types = schema.get("then").and_then(|branch| {
+            subschema_types(root, branch, depth, remaining, active_refs, refs_allowed)
+        });
+        let else_types = schema.get("else").and_then(|branch| {
+            subschema_types(root, branch, depth, remaining, active_refs, refs_allowed)
+        });
+        let condition_types = exact_schema_types(
+            root,
+            condition,
+            depth + 1,
+            remaining,
+            active_refs,
+            &mut HashMap::new(),
+            refs_allowed,
+        );
+        let outcome: Option<HashSet<SchemaType>> = match (condition_types, then_types, else_types) {
+            // `then` untyped means the `if` type alone describes that outcome.
+            (Some(when), then_types, Some(else_types)) => {
+                let then_branch =
+                    then_types.map_or_else(|| when.clone(), |types| intersect_types(&when, &types));
+                let else_branch = intersect_types(&complement_types(&when), &else_types);
+                Some(then_branch.union(&else_branch).copied().collect())
+            }
+            (None, Some(then_types), Some(else_types)) => {
+                Some(then_types.union(&else_types).copied().collect())
+            }
+            _ => None,
+        };
+        if let Some(types) = outcome {
+            context.has_type_constraints = true;
+            constraints.push(types);
+        }
+    }
     constraints.into_iter().reduce(|mut left, right| {
         left.retain(|ty| right.contains(ty));
         left
     })
+}
+
+const ALL_SCHEMA_TYPES: [SchemaType; 7] = [
+    SchemaType::String,
+    SchemaType::Integer,
+    SchemaType::Number,
+    SchemaType::Boolean,
+    SchemaType::Object,
+    SchemaType::Array,
+    SchemaType::Null,
+];
+
+/// The determinate type set of a nested applicator schema, or `None` when it
+/// constrains nothing (no types, or a contradictory empty intersection).
+fn subschema_types(
+    root: &Value,
+    schema: &Value,
+    depth: usize,
+    remaining: &mut usize,
+    active_refs: &mut HashSet<String>,
+    refs_allowed: bool,
+) -> Option<HashSet<SchemaType>> {
+    let mut sub_context = TypeConstraintContext {
+        inherited_nullable: false,
+        refs_allowed,
+        has_type_constraints: false,
+    };
+    collect_type_constraints(
+        root,
+        schema,
+        depth + 1,
+        remaining,
+        active_refs,
+        &mut sub_context,
+    )
+    .filter(|types| !types.is_empty())
+}
+
+/// Keywords that never narrow a schema below a whole JSON type.
+const TYPE_LEVEL_KEYWORDS: [&str; 17] = [
+    "type",
+    "$ref",
+    "allOf",
+    "anyOf",
+    "oneOf",
+    "not",
+    "nullable",
+    "$defs",
+    "definitions",
+    "$id",
+    "$schema",
+    "$comment",
+    "title",
+    "description",
+    "default",
+    "examples",
+    "deprecated",
+];
+
+/// Per-walk cache of resolved reference results, so a reference shared by many
+/// branches of a definition graph is expanded once.
+type ExactRefMemo = HashMap<String, Option<HashSet<SchemaType>>>;
+
+/// The EXACT set of JSON types a schema accepts when that is decided by type
+/// alone, or `None` when it is not: a value-sensitive keyword (`const`, `enum`,
+/// bounds, `pattern`, `properties`, `items`, `if`, …), an unknown type name,
+/// an inexact composition (`oneOf` whose alternatives overlap), an
+/// unresolvable or cyclic reference, excessive depth, or an exhausted visit
+/// budget. Callers treat `None` as "no constraint". Only an exact set may be
+/// complemented (`not`) or used to partition `if`/`then`/`else`.
+///
+/// `Number` in the returned set means a non-integral number; `Integer` is
+/// listed separately, so `type: number` yields both and `type: integer` only
+/// the latter.
+fn exact_schema_types(
+    root: &Value,
+    schema: &Value,
+    depth: usize,
+    remaining: &mut usize,
+    active_refs: &mut HashSet<String>,
+    memo: &mut ExactRefMemo,
+    refs_allowed: bool,
+) -> Option<HashSet<SchemaType>> {
+    *remaining = remaining.checked_sub(1)?;
+    if depth >= 16 {
+        return None;
+    }
+    let object = schema.as_object()?;
+    if !object
+        .keys()
+        .all(|key| TYPE_LEVEL_KEYWORDS.contains(&key.as_str()))
+    {
+        return None;
+    }
+    let refs_allowed = refs_allowed && !has_unsupported_schema_ref_scope(schema);
+    let mut parts: Vec<HashSet<SchemaType>> = Vec::new();
+    if let Some(ty) = object.get("type") {
+        let names: Vec<&str> = match ty {
+            Value::String(name) => vec![name.as_str()],
+            Value::Array(names) => names
+                .iter()
+                .map(Value::as_str)
+                .collect::<Option<Vec<_>>>()?,
+            _ => return None,
+        };
+        let mut types = HashSet::new();
+        for name in names {
+            types.insert(categorize_type(name)?);
+        }
+        if types.contains(&SchemaType::Number) {
+            types.insert(SchemaType::Integer);
+        }
+        parts.push(types);
+    }
+    if let Some(reference) = object.get("$ref") {
+        let reference = reference.as_str()?;
+        if !refs_allowed {
+            return None;
+        }
+        let resolved = match memo.get(reference) {
+            Some(cached) => cached.clone(),
+            None => {
+                // A reference already being expanded is a cycle: inexact.
+                if !active_refs.insert(reference.to_string()) {
+                    return None;
+                }
+                let resolved = resolve_local_schema_ref(reference, root).and_then(|target| {
+                    exact_schema_types(
+                        root,
+                        target,
+                        depth + 1,
+                        remaining,
+                        active_refs,
+                        memo,
+                        refs_allowed,
+                    )
+                });
+                active_refs.remove(reference);
+                memo.insert(reference.to_string(), resolved.clone());
+                resolved
+            }
+        };
+        parts.push(resolved?);
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        let Some(branches) = object.get(keyword) else {
+            continue;
+        };
+        let branches = branches.as_array()?;
+        let mut sets = Vec::with_capacity(branches.len());
+        for branch in branches {
+            sets.push(exact_schema_types(
+                root,
+                branch,
+                depth + 1,
+                remaining,
+                active_refs,
+                memo,
+                refs_allowed,
+            )?);
+        }
+        let combined = match keyword {
+            "allOf" => sets
+                .into_iter()
+                .reduce(|left, right| intersect_types(&left, &right))?,
+            "anyOf" => sets.into_iter().flatten().collect(),
+            // `oneOf` is exactly one alternative: a type accepted by two
+            // alternatives is rejected, so only pairwise-disjoint alternatives
+            // have a type-decidable result.
+            _ => {
+                let overlapping = sets.iter().enumerate().any(|(index, left)| {
+                    sets[index + 1..]
+                        .iter()
+                        .any(|right| !left.is_disjoint(right))
+                });
+                if overlapping {
+                    return None;
+                }
+                sets.into_iter().flatten().collect()
+            }
+        };
+        parts.push(combined);
+    }
+    if let Some(negated) = object.get("not") {
+        let excluded = exact_schema_types(
+            root,
+            negated,
+            depth + 1,
+            remaining,
+            active_refs,
+            memo,
+            refs_allowed,
+        )?;
+        parts.push(complement_types(&excluded));
+    }
+    let mut result = parts
+        .into_iter()
+        .reduce(|left, right| intersect_types(&left, &right))?;
+    if object.get("nullable").and_then(Value::as_bool) == Some(true) {
+        result.insert(SchemaType::Null);
+    }
+    Some(result)
+}
+
+/// Whether numeric text denotes an integral value (`42`, `21.0`, `1e3`), which
+/// a schema that admits only non-integral numbers must not coerce.
+fn is_integral_number_text(value: &str) -> bool {
+    integral_number_text(value) == Some(true)
+}
+
+/// Whether the text is shaped like a decimal number literal at all.
+fn is_number_text(value: &str) -> bool {
+    integral_number_text(value).is_some()
+}
+
+/// Decide integrality on the literal text, never through `f64`: `Some(true)`
+/// when every digit right of the (exponent-shifted) decimal point is zero,
+/// `Some(false)` for a non-integral number, `None` when the text is not a
+/// decimal literal (`[+-]digits[.digits][e[+-]digits]`). `1.0000000000000001`
+/// and `9007199254740992.5` are non-integral even though they round to whole
+/// `f64`s; `1e-400` is non-integral even though it underflows to `0.0`.
+fn integral_number_text(value: &str) -> Option<bool> {
+    let unsigned = value.strip_prefix(['+', '-']).unwrap_or(value);
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => {
+            let digits = exponent.strip_prefix(['+', '-']).unwrap_or(exponent);
+            if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                return None;
+            }
+            // An exponent too large to parse saturates: it only moves the point
+            // further in the same direction.
+            let magnitude = digits.parse::<i64>().unwrap_or(i64::MAX);
+            (
+                mantissa,
+                if exponent.starts_with('-') {
+                    -magnitude
+                } else {
+                    magnitude
+                },
+            )
+        }
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    if (whole.is_empty() && fraction.is_empty())
+        || !whole
+            .bytes()
+            .chain(fraction.bytes())
+            .all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    // Digits at or beyond the shifted point must all be zero.
+    let digits = format!("{whole}{fraction}");
+    let point = i64::try_from(whole.len()).ok()?.saturating_add(exponent);
+    let fractional_from = usize::try_from(point.max(0)).unwrap_or(usize::MAX);
+    Some(
+        digits
+            .bytes()
+            .skip(fractional_from.min(digits.len()))
+            .all(|byte| byte == b'0'),
+    )
+}
+
+fn complement_types(excluded: &HashSet<SchemaType>) -> HashSet<SchemaType> {
+    ALL_SCHEMA_TYPES
+        .iter()
+        .copied()
+        .filter(|ty| !excluded.contains(ty))
+        .collect()
+}
+
+fn intersect_types(left: &HashSet<SchemaType>, right: &HashSet<SchemaType>) -> HashSet<SchemaType> {
+    left.intersection(right).copied().collect()
 }
 
 // A float-backed schema literal has already passed through f64: an integral-looking
@@ -1024,8 +1365,8 @@ fn value_matches(v: &ParsedValue, allowed: &HashSet<SchemaType>) -> bool {
         ParsedValue::Array(_) => SchemaType::Array,
         ParsedValue::Object(_) => SchemaType::Object,
     };
-    // An integer literal also satisfies a `number` constraint.
-    allowed.contains(&cat) || (cat == SchemaType::Integer && allowed.contains(&SchemaType::Number))
+    // `Number` alone means a non-integral number; an integral value needs `Integer`.
+    allowed.contains(&cat)
 }
 
 fn coerce_number_value(value: &str) -> Option<ParsedValue> {
@@ -1055,7 +1396,10 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
         {
             return value;
         }
-        if let Ok(json_val) = try_literal_eval(value)
+        // Number-shaped text is decided by the exact numeric branches below,
+        // never by a storage category.
+        if !is_number_text(value.trim())
+            && let Ok(json_val) = try_literal_eval(value)
             && value_matches(&json_val, allowed)
         {
             return json_val;
@@ -1069,6 +1413,7 @@ fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue
     }
 
     if allowed.contains(&SchemaType::Number)
+        && (allowed.contains(&SchemaType::Integer) || !is_integral_number_text(value.trim()))
         && let Some(number) = coerce_number_value(value.trim())
     {
         return number;
@@ -1484,5 +1829,397 @@ mod integral_number_tests {
         for raw in ["42.0000000000000001", "1e-400", "true", "\"42\""] {
             assert!(coerce_integral_number(raw).is_none(), "{raw}");
         }
+    }
+}
+
+#[cfg(test)]
+mod schema_composition_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn one_param(name: &str, schema: Value) -> HashMap<String, SchemaCoercion> {
+        let mut m = HashMap::new();
+        m.insert(name.to_string(), SchemaCoercion::local(&schema));
+        m
+    }
+
+    fn document_config(parameters: Value) -> HashMap<String, SchemaCoercion> {
+        let tool = ToolDefinition {
+            name: "f".into(),
+            parameters: Some(parameters),
+        };
+        get_arguments_config("f", Some(&[tool]))
+    }
+
+    fn ser(pv: &ParsedValue) -> String {
+        serde_json::to_string(pv).unwrap()
+    }
+
+    #[test]
+    fn ref_to_object_definition_parses_json_object() {
+        let cfg = document_config(json!({
+            "type": "object",
+            "$defs": {"Category": {"type": "object", "properties": {
+                "label": {"type": "string"}, "children": {"type": "array"}}}},
+            "properties": {"category": {"$ref": "#/$defs/Category"}}
+        }));
+        assert_eq!(
+            ser(&convert_param_value(
+                r#"{"label": "Garden Tools", "children": []}"#,
+                "category",
+                &cfg,
+                "f"
+            )),
+            r#"{"label":"Garden Tools","children":[]}"#
+        );
+    }
+
+    #[test]
+    fn ref_to_string_definition_keeps_numeric_text() {
+        let cfg = document_config(json!({
+            "type": "object",
+            "$defs": {"Code": {"type": "string"}},
+            "properties": {"code": {"$ref": "#/$defs/Code"}}
+        }));
+        assert_eq!(
+            ser(&convert_param_value("123", "code", &cfg, "f")),
+            "\"123\""
+        );
+    }
+
+    #[test]
+    fn ref_through_definitions_section_coerces_integer() {
+        let cfg = document_config(json!({
+            "type": "object",
+            "definitions": {"Count": {"type": "integer"}},
+            "properties": {"count": {"$ref": "#/definitions/Count"}}
+        }));
+        assert_eq!(ser(&convert_param_value("7", "count", &cfg, "f")), "7");
+    }
+
+    #[test]
+    fn not_string_coerces_numeric_text() {
+        let cfg = one_param("count", json!({"not": {"type": "string"}}));
+        assert_eq!(
+            ser(&convert_param_value("-2500", "count", &cfg, "f")),
+            "-2500"
+        );
+        assert_eq!(
+            ser(&convert_param_value("hello", "count", &cfg, "f")),
+            "\"hello\""
+        );
+    }
+
+    #[test]
+    fn not_integer_keeps_integral_text_as_string() {
+        let cfg = one_param("x", json!({"not": {"type": "integer"}}));
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+    }
+
+    #[test]
+    fn integer_condition_keeps_the_fractional_else_branch() {
+        let cfg = one_param(
+            "amount",
+            json!({"type": "number", "if": {"type": "integer"}, "then": {"minimum": 1}, "else": {"type": "number"}}),
+        );
+        assert_eq!(
+            ser(&convert_param_value("21.5", "amount", &cfg, "f")),
+            "21.5"
+        );
+        assert_eq!(ser(&convert_param_value("3", "amount", &cfg, "f")), "3");
+        // Excluding integers keeps non-integral numbers and rejects integral text.
+        let cfg = one_param("x", json!({"type": "number", "not": {"type": "integer"}}));
+        assert_eq!(ser(&convert_param_value("2.5", "x", &cfg, "f")), "2.5");
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+        assert_eq!(
+            ser(&convert_param_value("21.0", "x", &cfg, "f")),
+            "\"21.0\""
+        );
+    }
+
+    #[test]
+    fn overlapping_one_of_is_not_an_exact_type_set() {
+        let overlapping = json!({"oneOf": [{"type": "integer"}, {"type": "number"}]});
+        let cfg = one_param("x", json!({"type": "integer", "not": overlapping}));
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        let cfg = one_param(
+            "x",
+            json!({"if": overlapping, "then": {"type": "string"}, "else": {"type": "integer"}}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+        // Disjoint alternatives stay exact and are complemented.
+        let cfg = one_param(
+            "x",
+            json!({"not": {"oneOf": [{"type": "string"}, {"type": "boolean"}]}}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+    }
+
+    #[test]
+    fn integrality_is_decided_on_the_literal_text() {
+        // `then: string` leaves only non-integral numbers in the else branch.
+        let cfg = one_param(
+            "x",
+            json!({"type": "number", "if": {"type": "integer"}, "then": {"type": "string"}, "else": {"type": "number"}}),
+        );
+        for literal in ["1.0000000000000001", "9007199254740992.5", "1e-400", "2.5"] {
+            assert_eq!(
+                ser(&convert_param_value(literal, "x", &cfg, "f")),
+                literal,
+                "{literal}"
+            );
+        }
+        for literal in ["42", "42.0", "1e3"] {
+            assert_eq!(
+                ser(&convert_param_value(literal, "x", &cfg, "f")),
+                format!("\"{literal}\""),
+                "{literal}"
+            );
+        }
+        // The literal-eval admission under `not integer` uses the same decision.
+        let cfg = one_param("x", json!({"not": {"type": "integer"}}));
+        assert_eq!(
+            ser(&convert_param_value("42.0", "x", &cfg, "f")),
+            "\"42.0\""
+        );
+        assert_eq!(ser(&convert_param_value("1e3", "x", &cfg, "f")), "\"1e3\"");
+        assert_eq!(ser(&convert_param_value("2.5", "x", &cfg, "f")), "2.5");
+        assert_eq!(
+            ser(&convert_param_value("1e-400", "x", &cfg, "f")),
+            "1e-400"
+        );
+    }
+
+    #[test]
+    fn integral_decimal_and_exponent_spellings_stay_numbers() {
+        // Union alternatives without `number`: the integer alternative admits
+        // every whole-number spelling, normalized to the integer (v1 and v2 agree).
+        let expected = [
+            ("42.0", "42"),
+            ("1e3", "1000"),
+            ("1.5e1", "15"),
+            ("-0.0", "0"),
+            ("9007199254740993.0", "9007199254740993"),
+        ];
+        for schema in [
+            json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"oneOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"type": "integer"}),
+            json!({"type": "number"}),
+        ] {
+            let cfg = one_param("x", schema.clone());
+            for (literal, number) in expected {
+                assert_eq!(
+                    ser(&convert_param_value(literal, "x", &cfg, "f")),
+                    number,
+                    "{literal} under {schema}"
+                );
+            }
+            assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+        }
+        // Only an explicit integer exclusion keeps whole-number spellings as text.
+        let cfg = one_param("x", json!({"not": {"type": "integer"}}));
+        assert_eq!(
+            ser(&convert_param_value("42.0", "x", &cfg, "f")),
+            "\"42.0\""
+        );
+    }
+
+    #[test]
+    fn quoted_text_is_not_a_number_under_numeric_unions() {
+        // A JSON-quoted literal is text: it must keep its quotes wherever the
+        // schema admits no string (v1 and v2 agree), and parse as the JSON
+        // string only where a string alternative exists.
+        for schema in [
+            json!({"not": {"type": "string"}}),
+            json!({"$ref": "#/$defs/Number"}),
+            json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+            json!({"type": "number"}),
+        ] {
+            let cfg = document_config(json!({
+                "type": "object",
+                "$defs": {"Number": {"type": "number"}},
+                "properties": {"x": schema}
+            }));
+            assert_eq!(
+                ser(&convert_param_value("\"42\"", "x", &cfg, "f")),
+                "\"\\\"42\\\"\"",
+                "{schema}"
+            );
+        }
+        let cfg = one_param(
+            "x",
+            json!({"anyOf": [{"type": "string"}, {"type": "object"}]}),
+        );
+        assert_eq!(
+            ser(&convert_param_value("\"42\"", "x", &cfg, "f")),
+            "\"42\""
+        );
+    }
+
+    #[test]
+    fn integral_number_text_shapes() {
+        assert_eq!(integral_number_text("42"), Some(true));
+        assert_eq!(integral_number_text("-42.000"), Some(true));
+        assert_eq!(integral_number_text("1e3"), Some(true));
+        assert_eq!(integral_number_text("1.5e1"), Some(true));
+        assert_eq!(integral_number_text("0.0e-5"), Some(true));
+        assert_eq!(integral_number_text("1e99999999999999999999"), Some(true));
+        assert_eq!(integral_number_text("1.5"), Some(false));
+        assert_eq!(integral_number_text("1.0000000000000001"), Some(false));
+        assert_eq!(integral_number_text("9007199254740992.5"), Some(false));
+        assert_eq!(integral_number_text("1e-400"), Some(false));
+        assert_eq!(integral_number_text("15e-1"), Some(false));
+        assert_eq!(integral_number_text("abc"), None);
+        assert_eq!(integral_number_text("1e"), None);
+        assert_eq!(integral_number_text("."), None);
+        assert_eq!(integral_number_text(""), None);
+    }
+
+    /// Six levels of `$defs`, eight references per level, acyclic: the naive
+    /// expansion is 8^6 visits. Memoized references make the walk linear in the
+    /// number of definitions, and the visit budget bounds it regardless.
+    fn repeated_reference_dag() -> Value {
+        let mut defs = serde_json::Map::new();
+        for level in 0..6 {
+            for index in 0..8 {
+                let name = format!("l{level}_{index}");
+                let node = if level == 5 {
+                    json!({"type": "integer"})
+                } else {
+                    let refs: Vec<Value> = (0..8)
+                        .map(|next| json!({"$ref": format!("#/$defs/l{}_{next}", level + 1)}))
+                        .collect();
+                    json!({"allOf": refs})
+                };
+                defs.insert(name, node);
+            }
+        }
+        json!({
+            "type": "object",
+            "$defs": Value::Object(defs),
+            "properties": {"x": {"type": "integer", "not": {"$ref": "#/$defs/l0_0"}}}
+        })
+    }
+
+    #[test]
+    fn exact_walk_memoizes_references_and_respects_the_budget() {
+        let root = repeated_reference_dag();
+        let negated = json!({"$ref": "#/$defs/l0_0"});
+        let mut remaining = 4096usize;
+        let types = exact_schema_types(
+            &root,
+            &negated,
+            0,
+            &mut remaining,
+            &mut HashSet::new(),
+            &mut ExactRefMemo::new(),
+            true,
+        );
+        assert_eq!(types, Some(HashSet::from([SchemaType::Integer])));
+        // 48 definitions plus their 8 reference wrappers each: far below 8^6.
+        assert!(4096 - remaining <= 512, "visits: {}", 4096 - remaining);
+
+        let mut remaining = 32usize;
+        let exhausted = exact_schema_types(
+            &root,
+            &negated,
+            0,
+            &mut remaining,
+            &mut HashSet::new(),
+            &mut ExactRefMemo::new(),
+            true,
+        );
+        assert_eq!(exhausted, None, "an exhausted budget is no constraint");
+
+        // End to end, the negation still resolves and `42` is excluded as an integer.
+        let cfg = document_config(root);
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+        assert_eq!(ser(&convert_param_value("2.5", "x", &cfg, "f")), "\"2.5\"");
+    }
+
+    #[test]
+    fn not_with_a_value_constraint_keeps_the_outer_type() {
+        let cfg = one_param("x", json!({"type": "integer", "not": {"const": 0}}));
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        let cfg = one_param("x", json!({"not": {"const": 0}}));
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+        let cfg = one_param(
+            "x",
+            json!({"type": "integer", "not": {"type": "integer", "minimum": 100}}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+    }
+
+    #[test]
+    fn if_with_a_value_condition_unions_the_branch_types() {
+        let cfg = one_param(
+            "x",
+            json!({"if": {"const": 0}, "then": {"type": "string"}, "else": {"type": "integer"}}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+        let cfg = one_param(
+            "x",
+            json!({"if": {"type": "integer", "minimum": 0}, "then": {"type": "integer"}, "else": {"type": "string"}}),
+        );
+        assert_eq!(ser(&convert_param_value("-5", "x", &cfg, "f")), "-5");
+    }
+
+    #[test]
+    fn not_without_a_type_adds_no_constraint() {
+        let cfg = one_param("x", json!({"type": "integer", "not": {"minimum": 100}}));
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+    }
+
+    #[test]
+    fn if_then_else_number_branches_coerce_number() {
+        let cfg = one_param(
+            "amount",
+            json!({"if": {"minimum": 0}, "then": {"type": "number", "minimum": 0}, "else": {"type": "number"}}),
+        );
+        assert_eq!(
+            ser(&convert_param_value("21.5", "amount", &cfg, "f")),
+            "21.5"
+        );
+    }
+
+    #[test]
+    fn if_integer_then_constraint_else_string_coerces_integer() {
+        let cfg = one_param(
+            "x",
+            json!({"if": {"type": "integer"}, "then": {"minimum": 1}, "else": {"type": "string"}}),
+        );
+        assert_eq!(ser(&convert_param_value("37", "x", &cfg, "f")), "37");
+        assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+    }
+
+    #[test]
+    fn if_with_only_then_leaves_the_value_unconstrained() {
+        let cfg = one_param(
+            "x",
+            json!({"if": {"type": "integer"}, "then": {"minimum": 1}}),
+        );
+        assert_eq!(ser(&convert_param_value("37", "x", &cfg, "f")), "\"37\"");
+    }
+
+    #[test]
+    fn type_array_integer_or_null_coerces_both() {
+        let cfg = one_param("x", json!({"type": ["integer", "null"]}));
+        assert_eq!(ser(&convert_param_value("37", "x", &cfg, "f")), "37");
+        assert_eq!(ser(&convert_param_value("null", "x", &cfg, "f")), "null");
+    }
+
+    #[test]
+    fn all_of_boolean_coerces_bool() {
+        let cfg = one_param(
+            "flag",
+            json!({"allOf": [{"type": "boolean"}, {"description": "x"}]}),
+        );
+        assert_eq!(
+            ser(&convert_param_value("false", "flag", &cfg, "f")),
+            "false"
+        );
     }
 }
