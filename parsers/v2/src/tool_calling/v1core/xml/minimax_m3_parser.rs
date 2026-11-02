@@ -9,7 +9,7 @@ use super::super::ToolDefinition;
 use super::super::config::MiniMaxM3ParserConfig;
 use crate::tool_calling::arguments::{
     MAX_SCHEMA_DEPTH, ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number,
-    normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
+    literals_contradict_type, normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
 };
 
 // Builds the marker that introduces an individual function invocation before attributes.
@@ -169,7 +169,9 @@ fn parameter_schema<'a>(root: &'a Value, name: &str) -> Option<Cow<'a, Value>> {
 /// Use the same bounded schema interpretation as the parser when deciding if
 /// guided generation needs JSON to preserve that distinction. Any schema whose
 /// null cannot be proven or excluded stays on JSON, since the parser keeps `null`
-/// as text unless null is proven; so does a string that may be null.
+/// as text unless null is proven; so does a string that may be null. So does a
+/// literal that contradicts its declared type: the grammar would force the
+/// literal's bytes, which the parser types by the declared type.
 pub(crate) fn native_types_require_json(root: &Value, schema: &Value) -> bool {
     let mut walker = SchemaFacts::new(root);
     let null = walker.permits_null(schema);
@@ -179,7 +181,7 @@ pub(crate) fn native_types_require_json(root: &Value, schema: &Value) -> bool {
             || ["integer", "number", "boolean", "object", "array"]
                 .iter()
                 .any(|kind| walker.has_type(Some(schema), kind)));
-    mixed || null.is_none() || walker.exhausted
+    mixed || null.is_none() || literals_contradict_type(schema) || walker.exhausted
 }
 
 /// Nested XML identifies an object or an array, but not which union alternative
@@ -1889,6 +1891,37 @@ mod tests {
             parameter_kind("f", "text", &tools),
             M3ParameterKind::LiteralString { streamable: false }
         ));
+    }
+
+    #[test]
+    fn declared_type_wins_over_contradicting_literals() {
+        // An `enum` written beside `type: array` instead of under `items` cannot
+        // hold an array, so the declared type decides, as stock SGLang does.
+        let metrics = json!({
+            "type": "array", "items": {"type": "string"},
+            "enum": ["temperature", "humidity", "co2"]
+        });
+        let parameters = json!({"type": "object", "properties": {
+            "metrics": metrics, "count": {"type": "integer", "enum": ["auto"]}
+        }});
+        for (raw, expected) in [
+            (
+                format!(
+                    "{TOK}<metrics>{TOK}<item>temperature{TOK}</item>\
+                     {TOK}<item>humidity{TOK}</item>{TOK}</metrics>{TOK}<count>5{TOK}</count>"
+                ),
+                json!({"metrics": ["temperature", "humidity"], "count": 5}),
+            ),
+            (
+                format!(
+                    "{TOK}<metrics>[\"temperature\", \"humidity\"]{TOK}</metrics>\
+                     {TOK}<count>auto{TOK}</count>"
+                ),
+                json!({"metrics": ["temperature", "humidity"], "count": "auto"}),
+            ),
+        ] {
+            assert_eq!(parse_with_parameters(parameters.clone(), &raw), expected);
+        }
     }
 
     #[test]

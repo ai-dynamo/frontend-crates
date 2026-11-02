@@ -24,6 +24,14 @@ def _json_equal(left: object, right: object) -> bool:
     return left == right
 
 
+def _value_types(value: object) -> dict[str, bool]:
+    return {"string": isinstance(value, str), "null": value is None,
+            "number": type(value) in (int, float, Decimal),
+            "integer": type(value) is int or (type(value) is float and value.is_integer()) or (type(value) is Decimal and value == value.to_integral_value()),
+            "boolean": type(value) is bool,
+            "object": isinstance(value, dict), "array": isinstance(value, list)}
+
+
 def _local_reference(root_schema: dict, reference: str) -> dict:
     assert isinstance(reference, str) and reference.startswith("#"), reference
     fragment = unquote(reference[1:], errors="strict")
@@ -73,20 +81,24 @@ def matches_schema(
             return False
     kind = schema.get("type")
     kinds = kind if isinstance(kind, list) else [kind] if kind else []
+    declared = kinds
     if nullable and kinds:
         kinds = kinds + ["null"]
-    types = {"string": isinstance(value, str), "null": value is None,
-             "number": type(value) in (int, float, Decimal),
-             "integer": type(value) is int or (type(value) is float and value.is_integer()) or (type(value) is Decimal and value == value.to_integral_value()),
-             "boolean": type(value) is bool,
-             "object": isinstance(value, dict), "array": isinstance(value, list)}
+    types = _value_types(value)
     # Reject unknown types even when another union member matches the value.
     assert all(isinstance(k, str) and k in types for k in kinds), schema
     if kinds and not any(types[k] for k in kinds):
         return False
-    if "const" in schema and not _json_equal(value, schema["const"]):
+    # Literals that no declared type admits (an array's `enum` written beside
+    # `type` instead of under `items`) leave the value to the declared type, as
+    # the parsers and stock SGLang do.
+    literals = ([schema["const"]] if "const" in schema else []) + list(schema.get("enum", []))
+    contradicted = bool(declared) and ("const" in schema or "enum" in schema) and not any(
+        _value_types(literal)[k] for literal in literals for k in declared
+    )
+    if not contradicted and "const" in schema and not _json_equal(value, schema["const"]):
         return False
-    if "enum" in schema and not any(_json_equal(value, item) for item in schema["enum"]):
+    if not contradicted and "enum" in schema and not any(_json_equal(value, item) for item in schema["enum"]):
         return False
     if "minimum" in schema and (type(value) not in (int, float) or value < schema["minimum"]):
         return False
