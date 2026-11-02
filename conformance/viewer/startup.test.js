@@ -242,3 +242,13 @@ console.log('Selection generations reject stale paints and failures; empty Refer
 }
 
 });
+
+await test('source SHA is independent of generation metadata and validated', async () => {
+  const {sourceCommitSha} = await import('./app.js');
+  const {default: assert} = await import('node:assert/strict');
+  assert.equal(sourceCommitSha({source_commit_sha: 'a'.repeat(40)}),'a'.repeat(40));
+  assert.equal(sourceCommitSha({revision: 'b'.repeat(40)}),'b'.repeat(40));
+  assert.equal(sourceCommitSha(null),null);
+  assert.throws(() => sourceCommitSha({source_commit_sha: 'catalog-hash'}),/source_commit_sha/);
+  assert.throws(() => sourceCommitSha({source_commit_sha: 'a'.repeat(40),revision:'b'.repeat(40)}),/source_commit_sha/);
+});

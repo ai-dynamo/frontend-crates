@@ -517,15 +517,24 @@ export class FixtureResources {
   unifiedDependencies(descriptors) {
     if (this.embedded) {
       const latest = descriptors.filter(item => this.isEmbedded(item.source.implementation, item.source.version));
-      const historical = descriptors.filter(item => item.source.implementation !== 'golden' && !latest.includes(item));
+      const historical = descriptors.flatMap(item => {
+        if (item.source.implementation === 'golden') return [];
+        if (!latest.includes(item)) return [item];
+        // A latest release can have retained captures for families absent from bootstrap.
+        const families = [...selectedUnifiedFamilies(this.catalog, [item])]
+          .filter(family => !this.isEmbedded(item.source.implementation, item.source.version, family));
+        return families.length ? [{ ...item, source: { ...item.source, capture_families: families } }] : [];
+      });
       return [...(latest.length ? this.embedded.unifiedDependencies(latest) : []),
         ...(historical.length ? this.catalogDependencies(historical) : [])];
     }
     return this.catalogDependencies(descriptors);
   }
 
-  isEmbedded(implementation, version) {
-    return this.embeddedIdentities.has(`${implementation}@${version}`);
+  isEmbedded(implementation, version, family = null) {
+    return this.embeddedIdentities.has(`${implementation}@${version}`)
+      && (family === null || this.embedded.catalog.sources.unified.some(resource =>
+        resource.kind === 'inputs-and-golden' && resource.family === family));
   }
 
   catalogDependencies(descriptors) {
@@ -617,7 +626,7 @@ export class FixtureResources {
   async unified(family, implementation, version, inputDocument = undefined) {
     // Latest envelopes are bound to the embedded catalog's input fingerprint.
     // Keep their normal validation and recipes when history adds another catalog.
-    if (this.isEmbedded(implementation, version)) return this.embedded.unified(family, implementation, version);
+    if (this.isEmbedded(implementation, version, family)) return this.embedded.unified(family, implementation, version);
     const inputs = inputDocument === undefined ? await this.unifiedInputs(family)
       : { value: inputDocument, sourceResource: this.inputResources.get(family) || this.catalog.sources.unified.find(item => item.kind === 'inputs-and-golden'
         && item.family === family) };

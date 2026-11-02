@@ -222,6 +222,22 @@ assert.deepEqual(await dualReader.unified('A', 'v1', '1.0.0', { wrong: 'history 
   'embedded records must validate against their own authored input');
 console.log('history discovery retains embedded latest dependencies and input validation');
 
+const retainedCatalog = structuredClone(unionCatalog);
+retainedCatalog.sources.unified.push(
+  { family: 'retired', kind: 'inputs-and-golden', format: 'typed-json-v1', path: 'retired/inputs' },
+  { family: 'retired', implementation: 'v1', version: '1.0.0', format: 'typed-json-v1', kind: 'resolved-capture', path: 'retired/v1' },
+);
+const retainedReader = new FixtureResources(retainedCatalog, {}, {}, bootstrapCatalog);
+const retainedSelection = [{ source: { ...unionDescriptors[0].source, capture_families: ['A', 'retired'] } }];
+assert.deepEqual(retainedReader.unifiedDependencies(retainedSelection).map(item => item.path),
+  ['embedded/A/inputs', 'embedded/A/v1', 'retired/inputs', 'retired/v1']);
+assert.equal(retainedReader.isEmbedded('v1', '1.0.0', 'retired'), false);
+retainedReader.embedded.unified = async () => assert.fail('retained family cannot use the latest-only reader');
+retainedReader.snapshot = async () => ({ value: {} });
+const retainedResult = await retainedReader.unified('retired', 'v1', '1.0.0', { cases: {} });
+assert.equal(retainedResult.records.size, 0);
+console.log('latest release identities load retained-only families from historical resources');
+
 const bundledInputs = ['A', 'B', 'C'].map(family => ({ family, kind: 'inputs-and-golden', path: `${family}/inputs` }));
 const captureBundle = { kind: 'resolved-capture', families: ['A', 'B'], implementation: 'dynamo_v1', version: '2.0.0', path: 'bundles/dynamo_v1-2.0.0' };
 const bundledReader = new FixtureResources({ sources: { unified: [...bundledInputs, captureBundle] } }, {
