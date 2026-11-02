@@ -64,6 +64,7 @@ fn spec(tools: Arc<[ToolDefinition]>) -> WrappedBlockSpec {
                 ..Default::default()
             })
         }))),
+        narrated_invoke_header_end: None,
     }
 }
 
