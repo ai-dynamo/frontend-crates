@@ -2,11 +2,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 """
-Extract conformance fixtures from the in-repo LFS shard store into the local cache.
+Materialize local latest captures or verified bundled history.
 
-Archived v1 fixtures live at conformance/fixtures/. Unified fixtures live as YAML
-under conformance/fixtures-unified-v2/. The manifest pins both sources. Extraction
-materializes them into one compatibility tree without network access.
+Default extraction uses authored inputs and generic current YAML only. Historical
+extraction uses --include-history, verifies baseline and added evidence, and uses
+retained format readers without network access.
 
 Cache location (fixed, same contract as the old HF downloader):
   ${XDG_CACHE_HOME:-~/.cache}/dynamo/conformance-fixtures/
@@ -32,6 +32,7 @@ import hashlib
 import json
 import os
 import secrets
+import capture_sources
 import shutil
 import sys
 import tarfile
@@ -109,7 +110,7 @@ def fixtures_identity(shards, inactive=()):
     `main()`). Naming the cache directory by `pin` alone let two DIFFERENT
     shard-hash sets collide on one path; whichever extraction ran second
     called `shutil.rmtree()` on the directory a concurrent reader (a test in
-    another git worktree, or `_common.sh`, which has no lock at all) could
+    another git worktree) could
     still be reading through the `toolcalling`/`reasoning`/`unified`
     symlinks -- a real, reproduced `ENOENT` race. Keying the directory name
     by this identity instead means two different shard sets simply never
@@ -429,7 +430,47 @@ def show_info(manifest, cache_root):
         print(f"\nNo cached snapshots in {cache_root}")
 
 
-def _extract(args):
+def current_materialization_identity():
+    paths = set((ROOT / "conformance/inputs").rglob("*.yaml"))
+    paths.update((ROOT / capture_sources.STORE / "families").glob("*/inputs_and_golden.yaml"))
+    # Reader changes must invalidate fixtures just as authored changes do.
+    paths.update((ROOT / "conformance/utils/src").glob("*.py"))
+    return [capture_sources.identity(path.relative_to(ROOT).as_posix(),
+                                     capture_sources.read(ROOT, path.relative_to(ROOT).as_posix()))
+            for path in sorted(paths)]
+
+
+def _extract(args, *, legacy_only=False, current=True):
+    if current and capture_sources.is_current(ROOT):
+        document = capture_sources.current(ROOT)
+        authored = current_materialization_identity()
+        fid = capture_sources.digest(capture_sources.encoded({"current": document, "authored": authored, "format": 2, "legacy_only": legacy_only}))
+        cache_root = get_cache_root()
+        destination = cache_root / f"current-{fid}"
+        if args.info or args.dry_run:
+            print(destination)
+            return
+        with cache_publish_lock(cache_root):
+            selected, _generation = resolve_current_generation(cache_root, "current", fid, {})
+            if selected is None or args.full_refresh:
+                temporary = cache_root / f".current-{fid}-{secrets.token_hex(8)}"
+                temporary.mkdir()
+                capture_sources.materialize_legacy(ROOT, temporary, document=document, authored=authored)
+                if not legacy_only:
+                    unified_history.materialize_store(HISTORY_DIR, temporary / "unified")
+                if capture_sources.current(ROOT) != document:
+                    raise ValueError("current captures changed during extraction")
+                if current_materialization_identity() != authored:
+                    raise ValueError("authored inputs or readers changed during extraction")
+                write_state(temporary, "current", [])
+                if selected is not None:
+                    publish_refresh_generation(temporary, cache_root, "current", fid, {})
+                else:
+                    temporary.rename(destination)
+                selected, _generation = resolve_current_generation(cache_root, "current", fid, {})
+            destination = selected
+        print(destination)
+        return
     if not MANIFEST_PATH.exists():
         sys.exit(
             f"Manifest not found: {MANIFEST_PATH}\n"
@@ -439,6 +480,8 @@ def _extract(args):
     manifest = json.loads(MANIFEST_PATH.read_text())
     pin = manifest["snapshot"]
     shards = fixture_disposition.active_shards(manifest)
+    if legacy_only:
+        shards = [shard for shard in shards if shard.get("format") != "unified-history"]
     inactive = fixture_disposition.verify_inactive_shards(manifest, FIXTURES_DIR)
 
     cache_root = get_cache_root()
@@ -530,9 +573,23 @@ def _extract(args):
     print(snap_dir)
 
 
-def extract_snapshot(args):
+def extract_snapshot(args, *, legacy_only=False):
     with unified_history._store_read_lock(HISTORY_DIR):
-        _extract(args)
+        _extract(args, legacy_only=legacy_only)
+
+
+def extract_history(args, source, *, legacy_only=False):
+    global MANIFEST_PATH, FIXTURES_DIR, HISTORY_DIR
+    source = Path(source).resolve()
+    with capture_sources.history_view(ROOT, source) as source:
+        original = MANIFEST_PATH, FIXTURES_DIR, HISTORY_DIR
+        try:
+            MANIFEST_PATH = source / "conformance/fixtures-manifest.json"
+            FIXTURES_DIR = source / "conformance/fixtures"
+            HISTORY_DIR = source / capture_sources.STORE
+            _extract(args, legacy_only=legacy_only, current=False)
+        finally:
+            MANIFEST_PATH, FIXTURES_DIR, HISTORY_DIR = original
 
 
 def main():
@@ -542,10 +599,19 @@ def main():
     ap.add_argument("--full-refresh", action="store_true", help="Ignore existing cache, re-extract all")
     ap.add_argument("--dry-run", action="store_true", help="Show plan without extracting")
     ap.add_argument("--info", action="store_true", help="Show manifest info and cache state, then exit")
+    ap.add_argument("--legacy-only", action="store_true", help="Extract legacy fixtures without materializing Unified history")
+    ap.add_argument("--include-history", action="store_true")
+    ap.add_argument("--history-source", type=Path)
     ap.add_argument("-v", "--verbose", action="store_true", help="Print per-shard details")
     args = ap.parse_args()
 
-    extract_snapshot(args)
+    if args.history_source is not None and not args.include_history:
+        ap.error("--history-source requires --include-history")
+    if args.include_history:
+        args.history_source = args.history_source or capture_sources.default_history(ROOT)
+        extract_history(args, args.history_source, legacy_only=args.legacy_only)
+    else:
+        extract_snapshot(args, legacy_only=args.legacy_only)
 
 
 if __name__ == "__main__":

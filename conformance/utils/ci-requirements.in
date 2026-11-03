@@ -1,0 +1,5 @@
+# Keep the workflow bootstrap common to publication, qualification and delivery.
+-r publication-requirements.in
+pytest
+pytest-xdist
+selenium

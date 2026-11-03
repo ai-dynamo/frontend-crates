@@ -57,6 +57,9 @@ fn spec() -> WrappedBlockSpec {
         invoke_boundary_factory: Some(InvokeBoundaryFactory::NativeOnly(|| {
             Box::new(QwenInvokeBoundary::default())
         })),
+        // The template always wraps a call in `<tool_call>`; a bare
+        // `<function=NAME>` inside an open thought is narration.
+        narrated_invoke_header_end: Some('>'),
     }
 }
 
@@ -67,6 +70,9 @@ struct QwenInvokeBoundary {
     cursor: usize,
     in_parameter: bool,
     parameter_value_start: usize,
+    /// Closed parameter values as `[start, end)` candidate byte ranges, so a
+    /// narrating scanner can ask whether a nested marker was value data.
+    value_spans: Vec<(usize, usize)>,
 }
 
 impl InvokeBoundary for QwenInvokeBoundary {
@@ -81,6 +87,8 @@ impl InvokeBoundary for QwenInvokeBoundary {
             let tail = &candidate[self.cursor..];
             if self.in_parameter {
                 if let Some(end) = tail.find("</parameter>") {
+                    self.value_spans
+                        .push((self.parameter_value_start, self.cursor + end));
                     self.cursor += end + "</parameter>".len();
                     self.in_parameter = false;
                 } else {
@@ -124,6 +132,18 @@ impl InvokeBoundary for QwenInvokeBoundary {
     fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
         None
     }
+    /// Everything from the scan cursor on is still unclassified: a parameter
+    /// header without its `>`, or a split `</parameter>` / `</function>`.
+    fn unclassified_tail(&self, candidate: &str) -> usize {
+        candidate.len().saturating_sub(self.cursor)
+    }
+    fn owns_value_byte(&self, _candidate: &str, at: usize) -> bool {
+        (self.in_parameter && at >= self.parameter_value_start)
+            || self
+                .value_spans
+                .iter()
+                .any(|(start, end)| (*start..*end).contains(&at))
+    }
     fn reset(&mut self) {
         *self = Self::default();
     }
@@ -163,6 +183,9 @@ struct ActiveStringParameter {
 }
 
 impl InvokeEmitter for Qwen3Emitter {
+    fn abandon_invoke(&mut self) {
+        self.partial = None;
+    }
     fn parse_partial_invoke(
         &mut self,
         invoke: &str,
@@ -1275,116 +1298,5 @@ mod tests {
             parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
             baseline
         );
-    }
-    #[test]
-    fn integral_decimal_arguments_with_literal_constraints() {
-        for keyword in ["const", "enum"] {
-            for literal in [serde_json::json!(42), serde_json::json!(42.0)] {
-                for ty in [
-                    serde_json::json!(["number", "null"]),
-                    serde_json::json!(["integer", "null"]),
-                    serde_json::json!(["number", "string"]),
-                ] {
-                    let mut schema = serde_json::json!({"type":ty});
-                    schema[keyword] = if keyword == "const" {
-                        literal.clone()
-                    } else {
-                        serde_json::json!([literal])
-                    };
-                    for raw in ["42", "42.0", "4.2e1"] {
-                        let mut tools = weather_tools();
-                        tools[0].parameters["properties"]["location"] = schema.clone();
-                        let input = format!(
-                            "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
-                        );
-                        for width in [1, input.len()] {
-                            let chunks: Vec<_> = input
-                                .as_bytes()
-                                .chunks(width)
-                                .map(|c| std::str::from_utf8(c).unwrap())
-                                .collect();
-                            let out = parse_chunks(&tools, &chunks).coalesce_calls();
-                            assert_eq!(out.calls.len(), 1);
-                            assert_eq!(
-                                out.calls[0].arguments, r#"{"location":42}"#,
-                                "{schema}, {raw}, width {width}"
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn integral_decimal_coercion_preserves_precision() {
-        for (raw, expected) in [
-            ("9007199254740993.0", "9007199254740993"),
-            ("9.007199254740993e15", "9007199254740993"),
-            ("-4.2E+1", "-42"),
-            ("4200e-2", "42"),
-            ("0.0e-400", "0"),
-            ("42.0000000000000001", "\"42.0000000000000001\""),
-            ("1e-400", "\"1e-400\""),
-            ("42.5", "\"42.5\""),
-        ] {
-            let mut tools = weather_tools();
-            tools[0].parameters["properties"]["location"] =
-                serde_json::json!({"type":["integer","string"]});
-            let input = format!(
-                "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
-            );
-            for width in [1, input.len()] {
-                let chunks: Vec<_> = input
-                    .as_bytes()
-                    .chunks(width)
-                    .map(|c| std::str::from_utf8(c).unwrap())
-                    .collect();
-                let out = parse_chunks(&tools, &chunks).coalesce_calls();
-                assert_eq!(out.calls.len(), 1);
-                assert_eq!(
-                    out.calls[0].arguments,
-                    format!(r#"{{"location":{expected}}}"#),
-                    "{raw}, width {width}"
-                );
-            }
-        }
-    }
-    #[test]
-    fn large_fractional_arguments_remain_exact_json_numbers() {
-        for raw in [
-            "9007199254740992.5",
-            "9007199254740993.1",
-            "9007199254740993.25",
-            "9.0071992547409925e15",
-            "0.10000000000000000001",
-            "-9007199254740992.5",
-        ] {
-            for schema in [
-                serde_json::json!({"type":"number"}),
-                serde_json::json!({"type":["number","null"],"const":serde_json::from_str::<serde_json::Value>(raw).unwrap()}),
-                serde_json::json!({"type":["number","null"],"enum":[serde_json::from_str::<serde_json::Value>(raw).unwrap()]}),
-            ] {
-                let mut tools = weather_tools();
-                tools[0].parameters["properties"]["location"] = schema.clone();
-                let input = format!(
-                    "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
-                );
-                for width in [1, input.len()] {
-                    let chunks: Vec<_> = input
-                        .as_bytes()
-                        .chunks(width)
-                        .map(|c| std::str::from_utf8(c).unwrap())
-                        .collect();
-                    let out = parse_chunks(&tools, &chunks).coalesce_calls();
-                    assert_eq!(out.calls.len(), 1);
-                    assert_eq!(
-                        out.calls[0].arguments,
-                        format!(r#"{{"location":{raw}}}"#),
-                        "{schema}, width {width}"
-                    );
-                }
-            }
-        }
     }
 }

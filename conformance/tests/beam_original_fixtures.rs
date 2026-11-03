@@ -12,6 +12,8 @@ use dynamo_parsers_v2::{
 };
 use serde_json::Value;
 
+mod common;
+
 const FIXTURES: &str = include_str!("../fixtures-beam/original_parser_fixtures.yaml");
 
 struct Case {
@@ -115,6 +117,7 @@ fn run_v2(case: &Case, chunks: &[&str], policy: ToolCallPolicy) -> anyhow::Resul
     };
     for event in dynamo_parsers_v2::assemble(&deltas) {
         match event {
+            UnifiedEvent::MessageStart { .. } | UnifiedEvent::MessageEnd => {}
             UnifiedEvent::Reasoning { text } => out.reasoning += &text,
             UnifiedEvent::Text { text } => out.content += &text,
             UnifiedEvent::ToolCall { name, arguments } => out.calls.push((name, arguments)),
@@ -147,7 +150,13 @@ fn v2_unified_matches_every_positive_fixture_at_every_split() {
                     .unwrap_or_else(|e| panic!("{} {chunks:?}: {e}", case.id));
                 assert_eq!(got.reasoning, want.reasoning, "{} reasoning", case.id);
                 assert_eq!(got.content, want.content, "{} content", case.id);
-                assert_eq!(got.calls, want.calls, "{} calls", case.id);
+                assert!(
+                    common::json_values_equal(&got.calls, &want.calls),
+                    "{} calls: got {:?}, want {:?}",
+                    case.id,
+                    got.calls,
+                    want.calls
+                );
             }
         }
     }

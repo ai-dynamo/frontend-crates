@@ -7,6 +7,8 @@ use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 
+pub(crate) use dynamo_structural_tag::format::RegexFormat;
+
 #[derive(Debug, Clone)]
 pub(crate) struct StructuralTag {
     pub format: Format,
@@ -36,6 +38,8 @@ pub(crate) enum Format {
     AnyText(AnyTextFormat),
     AnyTokens(dynamo_structural_tag::format::AnyTokensFormat),
     Or(OrFormat),
+    // Native ATEM needs repeated call messages with bounded cardinality.
+    Repeat(RepeatFormat),
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -89,7 +93,10 @@ pub(crate) struct SequenceFormat {
 pub(crate) enum JsonSchemaStyle {
     Json,
     QwenXml,
+    MinimaxM3Xml,
     DeepseekXml,
+    #[serde(rename = "deepseek_v4_1_xml")]
+    DeepseekV41Xml,
     GlmXml,
     MinimaxXml,
 }
@@ -100,6 +107,8 @@ pub(crate) struct JsonSchemaFormat {
     pub style: JsonSchemaStyle,
     #[serde(skip_serializing_if = "is_false")]
     pub any_order: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_whitespace_cnt: Option<usize>,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -114,6 +123,15 @@ pub(crate) struct AnyTextFormat {
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct OrFormat {
     pub elements: Vec<Format>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct RepeatFormat {
+    pub content: Box<Format>,
+    // Bound repetition to enforce required calls and single-call choices.
+    pub min: usize,
+    /// XGrammar uses -1 for an unbounded upper limit.
+    pub max: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -169,6 +187,7 @@ pub(super) fn import_native(
                 native::JsonSchemaStyle::DeepseekXml => JsonSchemaStyle::DeepseekXml,
             },
             any_order,
+            max_whitespace_cnt: None,
         }),
         native::Format::AnyTokens(f) => Format::AnyTokens(f),
         native::Format::AnyText(f) => Format::AnyText(AnyTextFormat {

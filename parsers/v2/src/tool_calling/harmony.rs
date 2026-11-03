@@ -87,7 +87,10 @@ impl HarmonyToolStreamParser {
         for event in events {
             match event {
                 UnifiedParserEvent::Text(text) => self.pending_normal_text.push_str(&text),
-                UnifiedParserEvent::Reasoning(_) => {}
+                // Legacy tool-only projection has no message-phase surface.
+                UnifiedParserEvent::Reasoning(_)
+                | UnifiedParserEvent::MessageStart(_)
+                | UnifiedParserEvent::MessageEnd => {}
                 UnifiedParserEvent::ToolCall(call) => result.calls.push(call),
             }
         }
@@ -229,6 +232,21 @@ mod tests {
             .push("<|start|>assistant<|channel|>final<|message|>answer<|return|>")
             .unwrap();
         assert_eq!(parser.finish().unwrap().normal_text, "answer");
+    }
+
+    #[test]
+    fn legacy_parser_preserves_arguments_beyond_sorting_depth_limit() {
+        for (open, close) in [("[", "]"), ("{\"item\":", "}"), ("[{\"item\":", "}]")] {
+            let arguments = format!("{}0{}", open.repeat(3000), close.repeat(3000));
+            let input = format!(
+                "<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{arguments}<|call|>"
+            );
+            let mut parser = HarmonyToolStreamParser::new().unwrap();
+            let result = parser.parse_complete(&input).unwrap();
+            assert_eq!(result.calls.len(), 1);
+            assert_eq!(result.calls[0].name.as_deref(), Some("lookup"));
+            assert_eq!(result.calls[0].arguments, arguments);
+        }
     }
 
     #[test]

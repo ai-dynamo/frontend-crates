@@ -10,9 +10,10 @@ import json
 import sys
 from pathlib import Path
 
-import capture_reasoning
+import peer_modules
 from capture_stimulus import batch_final_events, unavailable_result, validate_family_scoped_cases
 from impls import SGLANG_UNIFIED_PIPELINES, VLLM_UNIFIED_PIPELINES, parser_families_path
+from peer_modules import VllmTextTokenizer, resolve_peer_module, sglang_reasoning_kwargs, sglang_supports_reasoning_init, parser_error_detail, peer_call
 
 
 from tables.common import decode_arguments
@@ -38,60 +39,58 @@ def capture_cases(job, pipeline, registrations, execute, *, supports_reasoning_i
                 final = execute(names, request)
                 result = {"assembled": batch_final_events(final), "batch_final": final, "capture_input": request}
             except (ValueError, TypeError, KeyError, RuntimeError, IndexError, AssertionError, AttributeError) as error:
-                detail = f"{type(error).__name__}: {error}"
+                detail = parser_error_detail(error)
                 result = {"error": detail, "capture_input": request, "capture_observation": {"error": {"code": "parser_exception", "detail": detail}}}
         results[case["id"]] = result
     return results
 
 
 def sglang_pipeline():
-    protocol = importlib.import_module("sglang.srt.entrypoints.openai.protocol")
-    reasoning = importlib.import_module("sglang.srt.parser.reasoning_parser").ReasoningParser
-    tool_parser = importlib.import_module("sglang.srt.function_call.function_call_parser").FunctionCallParser
+    protocol = resolve_peer_module("sglang", "protocol")
+    reasoning = resolve_peer_module("sglang", "reasoning").ReasoningParser
+    tool_parser = resolve_peer_module("sglang", "tools").FunctionCallParser
 
     def registered(names):
         return names[0] in reasoning.DetectorMap and names[1] in tool_parser.ToolCallParserEnum
 
     def execute(names, request):
-        kwargs = {"tool_call_parser_active": True} if "tool_call_parser_active" in inspect.signature(reasoning.__init__).parameters else {}
-        parser = reasoning(model_type=names[0], stream_reasoning=False, force_reasoning=request["init"]["starting_state"] == "Reasoning", **kwargs)
-        reasoning_text, content = parser.parse_non_stream(request["input"])
+        kwargs = sglang_reasoning_kwargs(reasoning, streaming=False, force_reasoning=request["init"]["starting_state"] == "Reasoning")
+        parser = peer_call(reasoning, model_type=names[0], **kwargs)
+        reasoning_text, content = peer_call(parser.parse_non_stream, request["input"])
         tools = [protocol.Tool(type="function", function=protocol.Function(**(tool.get("function") or tool))) for tool in request["tools"]]
-        parser = tool_parser(tools=tools, tool_call_parser=names[1])
-        normal_text, calls = parser.parse_non_stream(content)
+        parser = peer_call(tool_parser, tools=tools, tool_call_parser=names[1])
+        normal_text, calls = peer_call(parser.parse_non_stream, content)
         return {"reasoning_text": reasoning_text or "", "normal_text": normal_text or "", "calls": [{"name": call.name, "arguments": decode_arguments(call.parameters)} for call in calls]}
 
     return SGLANG_UNIFIED_PIPELINES, registered, execute
 
 
 def vllm_pipeline():
-    reasoning_manager = importlib.import_module("vllm.reasoning").ReasoningParserManager
-    tool_manager = importlib.import_module("vllm.tool_parsers").ToolParserManager
-    protocol = importlib.import_module("vllm.entrypoints.openai.chat_completion.protocol")
-    adapter = importlib.import_module("tables.toolcalling.vllm")
+    reasoning_manager = resolve_peer_module("vllm", "reasoning").ReasoningParserManager
+    tool_manager = resolve_peer_module("vllm", "tools").ToolParserManager
+    protocol = resolve_peer_module("vllm", "protocol")
 
     def registered(names):
-        return (names[0] in reasoning_manager.reasoning_parsers or names[0] in reasoning_manager.lazy_parsers) and (names[1] in tool_manager.tool_parsers or names[1] in tool_manager.lazy_parsers)
+        return (names[0] in reasoning_manager.reasoning_parsers or names[0] in reasoning_manager.__dict__.get("lazy_parsers", {})) and (names[1] in tool_manager.tool_parsers or names[1] in tool_manager.__dict__.get("lazy_parsers", {}))
 
     def execute(names, request):
         tools = [protocol.ChatCompletionToolsParam.model_validate(tool if "function" in tool else {"type": "function", "function": tool}) for tool in request["tools"]]
         req = protocol.ChatCompletionRequest.model_construct(model="parser-only-capture", messages=[], tools=tools, tool_choice="auto" if tools else "none")
-        parser = capture_reasoning._vllm_reasoning_parser(names[0], {})
-        reasoning_text, content = parser.extract_reasoning(request["input"], req)
+        parser = peer_modules._vllm_reasoning_parser(names[0], {})
+        reasoning_method = parser.extract_reasoning if hasattr(parser, "extract_reasoning") else parser.extract_reasoning_content
+        reasoning_text, content = peer_call(reasoning_method, request["input"], req)
         cls = tool_manager.get_tool_parser(names[1])
         kwargs = {"tools": tools} if "tools" in inspect.signature(cls.__init__).parameters else {}
-        parser = cls(tokenizer=adapter._StubTokenizer(), **kwargs)
-        result = parser.extract_tool_calls(content or "", req)
+        parser = peer_call(cls, tokenizer=VllmTextTokenizer(), **kwargs)
+        result = peer_call(parser.extract_tool_calls, content or "", req)
         return {"reasoning_text": reasoning_text or "", "normal_text": result.content or "", "calls": [{"name": call.function.name, "arguments": decode_arguments(call.function.arguments)} for call in result.tool_calls]}
 
     return VLLM_UNIFIED_PIPELINES, registered, execute
 
 
-def source_identity(engine):
-    module = importlib.import_module(engine)
-    root = Path(module.__file__).resolve().parent
-    directories = ("parser", "reasoning", "tool_parsers", "entrypoints/openai") if engine == "vllm" else ("srt/parser", "srt/function_call", "srt/entrypoints/openai")
-    files = {str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest() for directory in directories for path in sorted((root / directory).rglob("*.py"))}
+def source_identity_root(engine, root, version):
+    root = Path(root).resolve()
+    files = {str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(root.rglob("*.py"))}
     if not files:
         raise ValueError("producer source inventory is empty")
     adapter_root = Path(__file__).resolve().parent
@@ -105,7 +104,12 @@ def source_identity(engine):
                 adapter_files[str(path.relative_to(adapter_root))] = hashlib.sha256(path.read_bytes()).hexdigest()
     return {"source_sha256": hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest(),
             "adapter_sha256": hashlib.sha256(json.dumps(adapter_files, sort_keys=True).encode()).hexdigest(),
-            "adapter_files": adapter_files, "package_files": files, "version": module.__version__}
+            "adapter_files": adapter_files, "package_files": files, "version": version}
+
+
+def source_identity(engine):
+    module = importlib.import_module(engine)
+    return source_identity_root(engine, Path(module.__file__).resolve().parent, module.__version__)
 
 
 def main():
@@ -119,7 +123,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     for path in sorted(args.jobs.glob("*.json")):
         job = json.loads(path.read_text())
-        result = {"version": before["version"], "results": capture_cases(job, *pipeline, supports_reasoning_init=args.engine == "sglang"),
+        result = {"version": before["version"], "results": capture_cases(job, *pipeline, supports_reasoning_init=args.engine == "sglang" and sglang_supports_reasoning_init()),
                   "provenance": {"implementation": args.engine + "_python_batch", "version": before["version"], "source_sha256": before["source_sha256"], "adapter_sha256": before["adapter_sha256"], "job_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}}
         (args.output / path.name).write_text(json.dumps(result, ensure_ascii=False))
     if before != source_identity(args.engine):

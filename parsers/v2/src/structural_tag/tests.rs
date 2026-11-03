@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 
 use crate::{Tool, UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family};
 
-use super::builders::{DEEPSEEK_DSML, GLM47, HARMONY, QWEN3_CODER};
+use super::builders::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41, GLM47, HARMONY, QWEN3_CODER};
 use super::test_support::{build, build_context, tools};
 use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
@@ -317,7 +317,7 @@ fn harmony_structured_output_preserves_tool_policy_and_external_boundary() {
 #[test]
 fn schema_only_requests_keep_other_family_response_formats() {
     let schema = json!({"type":"object"});
-    for builder in [&QWEN3_CODER, &DEEPSEEK_DSML, &GLM47] {
+    for builder in [&QWEN3_CODER, &DEEPSEEK_DSML, &DEEPSEEK_DSML_V41, &GLM47] {
         for choice in [StructuralTagToolChoice::Auto, StructuralTagToolChoice::None] {
             let actual = build_with_structured_output(builder, choice, &[], None, false, &schema);
             assert_eq!(
@@ -462,6 +462,13 @@ fn common_builder_closes_prompt_opened_reasoning_before_tool_output() {
             Some("\n\n"),
             None,
         ),
+        (
+            "deepseek_v41",
+            &DEEPSEEK_DSML_V41,
+            "<｜DSML｜ calls>",
+            Some("\n\n"),
+            None,
+        ),
         ("glm47", &GLM47, "<tool_call>", None, None),
     ] {
         for tool_choice in [
@@ -520,6 +527,7 @@ fn auto_closes_prompt_opened_reasoning_before_triggered_dispatch() {
     for (family, builder, tool_call_exclude, reasoning_suffix) in [
         ("qwen3_coder", &QWEN3_CODER, "<tool_call>", Some("\n\n")),
         ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜tool_calls>", None),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41, "<｜DSML｜ calls>", None),
         ("glm47", &GLM47, "<tool_call>", None),
     ] {
         let actual = build(
@@ -561,6 +569,7 @@ fn auto_with_structured_output_offers_tool_calls_only_or_schema_constrained_resp
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = build_with_structured_output(
@@ -597,6 +606,7 @@ fn auto_with_structured_output_honors_single_call_limit() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = build_with_structured_output(
@@ -621,6 +631,7 @@ fn auto_with_structured_output_closes_prompt_opened_reasoning_before_choice() {
     for (family, builder, reasoning_suffix) in [
         ("qwen3_coder", &QWEN3_CODER, Some("\n\n")),
         ("deepseek_v4", &DEEPSEEK_DSML, None),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41, None),
         ("glm47", &GLM47, None),
     ] {
         let actual = build_with_structured_output(
@@ -647,6 +658,7 @@ fn external_reasoning_boundary_builds_only_the_post_reasoning_suffix() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = builder
@@ -719,6 +731,7 @@ fn required_and_named_choices_do_not_offer_final_response_branch() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         for tool_choice in [
@@ -738,6 +751,7 @@ fn auto_with_empty_tools_needs_no_structural_tag() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let result = builder

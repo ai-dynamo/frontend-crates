@@ -3,12 +3,13 @@
 """Independent value validator for the schema keywords authored by this corpus."""
 
 import re
+from decimal import Decimal
 from urllib.parse import unquote
 
 
 def _json_equal(left: object, right: object) -> bool:
     """JSON numbers compare mathematically; booleans never compare as numbers."""
-    if type(left) in (int, float) and type(right) in (int, float):
+    if type(left) in (int, float, Decimal) and type(right) in (int, float, Decimal):
         return left == right
     if type(left) is not type(right):
         return False
@@ -57,7 +58,8 @@ def matches_schema(
     assert schema.keys() <= {
         "$id", "type", "properties", "items", "anyOf", "oneOf", "const", "enum",
         "nullable", "minLength", "required", "$ref", "$defs", "definitions",
-        "allOf", "minimum", "additionalProperties",
+        "allOf", "minimum", "additionalProperties", "not", "if", "then", "else",
+        "description",
     }, schema
     if "$ref" in schema:
         reference = schema["$ref"]
@@ -75,8 +77,8 @@ def matches_schema(
     if nullable and kinds:
         kinds = kinds + ["null"]
     types = {"string": isinstance(value, str), "null": value is None,
-             "number": type(value) in (int, float),
-             "integer": type(value) is int or (type(value) is float and value.is_integer()),
+             "number": type(value) in (int, float, Decimal),
+             "integer": type(value) is int or (type(value) is float and value.is_integer()) or (type(value) is Decimal and value == value.to_integral_value()),
              "boolean": type(value) is bool,
              "object": isinstance(value, dict), "array": isinstance(value, list)}
     # Reject unknown types even when another union member matches the value.
@@ -104,8 +106,18 @@ def matches_schema(
         for branch in schema["allOf"]
     ):
         return False
+    if "not" in schema and matches_schema(value, schema["not"], root_schema, _references, nullable):
+        return False
+    if "if" in schema:
+        branch = schema.get("then") if matches_schema(
+            value, schema["if"], root_schema, _references, nullable
+        ) else schema.get("else")
+        if branch is not None and not matches_schema(value, branch, root_schema, _references, nullable):
+            return False
     if isinstance(value, str) and len(value) < schema.get("minLength", 0):
         return False
+    # Descending into a child VALUE ends the reference cycle guard: a recursive
+    # definition (a tree node whose children are nodes) terminates on the data.
     if isinstance(value, dict):
         if not set(schema.get("required", [])) <= value.keys():
             return False
@@ -117,13 +129,13 @@ def matches_schema(
                 if additional is False:
                     return False
                 if isinstance(additional, dict) and not matches_schema(
-                    item, additional, root_schema, _references
+                    item, additional, root_schema
                 ):
                     return False
         return all(
-            matches_schema(item, properties[key], root_schema, _references)
+            matches_schema(item, properties[key], root_schema)
             for key, item in value.items() if key in properties
         )
     if isinstance(value, list) and "items" in schema:
-        return all(matches_schema(item, schema["items"], root_schema, _references) for item in value)
+        return all(matches_schema(item, schema["items"], root_schema) for item in value)
     return True

@@ -20,10 +20,12 @@ parser cannot see that value — `finish()` takes no argument).
 """
 
 import re
+from typing import NamedTuple
 
 from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
-from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group
+from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group, schema_case_label
+from numeric_cases import NUMERIC_VARIANTS, OVERFLOW_SIBLING_VARIANTS
 
 UNIFIED_TAX = {
     "default_reasoning_without_opener": (10, "6"),
@@ -40,9 +42,11 @@ UNIFIED_TAX = {
 
     # Group 1 — Single call
     "tool_only": (1, "1"),
+    "tool_body_whitespace": (1, "7"),
     "dotted_name_minimal": (1, "3"),
     "dotted_name_mixed_punctuation": (1, "4"),
     "dotted_name_multiple_segments": (1, "5"),
+    "v1_split_parallel_tool_calls": ("v1_split", "parallel_tool_calls"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases). Completed below; the family-scoped alias retains its historical ID.
     "kimi_k2_optional_prefix_name_overlap": ("kimi_k2", "1"),
     # Group 2 — Multiple calls (streamv1.2)
@@ -64,8 +68,17 @@ UNIFIED_TAX = {
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
+    "arg_object_quoted_parameter_close": (7, "27"),
+    # ai-dynamo/dynamo#17662: argument types declared without a direct `type` key.
+    "not_keyword_type_complement": (7, "29"),
+    "conditional_schema_number_types": (7, "30"),
+    "reference_object_recursive_and_composed_types": (7, "31"),
+    "arg_array_quoted_parameter_close": (7, "28"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
-    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
+    "arg_numeric_nested_exact": (7, "20.nested_exact"),
+    **{f"arg_numeric_overflow_siblings_{variant}": (7, f"29.{variant}")
+       for variant, _ in OVERFLOW_SIBLING_VARIANTS},
     "arg_json_null_ref": (7, "4.ref"),
     "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),
@@ -85,6 +98,11 @@ UNIFIED_TAX = {
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
     "narrated_calls": (8, "5"),
+    "commentary_then_tool": ("muse_spark", "1"),
+    "spark_phase_tool_final": ("muse_spark", "2"),
+    "spark_phase_repeated": ("muse_spark", "3"),
+    "spark_phase_empty": ("muse_spark", "4"),
+    "spark_phase_eof": ("muse_spark", "5"),
     "native_quoted_control_in_response": (8, "6"),
     "native_single_quoted_word_control": (8, "7"),
     "native_quoted_control_then_call": (8, "8"),
@@ -98,6 +116,11 @@ UNIFIED_TAX = {
     "guided_response_quoted_control_braces_named": (35, "3"),
     "guided_response_quoted_control_braces_required": (35, "4"),
     "guided_response_rejected_header_quote_ownership": (35, "5"),
+    "muse_unterminated_reasoning_native": ("muse", "unterminated_reasoning_native"),
+    "muse_unterminated_reasoning_guided": ("muse", "unterminated_reasoning_guided"),
+    "muse_opaque_undeclared_invoke": ("muse", "opaque_undeclared_invoke"),
+    "muse_opaque_declared_invoke": ("muse", "opaque_declared_invoke"),
+    "muse_recovery_second_parameter": ("muse", "recovery_second_parameter"),
     # Beam-specific: only Beam's grammar admits a bare tool header at EOS as a call.
     "empty_args_no_close": ("beam", "1"), "optional_args_no_close": ("beam", "2"),
     "muse_quoted_reserved_eom_argument": ("muse", "2"),
@@ -124,6 +147,25 @@ UNIFIED_TAX = {
     "kimi_k3_malformed_call_then_valid": ("kimi", "6"),
     "kimi_k3_raw_json_eof": ("kimi", "7"),
     "kimi_k3_guided_native_wrapper": ("kimi", "8"),
+    "kimi_native_k2_count_content_chunk7": ("kimi", "9"),
+    "kimi_native_k2_count_content_chunk1024": ("kimi", "10"),
+    "kimi_native_k3_typed_count_content_chunk7": ("kimi", "11"),
+    "kimi_native_k3_typed_count_content_chunk1024": ("kimi", "12"),
+    "kimi_native_k3_json_count_content_chunk7": ("kimi", "13"),
+    "kimi_native_k3_json_count_content_chunk1024": ("kimi", "14"),
+    "kimi_native_trailing_syntax_whitespace": ("kimi", "15"),
+    "kimi_native_valid_object_trailing_garbage": ("kimi", "16"),
+    "kimi_native_incompatible_string_recovery": ("kimi", "17"),
+    "kimi_native_incremental_interfield_whitespace": ("kimi", "18"),
+    "kimi_native_rejected_next_header_progress": ("kimi", "19"),
+    "kimi_k3_typed_json_marker_payload": ("kimi", "20"),
+    "kimi_k3_typed_response_marker_payload": ("kimi", "21"),
+    "kimi_k3_json_missing_close_literal_response": ("kimi", "22"),
+    "kimi_k3_json_marker_then_long_field": ("kimi", "23"),
+    "kimi_k3_typed_response_then_call": ("kimi", "24"),
+    "kimi_k3_typed_response_argument_literal": ("kimi", "25"),
+    "kimi_k3_direct_typed_response_recovery": ("kimi", "26"),
+    "kimi_k3_direct_json_response_recovery": ("kimi", "27"),
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),
@@ -140,6 +182,8 @@ UNIFIED_TAX = {
     "guided_json_wrapped_in_tool_markup": (32, "3"),
     "guided_json_orphan_tool_close_before_payload": (32, "4"),
     "guided_json_native_markup_only": (32, "5"),
+    "guided_native_after_prefilled_reasoning_required": ("minimax_m3", "1"),
+    "guided_native_after_prefilled_reasoning_named": ("minimax_m3", "2"),
     # Generated crossings (`_guided_product` in gen_unified_golden.py): payload
     # shape x surrounding grammar. The 31-12 through 31-20 rows are the quadrant that had ZERO
     # cases — markup present AND no call recoverable — where both the P2 recovery
@@ -186,6 +230,8 @@ UNIFIED_TAX = {
     "guided_json_native_parameter_object_before_payload": (35, "6"),
     "guided_json_native_parameter_array_before_payload": (35, "7"),
     "qwen3_guided_reasoning_opener_inside_native_header": ("qwen3", "3"),
+    "narrated_bare_invoke_in_unterminated_thought": ("qwen3", "4"),
+    "narrated_bare_invoke_then_wrapped_call": ("qwen3", "5"),
     "muse_glimmer_guided_message_end_inside_native_header": ("muse", "5"),
     "deepseek_v4_guided_reasoning_opener_inside_native_body": ("deepseek_v4", "1"),
     "gemma4_guided_reasoning_opener_after_call_prefix": ("gemma", "3"),
@@ -225,6 +271,14 @@ UNIFIED_TAX = {
     # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases). Completed below with family-scoped aliases.
     "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
     "prefilled_response_guided_closer_inside_invoke_quote": ("muse", "6"),
+    # Issue #406 — whitespace-only text in a tool-only turn is call framing.
+    "blank_framing_tool_only": (8, "12"),
+    "blank_framing_between_calls_single_chunk": (8, "13"),
+    "blank_framing_with_prose": (8, "14"),
+    "blank_output_without_call": (3, "2"),
+    "blank_framing_after_reasoning": (11, "11"),
+    "blank_framing_prose_after_call": (8, "15"),
+    "blank_framing_incomplete_call": (5, "5"),
     # DeepSeek V4 and V4.1 — DSML tool-call separator framing.
     **{scenario: ("dsml", str(index)) for index, scenario in enumerate([
         "dsml_separator_two_lf", "dsml_separator_four_lf", "dsml_no_separator",
@@ -236,6 +290,7 @@ UNIFIED_TAX = {
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
 # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
 UNIFIED_GROUP_LABEL = UNIFIED_DISPLAY["group_labels"]
+V1_SPLIT_SCENARIOS = tuple(scenario for scenario, taxonomy in UNIFIED_TAX.items() if taxonomy[0] == "v1_split")
 
 
 def tax(scenario):
@@ -253,24 +308,29 @@ def tax(scenario):
 _DISPLAY_GROUP = UNIFIED_DISPLAY["group_overrides"]
 
 
-def display_tax(scenario):
+def display_tax(scenario, families=None):
     group, sub = tax(scenario)
+    if families is not None and len(families) == 1:
+        return next(iter(families)), sub
     parent = case_fold(scenario)
     if parent and parent[0] != scenario:
         return display_tax(parent[0])[0], sub
     return _DISPLAY_GROUP.get(scenario, group), sub
 
 
-def display_section(scenario):
-    group, _ = display_tax(scenario)
+def display_section(scenario, families=None):
+    group, _ = display_tax(scenario, families)
+    if families is not None and len(families) == 1:
+        label = UNIFIED_GROUP_LABEL.get(group) or f"Family-specific tests: {group}"
+        return f"unified_g{group}", label
     if group == 7:
         section = argument_section((case_fold(scenario) or (scenario, ""))[0])
         return f"unified_g7_{section}", ARGUMENT_SECTIONS[section]
     return f"unified_g{group}", UNIFIED_GROUP_LABEL.get(group, "Other")
 
 
-def display_sort_key(scenario):
-    group, _ = display_tax(scenario)
+def display_sort_key(scenario, families=None):
+    group, _ = display_tax(scenario, families)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))
     section_rank = list(ARGUMENT_SECTIONS).index(argument_section((case_fold(scenario) or (scenario, ""))[0])) if group == 7 else 0
     return group_key, section_rank, case_description(scenario), scenario
@@ -279,16 +339,17 @@ def display_sort_key(scenario):
 DISPLAY_PREFIXES = {group: tuple(prefixes) for group, prefixes in UNIFIED_DISPLAY["prefixes"].items()}
 
 
-def display_case_labels(scenarios):
+def display_case_labels(scenarios, scenario_families=None):
     """Display ranks belong to the visible corpus, never to capture identities."""
     labels = {}
     counts = {}
-    for scenario in sorted(set(scenarios), key=display_sort_key):
-        group, _ = display_tax(scenario)
+    families = scenario_families or {}
+    for scenario in sorted(set(scenarios), key=lambda name: display_sort_key(name, families.get(name))):
+        group, _ = display_tax(scenario, families.get(scenario))
         full_prefix, compact_prefix = DISPLAY_PREFIXES.get(group, (str(group), str(group)))
         counts[compact_prefix] = counts.get(compact_prefix, 0) + 1
         labels[scenario] = {
-            "label": f"{full_prefix}-{case_description(scenario)}",
+            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{case_description(scenario)}",
             "compact_prefix": compact_prefix,
             "display_number": counts[compact_prefix],
         }
@@ -363,34 +424,56 @@ for _scenario, _active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
 # Assign new numeric IDs after historical variants so their published ranks do not move.
 UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12")
 
+UNIFIED_TAX["interrupted_reasoning_then_response"] = (10, "7")
+UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "6")
+UNIFIED_TAX["reason_markup_in_arg_with_text_consistent"] = (12, "7")
 
 # Historical requests remain separate executions, but share one semantic heading.
-RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped"})
+RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace", "gpt_oss_interrupted_reasoning_then_response", "kimi_k3_elided_think_close_to_response"})
+
+
+class CaseVariant(NamedTuple):
+    parent: str
+    label: str
+    # Visual folding alone cannot qualify a new semantic axis for other families.
+    coverage_parent: str | None = None
+    name_suffix: str | None = None
+
+
 SHARED_CASE_VARIANTS = {
-    **{scenario + "_pr424": (scenario, "Retained #424 delivery / input")
+    "interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Interrupted", name_suffix="interrupted"),
+    "reason_markup_in_arg_consistent": CaseVariant("reason_markup_in_arg", "Consistent example prose", "reason_markup_in_arg"),
+    "reason_markup_in_arg_with_text_consistent": CaseVariant("reason_markup_in_arg_with_text", "Consistent example prose", "reason_markup_in_arg_with_text"),
+    **{scenario + "_pr424": CaseVariant(scenario, "Retained #424 delivery / input", scenario)
        for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items() if active},
-    **{scenario: (scenario.removeprefix("harmony_"), "Harmony partial header")
+    **{scenario: CaseVariant(scenario.removeprefix("harmony_"), "Harmony partial header", scenario.removeprefix("harmony_"), "harmony_partial_header")
        for scenario in UNIFIED_TAX if scenario.startswith("harmony_")},
-    "gpt_oss_multiple_unknown_and_empty_tools": ("two_calls", "Empty body and unoffered names"),
-    "gpt_oss_control_marker_inside_argument_string": ("arg_marker_in_string", "All Harmony controls"),
-    "gpt_oss_truncated_tool_resynchronizes_at_next_message": ("tool_no_close", "Next message recovery"),
-    "gpt_oss_interrupted_reasoning_then_tool": ("tool_in_reason", "Interrupted Harmony reasoning"),
-    "gpt_oss_interrupted_reasoning_then_tool_with_text": ("tool_in_reason_with_text", "Interrupted Harmony reasoning"),
-    "gpt_oss_interrupted_reasoning_then_response": ("reason_then_content", "Elided Harmony reasoning close"),
-    "kimi_k3_elided_think_close_to_response": ("reason_then_content", "Elided Kimi K3 reasoning close"),
-    "gpt_oss_invalid_tool_body_then_empty_call": ("malformed_json_then_two_valid_calls", "Invalid text then empty call"),
-    "gpt_oss_invalid_tool_body_then_valid_call": ("malformed_json_then_two_valid_calls", "Truncated JSON then valid call"),
-    "gpt_oss_tool_body_whitespace": ("tool_only", "Leading JSON body whitespace"),
-    "gpt_oss_quoted_truncated_tool_then_final": ("tool_no_close", "Malformed argument then visible response"),
-    "gpt_oss_quoted_message_header_literal": ("arg_marker_in_string", "Quoted closer and response header"),
+    "gpt_oss_multiple_unknown_and_empty_tools": CaseVariant("two_calls", "Empty body and unoffered names", name_suffix="empty_body_and_unoffered_names"),
+    "gpt_oss_control_marker_inside_argument_string": CaseVariant("arg_marker_in_string", "Native controls in arguments", name_suffix="native_controls_in_arguments"),
+    "gpt_oss_truncated_tool_resynchronizes_at_next_message": CaseVariant("tool_no_close", "Next message recovery", name_suffix="next_message_recovery"),
+    "gpt_oss_interrupted_reasoning_then_tool": CaseVariant("tool_in_reason", "Interrupted Harmony reasoning", "tool_in_reason", "interrupted_harmony_reasoning"),
+    "gpt_oss_interrupted_reasoning_then_tool_with_text": CaseVariant("tool_in_reason_with_text", "Interrupted Harmony reasoning", "tool_in_reason_with_text", "interrupted_harmony_reasoning"),
+    "gpt_oss_interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Elided reasoning close"),
+    "kimi_k3_elided_think_close_to_response": CaseVariant("reason_then_content", "Elided Kimi K3 reasoning close", "gpt_oss_interrupted_reasoning_then_response"),
+    "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call", name_suffix="invalid_text_then_empty_call"),
+    "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call", name_suffix="truncated_json_then_valid_call"),
+    "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
+    "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
+    "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response", name_suffix="malformed_argument_then_visible_response"),
+    "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header", name_suffix="quoted_closer_and_response_header"),
 }
-_SHARED_VARIANT_PARENTS = {parent for parent, _ in SHARED_CASE_VARIANTS.values()}
+_SHARED_VARIANT_PARENTS = {variant.parent for variant in SHARED_CASE_VARIANTS.values()}
 
 
 def case_fold(scenario):
     """One grouping owner for schema, native grammar, and delivery variants."""
-    return (schema_fold(scenario) or SHARED_CASE_VARIANTS.get(scenario)
+    return (schema_fold(scenario) or (SHARED_CASE_VARIANTS[scenario][:2] if scenario in SHARED_CASE_VARIANTS else None)
             or ((scenario, "Standard") if scenario in _SHARED_VARIANT_PARENTS else None))
+
+
+def coverage_case(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    return (variant.coverage_parent if variant else None) or scenario
 
 
 def legacy_case_label(scenario):
@@ -400,6 +483,7 @@ def legacy_case_label(scenario):
 
 
 GROUP_DESCRIPTION_PREFIXES = {
+    "v1_split": ("v1_split_",),
     "kimi": ("kimi_k3_",),
     "gemma": ("gemma4_",),
     "glm5": ("glm47_",),
@@ -410,7 +494,7 @@ GROUP_DESCRIPTION_PREFIXES = {
 }
 
 
-def case_description(scenario):
+def original_case_description(scenario):
     """The tested behavior, independent of its ordering and display placement."""
     if scenario.startswith("schema_"):
         return scenario.removeprefix("schema_")
@@ -420,8 +504,27 @@ def case_description(scenario):
     return scenario
 
 
+def case_description(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    if variant and variant.name_suffix and scenario not in RETIRED_SCENARIOS:
+        return f"{case_description(variant.parent)}_{variant.name_suffix}"
+    return original_case_description(scenario)
+
+
+def previous_case_label(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    group = tax(scenario)[0]
+    if variant and scenario not in RETIRED_SCENARIOS:
+        group = previous_case_label(variant.parent).split("-", 1)[0]
+    return f"{group}-{case_description(scenario)}"
+
+
 def case_label(scenario):
-    return f"{tax(scenario)[0]}-{case_description(scenario)}"
+    previous = previous_case_label(scenario)
+    if previous.startswith("7-"):
+        related = (case_fold(scenario) or (scenario, ""))[0]
+        return f"{ARGUMENT_SECTIONS[argument_section(related)]}-{previous[2:]}"
+    return previous
 
 
 def numbered_id(scenario):
@@ -498,6 +601,24 @@ LEGACY_CASE_LABELS = {
 }
 
 
+LEGACY_CASE_LABELS.update({
+    "6-empty_args_no_close": "empty_args_no_close",
+    "6-optional_args_no_close": "optional_args_no_close",
+    "32-guided_native_after_prefilled_reasoning_named": "guided_native_after_prefilled_reasoning_named",
+    "32-guided_native_after_prefilled_reasoning_required": "guided_native_after_prefilled_reasoning_required",
+    "8-commentary_then_tool": "commentary_then_tool",
+})
+LEGACY_CASE_LABELS.update({previous_case_label(scenario): scenario for scenario in UNIFIED_TAX})
+
+
+# Historical YAML and shared links keep their original descriptive identities.
+LEGACY_CASE_LABELS.update({
+    f"{tax(scenario)[0]}-{original_case_description(scenario)}": scenario
+    for scenario in UNIFIED_TAX
+    if case_label(scenario) != f"{tax(scenario)[0]}-{original_case_description(scenario)}"
+})
+
+
 def _label_owners(scenario_labels, historical_labels):
     owners = {}
     for scenario, labels in scenario_labels.items():
@@ -529,6 +650,9 @@ FAMILY_LEGACY_CASE_LABELS = {
 }
 
 
+HISTORICAL_FAMILY_LABEL_ALIASES = {"gemma4": {"31-29": "g4-1", "31-30": "g4-2"}}
+
+
 def scenario_for_label(label, family=None, scenario=None):
     """Resolve aliases without changing the meaning of older published labels."""
     label = label.removeprefix("UNIFIED.")
@@ -541,8 +665,7 @@ def scenario_for_label(label, family=None, scenario=None):
         return family_scenario
     if label in UNIFIED_TAX:
         return label
-    if family == "gemma4":
-        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
+    label = HISTORICAL_FAMILY_LABEL_ALIASES.get(family, {}).get(label, label)
     dotted_group_31 = re.fullmatch(r"31\.([a-x])", label)
     if dotted_group_31:
         label = f"31-{ord(dotted_group_31[1]) - ord('a') + 1}"
@@ -552,11 +675,6 @@ def scenario_for_label(label, family=None, scenario=None):
     if len(owners) > 1:
         raise ValueError(f"conflicting Unified alias ownership: {label}: {sorted(owners)}")
     owner = next(iter(owners), None)
-    if owner is not None and family:
-        family_names = sorted({name for name, _label in FAMILY_LEGACY_CASE_LABELS}, key=len, reverse=True)
-        owner_family = next((name for name in family_names if owner.startswith(f"{name}_")), None)
-        if owner_family is not None and owner_family != family:
-            return None
     return owner
 
 

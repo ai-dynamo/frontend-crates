@@ -107,12 +107,15 @@ pub mod traits {
         /// tool, or attribute content from becoming structural when it happens
         /// to resemble a control token.
         ///
-        /// The Baseten backend preserves legacy tiktoken behavior by splitting
-        /// each segment into chunks of at most 400,000 characters and splitting
-        /// whitespace/non-whitespace runs at 25,000 characters. Independent
-        /// chunks are encoded through the Rayon thread pool, then concatenated
-        /// in input order. Tokenizer post-processing is applied once after all
-        /// segment IDs have been joined.
+        /// The Baseten and TikToken backends preserve legacy tiktoken behavior
+        /// by splitting each segment into chunks of at most 400,000 characters
+        /// and splitting whitespace/non-whitespace runs at 25,000 characters.
+        /// Baseten encodes independent chunks through the Rayon thread pool,
+        /// then concatenates them in input order, and applies tokenizer
+        /// post-processing once after all segment IDs have been joined.
+        /// TikToken classifies whitespace like the reference Kimi tokenizer
+        /// (Python's `str.isspace`), while Baseten uses `char::is_whitespace`;
+        /// the two differ only on runs of U+001C..U+001F.
         ///
         /// Backends must not implement this by flattening the segments first,
         /// because that discards the special-token trust boundary.

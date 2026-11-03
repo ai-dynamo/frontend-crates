@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Request schemas and oracle types shared by Unified and legacy stream cases."""
 
+import yaml
+
+from markers import parser_families_path
+
 NULL_DESCRIPTIONS = {
     "7-4": 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269.',
     "7-5": 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269.',
@@ -36,9 +40,12 @@ NULL_VARIANTS = (
      'The request tool schema requires string alongside an enum containing string "null" and JSON null; the type excludes JSON null.'),
 )
 
+_FAMILY_REGISTRY = yaml.safe_load(parser_families_path().read_text())
+_MIXED_VALUE_FAMILIES = frozenset(_FAMILY_REGISTRY["unified"]) | {
+    family for family, spec in _FAMILY_REGISTRY["families"].items() if spec.get("dynamo_v2")}
 MIXED_CASE_FAMILIES = {
-    "7-4.mixed_labels": {"glm47"},
-    "7-4.mixed_grep": {"minimax_m3"},
+    "7-4.mixed_labels": _MIXED_VALUE_FAMILIES,
+    "7-4.mixed_grep": _MIXED_VALUE_FAMILIES,
 }
 
 MIXED_LABELS_SCHEMA = {"type": "object", "properties": {

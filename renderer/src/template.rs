@@ -177,6 +177,11 @@ struct HfTokenizerConfigJsonFormatter {
     /// When true, strip tool definitions from the chat template when tool_choice is "none".
     /// This prevents models from generating raw XML tool calls in the content field.
     exclude_tools_when_tool_choice_none: bool,
+    /// Cached per selected template variant; native namespace rendering was
+    /// introduced by the template's `deferred_render_mode` argument.
+    /// A capable default must not opt an older tool-use variant into native tools.
+    default_template_handles_native_tools: bool,
+    tool_use_template_handles_native_tools: bool,
     /// True if the `default` template natively references `reasoning_content`.
     /// When true and rendering through `default`, skip injection — the template
     /// handles it. Tracked separately for `default` and `tool_use` because HF

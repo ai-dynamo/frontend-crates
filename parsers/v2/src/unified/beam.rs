@@ -161,6 +161,7 @@ static GUIDED_CHANNEL: GuidedChannel = GuidedChannel {
     // Beam's markers are special tokens the native path strips positionally; prose
     // that quotes them under a Response prefill keeps them literal.
     strip_text: str::to_string,
+    reasoning_filter: None,
     competitors: &GUIDED_COMPETITORS,
     close_markers: &ANALYSIS_TERMINATORS,
     response_literal_markers: &GUIDED_COMPETITORS,

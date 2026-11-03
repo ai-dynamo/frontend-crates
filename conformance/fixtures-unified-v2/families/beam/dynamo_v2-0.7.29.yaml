@@ -172,6 +172,15 @@ changes:
             arguments: '}'
             complete: true
         - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: f72a4d6a8197187f39f9062a23081b065797f5f04e371aaebfe13fe710aaa0ca
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.29 source could not be recovered with its recorded identity d478e73dbf3685f91933985acce53bef6567fe5770e1d6e9bbc9cf4736af972e; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_marker_in_string:
     case_key: UNIFIED.7-arg_marker_in_string
     stimulus:
@@ -223,6 +232,15 @@ changes:
             arguments: '}'
             complete: true
         - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: d530f06fdb7f9e806b5a6308791d0e470603443b2673cf65e486db356566bca8
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.29 source could not be recovered with its recorded identity d478e73dbf3685f91933985acce53bef6567fe5770e1d6e9bbc9cf4736af972e; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null:
     case_key: UNIFIED.7-arg_string_null
     stimulus:
@@ -338,6 +356,15 @@ changes:
             arguments: '}'
             complete: true
         - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 8dacf7dcd7ef9cf32b4b066bce99a3922c6d964e6170bc552cd6faef55626125
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.29 source could not be recovered with its recorded identity d478e73dbf3685f91933985acce53bef6567fe5770e1d6e9bbc9cf4736af972e; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null_sibling_anyof:
     case_key: UNIFIED.7-arg_string_null_sibling_anyof
     stimulus:
@@ -1040,6 +1067,33 @@ changes:
             arguments: '}'
             complete: true
         - expected: []
+  gpt_oss_interrupted_reasoning_then_response:
+    case_key: UNIFIED.gpt_oss-interrupted_reasoning_then_response
+    stimulus:
+      ref: current
+      semantic_sha256: 754f1104e563500fd1475abd990660d688c34cad5461a78a1ce76eeb08ca11f9
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.29 source could not be recovered with its recorded identity d478e73dbf3685f91933985acce53bef6567fe5770e1d6e9bbc9cf4736af972e; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: a8985bfdccc1a5b68c0bf6a89b0db294a69d452907b74f53b7ffbfaf41541c55
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.29 source could not be recovered with its recorded identity d478e73dbf3685f91933985acce53bef6567fe5770e1d6e9bbc9cf4736af972e; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    case_key: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
+    stimulus:
+      ref: current
+      semantic_sha256: fc18e0569069af1f624885c461b151a081e81589b652c607fcc0496aeb3f756c
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.29 source could not be recovered with its recorded identity d478e73dbf3685f91933985acce53bef6567fe5770e1d6e9bbc9cf4736af972e; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_after_reasoning:
     case_key: UNIFIED.30-guided_json_after_reasoning
     stimulus:
@@ -9085,4 +9139,40 @@ changes:
             complete: true
         - expected: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.29
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.29
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.29
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_interrupted_reasoning_then_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.29
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.29
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.29
+      capture_origin: null
+      inherited_from: null

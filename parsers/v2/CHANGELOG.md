@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.9.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.6...dynamo-parsers-v2-v0.9.7) - 2026-11-03
+
+### Bug fixes
+
+- *(parsers)* [P1] coordinate Harmony vocabulary cache loading ([#513](https://github.com/ai-dynamo/frontend-crates/pull/513))
+
+## [0.9.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.3...dynamo-parsers-v2-v0.9.4) - 2026-10-31
+
+### Bug fixes
+
+- Preserve sibling arguments for out-of-range numbers ([#515](https://github.com/ai-dynamo/frontend-crates/pull/515))
+
+## [0.9.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.2...dynamo-parsers-v2-v0.9.3) - 2026-10-31
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only content from tool-only jail turns ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only text from Nemotron V3 Unified tool-only turns, so the call framing newlines are no longer content. Other families are unchanged ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+## [0.9.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.0...dynamo-parsers-v2-v0.9.1) - 2026-10-30
+
+### Features
+
+- *(parsers)* [P2] share GPT-OSS v2 continuation state ([#506](https://github.com/ai-dynamo/frontend-crates/pull/506))
+
+## [0.8.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.8...dynamo-parsers-v2-v0.8.9) - 2026-10-29
+
+### Bug fixes
+
+- *(parsers)* Stream native Kimi arguments before call closure ([#384](https://github.com/ai-dynamo/frontend-crates/pull/384))
+
+## [0.8.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.7...dynamo-parsers-v2-v0.8.8) - 2026-10-29
+
+### Bug fixes
+
+- *(parsers)* DeepSeek V4.1 grammar and recovery ([#493](https://github.com/ai-dynamo/frontend-crates/pull/493))
+
+### Documentation
+
+- *(parsers)* Refresh library usage and contributor guides ([#492](https://github.com/ai-dynamo/frontend-crates/pull/492))
+
+## [0.8.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.6...dynamo-parsers-v2-v0.8.7) - 2026-10-28
+
+### Bug fixes
+
+- *(parsers)* Execute structural tags with pinned XGrammar ([#350](https://github.com/ai-dynamo/frontend-crates/pull/350))
+
+## [0.8.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.5...dynamo-parsers-v2-v0.8.6) - 2026-10-28
+
+### Performance
+
+- *(parsers-v2)* Stop rescanning an open invoke for the block end ([#490](https://github.com/ai-dynamo/frontend-crates/pull/490))
+
+## [0.8.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.4...dynamo-parsers-v2-v0.8.5) - 2026-10-28
+
+### Performance
+
+- *(parsers-v2)* Build the Harmony special-token set once ([#489](https://github.com/ai-dynamo/frontend-crates/pull/489))
+
+## [0.8.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.3...dynamo-parsers-v2-v0.8.4) - 2026-10-28
+
+### Refactoring
+
+- Optimize conformance reports for speed and space ([#470](https://github.com/ai-dynamo/frontend-crates/pull/470))
+
 ## [0.7.35](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.34...dynamo-parsers-v2-v0.7.35) - 2026-10-23
 
 ### Bug fixes

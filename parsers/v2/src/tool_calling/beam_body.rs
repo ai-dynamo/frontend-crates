@@ -19,6 +19,9 @@
 //!   between parameters, so a malformed or truncated body is an error and never `{}`;
 //! * the last duplicate key wins and keeps its first position.
 
+use crate::tool_calling::arguments::{
+    coerce_integral_number, is_integer_literal, normalize_decimal_spelling,
+};
 use crate::tool_calling::beam_py::{self, PyDict, PyValue};
 use crate::tool_calling::scan::JsonStringState;
 use crate::tool_calling::traits::Tool;
@@ -853,6 +856,13 @@ fn json_type_names(value: &PyValue) -> &'static [&'static str] {
         PyValue::Bool(_) => &["boolean"],
         PyValue::Int(_) => &["integer", "number"],
         PyValue::Float(_) => &["number"],
+        PyValue::RawNumber(number) => {
+            if is_integer_literal(number) {
+                &["integer", "number"]
+            } else {
+                &["number"]
+            }
+        }
         PyValue::None => &["null"],
         PyValue::Dict(_) => &["object"],
         PyValue::List(_) => &["array"],
@@ -860,18 +870,18 @@ fn json_type_names(value: &PyValue) -> &'static [&'static str] {
     }
 }
 
-/// Beam can emit an integer with a zero decimal fraction. Keep its digits exact;
+/// Beam can emit integer-valued decimal and exponent forms. Keep their digits exact;
 /// this deliberately extends the frozen reference's Python `int()` conversion.
-fn integral_decimal(raw: &str) -> Option<beam_py::PyInt> {
-    let (whole, fraction) = beam_py::strip(raw).split_once('.')?;
-    let digits = whole.strip_prefix(['-', '+']).unwrap_or(whole);
-    if digits.is_empty()
-        || !digits.bytes().all(|b| b.is_ascii_digit())
-        || !fraction.bytes().all(|b| b == b'0')
-    {
+fn integral_decimal(raw: &str) -> Option<PyValue> {
+    let stripped = beam_py::strip(raw);
+    let parsed = if stripped.contains(['e', 'E']) {
+        coerce_integral_number(&beam_py::numeric_text(raw)?)?
+    } else if stripped.contains('.') {
+        coerce_integral_number(stripped)?
+    } else {
         return None;
-    }
-    beam_py::parse_int(whole)
+    };
+    Some(PyValue::RawNumber(parsed.json_text().ok()?))
 }
 
 /// `raw` typed by the first of `types` it can be read as, else `raw` unchanged.
@@ -891,13 +901,25 @@ pub(crate) fn coerce(raw: &str, types: &[String]) -> PyValue {
     for type_name in filtered {
         match type_name {
             "integer" => {
-                if let Some(i) = beam_py::parse_int(raw).or_else(|| integral_decimal(raw)) {
+                if let Some(i) = beam_py::parse_int(raw) {
                     return PyValue::Int(i);
+                }
+                if let Some(value) = integral_decimal(raw) {
+                    return value;
                 }
             }
             "number" => {
                 if let Some(i) = beam_py::parse_int(raw) {
                     return PyValue::Int(i);
+                }
+                if let Some(PyValue::RawNumber(number)) = beam_py::json_loads(raw) {
+                    return PyValue::RawNumber(number);
+                }
+                if let Some(numeric) = beam_py::numeric_text(raw)
+                    && let Some(number) = normalize_decimal_spelling(&numeric)
+                    && let Ok(number) = number.json_text()
+                {
+                    return PyValue::RawNumber(number);
                 }
                 let Some(number) = beam_py::parse_float(raw) else {
                     continue;
@@ -1583,10 +1605,11 @@ mod tests {
             (" -12.00\n", "-12"),
             ("7.", "7"),
             ("-0.00", "0"),
-            ("123456789012345678901.0", "123456789012345678901"),
+            ("123456789012345678901.0", "123456789012345678901.0"),
             ("3.5", r#""3.5""#),
-            ("7e0", r#""7e0""#),
-            (".0", r#"".0""#),
+            ("7e0", "7"),
+            ("4.2e1", "42"),
+            (".0", "0"),
             ("1_0.0", r#""1_0.0""#),
             ("3.0000000000000001", r#""3.0000000000000001""#),
         ] {
@@ -1603,6 +1626,38 @@ mod tests {
         ] {
             assert_eq!(super::typed_value(Some(&schema), "3.0").dumps(), expected);
         }
+    }
+
+    #[test]
+    fn numeric_coercion_preserves_python_numeric_whitespace_rules() {
+        for separator in ['\x1c', '\x1d', '\x1e', '\x1f'] {
+            for (kind, token) in [
+                ("integer", "5"),
+                ("integer", "5.5"),
+                ("integer", "5e0"),
+                ("number", "5"),
+                ("number", "5.5"),
+                ("number", "5e0"),
+            ] {
+                for raw in [format!("{token}{separator}"), format!("{separator}{token}")] {
+                    assert_eq!(
+                        super::coerce(&raw, &[kind.to_string()]).dumps(),
+                        super::PyValue::Str(raw.clone()).dumps(),
+                        "kind={kind}, raw={raw:?}"
+                    );
+                }
+            }
+        }
+        for whitespace in [' ', '\t', '\n', '\r', '\x0b', '\x0c', '\u{85}', '\u{a0}'] {
+            for (kind, token) in [("integer", "5"), ("number", "5.5")] {
+                let raw = format!("{whitespace}{token}{whitespace}");
+                assert_eq!(super::coerce(&raw, &[kind.to_string()]).dumps(), token);
+            }
+        }
+        assert_eq!(
+            super::coerce("5.0\x1f", &["integer".to_string()]).dumps(),
+            "5"
+        );
     }
 
     #[test]

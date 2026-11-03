@@ -144,7 +144,8 @@ impl FastTikTokenTokenizer {
         let pattern = tiktoken::detect_bpe_pattern(directory)?;
         let encoder = tiktoken::parse_tiktoken_file(path)?;
         let num_base_tokens = encoder.values().max().map_or(0, |&m| m + 1) as usize;
-        let special_tokens = tiktoken::load_special_tokens(directory, num_base_tokens)?;
+        let tiktoken::AddedTokens { tokens, skip_ids } =
+            tiktoken::load_added_tokens(directory, num_base_tokens)?;
 
         let ranks: Vec<(Vec<u8>, u32)> = encoder.into_iter().collect();
         let mut id_to_bytes: FxHashMap<u32, Vec<u8>> = ranks
@@ -152,15 +153,14 @@ impl FastTikTokenTokenizer {
             .map(|(bytes, rank)| (*rank, bytes.clone()))
             .collect();
         id_to_bytes.extend(
-            special_tokens
+            tokens
                 .iter()
                 .map(|(content, &id)| (id, content.as_bytes().to_vec())),
         );
-        let special_token_ids = special_tokens.values().copied().collect();
-        let special_token_strings = tiktoken::sorted_special_token_strings(&special_tokens);
+        let special_token_strings = tiktoken::sorted_special_token_strings(&tokens);
 
         let config =
-            fastokens::tiktoken::TiktokenConfig::new(pattern, special_tokens.into_iter().collect());
+            fastokens::tiktoken::TiktokenConfig::new(pattern, tokens.into_iter().collect());
         let inner = fastokens::Tokenizer::from_tiktoken_ranks(&ranks, config).map_err(|e| {
             Error::msg(format!(
                 "Error loading fastokens tiktoken tokenizer from {path}: {e}"
@@ -169,13 +169,14 @@ impl FastTikTokenTokenizer {
         Ok(Self {
             inner,
             id_to_bytes,
-            special_token_ids,
+            special_token_ids: skip_ids,
             special_tokens: special_token_strings,
         })
     }
 
     /// Atomic special-token strings registered with the encoder, sorted; the boundary set
-    /// for [`CachedTokenizer`](crate::CachedTokenizer).
+    /// for [`CachedTokenizer`](crate::CachedTokenizer). Includes added tokens marked
+    /// `"special": false`, unlike `special_token_ids`.
     pub fn special_tokens(&self) -> &[String] {
         &self.special_tokens
     }
@@ -513,6 +514,45 @@ mod tiktoken_parity_tests {
             reference.special_token_ids().unwrap()
         );
         assert_eq!(fast.token_to_id("<|im_end|>").unwrap(), Some(474));
+    }
+
+    #[test]
+    fn non_special_added_tokens_survive_skip_special_tokens() {
+        let source = Path::new(TIKTOKEN_PATH).parent().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        for file in ["tiktoken.model", "config.json"] {
+            std::fs::copy(source.join(file), dir.path().join(file)).unwrap();
+        }
+        let mut config: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(source.join("tokenizer_config.json")).unwrap(),
+        )
+        .unwrap();
+        config["added_tokens_decoder"]["475"] =
+            serde_json::json!({"content": "<|open|>", "special": false});
+        std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string()).unwrap();
+        let path = dir.path().join("tiktoken.model");
+        let path = path.to_str().unwrap();
+        let reference = TikTokenTokenizer::from_file_auto(path).unwrap();
+        let fast = FastTikTokenTokenizer::from_file_auto(path).unwrap();
+
+        let special_ids = fast.special_token_ids().unwrap();
+        assert_eq!(special_ids, reference.special_token_ids().unwrap());
+        assert!(special_ids.contains(&474));
+        assert!(!special_ids.contains(&475));
+
+        let ids = fast.encode("<|open|>hello<|im_end|>").unwrap();
+        assert_eq!(
+            ids.token_ids(),
+            reference
+                .encode("<|open|>hello<|im_end|>")
+                .unwrap()
+                .token_ids()
+        );
+        assert_eq!(ids.token_ids().first(), Some(&475));
+        let fast_text: String = fast.decode(ids.token_ids(), true).unwrap().into();
+        let reference_text: String = reference.decode(ids.token_ids(), true).unwrap().into();
+        assert_eq!(fast_text, "<|open|>hello");
+        assert_eq!(reference_text, "<|open|>hello");
     }
 
     #[test]

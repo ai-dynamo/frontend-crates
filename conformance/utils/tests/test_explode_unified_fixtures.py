@@ -175,7 +175,8 @@ def test_split_only_family_retains_explicit_schedule_and_finish() -> None:
     ]
 
 
-def test_split_only_family_preserves_an_empty_offered_tool_set() -> None:
+@pytest.mark.parametrize("offered_tools", [[], None])
+def test_split_only_family_preserves_explicit_offered_tools(offered_tools) -> None:
     rows = explode._split_only_cases(
         "gpt_oss",
         {
@@ -185,14 +186,14 @@ def test_split_only_family_preserves_an_empty_offered_tool_set() -> None:
                     "input": "authored text",
                     "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
                     "finish_reason": "stop",
-                    "tools": None,
+                    "tools": offered_tools,
                     "golden": [{"kind": "text", "text": "authored text"}],
                 }
             },
         },
     )
 
-    assert rows["UNIFIED.3-text_only"]["request"]["tools"] == []
+    assert rows["UNIFIED.3-text_only"]["request"]["tools"] == offered_tools
 
 
 def test_regeneration_removes_all_materialized_capture_directories(tmp_path, monkeypatch) -> None:
