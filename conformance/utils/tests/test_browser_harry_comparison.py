@@ -224,11 +224,16 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
                 const table=document.querySelector('.comparison-matrix'), segments=[...table.querySelectorAll('.matrix-segments > i')];
                 return {segments:segments.length, addedContent:segments.some(segment=>segment.childElementCount || segment.textContent.trim()),
                   after:Boolean(table.compareDocumentPosition(document.querySelector('.case-descriptions'))&Node.DOCUMENT_POSITION_FOLLOWING),
-                  width:table.querySelector('.matrix-cell').getBoundingClientRect().width};
+                  width:table.querySelector('.matrix-cell').getBoundingClientRect().width,
+                  markWidth:table.querySelector('.matrix-segments').getBoundingClientRect().width,
+                  fontSize:parseFloat(getComputedStyle(table).fontSize)};
             """)
             assert result["segments"] > 0 and not result["addedContent"], result
             assert result["after"], result
-            assert abs(result["width"] - (42 if vertical else 30)) <= 1, result
+            if vertical and stacked:
+                assert 0 <= result['width'] - result['markWidth'] <= result['fontSize'], result
+            else:
+                assert abs(result["width"] - (42 if vertical else 30)) <= 1, result
             assert counts(driver) == before
 
         driver.find_element("css selector", "[data-view-detailed]").click()
@@ -307,17 +312,28 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
             _choose_engine(driver, 1, "sglang")
             _ready(driver, "tab-unified")
             driver.find_element("css selector", "[data-layout='stacked']").click()
-        expected_label_widths = [(2048, 640), (480, 640)] if vertical else [(2048, 220), (480, 150)]
-        for width, label_width in expected_label_widths:
+        for width in (2048, 480):
             driver.set_window_size(width, 1000)
+            if vertical and stacked:
+                WebDriverWait(driver, 10).until(lambda page: page.execute_script("""
+                    const table=document.querySelector('.comparison-matrix');
+                    return table.querySelector('.matrix-cell').getBoundingClientRect().width
+                      - table.querySelector('.matrix-segments').getBoundingClientRect().width
+                      <= parseFloat(getComputedStyle(table).fontSize);
+                """))
             geometry = driver.execute_script("""
                 const table=document.querySelector('.comparison-matrix');
                 return {label:table.tHead.rows[0].cells[0].getBoundingClientRect().width,
+                  labelTrack:parseFloat(getComputedStyle(table.querySelector('.matrix-label-column')).width),
+                  cellTrack:parseFloat(getComputedStyle(table).getPropertyValue('--matrix-cell-width')),
                   cells:[...table.querySelectorAll('.matrix-cell')].map(c=>c.getBoundingClientRect().width),
                   header:table.tHead.getBoundingClientRect().height};
             """)
+            label_width = geometry['labelTrack'] if vertical else (220 if width > 700 else 150)
             assert abs(geometry["label"] - label_width) <= 1, geometry
-            assert geometry["cells"] and all(abs(w - (42 if vertical else 30)) <= 1 for w in geometry["cells"]), geometry
+            assert geometry["cells"] and all(abs(w - geometry['cellTrack']) <= 1 for w in geometry["cells"]), geometry
+            if not (vertical and stacked):
+                assert abs(geometry['cellTrack'] - (42 if vertical else 30)) <= 1, geometry
             if not vertical:
                 assert geometry["header"] <= 100, geometry
             assert not driver.find_elements("css selector", ".matrix-summary")
@@ -390,6 +406,37 @@ def test_stacked_families_are_grouped_and_legend_matches_visible_colors(publishe
             assert result["grouped"], result
             assert result["separators"], result
             assert result["separatorWidth"] == "3px", result
+
+            def compact_spacing(browser):
+                return browser.execute_script("""
+                  const table = document.querySelector('.comparison-matrix');
+                  const rows = [...table.tBodies[0].querySelectorAll('tr:not(.matrix-category-row)')];
+                  const vertical = document.body.classList.contains('transpose-mode');
+                  let cells;
+                  if (vertical) {
+                    const row = rows.find(row => [...row.querySelectorAll('.matrix-cell')].slice(0,3)
+                      .every(cell => cell.querySelector('.matrix-segments')));
+                    cells = [...row.querySelectorAll('.matrix-cell')].slice(0,3);
+                  } else {
+                    const group = rows.slice(0,3);
+                    const index = [...group[0].querySelectorAll('.matrix-cell')].findIndex((cell,index) =>
+                      group.every(row => row.querySelectorAll('.matrix-cell')[index].querySelector('.matrix-segments')));
+                    cells = group.map(row => row.querySelectorAll('.matrix-cell')[index]);
+                  }
+                  const boxes = cells.map(cell => cell.querySelector('.matrix-segments').getBoundingClientRect());
+                  const gaps = boxes.slice(1).map((box,index) => vertical
+                    ? box.left-boxes[index].right : box.top-boxes[index].bottom);
+                  const limit = parseFloat(getComputedStyle(table).fontSize)/2 + 1;
+                  return gaps.every(gap => gap >= 0 && gap <= limit) && {gaps,
+                    contained: boxes.every((box,index) => {
+                      const cell=cells[index].getBoundingClientRect();
+                      return box.left>=cell.left-1 && box.right<=cell.right+1
+                        && box.top>=cell.top-1 && box.bottom<=cell.bottom+1;
+                    })};
+                """)
+
+            spacing = WebDriverWait(driver, 10).until(compact_spacing)
+            assert spacing['contained'], spacing
 
         assert_groups_and_legend()
         driver.find_element("css selector", "[data-case-search]").send_keys("dotted_name_minimal")

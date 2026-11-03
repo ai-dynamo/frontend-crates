@@ -60,12 +60,24 @@ export function captureCounts(view, key) {
   return counts;
 }
 
+function horizontalCellExtra(cell) {
+  const style = getComputedStyle(cell);
+  return ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth']
+    .reduce((sum, property) => sum + parseFloat(style[property]), 0);
+}
+
+function fitStackedResultColumns(table) {
+  const mark = table.querySelector('.matrix-segments');
+  if (!mark) return;
+  const boundary = table.querySelector('.matrix-cell.matrix-family-end');
+  const extra = Math.max(horizontalCellExtra(mark.closest('td')), boundary ? horizontalCellExtra(boundary) : 0);
+  table.style.setProperty('--matrix-cell-width', (mark.getBoundingClientRect().width + extra) + 'px');
+}
+
 function fitVerticalCaseLabels(table) {
   const labels = [...table.querySelectorAll('tbody tr > th:first-child .matrix-case-text')];
   if (!labels.length) return;
-  const firstCellStyle = getComputedStyle(labels[0].closest('th'));
-  const cellExtra = ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth']
-    .reduce((sum, property) => sum + parseFloat(firstCellStyle[property]), 0);
+  const cellExtra = horizontalCellExtra(labels[0].closest('th'));
   const signature = cellExtra + labels.map(label => {
     const style = getComputedStyle(label);
     return `${label.textContent}\u0000${style.font}\u0000${style.letterSpacing}\u0000${style.lineHeight}`;
@@ -142,7 +154,10 @@ export function mountComparison(panel, controller, familyNames = () => []) {
   let tab;
   let observedMatrix;
   const labelResizeObserver = new ResizeObserver(() => {
-    if (observedMatrix?.isConnected && ui.classList.contains('layout-vertical')) fitVerticalCaseLabels(observedMatrix);
+    if (observedMatrix?.isConnected && ui.classList.contains('layout-vertical')) {
+      if (ui.classList.contains('layout-stacked')) fitStackedResultColumns(observedMatrix);
+      fitVerticalCaseLabels(observedMatrix);
+    }
   });
   const persist = () => {
     const url = new URL(location.href);
@@ -183,6 +198,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const rowKeys = row => focused.rowKeys.get(row);
     toolbar.querySelector('.layout-control').hidden = keys.length < 2;
     const stacked = keys.length > 1 && state.layout === 'stacked';
+    ui.classList.toggle('layout-stacked', stacked);
     const familyGroups = [];
     for (const row of view.rows) {
       const key = familyOf(row), previous = familyGroups[familyGroups.length - 1];
@@ -203,6 +219,10 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const thead = table.createTHead(), tbody = table.createTBody();
     const entryFor = (row,column) => entriesByRow.get(row)?.get(column);
     const candidate = key => tab.candidates.find(c => c.key === key);
+    const captureLabel = key => {
+      const item = candidate(key);
+      return [item?.impl, item?.version].filter(Boolean).join(' ') || key;
+    };
     const outcomes = (entry,key) => entry ? selectedCaptureOutcome({...entry.cell, variants: entry.leaves},key) : 'unsupported';
     const heading = (tr,label,span=1) => { const th = document.createElement('th'); th.textContent = label; th.colSpan = span; tr.appendChild(th); return th; };
     const rotatedHeading = (tr,label,span=1) => {
@@ -252,7 +272,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
           if (groupIndex < familyGroups.length - 1) th.classList.add('matrix-family-end');
           for (const row of group.rows) for (const [index,k] of rowKeys(row).entries()) {
             const item = candidate(k);
-            const capture = rotatedHeading(sub,[item?.impl, item?.version].filter(Boolean).join(' ') || k);
+            const capture = rotatedHeading(sub,captureLabel(k));
             capture.className = 'matrix-capture-heading';
             capture.title = item?.label || k;
             capture.setAttribute('aria-label', item?.label || k);
@@ -299,7 +319,10 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       if (stacked) for (const [groupIndex,family] of familyGroups.entries()) for (const row of family.rows) for (const [index,k] of rowKeys(row).entries()) {
         const tr = tbody.insertRow(); tr.dataset.family = family.key;
         if (groupIndex > 0 && row === family.rows[0] && index === 0) tr.classList.add('matrix-family-start');
-        heading(tr,(row.model_label || row.family) + ' / ' + candidate(k)?.label); results(tr,row,[k]);
+        const label = (row.model_label || row.family) + ' / ';
+        const th = heading(tr,label + captureLabel(k));
+        th.title = label + candidate(k)?.label; th.setAttribute('aria-label', th.title);
+        results(tr,row,[k]);
       }
       else for (const row of view.rows) {
         const tr = tbody.insertRow(); heading(tr,row.model_label || row.family); results(tr,row);

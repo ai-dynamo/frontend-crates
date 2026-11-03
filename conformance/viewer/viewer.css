@@ -82,6 +82,8 @@ body { background: var(--page-bg); color: var(--ink); }
 .comparison-matrix tr > th:first-child .matrix-case-text { display: block; padding-left: 1em; text-indent: -1em; white-space: normal; overflow-wrap: anywhere; }
 .comparison-matrix thead tr > th:first-child { z-index: 5; }
 .comparison-matrix .matrix-cell { height: 22px; padding: 4px 2px; cursor: pointer; }
+.comparison-ui.layout-stacked .matrix-cell { height: auto; padding: .1em; }
+.comparison-ui.layout-stacked:not(.layout-vertical) .comparison-matrix tbody tr > th:first-child { padding-block: .1em; }
 .comparison-matrix .filtered-cell { text-align: center; }
 .comparison-matrix .matrix-cell:focus-visible,.comparison-matrix .matrix-case-heading:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .matrix-segments { display: flex; height: 22px; border-radius: 4px; overflow: hidden; }
