@@ -3,6 +3,7 @@
 
 //! Unified GPT-OSS parser over the incremental Harmony message reader.
 
+mod encoding;
 mod reader;
 
 use super::shared_input::SharedInput;
@@ -11,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 
-use dynamo_harmony::harmony_gpt_oss_encoding;
+use encoding::harmony_gpt_oss_encoding;
 use openai_harmony::HarmonyEncoding;
 use openai_harmony::chat::Role;
 

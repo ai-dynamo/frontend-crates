@@ -1197,16 +1197,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dynamo-harmony"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "openai-harmony",
- "sha2 0.10.9",
- "tempfile",
-]
-
-[[package]]
 name = "dynamo-multimodal"
 version = "0.2.4"
 dependencies = [
@@ -1234,7 +1224,6 @@ dependencies = [
  "aho-corasick",
  "anyhow",
  "async-stream",
- "dynamo-harmony",
  "dynamo-protocols",
  "dynamo-structural-tag",
  "futures",
@@ -1257,7 +1246,6 @@ name = "dynamo-parsers-v2"
 version = "0.9.7"
 dependencies = [
  "anyhow",
- "dynamo-harmony",
  "dynamo-structural-tag",
  "openai-harmony",
  "percent-encoding",
@@ -1265,6 +1253,8 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2 0.10.9",
+ "tempfile",
  "tracing",
  "tracing-subscriber",
  "uuid",
