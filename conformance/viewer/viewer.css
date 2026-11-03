@@ -20,6 +20,7 @@ body { background: var(--page-bg); color: var(--ink); }
 .capture-slot-engine-trigger { color: var(--ink); }
 .capture-slot .capture-slot-badge { width: 25px; height: 25px; flex-basis: 25px; border-radius: 6px; font-size: 14px; }
 .capture-summary { grid-column: 1 / -1; min-width: 0; color: var(--ink-muted); font-size: 11px; }
+.tab-panel:not([data-load-state="ready"]) .capture-summary { visibility: hidden; }
 .engine-status-bar { display: flex; gap: 0; height: 8px; margin: 8px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-alt); }
 .engine-status-bar > i { min-width: 1px; flex-basis: 0; }
 .engine-counts { display: flex; flex-wrap: wrap; gap: 5px 12px; }

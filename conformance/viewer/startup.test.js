@@ -252,3 +252,42 @@ await test('source SHA is independent of generation metadata and validated', asy
   assert.throws(() => sourceCommitSha({source_commit_sha: 'catalog-hash'}),/source_commit_sha/);
   assert.throws(() => sourceCommitSha({source_commit_sha: 'a'.repeat(40),revision:'b'.repeat(40)}),/source_commit_sha/);
 });
+
+await test('an open report recovers once when a deployment replaces its transport', async () => {
+  const {default: assert} = await import('node:assert/strict');
+  const {HttpResourceStore, sha256} = await import('./data.js');
+  const {reloadChangedPublication} = await import('./app.js');
+  const base = new URL('https://example.test/report/');
+  const oldBytes = new Uint8Array([1, 2, 3]);
+  const descriptor = {path: 'conformance/viewer-data/indexes/inputs.json.gz', size: oldBytes.length, sha256: await sha256(oldBytes)};
+  const store = new HttpResourceStore({baseUrl: base, fetchImpl: async () => new Response(new Uint8Array([4, 5, 6, 7]))});
+  await assert.rejects(store.readTransportBytes(descriptor), /size mismatch/);
+  const previous = {schema: 1, source_commit_sha: 'a'.repeat(40), resolved_catalog_revision: 'a'.repeat(64)};
+  const current = {...previous, source_commit_sha: 'b'.repeat(40), resolved_catalog_revision: 'b'.repeat(64)};
+  const values = new Map();
+  const storage = {getItem: key => values.get(key), setItem: (key, value) => values.set(key, value)};
+  let reloads = 0;
+  const options = {storage, reload: () => reloads++, fetchImpl: async () => Response.json(current)};
+  assert.equal(await reloadChangedPublication(base, previous, options), 'reloading');
+  assert.equal(reloads, 1);
+  assert.equal(await reloadChangedPublication(base, previous, options), 'stale', 'a stale HTML response cannot create a reload loop');
+  assert.equal(reloads, 1);
+  assert.equal(await reloadChangedPublication(base, current, options), null, 'corruption in the same publication must remain an integrity error');
+  assert.equal(await reloadChangedPublication(base, previous, {...options,
+    fetchImpl: async () => Response.json({...previous, source_commit_sha: 'c'.repeat(40)})}), null,
+  'a code-only deployment with unchanged transport cannot explain an integrity failure');
+  assert.equal(await reloadChangedPublication(base, {...previous, source_checkout: true}, options), null);
+  assert.equal(await reloadChangedPublication(base, previous, {...options, fetchImpl: async () => new Response(null, {status: 404})}), null);
+  let release;
+  let active = true;
+  const pending = reloadChangedPublication(base, previous, {...options, isCurrent: () => active,
+    fetchImpl: () => new Promise(resolve => { release = resolve; })});
+  active = false;
+  release(Response.json(current));
+  assert.equal(await pending, null, 'a newer selection cancels the old failure recovery');
+  assert.equal(reloads, 1);
+  assert.equal(await reloadChangedPublication(base, previous, {...options, storage: {
+    getItem() { throw new DOMException('storage blocked', 'SecurityError'); },
+  }}), 'stale', 'unavailable reload guards leave an explicit manual action');
+  assert.equal(reloads, 1);
+});
