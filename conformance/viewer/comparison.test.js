@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
-import { comparisonView, captureCounts, isProblemOutcome, verticalDefault } from './comparison.js';
+import { comparisonView, focusComparison, captureCounts, isProblemOutcome, verticalDefault } from './comparison.js';
 import { captureSegmentHtml } from './presentation.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
   cmp: { golden: {sig: 1}, d: {sig: status === 'diverge' || status === 'documented' ? 2 : 1,
@@ -91,4 +91,48 @@ test('Vertical default preserves explicit horizontal URL overrides', () => {
 
 test('folded matrix statuses preserve every leaf outcome', () => {
   for (const leaf of leaves) assert.equal(selectedCaptureOutcome({...leaf,variants: [leaf]}, 'd'), selectedCaptureOutcome(leaf,'d'));
+});
+
+test('focus removes case, model and capture axes using only selected captures', () => {
+  const other = cell('pass', 'pass', {cmp: {golden: {sig: 1}, d: {sig: 1}, peer: {sig: 2}}});
+  const matrix = {...tab, rows: [...tab.rows, {family: 'passing', cells: Object.fromEntries(columns.map(c => [c.sub, cell(c.sub)]))}]};
+  matrix.rows[1].cells.pass = other;
+  const base = comparisonView(matrix, state);
+  const result = focusComparison(base, ['d', 'peer'], 'problems');
+  assert.deepEqual(result.view.columns.map(c => c.sub), ['pass', 'documented', 'diverge', 'error', 'leak']);
+  assert.deepEqual(result.rowKeys.get(matrix.rows[1]), ['peer']);
+  const selected = focusComparison(base, ['d'], 'disagreements');
+  assert.deepEqual(selected.view.columns.map(c => c.sub), ['diverge']);
+  assert.deepEqual(selected.view.rows, [matrix.rows[0]]);
+  assert.deepEqual(selected.rowKeys.get(matrix.rows[0]), ['d']);
+  assert.equal(focusComparison(base, ['golden'], 'problems').focus, 'all');
+  assert.deepEqual(focusComparison(base, ['golden'], 'all').available, {disagreements: false, problems: false});
+  assert.equal(captureCounts(base, 'd').total, leaves.length * 2);
+});
+
+test('focus availability follows search and categories before filtering', () => {
+  for (const search of ['pass', '__nothing__']) {
+    const base = comparisonView(tab, {...state, search});
+    const result = focusComparison(base, ['d'], 'problems');
+    assert.equal(result.focus, 'all');
+    assert.deepEqual(result.available, {disagreements: false, problems: false});
+  }
+  const empty = focusComparison(comparisonView(tab, {...state, groups: new Set()}), ['d'], 'disagreements');
+  assert.deepEqual(empty.view.rows, []); assert.deepEqual(empty.view.columns, []);
+  const problem = focusComparison(comparisonView(tab, {...state, search: 'documented OR leak'}), ['d'], 'problems');
+  assert.deepEqual(problem.available, {disagreements: false, problems: true});
+  assert.deepEqual(problem.view.columns.map(c => c.sub), ['documented', 'leak']);
+  assert.equal(focusComparison(comparisonView(tab, state), [], 'problems').focus, 'all');
+});
+
+test('category and search intersections exclude problems outside the selected slice', () => {
+  const scoped = {...tab, column_groups: [...tab.column_groups, {key: 'other', label: 'Other'}],
+    columns: tab.columns.map(column => ({...column, group_key: column.sub === 'leak' ? 'other' : 'core'}))};
+  const base = comparisonView(scoped, {...state, search: 'leak OR pass'});
+  const result = focusComparison(base, ['d'], 'problems');
+  assert.equal(result.focus, 'all');
+  assert.deepEqual(result.view.columns.map(column => column.sub), ['pass']);
+  const included = focusComparison(comparisonView(scoped, {...state, groups: new Set(['other']), search: 'leak OR pass'}), ['d'], 'problems');
+  assert.equal(included.focus, 'problems');
+  assert.deepEqual(included.view.columns.map(column => column.sub), ['leak']);
 });

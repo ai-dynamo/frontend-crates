@@ -34,6 +34,24 @@ export function comparisonView(tab, state, matches = compileSearch(state.search,
     columns: tab.columns.filter(column => visibleColumns.has(column))};
 }
 
+// Apply focus after search/categories so availability and card totals share the base view.
+export function focusComparison(view, keys, requested) {
+  const matches = (entry, key, focus) => entry.leaves.some(leaf => {
+    const outcome = selectedCaptureOutcome(leaf, key);
+    return focus === 'disagreements' ? outcome === 'diverge' : isProblemOutcome(outcome);
+  });
+  const available = Object.fromEntries(['disagreements', 'problems'].map(focus =>
+    [focus, view.entries.some(entry => keys.some(key => matches(entry, key, focus)))]));
+  const focus = requested === 'all' || available[requested] ? requested : 'all';
+  const matching = focus === 'all' ? view.entries : view.entries.filter(entry => keys.some(key => matches(entry, key, focus)));
+  const rows = focus === 'all' ? view.rows : view.rows.filter(row => matching.some(entry => entry.row === row));
+  const columns = focus === 'all' ? view.columns : view.columns.filter(column => matching.some(entry => entry.column === column));
+  const rowKeys = new Map(rows.map(row => [row, focus === 'all' ? keys : keys.filter(key =>
+    matching.some(entry => entry.row === row && matches(entry, key, focus)))]));
+  return {focus, available, rowKeys, view: {rows, columns,
+    entries: view.entries.filter(entry => rows.includes(entry.row) && columns.includes(entry.column))}};
+}
+
 export function captureCounts(view, key) {
   const counts = Object.fromEntries(Object.keys(statusLabels).map(status => [status, 0]));
   for (const entry of view.entries) for (const leaf of entry.countedLeaves || entry.leaves) counts[selectedCaptureOutcome(leaf, key)]++;
@@ -58,7 +76,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
   ui.innerHTML = '<div class="comparison-toolbar"><div class="layout-control"><span class="control-label">Layout</span><div class="segmented">'
     + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div></div>'
     + '<div class="focus-control"><span class="control-label">Focus</span><div class="segmented"><button type="button" data-focus="all">All</button>'
-    + '<button type="button" data-focus="disagreements">Disagreements</button><button type="button" data-focus="problems">Problems</button></div></div>'
+    + '<button type="button" data-focus="disagreements">Disagreements only</button><button type="button" data-focus="problems">Problems only</button></div></div>'
     + '<details class="comparison-categories"><summary>Categories</summary><div data-category-options></div></details>'
     + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"'
     + ' title=\'Spaces require all words. Use OR, quotes, -exclusions and parentheses: beam ("guided decoding" OR TC). Scopes: parser:, col:, description:. Case numbers expand to stable names in shared URLs.\''
@@ -99,12 +117,20 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     ui.classList.toggle('layout-vertical', vertical);
     toolbar.querySelector('[data-layout="stacked"]').textContent = vertical ? 'Stacked columns' : 'Stacked rows';
     toolbar.querySelectorAll('[data-layout]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.layout === state.layout)));
-    toolbar.querySelectorAll('[data-focus]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.focus === state.focus)));
     let view;
     const notice = ui.querySelector('.comparison-notice');
     try { view = comparisonView(tab,state,matches); notice.hidden = true; }
     catch (error) { notice.textContent = error.message; notice.hidden = false; view = {entries: [],rows: [],columns: []}; }
     const keys = panel._comparisonSelection.keys;
+    const baseView = view;
+    const focused = focusComparison(baseView, keys, state.focus);
+    if (state.focus !== focused.focus) { state.focus = focused.focus; persist(); }
+    view = focused.view;
+    toolbar.querySelectorAll('[data-focus]').forEach(button => {
+      button.disabled = button.dataset.focus !== 'all' && !focused.available[button.dataset.focus];
+      button.setAttribute('aria-pressed', String(button.dataset.focus === state.focus));
+    });
+    const rowKeys = row => focused.rowKeys.get(row);
     toolbar.querySelector('.layout-control').hidden = keys.length < 2;
     const stacked = keys.length > 1 && state.layout === 'stacked';
     const familyGroups = [];
@@ -120,7 +146,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       if (!summary) { summary = document.createElement('div'); summary.className = 'capture-summary'; card.appendChild(summary); }
       const selected = keys.includes(key);
       summary.dataset.capture = selected ? key : '';
-      summary.innerHTML = selected ? '<div class="summary-capture-label">Results: ' + html(tab.candidates.find(c => c.key === key)?.label || key) + '</div>' + countMarkup(captureCounts(view,key)) : '<p>' + (key ? 'Selected capture loading' : 'No comparison selected') + '</p>';
+      summary.innerHTML = selected ? '<div class="summary-capture-label">Results: ' + html(tab.candidates.find(c => c.key === key)?.label || key) + '</div>' + countMarkup(captureCounts(baseView,key)) : '<p>' + (key ? 'Selected capture loading' : 'No comparison selected') + '</p>';
     });
     const table = document.createElement('table'); table.className = 'comparison-matrix'; table.dataset.comparisonTable = '';
     if (vertical) table.dataset.transposeTable = '';
@@ -154,10 +180,6 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const result = (tr,row,column,shown=keys) => {
       const entry = entryFor(row,column), td = tr.insertCell(); td.className = 'matrix-cell';
       if (!entry) { td.classList.add('filtered-cell'); td.textContent = '—'; td.setAttribute('aria-label', isApplicableCell(row.cells[column.sub]) ? 'Excluded by filters' : 'Not applicable to this family'); return td; }
-      const codes = shown.map(k => outcomes(entry,k));
-      const focused = state.focus === 'all' || (state.focus === 'disagreements'
-        ? codes.includes('diverge') : codes.some(isProblemOutcome));
-      td.classList.toggle('focus-dim',!focused);
       td.innerHTML = '<span class="matrix-segments">' + shown.map(k => captureSegmentHtml(outcomes(entry,k),k)).join('') + '</span><div class="ttip comparison-output"></div>';
       td.setAttribute('role','button');
       td.setAttribute('aria-label',[row.model_label || row.family,column.label,...shown.map(k => (candidate(k)?.label || k) + ': ' + statusLabels[outcomes(entry,k)])].join('; '));
@@ -174,17 +196,17 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       if (sub) heading(sub,'');
       if (stacked) {
         for (const [groupIndex,group] of familyGroups.entries()) {
-          const th = rotatedHeading(top,group.rows[0].model_label || group.key,group.rows.length * keys.length);
+          const th = rotatedHeading(top,group.rows[0].model_label || group.key,group.rows.reduce((sum,row) => sum + rowKeys(row).length, 0));
           th.className = 'matrix-family-heading';
           th.dataset.family = group.key;
           if (groupIndex < familyGroups.length - 1) th.classList.add('matrix-family-end');
-          for (const row of group.rows) for (const [index,k] of keys.entries()) {
+          for (const row of group.rows) for (const [index,k] of rowKeys(row).entries()) {
             const item = candidate(k);
             const capture = rotatedHeading(sub,[item?.impl, item?.version].filter(Boolean).join(' ') || k);
             capture.className = 'matrix-capture-heading';
             capture.title = item?.label || k;
             capture.setAttribute('aria-label', item?.label || k);
-            if (row === group.rows[group.rows.length - 1] && index === keys.length - 1 && groupIndex < familyGroups.length - 1) capture.classList.add('matrix-family-end');
+            if (row === group.rows[group.rows.length - 1] && index === rowKeys(row).length - 1 && groupIndex < familyGroups.length - 1) capture.classList.add('matrix-family-end');
           }
         }
       } else for (const row of view.rows) {
@@ -196,7 +218,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
         if (stacked) {
           for (const [index,family] of familyGroups.entries()) {
             const cell = category.insertCell();
-            cell.colSpan = family.rows.length * keys.length;
+            cell.colSpan = family.rows.reduce((sum,row) => sum + rowKeys(row).length, 0);
             cell.dataset.family = family.key;
             if (index < familyGroups.length - 1) cell.classList.add('matrix-family-end');
           }
@@ -207,9 +229,9 @@ export function mountComparison(panel, controller, familyNames = () => []) {
         for (const column of view.columns.filter(c => c.group_key === group.key)) {
           const tr = tbody.insertRow(); caseHeading(tr,column);
           if (stacked) for (const [groupIndex,family] of familyGroups.entries()) for (const row of family.rows) {
-            for (const [index,k] of keys.entries()) {
+            for (const [index,k] of rowKeys(row).entries()) {
               const cell = result(tr,row,column,[k]);
-              if (row === family.rows[family.rows.length - 1] && index === keys.length - 1 && groupIndex < familyGroups.length - 1) cell.classList.add('matrix-family-end');
+              if (row === family.rows[family.rows.length - 1] && index === rowKeys(row).length - 1 && groupIndex < familyGroups.length - 1) cell.classList.add('matrix-family-end');
             }
           }
           else for (const row of view.rows) result(tr,row,column);
@@ -224,7 +246,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       const results = (tr,row,shown=keys) => {
         for (const {columns: cases} of columns) for (const c of cases) result(tr,row,c,shown);
       };
-      if (stacked) for (const [groupIndex,family] of familyGroups.entries()) for (const row of family.rows) for (const [index,k] of keys.entries()) {
+      if (stacked) for (const [groupIndex,family] of familyGroups.entries()) for (const row of family.rows) for (const [index,k] of rowKeys(row).entries()) {
         const tr = tbody.insertRow(); tr.dataset.family = family.key;
         if (groupIndex > 0 && row === family.rows[0] && index === 0) tr.classList.add('matrix-family-start');
         heading(tr,(row.model_label || row.family) + ' / ' + candidate(k)?.label); results(tr,row,[k]);
@@ -234,7 +256,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       }
     }
     const visibleStatuses = new Set();
-    for (const entry of view.entries) for (const key of keys) visibleStatuses.add(outcomes(entry,key));
+    for (const entry of view.entries) for (const key of (stacked ? rowKeys(entry.row) : keys)) visibleStatuses.add(outcomes(entry,key));
     const legend = ui.querySelector('.comparison-legend');
     legend.replaceChildren(...Object.entries(statusLabels).filter(([status]) => visibleStatuses.has(status)).map(([status,label]) => {
       const item = document.createElement('span'); item.dataset.status = status;
@@ -242,7 +264,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       item.append(swatch,label); return item;
     }));
     // Explicit tracks keep long headings and a wide viewport from stretching result cells.
-    const resultColumns = vertical ? view.rows.length * (stacked ? keys.length : 1) : thead.rows[1].cells.length - 1;
+    const resultColumns = vertical ? view.rows.reduce((sum,row) => sum + (stacked ? rowKeys(row).length : 1), 0) : thead.rows[1].cells.length - 1;
     table.style.setProperty('--matrix-result-columns', resultColumns);
     const tracks = document.createElement('colgroup');
     const labelTrack = document.createElement('col'); labelTrack.className = 'matrix-label-column';
@@ -254,12 +276,12 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     table.insertBefore(tracks,thead);
     scroll.replaceChildren(table);
     controller.restorePopup(panel,pin);
-    window.__conformanceComparison = {state,view,search: {ast: matches.ast, canonicalQuery: matches.canonicalQuery, context},counts: Object.fromEntries(keys.map(k => [k,captureCounts(view,k)]))};
+    window.__conformanceComparison = {state,view,availability: focused.available,search: {ast: matches.ast, canonicalQuery: matches.canonicalQuery, context},counts: Object.fromEntries(keys.map(k => [k,captureCounts(baseView,k)]))};
   }
   toolbar.addEventListener('click', event => {
     const group = event.target.closest('[data-group]')?.dataset.group;
     if (group) { toggleGroup(group); return; }
-    const button = event.target.closest('[data-layout],[data-focus]'); if (!button) return;
+    const button = event.target.closest('[data-layout],[data-focus]'); if (!button || button.disabled) return;
     if (button.dataset.layout) state.layout = button.dataset.layout; else state.focus = button.dataset.focus;
     draw(); persist();
   });

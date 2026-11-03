@@ -550,7 +550,8 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         search.send_keys("dotted_name_minimal")
         after = counts(driver)
         assert 0 < after["dynamo"]["total"] < before["dynamo"]["total"]
-        assert driver.find_element("css selector", "[data-focus='problems']").get_attribute("aria-pressed") == "true"
+        assert not driver.find_element("css selector", "[data-focus='problems']").is_enabled()
+        assert driver.find_element("css selector", "[data-focus='all']").get_attribute("aria-pressed") == "true"
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == "dotted_name_minimal"
         driver.find_element("css selector", "[data-theme-toggle]").click()
         assert counts(driver) == after
@@ -598,28 +599,96 @@ def test_source_sha_appears_once_on_second_line(published_viewer):
         driver.quit(); server.shutdown(); server.server_close()
 
 
-def test_vertical_stacked_problems_focus_dims_uncaptured_outputs(published_viewer):
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("stacked", [False, True])
+def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical, stacked):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
-        driver.set_window_size(1920, 1100)
-        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&layout_tab-unified=stacked")
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&layout_tab-unified={'stacked' if stacked else 'split'}")
         _ready(driver, "tab-unified")
-        _choose_engine(driver, 1, "dynamo")
+        _choose_engine(driver, 1, "sglang")
         _ready(driver, "tab-unified")
-        driver.find_element("css selector", "[data-focus='problems']").click()
-        result = driver.execute_script("""
-            const statuses = ['documented','diverge','error','leak'];
-            const cells = [...document.querySelectorAll('.comparison-matrix .matrix-cell:not(.filtered-cell)')];
-            return cells.map(cell => {
-                const outcomes = [...cell.querySelectorAll('.matrix-segments > i')]
-                  .flatMap(node => [...node.classList].filter(name => name.startsWith('status-')).map(name => name.slice(7)));
-                return {outcomes, dimmed: cell.classList.contains('focus-dim'), hasProblem: outcomes.some(status => statuses.includes(status))};
+        before = counts(driver)
+        inventory = driver.execute_script("""
+            return [...document.querySelectorAll('.matrix-cell[role=button]')].map(cell => ({
+                label: cell.getAttribute('aria-label').split('; ').slice(0, 2),
+                statuses: [...cell.querySelectorAll('.matrix-segments > i')].map(node =>
+                    [...node.classList].find(c => c.startsWith('status-')).slice(7))
+            }));
+        """)
+        assert inventory
+        for focus, statuses in [('disagreements', ['diverge']), ('problems', ['documented', 'diverge', 'error', 'leak'])]:
+            expected = [cell for cell in inventory if any(status in statuses for status in cell['statuses'])]
+            button = driver.find_element("css selector", f"[data-focus='{focus}']")
+            assert button.text == ('Disagreements only' if focus == 'disagreements' else 'Problems only')
+            assert button.is_enabled() == bool(expected)
+            if not expected:
+                continue
+            button.click()
+            assert counts(driver) == before
+            labels = driver.execute_script("""
+                return [...document.querySelectorAll('.matrix-cell[role=button]')]
+                    .map(cell => cell.getAttribute('aria-label').split('; ').slice(0, 2));
+            """)
+            assert {pair[0] for pair in labels} == {cell['label'][0] for cell in expected}
+            assert {pair[1] for pair in labels} == {cell['label'][1] for cell in expected}
+            assert len(driver.find_elements('css selector', '.matrix-cell[role=button]')) < len(inventory)
+            if stacked:
+                # Every retained capture/model axis has at least one matching result.
+                assert driver.execute_script("""
+                    const allowed = arguments[0], vertical = arguments[1];
+                    const rows = [...document.querySelectorAll('.comparison-matrix tbody tr:not(.matrix-category-row)')];
+                    const cells = rows.map(row => [...row.querySelectorAll('.matrix-cell')]);
+                    const matches = cell => [...cell.querySelectorAll('.matrix-segments > i')].some(node =>
+                        allowed.some(status => node.classList.contains('status-' + status)));
+                    return vertical ? cells[0].every((_,i) => cells.some(row => matches(row[i])))
+                        : cells.every(row => row.some(matches));
+                """, statuses, vertical)
+            driver.refresh()
+            _ready(driver, 'tab-unified')
+            assert driver.find_element('css selector', f"[data-focus='{focus}']").get_attribute('aria-pressed') == 'true'
+            assert counts(driver) == before
+            driver.find_element('css selector', '[data-focus=all]').click()
+            assert len(driver.find_elements('css selector', '.matrix-cell[role=button]')) == len(inventory)
+        driver.find_element('css selector', '[data-focus=problems]').click()
+        field = driver.find_element('css selector', '[data-case-search]')
+        field.send_keys('__no_matching_case__')
+        assert driver.find_element('css selector', '[data-focus=all]').get_attribute('aria-pressed') == 'true'
+        assert not driver.find_element('css selector', '[data-focus=problems]').is_enabled()
+        assert not driver.find_element('css selector', '[data-focus=disagreements]').is_enabled()
+        assert not driver.find_elements('css selector', '.matrix-category-heading, .matrix-case-heading')
+        assert 'focus_tab-unified' not in parse_qs(urlsplit(driver.current_url).query)
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize('width', [480, 1600])
+def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_viewer, width):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(width, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&search_tab-unified=dotted_name")
+        _ready(driver, 'tab-unified')
+        geometry = driver.execute_script("""
+            return [...document.querySelectorAll('.matrix-case-heading')].map(th => {
+                const text = th.querySelector('.matrix-case-text'), rect = text.getBoundingClientRect();
+                const range = document.createRange(); range.selectNodeContents(text);
+                const boxes = [...range.getClientRects()];
+                return {label: text.textContent, sticky: getComputedStyle(th).position,
+                    width: th.getBoundingClientRect().width, height: rect.height,
+                    labelWidth: parseFloat(getComputedStyle(th.closest('table')).getPropertyValue('--matrix-label-width')),
+                    clipped: text.scrollWidth > text.clientWidth || text.scrollHeight > text.clientHeight,
+                    contained: boxes.every(box => box.left >= rect.left - 1 && box.right <= rect.right + 1
+                        && box.top >= rect.top - 1 && box.bottom <= rect.bottom + 1)};
             });
         """)
-        assert result
-        assert all(item["dimmed"] == (not item["hasProblem"]) for item in result), result
-        assert any("missing" in item["outcomes"] and item["dimmed"] for item in result)
+        assert geometry
+        assert any('dotted_name_minimal' in item['label'] for item in geometry)
+        assert all(item['sticky'] == 'sticky' and abs(item['width'] - item['labelWidth']) <= 1 for item in geometry), geometry
+        assert all(not item['clipped'] and item['contained'] for item in geometry), geometry
+        assert any(item['height'] > 25 for item in geometry), geometry
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 
