@@ -686,8 +686,18 @@ def test_complete_case_names_wrap_in_label_column(published_viewer, width):
         driver.set_window_size(width, 1000)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1")
         _ready(driver, 'tab-unified')
+        width_per_font_size = None
         for font_size in (10, 11, 12):
             driver.execute_script("document.querySelector('.comparison-matrix').style.fontSize=arguments[0]+'px'", font_size)
+            if width_per_font_size is None:
+                WebDriverWait(driver, 10).until(lambda browser: browser.execute_script(
+                    "return Boolean(document.querySelector('.comparison-matrix')?.style.getPropertyValue('--matrix-label-width'))"))
+            else:
+                WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
+                    const table = document.querySelector('.comparison-matrix');
+                    const width = parseFloat(getComputedStyle(table.querySelector('.matrix-label-column')).width);
+                    return Math.abs(width / arguments[1] - arguments[0]) < 1;
+                """, width_per_font_size, font_size))
             geometry = driver.execute_script("""
                 return [...document.querySelectorAll('.matrix-case-heading')].map(th => {
                     const table = th.closest('table'), text = th.querySelector('.matrix-case-text'), rect = text.getBoundingClientRect();
@@ -707,6 +717,7 @@ def test_complete_case_names_wrap_in_label_column(published_viewer, width):
                 });
             """)
             assert geometry
+            width_per_font_size = geometry[0]['labelWidth'] / font_size
             assert any('7-tool-argument-text-preservation' in item['label'] for item in geometry)
             assert any('dotted_name_minimal' in item['label'] for item in geometry)
             expected_position = 'sticky' if width > 1280 else 'static'

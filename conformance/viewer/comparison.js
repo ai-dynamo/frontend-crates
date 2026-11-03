@@ -8,6 +8,7 @@ const html = value => escapeHtml(value ?? '');
 const leavesOf = cell => cell?.variants ? cell.variants.flatMap(leavesOf) : cell ? [cell] : [];
 const familyOf = row => row.family || row.model_label || '';
 const problemOutcomes = new Set(['documented', 'diverge', 'error', 'leak']);
+const fittedCaseLabelColumns = new WeakMap();
 
 export const isProblemOutcome = outcome => problemOutcomes.has(outcome);
 
@@ -59,6 +60,50 @@ export function captureCounts(view, key) {
   return counts;
 }
 
+function fitVerticalCaseLabels(table) {
+  const labels = [...table.querySelectorAll('tbody tr > th:first-child .matrix-case-text')];
+  if (!labels.length) return;
+  const firstCellStyle = getComputedStyle(labels[0].closest('th'));
+  const cellExtra = ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth']
+    .reduce((sum, property) => sum + parseFloat(firstCellStyle[property]), 0);
+  const signature = cellExtra + labels.map(label => {
+    const style = getComputedStyle(label);
+    return `${label.textContent}\u0000${style.font}\u0000${style.letterSpacing}\u0000${style.lineHeight}`;
+  }).join('\u0001');
+  const cached = fittedCaseLabelColumns.get(table);
+  if (cached?.signature === signature) {
+    table.style.setProperty('--matrix-label-width', cached.width + 'px');
+    return;
+  }
+  const measurements = labels.map(label => {
+    const style = getComputedStyle(label), clone = label.cloneNode(true);
+    Object.assign(clone.style, {position: 'fixed', left: '-100000px', top: '0', visibility: 'hidden',
+      display: 'block', width: 'max-content', whiteSpace: 'nowrap', padding: '0', textIndent: '0',
+      overflow: 'visible', overflowWrap: 'normal', font: style.font, letterSpacing: style.letterSpacing,
+      lineHeight: style.lineHeight});
+    document.body.appendChild(clone);
+    const rect = clone.getBoundingClientRect();
+    clone.remove();
+    return {width: rect.width, lineHeight: rect.height};
+  });
+  const fitsInTwoLines = width => {
+    table.style.setProperty('--matrix-label-width', width + 'px');
+    return labels.every((label, index) =>
+      measurements[index].lineHeight > 0
+        && Math.round(label.getBoundingClientRect().height / measurements[index].lineHeight) <= 2);
+  };
+  let high = Math.max(...measurements.map(item => item.width)) + cellExtra;
+  for (let attempt = 0; attempt < 4 && !fitsInTwoLines(high); attempt++) high *= 2;
+  let low = 0;
+  for (let attempt = 0; attempt < 32 && high - low > 1 / window.devicePixelRatio; attempt++) {
+    const middle = (low + high) / 2;
+    if (fitsInTwoLines(middle)) high = middle;
+    else low = middle;
+  }
+  table.style.setProperty('--matrix-label-width', high + 'px');
+  fittedCaseLabelColumns.set(table, {signature, width: high});
+}
+
 function countMarkup(counts) {
   const present = Object.entries(statusLabels).filter(([s]) => counts[s] > 0);
   return '<div class="engine-status-bar" role="img" aria-label="' + html(present.map(([s,l]) => `${l}: ${counts[s]}`).join(', ')) + '">'
@@ -95,6 +140,10 @@ export function mountComparison(panel, controller, familyNames = () => []) {
   toolbar.querySelector('[data-case-search]').value = state.search;
   let search, context, matches = compileSearch('');
   let tab;
+  let observedMatrix;
+  const labelResizeObserver = new ResizeObserver(() => {
+    if (observedMatrix?.isConnected && ui.classList.contains('layout-vertical')) fitVerticalCaseLabels(observedMatrix);
+  });
   const persist = () => {
     const url = new URL(location.href);
     for (const [key,value,defaultValue] of [['layout',state.layout,'split'],['focus',state.focus,'all'],['search',matches.canonicalQuery,''],['groups',[...state.groups].join(','),tab.column_groups.map(g => g.key).join(',')]]) {
@@ -275,7 +324,10 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       tracks.appendChild(resultTracks);
     }
     table.insertBefore(tracks,thead);
+    if (observedMatrix) labelResizeObserver.unobserve(observedMatrix);
+    observedMatrix = table;
     scroll.replaceChildren(table);
+    labelResizeObserver.observe(table);
     controller.restorePopup(panel,pin);
     window.__conformanceComparison = {state,view,availability: focused.available,search: {ast: matches.ast, canonicalQuery: matches.canonicalQuery, context},counts: Object.fromEntries(keys.map(k => [k,captureCounts(baseView,k)]))};
   }
