@@ -7,16 +7,26 @@ import argparse
 import sys
 import base64
 from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from email.utils import parsedate_to_datetime
 from functools import lru_cache
+from http.client import IncompleteRead
 import gzip
 import hashlib
 import json
+import os
+import multiprocessing
 from pathlib import Path
+import random
 import re
+import ssl
+import tempfile
+import threading
+import traceback
 import time
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 import zlib
 
 
@@ -51,6 +61,244 @@ def read(root, relative):
     return resources[relative]
 
 
+HTTP_BUDGET = 180
+HTTP_TIMEOUT = 30
+HTTP_ATTEMPTS = 4
+RETRY_STATUSES = {429, 502, 503, 504}
+
+
+def retry_delay(value, attempt):
+    delay = 2 ** (attempt - 1) + random.uniform(0, 0.25)
+    if value is not None:
+        try:
+            seconds = int(value) if re.fullmatch(r"[0-9]+", value) else parsedate_to_datetime(value).timestamp() - time.time()
+        except (ValueError, TypeError, OverflowError):
+            return delay
+        delay = max(delay, seconds)
+    return delay
+
+
+def transient_http_error(error):
+    if isinstance(error, HTTPError):
+        return error.code in RETRY_STATUSES
+    reason = error.reason if isinstance(error, URLError) else error
+    return isinstance(reason, (TimeoutError, ConnectionResetError, IncompleteRead)) and not isinstance(reason, ssl.SSLError)
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _http_records(base_url, paths):
+    return {path: {"url": f"{base_url.rstrip('/')}/{quote(path)}", "attempts": [], "outcome": "not-started"} for path in paths}
+
+
+def _http_request_ids(headers):
+    return {key: value for key, value in headers.items()
+            if key.lower() in {"x-github-request-id", "x-request-id", "x-served-by", "x-cache"}}
+
+
+def _scan_http_resources(root, base_url, paths, update, deadline=None, timeout=HTTP_TIMEOUT):
+    started = time.monotonic()
+    deadline = started + HTTP_BUDGET if deadline is None else deadline
+    records = _http_records(base_url, paths)
+    opener = build_opener(_NoRedirect())
+    lock = threading.Lock()
+    failure = None
+    stopped = threading.Event()
+
+    def emit(relative):
+        with lock:
+            update(relative, records[relative])
+
+    def check(relative):
+        record = records[relative]
+        expected = read(root, relative)
+        request = Request(record["url"], headers={"Accept-Encoding": "identity", "Cache-Control": "no-cache"})
+        for attempt in range(1, HTTP_ATTEMPTS + 1):
+            require(not stopped.is_set(), f"verification stopped: {request.full_url}; attempt {attempt}")
+            remaining = deadline - time.monotonic()
+            require(remaining > 0, f"verification budget exhausted: {request.full_url}; attempt {attempt}")
+            entry = {"attempt": attempt, "status": None, "elapsed_seconds": time.monotonic() - started, "request_ids": {}}
+            record["attempts"].append(entry)
+            record["outcome"] = "active"
+            emit(relative)
+            error = None
+            retry_after = None
+            try:
+                with opener.open(request, timeout=min(timeout, remaining)) as response:
+                    entry["status"] = response.status
+                    entry["request_ids"] = _http_request_ids(response.headers)
+                    require(response.status == 200 and response.url == request.full_url,
+                            f"unexpected publication HTTP response: {request.full_url}: {response.status}")
+                    emit(relative)
+                    actual = response.read(len(expected) + 1)
+                    # Reaching the oversize sentinel remains an integrity failure.
+                    if response.length and len(actual) < len(expected) + 1:
+                        raise IncompleteRead(actual, response.length)
+                require(actual == expected, f"published resource differs from qualified artifact: {request.full_url}")
+            except (HTTPError, URLError, OSError, ValueError, IncompleteRead) as caught:
+                error = caught
+                entry["error"] = repr(caught)
+                if isinstance(caught, HTTPError):
+                    entry["status"] = caught.code
+                    entry["request_ids"] = _http_request_ids(caught.headers)
+                    retry_after = caught.headers.get("Retry-After")
+                    caught.close()
+            finally:
+                entry["elapsed_seconds"] = time.monotonic() - started
+                with lock:
+                    print(json.dumps({"url": request.full_url, **entry}), flush=True)
+                    update(relative, record)
+            if error is None:
+                record["outcome"] = "recovered" if attempt > 1 else "passed"
+                record["bytes"] = len(expected)
+                emit(relative)
+                return len(expected)
+            if not transient_http_error(error) or attempt == HTTP_ATTEMPTS:
+                raise error
+            delay = retry_delay(retry_after, attempt)
+            entry["retry_delay_seconds"] = delay
+            require(delay < deadline - time.monotonic(),
+                    f"verification budget exhausted before retry: {request.full_url}; attempt {attempt}")
+            time.sleep(delay)
+        raise AssertionError("unreachable HTTP attempt")
+
+    workers = ThreadPoolExecutor(max_workers=8)
+    active = {}
+    pending = iter(paths)
+    total = 0
+    try:
+        while True:
+            while len(active) < 8 and not stopped.is_set() and time.monotonic() < deadline:
+                relative = next(pending, None)
+                if relative is None:
+                    break
+                active[workers.submit(check, relative)] = relative
+            if not active:
+                break
+            done, _ = wait(active, timeout=max(0, deadline + timeout - time.monotonic()), return_when=FIRST_COMPLETED)
+            if not done:
+                failure = failure or TimeoutError("verification budget and active-request grace exhausted")
+                break
+            for future in done:
+                relative = active.pop(future)
+                try:
+                    total += future.result()
+                except Exception as error:
+                    # Resource supervisor: retain every failure and finish accounting
+                    # for independent files before propagating the first cause.
+                    records[relative]["outcome"] = "failed"
+                    records[relative]["error"] = repr(error)
+                    failure = failure or error
+                    stopped.set()
+                    emit(relative)
+        for relative, record in records.items():
+            if record["outcome"] in {"not-started", "active"}:
+                record["outcome"] = "not-checked" if stopped.is_set() else "budget-exhausted"
+                emit(relative)
+                failure = failure or TimeoutError(f"verification budget exhausted: {record['url']}")
+        if failure:
+            raise failure
+        return {"resources": len(paths), "bytes": total}
+    finally:
+        workers.shutdown(wait=False, cancel_futures=True)
+
+
+def _http_scan_process(connection, root, base_url, paths, deadline, timeout):
+    try:
+        result = _scan_http_resources(root, base_url, paths, lambda path, record: connection.send(("resource", path, record)), deadline, timeout)
+        connection.send(("result", result))
+    except Exception as error:
+        # Process supervisor preserves the original failure and traceback across IPC.
+        detail = {"type": type(error).__name__, "message": str(error), "traceback": traceback.format_exc()}
+        if isinstance(error, HTTPError):
+            detail.update(url=error.url, code=error.code, headers=dict(error.headers))
+        connection.send(("error", detail))
+    finally:
+        connection.close()
+
+
+def _run_http_scan(root, base_url, paths, update, deadline):
+    context = multiprocessing.get_context("spawn")
+    receiver, sender = context.Pipe(duplex=False)
+    worker = context.Process(target=_http_scan_process, args=(sender, root, base_url, paths, deadline, HTTP_TIMEOUT))
+    expires = deadline + HTTP_TIMEOUT
+    worker.start()
+    sender.close()
+    try:
+        while True:
+            remaining = expires - time.monotonic()
+            if remaining <= 0 or not receiver.poll(remaining):
+                raise TimeoutError("verification budget and active-request grace exhausted")
+            message = receiver.recv()
+            if message[0] == "resource":
+                update(message[1], message[2])
+            elif message[0] == "result":
+                return message[1]
+            else:
+                detail = message[1]
+                if detail["type"] == "HTTPError":
+                    raise HTTPError(detail["url"], detail["code"], detail["message"], detail["headers"], None)
+                if detail["type"] == "TimeoutError":
+                    raise TimeoutError(detail["message"])
+                raise ValueError(detail["message"] + "\n" + detail["traceback"])
+    finally:
+        if worker.is_alive():
+            worker.terminate()
+        worker.join(timeout=1)
+        if worker.is_alive():
+            worker.kill()
+            worker.join()
+        receiver.close()
+
+
+def update_delivery_report(path, *, check=None, browser_journey=None):
+    failure = sys.exc_info()[1]
+    try:
+        evidence = json.loads(path.read_bytes()) if path.is_file() and path.stat().st_size else {"checks": []}
+        if check is not None:
+            evidence["checks"].append(check)
+        if browser_journey is not None:
+            evidence["browser_journey"] = browser_journey
+        path.write_text(json.dumps(evidence, indent=2) + "\n")
+    except Exception as error:
+        # Reporting must fail CI without replacing the failure it was recording.
+        if failure is not None:
+            raise failure from error
+        raise
+    print(f"delivery report: {path}", flush=True)
+
+
+def _verify_http_resources(root, base_url, paths):
+    started = time.monotonic()
+    records = _http_records(base_url, paths)
+    report = {"base_url": base_url, "resources": records, "success": False}
+    report_path = os.environ.get("CONFORMANCE_DELIVERY_REPORT")
+    if report_path is None:
+        fd, report_path = tempfile.mkstemp(prefix="conformance-delivery-", suffix=".json")
+        os.close(fd)
+    report_path = Path(report_path).resolve()
+    require(not report_path.is_relative_to(root), "delivery report must remain outside publication")
+    try:
+        deadline = float(os.environ.get("CONFORMANCE_DELIVERY_DEADLINE", started + HTTP_BUDGET))
+        require(deadline > started, "verification budget exhausted before scan")
+        result = _run_http_scan(root, base_url, paths, lambda path, record: records.__setitem__(path, record), deadline)
+        report["success"] = True
+        return result
+    except Exception as error:
+        # Report supervisor records failures before propagating them to CI.
+        report["error"] = repr(error)
+        raise
+    finally:
+        for record in records.values():
+            if record["outcome"] in {"active", "not-started"}:
+                record["outcome"] = "not-checked" if record["outcome"] == "not-started" else "interrupted"
+        report["elapsed_seconds"] = time.monotonic() - started
+        update_delivery_report(report_path, check=report)
+
+
 def verify_http_publication(root, base_url):
     parsed = urlsplit(base_url)
     require(parsed.scheme in {"http", "https"} and parsed.netloc and not parsed.username
@@ -58,22 +306,14 @@ def verify_http_publication(root, base_url):
     root = Path(root).resolve(strict=True)
     require((root / "index.html").is_file(), "qualified publication lacks index.html")
     paths = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
-    def check(relative):
-        expected = read(root, relative)
-        request = Request(f"{base_url.rstrip('/')}/{quote(relative)}", headers={"Accept-Encoding": "identity"})
-        with urlopen(request, timeout=30) as response:
-            require(response.status == 200, f"publication HTTP failure: {relative}")
-            actual = response.read(len(expected) + 1)
-        try:
-            identity(actual, digest(expected), len(expected))
-        except ValueError as error:
-            raise ValueError(f"published resource differs from qualified artifact: {relative}") from error
-        return len(expected)
+    return _verify_http_resources(root, base_url, paths)
 
-    # Bound fanout while avoiding hundreds of sequential TLS handshakes for history.
-    with ThreadPoolExecutor(max_workers=8) as workers:
-        total = sum(workers.map(check, paths))
-    return {"resources": len(paths), "bytes": total}
+
+def verify_http_publication_identity(root, base_url):
+    root = Path(root).resolve(strict=True)
+    relative = "conformance/viewer-publication.json"
+    require((root / relative).is_file(), "qualified history lacks publication identity")
+    return _verify_http_resources(root, base_url, [relative])
 
 
 def decompress(data, limit):

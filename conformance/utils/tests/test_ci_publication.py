@@ -133,3 +133,35 @@ def test_phase_cli_rejects_missing_or_misplaced_context(arguments, monkeypatch):
     with pytest.raises(SystemExit) as failure:
         ci_publication.main()
     assert failure.value.code == 2
+
+
+@pytest.mark.parametrize("remote,current", [("a" * 40, True), ("b" * 40, False)])
+def test_only_current_main_candidate_can_deploy(publication, monkeypatch, remote, current):
+    metadata = publication.site / "conformance/viewer-publication.json"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text('{"revision":"' + "a" * 40 + '"}')
+    calls = []
+    def run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=f"{remote}\trefs/heads/main\n")
+    monkeypatch.setattr(publication, "run", run)
+    assert publication.current() is current
+    assert calls == [["git", "ls-remote", "--exit-code", "origin", "refs/heads/main"]]
+    assert Path(os.environ["GITHUB_OUTPUT"]).read_text() == f"current={str(current).lower()}\n"
+    report = (publication.temporary / "conformance-deployment.json").read_text()
+    assert ('"outcome": "current"' if current else '"outcome": "superseded"') in report
+
+
+@pytest.mark.parametrize("fault", ["metadata", "remote", "network"])
+def test_deployment_admission_fails_closed(publication, monkeypatch, fault):
+    metadata = publication.site / "conformance/viewer-publication.json"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text('{"revision":"' + ("b" if fault == "metadata" else "a") * 40 + '"}')
+    def run(command, **kwargs):
+        if fault == "network":
+            raise subprocess.CalledProcessError(128, command)
+        return subprocess.CompletedProcess(command, 0, stdout="unrecognized response")
+    monkeypatch.setattr(publication, "run", run)
+    with pytest.raises((ValueError, subprocess.CalledProcessError)):
+        publication.current()
+    assert not Path(os.environ["GITHUB_OUTPUT"]).exists()

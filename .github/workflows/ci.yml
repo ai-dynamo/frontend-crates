@@ -333,9 +333,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
       - name: Checkout deployed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -345,7 +342,25 @@ jobs:
         uses: ./.github/actions/conformance-publication
       - name: Install delivery dependencies
         run: python3 conformance/utils/src/ci_plan.py --setup
+      - name: Check candidate is still current main
+        id: current
+        run: python3 conformance/utils/src/ci_publication.py current
+      - name: Deploy GitHub Pages
+        if: ${{ steps.current.outputs.current == 'true' }}
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
       - name: Verify public artifact and browser journey
+        if: ${{ steps.current.outputs.current == 'true' }}
         env:
           PUBLICATION_URL: ${{ steps.deployment.outputs.page_url }}
+          CONFORMANCE_DELIVERY_REPORT: ${{ runner.temp }}/conformance-delivery.json
         run: python3 conformance/utils/src/ci_publication.py delivery --url "$PUBLICATION_URL"
+      - name: Retain delivery evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: conformance-delivery-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/conformance-delivery.json
+            ${{ runner.temp }}/conformance-deployment.json
+          if-no-files-found: error

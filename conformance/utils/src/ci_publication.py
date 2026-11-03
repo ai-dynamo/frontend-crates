@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Run publication phases while GitHub owns artifact transport and privileges."""
 import argparse
+import json
 import os
 from pathlib import Path
 import shutil
@@ -10,6 +11,7 @@ import subprocess
 import sys
 
 from ci_publication_cache import CONTEXT, FILES, valid
+from verify_publication_transport import publication_metadata
 
 
 # Increment when publisher invocation or output policy changes. Cache admission
@@ -114,8 +116,25 @@ class Publication:
                   "-k", "test_publication_delivery_matches_qualified_artifact", "--publication-url", url,
                   *self.history_args(), "-vv"])
 
+    def current(self):
+        candidate = os.environ["GITHUB_SHA"]
+        if publication_metadata(self.site)["revision"] != candidate:
+            raise ValueError("qualified publication does not match deployment candidate")
+        result = self.run(["git", "ls-remote", "--exit-code", "origin", "refs/heads/main"],
+                          capture_output=True, text=True)
+        fields = result.stdout.split()
+        if len(fields) != 2 or fields[1] != "refs/heads/main" or len(fields[0]) != 40:
+            raise ValueError("cannot establish current main revision")
+        current = fields[0] == candidate
+        report = {"candidate": candidate, "main": fields[0], "outcome": "current" if current else "superseded"}
+        (self.temporary / "conformance-deployment.json").write_text(json.dumps(report) + "\n")
+        print(json.dumps(report))
+        with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+            output.write(f"current={str(current).lower()}\n")
+        return current
 
-PHASES = ("configure", "identify", "restore", "build", "snapshot", "catalog", "publish", "verify", "stamp", "package", "seal", "delivery")
+
+PHASES = ("configure", "identify", "restore", "build", "snapshot", "catalog", "publish", "verify", "stamp", "package", "seal", "delivery", "current")
 
 
 def main():
@@ -134,7 +153,7 @@ def main():
               "build": publication.build, "snapshot": publication.snapshot, "catalog": publication.catalog,
               "publish": publication.publish, "verify": publication.verify, "stamp": publication.stamp,
               "package": publication.package, "seal": lambda: publication.seal(args.identity),
-              "delivery": lambda: publication.delivery(args.url)}
+              "delivery": lambda: publication.delivery(args.url), "current": publication.current}
     phases[args.phase]()
 
 
