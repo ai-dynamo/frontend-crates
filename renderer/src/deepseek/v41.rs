@@ -19,10 +19,23 @@ fn validate_text(text: &str) -> Result<&str> {
     Ok(text)
 }
 
+/// Mid-conversation system messages count as user turns. As in the reference
+/// encoder, user messages containing only tool results do not start a new turn.
 pub(super) fn find_last_user_index(messages: &[Value]) -> Option<usize> {
     messages.iter().enumerate().rposition(|(index, message)| {
         let role = message.get("role").and_then(Value::as_str);
-        role == Some("user") || (role == Some("system") && index > 0)
+        if !(role == Some("user") || (role == Some("system") && index > 0)) {
+            return false;
+        }
+        match message.get("content_blocks").and_then(Value::as_array) {
+            Some(blocks) if !blocks.is_empty() => blocks.iter().any(|block| {
+                matches!(
+                    block.get("type").and_then(Value::as_str),
+                    Some("text" | "image" | "image_url")
+                )
+            }),
+            _ => true,
+        }
     })
 }
 
