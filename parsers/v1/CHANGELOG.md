@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.1...dynamo-parsers-v11.0.2) - 2026-11-03
+
+### Bug fixes
+
+- *(parsers)* [P1] coordinate Harmony vocabulary cache loading ([#513](https://github.com/ai-dynamo/frontend-crates/pull/513))
+
 ## [11.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.0...dynamo-parsers-v11.0.1) - 2026-11-02
 
 ### Bug fixes
