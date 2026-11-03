@@ -465,7 +465,7 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     assert matrix["strategy"]["fail-fast"] is False
     assert matrix["strategy"]["matrix"] == {"include": "${{ fromJSON(needs.prepare.outputs.validation_matrix) }}"}
     assert matrix["runs-on"] == "ubuntu-24.04"
-    assert matrix["permissions"] == {"contents": "read"}
+    assert matrix["permissions"] == {"contents": "read", "actions": "read"}
     assert "conformance-check" in jobs["conformance-table"]["needs"]
     assert all("strategy.job-total" not in step.get("run", "") for step in matrix["steps"])
     execute = next(step for step in matrix["steps"] if "--run" in step.get("run", ""))

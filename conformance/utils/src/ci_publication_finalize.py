@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Collect a run's publication, then remove transfers only after a successful upload."""
+"""Transfer this run's publication and evidence; clean up only after final upload."""
 import argparse
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,12 @@ from ci_publication import copy_publication_site, publication_run_url, retained_
 PUBLICATION = "conformance-publication"
 CANDIDATE = "conformance-native-publication"
 SITE_CANDIDATE = "conformance-site-candidate"
+
+
+def latest_artifacts(artifacts: list) -> dict:
+    # GitHub can allocate a lower ID to a later artifact across reruns.
+    ordered = sorted(artifacts, key=lambda item: (datetime.fromisoformat(item["created_at"]), item["id"]))
+    return {item["name"]: item for item in ordered}
 
 
 class Finalizer:
@@ -81,10 +88,32 @@ class Finalizer:
         with Path(self.environment["GITHUB_OUTPUT"]).open("a") as output:
             output.write(f"{name}={value}\n")
 
+    def restore(self) -> None:
+        latest = latest_artifacts(self.artifacts())
+        if CANDIDATE in latest:
+            self.download(latest[CANDIDATE], self.inventory.parent / "native-publication")
+            self.output("recovered", "false")
+        elif PUBLICATION in latest:
+            self.download(latest[PUBLICATION], self.inventory.parent / "retained-publication")
+            self.output("recovered", "true")
+        else:
+            raise ValueError("no candidate or retained publication is available in this run")
+
+    def receipts(self) -> None:
+        latest = latest_artifacts(self.artifacts())
+        retained = self.inventory.parent / "retained-publication"
+        if PUBLICATION in latest and not retained.exists():
+            self.download(latest[PUBLICATION], retained)
+        if "conformance-test-baseline" in latest:
+            self.download(latest["conformance-test-baseline"], self.inventory.parent / "fresh-baseline")
+        for name, artifact in latest.items():
+            if name.startswith("conformance-selection-"):
+                self.download(artifact, self.inventory.parent / "fresh-selections" / name)
+
     def collect(self) -> bool:
         artifacts = self.artifacts()
         self.inventory.write_text(json.dumps(artifacts) + "\n")
-        latest = {item["name"]: item for item in sorted(artifacts, key=lambda item: item["id"])}
+        latest = latest_artifacts(artifacts)
         self.directory.mkdir(parents=True)
         retained = self.inventory.parent / "previous-publication"
         if PUBLICATION in latest:
@@ -173,18 +202,15 @@ class Finalizer:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("collect", "cleanup", "announce"))
+    parser.add_argument("phase", choices=("restore", "receipts", "collect", "cleanup", "announce"))
     parser.add_argument("--artifact-id", type=int)
     args = parser.parse_args()
-    if (args.phase != "collect") != bool(args.artifact_id):
-        parser.error("cleanup and announce require --artifact-id; collect does not accept it")
+    if (args.phase in {"cleanup", "announce"}) != bool(args.artifact_id):
+        parser.error("only cleanup and announce require --artifact-id")
     finalizer = Finalizer(Path(os.environ["RUNNER_TEMP"]), dict(os.environ))
-    if args.phase == "collect":
-        finalizer.collect()
-    elif args.phase == "cleanup":
-        finalizer.cleanup(args.artifact_id)
-    else:
-        finalizer.announce(args.artifact_id)
+    phases = {"restore": finalizer.restore, "receipts": finalizer.receipts, "collect": finalizer.collect,
+              "cleanup": lambda: finalizer.cleanup(args.artifact_id), "announce": lambda: finalizer.announce(args.artifact_id)}
+    phases[args.phase]()
 
 
 if __name__ == "__main__":

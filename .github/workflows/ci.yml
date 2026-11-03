@@ -231,6 +231,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      actions: read
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -274,6 +275,7 @@ jobs:
     permissions:
       contents: read
       pages: read
+      actions: read
     steps:
       - name: Checkout qualified source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -290,27 +292,11 @@ jobs:
           printf '%s\n' "$NEEDS_JSON" > "$RUNNER_TEMP/validation-results.json"
           python3 conformance/utils/src/verify_ci_selection.py --job-results "$RUNNER_TEMP/validation-results.json" 2>&1 | tee "$RUNNER_TEMP/validation-jobs.log"
       - name: Restore qualified publication
-        id: restore
         uses: ./.github/actions/conformance-publication
-      - name: Find retained accounting evidence after partial cleanup
-        if: ${{ steps.restore.outputs.recovered != 'true' }}
-        id: retained
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: conformance-publication
-          path: ${{ runner.temp }}/retained-publication
-      - name: Download complete collection baseline
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: conformance-test-baseline
-          path: ${{ runner.temp }}/fresh-baseline
-      - name: Download every test assignment
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          pattern: conformance-selection-*
-          path: ${{ runner.temp }}/fresh-selections
+      - name: Restore latest accounting transfers by creation time
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 conformance/utils/src/ci_publication_finalize.py receipts
       - name: Select fresh or retained receipts once per artifact
         run: python3 conformance/utils/src/ci_publication.py selections
       - name: Account for every collected test before publication
@@ -364,7 +350,6 @@ jobs:
           lfs: true
           fetch-depth: 0
       - name: Restore deployed publication
-        id: restore
         uses: ./.github/actions/conformance-publication
       - name: Install delivery dependencies
         run: python3 conformance/utils/src/ci_plan.py --setup

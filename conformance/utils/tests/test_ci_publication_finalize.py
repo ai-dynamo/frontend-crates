@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import io
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 import subprocess
 import tarfile
@@ -19,10 +20,12 @@ class ArtifactService:
         self.bundles = {}
         self.deleted = []
         self.fail_deletion = set()
+        self.fail_download = set()
 
     def add(self, name, files, *, run=123, revision="a" * 40):
         identifier = max(self.bundles, default=0) + 1
         self.items[identifier] = {"id": identifier, "name": name, "expired": False,
+                                  "created_at": datetime.fromtimestamp(identifier, timezone.utc).isoformat(),
                                   "workflow_run": {"id": run, "head_sha": revision}}
         output = io.BytesIO()
         with zipfile.ZipFile(output, "w") as bundle:
@@ -42,13 +45,15 @@ class ArtifactService:
             self.deleted.append(identifier)
             del self.items[identifier]
         else:
+            if identifier in self.fail_download:
+                raise subprocess.CalledProcessError(1, ["gh", "api", endpoint])
             destination.write_bytes(self.bundles[identifier])
 
 
-def candidate_files():
+def candidate_files(html=b"<html>report</html>"):
     output = io.BytesIO()
     with tarfile.open(fileobj=output, mode="w") as archive:
-        for path, content in {"index.html": b"<html>report</html>", "history/data.json.gz": b"history", ".nojekyll": b""}.items():
+        for path, content in {"index.html": html, "history/data.json.gz": b"history", ".nojekyll": b""}.items():
             member = tarfile.TarInfo(path)
             member.size = len(content)
             archive.addfile(member, io.BytesIO(content))
@@ -264,6 +269,77 @@ def test_fresh_uuid_receipts_replace_retained_artifact_owner(finalizer):
     assert [path.name for path in owner.iterdir()] == ["new-uuid.json"]
 
 
+@pytest.mark.parametrize("name,phase", [
+    (PUBLICATION, "collect"), (CANDIDATE, "collect"), ("capture-verification", "collect"),
+    (PUBLICATION, "restore"), (CANDIDATE, "restore"),
+    ("conformance-test-baseline", "receipts"), ("conformance-selection-conformance-check-0", "receipts"),
+])
+def test_latest_artifact_uses_creation_time_when_github_ids_decrease(finalizer, name, phase):
+    target, service = finalizer
+    identifiers = []
+    for content in (b"old", b"new"):
+        if name == PUBLICATION:
+            files = {"index.html": content, "ci-evidence/result.json": content,
+                     "publication-status.json": json.dumps({"commit": target.revision, "run_url": target.run_url})}
+        elif name == CANDIDATE:
+            files = candidate_files(content)
+        else:
+            files = {"result.json": content}
+        identifiers.append(service.add(name, files))
+    if name == "capture-verification":
+        service.add(CANDIDATE, candidate_files())
+    # Real hosted reruns allocated a lower ID to the later publication.
+    for original, replacement in zip(identifiers, (100, 50)):
+        artifact = service.items.pop(original)
+        artifact["id"] = replacement
+        service.items[replacement] = artifact
+        service.bundles[replacement] = service.bundles.pop(original)
+    if phase == "collect":
+        assert target.collect()
+        result = (target.directory / "ci-evidence/capture-verification/result.json"
+                  if name == "capture-verification" else target.directory / "index.html")
+    elif phase == "restore":
+        target.restore()
+        if name == CANDIDATE:
+            with tarfile.open(target.inventory.parent / "native-publication/native-pages.tar") as archive:
+                assert archive.extractfile("index.html").read() == b"new"
+            assert Path(target.environment["GITHUB_OUTPUT"]).read_text() == "recovered=false\n"
+            return
+        result = target.inventory.parent / "retained-publication/index.html"
+        assert Path(target.environment["GITHUB_OUTPUT"]).read_text() == "recovered=true\n"
+    else:
+        target.receipts()
+        result = (target.inventory.parent / "fresh-baseline/result.json" if name == "conformance-test-baseline"
+                  else target.inventory.parent / "fresh-selections" / name / "result.json")
+    assert result.read_bytes() == b"new"
+
+
+def test_restore_download_failure_does_not_fall_back_to_an_older_publication(finalizer):
+    target, service = finalizer
+    candidate = service.add(CANDIDATE, candidate_files())
+    service.add(PUBLICATION, {"index.html": b"older publication"})
+    service.fail_download.add(candidate)
+    with pytest.raises(subprocess.CalledProcessError):
+        target.restore()
+    assert not (target.inventory.parent / "retained-publication").exists()
+    assert not Path(target.environment["GITHUB_OUTPUT"]).exists()
+
+
+def test_restore_requires_a_candidate_or_retained_publication(finalizer):
+    target, service = finalizer
+    with pytest.raises(ValueError, match="no candidate or retained publication"):
+        target.restore()
+
+
+def test_receipts_restore_prior_evidence_after_only_some_transfers_were_deleted(finalizer):
+    target, service = finalizer
+    service.add(PUBLICATION, {"ci-evidence/old.json": b"retained evidence"})
+    service.add("conformance-selection-conformance-check-0", {"new.json": b"fresh receipt"})
+    target.receipts()
+    assert (target.inventory.parent / "retained-publication/ci-evidence/old.json").read_bytes() == b"retained evidence"
+    assert (target.inventory.parent / "fresh-selections/conformance-selection-conformance-check-0/new.json").read_bytes() == b"fresh receipt"
+
+
 def test_finalization_workflow_keeps_validation_and_upload_before_cleanup():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
@@ -273,6 +349,8 @@ def test_finalization_workflow_keeps_validation_and_upload_before_cleanup():
     assert set(finalizer["needs"]) == {"conformance-table", "deploy-pages"}
     assert workflow["permissions"] == {"contents": "read"}
     assert [name for name, job in jobs.items() if job.get("permissions", {}).get("actions") == "write"] == ["finalize-publication"]
+    for name in ("conformance-check", "conformance-table", "deploy-pages"):
+        assert jobs[name]["permissions"]["actions"] == "read"
     steps = finalizer["steps"]
     upload = next(index for index, step in enumerate(steps) if step.get("id") == "publication")
     cleanup = next(index for index, step in enumerate(steps) if " finalize" in step.get("run", "") or " cleanup " in step.get("run", ""))
@@ -288,11 +366,12 @@ def test_finalization_workflow_keeps_validation_and_upload_before_cleanup():
     assert all(step["shell"] == "bash" for step in verifiers)
     gate = jobs["conformance-table"]["steps"]
     restore = next(index for index, step in enumerate(gate) if "ci_publication.py selections" in step.get("run", ""))
-    baseline = next(index for index, step in enumerate(gate) if step.get("name") == "Download complete collection baseline")
-    assert baseline < restore
+    receipts = next(index for index, step in enumerate(gate) if "ci_publication_finalize.py receipts" in step.get("run", ""))
+    assert receipts < restore
     assert "if" not in gate[restore]
-    assignments = next(step for step in gate if step.get("name") == "Download every test assignment")
-    assert not assignments["with"].get("merge-multiple", False)
+    composite = yaml.safe_load((root / ".github/actions/conformance-publication/action.yml").read_text())
+    assert any("ci_publication_finalize.py restore" in step.get("run", "") for step in composite["runs"]["steps"])
+    assert "actions/download-artifact" not in json.dumps(workflow) + json.dumps(composite)
     failed_pipeline = subprocess.run(["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c",
                                       'python3 -c "raise SystemExit(23)" | tee /dev/null'], capture_output=True)
     assert failed_pipeline.returncode == 23
