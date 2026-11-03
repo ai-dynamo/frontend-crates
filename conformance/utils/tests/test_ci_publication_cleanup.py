@@ -1,14 +1,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
+from dataclasses import replace
 import json
 from pathlib import Path
 import subprocess
 
 import pytest
 
+import ci_plan
 from ci_publication_cleanup import cleanup
-from ci_publication_finalize import Finalizer, PUBLICATION
-from test_ci_publication_finalize import ArtifactService
+from ci_publication_finalize import CANDIDATE, Finalizer, INVENTORY, PUBLICATION
+from test_ci_publication_finalize import ArtifactService, candidate_files
 
 
 class CleanupService(ArtifactService):
@@ -50,7 +52,132 @@ def source(tmp_path, monkeypatch):
 
 
 def publish(service, status, **extra):
-    return service.add(PUBLICATION, {"index.html": b"site", "publication-status.json": json.dumps(status), **extra})
+    inventory = {"version": 1, "artifacts": [{"id": item["id"], "name": item["name"]} for item in service.items.values()]}
+    return service.add(PUBLICATION, {"index.html": b"site", "publication-status.json": json.dumps(status),
+        INVENTORY: json.dumps(inventory), **extra})
+
+
+@pytest.mark.parametrize("name", ["conformance-selection-conformance-check-99", "renamed-capture-report"])
+def test_source_run_inventory_handles_new_lanes_and_renamed_transfers(source, name):
+    service, environment, _, status = source
+    transfer = service.add(name, {"result.json": b"{}"})
+    published = publish(service, status)
+    cleanup(environment)
+    assert service.deleted == [transfer]
+    assert list(service.items) == [published]
+
+
+@pytest.mark.parametrize("change", ["added-worker", "renamed-transfer"])
+def test_producer_inventory_survives_a_different_default_branch_plan(source, monkeypatch, change):
+    service, environment, _, _ = source
+    default_count = len(ci_plan.plan())
+    producer_environment = {**environment, "GITHUB_RUN_ID": "123", "GITHUB_SHA": "a" * 40,
+        "GITHUB_RUN_ATTEMPT": "1", "GITHUB_OUTPUT": str(Path(environment["RUNNER_TEMP"]) / "output"),
+        "NEEDS_JSON": json.dumps({"conformance-table": {"outputs": {"validation": "success"}},
+                                  "deploy-pages": {"result": "skipped"}})}
+    with monkeypatch.context() as candidate:
+        if change == "added-worker":
+            candidate.setattr(ci_plan, "LANES", tuple(replace(lane, count=lane.count + 1)
+                if lane.name == "qualification" else lane for lane in ci_plan.LANES))
+        producer = Finalizer(Path(environment["RUNNER_TEMP"]), producer_environment)
+        name = f"conformance-selection-conformance-check-{default_count}" if change == "added-worker" else "renamed-report"
+        if change == "renamed-transfer":
+            producer.temporary_names.add(name)
+        candidate_id = service.add(CANDIDATE, candidate_files())
+        receipt_id = service.add(name, {"receipt.json": b"{}"})
+        assert producer.collect()
+        files = {path.relative_to(producer.directory).as_posix(): path.read_bytes()
+                 for path in producer.directory.rglob("*") if path.is_file()}
+        published = service.add(PUBLICATION, files)
+    assert len(ci_plan.plan()) == default_count
+    cleanup(environment)
+    assert service.deleted == [candidate_id, receipt_id]
+    assert list(service.items) == [published]
+
+
+def test_unlisted_artifact_remains_visible_as_a_cleanup_failure(source):
+    service, environment, _, status = source
+    transfer = service.add("conformance-validation", {"result.json": b"{}"})
+    unknown = service.add("unrelated-report", {"result.json": b"preserve"})
+    inventory = {"version": 1, "artifacts": [{"id": transfer, "name": "conformance-validation"}]}
+    published = publish(service, status, **{INVENTORY: json.dumps(inventory)})
+    with pytest.raises(RuntimeError, match="remaining artifacts=.*unrelated-report"):
+        cleanup(environment)
+    assert service.deleted == [transfer]
+    assert set(service.items) == {unknown, published}
+
+
+def test_inventory_ids_not_in_this_run_cannot_authorize_deletion(source, capsys):
+    service, environment, _, status = source
+    transfer = service.add("conformance-validation", {"result.json": b"{}"})
+    inventory = {"version": 1, "artifacts": [{"id": transfer, "name": "conformance-validation"},
+                                               {"id": 999, "name": "another-runs-artifact"}]}
+    published = publish(service, status, **{INVENTORY: json.dumps(inventory)})
+    cleanup(environment)
+    assert service.deleted == [transfer]
+    assert list(service.items) == [published]
+    assert "999 is absent from this run; skipping" in capsys.readouterr().out
+
+
+def test_inventory_name_mismatch_prevents_every_deletion(source):
+    service, environment, _, status = source
+    transfer = service.add("conformance-validation", {"result.json": b"{}"})
+    inventory = {"version": 1, "artifacts": [{"id": transfer, "name": "different-name"}]}
+    publish(service, status, **{INVENTORY: json.dumps(inventory)})
+    with pytest.raises(ValueError, match="inventory name does not match"):
+        cleanup(environment)
+    assert service.deleted == []
+
+
+@pytest.mark.parametrize("inventory", [
+    None,
+    {"version": 1, "artifacts": [], "extra": True},
+    {"version": True, "artifacts": []},
+    {"version": 2, "artifacts": []},
+    {"version": 1, "artifacts": {}},
+    {"version": 1, "artifacts": [None]},
+    {"version": 1, "artifacts": [{"id": 1}]},
+    {"version": 1, "artifacts": [{"id": True, "name": "transfer"}]},
+    {"version": 1, "artifacts": [{"id": 0, "name": "transfer"}]},
+    {"version": 1, "artifacts": [{"id": 1, "name": None}]},
+    {"version": 1, "artifacts": [{"id": 1, "name": ""}]},
+    {"version": 1, "artifacts": [{"id": 1, "name": "transfer"}, {"id": 1, "name": "transfer"}]},
+], ids=["object-type", "object-fields", "version-type", "version-value", "artifacts-type", "entry-type", "entry-fields",
+        "id-type", "id-value", "name-type", "name-empty", "duplicate-id"])
+def test_malformed_inventory_fails_before_any_deletion(source, inventory):
+    service, environment, _, status = source
+    service.add("transfer", {"result.json": b"{}"})
+    publish(service, status, **{INVENTORY: json.dumps(inventory)})
+    with pytest.raises(ValueError, match="invalid"):
+        cleanup(environment)
+    assert service.deleted == []
+
+
+def test_inventory_can_replace_the_previous_publication(source):
+    service, environment, _, status = source
+    old = service.add(PUBLICATION, {"index.html": b"previous"})
+    transfer = service.add("renamed-transfer", {"result.json": b"{}"})
+    published = publish(service, status)
+    cleanup(environment)
+    assert service.deleted == [old, transfer]
+    assert list(service.items) == [published]
+
+
+def test_missing_inventory_prevents_cleanup(source):
+    service, environment, _, status = source
+    service.add(PUBLICATION, {"index.html": b"site", "publication-status.json": json.dumps(status)})
+    with pytest.raises(KeyError, match="artifact-inventory.json"):
+        cleanup(environment)
+    assert service.deleted == []
+
+
+def test_inventory_metadata_read_is_bounded(source):
+    service, environment, _, status = source
+    inventory = {"version": 1, "artifacts": [{"id": 1, "name": "x" * 262_144}]}
+    publish(service, status, **{INVENTORY: json.dumps(inventory)})
+    with pytest.raises(ValueError, match="metadata limit"):
+        cleanup(environment)
+    assert service.deleted == []
 
 
 @pytest.mark.parametrize("branch", ["main", "pull-request/42"])

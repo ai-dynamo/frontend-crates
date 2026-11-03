@@ -9,7 +9,31 @@ import re
 import zipfile
 
 from ci_publication import retained_publication
-from ci_publication_finalize import Finalizer, PUBLICATION, latest_artifacts
+from ci_publication_finalize import Finalizer, INVENTORY, PUBLICATION, latest_artifacts
+
+
+def identified_artifacts(inventory: dict, artifacts: list) -> list:
+    if (not isinstance(inventory, dict) or set(inventory) != {"version", "artifacts"}
+            or type(inventory["version"]) is not int or inventory["version"] != 1
+            or not isinstance(inventory["artifacts"], list)):
+        raise ValueError("invalid publication artifact inventory")
+    owned = {item["id"]: item for item in artifacts}
+    identified = []
+    seen = set()
+    for item in inventory["artifacts"]:
+        if (not isinstance(item, dict) or set(item) != {"id", "name"}
+                or type(item["id"]) is not int or item["id"] < 1
+                or not isinstance(item["name"], str) or not item["name"] or item["id"] in seen):
+            raise ValueError("invalid or duplicate publication artifact inventory entry")
+        seen.add(item["id"])
+        artifact = owned.get(item["id"])
+        if artifact is None:
+            print(f"Inventory artifact {item['id']} is absent from this run; skipping.")
+            continue
+        if artifact["name"] != item["name"]:
+            raise ValueError("publication artifact inventory name does not match this run")
+        identified.append(artifact)
+    return identified
 
 
 def cleanup(environment: dict) -> None:
@@ -57,18 +81,23 @@ def cleanup(environment: dict) -> None:
     # The contributor controls the ZIP. Read bounded metadata only; never extract
     # its scripts, imports, executables, or workflow files into the trusted checkout.
     with zipfile.ZipFile(archive) as bundle:
-        metadata = bundle.getinfo("publication-status.json")
         bundle.getinfo("index.html")
-        if metadata.file_size > 16_384:
-            raise ValueError("publication status exceeds the cleanup metadata limit")
-        status = json.loads(bundle.read(metadata))
+        documents = {}
+        for name, limit in (("publication-status.json", 16_384), (INVENTORY, 262_144)):
+            metadata = bundle.getinfo(name)
+            if metadata.file_size > limit:
+                raise ValueError(f"publication {name} exceeds the cleanup metadata limit")
+            documents[name] = json.loads(bundle.read(metadata))
+    status = documents["publication-status.json"]
     directory = target.inventory.parent / "cleanup-publication"
     directory.mkdir(exist_ok=True)
     (directory / "publication-status.json").write_text(json.dumps(status))
     retained_publication(directory, target_environment)
     if status["run_attempt"] != source["run_attempt"]:
         raise ValueError("publication belongs to another attempt; no artifacts deleted")
-    target.inventory.write_text(json.dumps(artifacts))
+    # The PR identifies transfers as data. Only matching IDs returned by this
+    # run's API may authorize deletion; the default branch never runs the PR plan.
+    target.inventory.write_text(json.dumps(identified_artifacts(documents[INVENTORY], artifacts)))
     current = target.api(endpoint)
     if any(current[field] != run[field] for field in ("id", "head_sha", "run_attempt", "status")):
         raise ValueError("source run changed during collection; no artifacts deleted")

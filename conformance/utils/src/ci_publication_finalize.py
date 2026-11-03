@@ -19,6 +19,7 @@ from ci_publication import copy_publication_site, publication_run_url, retained_
 PUBLICATION = "conformance-publication"
 CANDIDATE = "conformance-native-publication"
 SITE_CANDIDATE = "conformance-site-candidate"
+INVENTORY = "ci-evidence/artifact-inventory.json"
 
 
 def latest_artifacts(artifacts: list) -> dict:
@@ -116,7 +117,8 @@ class Finalizer:
 
     def collect(self) -> bool:
         artifacts = self.artifacts()
-        self.inventory.write_text(json.dumps(artifacts) + "\n")
+        transfers = [item for item in artifacts if item["name"] in self.temporary_names | {PUBLICATION}]
+        self.inventory.write_text(json.dumps(transfers) + "\n")
         latest = latest_artifacts(artifacts)
         self.directory.mkdir(parents=True)
         retained = self.inventory.parent / "previous-publication"
@@ -160,6 +162,8 @@ class Finalizer:
         for name, artifact in latest.items():
             if name in self.temporary_names - {CANDIDATE, SITE_CANDIDATE, "github-pages"}:
                 self.download(artifact, evidence / name, replace=True)
+        (self.directory / INVENTORY).write_text(json.dumps({"version": 1, "artifacts": [
+            {"id": item["id"], "name": item["name"]} for item in transfers]}) + "\n")
         jobs = json.loads(self.environment["NEEDS_JSON"])
         validation = jobs["conformance-table"]["outputs"].get("validation", "skipped")
         label = "validated publication" if validation == "success" else "unvalidated candidate"
@@ -177,7 +181,7 @@ class Finalizer:
         if len(uploaded) != 1:
             raise ValueError("successful publication upload is not present in this run; no artifacts deleted")
         previous = json.loads(self.inventory.read_text())
-        permitted = {item["id"] for item in previous if item["name"] in self.temporary_names | {PUBLICATION}}
+        permitted = {item["id"] for item in previous}
         failures = []
         for artifact in current:
             if artifact["id"] == uploaded_id or artifact["id"] not in permitted:

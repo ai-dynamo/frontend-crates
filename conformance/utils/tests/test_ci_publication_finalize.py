@@ -11,7 +11,7 @@ import zipfile
 import pytest
 import yaml
 
-from ci_publication_finalize import CANDIDATE, PUBLICATION, SITE_CANDIDATE, Finalizer
+from ci_publication_finalize import CANDIDATE, INVENTORY, PUBLICATION, SITE_CANDIDATE, Finalizer
 
 
 class ArtifactService:
@@ -107,6 +107,9 @@ def test_publication_contains_site_and_available_diagnostics(finalizer, validati
     assert not members.intersection({"native-pages.tar", "source-catalogs.tar", "conformance-publish"})
     assert service.deleted == []
     assert (target.directory / "ci-evidence/publication-inputs/conformance/publication-context.json").is_file()
+    inventory = json.loads((target.directory / INVENTORY).read_text())
+    assert inventory == {"version": 1, "artifacts": [{"id": item["id"], "name": item["name"]}
+                                                     for item in service.items.values()]}
 
 
 def test_missing_evidence_does_not_hide_generated_candidate(finalizer):
@@ -170,6 +173,7 @@ def test_unrecognized_or_newly_arriving_artifacts_are_retained_and_reported(fina
     service.add(CANDIDATE, candidate_files())
     unknown = service.add("unrelated", {"evidence": b"keep"})
     target.collect()
+    assert unknown not in {item["id"] for item in json.loads((target.directory / INVENTORY).read_text())["artifacts"]}
     if new_transfer:
         unknown = service.add("capture-verification", {"evidence": b"arrived after snapshot"})
     uploaded = service.add(PUBLICATION, {"index.html": b"new"})
