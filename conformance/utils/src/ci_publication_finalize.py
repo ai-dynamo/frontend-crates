@@ -55,21 +55,25 @@ class Finalizer:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         return json.loads(result.stdout) if result.stdout.strip() else None
 
-    def artifacts(self) -> list:
-        artifacts = []
+    def items(self, endpoint: str, key: str) -> list:
+        items = []
         page = 1
         while True:
-            result = self.api(f"{self.api_root}/runs/{self.run_id}/artifacts?per_page=100&page={page}")
-            for artifact in result["artifacts"]:
-                # Never trust an artifact ID without its run and source binding.
-                if artifact["workflow_run"]["id"] != self.run_id or artifact["workflow_run"]["head_sha"] != self.revision:
-                    raise ValueError(f"artifact belongs to another run or revision: {artifact['name']}")
-            artifacts.extend(result["artifacts"])
-            if len(artifacts) >= result["total_count"]:
-                return artifacts
-            if not result["artifacts"]:
-                raise ValueError("incomplete run artifact inventory")
+            result = self.api(f"{endpoint}?per_page=100&page={page}")
+            items.extend(result[key])
+            if len(items) >= result["total_count"]:
+                return items
+            if not result[key]:
+                raise ValueError(f"incomplete run {key} inventory")
             page += 1
+
+    def artifacts(self) -> list:
+        artifacts = self.items(f"{self.api_root}/runs/{self.run_id}/artifacts", "artifacts")
+        for artifact in artifacts:
+            # Never trust an artifact ID without its run and source binding.
+            if artifact["workflow_run"]["id"] != self.run_id or artifact["workflow_run"]["head_sha"] != self.revision:
+                raise ValueError(f"artifact belongs to another run or revision: {artifact['name']}")
+        return artifacts
 
     def download(self, artifact: dict, destination: Path, *, replace: bool = False) -> None:
         archive = self.inventory.parent / f"artifact-{artifact['id']}.zip"
@@ -202,14 +206,14 @@ class Finalizer:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("restore", "receipts", "collect", "cleanup", "announce"))
+    parser.add_argument("phase", choices=("restore", "receipts", "collect", "announce"))
     parser.add_argument("--artifact-id", type=int)
     args = parser.parse_args()
-    if (args.phase in {"cleanup", "announce"}) != bool(args.artifact_id):
-        parser.error("only cleanup and announce require --artifact-id")
+    if (args.phase == "announce") != bool(args.artifact_id):
+        parser.error("only announce requires --artifact-id")
     finalizer = Finalizer(Path(os.environ["RUNNER_TEMP"]), dict(os.environ))
     phases = {"restore": finalizer.restore, "receipts": finalizer.receipts, "collect": finalizer.collect,
-              "cleanup": lambda: finalizer.cleanup(args.artifact_id), "announce": lambda: finalizer.announce(args.artifact_id)}
+              "announce": lambda: finalizer.announce(args.artifact_id)}
     phases[args.phase]()
 
 

@@ -340,7 +340,7 @@ def test_receipts_restore_prior_evidence_after_only_some_transfers_were_deleted(
     assert (target.inventory.parent / "fresh-selections/conformance-selection-conformance-check-0/new.json").read_bytes() == b"fresh receipt"
 
 
-def test_finalization_workflow_keeps_validation_and_upload_before_cleanup():
+def test_finalization_workflow_keeps_contributor_code_read_only():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
     jobs = workflow["jobs"]
@@ -348,18 +348,16 @@ def test_finalization_workflow_keeps_validation_and_upload_before_cleanup():
     assert finalizer["if"] == "${{ always() }}"
     assert set(finalizer["needs"]) == {"conformance-table", "deploy-pages"}
     assert workflow["permissions"] == {"contents": "read"}
-    assert [name for name, job in jobs.items() if job.get("permissions", {}).get("actions") == "write"] == ["finalize-publication"]
+    assert not [name for name, job in jobs.items() if job.get("permissions", {}).get("actions") == "write"]
+    assert finalizer["permissions"]["actions"] == "read"
     for name in ("conformance-check", "conformance-table", "deploy-pages"):
         assert jobs[name]["permissions"]["actions"] == "read"
     steps = finalizer["steps"]
     upload = next(index for index, step in enumerate(steps) if step.get("id") == "publication")
-    cleanup = next(index for index, step in enumerate(steps) if " finalize" in step.get("run", "") or " cleanup " in step.get("run", ""))
-    assert upload < cleanup
+    assert not any(" cleanup " in step.get("run", "") for step in steps)
     assert steps[upload]["with"]["name"] == PUBLICATION
     assert steps[upload]["with"]["retention-days"] == 7
     assert not steps[upload]["with"].get("overwrite", False)
-    assert "steps.publication.outcome == 'success'" in steps[cleanup]["if"]
-    assert "steps.publication.outputs.artifact-id != ''" in steps[cleanup]["if"]
     assert jobs["conformance-table"]["outputs"]["validation"] == "${{ steps.accounting.outcome }}"
     verifiers = [step for step in jobs["conformance-table"]["steps"] if "verify_ci_selection.py" in step.get("run", "")]
     assert len(verifiers) == 2
@@ -375,3 +373,20 @@ def test_finalization_workflow_keeps_validation_and_upload_before_cleanup():
     failed_pipeline = subprocess.run(["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c",
                                       'python3 -c "raise SystemExit(23)" | tee /dev/null'], capture_output=True)
     assert failed_pipeline.returncode == 23
+
+
+def test_cleanup_workflow_uses_default_branch_code_and_serializes_only_same_run():
+    root = Path(__file__).resolve().parents[3]
+    workflow = yaml.load((root / ".github/workflows/conformance-cleanup.yml").read_text(), Loader=yaml.BaseLoader)
+    ci = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    assert workflow["on"] == {"workflow_run": {"workflows": ["ci"], "types": ["completed"]}}
+    job = workflow["jobs"]["cleanup"]
+    assert workflow["permissions"] == {"contents": "read"}
+    assert job["permissions"] == {"contents": "read", "actions": "write"}
+    assert "head_repository.full_name == github.repository" in job["if"]
+    checkout, cleanup = job["steps"]
+    assert checkout["with"] == {"ref": "${{ github.workflow_sha }}", "persist-credentials": "false"}
+    assert cleanup["run"] == "python3 conformance/utils/src/ci_publication_cleanup.py"
+    assert cleanup["env"] == {"GH_TOKEN": "${{ github.token }}"}
+    assert ci["concurrency"] == {"group": "conformance-artifacts-${{ github.run_id }}", "cancel-in-progress": False}
+    assert job["concurrency"] == {"group": "conformance-artifacts-${{ github.event.workflow_run.id }}", "cancel-in-progress": "false"}

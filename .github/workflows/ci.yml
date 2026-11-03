@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: conformance-artifacts-${{ github.run_id }}
+  cancel-in-progress: false
+
 env:
   CONFORMANCE_INCLUDE_HISTORY: "true"
   CONFORMANCE_COVERAGE: exhaustive
@@ -394,7 +398,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      actions: write
+      actions: read
       pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
@@ -422,8 +426,3 @@ jobs:
         env:
           ARTIFACT_ID: ${{ steps.publication.outputs.artifact-id }}
         run: python3 conformance/utils/src/ci_publication_finalize.py announce --artifact-id "$ARTIFACT_ID"
-      - name: Remove this run's identified transfers after upload
-        if: ${{ !cancelled() && steps.publication.outcome == 'success' && steps.publication.outputs.artifact-id != '' }}
-        env:
-          ARTIFACT_ID: ${{ steps.publication.outputs.artifact-id }}
-        run: python3 conformance/utils/src/ci_publication_finalize.py cleanup --artifact-id "$ARTIFACT_ID"
