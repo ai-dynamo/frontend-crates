@@ -551,7 +551,7 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         after = counts(driver)
         assert 0 < after["dynamo"]["total"] < before["dynamo"]["total"]
         assert not driver.find_element("css selector", "[data-focus='problems']").is_enabled()
-        assert driver.find_element("css selector", "[data-focus='all']").is_selected()
+        assert driver.find_element("css selector", "[data-focus='all']").get_attribute('aria-pressed') == 'true'
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == "dotted_name_minimal"
         driver.find_element("css selector", "[data-theme-toggle]").click()
         assert counts(driver) == after
@@ -618,10 +618,13 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
             }));
         """)
         assert inventory
-        all_checkbox = driver.find_element('css selector', "[data-focus='all']")
-        assert all_checkbox.is_selected()
-        all_checkbox.click()
-        assert all_checkbox.is_selected()
+        all_button = driver.find_element('css selector', "[data-focus='all']")
+        assert all_button.tag_name == 'button'
+        assert all_button.get_attribute('aria-pressed') == 'true'
+        assert len(driver.find_elements('css selector', '[data-focus]')) == 3
+        assert driver.execute_script("return [...document.querySelectorAll('[data-focus][aria-pressed=true]')].length") == 1
+        all_button.click()
+        assert all_button.get_attribute('aria-pressed') == 'true'
         for focus, statuses in [('disagreements', ['diverge']), ('problems', ['documented', 'diverge', 'error', 'leak'])]:
             expected = [cell for cell in inventory if any(status in statuses for status in cell['statuses'])]
             button = driver.find_element("css selector", f"[data-focus='{focus}']")
@@ -630,7 +633,9 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
             if not expected:
                 continue
             button.click()
-            assert not driver.find_element('css selector', "[data-focus='all']").is_selected()
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'false'
+            assert button.get_attribute('aria-pressed') == 'true'
+            assert driver.execute_script("return [...document.querySelectorAll('[data-focus][aria-pressed=true]')].length") == 1
             assert counts(driver) == before
             labels = driver.execute_script("""
                 return [...document.querySelectorAll('.matrix-cell[role=button]')]
@@ -653,17 +658,17 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
             driver.refresh()
             _ready(driver, 'tab-unified')
             assert driver.find_element('css selector', f"[data-focus='{focus}']").get_attribute('aria-pressed') == 'true'
-            assert not driver.find_element('css selector', "[data-focus='all']").is_selected()
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'false'
             assert counts(driver) == before
             driver.find_element('css selector', f"[data-focus='{focus}']").click()
-            assert driver.find_element('css selector', "[data-focus='all']").is_selected()
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'true'
             driver.find_element('css selector', '[data-focus=all]').click()
-            assert driver.find_element('css selector', "[data-focus='all']").is_selected()
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'true'
             assert len(driver.find_elements('css selector', '.matrix-cell[role=button]')) == len(inventory)
         driver.find_element('css selector', '[data-focus=problems]').click()
         field = driver.find_element('css selector', '[data-case-search]')
         field.send_keys('__no_matching_case__')
-        assert driver.find_element('css selector', '[data-focus=all]').is_selected()
+        assert driver.find_element('css selector', '[data-focus=all]').get_attribute('aria-pressed') == 'true'
         assert not driver.find_element('css selector', '[data-focus=problems]').is_enabled()
         assert not driver.find_element('css selector', '[data-focus=disagreements]').is_enabled()
         assert not driver.find_elements('css selector', '.matrix-category-heading, .matrix-case-heading')

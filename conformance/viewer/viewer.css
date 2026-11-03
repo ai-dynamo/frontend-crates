@@ -40,8 +40,6 @@ body { background: var(--page-bg); color: var(--ink); }
 .control-label { color: var(--ink-muted); font-size: 11px; text-transform: uppercase; }
 .layout-control, .focus-control { display: flex; align-items: center; gap: 10px; }
 .layout-control[hidden] { display: none; }
-.focus-all { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); cursor: pointer; }
-.focus-all input { margin: 0; accent-color: var(--ink); }
 .segmented { display: inline-flex; padding: 3px; background: var(--panel-alt); border-radius: 8px; }
 .segmented button { border: 0; padding: 6px 10px; border-radius: 6px; background: transparent; color: var(--ink-muted); cursor: pointer; }
 .segmented button[aria-pressed="true"] { color: var(--ink); background: var(--panel-bg); box-shadow: var(--card-shadow); }

@@ -75,8 +75,8 @@ export function mountComparison(panel, controller, familyNames = () => []) {
   const ui = document.createElement('div'); ui.className = 'comparison-ui';
   ui.innerHTML = '<div class="comparison-toolbar"><div class="layout-control"><span class="control-label">Layout</span><div class="segmented">'
     + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div></div>'
-    + '<div class="focus-control"><span class="control-label">Focus</span><label class="focus-all"><input type="checkbox" data-focus="all">All</label>'
-    + '<div class="segmented"><button type="button" data-focus="disagreements">Disagreements</button>'
+    + '<div class="focus-control"><span class="control-label">Focus</span><div class="segmented" role="group" aria-label="Focus filter">'
+    + '<button type="button" data-focus="all">All</button><button type="button" data-focus="disagreements">Disagreements</button>'
     + '<button type="button" data-focus="problems">Problems</button></div></div>'
     + '<details class="comparison-categories"><summary>Categories</summary><div data-category-options></div></details>'
     + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"'
@@ -129,8 +129,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     view = focused.view;
     toolbar.querySelectorAll('[data-focus]').forEach(button => {
       button.disabled = button.dataset.focus !== 'all' && !focused.available[button.dataset.focus];
-      if (button.dataset.focus === 'all') button.checked = state.focus === 'all';
-      else button.setAttribute('aria-pressed', String(button.dataset.focus === state.focus));
+      button.setAttribute('aria-pressed', String(button.dataset.focus === state.focus));
     });
     const rowKeys = row => focused.rowKeys.get(row);
     toolbar.querySelector('.layout-control').hidden = keys.length < 2;
