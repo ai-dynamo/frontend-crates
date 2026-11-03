@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Run publication phases while GitHub owns artifact transport and privileges."""
 import argparse
+from collections.abc import Mapping
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,25 @@ PUBLICATION_POLICY = "native-history-context-v4"
 # Preserve the existing workflow's candidate-archive ceiling before upload.
 MAX_SITE_ARCHIVE_BYTES = 1_000_000_000
 SITE_ARCHIVE, CATALOG_ARCHIVE, PUBLISHER_BINARY = FILES
+
+
+def publication_run_url(environment: Mapping[str, str]) -> str:
+    return f"{environment['GITHUB_SERVER_URL']}/{environment['GITHUB_REPOSITORY']}/actions/runs/{environment['GITHUB_RUN_ID']}"
+
+
+def retained_publication(directory: Path, environment: Mapping[str, str]) -> Path:
+    status = json.loads((directory / "publication-status.json").read_bytes())
+    if status["commit"] != environment["GITHUB_SHA"] or status["run_url"] != publication_run_url(environment):
+        raise ValueError("retained publication does not match this run or revision")
+    return directory
+
+
+def copy_publication_site(source: Path, destination: Path) -> None:
+    # Recovery and finalization exclude only root CI metadata; nested files with
+    # the same names remain part of the published site.
+    shutil.copytree(source, destination, dirs_exist_ok=True,
+                    ignore=lambda directory, _: {"ci-evidence", "publication-status.json"}
+                    if Path(directory) == source else set())
 
 
 class Publication:
@@ -110,24 +130,17 @@ class Publication:
     def seal(self, identity):
         self.python("ci_publication_cache.py", "seal", "--directory", self.payload, "--identity", identity)
 
-    def retained(self):
-        retained = self.temporary / "retained-publication"
-        status = json.loads((retained / "publication-status.json").read_bytes())
-        run_url = f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
-        if status["commit"] != os.environ["GITHUB_SHA"] or status["run_url"] != run_url:
-            raise ValueError("retained publication does not match this run")
-        return retained
-
     def selections(self):
         retained = self.temporary / "retained-publication"
-        evidence = self.retained() / "ci-evidence" if retained.exists() else self.temporary / "no-retained-evidence"
-        fresh = self.temporary / "fresh-selections"
-        sources = {path.name: path for path in evidence.glob("conformance-selection-*")}
-        sources.update({path.name: path for path in fresh.glob("conformance-selection-*")})
-        baseline = self.temporary / "fresh-baseline"
-        if not list(baseline.glob("*.json")):
-            baseline = evidence / "conformance-test-baseline"
-        if not list(baseline.glob("*.json")):
+        sources = {}
+        baselines = [self.temporary / "fresh-baseline"]
+        if retained.exists():
+            evidence = retained_publication(retained, os.environ) / "ci-evidence"
+            sources.update({path.name: path for path in evidence.glob("conformance-selection-*")})
+            baselines.append(evidence / "conformance-test-baseline")
+        sources.update({path.name: path for path in (self.temporary / "fresh-selections").glob("conformance-selection-*")})
+        baseline = next((path for path in baselines if any(path.glob("*.json"))), None)
+        if baseline is None:
             raise ValueError("complete collection baseline is unavailable in transfers and retained evidence")
         for directory, owners in (("baseline-selection", [baseline]), ("assignments", sources.values())):
             destination = self.temporary / directory
@@ -141,20 +154,12 @@ class Publication:
                     shutil.copyfile(path, destination / path.name)
 
     def recover(self):
-        retained = self.retained()
+        retained = retained_publication(self.temporary / "retained-publication", os.environ)
         evidence = retained / "ci-evidence"
         sources = evidence / "publication-inputs"
         shutil.copytree(sources / "conformance", self.root / "conformance", dirs_exist_ok=True)
         self.python("ci_publication_cache.py", "context-check", "--context", self.context)
-        for path in retained.iterdir():
-            if path.name in {"ci-evidence", "publication-status.json"}:
-                continue
-            destination = self.site / path.name
-            if path.is_dir():
-                shutil.copytree(path, destination, dirs_exist_ok=True)
-            else:
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(path, destination)
+        copy_publication_site(retained, self.site)
         if publication_metadata(self.site)["revision"] != os.environ["GITHUB_SHA"]:
             raise ValueError("retained site does not match this revision")
         self.build()

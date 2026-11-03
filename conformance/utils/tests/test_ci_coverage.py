@@ -786,12 +786,13 @@ def test_only_history_can_replace_public_main_site():
         assert install < invocation
 
 
-def test_publication_identification_bootstraps_without_site_packages():
+@pytest.mark.parametrize("script,phase", [("ci_publication_cache.py", "identify"), ("ci_publication_finalize.py", "collect")])
+def test_publication_tools_bootstrap_without_site_packages(script, phase):
     root = Path(__file__).resolve().parents[3]
-    result = subprocess.run([sys.executable, "-S", "conformance/utils/src/ci_publication_cache.py", "--help"],
+    result = subprocess.run([sys.executable, "-S", f"conformance/utils/src/{script}", "--help"],
                             cwd=root, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
-    assert "identify" in result.stdout
+    assert phase in result.stdout
 
 
 def test_sealed_release_context_qualifies_a_shallow_checkout(tmp_path):

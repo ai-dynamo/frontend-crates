@@ -12,6 +12,7 @@ import tarfile
 import zipfile
 
 import ci_plan
+from ci_publication import copy_publication_site, publication_run_url, retained_publication
 
 
 PUBLICATION = "conformance-publication"
@@ -30,7 +31,7 @@ class Finalizer:
         self.api_root = f"repos/{self.repository}/actions"
         self.directory = temporary / PUBLICATION
         self.inventory = temporary / "publication-artifacts.json"
-        self.run_url = f"{environment['GITHUB_SERVER_URL']}/{self.repository}/actions/runs/{self.run_id}"
+        self.run_url = publication_run_url(environment)
         self.temporary_names = {
             CANDIDATE, SITE_CANDIDATE, "capture-verification", "conformance-test-baseline",
             "conformance-validation", "github-pages", f"conformance-delivery-{self.revision}",
@@ -88,9 +89,7 @@ class Finalizer:
         retained = self.inventory.parent / "previous-publication"
         if PUBLICATION in latest:
             self.download(latest[PUBLICATION], retained)
-            previous = json.loads((retained / "publication-status.json").read_text())
-            if previous["commit"] != self.revision or previous["run_url"] != self.run_url:
-                raise ValueError("retained publication belongs to another run or revision")
+            retained_publication(retained, self.environment)
             # A previous cleanup can have removed only some transfers. Merge its
             # evidence even when a leftover native candidate still exists.
             shutil.copytree(retained / "ci-evidence", self.directory / "ci-evidence")
@@ -118,7 +117,7 @@ class Finalizer:
         elif PUBLICATION in latest:
             # A partial rerun can start after the previous finalizer consumed its
             # transfers. Retain the previous site and evidence until re-upload.
-            shutil.copytree(retained, self.directory, dirs_exist_ok=True)
+            copy_publication_site(retained, self.directory)
         if not (self.directory / "index.html").is_file():
             print("No generated site is available; publication and cleanup skipped. See upstream job logs.")
             self.output("available", "false")
@@ -137,7 +136,6 @@ class Finalizer:
         (evidence / "finalization-results.json").write_text(json.dumps(jobs, indent=2) + "\n")
         (self.directory / "publication-status.json").write_text(json.dumps(status, indent=2) + "\n")
         self.output("available", "true")
-        self.output("label", label)
         return True
 
     def cleanup(self, uploaded_id: int) -> None:

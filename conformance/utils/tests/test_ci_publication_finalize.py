@@ -183,6 +183,16 @@ def test_foreign_run_or_revision_fails_before_any_mutation(finalizer, run, revis
     assert service.deleted == []
 
 
+@pytest.mark.parametrize("field,value", [("commit", "b" * 40), ("run_url", "https://github.com/example/repo/actions/runs/999")])
+def test_retained_payload_identity_is_checked_even_when_artifact_metadata_matches(finalizer, field, value):
+    target, service = finalizer
+    status = {"commit": target.revision, "run_url": target.run_url, field: value}
+    service.add(PUBLICATION, {"index.html": b"old", "publication-status.json": json.dumps(status)})
+    with pytest.raises(ValueError, match="does not match this run or revision"):
+        target.collect()
+    assert service.deleted == []
+
+
 def test_partial_rerun_reuses_site_and_evidence_then_replaces_old_publication(finalizer, monkeypatch):
     target, service = finalizer
     service.add(CANDIDATE, candidate_files())

@@ -180,6 +180,12 @@ def test_partial_rerun_rebuilds_binary_and_restores_frozen_sources(publication, 
     metadata = retained / "conformance/viewer-publication.json"
     metadata.parent.mkdir()
     metadata.write_text(json.dumps({"revision": "a" * 40}))
+    nested = metadata.parent / "nested/publication-status.json"
+    nested.parent.mkdir()
+    nested.write_bytes(b"reader-facing nested resource")
+    nested_evidence = metadata.parent / "nested/ci-evidence/provenance.json"
+    nested_evidence.parent.mkdir()
+    nested_evidence.write_bytes(b"reader-facing nested provenance")
     for name, content in site.items():
         path = retained / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -202,6 +208,9 @@ def test_partial_rerun_rebuilds_binary_and_restores_frozen_sources(publication, 
     assert publication.publisher.read_bytes() == b"rebuilt executable"
     assert (publication.site / "index.html").read_bytes() == site["index.html"]
     assert not (publication.site / "ci-evidence").exists()
+    assert not (publication.site / "publication-status.json").exists()
+    assert (publication.site / "conformance/nested/publication-status.json").read_bytes() == nested.read_bytes()
+    assert (publication.site / "conformance/nested/ci-evidence/provenance.json").read_bytes() == nested_evidence.read_bytes()
 
 
 @pytest.mark.parametrize("commit,run", [("b" * 40, "123"), ("a" * 40, "999")])
@@ -257,6 +266,12 @@ def test_partial_cleanup_restores_accounting_even_when_native_transfer_survives(
     publication.selections()
     assert sorted(path.name for path in (publication.temporary / "assignments").iterdir()) == ["new-uuid.json", "other-uuid.json"]
     assert (publication.temporary / "assignments/new-uuid.json").read_bytes() == b"fresh assignment"
+    fresh_baseline = publication.temporary / "fresh-baseline/new-baseline-uuid.json"
+    fresh_baseline.parent.mkdir()
+    fresh_baseline.write_bytes(b"fresh complete baseline")
+    publication.selections()
+    assert [path.name for path in (publication.temporary / "baseline-selection").iterdir()] == [fresh_baseline.name]
+    assert (publication.temporary / "baseline-selection" / fresh_baseline.name).read_bytes() == fresh_baseline.read_bytes()
 
 
 def test_missing_baseline_fails_even_when_download_failure_was_expected(publication):
