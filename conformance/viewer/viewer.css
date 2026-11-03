@@ -88,6 +88,9 @@ body { background: var(--page-bg); color: var(--ink); }
 .matrix-segments > i { flex: 1; border-right: 1px solid var(--panel-bg); }
 .segmented button:disabled { opacity: .45; cursor: default; }
 .publication-history-notice { display: block; flex: none; margin: 16px 0 0; }
+@media (max-width: 1280px) {
+  .comparison-ui.layout-vertical .comparison-matrix tbody tr > th:first-child { position: static; }
+}
 @media (min-width: 701px) and (max-width: 1200px) {
   .capture-slot { grid-template-columns: minmax(0,1fr); }
 }

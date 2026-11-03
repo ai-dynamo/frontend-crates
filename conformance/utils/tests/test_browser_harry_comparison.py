@@ -307,7 +307,8 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
             _choose_engine(driver, 1, "sglang")
             _ready(driver, "tab-unified")
             driver.find_element("css selector", "[data-layout='stacked']").click()
-        for width, label_width in [(2048, 220), (480, 150)]:
+        expected_label_widths = [(2048, 640), (480, 640)] if vertical else [(2048, 220), (480, 150)]
+        for width, label_width in expected_label_widths:
             driver.set_window_size(width, 1000)
             geometry = driver.execute_script("""
                 const table=document.querySelector('.comparison-matrix');
@@ -705,7 +706,8 @@ def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_view
         assert geometry
         assert any('7-tool-argument-text-preservation' in item['label'] for item in geometry)
         assert any('dotted_name_minimal' in item['label'] for item in geometry)
-        assert all(item['sticky'] == 'sticky' and abs(item['width'] - item['labelWidth']) <= 1 for item in geometry), geometry
+        expected_position = 'sticky' if width > 1280 else 'static'
+        assert all(item['sticky'] == expected_position and abs(item['width'] - item['labelWidth']) <= 1 for item in geometry), geometry
         assert all(not item['clipped'] and item['contained'] for item in geometry), geometry
         assert any(item['lineCount'] > 1 for item in geometry), geometry
         assert any(item['lineLefts'][0] + item['indent'] - 2 <= min(item['lineLefts'][1:]) for item in geometry if len(item['lineLefts']) > 1), geometry
