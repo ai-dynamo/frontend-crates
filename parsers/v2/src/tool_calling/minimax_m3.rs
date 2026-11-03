@@ -120,6 +120,19 @@ mod tests {
                 true,
             ),
             (json!({"$ref": "#/$defs/Nullable"}), true),
+            // A nested `$id` keeps its own type; only its references stay unknown.
+            (
+                json!({"$id": "https://example.com/item", "type": ["number", "null"]}),
+                true,
+            ),
+            (
+                json!({"$id": "https://example.com/item", "type": "number"}),
+                false,
+            ),
+            (
+                json!({"$id": "https://example.com/item", "$ref": "#/$defs/Nullable"}),
+                false,
+            ),
             (json!({"type": "number"}), false),
             (json!({"type": "string"}), false),
             (
