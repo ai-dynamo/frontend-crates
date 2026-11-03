@@ -92,20 +92,31 @@ impl Survey {
         survey.walk(schema, &mut Vec::new(), &mut budget)?;
         // A grammar backend follows a local `$ref` wherever it points, so a
         // target under an instance-valued or unknown keyword is a live schema.
+        // Two targets matter: the decoded one (where the reference will point
+        // once rewritten) and the literal one (where the backend resolves the
+        // text as written, which is what a retained reference keeps using).
         // Walking a target can surface more references; loop until none is new.
         let mut next = 0;
         while next < survey.refs.len() {
-            let Some(target) = survey.refs[next].2.clone() else {
-                next += 1;
-                continue;
-            };
-            next += 1;
-            if survey.visited.contains(&target) {
-                continue;
+            let (_, raw, decoded) = &survey.refs[next];
+            let mut targets: Vec<Path> = Vec::new();
+            if let Some(decoded) = decoded {
+                targets.push(decoded.clone());
             }
-            if let Some(node) = node_at(schema, &target)
-                && node.is_object()
-            {
+            if let Some(literal) = literal_segments(raw) {
+                targets.push(literal);
+            }
+            next += 1;
+            for target in targets {
+                if survey.visited.contains(&target) {
+                    continue;
+                }
+                let Some(node) = node_at(schema, &target) else {
+                    continue;
+                };
+                if !node.is_object() {
+                    continue;
+                }
                 // A reference into literal data (`const`, `enum`, `default`,
                 // `examples`) makes that literal a live schema for the backend
                 // while its bytes stay argument data for the model. The two
@@ -251,9 +262,11 @@ impl Plan {
         let survey = Survey::collect(schema)?;
 
         // Start from every definition that cannot be referenced literally, then
-        // withdraw a rename while some reference that resolves to that definition
-        // today cannot be rewritten (an invalid escape, or a decoded `/` outside a
-        // renamed key). Each round only removes candidates, so this terminates.
+        // withdraw a rename while some reference that is kept as written passes
+        // through that definition by literal lookup (an invalid escape, or a
+        // decoded `/` outside a renamed key): a retained reference anywhere on a
+        // definition's path pins that definition. Each round only removes
+        // candidates, so this terminates.
         let mut candidates: BTreeSet<(Path, String)> = survey
             .containers
             .iter()
@@ -270,7 +283,7 @@ impl Plan {
                 .filter(|(_, raw, decoded)| {
                     !rewritable(decoded.as_deref(), &survey.containers, &candidates) && raw != "#"
                 })
-                .filter_map(|(_, raw, _)| literal_target(raw, &survey.containers))
+                .flat_map(|(_, raw, _)| literal_targets(raw, &survey.containers))
                 .filter(|target| candidates.contains(target))
                 .collect();
             if pinned.is_empty() {
@@ -312,13 +325,17 @@ impl Plan {
     }
 
     fn apply(&self, schema: &mut Value) {
-        let containers: Vec<Path> = self
+        // Deepest container first: every path here is an ORIGINAL pointer path,
+        // and renaming an ancestor definition would make the path to a container
+        // nested inside it unresolvable.
+        let mut containers: Vec<Path> = self
             .renames
             .keys()
             .map(|(path, _)| path.clone())
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect();
+        containers.sort_by_key(|path| std::cmp::Reverse(path.len()));
         // Each surveyed site is rewritten exactly once from its original text, so
         // a site reachable through several references (an ancestor target and the
         // site itself) is never decoded twice.
@@ -349,13 +366,17 @@ impl Plan {
     /// The literal-segment spelling of a local reference, or `None` when it is
     /// not local, cannot be decoded, would still hold a `/`, or would not change.
     fn canonical_ref(&self, reference: &str, containers: &[Path]) -> Option<String> {
-        let mut segments = decode_local_ref(reference)?;
+        let original = decode_local_ref(reference)?;
+        // Every container is matched against the ORIGINAL decoded segments, so a
+        // definition nested inside a renamed definition is still found and
+        // renamed in the same pass.
+        let mut segments = original.clone();
         for path in containers {
-            if segments.len() > path.len()
-                && segments[..path.len()] == path[..]
+            if original.len() > path.len()
+                && original[..path.len()] == path[..]
                 && let Some(renamed) = self
                     .renames
-                    .get(&(path.clone(), segments[path.len()].clone()))
+                    .get(&(path.clone(), original[path.len()].clone()))
             {
                 segments[path.len()] = renamed.clone();
             }
@@ -388,19 +409,32 @@ fn rewritable(
     })
 }
 
-/// The definition a reference left as written resolves to by literal segment
-/// lookup, if any.
-fn literal_target(raw: &str, containers: &[(Path, Vec<String>)]) -> Option<(Path, String)> {
-    let segments: Vec<&str> = raw.strip_prefix("#/")?.split('/').collect();
-    containers.iter().find_map(|(path, keys)| {
-        (segments.len() > path.len()
-            && segments[..path.len()]
-                .iter()
-                .zip(path)
-                .all(|(segment, step)| *segment == step.as_str())
-            && keys.iter().any(|key| key == segments[path.len()]))
-        .then(|| (path.clone(), segments[path.len()].to_string()))
-    })
+/// The segments a backend looks up for a reference kept as written: the raw
+/// text split on `/`, with no decoding at all.
+fn literal_segments(raw: &str) -> Option<Path> {
+    Some(
+        raw.strip_prefix("#/")?
+            .split('/')
+            .map(str::to_string)
+            .collect(),
+    )
+}
+
+/// Every definition a reference left as written passes through by literal
+/// segment lookup: the one it names and each ancestor definition on its path.
+fn literal_targets(raw: &str, containers: &[(Path, Vec<String>)]) -> Vec<(Path, String)> {
+    let Some(segments) = literal_segments(raw) else {
+        return Vec::new();
+    };
+    containers
+        .iter()
+        .filter(|(path, keys)| {
+            segments.len() > path.len()
+                && segments[..path.len()] == path[..]
+                && keys.contains(&segments[path.len()])
+        })
+        .map(|(path, _)| (path.clone(), segments[path.len()].clone()))
+        .collect()
 }
 
 /// Whether the value at `path` may be read as a schema: the path must not pass
@@ -990,6 +1024,76 @@ mod tests {
         expected["properties"]["f"] = json!({"$ref": "#/$defs/x_y"});
         expected["x-target"]["$ref"] = json!("#/$defs/x_y");
         assert_eq!(canonicalize_local_refs(schema), expected);
+    }
+
+    #[test]
+    fn a_retained_reference_pins_every_definition_on_its_path() {
+        // PR #516 review (rmccorm4): the undecodable reference is kept, so the
+        // nested `Bad%ZZ` it reaches by literal lookup keeps its name too; only
+        // the first ancestor used to be checked.
+        let schema = json!({
+            "type": "object",
+            "$defs": {"Outer": {"$defs": {"Bad%ZZ": {"type": "integer"}}}},
+            "properties": {"value": {"$ref": "#/$defs/Outer/$defs/Bad%ZZ"}},
+            "required": ["value"]
+        });
+        assert_eq!(canonicalize_local_refs(schema.clone()), schema);
+
+        // A non-plain ancestor on the same retained path is pinned as well.
+        let schema = json!({
+            "$defs": {"Out er": {"$defs": {"Bad%ZZ": {"type": "integer"}}, "x y": true}},
+            "properties": {
+                "value": {"$ref": "#/$defs/Out er/$defs/Bad%ZZ"},
+                "other": {"$ref": "#/$defs/Out%20er/x%20y"}
+            }
+        });
+        let mut expected = schema.clone();
+        expected["properties"]["other"] = json!({"$ref": "#/$defs/Out er/x y"});
+        assert_eq!(canonicalize_local_refs(schema), expected);
+    }
+
+    #[test]
+    fn the_literal_target_of_an_undecodable_reference_is_surveyed() {
+        // PR #516 review (rmccorm4): XGrammar resolves `#/custom%ZZ` literally, so
+        // the `$ref` inside that target is live and follows the rename.
+        let schema = json!({
+            "type": "object",
+            "$defs": {"a b": {"type": "integer"}},
+            "properties": {"v": {"$ref": "#/custom%ZZ"}},
+            "custom%ZZ": {"$ref": "#/$defs/a b"},
+            "required": ["v"]
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "type": "object",
+                "$defs": {"a_b": {"type": "integer"}},
+                "properties": {"v": {"$ref": "#/custom%ZZ"}},
+                "custom%ZZ": {"$ref": "#/$defs/a_b"},
+                "required": ["v"]
+            })
+        );
+    }
+
+    #[test]
+    fn a_definition_nested_in_a_renamed_definition_is_renamed_too() {
+        // PR #516 review (rmccorm4): container matching uses the original decoded
+        // segments and renames are applied deepest-first, so both levels change.
+        let schema = json!({
+            "type": "object",
+            "$defs": {"outer name": {"$defs": {"a/b": {"type": "integer"}}}},
+            "properties": {"value": {"$ref": "#/$defs/outer%20name/$defs/a~1b"}},
+            "required": ["value"]
+        });
+        assert_eq!(
+            canonicalize_local_refs(schema),
+            json!({
+                "type": "object",
+                "$defs": {"outer_name": {"$defs": {"a_b": {"type": "integer"}}}},
+                "properties": {"value": {"$ref": "#/$defs/outer_name/$defs/a_b"}},
+                "required": ["value"]
+            })
+        );
     }
 
     #[test]
