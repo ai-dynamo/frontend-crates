@@ -10,6 +10,7 @@ import gzip
 import json
 import re
 import shutil
+import sys
 import tarfile
 import threading
 from urllib.error import HTTPError
@@ -35,6 +36,12 @@ import unified_history
 from capture_versions import capture_release_sort_key
 
 
+# How long the delivery check waits for a freshly deployed GitHub Pages site to
+# serve the new revision (main runs f9ea1b2e, 6252b6f4 and 7a2e8f96 saw HTTP 503
+# right after `deploy-pages` succeeded; the next run was green).
+PAGES_PROPAGATION_SECONDS = 300.0
+
+
 def test_publication_delivery_matches_qualified_artifact(historical_published_viewer, request):
     site = historical_published_viewer
     configured = request.config.getoption("--publication-url")
@@ -48,7 +55,10 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
     try:
         # Compare the qualified bytes, including all history sidecars, rather than
         # trusting a successful HTTP response or a revision label on an older site.
-        verify_http_publication(site, base)
+        # A deployed site may still answer 503/404 while Pages propagates, so the
+        # public check waits bounded; the local server must answer at once.
+        verify_http_publication(site, base, propagation_deadline=PAGES_PROPAGATION_SECONDS if configured else 0.0,
+                                log=lambda message: print(message, file=sys.stderr))
         driver = _driver()
         driver.get(f"{base}/index.html?tab=tab-unified")
         settle(driver, "tab-unified", history_ready=True)

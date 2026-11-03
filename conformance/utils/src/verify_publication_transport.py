@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 import re
 import time
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
 import zlib
@@ -22,6 +23,11 @@ import zlib
 
 MAX_PACK = 1024 * 1024
 MAX_RESOURCE = 1024 * 1024 * 1024
+# A freshly deployed GitHub Pages site answers 503 (and 404 for new paths) for a
+# short while after `deploy-pages` reports success. These statuses are retried
+# only while a propagation deadline is in force; a healthy 200 is unaffected.
+PROPAGATION_STATUSES = frozenset({404, 502, 503, 504})
+PROPAGATION_BACKOFF_SECONDS = 10.0
 
 
 def require(condition, message):
@@ -51,7 +57,36 @@ def read(root, relative):
     return resources[relative]
 
 
-def verify_http_publication(root, base_url):
+def open_published(request, *, timeout=30, propagation_deadline=0.0, backoff=PROPAGATION_BACKOFF_SECONDS,
+                   opener=urlopen, clock=time.monotonic, sleep=time.sleep, log=None):
+    """Open a published URL, retrying propagation failures until the deadline.
+
+    With ``propagation_deadline`` of 0 this is a single ``opener`` call. Otherwise
+    an HTTP 404/502/503/504 or a connection error is retried every ``backoff``
+    seconds until ``propagation_deadline`` seconds have elapsed since the first
+    attempt; the last error is then raised unchanged. Any other failure is raised
+    immediately, so a genuinely broken publication still fails fast.
+    """
+    started = clock()
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            return opener(request, timeout=timeout)
+        except (HTTPError, URLError) as error:
+            status = error.code if isinstance(error, HTTPError) else None
+            propagating = status in PROPAGATION_STATUSES if status is not None else True
+            elapsed = clock() - started
+            if not propagating or elapsed + backoff > propagation_deadline:
+                raise
+            if log is not None:
+                reason = f"HTTP {status}" if status is not None else f"connection error: {error.reason}"
+                log(f"publication not yet reachable ({reason}) after {elapsed:.0f}s, attempt {attempt}; "
+                    f"retrying in {backoff:.0f}s: {request.full_url}")
+            sleep(backoff)
+
+
+def verify_http_publication(root, base_url, *, propagation_deadline=0.0, log=None):
     parsed = urlsplit(base_url)
     require(parsed.scheme in {"http", "https"} and parsed.netloc and not parsed.username
             and not parsed.query and not parsed.fragment, "publication URL must be an HTTP directory")
@@ -61,7 +96,7 @@ def verify_http_publication(root, base_url):
     def check(relative):
         expected = read(root, relative)
         request = Request(f"{base_url.rstrip('/')}/{quote(relative)}", headers={"Accept-Encoding": "identity"})
-        with urlopen(request, timeout=30) as response:
+        with open_published(request, propagation_deadline=propagation_deadline, log=log) as response:
             require(response.status == 200, f"publication HTTP failure: {relative}")
             actual = response.read(len(expected) + 1)
         try:
