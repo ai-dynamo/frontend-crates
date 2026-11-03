@@ -693,6 +693,8 @@ def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_view
                 return {label: text.textContent, sticky: getComputedStyle(th).position,
                     width: th.getBoundingClientRect().width, height: rect.height,
                     labelWidth: parseFloat(getComputedStyle(th.closest('table')).getPropertyValue('--matrix-label-width')),
+                    lineLefts: [...new Map(boxes.map(box => [Math.round(box.top), box.left])).values()],
+                    indent: parseFloat(getComputedStyle(text).fontSize),
                     clipped: text.scrollWidth > text.clientWidth || text.scrollHeight > text.clientHeight,
                     contained: boxes.every(box => box.left >= rect.left - 1 && box.right <= rect.right + 1
                         && box.top >= rect.top - 1 && box.bottom <= rect.bottom + 1)};
@@ -703,6 +705,7 @@ def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_view
         assert all(item['sticky'] == 'sticky' and abs(item['width'] - item['labelWidth']) <= 1 for item in geometry), geometry
         assert all(not item['clipped'] and item['contained'] for item in geometry), geometry
         assert any(item['height'] > 25 for item in geometry), geometry
+        assert any(item['lineLefts'][0] + item['indent'] - 2 <= min(item['lineLefts'][1:]) for item in geometry if len(item['lineLefts']) > 1), geometry
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 
