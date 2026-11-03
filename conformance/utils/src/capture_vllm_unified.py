@@ -212,9 +212,11 @@ def _request(case):
         "enable_thinking": thinking_enabled,
     }
     tools = openai_tools(case.get("tools"))
+    if not tools and mode != "GuidedJson":
+        tool_choice = "none"
     return ChatCompletionRequest(
         messages=[{"role": "user", "content": "x"}],
-        tools=tools,
+        tools=tools or None,
         tool_choice=tool_choice,
         chat_template_kwargs=chat_template_kwargs or None,
     )
@@ -303,13 +305,13 @@ def _capture_cases(cases):
                 "Published manager exposes only native extraction; structured serving uses a separate controller path",
                 observation=True)
             continue
-        req = _request(case)
-        parser_kwargs = {
-            "tools": openai_tools(case.get("tools")),
-            "chat_template_kwargs": req.chat_template_kwargs,
-        }
         per_chunk = []
         try:
+            req = _request(case)
+            parser_kwargs = {
+                "tools": openai_tools(case.get("tools")),
+                "chat_template_kwargs": req.chat_template_kwargs,
+            }
             full_tokenizer = StubTokenizer(fam)
             parser = capture_parser(cls, full_tokenizer, **parser_kwargs)
             full_tokenizer.bind_input(case["input"], marker_at_start=parser.token_engine)
