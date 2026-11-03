@@ -356,6 +356,7 @@ def test_finalization_workflow_keeps_contributor_code_read_only():
     upload = next(index for index, step in enumerate(steps) if step.get("id") == "publication")
     assert not any(" cleanup " in step.get("run", "") for step in steps)
     assert steps[upload]["with"]["name"] == PUBLICATION
+    assert steps[upload]["name"] == "Retain one downloadable publication"
     assert steps[upload]["with"]["retention-days"] == 7
     assert not steps[upload]["with"].get("overwrite", False)
     assert jobs["conformance-table"]["outputs"]["validation"] == "${{ steps.accounting.outcome }}"

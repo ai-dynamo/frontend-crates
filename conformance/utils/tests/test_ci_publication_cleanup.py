@@ -18,6 +18,7 @@ class CleanupService(ArtifactService):
                     "path": ".github/workflows/ci.yml", "event": "push", "head_branch": "pull-request/42"}
         self.jobs = [{"name": "finalize-publication", "conclusion": "success",
                       "run_id": 123, "run_attempt": 1, "head_sha": "a" * 40, "status": "completed",
+                      "steps": [{"name": "Retain one downloadable publication", "conclusion": "success"}],
                       "started_at": "1970-01-01T00:00:00+00:00", "completed_at": "2040-01-01T00:00:00+00:00"}]
         self.changed_run = False
         self.run_reads = 0
@@ -80,6 +81,17 @@ def test_cleanup_can_repeat_without_deleting_the_retained_publication(source):
     assert service.deleted == deleted
 
 
+def test_announcement_failure_after_successful_upload_does_not_block_cleanup(source):
+    service, environment, _, status = source
+    service.jobs[0]["conclusion"] = "failure"
+    service.jobs[0]["steps"] = [{"name": "Retain one downloadable publication", "conclusion": "success"},
+                               {"name": "Link publication from summary and PR", "conclusion": "failure"}]
+    service.add("conformance-validation", {"result.json": b"{}"})
+    published = publish(service, status)
+    cleanup(environment)
+    assert list(service.items) == [published]
+
+
 @pytest.mark.parametrize("field,value", [("head_sha", "b" * 40), ("run_attempt", 2), ("status", "in_progress"),
                                         ("path", ".github/workflows/release.yml"), ("event", "pull_request"),
                                         ("head_branch", "feature/untrusted")])
@@ -119,15 +131,18 @@ def test_publication_metadata_must_match_run_and_attempt(source, field, value):
     assert service.deleted == []
 
 
-@pytest.mark.parametrize("finalizers", [[], [{"name": "finalize-publication", "conclusion": "failure"}]])
-def test_missing_or_failed_finalizer_preserves_all_transfers(source, finalizers, capsys):
+@pytest.mark.parametrize("missing", [True, False])
+def test_missing_finalizer_or_failed_upload_preserves_all_transfers(source, missing, capsys):
     service, environment, _, status = source
-    service.jobs = finalizers
+    if missing:
+        service.jobs = []
+    else:
+        service.jobs[0]["steps"][0]["conclusion"] = "failure"
     published = publish(service, status)
     service.fail_download.add(published)
     cleanup(environment)
     assert service.deleted == []
-    assert "Finalization did not succeed" in capsys.readouterr().out
+    assert ("No unique finalizer" if missing else "Publication upload did not succeed") in capsys.readouterr().out
 
 
 def test_no_site_preserves_failure_transfers(source, capsys):

@@ -32,13 +32,17 @@ def cleanup(environment: dict) -> None:
         raise ValueError("cleanup source is not the completed conformance CI attempt")
     jobs = target.items(f"{endpoint}/attempts/{source['run_attempt']}/jobs", "jobs")
     finalizers = [job for job in jobs if job["name"] == "finalize-publication"]
-    if len(finalizers) != 1 or finalizers[0]["conclusion"] != "success":
-        print("Finalization did not succeed; transfers retained. See the source CI logs.")
+    if len(finalizers) != 1:
+        print("No unique finalizer job; transfers retained. See the source CI logs.")
         return
     job = finalizers[0]
     if (job["run_id"] != target.run_id or job["run_attempt"] != source["run_attempt"]
             or job["head_sha"] != target.revision or job["status"] != "completed"):
         raise ValueError("finalizer job does not match this completed run attempt")
+    uploads = [step for step in job["steps"] if step["name"] == "Retain one downloadable publication"]
+    if len(uploads) != 1 or uploads[0]["conclusion"] != "success":
+        print("Publication upload did not succeed; transfers retained. See the source CI logs.")
+        return
     artifacts = target.artifacts()
     publication = latest_artifacts(artifacts).get(PUBLICATION)
     if publication is None:
