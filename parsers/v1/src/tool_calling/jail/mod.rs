@@ -1783,7 +1783,8 @@ impl ChoiceJailState {
             && jail_stream.should_start_jail(&self.partial_match_buffer)
         {
             let remaining = std::mem::take(&mut self.partial_match_buffer);
-            self.begin_jail(remaining, None);
+            let logprobs = self.take_held_entries();
+            self.begin_jail(remaining, logprobs);
         }
         let policy = jail_stream.terminal_marker_policy;
         let emission = if self.is_jailed && !self.accumulated_content.is_empty() {
@@ -5269,6 +5270,31 @@ mod tests {
                 responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
                 Some(finish)
             );
+        }
+    }
+
+    #[tokio::test]
+    async fn eof_tool_recovery_preserves_held_logprobs() {
+        let input = "`<tool_call><function=f></function></tool_call>";
+        for alias in ["qwen3_coder", "nemotron_nano"] {
+            for split in [0, 1, input.len() / 2] {
+                let jail = JailedStream::builder().tool_call_parser(alias).build();
+                let responses: Vec<_> = jail
+                    .apply_with_finish_reason(stream::iter([
+                        text_chunk_with_logprobs(&input[..split]),
+                        text_chunk_with_logprobs(&input[split..]),
+                    ]))
+                    .collect()
+                    .await;
+                assert_eq!(collect_tool_calls(&responses).len(), 1, "{alias}: {split}");
+                let tokens: String = collect_logprobs(&responses)
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|logprobs| logprobs.content.unwrap_or_default())
+                    .map(|entry| entry.token)
+                    .collect();
+                assert_eq!(tokens, input, "{alias}: {split}");
+            }
         }
     }
 
