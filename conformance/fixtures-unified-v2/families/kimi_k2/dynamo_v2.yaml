@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"4bf7f92c59a15ccfdc9cd7c9eb586b9a676d474cf0a8c2e868e7d85a08ef2e3c","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"8f8bd5087515e9b27b1c7f86f5d4cc2782388914b9c69c8408511c2b66619d2b","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -4821,73 +4821,6 @@ records:
           input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.not_offered:1<|tool_call_argument_begin|>{"x": 2}<|tool_call_end|><|tool_calls_section_end|>'
           tools: []
         semantic_sha256: b20838bb6c7609f23326eebed27c8c74f987af841d4d524e49a5d130fcf44be7
-  gpt_oss_tool_body_whitespace:
-    member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.8.yaml
-    suppress_inherited_from: true
-    value:
-      case_key: UNIFIED.gpt_oss-tool_body_whitespace
-      document:
-        capture_origin:
-          crate_version: 0.9.6
-          git_commit: e11ec2903b5f38fa2d514fe16de57ff3727a6373
-          source_sha256: 088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        captured_with:
-          dynamo_v2: 0.9.6+source.088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        mode: unified
-        record_metadata:
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          parser_path: unified
-      observation:
-        value:
-          assembled:
-          - arguments: '{"q": "x"}'
-            kind: tool_call
-            name: lookup
-          chunks:
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected:
-            - arguments: '{"q": "x"}'
-              complete: false
-              kind: tool_call
-              name: lookup
-          - expected:
-            - arguments: ''
-              complete: true
-              kind: tool_call
-              name: null
-          - expected: []
-          - expected: []
-      stimulus:
-        inline:
-          chunks:
-          - delta_text: <|tool_calls_section_begin|>
-          - delta_text: <|tool_call_begin|>
-          - delta_text: functions.lookup:0
-          - delta_text: <|tool_call_argument_begin|>
-          - delta_text: " \n\t{\"q\": \"x\"}"
-          - delta_text: <|tool_call_end|>
-          - delta_text: <|tool_calls_section_end|>
-          - delta_text: ‹finish›
-          finish_reason: stop
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|> \n\t{\"q\": \"x\"}<|tool_call_end|><|tool_calls_section_end|>"
-          tools:
-          - name: lookup
-            parameters:
-              properties:
-                q:
-                  type: string
-              type: object
-        semantic_sha256: 89c2e54cfb64861d55559d9376611e349b35c4e5b01029a9a899d7c3dbc9dec3
   guided_json_after_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.8.yaml
     value:

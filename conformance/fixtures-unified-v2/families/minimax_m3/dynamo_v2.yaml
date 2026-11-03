@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"c700344d44feed5dc1abd552d2a73937ec5949b2b5f892921642c9278e993227","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.7.yaml","version":"0.9.7"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"c6a35d42986b346c9bff04f896a8067dc4d5bc9e1b3b9b874572fcd726ad645d","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -10351,6 +10351,57 @@ records:
               - value
               type: object
         semantic_sha256: 7e7ea1591864dd858536242772c56912199c1e5146721cf2df7c823480b32f78
+  missing_inner_closers_then_valid_call:
+    member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.8.yaml
+    value:
+      case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+      document:
+        capture_origin:
+          crate_version: 0.9.7
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        captured_with:
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"location":"unfinished]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"get_weather\">]<]minimax[>[<location>Paris"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected:
+            - arguments: '{"location":"unfinished]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"get_weather\">]<]minimax[>[<location>Paris"}'
+              complete: true
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>Paris]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>Paris]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                location:
+                  type: string
+              required:
+              - location
+              type: object
+        semantic_sha256: e9cadcd91aaee6ab6d150e20ad9d51ec051b5b4babb324eb7b8256499590e6d3
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.9.8.yaml
     value:

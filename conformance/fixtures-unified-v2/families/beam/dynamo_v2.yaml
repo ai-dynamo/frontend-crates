@@ -1,4 +1,4 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"5e81692959c00a6e1e9d21a6d3432553900d0d5c429a6d2b9c6415e5adfd0978","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.7.yaml","version":"0.9.7"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"7a764c7a2a6566f6cdf8c2c04e6352e74112cf74a05f260af757f894b9c881ed","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -5826,76 +5826,6 @@ records:
                   $ref: '#/$defs/Number'
               type: object
         semantic_sha256: da12f4fbca7abe120515a606af69d25d950b50b49c9e7b67b6a3618db5ee5935
-  gpt_oss_interrupted_reasoning_then_response:
-    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml
-    suppress_inherited_from: true
-    value:
-      case_key: UNIFIED.gpt_oss-interrupted_reasoning_then_response
-      document:
-        capture_origin:
-          crate_version: 0.9.6
-          git_commit: e11ec2903b5f38fa2d514fe16de57ff3727a6373
-          source_sha256: 088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        captured_with:
-          dynamo_v2: 0.9.6+source.088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        mode: unified
-        record_metadata:
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          parser_path: unified
-      observation:
-        value:
-          assembled:
-          - kind: reasoning
-            text: checking
-          - kind: text
-            text: done
-          chunks:
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected:
-            - kind: reasoning
-              text: checking
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected:
-            - kind: text
-              text: done
-          - expected: []
-          - expected: []
-      stimulus:
-        inline:
-          chunks:
-          - delta_text: <|start|>
-          - delta_text: assistant
-          - delta_text: <|channel|>
-          - delta_text: analysis
-          - delta_text: <|message|>
-          - delta_text: checking
-          - delta_text: <|start|>
-          - delta_text: assistant
-          - delta_text: <|channel|>
-          - delta_text: final
-          - delta_text: <|message|>
-          - delta_text: done
-          - delta_text: <|return|>
-          - delta_text: ‹finish›
-          finish_reason: stop
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          input: <|start|>assistant<|channel|>analysis<|message|>checking<|start|>assistant<|channel|>final<|message|>done<|return|>
-          tools: []
-        semantic_sha256: 754f1104e563500fd1475abd990660d688c34cad5461a78a1ce76eeb08ca11f9
   gpt_oss_multiple_unknown_and_empty_tools:
     member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml
     value:
@@ -11199,6 +11129,65 @@ records:
               - value
               type: object
         semantic_sha256: 54afecd321d5af5442d76b978bf69795a5d35d6c5fe1f852dada4255b8cc96d6
+  missing_inner_closers_then_valid_call:
+    member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml
+    value:
+      case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+      document:
+        capture_origin:
+          crate_version: 0.9.7
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        captured_with:
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"location": "unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"location\">\nParis"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected:
+            - arguments: '{"location": "unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"location\">\nParis"}'
+              complete: true
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
+
+              Paris
+
+              </rfl:parameter><|call|>'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
+
+            Paris
+
+            </rfl:parameter><|call|>'
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                location:
+                  type: string
+              required:
+              - location
+              type: object
+        semantic_sha256: d7649b7281cb3047236fb5c4b1d881841fe57ecec05c6a7d4b5f38e2f08c3a55
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.8.yaml
     value:

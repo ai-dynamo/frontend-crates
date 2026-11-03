@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"f249d278fbe411730938841130411c3b8509734e2d4efe98fd805862dc64133d","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.7.yaml","version":"0.9.7"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"3c649e2b5f13ff0f0fc1423d2f3dfa8830aab7c94021823ea23834b2eecc5c4b","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -9705,6 +9705,61 @@ records:
               - value
               type: object
         semantic_sha256: 47d44fbc177d4fa2972e154079aabd372c389373bbcc57b94f1c888a86ef9ec0
+  missing_inner_closers_then_valid_call:
+    member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.8.yaml
+    value:
+      case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+      document:
+        capture_origin:
+          crate_version: 0.9.7
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        captured_with:
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"location":"unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"location\" string=\"true\">Paris"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected:
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: get_weather
+            - arguments: '{"location":"unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"location\" string=\"true\">Paris"}'
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                location:
+                  type: string
+              required:
+              - location
+              type: object
+        semantic_sha256: 1d726e4d7cbcded3da29a342412cef259e71ffa7917532c2dc31755ffdaf0401
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.8.yaml
     value:

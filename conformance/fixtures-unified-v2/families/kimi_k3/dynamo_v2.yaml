@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"2f13086fe823231b5ee646e844b784051383f26cfd66ddb0c98441b476f1c90d","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.7.yaml","version":"0.9.7"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"2cc3d83d989c21308406ba4191292d2ee6365d75921b34dbb67e640d77cfbced","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -6772,97 +6772,6 @@ records:
                   type: string
               type: object
         semantic_sha256: 7af1d3052ddd010a8e795d132fa7c5cbfcd9fadcf8c63449c2ffb013897ada0d
-  gpt_oss_tool_body_whitespace:
-    member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml
-    suppress_inherited_from: true
-    value:
-      case_key: UNIFIED.gpt_oss-tool_body_whitespace
-      document:
-        capture_origin:
-          crate_version: 0.9.6
-          git_commit: e11ec2903b5f38fa2d514fe16de57ff3727a6373
-          source_sha256: 088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        captured_with:
-          dynamo_v2: 0.9.6+source.088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        mode: unified
-        record_metadata:
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          parser_path: unified
-      observation:
-        value:
-          assembled:
-          - arguments: '{"q":"x"}'
-            kind: tool_call
-            name: lookup
-          chunks:
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected:
-            - arguments: '{"q":"x"}'
-              complete: false
-              kind: tool_call
-              name: lookup
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected:
-            - arguments: ''
-              complete: true
-              kind: tool_call
-              name: null
-          - expected: []
-      stimulus:
-        inline:
-          chunks:
-          - delta_text: <|open|>
-          - delta_text: tools
-          - delta_text: <|sep|>
-          - delta_text: <|open|>
-          - delta_text: call tool="lookup" index="1"
-          - delta_text: <|sep|>
-          - delta_text: <|open|>
-          - delta_text: json type="object"
-          - delta_text: <|sep|>
-          - delta_text: " \n\t{\"q\":\"x\"}"
-          - delta_text: <|close|>
-          - delta_text: json
-          - delta_text: <|sep|>
-          - delta_text: <|close|>
-          - delta_text: call
-          - delta_text: <|sep|>
-          - delta_text: <|close|>
-          - delta_text: tools
-          - delta_text: <|sep|>
-          - delta_text: ‹finish›
-          finish_reason: stop
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          input: "<|open|>tools<|sep|><|open|>call tool=\"lookup\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|> \n\t{\"q\":\"x\"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
-          tools:
-          - name: lookup
-            parameters:
-              properties:
-                q:
-                  type: string
-              type: object
-        semantic_sha256: 58ec57188fc27f1a56bace40c236f8dd030b205fdebab7dac79fb611581d7a12
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
     member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml
     value:
@@ -11844,114 +11753,6 @@ records:
               - n
               type: object
         semantic_sha256: 46734967eb51bf40339a32f95fe1d1f92bd512840278077d687f426db74eda3b
-  kimi_k3_elided_think_close_to_response:
-    member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml
-    suppress_inherited_from: true
-    value:
-      case_key: UNIFIED.kimi-elided_think_close_to_response
-      document:
-        capture_origin:
-          crate_version: 0.9.6
-          git_commit: e11ec2903b5f38fa2d514fe16de57ff3727a6373
-          source_sha256: 088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        captured_with:
-          dynamo_v2: 0.9.6+source.088e79445a4e0e44822bd2612bbf9cdc64b9813e363e14611528b8ba4cfc9ff8
-        mode: unified
-        record_metadata:
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          parser_path: unified
-      observation:
-        value:
-          assembled:
-          - kind: reasoning
-            text: checking
-          - kind: text
-            text: The answer is 42.
-          chunks:
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected:
-            - kind: reasoning
-              text: checking
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected:
-            - kind: text
-              text: The answer is 42.
-          - expected: []
-          - expected: []
-          - expected: []
-          - expected: []
-      stimulus:
-        inline:
-          chunks:
-          - delta_text: <|open|>
-          - delta_text: think
-          - delta_text: <|sep|>
-          - delta_text: checking
-          - delta_text: <|open|>
-          - delta_text: response
-          - delta_text: <|sep|>
-          - delta_text: The answer is 42.
-          - delta_text: <|close|>
-          - delta_text: response
-          - delta_text: <|sep|>
-          - delta_text: ‹finish›
-          finish_reason: stop
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-          input: <|open|>think<|sep|>checking<|open|>response<|sep|>The answer is 42.<|close|>response<|sep|>
-          tools:
-          - name: get_weather
-            parameters:
-              properties:
-                city:
-                  type: string
-              type: object
-          - name: f
-            parameters:
-              properties:
-                x:
-                  type: string
-              type: object
-          - name: g
-            parameters:
-              properties:
-                y:
-                  type: string
-              type: object
-          - name: run
-            parameters:
-              properties:
-                cmd:
-                  type: string
-              type: object
-          - name: log
-            parameters:
-              properties:
-                note:
-                  type: string
-              type: object
-          - name: sum_values
-            parameters:
-              properties:
-                values:
-                  items:
-                    type: number
-                  type: array
-              type: object
-          - name: functions.
-            parameters:
-              properties: {}
-              type: object
-        semantic_sha256: 2fe20c39436ef8e401494e8bb9bef1a50b31af8207d245f0fe1b7bdf112ca099
   kimi_k3_guided_native_wrapper:
     member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml
     value:
@@ -26039,6 +25840,61 @@ records:
               - value
               type: object
         semantic_sha256: 0787ab8c2229e3c2d6391cdb11e439f4e66a0f0fb22982c92550526404a2caee
+  missing_inner_closers_then_valid_call:
+    member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml
+    value:
+      case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+      document:
+        capture_origin:
+          crate_version: 0.9.7
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        captured_with:
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"location":"unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>argument key=\"location\" type=\"string\"<|sep|>Paris"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected:
+            - arguments: '{"location":"unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>argument key=\"location\" type=\"string\"<|sep|>Paris'
+              complete: false
+              kind: tool_call
+              name: get_weather
+          - expected:
+            - arguments: '"}'
+              complete: true
+              kind: tool_call
+              name: null
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                location:
+                  type: string
+              required:
+              - location
+              type: object
+        semantic_sha256: 358ad471306f0b54f6db920c4f08ccdf2d085483ceacdf71d4b83f357df6f249
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.8.yaml
     value:

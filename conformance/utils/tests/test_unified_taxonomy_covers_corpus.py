@@ -1001,7 +1001,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 265 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 5
+    assert len(UNIFIED_TAX) == 265 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1989,6 +1989,33 @@ def _assert_malformed_recovery(family, case):
     return echoes
 
 
+def _assert_missing_inner_closers(family: str, case: dict) -> list[dict]:
+    family = G.unified_grammar_family(family)
+    if family == "muse_spark":
+        family = "muse_glimmer"
+    raw = case["input"]
+    assert case["input_chunks"] == [raw]
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    prefix = G.MISSING_INNER_CLOSERS_PREFIX[family]
+    native_raw = raw.removeprefix(G.control_tokens(family)[1])
+    assert native_raw.startswith(prefix)
+    inner_closers = {
+        "beam": "</rfl:parameter>", "minimax_m3": "]<]minimax[>[</location>",
+        "qwen3": "</parameter>", "glm47": "</arg_value>",
+        "deepseek_v4": "</｜DSML｜parameter>", "deepseek_v41": "</｜DSML｜ parameter>",
+        "gemma4": '<|"|>}', "kimi_k3": "<|close|>argument", "muse_glimmer": "</atem:parameter>",
+    }
+    assert "unfinished" in prefix and inner_closers[family] not in prefix
+    paris = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}]
+    assert _native_input_calls(family, native_raw[len(prefix):]) == paris
+    assert case["golden"] == paris
+    assert case["tools"] == [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"],
+    }}]
+    return paris
+
+
+
 _GUIDED_NATIVE_RECOVERY_SCENARIOS = (
     "guided_json_native_markup_only",
     "guided_native_after_prefilled_reasoning_required",
@@ -2028,6 +2055,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
     family = G.unified_grammar_family(family)
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
+        return
+    if scenario == "missing_inner_closers_then_valid_call":
+        _assert_missing_inner_closers(family, case)
         return
     if scenario.startswith("kimi_native_"):
         _assert_kimi_native_golden(scenario, case)
@@ -2205,6 +2235,8 @@ def _assert_cross_family_contract(corpus):
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
+                      else _assert_missing_inner_closers(family, case)
+                      if scenario == "missing_inner_closers_then_valid_call"
                       else _logical_events(scenario, family, case["golden"]))
             if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
                 raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "minimax_m3"} else 2

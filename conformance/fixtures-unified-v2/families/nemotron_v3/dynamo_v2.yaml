@@ -1,4 +1,4 @@
-capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"4b6bdcb2f6b51f681887ae18735621dc4fe5422ba62df2ed8cc5087f7c661720","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.7.yaml","version":"0.9.7"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"2c5789f6fcbef17b2a2a22eaf1b7506a067d50f7209a3f11a43f675b50803608","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -11467,6 +11467,57 @@ records:
               - value
               type: object
         semantic_sha256: 1a2d89caf68a6cc2b45bf029cd4e7f838567ba1c18c484fc262436302a436216
+  missing_inner_closers_then_valid_call:
+    member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.8.yaml
+    value:
+      case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+      document:
+        capture_origin:
+          crate_version: 0.9.7
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        captured_with:
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"location":"unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected:
+            - arguments: '{"location":"unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris"}'
+              complete: true
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: </think><tool_call><function=get_weather><parameter=location>unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris</parameter></function></tool_call>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: </think><tool_call><function=get_weather><parameter=location>unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris</parameter></function></tool_call>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                location:
+                  type: string
+              required:
+              - location
+              type: object
+        semantic_sha256: 01adec742d39d3726aaf9028c588e236147f06dd90a72bf7f0a417fb90b4ccbf
   narrated_bare_invoke_in_unterminated_thought:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.9.8.yaml
     value:

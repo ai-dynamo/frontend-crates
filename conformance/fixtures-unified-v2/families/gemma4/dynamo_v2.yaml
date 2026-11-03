@@ -1,4 +1,4 @@
-capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"725ec07b49033d61e9bfd9a7b11ceb4c522f5f5677762b1b38d458865cd4702f","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.9.7.yaml","version":"0.9.7"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"4b0913c1adeb225e2677a5c04bdf9aa6234ac1c99552cf706170d244c8d8c817","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -8859,6 +8859,57 @@ records:
               - value
               type: object
         semantic_sha256: 1f44f2373df80ee7f4cd7c29c6a0305efe6064847cb22a0f451574d1ae99196c
+  missing_inner_closers_then_valid_call:
+    member: conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.9.8.yaml
+    value:
+      case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+      document:
+        capture_origin:
+          crate_version: 0.9.7
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        captured_with:
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"location":"Paris"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected: []
+          - expected:
+            - arguments: '{"location":"Paris"}'
+              complete: true
+              kind: tool_call
+              name: get_weather
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|><|tool_call>call:get_weather{location:<|"|>Paris<|"|>}<tool_call|>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|><|tool_call>call:get_weather{location:<|"|>Paris<|"|>}<tool_call|>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                location:
+                  type: string
+              required:
+              - location
+              type: object
+        semantic_sha256: fce4187d5eeda3ba6382d6a8371399f2487be42ffcdc9f30c075cb126b47fe20
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.9.8.yaml
     value:

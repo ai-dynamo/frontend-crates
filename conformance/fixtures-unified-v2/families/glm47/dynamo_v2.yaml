@@ -1,4 +1,4 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"18673275878d25eafa4baeb41dd7ad7c7e6fa19c5d7e0c21473e5da4477e8002","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.7.yaml","version":"0.9.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.8.yaml","version":"0.9.8"}],"mode":"unified","payload_sha256":"ba43d63f87d8e47030da20ae908728f8a86768650a2a7d569d6732ea54edcadf","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.8.yaml","surface":"unified","version":"0.9.8"}
 document:
   mode: unified
 provenance:
@@ -9367,6 +9367,64 @@ records:
               - value
               type: object
         semantic_sha256: 84e8a9ea473ff97589606f714a092df4793bce23741607a2d3c4c22f54de67ac
+  missing_inner_closers_then_valid_call:
+    member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.8.yaml
+    value:
+      case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+      document:
+        capture_origin:
+          crate_version: 0.9.7
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        captured_with:
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"location":"unfinished"}'
+            kind: tool_call
+            name: get_weather
+          - arguments: '{"location":"Paris"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected:
+            - arguments: '{"location":"unfinished"}'
+              complete: true
+              kind: tool_call
+              name: get_weather
+            - arguments: '{"location":"Paris"}'
+              complete: true
+              kind: tool_call
+              name: get_weather
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Paris</arg_value></tool_call>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call><tool_call>get_weather<arg_key>location</arg_key><arg_value>Paris</arg_value></tool_call>
+          tools:
+          - name: get_weather
+            parameters:
+              properties:
+                location:
+                  type: string
+              required:
+              - location
+              type: object
+        semantic_sha256: 51571e40a6365a09853006529e4c49a891d3587159f1a3048f129c684bec3d59
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.8.yaml
     value:
