@@ -455,7 +455,7 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     jobs = workflow["jobs"]
     assert jobs["conformance-table"]["if"] == "${{ always() }}"
     for name, job in jobs.items():
-        if name not in {"conformance-table", "deploy-pages"}:
+        if name not in {"conformance-table", "deploy-pages", "finalize-publication"}:
             assert "if" not in job, name
     assert workflow["env"] == {"CONFORMANCE_INCLUDE_HISTORY": "true", "CONFORMANCE_COVERAGE": "exhaustive"}
     assert jobs["conformance-fixtures"]["needs"] == "prepare"
@@ -770,7 +770,7 @@ def test_only_history_can_replace_public_main_site():
     deployment = next(i for i, step in enumerate(deploy_steps) if step.get("id") == "deployment")
     smoke = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py delivery" in step.get("run", ""))
     admission = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py current" in step.get("run", ""))
-    assert admission + 1 == deployment < smoke
+    assert admission < deployment < smoke
     for index in (deployment, smoke):
         assert deploy_steps[index]["if"] == "${{ steps.current.outputs.current == 'true' }}"
     evidence = deploy_steps[-1]

@@ -110,6 +110,66 @@ class Publication:
     def seal(self, identity):
         self.python("ci_publication_cache.py", "seal", "--directory", self.payload, "--identity", identity)
 
+    def retained(self):
+        retained = self.temporary / "retained-publication"
+        status = json.loads((retained / "publication-status.json").read_bytes())
+        run_url = f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+        if status["commit"] != os.environ["GITHUB_SHA"] or status["run_url"] != run_url:
+            raise ValueError("retained publication does not match this run")
+        return retained
+
+    def selections(self):
+        retained = self.temporary / "retained-publication"
+        evidence = self.retained() / "ci-evidence" if retained.exists() else self.temporary / "no-retained-evidence"
+        fresh = self.temporary / "fresh-selections"
+        sources = {path.name: path for path in evidence.glob("conformance-selection-*")}
+        sources.update({path.name: path for path in fresh.glob("conformance-selection-*")})
+        baseline = self.temporary / "fresh-baseline"
+        if not list(baseline.glob("*.json")):
+            baseline = evidence / "conformance-test-baseline"
+        if not list(baseline.glob("*.json")):
+            raise ValueError("complete collection baseline is unavailable in transfers and retained evidence")
+        for directory, owners in (("baseline-selection", [baseline]), ("assignments", sources.values())):
+            destination = self.temporary / directory
+            destination.mkdir(exist_ok=True)
+            # Receipt names are UUIDs, so filename overlay cannot replace a lane.
+            # Select one complete artifact per owner before flattening for the gate.
+            for path in destination.glob("*.json"):
+                path.unlink()
+            for owner in owners:
+                for path in owner.glob("*.json"):
+                    shutil.copyfile(path, destination / path.name)
+
+    def recover(self):
+        retained = self.retained()
+        evidence = retained / "ci-evidence"
+        sources = evidence / "publication-inputs"
+        shutil.copytree(sources / "conformance", self.root / "conformance", dirs_exist_ok=True)
+        self.python("ci_publication_cache.py", "context-check", "--context", self.context)
+        for path in retained.iterdir():
+            if path.name in {"ci-evidence", "publication-status.json"}:
+                continue
+            destination = self.site / path.name
+            if path.is_dir():
+                shutil.copytree(path, destination, dirs_exist_ok=True)
+            else:
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(path, destination)
+        if publication_metadata(self.site)["revision"] != os.environ["GITHUB_SHA"]:
+            raise ValueError("retained site does not match this revision")
+        self.build()
+        self.package()
+        self.seal(json.loads((sources / "cache-manifest.json").read_bytes())["identity"])
+
+    def pages_needed(self):
+        result = self.run(["gh", "api", "--paginate", "--slurp",
+                           f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}/artifacts?per_page=100"],
+                          capture_output=True, text=True)
+        present = any(artifact["name"] == "github-pages" and not artifact["expired"]
+                      for page in json.loads(result.stdout) for artifact in page["artifacts"])
+        with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+            output.write(f"needed={str(not present).lower()}\n")
+
     def delivery(self, url):
         # This exact regression owns both local HTTP and deployed-site delivery.
         self.run([sys.executable, "-m", "pytest", "conformance/utils/tests/test_native_publication_browser.py",
@@ -134,7 +194,7 @@ class Publication:
         return current
 
 
-PHASES = ("configure", "identify", "restore", "build", "snapshot", "catalog", "publish", "verify", "stamp", "package", "seal", "delivery", "current")
+PHASES = ("configure", "identify", "restore", "build", "snapshot", "catalog", "publish", "verify", "stamp", "package", "seal", "delivery", "current", "recover", "selections", "pages-needed")
 
 
 def main():
@@ -153,7 +213,8 @@ def main():
               "build": publication.build, "snapshot": publication.snapshot, "catalog": publication.catalog,
               "publish": publication.publish, "verify": publication.verify, "stamp": publication.stamp,
               "package": publication.package, "seal": lambda: publication.seal(args.identity),
-              "delivery": lambda: publication.delivery(args.url), "current": publication.current}
+              "delivery": lambda: publication.delivery(args.url), "current": publication.current,
+              "recover": publication.recover, "selections": publication.selections, "pages-needed": publication.pages_needed}
     phases[args.phase]()
 
 

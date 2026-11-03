@@ -2,14 +2,30 @@
 # SPDX-License-Identifier: Apache-2.0
 name: Restore candidate conformance publication
 description: Restore one matching site, source catalog, and native publisher for qualification.
+outputs:
+  recovered:
+    description: Whether a partial rerun rebuilt tools from the retained publication.
+    value: ${{ steps.native.outcome == 'failure' }}
 runs:
   using: composite
   steps:
     - name: Download candidate native publication
+      id: native
+      continue-on-error: true
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
       with:
         name: conformance-native-publication
         path: ${{ runner.temp }}/native-publication
+    - name: Restore retained publication after transfer cleanup
+      if: ${{ steps.native.outcome == 'failure' }}
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      with:
+        name: conformance-publication
+        path: ${{ runner.temp }}/retained-publication
+    - name: Rebuild matching qualification tools for a partial rerun
+      if: ${{ steps.native.outcome == 'failure' }}
+      shell: bash
+      run: python3 conformance/utils/src/ci_publication.py recover
     - name: Restore matching publication inputs
       shell: bash
       run: |
