@@ -1001,7 +1001,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 265 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 5
+    assert len(UNIFIED_TAX) == 265 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1989,8 +1989,10 @@ def _assert_malformed_recovery(family, case):
     return echoes
 
 
-def _assert_missing_inner_closers(family, case):
+def _assert_missing_inner_closers(family: str, case: dict) -> list[dict]:
     family = G.unified_grammar_family(family)
+    if family == "muse_spark":
+        family = "muse_glimmer"
     raw = case["input"]
     assert case["input_chunks"] == [raw]
     assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
@@ -1998,6 +2000,7 @@ def _assert_missing_inner_closers(family, case):
     native_raw = raw.removeprefix(G.control_tokens(family)[1])
     assert native_raw.startswith(prefix)
     inner_closers = {
+        "beam": "</rfl:parameter>", "minimax_m3": "]<]minimax[>[</location>",
         "qwen3": "</parameter>", "glm47": "</arg_value>",
         "deepseek_v4": "</｜DSML｜parameter>", "deepseek_v41": "</｜DSML｜ parameter>",
         "gemma4": '<|"|>}', "kimi_k3": "<|close|>argument", "muse_glimmer": "</atem:parameter>",

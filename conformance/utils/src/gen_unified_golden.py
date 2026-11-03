@@ -2796,11 +2796,13 @@ EDGE.append((
 ))
 
 
-# TOOLCALLING.batch.5.i in Unified form: the first call loses its inner closers but
+# The first call loses its inner closers but
 # keeps the outer close, then a complete call follows. Scoped to grammars with inner
 # closers; Kimi K2 arguments are bare JSON, which 5-malformed_json_then_two_valid_calls
 # already covers.
 MISSING_INNER_CLOSERS_PREFIX = {
+    "beam": '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|>',
+    "minimax_m3": ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>',
     "deepseek_v4": '<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls>',
     "deepseek_v41": '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls>',
     "gemma4": '<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>',
