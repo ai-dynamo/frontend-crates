@@ -683,17 +683,19 @@ def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_view
     driver = _driver()
     try:
         driver.set_window_size(width, 1000)
-        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&search_tab-unified=dotted_name")
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&search_tab-unified=7-tool-argument-text-preservation%20OR%20dotted_name")
         _ready(driver, 'tab-unified')
         geometry = driver.execute_script("""
             return [...document.querySelectorAll('.matrix-case-heading')].map(th => {
                 const text = th.querySelector('.matrix-case-text'), rect = text.getBoundingClientRect();
                 const range = document.createRange(); range.selectNodeContents(text);
                 const boxes = [...range.getClientRects()];
+                const lineTops = [...new Set(boxes.map(box => Math.round(box.top)))];
                 return {label: text.textContent, sticky: getComputedStyle(th).position,
-                    width: th.getBoundingClientRect().width, height: rect.height,
+                    width: th.getBoundingClientRect().width,
                     labelWidth: parseFloat(getComputedStyle(th.closest('table')).getPropertyValue('--matrix-label-width')),
-                    lineLefts: [...new Map(boxes.map(box => [Math.round(box.top), box.left])).values()],
+                    lineCount: lineTops.length,
+                    lineLefts: lineTops.map(top => Math.min(...boxes.filter(box => Math.round(box.top) === top).map(box => box.left))),
                     indent: parseFloat(getComputedStyle(text).fontSize),
                     clipped: text.scrollWidth > text.clientWidth || text.scrollHeight > text.clientHeight,
                     contained: boxes.every(box => box.left >= rect.left - 1 && box.right <= rect.right + 1
@@ -701,11 +703,13 @@ def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_view
             });
         """)
         assert geometry
+        assert any('7-tool-argument-text-preservation' in item['label'] for item in geometry)
         assert any('dotted_name_minimal' in item['label'] for item in geometry)
         assert all(item['sticky'] == 'sticky' and abs(item['width'] - item['labelWidth']) <= 1 for item in geometry), geometry
         assert all(not item['clipped'] and item['contained'] for item in geometry), geometry
-        assert any(item['height'] > 25 for item in geometry), geometry
+        assert any(item['lineCount'] > 1 for item in geometry), geometry
         assert any(item['lineLefts'][0] + item['indent'] - 2 <= min(item['lineLefts'][1:]) for item in geometry if len(item['lineLefts']) > 1), geometry
+        assert all(item['lineCount'] <= 2 for item in geometry), [(item['label'], item['lineCount'], item['width']) for item in geometry if item['lineCount'] > 2]
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 
