@@ -664,7 +664,9 @@ impl HfTokenizerConfigJsonFormatter {
         let ctx = context! {
             messages => crate::python::template_value(&messages_for_template),
             tools => tools.as_ref().map(crate::python::template_json).transpose()?.as_ref().map(crate::python::template_value),
-            response_format => response_format.as_ref().map(crate::python::template_value),
+            response_format => response_format.as_ref()
+                .map(crate::python::template_value)
+                .unwrap_or(Value::UNDEFINED),
             bos_token => self.config.bos_tok(),
             eos_token => self.config.eos_tok(),
             unk_token => self.config.unk_tok(),
@@ -2923,7 +2925,7 @@ NORMAL_MODE
     #[test]
     fn test_response_format_in_template_context() {
         let formatter = formatter_for(
-            r#"{%- if response_format %}{{ response_format.json_schema.name }}: {{ response_format.json_schema.schema | tojson }}{% else %}none{% endif %}"#,
+            r#"{%- if response_format is defined %}{{ response_format.json_schema.name }}: {{ response_format.json_schema.schema | tojson }}{% else %}none{% endif %}"#,
         );
         let with_format: NvCreateChatCompletionRequest = serde_json::from_value(json!({
             "model": "test",
