@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.4...dynamo-parsers-v11.0.5) - 2026-11-03
+
+### Bug fixes
+
+- *(gpt-oss)* Recover the final message a malformed harmony header strands ([#236](https://github.com/ai-dynamo/frontend-crates/pull/236))
+
 ## [11.0.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.1...dynamo-parsers-v11.0.2) - 2026-11-03
 
 ### Bug fixes
