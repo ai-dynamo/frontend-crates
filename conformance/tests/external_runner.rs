@@ -134,3 +134,67 @@ fn generation_constraints_are_reported_as_unsupported() {
     assert_eq!(report.exit_code(false), 0);
     assert_eq!(report.exit_code(true), 1);
 }
+
+#[test]
+fn numeric_yaml_chunks_reach_the_glm_parser_without_changing_their_spelling() {
+    let options = RunOptions {
+        case_ids: Some(BTreeSet::from([
+            "UNIFIED.7-arg_numeric_14_const_exponent".to_owned()
+        ])),
+        ..RunOptions::default()
+    };
+
+    let report = run_unified_family("glm47", &options).unwrap();
+
+    assert_eq!(report.selected, 1);
+    assert_eq!(report.executed, 1);
+    assert_eq!(report.passed, 1, "{report:#?}");
+}
+
+#[test]
+fn glm_composed_schema_types_match_authored_golden_at_every_split() {
+    let options = RunOptions {
+        case_ids: Some(BTreeSet::from([
+            "UNIFIED.7-conditional_schema_number_types".to_owned(),
+            "UNIFIED.7-not_keyword_type_complement".to_owned(),
+        ])),
+        ..RunOptions::default()
+    };
+    let report = run_unified_family("glm47", &options).unwrap();
+    assert_eq!(report.passed, 2, "{report:#?}");
+    assert_eq!(report.exit_code(true), 0, "{report:#?}");
+}
+
+#[test]
+fn every_native_family_matches_the_complete_authored_golden() {
+    let _serial = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
+    let families: BTreeSet<_> = dynamo_parsers_v2::builtin_unified_families()
+        .iter()
+        .map(|family| dynamo_parsers_v2::canonical_unified_family(family).unwrap())
+        .collect();
+    let options = RunOptions {
+        check_every_split: false,
+        check_stream_isolation: false,
+        ..RunOptions::default()
+    };
+    let mut errors = Vec::new();
+    for family in families {
+        match run_unified_family(family, &options) {
+            Ok(report) => {
+                println!(
+                    "{family}: selected={} executed={} passed={} unsupported={} failures={}",
+                    report.selected,
+                    report.executed,
+                    report.passed,
+                    report.unsupported.len(),
+                    report.failures.len()
+                );
+                if report.exit_code(false) != 0 {
+                    errors.push(format!("{report:#?}"));
+                }
+            }
+            Err(error) => errors.push(format!("{family}: {error:#}")),
+        }
+    }
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
+}

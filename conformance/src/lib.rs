@@ -3,7 +3,11 @@
 
 //! Conformance fixtures, normalized storage and the authored Unified runner.
 
+#[doc(hidden)]
+#[path = "../tests/common/arguments.rs"]
+pub mod arguments;
 pub mod normalization;
+
 mod runner;
 
 pub use runner::{CaseFailure, CaseUnsupported, RunOptions, RunReport, run_unified_family};
