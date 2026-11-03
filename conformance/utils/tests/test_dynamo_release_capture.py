@@ -138,7 +138,7 @@ def test_all_engine_inventory_retains_stable_releases_yanks_and_source_blockers(
     targets = inventory["targets"]
     assert {name: sum(target["implementation"] == name for target in targets)
             for name in ("dynamo_v1", "dynamo_v2", "vllm", "sglang")} == {
-                "dynamo_v1": 81, "dynamo_v2": 69, "vllm": 99, "sglang": 150}
+                "dynamo_v1": 81, "dynamo_v2": 69, "vllm": 100, "sglang": 151}
     assert len({(target["implementation"], target["version"]) for target in targets}) == len(targets)
     for target in targets:
         if target["source_kind"] == "crate":
