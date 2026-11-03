@@ -206,53 +206,7 @@ pub fn assembled_native_capture(
     not(conformance_legacy_indexed_assembly),
     not(conformance_legacy_delta)
 ))]
-fn captured_arguments(projected: &serde_json::Value, raw: &str) -> String {
-    if serde_json::value::RawValue::from_string(raw.to_owned()).is_ok()
-        && raw_matches_projection(projected, raw.trim())
-    {
-        raw.to_owned()
-    } else {
-        serde_json::to_string(projected).expect("assembled arguments serialize")
-    }
-}
-
-#[cfg(all(
-    not(conformance_split_only),
-    not(conformance_legacy_indexed_assembly),
-    not(conformance_legacy_delta)
-))]
-fn raw_matches_projection(projected: &serde_json::Value, raw: &str) -> bool {
-    use serde_json::Value;
-    use serde_json::value::RawValue;
-    match (raw.as_bytes().first(), projected) {
-        (Some(b'{'), Value::Object(actual)) => {
-            let fields: std::collections::BTreeMap<String, Box<RawValue>> =
-                serde_json::from_str(raw).expect("validated object arguments");
-            actual.len() == fields.len()
-                && fields.iter().all(|(key, value)| {
-                    actual
-                        .get(key)
-                        .is_some_and(|actual| raw_matches_projection(actual, value.get()))
-                })
-        }
-        (Some(b'['), Value::Array(actual)) => {
-            let items: Vec<Box<RawValue>> =
-                serde_json::from_str(raw).expect("validated array arguments");
-            actual.len() == items.len()
-                && actual
-                    .iter()
-                    .zip(items.iter())
-                    .all(|(actual, value)| raw_matches_projection(actual, value.get()))
-        }
-        (Some(b'-' | b'0'..=b'9'), _) => match serde_json::from_str::<Value>(raw) {
-            Ok(value) => value == *projected,
-            // Raw reconstruction may restore an overflow token, but never an
-            // object or sibling field discarded by the typed assembler.
-            Err(_) => projected.as_str() == Some(raw),
-        },
-        _ => serde_json::from_str::<Value>(raw).is_ok_and(|value| value == *projected),
-    }
-}
+use super::arguments::captured_arguments;
 
 #[cfg(all(
     not(conformance_split_only),
