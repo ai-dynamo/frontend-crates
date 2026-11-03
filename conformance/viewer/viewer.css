@@ -61,7 +61,7 @@ body { background: var(--page-bg); color: var(--ink); }
 /* Use the page scrollport for both axes so sticky labels need no nested scroll box. */
 .comparison-matrix-scroll { overflow: visible; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); }
 .comparison-matrix { --matrix-label-width: 220px; --matrix-cell-width: 30px; width: calc(var(--matrix-label-width) + var(--matrix-cell-width) * var(--matrix-result-columns)); table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; }
-.comparison-ui.layout-vertical .comparison-matrix { --matrix-label-width: 540px; --matrix-cell-width: 42px; }
+.comparison-ui.layout-vertical .comparison-matrix { --matrix-label-width: 49em; --matrix-cell-width: 42px; }
 .matrix-label-column { width: var(--matrix-label-width); }
 .matrix-result-column { width: var(--matrix-cell-width); }
 .comparison-matrix th,.comparison-matrix td { border: 0; border-bottom: 1px solid var(--line); padding: 4px; background: var(--panel-bg); }
@@ -79,7 +79,7 @@ body { background: var(--page-bg); color: var(--ink); }
 .comparison-matrix tr > th:first-child { position: sticky; left: 0; z-index: 2; text-align: left; padding: 6px 10px; border-right: 1px solid var(--line-strong); overflow-wrap: anywhere; }
 .comparison-matrix tr > th:first-child .matrix-case-label { display: block; }
 .comparison-matrix tr > th:first-child .matrix-case-text { display: block; padding-left: 1em; text-indent: -1em; white-space: normal; overflow-wrap: anywhere; }
-.comparison-ui.layout-vertical .matrix-case-text { font-size: 10px; }
+.comparison-ui.layout-vertical .matrix-case-text { font-size: .91em; }
 .comparison-matrix thead tr > th:first-child { z-index: 5; }
 .comparison-matrix .matrix-cell { height: 22px; padding: 4px 2px; cursor: pointer; }
 .comparison-matrix .filtered-cell { text-align: center; }
