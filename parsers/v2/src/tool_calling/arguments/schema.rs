@@ -899,6 +899,45 @@ pub(crate) fn schema_type_match(
         (Some(left), Some(right)) => Some(left && right),
         (left, right) => left.or(right),
     };
+    // enum/const-derived type hint: a parameter declared only by its allowed values
+    // (`{"enum": [1, 2, 4]}`, `{"const": true}`, pydantic Literal / zod literal unions)
+    // admits the JSON types of those values. Integral numbers count as integer and number.
+    let value_matches = |value: &Value| -> bool {
+        match value {
+            Value::Null => expected == "null",
+            Value::Bool(_) => expected == "boolean",
+            Value::Number(n) => {
+                expected == "number"
+                    || (expected == "integer" && n.as_f64().is_some_and(|f| f.fract() == 0.0))
+            }
+            Value::String(_) => expected == "string",
+            Value::Array(_) => expected == "array",
+            Value::Object(_) => expected == "object",
+        }
+    };
+    let enum_hint = match schema.get("enum").and_then(Value::as_array) {
+        Some(values) if !values.is_empty() => {
+            // Mixed enums keep their string fallback. A string hint must match
+            // raw text so it cannot shadow another union branch.
+            if expected == "string" {
+                values
+                    .iter()
+                    .any(|value| value.as_str() == Some(raw))
+                    .then_some(true)
+            } else {
+                values.iter().try_fold(false, |matched, value| {
+                    (!value.is_string()).then(|| matched || value_matches(value))
+                })
+            }
+        }
+        _ => None,
+    };
+    for literal_hint in [enum_hint, schema.get("const").map(value_matches)] {
+        hint = match (hint, literal_hint) {
+            (Some(left), Some(right)) => Some(left && right),
+            (left, right) => left.or(right),
+        };
+    }
     for keyword in ["anyOf", "oneOf", "allOf"] {
         let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
             continue;

@@ -16196,7 +16196,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
-    historical_ids: [UNIFIED.7-conditional_schema_number_types]
+    historical_ids:
+    - UNIFIED.7-conditional_schema_number_types
     request:
       input: <tool_call>capture_payload<arg_key>amount</arg_key><arg_value>21.5</arg_value><arg_key>retries</arg_key><arg_value>37</arg_value></tool_call>
       init:
@@ -16255,7 +16256,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
-    historical_ids: [UNIFIED.7-not_keyword_type_complement]
+    historical_ids:
+    - UNIFIED.7-not_keyword_type_complement
     request:
       input: <tool_call>capture_payload<arg_key>count</arg_key><arg_value>-2500</arg_value><arg_key>text</arg_key><arg_value>42</arg_value></tool_call>
       init:
@@ -16305,7 +16307,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
-    historical_ids: [UNIFIED.7-reference_object_recursive_and_composed_types]
+    historical_ids:
+    - UNIFIED.7-reference_object_recursive_and_composed_types
     request:
       input: <tool_call>capture_payload<arg_key>category</arg_key><arg_value>{"label":"Garden Tools","children":[]}</arg_value><arg_key>tree</arg_key><arg_value>{"label":"root","children":[{"label":"leaf","children":[]}]}</arg_value><arg_key>retries</arg_key><arg_value>37</arg_value><arg_key>dry_run</arg_key><arg_value>false</arg_value></tool_call>
       init:
@@ -16391,6 +16394,114 @@ cases:
               children: []
           retries: 37
           dry_run: false
+  schema_enum_inferred_integer:
+    lifecycle: active
+    scenario: schema_enum_inferred_integer
+    description: 'Schema probe enum_inferred_integer: independently authored value 2 under {"enum": [1, 2, 4]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
+    historical_ids: []
+    request:
+      input: <tool_call>schema_probe<arg_key>value</arg_key><arg_value>2</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              enum:
+              - 1
+              - 2
+              - 4
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <tool_call>schema_probe<arg_key>value</arg_key><arg_value>2</arg_value></tool_call>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 2
+  schema_const_numeric_bare:
+    lifecycle: active
+    scenario: schema_const_numeric_bare
+    description: 'Schema probe const_numeric_bare: independently authored value 3 under {"const": 3}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-constants-const_numeric_bare
+    historical_ids: []
+    request:
+      input: <tool_call>schema_probe<arg_key>value</arg_key><arg_value>3</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              const: 3
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <tool_call>schema_probe<arg_key>value</arg_key><arg_value>3</arg_value></tool_call>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 3
+  schema_enum_const_narrowing:
+    lifecycle: active
+    scenario: schema_enum_const_narrowing
+    description: 'Schema probe enum_const_narrowing: independently authored value 1 under {"enum": [1, "auto"], "const": 1}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_const_narrowing
+    historical_ids: []
+    request:
+      input: <tool_call>schema_probe<arg_key>value</arg_key><arg_value>1</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              enum:
+              - 1
+              - auto
+              const: 1
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <tool_call>schema_probe<arg_key>value</arg_key><arg_value>1</arg_value></tool_call>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 1
   missing_inner_closers_then_valid_call:
     lifecycle: active
     scenario: missing_inner_closers_then_valid_call
