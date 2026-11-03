@@ -95,6 +95,8 @@ struct FamilyFixtures {
 struct CaseMetadata {
     lifecycle: Option<String>,
     display_id: Option<String>,
+    #[serde(default)]
+    historical_ids: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -284,11 +286,14 @@ fn load_active_cases(text: &str, options: &RunOptions) -> Result<Vec<ActiveCase>
             .unwrap_or(&key)
             .to_owned();
         known_active_ids.insert(id.clone());
-        if options
-            .case_ids
-            .as_ref()
-            .is_some_and(|selected| !selected.contains(&id))
-        {
+        known_active_ids.extend(metadata.historical_ids.iter().cloned());
+        if options.case_ids.as_ref().is_some_and(|selected| {
+            !selected.contains(&id)
+                && !metadata
+                    .historical_ids
+                    .iter()
+                    .any(|alias| selected.contains(alias))
+        }) {
             continue;
         }
         selected_rows.insert(key, id);
@@ -699,6 +704,7 @@ mod tests {
   selected:
     lifecycle: active
     display_id: selected
+    historical_ids: [old-selected]
     request:
       input: '{scalar}'
       chunks: [{{delta_text: {scalar}}}]
@@ -713,6 +719,11 @@ mod tests {
             assert_eq!(cases.len(), 1);
             assert_eq!(cases[0].input, scalar);
             assert_eq!(cases[0].chunks, [scalar]);
+            let alias_options = RunOptions {
+                case_ids: Some(BTreeSet::from(["old-selected".to_owned()])),
+                ..options.clone()
+            };
+            assert_eq!(load_active_cases(&text, &alias_options)?[0].id, "selected");
             assert!(load_active_cases(&text, &RunOptions::default()).is_err());
         }
         Ok(())
