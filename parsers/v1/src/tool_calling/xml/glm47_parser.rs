@@ -809,11 +809,8 @@ fn schema_type_match(
             Value::Object(_) => expected == "object",
         }
     };
-    let literal_hint = match (
-        schema.get("enum").and_then(Value::as_array),
-        schema.get("const"),
-    ) {
-        (Some(values), _) if !values.is_empty() => {
+    let enum_hint = match schema.get("enum").and_then(Value::as_array) {
+        Some(values) if !values.is_empty() => {
             // Mixed enums keep their string fallback. A string hint must match
             // raw text so it cannot shadow another union branch.
             if expected == "string" {
@@ -827,13 +824,14 @@ fn schema_type_match(
                 })
             }
         }
-        (_, Some(value)) => Some(value_matches(value)),
         _ => None,
     };
-    hint = match (hint, literal_hint) {
-        (Some(left), Some(right)) => Some(left && right),
-        (left, right) => left.or(right),
-    };
+    for literal_hint in [enum_hint, schema.get("const").map(value_matches)] {
+        hint = match (hint, literal_hint) {
+            (Some(left), Some(right)) => Some(left && right),
+            (left, right) => left.or(right),
+        };
+    }
     for keyword in ["anyOf", "oneOf", "allOf"] {
         let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
             continue;
