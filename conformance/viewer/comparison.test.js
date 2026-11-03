@@ -136,3 +136,10 @@ test('category and search intersections exclude problems outside the selected sl
   assert.equal(included.focus, 'problems');
   assert.deepEqual(included.view.columns.map(column => column.sub), ['leak']);
 });
+
+test('focus is a single toggle and clicking All always selects the full view', () => {
+  assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'all').focus, 'all');
+  assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'problems').focus, 'problems');
+  assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'disagreements').focus, 'disagreements');
+  assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'all').focus, 'all');
+});
