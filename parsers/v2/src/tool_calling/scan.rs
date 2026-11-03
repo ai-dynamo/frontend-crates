@@ -1634,6 +1634,7 @@ struct ProseQuoteState {
     escaped: bool,
     previous: Option<char>,
     pending_apostrophe: bool,
+    quoted_text: bool,
 }
 
 impl ProseQuoteState {
@@ -1648,7 +1649,11 @@ impl ProseQuoteState {
 
     fn advance(&mut self, character: char, next: Option<char>) {
         self.resolve_apostrophe(Some(character));
-        if self.escaped {
+        let was_open = self.quote.is_some();
+        if character == '\n' && self.quoted_text {
+            self.quote = None;
+            self.escaped = false;
+        } else if self.escaped {
             self.escaped = false;
         } else if character == '\\' {
             self.escaped = true;
@@ -1668,9 +1673,12 @@ impl ProseQuoteState {
         } else if self.quote.is_none()
             && matches!(character, '"' | '\'' | '`')
             && !(character == '\'' && self.previous.is_some_and(char::is_alphanumeric))
+            && !(character == '`' && self.previous == Some('`'))
         {
             self.quote = Some(character);
         }
+        self.quoted_text =
+            was_open && self.quote.is_some() && (self.quoted_text || !character.is_whitespace());
         self.previous = Some(character);
     }
 
@@ -1853,6 +1861,9 @@ impl ProseControlState {
                 ProseGrammarSpan::NotOwned => {}
             }
             let character = text[cursor..].chars().next().expect("prose cursor");
+            if character == '\n' && state.quoted_text {
+                return ProseControl::Unmatched(at);
+            }
             if !flush && character == '\'' && cursor + character.len_utf8() == text.len() {
                 self.pending = Some(PendingProseControl {
                     at,

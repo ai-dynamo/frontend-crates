@@ -192,6 +192,41 @@ fn unmatched_quote_cannot_hide_the_real_reasoning_closer() {
 }
 
 #[test]
+fn quote_closed_after_the_reasoning_closer_cannot_hide_it() {
+    for (family, _, closer) in FAMILIES {
+        if family == "beam" {
+            continue;
+        }
+        for quote in ['"', '\'', '`'] {
+            for (reasoning, answer) in [
+                (
+                    format!("He said {quote}maybe\n"),
+                    format!("\n\nShe said {quote}yes{quote}."),
+                ),
+                (
+                    format!("He said {quote}maybe.\nDone."),
+                    format!("She said {quote}yes{quote}."),
+                ),
+                (
+                    "```sql\nSELECT 1\n```\n\nDone.".to_string(),
+                    format!("She said {quote}yes{quote}."),
+                ),
+            ] {
+                every_split(
+                    family,
+                    &format!("{reasoning}{closer}{answer}"),
+                    UnifiedParserStartingState::Reasoning,
+                    &[
+                        UnifiedEvent::Reasoning { text: reasoning },
+                        UnifiedEvent::Text { text: answer },
+                    ],
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn definite_prose_progresses_and_reset_returns_the_ambiguous_control() {
     for (family, marker, _) in FAMILIES {
         let mut parser = create_unified_parser_for_family(family, &tools()).unwrap();
