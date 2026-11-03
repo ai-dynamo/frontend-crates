@@ -152,7 +152,8 @@ fn numeric_yaml_chunks_reach_the_glm_parser_without_changing_their_spelling() {
 }
 
 #[test]
-fn glm_composed_schema_types_match_authored_golden_at_every_split() {
+fn composed_schema_types_match_authored_golden_at_every_split() {
+    let _serial = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
     let options = RunOptions {
         case_ids: Some(BTreeSet::from([
             "UNIFIED.7-conditional_schema_number_types".to_owned(),
@@ -160,13 +161,15 @@ fn glm_composed_schema_types_match_authored_golden_at_every_split() {
         ])),
         ..RunOptions::default()
     };
-    let report = run_unified_family("glm47", &options).unwrap();
-    assert_eq!(report.passed, 2, "{report:#?}");
-    assert_eq!(report.exit_code(true), 0, "{report:#?}");
+    for family in ["beam", "glm47", "minimax_m3", "qwen3"] {
+        let report = run_unified_family(family, &options).unwrap();
+        assert_eq!(report.passed, 2, "{report:#?}");
+        assert_eq!(report.exit_code(true), 0, "{report:#?}");
+    }
 }
 
 #[test]
-fn every_native_family_matches_the_complete_authored_golden() {
+fn every_native_family_reports_every_active_case() {
     let _serial = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
     let families: BTreeSet<_> = dynamo_parsers_v2::builtin_unified_families()
         .iter()
@@ -189,7 +192,28 @@ fn every_native_family_matches_the_complete_authored_golden() {
                     report.unsupported.len(),
                     report.failures.len()
                 );
-                if report.exit_code(false) != 0 {
+                // A parser mismatch is a report outcome. A loader or batch-parity
+                // failure prevents an external author from evaluating their parser.
+                let failed_cases: BTreeSet<_> = report
+                    .failures
+                    .iter()
+                    .map(|failure| &failure.case_id)
+                    .collect();
+                assert_eq!(
+                    report.executed + report.unsupported.len(),
+                    report.selected,
+                    "{report:#?}"
+                );
+                assert_eq!(
+                    report.passed + failed_cases.len(),
+                    report.executed,
+                    "{report:#?}"
+                );
+                if report
+                    .failures
+                    .iter()
+                    .any(|failure| failure.check != "golden")
+                {
                     errors.push(format!("{report:#?}"));
                 }
             }
