@@ -6,6 +6,8 @@ Nested-tag probes `7.j`, `7.m`, `7.n`, `7-6`, `7-7`, `7-8`, and `7-10` appear un
 
 Inkling's consumed generation-primer header (`11.c`) appears under `Single Family Test: Inkling`; other registered grammars do not use this primer mode. Header-name precedence (`11.a`) remains generic because both Inkling and Muse can express an outer routing name that conflicts with the embedded invocation name. The streaming mixed-DSML-dialect probe `51.b` appears under `Single Family Test: DeepSeek V4`; only that native adapter accepts both dialects in the same stream. Shared reasoning projection `51.a` remains generic.
 
+`TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence and historical tests; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 
@@ -732,12 +734,10 @@ truncation recovery).
 
 ## Customer-incident regression tests
 
-When a test exists because a specific customer ticket / PR / GH
-issue uncovered a bug, include that reference inline in the
-`#[test]` comment:
+New regression tests use the applicable `UNIFIED.*` case ID and may retain the originating issue or PR reference. Archived tests keep their original `TOOLCALLING.*` tags.
 
 ```rust
-#[test] // TOOLCALLING.batch.5 (PR #8208)
+#[test] // UNIFIED.5-tool_no_close (PR #8208)
 fn test_parse_malformed_no_section_end() { ... }
 ```
 
@@ -757,32 +757,9 @@ parenthetical names the originating incident. No separate
 | `TOOLCALLING.xml.{1,2}` | XML-family only | Entity decoding + schema-aware coercion |
 | `TOOLCALLING.harmony.{1,2}` | Harmony only | Channel routing + envelope variants |
 
-## Adding a new tool-call parser: what you must include
+## Adding a new tool-call parser
 
-Minimum viable set:
-
-1. `TOOLCALLING.batch.{1, 2, 3}` — baseline correctness.
-2. `TOOLCALLING.batch.4` (or explicit `N/A`) — handle or refuse malformed
-   input.
-3. `TOOLCALLING.batch.5` — pin behavior when the outer fence is missing.
-   Silent drop is a regression waiting to happen.
-4. `TOOLCALLING.batch.{6, 7}` — empty and complex args.
-5. `TOOLCALLING.stream.{1, 2, 3, 4}` — streaming. Essentially
-   non-negotiable for any parser that sits behind a streaming
-   frontend.
-6. `TOOLCALLING.batch.8` — interleaved text.
-7. `TOOLCALLING.batch.9.{a,b,c}`, `TOOLCALLING.batch.10`, and
-   `TOOLCALLING.batch.13.{a,c}` — empty / blank / empty-container inputs,
-   duplicate calls, and unknown tool names.
-8. Format variants where applicable (`TOOLCALLING.fmt.{1..5}`): cover
-   any that the parser's grammar permits. Mark `N/A` for those that
-   don't apply. JSON-family parsers (Mistral, Llama 3 JSON, Hermes)
-   should specifically pin `TOOLCALLING.fmt.5` (argument-shape: native
-   ID / field-order / arguments-vs-parameters alias).
-9. Family-specific categories where applicable: `TOOLCALLING.xml.{1, 2}`
-   for XML grammars, `TOOLCALLING.harmony.{1, 2}` for Harmony.
-
-For reasoning parsers, see `REASONING_CASES.md`.
+Author new coverage in `UNIFIED_CASES.md` and `gen_unified_golden.py`. Cover single and multiple calls, text preservation, malformed and truncated inputs, empty and typed arguments, reasoning boundaries, and grammar-specific forms. Run each applicable request against the frozen Dynamo version inventory. The taxonomy above documents retained historical tests; it is not the active authoring workflow.
 
 ## Shared schema conformance probes
 

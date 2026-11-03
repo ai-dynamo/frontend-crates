@@ -32,8 +32,11 @@ import yaml
 from capture_stimulus import batch_final_events, capture_input, unavailable_result, validate_family_scoped_cases
 from unified_tools import openai_tools
 
-from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
-from vllm.parser.parser_manager import ParserManager
+from peer_modules import AdapterContractError, resolve_peer_module, vllm_parser_factory, vllm_stream_is_legacy, parser_error_detail
+from peer_modules import capture_parser
+
+ChatCompletionRequest = resolve_peer_module("vllm", "protocol").ChatCompletionRequest
+_PARSER_FACTORY = vllm_parser_factory()
 
 # family -> (reasoning_parser_name, tool_parser_name) for the released Python
 # parser registrations used by the Unified corpus. DeepSeek V4.1 shares the
@@ -56,12 +59,17 @@ class StubTokenizer:
     is_fast = True
 
     def __init__(self, family):
+        self.source_text = None
+        self.marker_at_start = False
         markers = VLLM_TOKENIZER_MARKERS[family]
         self._vocab = {marker: 256 + index for index, marker in enumerate(markers)}
         self._encoded = {
             marker: [token_id] for marker, token_id in self._vocab.items()
         }
         if family == "kimi_k3":
+            self._vocab = {token: 256 + index for index, token in enumerate(
+                ("<|open|>", "<|close|>", "<|sep|>", "think", "response", "message"))}
+            self._encoded.update({token: [token_id] for token, token_id in self._vocab.items()})
             self._encoded["<|open|>think<|sep|>"] = [256, 259, 258]
             self._encoded["<|close|>think<|sep|>"] = [257, 259, 258]
             self._encoded["<|open|>response<|sep|>"] = [256, 260, 258]
@@ -87,7 +95,23 @@ class StubTokenizer:
         return self._vocab
 
     def encode(self, t, add_special_tokens=False):
-        return list(self._encoded.get(t, []))
+        return [token for _start, _end, tokens in self.token_spans(t) for token in tokens]
+
+    def token_spans(self, text):
+        matches = sorted((match.start(), -len(match.group()), match.end(), ids)
+                         for pattern, ids in self._patterns for match in pattern.finditer(text))
+        spans, cursor = [], 0
+        for start, _length, end, ids in matches:
+            if start < cursor:
+                continue
+            spans.extend((index, index + 1, [1000 + ord(text[index])]) for index in range(cursor, start))
+            spans.append((start, end, ids))
+            cursor = end
+        spans.extend((index, index + 1, [1000 + ord(text[index])]) for index in range(cursor, len(text)))
+        return spans
+
+    def bind_input(self, text, *, marker_at_start):
+        self.source_text, self.marker_at_start = text, marker_at_start
 
     def generated_ids(self, previous_text, current_text):
         """Expose completed control markers at their authored chunk positions.
@@ -96,25 +120,19 @@ class StubTokenizer:
         extracts text correctly. A split marker must not transition early.
         Ordinary text gets an opaque ID: its vocabulary is irrelevant here.
         """
-        completed = sorted(
-            (match.start(), match.end(), ids)
-            for pattern, ids in self._patterns
-            for match in pattern.finditer(current_text)
-            if match.end() > len(previous_text)
-        )
-        tokens = []
-        cursor = len(previous_text)
-        for start, end, ids in completed:
-            if start > cursor:
-                tokens.append(0)
-            tokens.extend(ids)
-            cursor = end
-        if cursor < len(current_text):
-            tokens.append(0)
-        return tokens
+        if self.marker_at_start:
+            if self.source_text is None or not self.source_text.startswith(current_text):
+                raise AdapterContractError("Token engine input differs from the bound authored text")
+            # A token can precede its fully decoded spelling; the published
+            # scanner explicitly defers it until the corresponding text arrives.
+            return [token for start, _end, ids in self.token_spans(self.source_text)
+                    if len(previous_text) <= start < len(current_text) for token in ids]
+        return [token for _start, end, ids in self.token_spans(current_text)
+                if end > len(previous_text) for token in ids]
 
     def decode(self, ids, **k):
-        return ""
+        markers = {token_id: marker for marker, token_id in self._vocab.items()}
+        return "".join(chr(token_id - 1000) if token_id >= 1000 else markers[token_id] for token_id in ids)
 
     @property
     def vocab_size(self):
@@ -148,6 +166,8 @@ def _delta_events(dm):
     out = []
     if dm is None:
         return out
+    if not any(hasattr(dm, field) for field in ("content", "reasoning", "reasoning_content", "tool_calls")):
+        raise AdapterContractError("Published delta API returned an unexpected shape")
     # vLLM 0.27 renamed DeltaMessage.reasoning_content to reasoning.  Keep the
     # compatibility fallback because the capture matrix includes older releases,
     # but prefer the current field so prefilled reasoning is not silently dropped.
@@ -252,7 +272,6 @@ def _assembled_from_chunks(chunks):
 
 
 def _capture_cases(cases):
-    mgr = ParserManager()
     results = {}
     for case in cases:
         fam = case["family"]
@@ -260,9 +279,12 @@ def _capture_cases(cases):
             continue
         rn, tn = FAMILY_PARSERS[fam]
         try:
-            cls = mgr.get_parser(tool_parser_name=tn, reasoning_parser_name=rn,
+            cls = _PARSER_FACTORY(tool_parser_name=tn, reasoning_parser_name=rn,
                                  enable_auto_tools=True, model_name=fam)
-        except (KeyError, TypeError):
+        except (KeyError, TypeError) as error:
+            # Published managers can wrap a lazy dependency failure as a
+            # registration error; it still blocks execution of the release.
+            parser_error_detail(error)
             results[case["id"]] = unavailable_result(
                 "vllm_parser_not_registered",
                 f"vLLM {rn} parser is not registered for {fam}",
@@ -276,6 +298,11 @@ def _capture_cases(cases):
                 observation=True,
             )
             continue
+        if not hasattr(cls, "parse") and (case.get("init") or {}).get("tool_output_mode", "Native") == "GuidedJson":
+            results[case["id"]] = unavailable_result("unsupported_request_mode",
+                "Published manager exposes only native extraction; structured serving uses a separate controller path",
+                observation=True)
+            continue
         req = _request(case)
         parser_kwargs = {
             "tools": openai_tools(case.get("tools")),
@@ -283,19 +310,22 @@ def _capture_cases(cases):
         }
         per_chunk = []
         try:
-            parser = cls(StubTokenizer(fam), **parser_kwargs)
+            full_tokenizer = StubTokenizer(fam)
+            parser = capture_parser(cls, full_tokenizer, **parser_kwargs)
+            full_tokenizer.bind_input(case["input"], marker_at_start=parser.token_engine)
 
             # Streaming is the only vLLM API that accepts prompt token IDs. A
             # prefilled reasoning row therefore gets its assembled projection
             # from the initialized stream rather than from parse(), which has no
             # prompt-state argument.
-            p = cls(StubTokenizer(fam), **parser_kwargs)
+            tokenizer = StubTokenizer(fam)
+            p = capture_parser(cls, tokenizer, **parser_kwargs)
+            tokenizer.bind_input(case["input"], marker_at_start=p.token_engine)
             if hasattr(p, "initialize_streaming"):
                 p.initialize_streaming()
             chunks = case.get("chunks", [])
             per_chunk = []
             prompt_ids = _prompt_token_ids(case, fam)
-            tokenizer = StubTokenizer(fam)
             previous_text = ""
             for i, ch in enumerate(chunks):
                 current_text = previous_text + ch
@@ -320,14 +350,15 @@ def _capture_cases(cases):
                 assembled = _assembled_events(reasoning, content, tool_calls)
             results[case["id"]] = {"assembled": assembled, "chunks": per_chunk}
         except Exception as exc:  # per-case parser supervisor; retain concrete failure evidence
+            detail = parser_error_detail(exc)
             results[case["id"]] = {
-                "error": f"{type(exc).__name__}: {exc}",
+                "error": detail,
                 "error_traceback": traceback.format_exc(),
                 "partial_chunks": per_chunk,
                 "capture_observation": {
                     "error": {
                         "code": "vllm_parser_error",
-                        "detail": f"{type(exc).__name__}: {exc}",
+                        "detail": detail,
                     }
                 },
             }
@@ -348,6 +379,10 @@ def main():
         return unavailable_result(code, detail, capture=request_binding(case))
 
     for case in job.get("cases", []):
+        if case.get("finish_reason", "stop") not in {"stop", "length"}:
+            results[case["id"]] = unavailable_for(case, "peer_termination_unsupported",
+                "Published parser capture supports serving stop/length termination only")
+            continue
         if case["family"] not in FAMILY_PARSERS:
             results[case["id"]] = unavailable_result(
                 "vllm_parser_not_registered",
@@ -355,6 +390,10 @@ def main():
                 capture=request_binding(case),
                 observation=True,
             )
+            continue
+        if vllm_stream_is_legacy() and (case.get("init") != {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+                                      or case.get("finish_reason", "stop") not in {"stop", "length"}):
+            results[case["id"]] = unavailable_for(case, "unsupported_request_mode", "Published legacy serving composition supports native/default initialization and stop/length termination")
             continue
         chunks = case.get("chunks") or []
         terminal_step = bool(

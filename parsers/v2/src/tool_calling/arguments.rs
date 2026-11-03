@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tool_calling::scan::JsonValueBoundary;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserializer, Serialize};
@@ -9,11 +10,12 @@ use serde_json::value::RawValue;
 use std::collections::BTreeMap;
 
 mod schema;
+pub(crate) use schema::MAX_SCHEMA_DEPTH;
+#[cfg(test)]
+pub(crate) use schema::MAX_SCHEMA_WORK;
 pub(crate) use schema::SchemaFacts;
 #[cfg(test)]
 pub(crate) use schema::schema_type_match;
-#[cfg(test)]
-pub(crate) use schema::{MAX_SCHEMA_DEPTH, MAX_SCHEMA_WORK};
 pub(crate) use schema::{
     has_unsupported_schema_ref_scope, resolve_local_schema_ref, schema_has_type,
     schema_permits_null,
@@ -154,15 +156,26 @@ impl ParsedValue {
     }
 
     pub(crate) fn to_value(&self) -> Value {
-        serde_json::from_str(
-            &self
-                .json_text()
-                .expect("ParsedValue must serialize as JSON"),
-        )
-        .expect("ParsedValue serialization must be valid JSON")
+        match self {
+            Self::Json(value) => value.clone(),
+            // Value cannot hold an out-of-range number without arbitrary_precision.
+            // Preserve its token as a string rather than losing the enclosing object.
+            Self::RawNumber(raw) => serde_json::from_str(raw.get())
+                .unwrap_or_else(|_| Value::String(raw.get().to_string())),
+            Self::RawJson(raw) => parsed_json_literal(raw.get())
+                .expect("ParsedValue must contain bounded valid JSON")
+                .to_value(),
+            Self::Array(items) => Value::Array(items.iter().map(Self::to_value).collect()),
+            Self::Object(fields) => Value::Object(
+                fields
+                    .keys
+                    .keys()
+                    .map(|key| (key.clone(), fields.values[key].to_value()))
+                    .collect(),
+            ),
+        }
     }
 
-    #[cfg(test)]
     pub(crate) fn as_object(&self) -> Option<&BTreeMap<String, ParsedValue>> {
         match self {
             Self::Object(fields) => Some(&fields.values),
@@ -185,6 +198,16 @@ pub(crate) fn raw_number_literal(value: &str) -> Option<ParsedValue> {
         .map(ParsedValue::RawNumber)
 }
 
+/// Validate segmented input without retaining a second copy of a consumed prefix.
+/// IgnoredAny uses serde_json's iterative value skipper, as RawValue does.
+pub(crate) fn valid_json_reader(reader: impl std::io::Read) -> bool {
+    let mut decoder = serde_json::Deserializer::from_reader(reader);
+    serde::Deserialize::deserialize(&mut decoder)
+        .map(|_: serde::de::IgnoredAny| ())
+        .and_then(|()| decoder.end())
+        .is_ok()
+}
+
 pub(crate) fn raw_json_literal(value: &str) -> Option<ParsedValue> {
     RawValue::from_string(value.to_string())
         .ok()
@@ -201,6 +224,21 @@ pub(crate) fn parsed_json_literal(value: &str) -> Option<ParsedValue> {
     // RawValue skips serde_json's nesting limit; retain that limit before building
     // recursive nodes so serialization and drop remain stack bounded.
     parsed_json_literal_with_budget(value, 128)
+}
+
+/// Locate a complete JSON prefix without converting numeric tokens to floats.
+pub(crate) fn parsed_json_prefix_end(value: &str) -> serde_json::Result<Option<usize>> {
+    let mut values = serde_json::Deserializer::from_str(value).into_iter::<Box<RawValue>>();
+    let raw = match values.next().transpose() {
+        Ok(Some(raw)) => raw,
+        Ok(None) => return Ok(None),
+        Err(error) if error.is_eof() || incomplete_number_at_eof(value, &error) => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    if parsed_json_literal(raw.get()).is_none() {
+        return Err(serde::de::Error::custom("JSON nesting limit exceeded"));
+    }
+    Ok(Some(values.byte_offset()))
 }
 
 fn parsed_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedValue> {
@@ -231,11 +269,22 @@ fn parsed_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedV
     }
 }
 
-fn is_json_number(value: &str) -> bool {
+#[derive(Debug, PartialEq, Eq)]
+enum JsonNumberStatus {
+    Complete,
+    Incomplete,
+    Invalid,
+}
+
+fn json_number_status(value: &str) -> JsonNumberStatus {
+    use JsonNumberStatus::{Complete, Incomplete, Invalid};
     let bytes = value.as_bytes();
+    if bytes.is_empty() {
+        return Invalid;
+    }
     let mut cursor = usize::from(bytes.first() == Some(&b'-'));
     if cursor == bytes.len() {
-        return false;
+        return Incomplete;
     }
     match bytes[cursor] {
         b'0' => cursor += 1,
@@ -245,7 +294,7 @@ fn is_json_number(value: &str) -> bool {
                 cursor += 1;
             }
         }
-        _ => return false,
+        _ => return Invalid,
     }
     if bytes.get(cursor) == Some(&b'.') {
         cursor += 1;
@@ -254,7 +303,11 @@ fn is_json_number(value: &str) -> bool {
             cursor += 1;
         }
         if cursor == start {
-            return false;
+            return if cursor == bytes.len() {
+                Incomplete
+            } else {
+                Invalid
+            };
         }
     }
     if matches!(bytes.get(cursor), Some(b'e' | b'E')) {
@@ -267,10 +320,54 @@ fn is_json_number(value: &str) -> bool {
             cursor += 1;
         }
         if cursor == start {
-            return false;
+            return if cursor == bytes.len() {
+                Incomplete
+            } else {
+                Invalid
+            };
         }
     }
-    cursor == bytes.len()
+    if cursor == bytes.len() {
+        Complete
+    } else {
+        Invalid
+    }
+}
+
+fn is_json_number(value: &str) -> bool {
+    json_number_status(value) == JsonNumberStatus::Complete
+}
+
+fn incomplete_number_at_eof(value: &str, error: &serde_json::Error) -> bool {
+    let line = value.bytes().filter(|byte| *byte == b'\n').count() + 1;
+    let column = value.rsplit('\n').next().unwrap_or_default().len();
+    if !error.is_syntax() || error.line() != line || error.column() != column {
+        return false;
+    }
+    // Serde validated the prefix up to this EOF error. Reuse the number lexer
+    // only for its final token; earlier syntax failures stay malformed JSON.
+    let start = value
+        .as_bytes()
+        .iter()
+        .rposition(|byte| !matches!(byte, b'0'..=b'9' | b'-' | b'+' | b'.' | b'e' | b'E'))
+        .map_or(0, |at| at + 1);
+    if json_number_status(&value[start..]) != JsonNumberStatus::Incomplete {
+        return false;
+    }
+    let prefix = value[..start].trim_end();
+    let mut boundary = JsonValueBoundary::default();
+    for character in prefix.chars() {
+        boundary.advance(character);
+    }
+    if boundary.inside_string() {
+        return false;
+    }
+    match prefix.chars().next_back() {
+        None => true,
+        Some(':') => boundary.container_closer() == Some('}'),
+        Some('[' | ',') => boundary.container_closer() == Some(']'),
+        _ => false,
+    }
 }
 
 pub(crate) fn normalize_decimal_spelling(value: &str) -> Option<ParsedValue> {
@@ -387,7 +484,7 @@ pub(crate) fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
 mod tests {
     use super::{
         ParsedObject, ParsedValue, coerce_integral_number, normalize_decimal_spelling,
-        parsed_json_literal, raw_number_literal,
+        parsed_json_literal, parsed_json_prefix_end, raw_number_literal,
     };
 
     #[test]
@@ -437,6 +534,51 @@ mod tests {
             parsed_json_literal(input).unwrap().json_text().unwrap(),
             expected
         );
+    }
+
+    #[test]
+    fn raw_prefix_validation_preserves_numbers_and_nesting_limits() {
+        let payload = r#"{"n":1e9999,"nested":[1e-400]}"#;
+        assert_eq!(
+            parsed_json_prefix_end(&format!("{payload} trailing")).unwrap(),
+            Some(payload.len())
+        );
+        for token in ["-", "1.", "1e", "1e+", "1e-", "-0.5E+"] {
+            for prefix in [
+                r#"{"n":"#,
+                r#"{"huge":1e9999,"n":"#,
+                r#"{"é":"🙂","n":"#,
+                "[",
+                "[0,",
+                "\n  ",
+            ] {
+                assert_eq!(
+                    parsed_json_prefix_end(&format!("{prefix}{token}")).unwrap(),
+                    None
+                );
+            }
+        }
+        for value in [
+            r#"{"n":1eX"#,
+            r#"{"n":1e "#,
+            r#"{"n":01e"#,
+            r#"{"n":+"#,
+            r#"{1e"#,
+            "{ -",
+            r#"{"n":1,-"#,
+            "[1 -",
+        ] {
+            assert!(parsed_json_prefix_end(value).is_err(), "{value}");
+        }
+        assert!(parsed_json_prefix_end(r#"{"n":invalid}"#).is_err());
+        for depth in [126, 127, 128, 129] {
+            let input = format!("{}1e9999{}", "[".repeat(depth), "]".repeat(depth));
+            assert_eq!(
+                parsed_json_prefix_end(&input).is_ok(),
+                depth < 128,
+                "depth={depth}"
+            );
+        }
     }
 
     #[test]
@@ -527,5 +669,40 @@ mod tests {
             .replace("\"EXP\"", "4.2e1")
         );
         assert!(parsed_json_literal(r#"{"value":NaN}"#).is_none());
+    }
+}
+
+#[cfg(test)]
+mod segmented_validation_tests {
+    use super::*;
+    use std::io::Read;
+
+    #[test]
+    fn segmented_validation_matches_raw_value_at_every_byte() {
+        let deep = format!("{}0{}", "[".repeat(512), "]".repeat(512));
+        for input in [
+            deep.as_str(),
+            r#"{"n":1e999999999,"s":"漢🙂\uD800"}"#,
+            r#"{"a":"ok\\\"","b":[true,false,null,-0.3e+12]}"#,
+            r#"{"x":01}"#,
+            r#"{"x":1.}"#,
+            r#"{"x":"\q"}"#,
+            "[1,]",
+            "{} []",
+            "true",
+            " 1e999999999 ",
+            "",
+            "[1",
+        ] {
+            let expected = raw_json_literal(input).is_some();
+            for split in 0..=input.len() {
+                let bytes = input.as_bytes();
+                assert_eq!(
+                    valid_json_reader(bytes[..split].chain(&bytes[split..])),
+                    expected,
+                    "input={input:?} split={split}"
+                );
+            }
+        }
     }
 }

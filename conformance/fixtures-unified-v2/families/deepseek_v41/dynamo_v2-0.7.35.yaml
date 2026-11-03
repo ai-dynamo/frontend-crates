@@ -176,48 +176,21 @@ changes:
         - expected: []
 metadata_changes: {}
 document_overrides:
-  arg_null_mixed_labels:
+  xml_string_type_double_quoted_object:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.7.35
+        dynamo_v2: 0.7.33
       capture_origin:
-        crate_version: 0.7.35
-        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
-        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
       inherited_from: null
-  deepseek_v41_json_invocation_body:
+  xml_string_type_single_quoted_object:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.7.35
+        dynamo_v2: 0.7.33
       capture_origin:
-        crate_version: 0.7.35
-        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
-        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
-      inherited_from: null
-  glm_ref_encoded_targets:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.35
-      capture_origin:
-        crate_version: 0.7.35
-        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
-        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
-      inherited_from: null
-  glm_ref_json_looking_strings:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.35
-      capture_origin:
-        crate_version: 0.7.35
-        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
-        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
-      inherited_from: null
-  glm_ref_scalar_types:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.35
-      capture_origin:
-        crate_version: 0.7.35
-        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
-        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
       inherited_from: null

@@ -65,21 +65,48 @@ changes:
         - expected: []
 metadata_changes: {}
 document_overrides:
-  arg_array_quoted_parameter_close:
+  arg_null_mixed_labels:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.8.0
+        dynamo_v2: 0.7.35
       capture_origin:
-        crate_version: 0.8.0
-        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
-        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
       inherited_from: null
-  arg_object_quoted_parameter_close:
+  deepseek_v41_json_invocation_body:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.8.0
+        dynamo_v2: 0.7.35
       capture_origin:
-        crate_version: 0.8.0
-        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
-        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+      inherited_from: null
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
       inherited_from: null

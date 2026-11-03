@@ -58,7 +58,7 @@ def _case_job(family: str, case_id: str, case: dict, *, mode: str) -> dict:
         "finish_reason": request["finish_reason"],
         "tools": request["tools"],
         "chunks": texts,
-        **({"case_id": case_id, "request": request, "golden": case["golden"]} if mode == "batch" else {}),
+        **({"case_id": case_id, "request": request, "golden": case["golden"]} if mode in {"batch", "stream"} else {}),
     }
 
 
@@ -77,7 +77,7 @@ def build_job(input_root: Path, family: str, *, mode: str = "unified") -> dict:
     cases = document.get("cases")
     if not isinstance(cases, dict):
         raise ValueError(f"{path}: cases must be a mapping")
-    if mode not in {"unified", "batch"}:
+    if mode not in {"unified", "batch", "stream"}:
         raise ValueError(f"unknown capture mode: {mode}")
     jobs = [
         _case_job(family, case_id, case, mode=mode)
@@ -101,7 +101,7 @@ def main() -> None:
         default=Path(__file__).resolve().parents[2] / "fixtures-unified-v2" / "families",
     )
     parser.add_argument("--output", type=Path, help="write JSON here instead of stdout")
-    parser.add_argument("--mode", choices=("unified", "batch"), default="unified")
+    parser.add_argument("--mode", choices=("unified", "batch", "stream"), default="unified")
     args = parser.parse_args()
     if args.families:
         if args.output is None:

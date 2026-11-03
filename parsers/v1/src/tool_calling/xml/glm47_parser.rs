@@ -607,7 +607,7 @@ fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<boo
     }
 }
 
-fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
+pub(crate) fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
     ["$id", "$dynamicRef", "$recursiveRef"]
         .iter()
         .any(|keyword| schema.get(*keyword).and_then(Value::as_str).is_some())

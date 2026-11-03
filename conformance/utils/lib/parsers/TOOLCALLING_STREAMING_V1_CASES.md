@@ -6,6 +6,8 @@ Nested-tag probes `7.j`, `7.m`, `7.n`, `7-6`, `7-7`, `7-8`, and `7-10` appear un
 
 Inkling's consumed generation-primer header (`11.c`) appears under `Single Family Test: Inkling`; other registered grammars do not use this primer mode. Header-name precedence (`11.a`) remains generic because both Inkling and Muse can express an outer routing name that conflicts with the embedded invocation name. The streaming mixed-DSML-dialect probe `51.b` appears under `Single Family Test: DeepSeek V4`; only that native adapter accepts both dialects in the same stream. Shared reasoning projection `51.a` remains generic.
 
+`TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence and historical tests; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 

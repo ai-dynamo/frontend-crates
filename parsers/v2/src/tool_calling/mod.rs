@@ -9,8 +9,10 @@ pub mod dsml;
 pub mod gemma4;
 pub mod glm47;
 pub mod harmony;
+pub(crate) mod json_prefix;
 pub mod kimi_k2;
 pub mod kimi_k3;
+pub(crate) mod kimi_progress;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod muse_glimmer;
@@ -25,7 +27,7 @@ mod registry;
 pub(crate) mod scan;
 pub mod traits;
 /// Vendored batch extraction copied from v1 so v2 is standalone (see module docs).
-mod v1core;
+pub(crate) mod v1core;
 
 // Vendored types that surface in the public streaming API.
 pub use v1core::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};

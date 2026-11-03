@@ -11,8 +11,6 @@ use openai_harmony::chat::{Content, Message, TextContent};
 use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, chat::Role, load_harmony_encoding};
 use regex::Regex;
 
-///// Static initialization of harmony encoder to not affect performance every time a parser is created
-/// This is because load_harmony_encoding downloads some tiktoken files into a directory and we don't want to do this every time we create a parser.
 use std::sync::OnceLock;
 
 static GLOBAL_HARMONY_GPTOSS_ENCODING: OnceLock<Result<HarmonyEncoding, anyhow::Error>> =

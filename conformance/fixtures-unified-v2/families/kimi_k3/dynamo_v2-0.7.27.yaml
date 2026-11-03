@@ -200,7 +200,6 @@ changes:
             complete: true
         - expected: []
   guided_json_quoted_bare_header_in_answer:
-    case_key: UNIFIED.35-guided_json_quoted_bare_header_in_answer
     observation:
       value:
         assembled:
@@ -268,7 +267,6 @@ changes:
             complete: true
         - expected: []
   guided_response_quoted_control_braces_named:
-    case_key: UNIFIED.35-guided_response_quoted_control_braces_named
     observation:
       value:
         assembled:
@@ -292,7 +290,6 @@ changes:
             arguments: '{"city": "Paris"}'
             complete: true
   guided_response_quoted_control_braces_required:
-    case_key: UNIFIED.35-guided_response_quoted_control_braces_required
     observation:
       value:
         assembled:
@@ -321,6 +318,69 @@ metadata_changes:
   guided_json_native_parameter_string_before_payload: {}
   guided_json_noncall_before_native_array_before_payload: {}
 document_overrides:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
   gpt_oss_quoted_message_header_literal:
     capture_provenance:
       captured_with:
@@ -340,6 +400,15 @@ document_overrides:
         source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
       inherited_from: null
   gpt_oss_tool_body_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+      inherited_from: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.27

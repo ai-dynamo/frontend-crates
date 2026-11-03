@@ -57,4 +57,13 @@ changes:
 metadata_changes:
   guided_response_native_wrapper_whitespace_before_prose: {}
   structured_response_after_reasoning: {}
-document_overrides: {}
+document_overrides:
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.28
+      capture_origin:
+        crate_version: 0.7.28
+        git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+        source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+      inherited_from: null

@@ -73,21 +73,39 @@ changes:
         - expected: []
 metadata_changes: {}
 document_overrides:
-  arg_array_quoted_parameter_close:
+  xml_custom_type_double_quoted_object:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.8.0
+        dynamo_v2: 0.7.33
       capture_origin:
-        crate_version: 0.8.0
-        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
-        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
       inherited_from: null
-  arg_object_quoted_parameter_close:
+  xml_custom_type_single_quoted_object:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.8.0
+        dynamo_v2: 0.7.33
       capture_origin:
-        crate_version: 0.8.0
-        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
-        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+      inherited_from: null
+  xml_string_type_double_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.33
+      capture_origin:
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+      inherited_from: null
+  xml_string_type_single_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.33
+      capture_origin:
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
       inherited_from: null

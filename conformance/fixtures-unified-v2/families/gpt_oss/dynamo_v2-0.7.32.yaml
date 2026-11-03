@@ -7,103 +7,6 @@ provenance:
 document:
   mode: unified
 changes:
-  arg_null_mixed_labels:
-    case_key: UNIFIED.7-arg_null_mixed_labels
-    stimulus:
-      ref: current
-      semantic_sha256: 7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: set_labels
-          arguments:
-            label: null
-            note: null
-            literal: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: set_labels
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: label
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '":'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: ' null'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: ','
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: ' "'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: note
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '":'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: ' null'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: ','
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: ' "'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: literal
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '":'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: ' "'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: 'null'
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '"}'
-            complete: false
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: ''
-            complete: true
-        - expected: []
   arg_numeric_14_const_decimal:
     case_key: UNIFIED.7-arg_numeric_14_const_decimal
     stimulus:
@@ -1400,6 +1303,15 @@ document_overrides:
         crate_version: 0.7.28
         source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
         git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        git_commit: bd3471b067fdb5af3959b58217fe2c1ab84f8109
+        source_sha256: 572686dfa7be98529a2fc07cb62fc66d557bfb81a2391fa0003e5172eb655ab7
       inherited_from: null
   arg_string_null:
     capture_provenance:

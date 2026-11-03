@@ -36,7 +36,7 @@ pub use async_openai::types::chat::{
     ChatCompletionRequestSystemMessageContentPart, ChatCompletionResponseMessageAudio, Choice,
     CompletionFinishReason, CompletionTokensDetails, CompletionUsage, ImageDetail, InputAudio,
     InputAudioFormat, Logprobs, PredictionContent, PredictionContentContent, Prompt,
-    PromptTokensDetails, ResponseFormat, ResponseFormatJsonSchema, Role, ServiceTier, TopLogprobs,
+    PromptTokensDetails, ResponseFormat, ResponseFormatJsonSchema, Role, ServiceTier,
     WebSearchContextSize, WebSearchLocation, WebSearchOptions, WebSearchUserLocation,
     WebSearchUserLocationType,
 };
@@ -344,6 +344,26 @@ pub struct ImageUrl {
     pub uuid: Option<Uuid>,
 }
 
+/// Experimental modality envelope. The fields object is plugin-owned JSON;
+/// consumers must explicitly document whether they pass the whole map or a payload.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::CustomModalityPart))]
+pub struct CustomModalityPart {
+    #[serde(deserialize_with = "deserialize_custom_kind")]
+    pub kind: String,
+    pub fields: serde_json::Map<String, serde_json::Value>,
+}
+
+fn deserialize_custom_kind<'de, D: serde::Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+    let kind = String::deserialize(d)?;
+    if kind.trim().is_empty() {
+        return Err(serde::de::Error::custom("custom kind must be non-empty"));
+    }
+    Ok(kind)
+}
+
 /// Tool message content part with media observation support.
 ///
 /// OpenAI's schema currently limits tool content parts to text, but
@@ -360,6 +380,8 @@ pub enum ChatCompletionRequestToolMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::CustomContentPart))]
+    Custom(CustomModalityPart),
 }
 
 /// Tool message content, extended to preserve media observations.
@@ -414,6 +436,22 @@ pub struct ChatChoiceLogprobs {
     pub refusal: Option<Vec<ChatCompletionTokenLogprob>>,
 }
 
+/// Top logprob candidate with an optional backend vocabulary ID.
+///
+/// Different vocabulary IDs may render to the same token string. Retain IDs
+/// supplied by the backend without adding them to ordinary OpenAI responses.
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::TopLogprobs))]
+pub struct TopLogprobs {
+    pub token: String,
+    pub logprob: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_id: Option<u32>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
+    pub bytes: Option<Vec<u8>>,
+}
+
 /// Token logprob entry with optional backend token ID.
 ///
 /// Some inference backends can report both the rendered token string and its
@@ -429,7 +467,6 @@ pub struct ChatCompletionTokenLogprob {
     pub token_id: Option<u32>,
     #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub bytes: Option<Vec<u8>>,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = Vec<crate::schema::TopLogprobs>))]
     pub top_logprobs: Vec<TopLogprobs>,
 }
 
@@ -895,6 +932,8 @@ pub enum ChatCompletionRequestUserMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::CustomContentPart))]
+    Custom(CustomModalityPart),
     #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestMessageContentPartAudio))]
     InputAudio(ChatCompletionRequestMessageContentPartAudio),
 }

@@ -61,7 +61,7 @@ family_registry! {
         Some(&crate::structural_tag::builders::MUSE_SPARK)
     ),
     "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
-    "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
+    "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, Some(&crate::structural_tag::builders::MINIMAX_M3)),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),
     "glm47"        => (
         Glm47ToolStreamParser::create,
@@ -151,9 +151,10 @@ mod tests {
         }];
 
         for (family, trigger) in [
-            ("qwen3", "<tool_call>\n<function="),
-            ("qwen3_coder", "<tool_call>\n<function="),
+            ("qwen3", "<tool_call>"),
+            ("qwen3_coder", "<tool_call>"),
             ("deepseek_v4", "<｜DSML｜tool_calls>"),
+            ("deepseek_v41", "<｜DSML｜ calls>"),
             ("glm47", "<tool_call>"),
         ] {
             let builder = structural_tag_builder_for_family(family)

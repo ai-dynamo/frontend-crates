@@ -412,8 +412,8 @@ pub struct InputReasoningItem {
     /// Optional on input — upstream requires it; clients drop it on echo.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    /// Defaults to empty when absent — upstream requires a present array.
-    #[serde(default)]
+    /// Defaults to empty when absent or null — upstream requires a present array.
+    #[serde(default, deserialize_with = "deserialize_null_as_empty_vec")]
     pub summary: Vec<SummaryPart>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content: Option<Vec<ReasoningTextContent>>,
@@ -1188,6 +1188,60 @@ mod tests {
             InputItem::Item(Item::Reasoning(r)) => assert_eq!(r.id.as_deref(), Some("rs_1")),
             other => panic!("expected Item::Reasoning, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn reasoning_input_summary_normalizes_empty_values_and_preserves_fields() {
+        let populated = serde_json::json!([{"type": "summary_text", "text": "summary"}]);
+        for (summary, expected_summary) in [
+            (serde_json::Value::Null, serde_json::json!([])),
+            (serde_json::json!([]), serde_json::json!([])),
+            (populated.clone(), populated),
+        ] {
+            let mut input = serde_json::json!({
+                "type": "reasoning",
+                "id": "rs_1",
+                "summary": summary,
+                "content": [{"text": "reasoning content"}],
+                "encrypted_content": "AB==",
+                "status": "completed",
+            });
+            let request: CreateResponse = serde_json::from_value(serde_json::json!({
+                "model": "example-model", "input": [input.clone()]
+            }))
+            .expect("reasoning summary should deserialize");
+            input["summary"] = expected_summary;
+            let serialized = serde_json::to_value(request).unwrap();
+            assert_eq!(serialized["input"][0], input);
+        }
+    }
+
+    #[test]
+    fn reasoning_input_summary_rejects_invalid_values() {
+        for summary in [
+            serde_json::json!(false),
+            serde_json::json!([null]),
+            serde_json::json!([{"type": "summary_text"}]),
+            serde_json::json!([{"type": "output_text", "text": "summary"}]),
+        ] {
+            assert!(
+                serde_json::from_value::<InputItem>(serde_json::json!({
+                    "type": "reasoning", "summary": summary
+                }))
+                .is_err(),
+                "invalid summary must be rejected: {summary}"
+            );
+        }
+    }
+
+    #[test]
+    fn reasoning_output_summary_null_remains_invalid() {
+        let mut output = serde_json::json!({
+            "type": "reasoning", "id": "rs_1", "summary": null
+        });
+        assert!(serde_json::from_value::<OutputItem>(output.clone()).is_err());
+        output["summary"] = serde_json::json!([]);
+        assert!(serde_json::from_value::<OutputItem>(output).is_ok());
     }
 
     #[test]

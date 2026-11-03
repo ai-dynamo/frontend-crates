@@ -28,6 +28,11 @@ changes:
             complete: true
         - expected: []
         - expected: []
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.10 source could not be recovered with its recorded identity 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_marker_in_string:
     observation:
       value:
@@ -71,6 +76,11 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.10 source could not be recovered with its recorded identity 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null_const:
     observation:
       value:
@@ -302,8 +312,33 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  dotted_name_minimal:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_mixed_punctuation:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_multiple_segments:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_shared_prefix:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
   empty_args:
     case_key: UNIFIED.6.a
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.10 source could not be recovered with its recorded identity 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_after_reasoning:
     case_key: UNIFIED.30.f
   guided_json_array_argument:
@@ -495,35 +530,18 @@ changes:
     case_key: UNIFIED.2.b
   two_reason_spans:
     case_key: UNIFIED.10.c
-  dotted_name_minimal:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_mixed_punctuation:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_multiple_segments:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_shared_prefix:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
 metadata_changes:
-  guided_json_native_parameter_string_before_payload: {}
-  guided_json_noncall_before_native_array_before_payload: {}
-  guided_response_native_wrapper_whitespace_before_prose: {}
-  structured_response_after_reasoning: {}
+  arg_json_null_ref: {}
+  arg_null_mixed_labels: {}
   dotted_name_minimal: {}
   dotted_name_mixed_punctuation: {}
   dotted_name_multiple_segments: {}
   dotted_name_shared_prefix: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
+  guided_json_native_parameter_string_before_payload: {}
+  guided_json_noncall_before_native_array_before_payload: {}
+  guided_response_native_wrapper_whitespace_before_prose: {}
+  structured_response_after_reasoning: {}
 document_overrides:
   adjacent_calls_partial_header:
     capture_provenance:
@@ -533,6 +551,48 @@ document_overrides:
         crate_version: 0.7.10
         git_commit: 1a8eea8f79929cd508088df0c505b1d6bf01c391
         source_sha256: 1e0ec261e03e33995a1f284e24f78080baa207bf59c895683b41bf4e3ff358d8
+      inherited_from: null
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
       inherited_from: null
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
@@ -566,28 +626,4 @@ document_overrides:
         crate_version: 0.7.10
         git_commit: 1a8eea8f79929cd508088df0c505b1d6bf01c391
         source_sha256: 1e0ec261e03e33995a1f284e24f78080baa207bf59c895683b41bf4e3ff358d8
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.10
-      capture_origin: null
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.10
-      capture_origin: null
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.10
-      capture_origin: null
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.10
-      capture_origin: null
       inherited_from: null

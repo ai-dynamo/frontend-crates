@@ -8,10 +8,8 @@ re-declaring parallel tables that drift — the vLLM Rust stream parser vs a
 (nonexistent) vLLM Rust batch parser, `vllm` vs `vllm_python`, missing-parser-option
 class of bug.
 
-Consumers (`generate_conformance_table.py`, `build_stream_fixtures.py`,
-`validate.py`, `tests/test_stream_on_batch.py`) all `import impls`. The generator
-runs from the staged `tests/parity/` layout, so `_common.sh build_stage_conformance`
-copies this file next to it; the other tools run from `conformance/utils/` directly.
+Capture, validation, metadata indexing, and implementation-identity tests all
+import this module directly.
 """
 from __future__ import annotations
 
@@ -103,7 +101,7 @@ FIXTURE_IMPL_ALIASES: dict[str, str] = {
 PARSER_NOT_CAPTURED = "parser not captured"
 
 
-# Batch histories must not inherit streaming observations at the same version.
+# Adapter-backed batch rows require final fields; preserved legacy rows retain their recorded contract.
 _BATCH_POLICY = _REGISTRY["unified_batch"]
 UNIFIED_PEER_SOURCES = _REGISTRY["unified_peer_sources"]
 UNIFIED_BATCH_IMPLS = tuple(_BATCH_POLICY)
@@ -146,3 +144,4 @@ def batch_capture_label(implementation: str, version: str) -> str:
     label = (f"{source.display} {version} ({mode})" if source.engine == "dynamo"
              else f"{source.display} {version} · {mode}")
     return label + (" (source unavailable)" if (implementation, version) in BATCH_SOURCE_BLOCKERS else "")
+VLLM_RUST_UNAVAILABLE = "vLLM Rust source not available; set VLLM_RUST_SOURCE and run the Rust capture probe."

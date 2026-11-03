@@ -8,7 +8,6 @@ document:
   mode: unified
 changes:
   arg_json_null_anyof:
-    case_key: UNIFIED.7-arg_json_null_anyof
     observation:
       value:
         assembled:
@@ -30,7 +29,6 @@ changes:
         - expected: []
         - expected: []
   arg_json_null_const:
-    case_key: UNIFIED.7-arg_json_null_const
     observation:
       value:
         assembled:
@@ -52,7 +50,6 @@ changes:
         - expected: []
         - expected: []
   arg_json_null_nullable:
-    case_key: UNIFIED.7-arg_json_null_nullable
     observation:
       value:
         assembled:
@@ -74,7 +71,6 @@ changes:
         - expected: []
         - expected: []
   arg_json_null_oneof:
-    case_key: UNIFIED.7-arg_json_null_oneof
     observation:
       value:
         assembled:
@@ -96,7 +92,6 @@ changes:
         - expected: []
         - expected: []
   arg_marker_in_string:
-    case_key: UNIFIED.7-arg_marker_in_string
     observation:
       value:
         assembled:
@@ -504,7 +499,6 @@ changes:
         - expected: []
         - expected: []
   arg_string_null:
-    case_key: UNIFIED.7-arg_string_null
     observation:
       value:
         assembled:
@@ -526,7 +520,6 @@ changes:
         - expected: []
         - expected: []
   arg_string_null_const:
-    case_key: UNIFIED.7-arg_string_null_const
     observation:
       value:
         assembled:
@@ -548,7 +541,6 @@ changes:
         - expected: []
         - expected: []
   arg_string_null_enum:
-    case_key: UNIFIED.7-arg_string_null_enum
     observation:
       value:
         assembled:
@@ -570,7 +562,6 @@ changes:
         - expected: []
         - expected: []
   arg_string_null_sibling_anyof:
-    case_key: UNIFIED.7-arg_string_null_sibling_anyof
     observation:
       value:
         assembled:
@@ -592,7 +583,6 @@ changes:
         - expected: []
         - expected: []
   arg_string_null_sibling_oneof:
-    case_key: UNIFIED.7-arg_string_null_sibling_oneof
     observation:
       value:
         assembled:
@@ -614,7 +604,6 @@ changes:
         - expected: []
         - expected: []
   arg_string_null_union:
-    case_key: UNIFIED.7-arg_string_null_union
     observation:
       value:
         assembled:
@@ -636,7 +625,6 @@ changes:
         - expected: []
         - expected: []
   arg_string_null_untyped_branch:
-    case_key: UNIFIED.7-arg_string_null_untyped_branch
     observation:
       value:
         assembled:
@@ -658,7 +646,6 @@ changes:
         - expected: []
         - expected: []
   arg_unicode:
-    case_key: UNIFIED.7-arg_unicode
     observation:
       value:
         assembled:
@@ -680,7 +667,6 @@ changes:
         - expected: []
         - expected: []
   content_then_reason_then_tool:
-    case_key: UNIFIED.11-content_then_reason_then_tool
     observation:
       value:
         assembled:
@@ -714,7 +700,6 @@ changes:
         - expected: []
         - expected: []
   deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-deepseek_v41_mixed_control_text_in_string
     observation:
       value:
         assembled:
@@ -746,7 +731,6 @@ changes:
         - expected: []
         - expected: []
   glm_ref_encoded_targets:
-    case_key: UNIFIED.7-glm_ref_encoded_targets
     observation:
       value:
         assembled:
@@ -770,7 +754,6 @@ changes:
         - expected: []
         - expected: []
   glm_ref_json_looking_strings:
-    case_key: UNIFIED.7-glm_ref_json_looking_strings
     observation:
       value:
         assembled:
@@ -795,7 +778,6 @@ changes:
         - expected: []
         - expected: []
   glm_ref_object:
-    case_key: UNIFIED.7-glm_ref_object
     observation:
       value:
         assembled:
@@ -818,7 +800,6 @@ changes:
         - expected: []
         - expected: []
   glm_ref_scalar_types:
-    case_key: UNIFIED.7-glm_ref_scalar_types
     observation:
       value:
         assembled:
@@ -864,7 +845,6 @@ changes:
         - expected: []
         - expected: []
   interstitial_text:
-    case_key: UNIFIED.11-interstitial_text
     observation:
       value:
         assembled:
@@ -898,7 +878,6 @@ changes:
         - expected: []
         - expected: []
   local_schema_id_preserves_type:
-    case_key: UNIFIED.7-local_schema_id_preserves_type
     observation:
       value:
         assembled:
@@ -920,7 +899,6 @@ changes:
         - expected: []
         - expected: []
   malformed_json_then_two_valid_calls:
-    case_key: UNIFIED.5-malformed_json_then_two_valid_calls
     observation:
       value:
         assembled:
@@ -951,7 +929,6 @@ changes:
             complete: true
         - expected: []
   narrated_calls:
-    case_key: UNIFIED.8-narrated_calls
     observation:
       value:
         assembled:
@@ -1013,7 +990,6 @@ changes:
         - expected: []
         - expected: []
   native_quoted_control_then_call:
-    case_key: UNIFIED.8-native_quoted_control_then_call
     observation:
       value:
         assembled:
@@ -1044,7 +1020,6 @@ changes:
         - expected: []
         - expected: []
   native_unmatched_quote_then_call:
-    case_key: UNIFIED.8-native_unmatched_quote_then_call
     observation:
       value:
         assembled:
@@ -1071,7 +1046,6 @@ changes:
             arguments: '{"city": "Paris"}'
             complete: true
   nullable_reference_alias_literals:
-    case_key: UNIFIED.7-nullable_reference_alias_literals
     observation:
       value:
         assembled:
@@ -1094,7 +1068,6 @@ changes:
         - expected: []
         - expected: []
   prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41-prefilled_reasoning_redundant_opener
     observation:
       value:
         assembled:
@@ -1123,7 +1096,6 @@ changes:
         - expected: []
         - expected: []
   prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40-prefilled_reasoning_then_text_then_tool
     observation:
       value:
         assembled:
@@ -1156,7 +1128,6 @@ changes:
         - expected: []
         - expected: []
   prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40-prefilled_reasoning_with_tool
     observation:
       value:
         assembled:
@@ -1184,7 +1155,6 @@ changes:
         - expected: []
         - expected: []
   prefilled_response_reasoning_markers_literal:
-    case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
     observation:
       value:
         assembled:
@@ -1220,7 +1190,6 @@ changes:
         - expected: []
         - expected: []
   qwen_string_null:
-    case_key: UNIFIED.7-arg_json_null
     observation:
       value:
         assembled:
@@ -1242,7 +1211,6 @@ changes:
         - expected: []
         - expected: []
   reason_after_tool:
-    case_key: UNIFIED.11-reason_after_tool
     observation:
       value:
         assembled:
@@ -1283,7 +1251,6 @@ changes:
             text: It's 18C.
         - expected: []
   reason_between_calls:
-    case_key: UNIFIED.11-reason_between_calls
     observation:
       value:
         assembled:
@@ -1327,7 +1294,6 @@ changes:
         - expected: []
         - expected: []
   reason_interleaved:
-    case_key: UNIFIED.11-reason_interleaved
     observation:
       value:
         assembled:
@@ -1378,7 +1344,6 @@ changes:
         - expected: []
         - expected: []
   reason_markup_in_arg:
-    case_key: UNIFIED.12-reason_markup_in_arg
     observation:
       value:
         assembled:
@@ -1404,7 +1369,6 @@ changes:
         - expected: []
         - expected: []
   reason_markup_in_arg_with_text:
-    case_key: UNIFIED.12-reason_markup_in_arg_with_text
     observation:
       value:
         assembled:
@@ -1440,7 +1404,6 @@ changes:
             text: ' done.'
         - expected: []
   reason_then_tool:
-    case_key: UNIFIED.11-reason_then_tool
     observation:
       value:
         assembled:
@@ -1469,7 +1432,6 @@ changes:
         - expected: []
         - expected: []
   reason_tool_reason_tool_reason:
-    case_key: UNIFIED.11-reason_tool_reason_tool_reason
     observation:
       value:
         assembled:
@@ -1527,7 +1489,6 @@ changes:
         - expected: []
         - expected: []
   reason_tool_text_reason_tool:
-    case_key: UNIFIED.11-reason_tool_text_reason_tool
     observation:
       value:
         assembled:
@@ -1583,7 +1544,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_array_allof:
-    case_key: UNIFIED.7-const_array_allof
     observation:
       value:
         assembled:
@@ -1605,7 +1565,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_array_bare:
-    case_key: UNIFIED.7-const_array_bare
     observation:
       value:
         assembled:
@@ -1627,7 +1586,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_array_ref:
-    case_key: UNIFIED.7-const_array_ref
     observation:
       value:
         assembled:
@@ -1649,7 +1607,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_array_typed:
-    case_key: UNIFIED.7-const_array_typed
     observation:
       value:
         assembled:
@@ -1671,7 +1628,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_boolean_allof:
-    case_key: UNIFIED.7-const_boolean_allof
     observation:
       value:
         assembled:
@@ -1693,7 +1649,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_boolean_bare:
-    case_key: UNIFIED.7-const_boolean_bare
     observation:
       value:
         assembled:
@@ -1715,7 +1670,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_boolean_ref:
-    case_key: UNIFIED.7-const_boolean_ref
     observation:
       value:
         assembled:
@@ -1737,7 +1691,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_boolean_typed:
-    case_key: UNIFIED.7-const_boolean_typed
     observation:
       value:
         assembled:
@@ -1759,7 +1712,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_entity_allof:
-    case_key: UNIFIED.7-const_entity_allof
     observation:
       value:
         assembled:
@@ -1781,7 +1733,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_entity_bare:
-    case_key: UNIFIED.7-const_entity_bare
     observation:
       value:
         assembled:
@@ -1803,7 +1754,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_entity_ref:
-    case_key: UNIFIED.7-const_entity_ref
     observation:
       value:
         assembled:
@@ -1825,7 +1775,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_entity_typed:
-    case_key: UNIFIED.7-const_entity_typed
     observation:
       value:
         assembled:
@@ -1847,7 +1796,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_null_allof:
-    case_key: UNIFIED.7-const_null_allof
     observation:
       value:
         assembled:
@@ -1869,7 +1817,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_null_bare:
-    case_key: UNIFIED.7-const_null_bare
     observation:
       value:
         assembled:
@@ -1891,7 +1838,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_null_ref:
-    case_key: UNIFIED.7-const_null_ref
     observation:
       value:
         assembled:
@@ -1913,7 +1859,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_null_typed:
-    case_key: UNIFIED.7-const_null_typed
     observation:
       value:
         assembled:
@@ -1935,7 +1880,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_number_allof:
-    case_key: UNIFIED.7-const_number_allof
     observation:
       value:
         assembled:
@@ -1957,7 +1901,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_number_bare:
-    case_key: UNIFIED.7-const_number_bare
     observation:
       value:
         assembled:
@@ -1979,7 +1922,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_number_ref:
-    case_key: UNIFIED.7-const_number_ref
     observation:
       value:
         assembled:
@@ -2001,7 +1943,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_number_typed:
-    case_key: UNIFIED.7-const_number_typed
     observation:
       value:
         assembled:
@@ -2023,7 +1964,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_object_allof:
-    case_key: UNIFIED.7-const_object_allof
     observation:
       value:
         assembled:
@@ -2045,7 +1985,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_object_bare:
-    case_key: UNIFIED.7-const_object_bare
     observation:
       value:
         assembled:
@@ -2067,7 +2006,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_object_ref:
-    case_key: UNIFIED.7-const_object_ref
     observation:
       value:
         assembled:
@@ -2089,7 +2027,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_object_typed:
-    case_key: UNIFIED.7-const_object_typed
     observation:
       value:
         assembled:
@@ -2111,7 +2048,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_plain_allof:
-    case_key: UNIFIED.7-const_plain_allof
     observation:
       value:
         assembled:
@@ -2133,7 +2069,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_plain_bare:
-    case_key: UNIFIED.7-const_plain_bare
     observation:
       value:
         assembled:
@@ -2155,7 +2090,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_plain_ref:
-    case_key: UNIFIED.7-const_plain_ref
     observation:
       value:
         assembled:
@@ -2177,7 +2111,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_plain_typed:
-    case_key: UNIFIED.7-const_plain_typed
     observation:
       value:
         assembled:
@@ -2199,7 +2132,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_quoted_allof:
-    case_key: UNIFIED.7-const_quoted_allof
     observation:
       value:
         assembled:
@@ -2221,7 +2153,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_quoted_bare:
-    case_key: UNIFIED.7-const_quoted_bare
     observation:
       value:
         assembled:
@@ -2243,7 +2174,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_quoted_ref:
-    case_key: UNIFIED.7-const_quoted_ref
     observation:
       value:
         assembled:
@@ -2265,7 +2195,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_quoted_typed:
-    case_key: UNIFIED.7-const_quoted_typed
     observation:
       value:
         assembled:
@@ -2287,7 +2216,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_space_allof:
-    case_key: UNIFIED.7-const_space_allof
     observation:
       value:
         assembled:
@@ -2309,7 +2237,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_space_bare:
-    case_key: UNIFIED.7-const_space_bare
     observation:
       value:
         assembled:
@@ -2331,7 +2258,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_space_ref:
-    case_key: UNIFIED.7-const_space_ref
     observation:
       value:
         assembled:
@@ -2353,7 +2279,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_space_typed:
-    case_key: UNIFIED.7-const_space_typed
     observation:
       value:
         assembled:
@@ -2375,7 +2300,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_unicode_allof:
-    case_key: UNIFIED.7-const_unicode_allof
     observation:
       value:
         assembled:
@@ -2397,7 +2321,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_unicode_bare:
-    case_key: UNIFIED.7-const_unicode_bare
     observation:
       value:
         assembled:
@@ -2419,7 +2342,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_unicode_ref:
-    case_key: UNIFIED.7-const_unicode_ref
     observation:
       value:
         assembled:
@@ -2441,7 +2363,6 @@ changes:
         - expected: []
         - expected: []
   schema_const_unicode_typed:
-    case_key: UNIFIED.7-const_unicode_typed
     observation:
       value:
         assembled:
@@ -2463,7 +2384,6 @@ changes:
         - expected: []
         - expected: []
   schema_declared_array:
-    case_key: UNIFIED.7-declared_array
     observation:
       value:
         assembled:
@@ -2487,7 +2407,6 @@ changes:
         - expected: []
         - expected: []
   schema_declared_boolean:
-    case_key: UNIFIED.7-declared_boolean
     observation:
       value:
         assembled:
@@ -2509,7 +2428,6 @@ changes:
         - expected: []
         - expected: []
   schema_declared_integer:
-    case_key: UNIFIED.7-declared_integer
     observation:
       value:
         assembled:
@@ -2531,7 +2449,6 @@ changes:
         - expected: []
         - expected: []
   schema_declared_null:
-    case_key: UNIFIED.7-declared_null
     observation:
       value:
         assembled:
@@ -2553,7 +2470,6 @@ changes:
         - expected: []
         - expected: []
   schema_declared_number:
-    case_key: UNIFIED.7-declared_number
     observation:
       value:
         assembled:
@@ -2575,7 +2491,6 @@ changes:
         - expected: []
         - expected: []
   schema_declared_object:
-    case_key: UNIFIED.7-declared_object
     observation:
       value:
         assembled:
@@ -2598,7 +2513,6 @@ changes:
         - expected: []
         - expected: []
   schema_declared_string:
-    case_key: UNIFIED.7-declared_string
     observation:
       value:
         assembled:
@@ -2620,7 +2534,6 @@ changes:
         - expected: []
         - expected: []
   schema_enum_integer:
-    case_key: UNIFIED.7-enum_integer
     observation:
       value:
         assembled:
@@ -2642,7 +2555,6 @@ changes:
         - expected: []
         - expected: []
   schema_enum_string:
-    case_key: UNIFIED.7-enum_string
     observation:
       value:
         assembled:
@@ -2664,7 +2576,6 @@ changes:
         - expected: []
         - expected: []
   schema_escaped_ref_const:
-    case_key: UNIFIED.7-escaped_ref_const
     observation:
       value:
         assembled:
@@ -2686,7 +2597,6 @@ changes:
         - expected: []
         - expected: []
   schema_id_direct_integer:
-    case_key: UNIFIED.7-id_direct_integer
     observation:
       value:
         assembled:
@@ -2708,7 +2618,6 @@ changes:
         - expected: []
         - expected: []
   schema_integer_const_ambiguous:
-    case_key: UNIFIED.7-integer_const_ambiguous
     observation:
       value:
         assembled:
@@ -2730,7 +2639,6 @@ changes:
         - expected: []
         - expected: []
   schema_intersection_anyof:
-    case_key: UNIFIED.7-intersection_anyOf
     observation:
       value:
         assembled:
@@ -2752,7 +2660,6 @@ changes:
         - expected: []
         - expected: []
   schema_intersection_oneof:
-    case_key: UNIFIED.7-intersection_oneOf
     observation:
       value:
         assembled:
@@ -2774,7 +2681,6 @@ changes:
         - expected: []
         - expected: []
   schema_null_union_ambiguous:
-    case_key: UNIFIED.7-null_union_ambiguous
     observation:
       value:
         assembled:
@@ -2796,7 +2702,6 @@ changes:
         - expected: []
         - expected: []
   schema_nullable_string:
-    case_key: UNIFIED.7-nullable_string
     observation:
       value:
         assembled:
@@ -2818,7 +2723,6 @@ changes:
         - expected: []
         - expected: []
   schema_object_const_union:
-    case_key: UNIFIED.7-object_const_union
     observation:
       value:
         assembled:
@@ -2840,7 +2744,6 @@ changes:
         - expected: []
         - expected: []
   schema_percent_ref_const:
-    case_key: UNIFIED.7-percent_ref_const
     observation:
       value:
         assembled:
@@ -2862,7 +2765,6 @@ changes:
         - expected: []
         - expected: []
   schema_ref_sibling_integer:
-    case_key: UNIFIED.7-ref_sibling_integer
     observation:
       value:
         assembled:
@@ -2884,7 +2786,6 @@ changes:
         - expected: []
         - expected: []
   schema_ref_union_anyof_integer:
-    case_key: UNIFIED.7-ref_union_anyOf_integer
     observation:
       value:
         assembled:
@@ -2906,7 +2807,6 @@ changes:
         - expected: []
         - expected: []
   schema_ref_union_anyof_string:
-    case_key: UNIFIED.7-ref_union_anyOf_string
     observation:
       value:
         assembled:
@@ -2928,7 +2828,6 @@ changes:
         - expected: []
         - expected: []
   schema_ref_union_oneof_integer:
-    case_key: UNIFIED.7-ref_union_oneOf_integer
     observation:
       value:
         assembled:
@@ -2950,7 +2849,6 @@ changes:
         - expected: []
         - expected: []
   schema_ref_union_oneof_string:
-    case_key: UNIFIED.7-ref_union_oneOf_string
     observation:
       value:
         assembled:
@@ -2972,7 +2870,6 @@ changes:
         - expected: []
         - expected: []
   schema_type_array_integer_null:
-    case_key: UNIFIED.7-type_array_integer_null
     observation:
       value:
         assembled:
@@ -2994,7 +2891,6 @@ changes:
         - expected: []
         - expected: []
   schema_type_array_integer_null_null:
-    case_key: UNIFIED.7-type_array_integer_null_null
     observation:
       value:
         assembled:
@@ -3016,7 +2912,6 @@ changes:
         - expected: []
         - expected: []
   schema_type_array_string_integer:
-    case_key: UNIFIED.7-type_array_string_integer
     observation:
       value:
         assembled:
@@ -3038,7 +2933,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_array_reverse_string:
-    case_key: UNIFIED.7-union_anyOf_array_reverse_string
     observation:
       value:
         assembled:
@@ -3060,7 +2954,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_array_reverse_typed:
-    case_key: UNIFIED.7-union_anyOf_array_reverse_typed
     observation:
       value:
         assembled:
@@ -3084,7 +2977,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_array_string:
-    case_key: UNIFIED.7-union_anyOf_array_string
     observation:
       value:
         assembled:
@@ -3106,7 +2998,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_array_typed:
-    case_key: UNIFIED.7-union_anyOf_array_typed
     observation:
       value:
         assembled:
@@ -3130,7 +3021,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_reverse_string:
-    case_key: UNIFIED.7-union_anyOf_boolean_reverse_string
     observation:
       value:
         assembled:
@@ -3152,7 +3042,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_reverse_typed:
-    case_key: UNIFIED.7-union_anyOf_boolean_reverse_typed
     observation:
       value:
         assembled:
@@ -3174,7 +3063,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_string:
-    case_key: UNIFIED.7-union_anyOf_boolean_string
     observation:
       value:
         assembled:
@@ -3196,7 +3084,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_typed:
-    case_key: UNIFIED.7-union_anyOf_boolean_typed
     observation:
       value:
         assembled:
@@ -3218,7 +3105,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_integer_reverse_string:
-    case_key: UNIFIED.7-union_anyOf_integer_reverse_string
     observation:
       value:
         assembled:
@@ -3240,7 +3126,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_integer_reverse_typed:
-    case_key: UNIFIED.7-union_anyOf_integer_reverse_typed
     observation:
       value:
         assembled:
@@ -3262,7 +3147,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_integer_string:
-    case_key: UNIFIED.7-union_anyOf_integer_string
     observation:
       value:
         assembled:
@@ -3284,7 +3168,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_integer_typed:
-    case_key: UNIFIED.7-union_anyOf_integer_typed
     observation:
       value:
         assembled:
@@ -3306,7 +3189,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_null_reverse_string:
-    case_key: UNIFIED.7-union_anyOf_null_reverse_string
     observation:
       value:
         assembled:
@@ -3328,7 +3210,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_null_reverse_typed:
-    case_key: UNIFIED.7-union_anyOf_null_reverse_typed
     observation:
       value:
         assembled:
@@ -3350,7 +3231,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_null_string:
-    case_key: UNIFIED.7-union_anyOf_null_string
     observation:
       value:
         assembled:
@@ -3372,7 +3252,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_null_typed:
-    case_key: UNIFIED.7-union_anyOf_null_typed
     observation:
       value:
         assembled:
@@ -3394,7 +3273,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_number_reverse_string:
-    case_key: UNIFIED.7-union_anyOf_number_reverse_string
     observation:
       value:
         assembled:
@@ -3416,7 +3294,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_number_reverse_typed:
-    case_key: UNIFIED.7-union_anyOf_number_reverse_typed
     observation:
       value:
         assembled:
@@ -3438,7 +3315,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_number_string:
-    case_key: UNIFIED.7-union_anyOf_number_string
     observation:
       value:
         assembled:
@@ -3460,7 +3336,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_number_typed:
-    case_key: UNIFIED.7-union_anyOf_number_typed
     observation:
       value:
         assembled:
@@ -3482,7 +3357,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_object_reverse_string:
-    case_key: UNIFIED.7-union_anyOf_object_reverse_string
     observation:
       value:
         assembled:
@@ -3504,7 +3378,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_object_reverse_typed:
-    case_key: UNIFIED.7-union_anyOf_object_reverse_typed
     observation:
       value:
         assembled:
@@ -3527,7 +3400,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_object_string:
-    case_key: UNIFIED.7-union_anyOf_object_string
     observation:
       value:
         assembled:
@@ -3549,7 +3421,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_object_typed:
-    case_key: UNIFIED.7-union_anyOf_object_typed
     observation:
       value:
         assembled:
@@ -3572,7 +3443,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_array_reverse_string:
-    case_key: UNIFIED.7-union_oneOf_array_reverse_string
     observation:
       value:
         assembled:
@@ -3594,7 +3464,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_array_reverse_typed:
-    case_key: UNIFIED.7-union_oneOf_array_reverse_typed
     observation:
       value:
         assembled:
@@ -3618,7 +3487,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_array_string:
-    case_key: UNIFIED.7-union_oneOf_array_string
     observation:
       value:
         assembled:
@@ -3640,7 +3508,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_array_typed:
-    case_key: UNIFIED.7-union_oneOf_array_typed
     observation:
       value:
         assembled:
@@ -3664,7 +3531,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_reverse_string:
-    case_key: UNIFIED.7-union_oneOf_boolean_reverse_string
     observation:
       value:
         assembled:
@@ -3686,7 +3552,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_reverse_typed:
-    case_key: UNIFIED.7-union_oneOf_boolean_reverse_typed
     observation:
       value:
         assembled:
@@ -3708,7 +3573,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_string:
-    case_key: UNIFIED.7-union_oneOf_boolean_string
     observation:
       value:
         assembled:
@@ -3730,7 +3594,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_typed:
-    case_key: UNIFIED.7-union_oneOf_boolean_typed
     observation:
       value:
         assembled:
@@ -3752,7 +3615,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_integer_reverse_string:
-    case_key: UNIFIED.7-union_oneOf_integer_reverse_string
     observation:
       value:
         assembled:
@@ -3774,7 +3636,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_integer_reverse_typed:
-    case_key: UNIFIED.7-union_oneOf_integer_reverse_typed
     observation:
       value:
         assembled:
@@ -3796,7 +3657,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_integer_string:
-    case_key: UNIFIED.7-union_oneOf_integer_string
     observation:
       value:
         assembled:
@@ -3818,7 +3678,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_integer_typed:
-    case_key: UNIFIED.7-union_oneOf_integer_typed
     observation:
       value:
         assembled:
@@ -3840,7 +3699,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_null_reverse_string:
-    case_key: UNIFIED.7-union_oneOf_null_reverse_string
     observation:
       value:
         assembled:
@@ -3862,7 +3720,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_null_reverse_typed:
-    case_key: UNIFIED.7-union_oneOf_null_reverse_typed
     observation:
       value:
         assembled:
@@ -3884,7 +3741,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_null_string:
-    case_key: UNIFIED.7-union_oneOf_null_string
     observation:
       value:
         assembled:
@@ -3906,7 +3762,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_null_typed:
-    case_key: UNIFIED.7-union_oneOf_null_typed
     observation:
       value:
         assembled:
@@ -3928,7 +3783,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_number_reverse_string:
-    case_key: UNIFIED.7-union_oneOf_number_reverse_string
     observation:
       value:
         assembled:
@@ -3950,7 +3804,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_number_reverse_typed:
-    case_key: UNIFIED.7-union_oneOf_number_reverse_typed
     observation:
       value:
         assembled:
@@ -3972,7 +3825,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_number_string:
-    case_key: UNIFIED.7-union_oneOf_number_string
     observation:
       value:
         assembled:
@@ -3994,7 +3846,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_number_typed:
-    case_key: UNIFIED.7-union_oneOf_number_typed
     observation:
       value:
         assembled:
@@ -4016,7 +3867,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_object_reverse_string:
-    case_key: UNIFIED.7-union_oneOf_object_reverse_string
     observation:
       value:
         assembled:
@@ -4038,7 +3888,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_object_reverse_typed:
-    case_key: UNIFIED.7-union_oneOf_object_reverse_typed
     observation:
       value:
         assembled:
@@ -4061,7 +3910,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_object_string:
-    case_key: UNIFIED.7-union_oneOf_object_string
     observation:
       value:
         assembled:
@@ -4083,7 +3931,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_object_typed:
-    case_key: UNIFIED.7-union_oneOf_object_typed
     observation:
       value:
         assembled:
@@ -4106,7 +3953,6 @@ changes:
         - expected: []
         - expected: []
   text_before_tool:
-    case_key: UNIFIED.8-text_before_tool
     observation:
       value:
         assembled:
@@ -4133,7 +3979,6 @@ changes:
         - expected: []
         - expected: []
   text_between_calls:
-    case_key: UNIFIED.8-text_between_calls
     observation:
       value:
         assembled:
@@ -4175,7 +4020,6 @@ changes:
         - expected: []
         - expected: []
   text_reason_tool_text_reason_tool:
-    case_key: UNIFIED.11-text_reason_tool_text_reason_tool
     observation:
       value:
         assembled:
@@ -4236,7 +4080,6 @@ changes:
         - expected: []
         - expected: []
   text_sandwich:
-    case_key: UNIFIED.8-text_sandwich
     observation:
       value:
         assembled:
@@ -4268,7 +4111,6 @@ changes:
             text: ' After.'
         - expected: []
   tool_in_reason:
-    case_key: UNIFIED.12-tool_in_reason
     observation:
       value:
         assembled:
@@ -4302,7 +4144,6 @@ changes:
         - expected: []
         - expected: []
   tool_in_reason_with_text:
-    case_key: UNIFIED.12-tool_in_reason_with_text
     observation:
       value:
         assembled:
@@ -4346,7 +4187,6 @@ changes:
             text: ' Here you go.'
         - expected: []
   tool_no_close:
-    case_key: UNIFIED.5-tool_no_close
     observation:
       value:
         assembled:
@@ -4366,7 +4206,6 @@ changes:
             arguments: '{"city": "Paris"}'
             complete: true
   tool_only:
-    case_key: UNIFIED.1-tool_only
     observation:
       value:
         assembled:
@@ -4388,7 +4227,6 @@ changes:
         - expected: []
         - expected: []
   trailing_text_after_tool:
-    case_key: UNIFIED.8-trailing_text_after_tool
     observation:
       value:
         assembled:
@@ -4415,7 +4253,6 @@ changes:
             text: The forecast shows clear skies for the rest of the week.
         - expected: []
   two_calls:
-    case_key: UNIFIED.2-two_calls
     observation:
       value:
         assembled:
@@ -4452,7 +4289,6 @@ changes:
         - expected: []
         - expected: []
   two_calls_same_name:
-    case_key: UNIFIED.2-two_calls_same_name
     observation:
       value:
         assembled:
@@ -4489,7 +4325,6 @@ changes:
         - expected: []
         - expected: []
   unused_reference_graph_parameter_types:
-    case_key: UNIFIED.7-unused_reference_graph_parameter_types
     observation:
       value:
         assembled:

@@ -7,6 +7,65 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-arg_json_null_anyof
+  arg_json_null_const:
+    case_key: UNIFIED.7-arg_json_null_const
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-arg_json_null_nullable
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-arg_json_null_oneof
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_marker_in_string:
+    case_key: UNIFIED.7-arg_marker_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: 51ce3bd9a1f9ba25a082a2f0b4638aa3087d9df3b1af5c23b8bbfe10518c71a4
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_string_null:
+    case_key: UNIFIED.7-arg_string_null
+  arg_string_null_const:
+    case_key: UNIFIED.7-arg_string_null_const
+  arg_string_null_enum:
+    case_key: UNIFIED.7-arg_string_null_enum
+  arg_string_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-arg_string_null_sibling_anyof
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-arg_string_null_sibling_oneof
+  arg_string_null_union:
+    case_key: UNIFIED.7-arg_string_null_union
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-arg_string_null_untyped_branch
+  arg_unicode:
+    case_key: UNIFIED.7-arg_unicode
+    stimulus:
+      ref: current
+      semantic_sha256: eddd60fe337c2a971027895330d7deb477483e511603a89620a16d75fa22bc59
+  content_then_reason:
+    case_key: UNIFIED.11-content_then_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
+  content_then_reason_then_tool:
+    case_key: UNIFIED.11-content_then_reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: c7b85f5602d80349bc6c32d0feb9acf90fbe8c4a24801a9e9eecd68cb48aa979
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-deepseek_v41_mixed_control_text_in_string
   dsml_bare_invoke_four_lf:
     case_key: UNIFIED.dsml-bare_invoke_four_lf
     stimulus:
@@ -320,80 +379,6 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-  guided_json_native_parameter_array_before_payload:
-    observation:
-      unavailable:
-        code: producer_source_unavailable
-        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
-  guided_json_native_parameter_object_before_payload:
-    observation:
-      unavailable:
-        code: producer_source_unavailable
-        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
-  guided_json_native_parameter_string_before_payload:
-    observation:
-      unavailable:
-        code: producer_source_unavailable
-        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
-  guided_json_noncall_before_native_array_before_payload:
-    observation:
-      unavailable:
-        code: producer_source_unavailable
-        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
-  guided_response_native_wrapper_whitespace_before_prose:
-    observation:
-      unavailable:
-        code: producer_source_unavailable
-        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. The parser was not executed, and no newer output was substituted.
-  structured_response_after_reasoning:
-    observation:
-      unavailable:
-        code: producer_source_unavailable
-        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. The parser was not executed, and no newer output was substituted.
-  arg_json_null_anyof:
-    case_key: UNIFIED.7-arg_json_null_anyof
-  arg_json_null_const:
-    case_key: UNIFIED.7-arg_json_null_const
-  arg_json_null_nullable:
-    case_key: UNIFIED.7-arg_json_null_nullable
-  arg_json_null_oneof:
-    case_key: UNIFIED.7-arg_json_null_oneof
-  arg_marker_in_string:
-    case_key: UNIFIED.7-arg_marker_in_string
-    stimulus:
-      ref: current
-      semantic_sha256: 51ce3bd9a1f9ba25a082a2f0b4638aa3087d9df3b1af5c23b8bbfe10518c71a4
-  arg_string_null:
-    case_key: UNIFIED.7-arg_string_null
-  arg_string_null_const:
-    case_key: UNIFIED.7-arg_string_null_const
-  arg_string_null_enum:
-    case_key: UNIFIED.7-arg_string_null_enum
-  arg_string_null_sibling_anyof:
-    case_key: UNIFIED.7-arg_string_null_sibling_anyof
-  arg_string_null_sibling_oneof:
-    case_key: UNIFIED.7-arg_string_null_sibling_oneof
-  arg_string_null_union:
-    case_key: UNIFIED.7-arg_string_null_union
-  arg_string_null_untyped_branch:
-    case_key: UNIFIED.7-arg_string_null_untyped_branch
-  arg_unicode:
-    case_key: UNIFIED.7-arg_unicode
-    stimulus:
-      ref: current
-      semantic_sha256: eddd60fe337c2a971027895330d7deb477483e511603a89620a16d75fa22bc59
-  content_then_reason:
-    case_key: UNIFIED.11-content_then_reason
-    stimulus:
-      ref: current
-      semantic_sha256: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
-  content_then_reason_then_tool:
-    case_key: UNIFIED.11-content_then_reason_then_tool
-    stimulus:
-      ref: current
-      semantic_sha256: c7b85f5602d80349bc6c32d0feb9acf90fbe8c4a24801a9e9eecd68cb48aa979
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-deepseek_v41_mixed_control_text_in_string
   empty_args:
     case_key: UNIFIED.6-empty_args
     stimulus:
@@ -407,6 +392,26 @@ changes:
     case_key: UNIFIED.7-glm_ref_object
   glm_ref_scalar_types:
     case_key: UNIFIED.7-glm_ref_scalar_types
+  gpt_oss_control_marker_inside_argument_string:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_empty_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_valid_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_after_reasoning:
     case_key: UNIFIED.30-guided_json_after_reasoning
     stimulus:
@@ -482,6 +487,26 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: 1854b7f12c17c0eb86be906be6d0f27806082e8503b50d205c9e9280e6002d01
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
   guided_json_orphan_reason_close_before_payload:
     case_key: UNIFIED.34-guided_json_orphan_reason_close_before_payload
     stimulus:
@@ -596,6 +621,11 @@ changes:
     case_key: UNIFIED.34-guided_quoted_reasoning_closer_named
   guided_quoted_reasoning_closer_required:
     case_key: UNIFIED.34-guided_quoted_reasoning_closer_required
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. The parser was not executed, and no newer output was substituted.
   guided_response_quoted_control_braces_named:
     case_key: UNIFIED.35-guided_response_quoted_control_braces_named
   guided_response_quoted_control_braces_required:
@@ -967,6 +997,11 @@ changes:
     case_key: UNIFIED.7-union_oneOf_object_string
   schema_union_oneof_object_typed:
     case_key: UNIFIED.7-union_oneOf_object_typed
+  structured_response_after_reasoning:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. The parser was not executed, and no newer output was substituted.
   text_before_tool:
     case_key: UNIFIED.8-text_before_tool
     stimulus:
@@ -1055,57 +1090,19 @@ changes:
   unused_reference_graph_parameter_types:
     case_key: UNIFIED.7-unused_reference_graph_parameter_types
 metadata_changes:
+  arg_json_null_ref: {}
+  arg_null_mixed_labels: {}
+  arg_string_null_ref: {}
   dotted_name_minimal: {}
   dotted_name_mixed_punctuation: {}
   dotted_name_multiple_segments: {}
   dotted_name_shared_prefix: {}
+  gpt_oss_control_marker_inside_argument_string: {}
+  gpt_oss_invalid_tool_body_then_empty_call: {}
+  gpt_oss_invalid_tool_body_then_valid_call: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
 document_overrides:
   adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
-        source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
-      inherited_from: null
-  guided_json_native_parameter_array_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin: null
-      inherited_from: null
-  guided_json_native_parameter_object_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin: null
-      inherited_from: null
-  guided_json_native_parameter_string_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin: null
-      inherited_from: null
-  guided_json_noncall_before_native_array_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin: null
-      inherited_from: null
-  guided_response_native_wrapper_whitespace_before_prose:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin: null
-      inherited_from: null
-  structured_response_after_reasoning:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin: null
-      inherited_from: null
-  three_calls_partial_header:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.24
@@ -1150,6 +1147,12 @@ document_overrides:
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
       inherited_from: null
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
   arg_marker_in_string:
     capture_provenance:
       captured_with:
@@ -1158,6 +1161,12 @@ document_overrides:
         crate_version: 0.7.24
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
       inherited_from: null
   arg_string_null:
     capture_provenance:
@@ -1185,6 +1194,12 @@ document_overrides:
         crate_version: 0.7.24
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
       inherited_from: null
   arg_string_null_sibling_anyof:
     capture_provenance:
@@ -1339,6 +1354,30 @@ document_overrides:
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
       inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
@@ -1473,6 +1512,30 @@ document_overrides:
         crate_version: 0.7.24
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
       inherited_from: null
   guided_json_orphan_reason_close_before_payload:
     capture_provenance:
@@ -1689,6 +1752,12 @@ document_overrides:
         crate_version: 0.7.24
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
       inherited_from: null
   guided_response_quoted_control_braces_named:
     capture_provenance:
@@ -3076,6 +3145,12 @@ document_overrides:
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
       inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
   text_before_tool:
     capture_provenance:
       captured_with:
@@ -3120,6 +3195,15 @@ document_overrides:
         crate_version: 0.7.24
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin:
+        crate_version: 0.7.24
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+        source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
       inherited_from: null
   tool_block_never_closed_then_text:
     capture_provenance:

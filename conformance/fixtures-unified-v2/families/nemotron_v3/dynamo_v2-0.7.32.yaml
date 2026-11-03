@@ -8,7 +8,6 @@ document:
   mode: unified
 changes:
   arg_json_null_ref:
-    case_key: UNIFIED.7-arg_json_null_ref
     stimulus:
       ref: current
       semantic_sha256: bb6a9709cd2058707df2d4c60bbe077b5667b6d7af93ac7e58e4494342cbf9df
@@ -33,7 +32,6 @@ changes:
         - expected: []
         - expected: []
   arg_null_mixed_labels:
-    case_key: UNIFIED.7-arg_null_mixed_labels
     stimulus:
       ref: current
       semantic_sha256: 59b1792f5fa7c753bb2e59718771cf77efebf19efe666cf1e0f6cd37e48afc35

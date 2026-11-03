@@ -57,6 +57,9 @@ fn spec() -> WrappedBlockSpec {
         invoke_boundary_factory: Some(InvokeBoundaryFactory::NativeOnly(|| {
             Box::new(QwenInvokeBoundary::default())
         })),
+        // The template always wraps a call in `<tool_call>`; a bare
+        // `<function=NAME>` inside an open thought is narration.
+        narrated_invoke_header_end: Some('>'),
     }
 }
 
@@ -67,6 +70,9 @@ struct QwenInvokeBoundary {
     cursor: usize,
     in_parameter: bool,
     parameter_value_start: usize,
+    /// Closed parameter values as `[start, end)` candidate byte ranges, so a
+    /// narrating scanner can ask whether a nested marker was value data.
+    value_spans: Vec<(usize, usize)>,
 }
 
 impl InvokeBoundary for QwenInvokeBoundary {
@@ -81,6 +87,8 @@ impl InvokeBoundary for QwenInvokeBoundary {
             let tail = &candidate[self.cursor..];
             if self.in_parameter {
                 if let Some(end) = tail.find("</parameter>") {
+                    self.value_spans
+                        .push((self.parameter_value_start, self.cursor + end));
                     self.cursor += end + "</parameter>".len();
                     self.in_parameter = false;
                 } else {
@@ -124,6 +132,18 @@ impl InvokeBoundary for QwenInvokeBoundary {
     fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
         None
     }
+    /// Everything from the scan cursor on is still unclassified: a parameter
+    /// header without its `>`, or a split `</parameter>` / `</function>`.
+    fn unclassified_tail(&self, candidate: &str) -> usize {
+        candidate.len().saturating_sub(self.cursor)
+    }
+    fn owns_value_byte(&self, _candidate: &str, at: usize) -> bool {
+        (self.in_parameter && at >= self.parameter_value_start)
+            || self
+                .value_spans
+                .iter()
+                .any(|(start, end)| (*start..*end).contains(&at))
+    }
     fn reset(&mut self) {
         *self = Self::default();
     }
@@ -163,6 +183,9 @@ struct ActiveStringParameter {
 }
 
 impl InvokeEmitter for Qwen3Emitter {
+    fn abandon_invoke(&mut self) {
+        self.partial = None;
+    }
     fn parse_partial_invoke(
         &mut self,
         invoke: &str,

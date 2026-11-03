@@ -1,9 +1,9 @@
 {
-  "snapshot": "20261026_154618",
-  "created_pt": "2026-10-26 15:46:18 America/Los_Angeles",
+  "snapshot": "20261026_202432",
+  "created_pt": "2026-10-26 20:24:32 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "10.2.2",
-    "dynamo-parsers-v2": "0.8.2"
+    "dynamo-parsers-v2": "0.8.3"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -27,8 +27,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v1.tar.gz",
-      "sha256": "6c9a5d7f1ae9c538eb5b8a1d3ebb3a48d82f5205991536bd0755db0c53c789a2",
-      "size": 28552
+      "sha256": "8d2e8db385dd4270e87afc7b1e2ca25b94536b7e8f1db5a2ff5acf3592f2ae2e",
+      "size": 28556
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz",
@@ -331,14 +331,24 @@
       "size": 16514
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.9.0.tar.gz",
+      "sha256": "46a0ecdf188780650a37011d83b6cf4bae2598a6301d1c2353faa8f5692710a3",
+      "size": 4937
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.8.0.tar.gz",
       "sha256": "864e28ce4200c52584abf0ad4631b5b280bf6ec5ea34bf36c9e248f6745b3a97",
       "size": 35957
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.8.1.tar.gz",
+      "sha256": "3ca928cdb9277ca49fe6f25815d62bde2526c41a505b9ef22f3e7d1cfa900e74",
+      "size": 35949
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/inputs.tar.gz",
-      "sha256": "29dc8a7d28b03eaff4b0472207c93c570c3b6c772af4c89d1eeb91e7200034ca",
-      "size": 208043
+      "sha256": "b3a39ffd517de5e59a39f6dbfb92c71aa8ca10d492ef1000d4cd494c4299b8b8",
+      "size": 208837
     },
     {
       "path": "toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz",
@@ -393,9 +403,10 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "8f9693a5d80f860e00291f0bd157752f1c681e5cc66681f9665fbfd7c75fa2f4",
-      "size": 61877715
+      "sha256": "9f9690a5dc425e029dc0e5f7508cb4a4c8ef315931c3ff3898137ad3b0120ae8",
+      "size": 122081434
     }
   ],
-  "inactive_shards": []
+  "inactive_shards": [],
+  "historical_catalog_sha256": "e8afd93032fbab666f9bf2b0db2756c211774f73530be0208b8b53f6b8e42fd6"
 }

@@ -41,6 +41,9 @@ use crate::{TokenIdType, traits::Encoder};
 /// Hash type for cache keys
 type Blake3Hash = [u8; 32];
 
+/// First byte hashed for a segment key (see [`L1Cache::segment_key`]).
+const SEGMENT_KEY_TAG: u8 = 0xFF;
+
 /// Keys are blake3 digests (already uniformly distributed), so a fast non-DoS-resistant
 /// hasher suffices — no need for the default SipHash.
 type PrefixHasher = BuildHasherDefault<FxHasher>;
@@ -293,7 +296,7 @@ impl L1Cache {
         *hasher.finalize().as_bytes()
     }
 
-    fn insert(&self, hash: Blake3Hash, tokens: Arc<[TokenIdType]>) {
+    pub(super) fn insert(&self, hash: Blake3Hash, tokens: Arc<[TokenIdType]>) {
         self.cache.cache.insert(
             hash,
             CachedPrefix {
@@ -301,6 +304,36 @@ impl L1Cache {
                 tokens,
             },
         );
+    }
+
+    /// Key of one renderer segment's tokens.
+    ///
+    /// Prefix keys hash UTF-8 text, which never contains the byte `0xFF`; starting the
+    /// segment key with it keeps the two key spaces disjoint within a namespace.
+    pub(super) fn segment_key(&self, text: &str, allow_special: bool) -> Blake3Hash {
+        let mut hasher = self.hasher();
+        hasher.update(&[SEGMENT_KEY_TAG, allow_special as u8]);
+        hasher.update(text.as_bytes());
+        *hasher.finalize().as_bytes()
+    }
+
+    pub(super) fn get(&self, key: &Blake3Hash) -> Option<Arc<[TokenIdType]>> {
+        self.cache.cache.get(key).map(|entry| entry.tokens)
+    }
+
+    /// Count one lookup in the hit / miss counters and notify the observers.
+    pub(super) fn record_lookup(&self, hit: bool) {
+        if hit {
+            self.hits.fetch_add(1, Ordering::Relaxed);
+            if let Some(cb) = &self.on_hit {
+                cb();
+            }
+        } else {
+            self.misses.fetch_add(1, Ordering::Relaxed);
+            if let Some(cb) = &self.on_miss {
+                cb();
+            }
+        }
     }
 
     /// Install hit/miss callbacks. Replaces any previously-set observers.
@@ -340,10 +373,7 @@ impl L1Cache {
         let boundaries = self.boundaries(input);
 
         if boundaries.is_empty() {
-            self.misses.fetch_add(1, Ordering::Relaxed);
-            if let Some(cb) = &self.on_miss {
-                cb();
-            }
+            self.record_lookup(false);
             return PrefixLookup::Miss(Vec::new());
         }
 
@@ -351,10 +381,7 @@ impl L1Cache {
 
         for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
             if let Some(entry) = self.cache.cache.get(&hash_bytes) {
-                self.hits.fetch_add(1, Ordering::Relaxed);
-                if let Some(cb) = &self.on_hit {
-                    cb();
-                }
+                self.record_lookup(true);
                 // Share cached tokens to avoid copying the prefix during lookup.
                 let &(deepest_boundary, deepest_hash) =
                     prefix_hashes.last().expect("prefix hashes is non-empty");
@@ -367,10 +394,7 @@ impl L1Cache {
             }
         }
 
-        self.misses.fetch_add(1, Ordering::Relaxed);
-        if let Some(cb) = &self.on_miss {
-            cb();
-        }
+        self.record_lookup(false);
         PrefixLookup::Miss(prefix_hashes)
     }
 

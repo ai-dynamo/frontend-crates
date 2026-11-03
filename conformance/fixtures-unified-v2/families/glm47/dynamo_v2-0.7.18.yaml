@@ -7,6 +7,11 @@ provenance:
 document:
   mode: unified
 changes:
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_array_before_payload:
     observation:
       unavailable:
@@ -140,6 +145,7 @@ changes:
             complete: true
         - expected: []
 metadata_changes:
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   guided_json_native_parameter_array_before_payload: {}
   guided_json_native_parameter_object_before_payload: {}
   guided_json_native_parameter_string_before_payload: {}
@@ -155,6 +161,36 @@ document_overrides:
         crate_version: 0.7.18
         git_commit: ba6a403ac48ed894b44ab921ddcb0d5a30b14e11
         source_sha256: 2adc805ae85509f2e2efdfc02479b68cbc12805eb350fde85bca9167887b7a6d
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
       inherited_from: null
   guided_json_native_parameter_array_before_payload:
     capture_provenance:
@@ -209,28 +245,4 @@ document_overrides:
         crate_version: 0.7.18
         git_commit: ba6a403ac48ed894b44ab921ddcb0d5a30b14e11
         source_sha256: 2adc805ae85509f2e2efdfc02479b68cbc12805eb350fde85bca9167887b7a6d
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.18
-      capture_origin: null
       inherited_from: null

@@ -23,20 +23,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
-use dynamo_parsers_v2::{
-    assemble, create_tool_parser_for_family, create_unified_parser_for_family,
-};
+use dynamo_parsers_v2::{create_tool_parser_for_family, create_unified_parser_for_family};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Value, json};
 
 mod common;
 use common::unified_capture::{self as capture, chunk_input};
 
-use common::{
-    Init,
-    known_unified_divergences::{self as divergences, Check, Expected},
-    unified_tools as tools,
-};
+use common::{Init, unified_tools as tools};
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -406,8 +400,11 @@ fn capture_native_case(
     )?;
     let rows = capture::native_capture(&mut parser, chunks)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
-    let raw_args = dynamo_parsers_v2::tool_arguments_raw(&deltas);
-    let assembled: Vec<Ev> = assemble(&deltas).into_iter().map(Ev::from).collect();
+    let (assembled, raw_args) = capture::assembled_native_capture(&deltas);
+    let assembled = assembled
+        .into_iter()
+        .map(|event| serde_yaml::from_value(event).expect("shared native capture event"))
+        .collect();
     let rows = chunks
         .iter()
         .cloned()
@@ -441,7 +438,7 @@ fn numeric_raw_arguments_match_authored_tokens_for_every_family() {
             }
             let schemas = common::unified_tools_for_schemas(case.tools.as_ref());
             let chunks = capture::input_chunks(&case.input, case.input_chunks.as_deref());
-            let (_assembled, _rows, raw) =
+            let (assembled, _rows, raw) =
                 capture_native_case(&file.family, &chunks, &case.init, &schemas)
                     .unwrap_or_else(|error| panic!("{id}: {error:?}"));
             let expected = if file.family == "beam"
@@ -480,6 +477,19 @@ fn numeric_raw_arguments_match_authored_tokens_for_every_family() {
                 common::canonical_argument_json(actual),
                 common::canonical_argument_json(&expected),
                 "{id}"
+            );
+            let rendered = assembled
+                .iter()
+                .filter_map(|event| match event {
+                    Ev::ToolCall { arguments, .. } => Some(arguments),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(rendered.len(), 1, "{id}: rendered call inventory");
+            assert_eq!(
+                rendered[0],
+                &raw_arguments(&expected),
+                "{id}: rendered arguments"
             );
             checked += 1;
         }
@@ -767,15 +777,12 @@ fn cell(
 #[test]
 fn render_unified_conformance_html() {
     let capture_provenance = common::dynamo_capture_provenance(None);
-    let known = divergences::load();
-    let mut observed_dynamo = std::collections::BTreeSet::new();
-    let mut observed_projection = std::collections::BTreeSet::new();
-    let mut parity_failures = Vec::new();
+    let mut golden_differences = Vec::new();
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
     let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
-        let froot = common::ensure_fixtures().join("unified");
+        let froot = common::ensure_unified_fixtures().join("unified");
         let mut m = BTreeMap::new();
         // Shards key by TAXONOMY id (`UNIFIED.30-guided_json_named_tool`); the golden keys by SCENARIO
         // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
@@ -833,7 +840,7 @@ fn render_unified_conformance_html() {
     let mut dynamo_red = 0usize;
     let mut vllm_red = 0usize;
     let mut total = 0usize;
-    // Machine-readable feed for the CONFORMANCE_v2.html generator (Python reads this).
+    // Capture tooling consumes this feed; the viewer prefers resolved JSON even in a checkout.
     let mut json_cases: Vec<Value> = Vec::new();
 
     for file in &files {
@@ -871,43 +878,16 @@ fn render_unified_conformance_html() {
                 .as_ref()
                 .map(|e| format!("ERROR: {e}"))
                 .unwrap_or_else(|| got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  "));
-            // These entries pin the public Value projection separately from raw
-            // argument bytes, which are checked by the numeric parser tests.
-            let projection_matches =
-                match divergences::expected(&known, &file.family, id, Check::Projection) {
-                    Some(Expected::Projection(expected)) if actual == expected.actual => {
-                        observed_projection.insert((file.family.clone(), id.clone()));
-                        true
-                    }
-                    Some(Expected::Projection(expected)) => {
-                        parity_failures.push(format!(
-                    "{id}: known projection divergence changed\n expected: {}\n      got: {}",
-                    expected.actual, actual
-                    ));
-                        false
-                    }
-                    _ => false,
-                };
             if dclass != "MATCH" {
-                match divergences::expected(&known, &file.family, id, Check::Golden) {
-                    Some(Expected::Golden(expected)) if actual == expected.actual => {
-                        observed_dynamo.insert((file.family.clone(), id.clone()));
-                    }
-                    Some(Expected::Golden(expected)) => parity_failures.push(format!(
-                        "{id}: known golden divergence changed\n expected: {}\n      got: {}",
-                        expected.actual, actual
-                    )),
-                    _ if projection_matches => {}
-                    _ => parity_failures.push(format!(
-                        "{id}: unexpected golden divergence\n   golden: {}\n   actual: {}",
-                        case.golden
-                            .iter()
-                            .map(Ev::render)
-                            .collect::<Vec<_>>()
-                            .join("  |  "),
-                        actual
-                    )),
-                }
+                golden_differences.push(format!(
+                    "{id}: GOLDEN differs\n   golden: {}\n   actual: {}",
+                    case.golden
+                        .iter()
+                        .map(Ev::render)
+                        .collect::<Vec<_>>()
+                        .join("  |  "),
+                    actual
+                ));
             }
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
@@ -1052,7 +1032,7 @@ fn render_unified_conformance_html() {
         }
     }
 
-    // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
+    // Machine-readable capture feed consumed by explode_unified_fixtures.py.
     // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
     // is the gitignored build tree — create it (a fresh checkout won't have it; the
     // committed data is the self-contained family and capture YAML under conformance/fixtures-unified-v2/).
@@ -1080,26 +1060,7 @@ fn render_unified_conformance_html() {
     // and asserted elsewhere via the rendered legend), so this only needs to
     // pin Dynamo's own invariant.
     assert!(total >= 14, "expected the seed corpus");
-    parity_failures.extend(divergences::reconcile(
-        &known,
-        Check::Golden,
-        &observed_dynamo,
-    ));
-    parity_failures.extend(divergences::reconcile(
-        &known,
-        Check::Projection,
-        &observed_projection,
-    ));
-    assert_eq!(
-        dynamo_red,
-        observed_dynamo.len() + observed_projection.len(),
-        "every red report cell must match one exact allowlisted golden or projection divergence"
-    );
-    assert!(
-        parity_failures.is_empty(),
-        "unified report has unexpected or stale golden divergences:\n\n{}",
-        parity_failures.join("\n\n")
-    );
+    capture::report_comparison("render-golden", total, &golden_differences, false);
 }
 
 /// One committed `dynamo_v2-<ver>/<family>/<key>.yaml` capture.
@@ -1160,31 +1121,29 @@ struct InputCase {
 /// This closes that gap: touch a parser, and the capture must be regenerated.
 #[test]
 fn committed_dynamo_capture_matches_the_live_parsers() {
-    let root = common::ensure_fixtures().join("unified");
-    validate_committed_dynamo_capture(&root);
+    let root = common::ensure_unified_fixtures().join("unified");
+    let (checked, stale) = compare_committed_dynamo_capture(&root);
+    capture::report_comparison("recorded-capture", checked, &stale, true);
+    assert_dynamo_capture_matches(checked, &stale);
 }
 
 fn validate_committed_dynamo_capture(root: &std::path::Path) {
+    let (checked, stale) = compare_committed_dynamo_capture(root);
+    assert_dynamo_capture_matches(checked, &stale);
+}
+
+fn compare_committed_dynamo_capture(root: &std::path::Path) -> (usize, Vec<String>) {
     if !root.join("inputs").is_dir() {
         panic!(
             "no committed unified fixtures under {} — extract them first",
             root.display()
         );
     }
-    // Select the parser identity before resolving its effective per-case owners.
-    // A release's sparse patches and a source's complete snapshot differ here.
-    let capture_dir = common::version_dirs_ascending_with_current(
-        root,
-        "dynamo_v2-",
-        common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
-    )
-    .pop()
-    .expect("no committed dynamo_v2-<ver> capture dir");
+    // Advancing the parser build does not relabel retained evidence. Compare the
+    // newest recorded snapshot with this build and reject changed live outputs.
+    let capture_dir = common::latest_recorded_capture_dir(root, "dynamo_v2-")
+        .expect("no committed dynamo_v2-<ver> capture dir");
 
-    validate_selected_dynamo_capture(root, &capture_dir);
-}
-
-fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::path::Path) {
     let input_dirs = shared_overlay_dirs(root, "inputs");
     let native_families: BTreeSet<String> = common::unified_families()
         .into_iter()
@@ -1229,6 +1188,11 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
                 meta.retain(|(family, _), previous| {
                     family != &doc.family || previous.scenario != case.scenario
                 });
+                // v1_split scenarios have committed Dynamo v1 captures and are
+                // intentionally absent from the current Dynamo v2 capture.
+                if case.scenario.starts_with("v1_split_") {
+                    continue;
+                }
                 meta.insert((doc.family.clone(), key), case);
             }
         }
@@ -1320,14 +1284,17 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
         }
     }
 
+    (checked, stale)
+}
+
+fn assert_dynamo_capture_matches(checked: usize, stale: &[String]) {
     assert!(checked > 0, "no committed capture cases were compared");
     assert!(
         stale.is_empty(),
-        "{} of {checked} committed Dynamo capture cases are STALE — the HTML tab will \
-         show the old parser behavior. Regenerate:\n  \
-         cargo test -p dynamo-conformance-fixtures-v2 --test unified_render\n  \
-         python3 conformance/utils/src/explode_unified_fixtures.py\n  \
-         python3 conformance/utils/src/package_fixtures.py\n\n{}",
+        "{} of {checked} latest recorded Dynamo cases differ from the live parser. \
+         Verify the parser against authored inputs/GOLDEN and run latest parser tests. \
+         If the intended output changed, recapture the affected latest YAML; \
+         contributors do not recapture historical versions.\n\n{}",
         stale.len(),
         stale.join("\n\n"),
     );
@@ -1337,6 +1304,8 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
 fn plain_capture_records_reach_live_guard() {
     let root = std::env::temp_dir().join(format!("dynamo-plain-capture-{}", std::process::id()));
     let base = root.join("dynamo_v2-0.6.0");
+    std::fs::create_dir_all(root.join("dynamo_v2-0.5.0")).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-999.0.0+historical")).unwrap();
     let write = |directory: &std::path::Path, key: &str, doc: &Value| {
         std::fs::create_dir_all(directory.join("gemma4")).unwrap();
         std::fs::write(
@@ -1372,15 +1341,15 @@ fn plain_capture_records_reach_live_guard() {
     write(&base, "old", &captures["old"]);
     write(&base, "retained", &captures["retained"]);
     write(&base, "added", &captures["added"]);
-    validate_selected_dynamo_capture(&root, &base);
+    validate_committed_dynamo_capture(&root);
 
     std::fs::remove_file(base.join("gemma4/old.yaml")).unwrap();
-    assert!(std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base)).is_err());
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
     write(&base, "old", &captures["old"]);
     let mut wrong = captures["added"].clone();
     wrong["cases"]["added"]["assembled"] = json!([{"kind":"text","text":"wrong"}]);
     write(&base, "added", &wrong);
-    let failure = std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base))
+    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root))
         .expect_err("the live comparison must read the plain capture record");
     assert!(
         failure

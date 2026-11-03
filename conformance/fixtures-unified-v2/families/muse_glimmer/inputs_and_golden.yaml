@@ -7014,10 +7014,11 @@ cases:
     scenario: arg_unicode
     description: 'Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.'
     policy: []
-    display_id: UNIFIED.7-arg_unicode
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_unicode
     historical_ids:
     - UNIFIED.7-1
     - UNIFIED.7.a
+    - UNIFIED.7-arg_unicode
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -7112,10 +7113,11 @@ cases:
     scenario: arg_marker_in_string
     description: A close-marker-looking sequence INSIDE a string arg value. Invariant I7 — the value is data, preserved exactly, not truncated at the marker-looking substring.
     policy: []
-    display_id: UNIFIED.7-arg_marker_in_string
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
     historical_ids:
     - UNIFIED.7-2
     - UNIFIED.7.b
+    - UNIFIED.7-arg_marker_in_string
     request:
       input: '<|start|>assistant to=run<|message|><atem:function_calls>
 
@@ -7933,9 +7935,10 @@ cases:
     description: A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.
     policy:
     - I7
-    display_id: UNIFIED.7-deepseek_v41_mixed_control_text_in_string
+    display_id: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
     historical_ids:
     - UNIFIED.7-3
+    - UNIFIED.7-deepseek_v41_mixed_control_text_in_string
     request:
       input: "<|start|>assistant to=f<|message|><atem:function_calls>\n<atem:invoke name=\"f\">\n<atem:parameter name=\"x\"> <|start|>assistant to=self<|message|>quoted<|eom|> <atem:function_calls> </atem:function_calls> </atem:invoke> &amp; \"x\"\\\n </atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>"
       init:
@@ -8035,9 +8038,10 @@ cases:
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using a type array.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_json_null
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null
     historical_ids:
     - UNIFIED.7-4
+    - UNIFIED.7-arg_json_null
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8099,9 +8103,10 @@ cases:
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema declares `city` as non-nullable `string`.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_string_null
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null
     historical_ids:
     - UNIFIED.7-5
+    - UNIFIED.7-arg_string_null
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8161,9 +8166,10 @@ cases:
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using anyOf.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_json_null_anyof
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_anyof
     historical_ids:
     - UNIFIED.7-4.anyof
+    - UNIFIED.7-arg_json_null_anyof
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8225,9 +8231,10 @@ cases:
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema permits `city` to be null through an anyOf const-null branch.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_json_null_const
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_const
     historical_ids:
     - UNIFIED.7-4.const
+    - UNIFIED.7-arg_json_null_const
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8289,9 +8296,10 @@ cases:
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as string with nullable: true.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_json_null_nullable
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_nullable
     historical_ids:
     - UNIFIED.7-4.nullable
+    - UNIFIED.7-arg_json_null_nullable
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8352,9 +8360,10 @@ cases:
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using oneOf.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_json_null_oneof
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_oneof
     historical_ids:
     - UNIFIED.7-4.oneof
+    - UNIFIED.7-arg_json_null_oneof
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8416,9 +8425,10 @@ cases:
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits the literal string "null" through const, or an integer.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_string_null_const
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_const
     historical_ids:
     - UNIFIED.7-5.const
+    - UNIFIED.7-arg_string_null_const
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8480,9 +8490,10 @@ cases:
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string alongside an enum containing string "null" and JSON null; the type excludes JSON null.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_string_null_enum
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
     historical_ids:
     - UNIFIED.7-5.enum
+    - UNIFIED.7-arg_string_null_enum
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8545,9 +8556,10 @@ cases:
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has type string alongside a nullable anyOf; both constraints apply, so null is excluded.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_string_null_sibling_anyof
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
     historical_ids:
     - UNIFIED.7-5.sibling_anyof
+    - UNIFIED.7-arg_string_null_sibling_anyof
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8610,9 +8622,10 @@ cases:
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has a nullable type array alongside a non-nullable oneOf; their intersection permits string.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_string_null_sibling_oneof
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
     historical_ids:
     - UNIFIED.7-5.sibling_oneof
+    - UNIFIED.7-arg_string_null_sibling_oneof
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8677,9 +8690,10 @@ cases:
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits string or integer through anyOf, but excludes null.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_string_null_union
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_union
     historical_ids:
     - UNIFIED.7-5.union
+    - UNIFIED.7-arg_string_null_union
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -8741,9 +8755,10 @@ cases:
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string; an anyOf branch without a type does not remove that requirement.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_string_null_untyped_branch
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
     historical_ids:
     - UNIFIED.7-5.untyped_branch
+    - UNIFIED.7-arg_string_null_untyped_branch
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -10151,9 +10166,10 @@ cases:
     description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-glm_ref_encoded_targets
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
     historical_ids:
     - UNIFIED.7-11
+    - UNIFIED.7-glm_ref_encoded_targets
     request:
       input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
 
@@ -10242,9 +10258,10 @@ cases:
     description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-glm_ref_json_looking_strings
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
     historical_ids:
     - UNIFIED.7-12
+    - UNIFIED.7-glm_ref_json_looking_strings
     request:
       input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
 
@@ -10340,9 +10357,10 @@ cases:
     description: 'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-glm_ref_scalar_types
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_scalar_types
     historical_ids:
     - UNIFIED.7-13
+    - UNIFIED.7-glm_ref_scalar_types
     request:
       input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
 
@@ -10447,9 +10465,10 @@ cases:
     description: 'PR #271 compatibility control: a local object reference keeps JSON object text as an object. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-glm_ref_object
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_object
     historical_ids:
     - UNIFIED.7-9
+    - UNIFIED.7-glm_ref_object
     request:
       input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
 
@@ -10516,9 +10535,10 @@ cases:
     description: An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
     policy:
     - I7
-    display_id: UNIFIED.7-unused_reference_graph_parameter_types
+    display_id: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
     historical_ids:
     - UNIFIED.7-14
+    - UNIFIED.7-unused_reference_graph_parameter_types
     request:
       input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
 
@@ -10641,9 +10661,10 @@ cases:
     description: Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null". GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
     policy:
     - I7
-    display_id: UNIFIED.7-nullable_reference_alias_literals
+    display_id: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
     historical_ids:
     - UNIFIED.7-15
+    - UNIFIED.7-nullable_reference_alias_literals
     request:
       input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
 
@@ -10728,9 +10749,10 @@ cases:
     description: A directly declared integer remains typed when a local $id disables reference resolution. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
     policy:
     - I7
-    display_id: UNIFIED.7-local_schema_id_preserves_type
+    display_id: UNIFIED.7-tool-argument-schema-references-local_schema_id_preserves_type
     historical_ids:
     - UNIFIED.7-16
+    - UNIFIED.7-local_schema_id_preserves_type
     request:
       input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
 
@@ -10791,9 +10813,10 @@ cases:
     description: 'Schema probe declared_array: independently authored value [1, 2] under {"type": "array"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-declared_array
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_array
     historical_ids:
     - UNIFIED.7-17.declared_array
+    - UNIFIED.7-declared_array
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -10859,9 +10882,10 @@ cases:
     description: 'Schema probe declared_boolean: independently authored value true under {"type": "boolean"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-declared_boolean
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_boolean
     historical_ids:
     - UNIFIED.7-17.declared_boolean
+    - UNIFIED.7-declared_boolean
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -10925,9 +10949,10 @@ cases:
     description: 'Schema probe declared_integer: independently authored value 42 under {"type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-declared_integer
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_integer
     historical_ids:
     - UNIFIED.7-17.declared_integer
+    - UNIFIED.7-declared_integer
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -10991,9 +11016,10 @@ cases:
     description: 'Schema probe declared_null: independently authored value null under {"type": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-declared_null
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_null
     historical_ids:
     - UNIFIED.7-17.declared_null
+    - UNIFIED.7-declared_null
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11057,9 +11083,10 @@ cases:
     description: 'Schema probe declared_number: independently authored value 3.5 under {"type": "number"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-declared_number
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_number
     historical_ids:
     - UNIFIED.7-17.declared_number
+    - UNIFIED.7-declared_number
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11123,9 +11150,10 @@ cases:
     description: 'Schema probe declared_object: independently authored value {"x": 1} under {"type": "object"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-declared_object
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_object
     historical_ids:
     - UNIFIED.7-17.declared_object
+    - UNIFIED.7-declared_object
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11190,9 +11218,10 @@ cases:
     description: 'Schema probe declared_string: independently authored value "plain" under {"type": "string"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-declared_string
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_string
     historical_ids:
     - UNIFIED.7-17.declared_string
+    - UNIFIED.7-declared_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11256,9 +11285,10 @@ cases:
     description: 'Schema probe id_direct_integer: independently authored value 42 under {"$id": "https://example.test/schema", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-id_direct_integer
+    display_id: UNIFIED.7-tool-argument-declared-types-id_direct_integer
     historical_ids:
     - UNIFIED.7-17.id_direct_integer
+    - UNIFIED.7-id_direct_integer
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11323,9 +11353,10 @@ cases:
     description: 'Schema probe const_array_allof: independently authored value "[1,2]" under {"allOf": [{"const": "[1,2]"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_array_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_array_allof
     historical_ids:
     - UNIFIED.7-18.const_array_allof
+    - UNIFIED.7-const_array_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11391,9 +11422,10 @@ cases:
     description: 'Schema probe const_array_bare: independently authored value "[1,2]" under {"const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_array_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_array_bare
     historical_ids:
     - UNIFIED.7-18.const_array_bare
+    - UNIFIED.7-const_array_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11457,9 +11489,10 @@ cases:
     description: 'Schema probe const_array_ref: independently authored value "[1,2]" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_array_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_array_ref
     historical_ids:
     - UNIFIED.7-18.const_array_ref
+    - UNIFIED.7-const_array_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11526,9 +11559,10 @@ cases:
     description: 'Schema probe const_array_typed: independently authored value "[1,2]" under {"type": "string", "const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_array_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_array_typed
     historical_ids:
     - UNIFIED.7-18.const_array_typed
+    - UNIFIED.7-const_array_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11593,9 +11627,10 @@ cases:
     description: 'Schema probe const_boolean_allof: independently authored value "true" under {"allOf": [{"const": "true"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_boolean_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_allof
     historical_ids:
     - UNIFIED.7-18.const_boolean_allof
+    - UNIFIED.7-const_boolean_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11661,9 +11696,10 @@ cases:
     description: 'Schema probe const_boolean_bare: independently authored value "true" under {"const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_boolean_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_bare
     historical_ids:
     - UNIFIED.7-18.const_boolean_bare
+    - UNIFIED.7-const_boolean_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11727,9 +11763,10 @@ cases:
     description: 'Schema probe const_boolean_ref: independently authored value "true" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_boolean_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_ref
     historical_ids:
     - UNIFIED.7-18.const_boolean_ref
+    - UNIFIED.7-const_boolean_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11796,9 +11833,10 @@ cases:
     description: 'Schema probe const_boolean_typed: independently authored value "true" under {"type": "string", "const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_boolean_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_typed
     historical_ids:
     - UNIFIED.7-18.const_boolean_typed
+    - UNIFIED.7-const_boolean_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11863,9 +11901,10 @@ cases:
     description: 'Schema probe const_entity_allof: independently authored value "&lt;" under {"allOf": [{"const": "&lt;"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_entity_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_allof
     historical_ids:
     - UNIFIED.7-18.const_entity_allof
+    - UNIFIED.7-const_entity_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11931,9 +11970,10 @@ cases:
     description: 'Schema probe const_entity_bare: independently authored value "&lt;" under {"const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_entity_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_bare
     historical_ids:
     - UNIFIED.7-18.const_entity_bare
+    - UNIFIED.7-const_entity_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -11997,9 +12037,10 @@ cases:
     description: 'Schema probe const_entity_ref: independently authored value "&lt;" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_entity_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_ref
     historical_ids:
     - UNIFIED.7-18.const_entity_ref
+    - UNIFIED.7-const_entity_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12066,9 +12107,10 @@ cases:
     description: 'Schema probe const_entity_typed: independently authored value "&lt;" under {"type": "string", "const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_entity_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_typed
     historical_ids:
     - UNIFIED.7-18.const_entity_typed
+    - UNIFIED.7-const_entity_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12133,9 +12175,10 @@ cases:
     description: 'Schema probe const_null_allof: independently authored value "null" under {"allOf": [{"const": "null"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_null_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_null_allof
     historical_ids:
     - UNIFIED.7-18.const_null_allof
+    - UNIFIED.7-const_null_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12201,9 +12244,10 @@ cases:
     description: 'Schema probe const_null_bare: independently authored value "null" under {"const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_null_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_null_bare
     historical_ids:
     - UNIFIED.7-18.const_null_bare
+    - UNIFIED.7-const_null_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12267,9 +12311,10 @@ cases:
     description: 'Schema probe const_null_ref: independently authored value "null" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_null_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_null_ref
     historical_ids:
     - UNIFIED.7-18.const_null_ref
+    - UNIFIED.7-const_null_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12336,9 +12381,10 @@ cases:
     description: 'Schema probe const_null_typed: independently authored value "null" under {"type": "string", "const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_null_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_null_typed
     historical_ids:
     - UNIFIED.7-18.const_null_typed
+    - UNIFIED.7-const_null_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12403,9 +12449,10 @@ cases:
     description: 'Schema probe const_number_allof: independently authored value "42" under {"allOf": [{"const": "42"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_number_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_number_allof
     historical_ids:
     - UNIFIED.7-18.const_number_allof
+    - UNIFIED.7-const_number_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12471,9 +12518,10 @@ cases:
     description: 'Schema probe const_number_bare: independently authored value "42" under {"const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_number_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_number_bare
     historical_ids:
     - UNIFIED.7-18.const_number_bare
+    - UNIFIED.7-const_number_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12537,9 +12585,10 @@ cases:
     description: 'Schema probe const_number_ref: independently authored value "42" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_number_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_number_ref
     historical_ids:
     - UNIFIED.7-18.const_number_ref
+    - UNIFIED.7-const_number_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12606,9 +12655,10 @@ cases:
     description: 'Schema probe const_number_typed: independently authored value "42" under {"type": "string", "const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_number_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_number_typed
     historical_ids:
     - UNIFIED.7-18.const_number_typed
+    - UNIFIED.7-const_number_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12673,9 +12723,10 @@ cases:
     description: 'Schema probe const_object_allof: independently authored value "{\"x\":1}" under {"allOf": [{"const": "{\"x\":1}"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_object_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_object_allof
     historical_ids:
     - UNIFIED.7-18.const_object_allof
+    - UNIFIED.7-const_object_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12741,9 +12792,10 @@ cases:
     description: 'Schema probe const_object_bare: independently authored value "{\"x\":1}" under {"const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_object_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_object_bare
     historical_ids:
     - UNIFIED.7-18.const_object_bare
+    - UNIFIED.7-const_object_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12807,9 +12859,10 @@ cases:
     description: 'Schema probe const_object_ref: independently authored value "{\"x\":1}" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_object_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_object_ref
     historical_ids:
     - UNIFIED.7-18.const_object_ref
+    - UNIFIED.7-const_object_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12876,9 +12929,10 @@ cases:
     description: 'Schema probe const_object_typed: independently authored value "{\"x\":1}" under {"type": "string", "const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_object_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_object_typed
     historical_ids:
     - UNIFIED.7-18.const_object_typed
+    - UNIFIED.7-const_object_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -12943,9 +12997,10 @@ cases:
     description: 'Schema probe const_plain_allof: independently authored value "auto" under {"allOf": [{"const": "auto"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_plain_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_allof
     historical_ids:
     - UNIFIED.7-18.const_plain_allof
+    - UNIFIED.7-const_plain_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13011,9 +13066,10 @@ cases:
     description: 'Schema probe const_plain_bare: independently authored value "auto" under {"const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_plain_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_bare
     historical_ids:
     - UNIFIED.7-18.const_plain_bare
+    - UNIFIED.7-const_plain_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13077,9 +13133,10 @@ cases:
     description: 'Schema probe const_plain_ref: independently authored value "auto" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_plain_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_ref
     historical_ids:
     - UNIFIED.7-18.const_plain_ref
+    - UNIFIED.7-const_plain_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13146,9 +13203,10 @@ cases:
     description: 'Schema probe const_plain_typed: independently authored value "auto" under {"type": "string", "const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_plain_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_typed
     historical_ids:
     - UNIFIED.7-18.const_plain_typed
+    - UNIFIED.7-const_plain_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13213,9 +13271,10 @@ cases:
     description: 'Schema probe const_quoted_allof: independently authored value "\"hello\"" under {"allOf": [{"const": "\"hello\""}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_quoted_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_allof
     historical_ids:
     - UNIFIED.7-18.const_quoted_allof
+    - UNIFIED.7-const_quoted_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13281,9 +13340,10 @@ cases:
     description: 'Schema probe const_quoted_bare: independently authored value "\"hello\"" under {"const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_quoted_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_bare
     historical_ids:
     - UNIFIED.7-18.const_quoted_bare
+    - UNIFIED.7-const_quoted_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13347,9 +13407,10 @@ cases:
     description: 'Schema probe const_quoted_ref: independently authored value "\"hello\"" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_quoted_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_ref
     historical_ids:
     - UNIFIED.7-18.const_quoted_ref
+    - UNIFIED.7-const_quoted_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13416,9 +13477,10 @@ cases:
     description: 'Schema probe const_quoted_typed: independently authored value "\"hello\"" under {"type": "string", "const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_quoted_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_typed
     historical_ids:
     - UNIFIED.7-18.const_quoted_typed
+    - UNIFIED.7-const_quoted_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13483,9 +13545,10 @@ cases:
     description: 'Schema probe const_space_allof: independently authored value "  spaced  " under {"allOf": [{"const": "  spaced  "}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_space_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_space_allof
     historical_ids:
     - UNIFIED.7-18.const_space_allof
+    - UNIFIED.7-const_space_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13551,9 +13614,10 @@ cases:
     description: 'Schema probe const_space_bare: independently authored value "  spaced  " under {"const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_space_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_space_bare
     historical_ids:
     - UNIFIED.7-18.const_space_bare
+    - UNIFIED.7-const_space_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13617,9 +13681,10 @@ cases:
     description: 'Schema probe const_space_ref: independently authored value "  spaced  " under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_space_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_space_ref
     historical_ids:
     - UNIFIED.7-18.const_space_ref
+    - UNIFIED.7-const_space_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13686,9 +13751,10 @@ cases:
     description: 'Schema probe const_space_typed: independently authored value "  spaced  " under {"type": "string", "const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_space_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_space_typed
     historical_ids:
     - UNIFIED.7-18.const_space_typed
+    - UNIFIED.7-const_space_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13753,9 +13819,10 @@ cases:
     description: 'Schema probe const_unicode_allof: independently authored value "café" under {"allOf": [{"const": "café"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_unicode_allof
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_allof
     historical_ids:
     - UNIFIED.7-18.const_unicode_allof
+    - UNIFIED.7-const_unicode_allof
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13821,9 +13888,10 @@ cases:
     description: 'Schema probe const_unicode_bare: independently authored value "café" under {"const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_unicode_bare
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_bare
     historical_ids:
     - UNIFIED.7-18.const_unicode_bare
+    - UNIFIED.7-const_unicode_bare
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13887,9 +13955,10 @@ cases:
     description: 'Schema probe const_unicode_ref: independently authored value "café" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_unicode_ref
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_ref
     historical_ids:
     - UNIFIED.7-18.const_unicode_ref
+    - UNIFIED.7-const_unicode_ref
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -13956,9 +14025,10 @@ cases:
     description: 'Schema probe const_unicode_typed: independently authored value "café" under {"type": "string", "const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-const_unicode_typed
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_typed
     historical_ids:
     - UNIFIED.7-18.const_unicode_typed
+    - UNIFIED.7-const_unicode_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14023,9 +14093,10 @@ cases:
     description: 'Schema probe union_anyOf_array_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_array_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_array_reverse_string
+    - UNIFIED.7-union_anyOf_array_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14091,9 +14162,10 @@ cases:
     description: 'Schema probe union_anyOf_array_reverse_typed: independently authored value [1, 2] under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_array_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_array_reverse_typed
+    - UNIFIED.7-union_anyOf_array_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14161,9 +14233,10 @@ cases:
     description: 'Schema probe union_anyOf_array_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_array_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_array_string
+    - UNIFIED.7-union_anyOf_array_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14229,9 +14302,10 @@ cases:
     description: 'Schema probe union_anyOf_array_typed: independently authored value [1, 2] under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_array_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_array_typed
+    - UNIFIED.7-union_anyOf_array_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14299,9 +14373,10 @@ cases:
     description: 'Schema probe union_anyOf_boolean_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_boolean_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_boolean_reverse_string
+    - UNIFIED.7-union_anyOf_boolean_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14367,9 +14442,10 @@ cases:
     description: 'Schema probe union_anyOf_boolean_reverse_typed: independently authored value true under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_boolean_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_boolean_reverse_typed
+    - UNIFIED.7-union_anyOf_boolean_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14435,9 +14511,10 @@ cases:
     description: 'Schema probe union_anyOf_boolean_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_boolean_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_boolean_string
+    - UNIFIED.7-union_anyOf_boolean_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14503,9 +14580,10 @@ cases:
     description: 'Schema probe union_anyOf_boolean_typed: independently authored value true under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_boolean_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_boolean_typed
+    - UNIFIED.7-union_anyOf_boolean_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14571,9 +14649,10 @@ cases:
     description: 'Schema probe union_anyOf_integer_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_integer_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_integer_reverse_string
+    - UNIFIED.7-union_anyOf_integer_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14639,9 +14718,10 @@ cases:
     description: 'Schema probe union_anyOf_integer_reverse_typed: independently authored value 42 under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_integer_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_integer_reverse_typed
+    - UNIFIED.7-union_anyOf_integer_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14707,9 +14787,10 @@ cases:
     description: 'Schema probe union_anyOf_integer_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_integer_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_integer_string
+    - UNIFIED.7-union_anyOf_integer_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14775,9 +14856,10 @@ cases:
     description: 'Schema probe union_anyOf_integer_typed: independently authored value 42 under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_integer_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_integer_typed
+    - UNIFIED.7-union_anyOf_integer_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14843,9 +14925,10 @@ cases:
     description: 'Schema probe union_anyOf_null_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_null_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_null_reverse_string
+    - UNIFIED.7-union_anyOf_null_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14911,9 +14994,10 @@ cases:
     description: 'Schema probe union_anyOf_null_reverse_typed: independently authored value null under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_null_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_null_reverse_typed
+    - UNIFIED.7-union_anyOf_null_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14979,9 +15063,10 @@ cases:
     description: 'Schema probe union_anyOf_null_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_null_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_null_string
+    - UNIFIED.7-union_anyOf_null_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15047,9 +15132,10 @@ cases:
     description: 'Schema probe union_anyOf_null_typed: independently authored value null under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_null_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_null_typed
+    - UNIFIED.7-union_anyOf_null_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15115,9 +15201,10 @@ cases:
     description: 'Schema probe union_anyOf_number_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_number_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_number_reverse_string
+    - UNIFIED.7-union_anyOf_number_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15183,9 +15270,10 @@ cases:
     description: 'Schema probe union_anyOf_number_reverse_typed: independently authored value 3.5 under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_number_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_number_reverse_typed
+    - UNIFIED.7-union_anyOf_number_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15251,9 +15339,10 @@ cases:
     description: 'Schema probe union_anyOf_number_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_number_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_number_string
+    - UNIFIED.7-union_anyOf_number_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15319,9 +15408,10 @@ cases:
     description: 'Schema probe union_anyOf_number_typed: independently authored value 3.5 under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_number_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_number_typed
+    - UNIFIED.7-union_anyOf_number_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15387,9 +15477,10 @@ cases:
     description: 'Schema probe union_anyOf_object_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_object_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_object_reverse_string
+    - UNIFIED.7-union_anyOf_object_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15455,9 +15546,10 @@ cases:
     description: 'Schema probe union_anyOf_object_reverse_typed: independently authored value {"x": 1} under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_object_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_object_reverse_typed
+    - UNIFIED.7-union_anyOf_object_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15524,9 +15616,10 @@ cases:
     description: 'Schema probe union_anyOf_object_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_object_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_string
     historical_ids:
     - UNIFIED.7-19.union_anyOf_object_string
+    - UNIFIED.7-union_anyOf_object_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15592,9 +15685,10 @@ cases:
     description: 'Schema probe union_anyOf_object_typed: independently authored value {"x": 1} under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_anyOf_object_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_typed
     historical_ids:
     - UNIFIED.7-19.union_anyOf_object_typed
+    - UNIFIED.7-union_anyOf_object_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15661,9 +15755,10 @@ cases:
     description: 'Schema probe union_oneOf_array_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_array_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_array_reverse_string
+    - UNIFIED.7-union_oneOf_array_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15729,9 +15824,10 @@ cases:
     description: 'Schema probe union_oneOf_array_reverse_typed: independently authored value [1, 2] under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_array_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_array_reverse_typed
+    - UNIFIED.7-union_oneOf_array_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15799,9 +15895,10 @@ cases:
     description: 'Schema probe union_oneOf_array_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_array_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_array_string
+    - UNIFIED.7-union_oneOf_array_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15867,9 +15964,10 @@ cases:
     description: 'Schema probe union_oneOf_array_typed: independently authored value [1, 2] under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_array_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_array_typed
+    - UNIFIED.7-union_oneOf_array_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -15937,9 +16035,10 @@ cases:
     description: 'Schema probe union_oneOf_boolean_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_boolean_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_boolean_reverse_string
+    - UNIFIED.7-union_oneOf_boolean_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16005,9 +16104,10 @@ cases:
     description: 'Schema probe union_oneOf_boolean_reverse_typed: independently authored value true under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_boolean_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_boolean_reverse_typed
+    - UNIFIED.7-union_oneOf_boolean_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16073,9 +16173,10 @@ cases:
     description: 'Schema probe union_oneOf_boolean_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_boolean_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_boolean_string
+    - UNIFIED.7-union_oneOf_boolean_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16141,9 +16242,10 @@ cases:
     description: 'Schema probe union_oneOf_boolean_typed: independently authored value true under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_boolean_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_boolean_typed
+    - UNIFIED.7-union_oneOf_boolean_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16209,9 +16311,10 @@ cases:
     description: 'Schema probe union_oneOf_integer_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_integer_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_integer_reverse_string
+    - UNIFIED.7-union_oneOf_integer_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16277,9 +16380,10 @@ cases:
     description: 'Schema probe union_oneOf_integer_reverse_typed: independently authored value 42 under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_integer_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_integer_reverse_typed
+    - UNIFIED.7-union_oneOf_integer_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16345,9 +16449,10 @@ cases:
     description: 'Schema probe union_oneOf_integer_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_integer_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_integer_string
+    - UNIFIED.7-union_oneOf_integer_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16413,9 +16518,10 @@ cases:
     description: 'Schema probe union_oneOf_integer_typed: independently authored value 42 under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_integer_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_integer_typed
+    - UNIFIED.7-union_oneOf_integer_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16481,9 +16587,10 @@ cases:
     description: 'Schema probe union_oneOf_null_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_null_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_null_reverse_string
+    - UNIFIED.7-union_oneOf_null_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16549,9 +16656,10 @@ cases:
     description: 'Schema probe union_oneOf_null_reverse_typed: independently authored value null under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_null_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_null_reverse_typed
+    - UNIFIED.7-union_oneOf_null_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16617,9 +16725,10 @@ cases:
     description: 'Schema probe union_oneOf_null_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_null_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_null_string
+    - UNIFIED.7-union_oneOf_null_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16685,9 +16794,10 @@ cases:
     description: 'Schema probe union_oneOf_null_typed: independently authored value null under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_null_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_null_typed
+    - UNIFIED.7-union_oneOf_null_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16753,9 +16863,10 @@ cases:
     description: 'Schema probe union_oneOf_number_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_number_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_number_reverse_string
+    - UNIFIED.7-union_oneOf_number_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16821,9 +16932,10 @@ cases:
     description: 'Schema probe union_oneOf_number_reverse_typed: independently authored value 3.5 under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_number_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_number_reverse_typed
+    - UNIFIED.7-union_oneOf_number_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16889,9 +17001,10 @@ cases:
     description: 'Schema probe union_oneOf_number_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_number_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_number_string
+    - UNIFIED.7-union_oneOf_number_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -16957,9 +17070,10 @@ cases:
     description: 'Schema probe union_oneOf_number_typed: independently authored value 3.5 under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_number_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_number_typed
+    - UNIFIED.7-union_oneOf_number_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17025,9 +17139,10 @@ cases:
     description: 'Schema probe union_oneOf_object_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_object_reverse_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_object_reverse_string
+    - UNIFIED.7-union_oneOf_object_reverse_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17093,9 +17208,10 @@ cases:
     description: 'Schema probe union_oneOf_object_reverse_typed: independently authored value {"x": 1} under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_object_reverse_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_object_reverse_typed
+    - UNIFIED.7-union_oneOf_object_reverse_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17162,9 +17278,10 @@ cases:
     description: 'Schema probe union_oneOf_object_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_object_string
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_string
     historical_ids:
     - UNIFIED.7-20.union_oneOf_object_string
+    - UNIFIED.7-union_oneOf_object_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17230,9 +17347,10 @@ cases:
     description: 'Schema probe union_oneOf_object_typed: independently authored value {"x": 1} under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-union_oneOf_object_typed
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_typed
     historical_ids:
     - UNIFIED.7-20.union_oneOf_object_typed
+    - UNIFIED.7-union_oneOf_object_typed
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17299,9 +17417,10 @@ cases:
     description: 'Schema probe escaped_ref_const: independently authored value "\"hello\"" under {"$ref": "#/$defs/A~1B~0C"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-escaped_ref_const
+    display_id: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
     historical_ids:
     - UNIFIED.7-21.escaped_ref_const
+    - UNIFIED.7-escaped_ref_const
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17368,9 +17487,10 @@ cases:
     description: 'Schema probe percent_ref_const: independently authored value "42" under {"$ref": "#/$defs/Caf%C3%A9"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-percent_ref_const
+    display_id: UNIFIED.7-tool-argument-schema-references-percent_ref_const
     historical_ids:
     - UNIFIED.7-21.percent_ref_const
+    - UNIFIED.7-percent_ref_const
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17437,9 +17557,10 @@ cases:
     description: 'Schema probe ref_sibling_integer: independently authored value 42 under {"$ref": "#/$defs/Choice", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-ref_sibling_integer
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_sibling_integer
     historical_ids:
     - UNIFIED.7-21.ref_sibling_integer
+    - UNIFIED.7-ref_sibling_integer
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17509,9 +17630,10 @@ cases:
     description: 'Schema probe ref_union_anyOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-ref_union_anyOf_integer
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_integer
     historical_ids:
     - UNIFIED.7-21.ref_union_anyOf_integer
+    - UNIFIED.7-ref_union_anyOf_integer
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17582,9 +17704,10 @@ cases:
     description: 'Schema probe ref_union_anyOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-ref_union_anyOf_string
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_string
     historical_ids:
     - UNIFIED.7-21.ref_union_anyOf_string
+    - UNIFIED.7-ref_union_anyOf_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17655,9 +17778,10 @@ cases:
     description: 'Schema probe ref_union_oneOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-ref_union_oneOf_integer
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_integer
     historical_ids:
     - UNIFIED.7-21.ref_union_oneOf_integer
+    - UNIFIED.7-ref_union_oneOf_integer
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17728,9 +17852,10 @@ cases:
     description: 'Schema probe ref_union_oneOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-ref_union_oneOf_string
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_string
     historical_ids:
     - UNIFIED.7-21.ref_union_oneOf_string
+    - UNIFIED.7-ref_union_oneOf_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17801,9 +17926,10 @@ cases:
     description: 'Schema probe intersection_anyOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"anyOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-intersection_anyOf
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-intersection_anyOf
     historical_ids:
     - UNIFIED.7-22.intersection_anyOf
+    - UNIFIED.7-intersection_anyOf
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17871,9 +17997,10 @@ cases:
     description: 'Schema probe intersection_oneOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"oneOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-intersection_oneOf
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-intersection_oneOf
     historical_ids:
     - UNIFIED.7-22.intersection_oneOf
+    - UNIFIED.7-intersection_oneOf
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -17941,9 +18068,10 @@ cases:
     description: 'Schema probe enum_integer: independently authored value 42 under {"type": "integer", "enum": [7, 42]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-enum_integer
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_integer
     historical_ids:
     - UNIFIED.7-23.enum_integer
+    - UNIFIED.7-enum_integer
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18010,9 +18138,10 @@ cases:
     description: 'Schema probe enum_string: independently authored value "42" under {"type": "string", "enum": ["auto", "42"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-enum_string
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_string
     historical_ids:
     - UNIFIED.7-23.enum_string
+    - UNIFIED.7-enum_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18079,9 +18208,10 @@ cases:
     description: 'Schema probe nullable_string: independently authored value null under {"type": "string", "nullable": true}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-nullable_string
+    display_id: UNIFIED.7-tool-argument-nullability-nullable_string
     historical_ids:
     - UNIFIED.7-24.nullable_string
+    - UNIFIED.7-nullable_string
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18146,9 +18276,10 @@ cases:
     description: 'Schema probe type_array_integer_null: independently authored value 42 under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-type_array_integer_null
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_integer_null
     historical_ids:
     - UNIFIED.7-24.type_array_integer_null
+    - UNIFIED.7-type_array_integer_null
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18214,9 +18345,10 @@ cases:
     description: 'Schema probe type_array_integer_null_null: independently authored value null under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-type_array_integer_null_null
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_integer_null_null
     historical_ids:
     - UNIFIED.7-24.type_array_integer_null_null
+    - UNIFIED.7-type_array_integer_null_null
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18282,9 +18414,10 @@ cases:
     description: 'Schema probe type_array_string_integer: independently authored value "42" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-type_array_string_integer
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer
     historical_ids:
     - UNIFIED.7-24.type_array_string_integer
+    - UNIFIED.7-type_array_string_integer
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18350,9 +18483,10 @@ cases:
     description: 'Schema probe integer_const_ambiguous: independently authored value "42" under {"anyOf": [{"const": "42"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-integer_const_ambiguous
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-integer_const_ambiguous
     historical_ids:
     - UNIFIED.7-25.integer_const_ambiguous
+    - UNIFIED.7-integer_const_ambiguous
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18418,9 +18552,10 @@ cases:
     description: 'Schema probe null_union_ambiguous: independently authored value null under {"anyOf": [{"const": "null"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-null_union_ambiguous
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-null_union_ambiguous
     historical_ids:
     - UNIFIED.7-25.null_union_ambiguous
+    - UNIFIED.7-null_union_ambiguous
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18486,9 +18621,10 @@ cases:
     description: 'Schema probe object_const_union: independently authored value "{\"x\":1}" under {"anyOf": [{"const": "{\"x\":1}"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    display_id: UNIFIED.7-object_const_union
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-object_const_union
     historical_ids:
     - UNIFIED.7-25.object_const_union
+    - UNIFIED.7-object_const_union
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -18951,8 +19087,10 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_message_header_literal
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_quoted_closer_and_response_header
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_message_header_literal
+    - UNIFIED.7-arg_marker_in_string_quoted_closer_and_response_header
     request:
       input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
 
@@ -19019,8 +19157,9 @@ cases:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-quoted_truncated_tool_then_final
-    historical_ids: []
+    display_id: UNIFIED.5-tool_no_close_malformed_argument_then_visible_response
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_truncated_tool_then_final
     request:
       input: <|start|>assistant to=lookup<|message|><atem:invoke name="lookup"><atem:parameter name="q">abc<|eom|><|start|>assistant to=user<|message|>Answer<|eom|>
       init:
@@ -19566,8 +19705,9 @@ cases:
     description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
     policy:
     - I7
-    display_id: UNIFIED.7-xml_string_type_double_quoted_object
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-declared-types-xml_string_type_double_quoted_object
+    historical_ids:
+    - UNIFIED.7-xml_string_type_double_quoted_object
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -19631,8 +19771,9 @@ cases:
     description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
     policy:
     - I7
-    display_id: UNIFIED.7-xml_string_type_single_quoted_object
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-declared-types-xml_string_type_single_quoted_object
+    historical_ids:
+    - UNIFIED.7-xml_string_type_single_quoted_object
     request:
       input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -19696,9 +19837,10 @@ cases:
     description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-directed values use bare null text; typed grammars use native null and string values. Expect {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_null_mixed_labels
+    display_id: UNIFIED.7-tool-argument-nullability-arg_null_mixed_labels
     historical_ids:
     - UNIFIED.7-4.mixed_labels
+    - UNIFIED.7-arg_null_mixed_labels
     request:
       input: '<|start|>assistant to=set_labels<|message|><atem:function_calls>
 
@@ -19784,9 +19926,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_const_decimal
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_decimal
     historical_ids:
     - UNIFIED.7-14.const_decimal
+    - UNIFIED.7-arg_numeric_14_const_decimal
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -19848,9 +19991,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_const_exponent
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_exponent
     historical_ids:
     - UNIFIED.7-14.const_exponent
+    - UNIFIED.7-arg_numeric_14_const_exponent
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -19912,9 +20056,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_enum_decimal
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_decimal
     historical_ids:
     - UNIFIED.7-14.enum_decimal
+    - UNIFIED.7-arg_numeric_14_enum_decimal
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -19977,9 +20122,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_enum_exponent
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_exponent
     historical_ids:
     - UNIFIED.7-14.enum_exponent
+    - UNIFIED.7-arg_numeric_14_enum_exponent
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20042,9 +20188,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_large_decimal
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_decimal
     historical_ids:
     - UNIFIED.7-14.large_decimal
+    - UNIFIED.7-arg_numeric_14_large_decimal
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20105,9 +20252,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_large_exponent
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_exponent
     historical_ids:
     - UNIFIED.7-14.large_exponent
+    - UNIFIED.7-arg_numeric_14_large_exponent
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20168,9 +20316,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input -4.2E+1; expected -42.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_negative
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative
     historical_ids:
     - UNIFIED.7-14.negative
+    - UNIFIED.7-arg_numeric_14_negative
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20231,9 +20380,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4200e-2; expected 42.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_negative_exponent
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative_exponent
     historical_ids:
     - UNIFIED.7-14.negative_exponent
+    - UNIFIED.7-arg_numeric_14_negative_exponent
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20294,9 +20444,10 @@ cases:
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 0.0e-400; expected 0.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_14_zero_underflow
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_zero_underflow
     historical_ids:
     - UNIFIED.7-14.zero_underflow
+    - UNIFIED.7-arg_numeric_14_zero_underflow
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20357,9 +20508,10 @@ cases:
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9.0071992547409925e15; expected 9.0071992547409925e15.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_15_exponent
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_exponent
     historical_ids:
     - UNIFIED.7-15.exponent
+    - UNIFIED.7-arg_numeric_15_exponent
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20418,9 +20570,10 @@ cases:
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input -9007199254740992.5; expected -9007199254740992.5.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_15_negative
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_negative
     historical_ids:
     - UNIFIED.7-15.negative
+    - UNIFIED.7-arg_numeric_15_negative
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20479,9 +20632,10 @@ cases:
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 42.5; expected 42.5.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_15_ordinary
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_ordinary
     historical_ids:
     - UNIFIED.7-15.ordinary
+    - UNIFIED.7-arg_numeric_15_ordinary
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20540,9 +20694,10 @@ cases:
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.25; expected 9007199254740993.25.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_15_quarter
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_quarter
     historical_ids:
     - UNIFIED.7-15.quarter
+    - UNIFIED.7-arg_numeric_15_quarter
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20601,9 +20756,10 @@ cases:
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740992.5; expected 9007199254740992.5.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_15_round_down
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_down
     historical_ids:
     - UNIFIED.7-15.round_down
+    - UNIFIED.7-arg_numeric_15_round_down
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20662,9 +20818,10 @@ cases:
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.1; expected 9007199254740993.1.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_15_round_up
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_up
     historical_ids:
     - UNIFIED.7-15.round_up
+    - UNIFIED.7-arg_numeric_15_round_up
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20723,9 +20880,10 @@ cases:
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 0.10000000000000000001; expected 0.10000000000000000001.'
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_15_small
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_small
     historical_ids:
     - UNIFIED.7-15.small
+    - UNIFIED.7-arg_numeric_15_small
     request:
       input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
 
@@ -20784,8 +20942,9 @@ cases:
     description: Nested objects and arrays preserve exact large integers, long decimals, and underflow-sized numbers.
     policy:
     - I7
-    display_id: UNIFIED.7-arg_numeric_nested_exact
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_nested_exact
+    historical_ids:
+    - UNIFIED.7-arg_numeric_nested_exact
     request:
       input: '<|start|>assistant to=inspect<|message|><atem:function_calls>
 
@@ -21145,8 +21304,9 @@ cases:
     description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
     policy:
     - I7
-    display_id: UNIFIED.7-arg_array_quoted_parameter_close
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
+    historical_ids:
+    - UNIFIED.7-arg_array_quoted_parameter_close
     request:
       input: '<|start|>assistant to=record<|message|><atem:function_calls>
 
@@ -21214,8 +21374,9 @@ cases:
     description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
     policy:
     - I7
-    display_id: UNIFIED.7-arg_object_quoted_parameter_close
-    historical_ids: []
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_object_quoted_parameter_close
+    historical_ids:
+    - UNIFIED.7-arg_object_quoted_parameter_close
     request:
       input: '<|start|>assistant to=record<|message|><atem:function_calls>
 
@@ -21281,3 +21442,1514 @@ cases:
         arguments:
           value:
             s: </atem:parameter>
+  arg_json_null_ref:
+    lifecycle: active
+    scenario: arg_json_null_ref
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
+    historical_ids:
+    - UNIFIED.7-arg_json_null_ref
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">null</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type:
+              - string
+              - 'null'
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: 'null'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_string_null_ref:
+    lifecycle: active
+    scenario: arg_string_null_ref
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
+    historical_ids:
+    - UNIFIED.7-arg_string_null_ref
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type: string
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  gpt_oss_interrupted_reasoning_then_response:
+    lifecycle: retired
+    scenario: gpt_oss_interrupted_reasoning_then_response
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
+    policy:
+    - I1
+    - I3
+    display_id: null
+    historical_ids:
+    - UNIFIED.gpt_oss-interrupted_reasoning_then_response
+    request:
+      input: <|start|>assistant to=self<|message|>checking<|start|>assistant to=user<|message|>done<|eom|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=self
+      - delta_text: <|message|>
+      - delta_text: checking
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: done
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: checking
+      - kind: text
+        text: done
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    request:
+      input: '<|start|>assistant to=run<|message|><atem:function_calls>
+
+        <atem:invoke name="run">
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=not_offered<|message|><atem:function_calls>
+
+        <atem:invoke name="not_offered">
+
+        <atem:parameter name="x">2</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=run
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="run">
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=not_offered
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="not_offered">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="x">
+      - delta_text: '2'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: 2
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    lifecycle: active
+    scenario: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    description: A tool message omits its outer terminator before a visible-response header. Preserve the later content and each grammar's complete-call policy.
+    policy:
+    - I3
+    - I4
+    - I5
+    display_id: UNIFIED.5-tool_no_close_next_message_recovery
+    historical_ids:
+    - UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q">unfinished</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|start|>assistant to=user<|message|>recovered<|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=lookup
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="lookup">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="q">
+      - delta_text: unfinished
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: recovered
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: unfinished
+      - kind: text
+        text: recovered
+  blank_framing_tool_only:
+    lifecycle: active
+    scenario: blank_framing_tool_only
+    description: A tool-only turn frames its call with a newline on each side, as Nemotron emits it. The tag-aligned schedule delivers each newline in its own chunk. Nemotron V3 emits no text; every other family keeps the newlines.
+    policy:
+    - P8
+    - I5
+    display_id: UNIFIED.8-blank_framing_tool_only
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=user<|message|>
+
+        <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+        <|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_between_calls_single_chunk:
+    lifecycle: active
+    scenario: blank_framing_between_calls_single_chunk
+    description: Two calls framed by newlines before, between, and after them, delivered in one push. Nemotron V3 emits no text; every other family keeps the newlines.
+    policy:
+    - P8
+    - I6
+    display_id: UNIFIED.8-blank_framing_between_calls_single_chunk
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=user<|message|>
+
+        <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+        <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Tokyo</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+        <|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '<|start|>assistant to=user<|message|>
+
+          <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+
+          <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+          <atem:invoke name="get_weather">
+
+          <atem:parameter name="city">Tokyo</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+          <|eom|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Tokyo
+      - kind: text
+        text: '
+
+          '
+  blank_framing_with_prose:
+    lifecycle: active
+    scenario: blank_framing_with_prose
+    description: 'Visible prose before the call: the turn has visible text, so every whitespace byte, including the newline after the call, is kept by every family.'
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_with_prose
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=user<|message|>Pressing it now.
+
+
+        <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+        <|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: 'Pressing it now.
+
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_after_reasoning:
+    lifecycle: active
+    scenario: blank_framing_after_reasoning
+    description: 'Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive. Nemotron V3 emits no framing text; every other family keeps it.'
+    policy:
+    - P8
+    - I2
+    display_id: UNIFIED.11-blank_framing_after_reasoning
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=self<|message|>Check weather.<|eom|><|start|>assistant to=user<|message|>
+
+
+        <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+        <|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=self
+      - delta_text: <|message|>
+      - delta_text: Check weather.
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: text
+        text: '
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_prose_after_call:
+    lifecycle: active
+    scenario: blank_framing_prose_after_call
+    description: 'Framing newline, a call, then visible prose: the turn has visible text, so every whitespace byte is kept. Nemotron V3 holds the leading newline and releases it in front of the prose, so its text follows the call; every other family keeps it before the call.'
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_prose_after_call
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=user<|message|>
+
+        <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=user<|message|>
+
+        Done.<|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+          Done.'
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          Done.'
+  blank_output_without_call:
+    lifecycle: active
+    scenario: blank_output_without_call
+    description: Whitespace-only output with no call is visible content and is kept unchanged by every family.
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.3-blank_output_without_call
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=user<|message|>
+
+
+        <|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: '
+
+
+          '
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+  arg_numeric_overflow_siblings_finite:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_finite
+    description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
+    historical_ids:
+    - UNIFIED.7-arg_numeric_overflow_siblings_finite
+    request:
+      input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+        <atem:invoke name="echo">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        <atem:parameter name="value">1.5</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+          <atem:invoke name="echo">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          <atem:parameter name="value">1.5</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1.5}'
+  arg_numeric_overflow_siblings_positive:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_positive
+    description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
+    historical_ids:
+    - UNIFIED.7-arg_numeric_overflow_siblings_positive
+    request:
+      input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+        <atem:invoke name="echo">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        <atem:parameter name="value">1e400</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+          <atem:invoke name="echo">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          <atem:parameter name="value">1e400</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1e400}'
+  arg_numeric_overflow_siblings_negative:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_negative
+    description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
+    historical_ids:
+    - UNIFIED.7-arg_numeric_overflow_siblings_negative
+    request:
+      input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+        <atem:invoke name="echo">
+
+        <atem:parameter name="city">Paris</atem:parameter>
+
+        <atem:parameter name="value">-1E+400</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+          <atem:invoke name="echo">
+
+          <atem:parameter name="city">Paris</atem:parameter>
+
+          <atem:parameter name="value">-1E+400</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":-1E+400}'
+  interrupted_reasoning_then_response:
+    lifecycle: active
+    scenario: interrupted_reasoning_then_response
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
+    policy:
+    - I1
+    - I3
+    display_id: UNIFIED.10-reason_then_content_interrupted
+    historical_ids:
+    - UNIFIED.10-interrupted_reasoning_then_response
+    request:
+      input: <|start|>assistant to=self<|message|>let me think<|start|>assistant to=user<|message|>The answer is 42.<|eom|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=self
+      - delta_text: <|message|>
+      - delta_text: let me think
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: The answer is 42.
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: let me think
+      - kind: text
+        text: The answer is 42.
+  conditional_schema_number_types:
+    lifecycle: active
+    scenario: conditional_schema_number_types
+    description: 'ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number; an integer `if` with a numeric `else` keeps 37 an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
+    historical_ids: [UNIFIED.7-conditional_schema_number_types]
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="amount">21.5</atem:parameter>
+
+        <atem:parameter name="retries">37</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            amount:
+              if:
+                minimum: 0
+              then:
+                type: number
+                minimum: 0
+              else:
+                type: number
+            retries:
+              if:
+                type: integer
+              then:
+                minimum: 0
+              else:
+                type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="amount">
+      - delta_text: '21.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="retries">
+      - delta_text: '37'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          amount: 21.5
+          retries: 37
+  not_keyword_type_complement:
+    lifecycle: active
+    scenario: not_keyword_type_complement
+    description: 'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
+    historical_ids: [UNIFIED.7-not_keyword_type_complement]
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="count">-2500</atem:parameter>
+
+        <atem:parameter name="text">"42"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            count:
+              not:
+                type: string
+            text:
+              not:
+                type: integer
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="count">
+      - delta_text: '-2500'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="text">
+      - delta_text: '"42"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          count: -2500
+          text: '42'
+  reference_object_recursive_and_composed_types:
+    lifecycle: active
+    scenario: reference_object_recursive_and_composed_types
+    description: 'ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` all keep their JSON types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
+    historical_ids: [UNIFIED.7-reference_object_recursive_and_composed_types]
+    request:
+      input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+        <atem:invoke name="capture_payload">
+
+        <atem:parameter name="category">{"label":"Garden Tools","children":[]}</atem:parameter>
+
+        <atem:parameter name="tree">{"label":"root","children":[{"label":"leaf","children":[]}]}</atem:parameter>
+
+        <atem:parameter name="retries">37</atem:parameter>
+
+        <atem:parameter name="dry_run">false</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          $defs:
+            Category:
+              type: object
+              properties:
+                label:
+                  type: string
+                children:
+                  type: array
+            Node:
+              type: object
+              properties:
+                label:
+                  type: string
+                children:
+                  type: array
+                  items:
+                    $ref: '#/$defs/Node'
+          properties:
+            category:
+              $ref: '#/$defs/Category'
+            tree:
+              $ref: '#/$defs/Node'
+            retries:
+              type:
+              - integer
+              - 'null'
+            dry_run:
+              allOf:
+              - type: boolean
+              - description: flag
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=capture_payload
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="capture_payload">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="category">
+      - delta_text: '{"label":"Garden Tools","children":[]}'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="tree">
+      - delta_text: '{"label":"root","children":[{"label":"leaf","children":[]}]}'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="retries">
+      - delta_text: '37'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="dry_run">
+      - delta_text: 'false'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          category:
+            label: Garden Tools
+            children: []
+          tree:
+            label: root
+            children:
+            - label: leaf
+              children: []
+          retries: 37
+          dry_run: false

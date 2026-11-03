@@ -77,6 +77,57 @@ document_overrides:
         git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
         source_sha256: 4f0d78e8c87e91f58d7ae55901f81261c3d57d5ecf144cd065ea9ed2ace846e3
       inherited_from: null
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+        source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+        source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+        source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
+      inherited_from: null
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
       captured_with:
@@ -121,28 +172,4 @@ document_overrides:
         crate_version: 0.7.17
         git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
         source_sha256: 4f0d78e8c87e91f58d7ae55901f81261c3d57d5ecf144cd065ea9ed2ace846e3
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.17
-      capture_origin: null
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.17
-      capture_origin: null
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.17
-      capture_origin: null
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.17
-      capture_origin: null
       inherited_from: null

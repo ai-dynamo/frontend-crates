@@ -7,6 +7,41 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  arg_string_null_ref:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  gpt_oss_control_marker_inside_argument_string:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_empty_call:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_valid_call:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
   gpt_oss_tool_body_whitespace:
     observation:
       unavailable:
@@ -2913,6 +2948,72 @@ document_overrides:
         git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
         source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
       inherited_from: null
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
   gpt_oss_tool_body_whitespace:
     capture_provenance:
       captured_with:
@@ -2957,28 +3058,4 @@ document_overrides:
         crate_version: 0.7.20
         git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
         source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
       inherited_from: null

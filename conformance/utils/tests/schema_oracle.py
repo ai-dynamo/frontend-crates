@@ -58,7 +58,8 @@ def matches_schema(
     assert schema.keys() <= {
         "$id", "type", "properties", "items", "anyOf", "oneOf", "const", "enum",
         "nullable", "minLength", "required", "$ref", "$defs", "definitions",
-        "allOf", "minimum", "additionalProperties",
+        "allOf", "minimum", "additionalProperties", "not", "if", "then", "else",
+        "description",
     }, schema
     if "$ref" in schema:
         reference = schema["$ref"]
@@ -105,8 +106,18 @@ def matches_schema(
         for branch in schema["allOf"]
     ):
         return False
+    if "not" in schema and matches_schema(value, schema["not"], root_schema, _references, nullable):
+        return False
+    if "if" in schema:
+        branch = schema.get("then") if matches_schema(
+            value, schema["if"], root_schema, _references, nullable
+        ) else schema.get("else")
+        if branch is not None and not matches_schema(value, branch, root_schema, _references, nullable):
+            return False
     if isinstance(value, str) and len(value) < schema.get("minLength", 0):
         return False
+    # Descending into a child VALUE ends the reference cycle guard: a recursive
+    # definition (a tree node whose children are nodes) terminates on the data.
     if isinstance(value, dict):
         if not set(schema.get("required", [])) <= value.keys():
             return False
@@ -118,13 +129,13 @@ def matches_schema(
                 if additional is False:
                     return False
                 if isinstance(additional, dict) and not matches_schema(
-                    item, additional, root_schema, _references
+                    item, additional, root_schema
                 ):
                     return False
         return all(
-            matches_schema(item, properties[key], root_schema, _references)
+            matches_schema(item, properties[key], root_schema)
             for key, item in value.items() if key in properties
         )
     if isinstance(value, list) and "items" in schema:
-        return all(matches_schema(item, schema["items"], root_schema, _references) for item in value)
+        return all(matches_schema(item, schema["items"], root_schema) for item in value)
     return True

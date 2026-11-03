@@ -314,12 +314,9 @@ fn test_unclosed_think_tag_no_longer_swallows_tool_call() { ... }
 
 ---
 
-## Adding a new reasoning parser: target complete coverage
+## Historical reasoning coverage inventory
 
-The current fixture PR is seed coverage: it establishes the YAML
-contract, provenance, and representative cases, but it does not claim
-that every family already has the complete taxonomy below. Before a
-parser family is considered complete, add:
+New reasoning parser cases use `UNIFIED.*`; follow `UNIFIED_CASES.md` for family-native reasoning, text preservation, reasoning/tool boundaries, malformed recovery, EOF, and explicit chunk schedules. The checklist below describes the retained historical taxonomy and does not instruct new archive capture jobs.
 
 1. `REASONING.batch.1.*` — no reasoning content: plain text, empty
    input, whitespace, and null / missing upstream content.

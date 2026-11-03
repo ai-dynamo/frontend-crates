@@ -472,10 +472,10 @@ fn get_param_schema_type<'a>(
     let candidates: &[&str] = if coerce_integral_number(raw).is_some() {
         &["integer", "number"]
     } else {
-        match serde_json::from_str::<Value>(raw).ok()? {
-            Value::Null => &["null"],
-            Value::Bool(_) => &["boolean"],
-            Value::Number(_) => &["number"],
+        match parsed_json_literal(raw)? {
+            ParsedValue::Json(Value::Null) => &["null"],
+            ParsedValue::Json(Value::Bool(_)) => &["boolean"],
+            ParsedValue::RawNumber(_) => &["number"],
             _ => &[],
         }
     };
@@ -1146,6 +1146,39 @@ mod tests {
             assert_eq!(
                 parse_null_with_parameters(null_ref_parameters(parameter.clone())),
                 serde_json::json!("null"),
+                "{parameter}"
+            );
+        }
+    }
+
+    #[test]
+    fn null_coercion_evaluates_scoped_schemas() {
+        // A nested `$id` rebases only its references; its own keywords still apply.
+        for (parameter, expected) in [
+            (
+                serde_json::json!({"$id": "nested", "type": ["string", "null"]}),
+                Value::Null,
+            ),
+            (
+                serde_json::json!({"$id": "nested", "type": "integer", "nullable": true}),
+                Value::Null,
+            ),
+            (
+                serde_json::json!({"$id": "nested", "enum": ["a", null]}),
+                Value::Null,
+            ),
+            (
+                serde_json::json!({"$id": "nested", "type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"$id": "nested", "anyOf": [{"$ref": "#/$defs/Nullable"}]}),
+                serde_json::json!("null"),
+            ),
+        ] {
+            assert_eq!(
+                parse_null_with_parameters(null_ref_parameters(parameter.clone())),
+                expected,
                 "{parameter}"
             );
         }

@@ -3,15 +3,15 @@
 """A vLLM cell nobody can capture must say so.
 
 `unified_render.rs` reads `expect.vllm` only as a FALLBACK for a case vLLM did not
-capture. The packaged feed is rendered in `conformance/CONFORMANCE_v2.html`.
+capture. Capture tooling consumes that feed independently of the browser viewer.
 For a family `capture_vllm_unified.py` cannot run at all, that fallback is every case, so
 the whole column is authored — and a bare `match` there draws the same
 `expected: MATCH` a family an engine really parsed earns.
 
 This file guards the AUTHORED spec only. `expect.*` never reaches the packaged shards,
-so the published `CONFORMANCE_v2.html` Unified tab cannot read this note at all; it
-derives its own from the missing capture. `test_unified_tab_vllm_caveat.py` guards that
-side, and neither guard implies the other.
+so the maintained browser's Unified tab cannot read this note at all; it
+derives its own from the missing capture through `unified_panel.js` and `status.js`.
+This authored-spec test does not exercise that browser classification.
 
 The gap fails SILENTLY, in the direction that reads as good news: nothing errors,
 the cell is simply greener than the corpus can support.

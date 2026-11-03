@@ -7,6 +7,61 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_string_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  dotted_name_minimal:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_mixed_punctuation:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_multiple_segments:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_shared_prefix:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  gpt_oss_control_marker_inside_argument_string:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_empty_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_valid_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   gpt_oss_quoted_message_header_literal:
     observation:
       unavailable:
@@ -22,6 +77,11 @@ changes:
       unavailable:
         code: producer_source_unavailable
         detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. The parser was not executed, and no newer output was substituted.
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_array_before_payload:
     observation:
       unavailable:
@@ -66,39 +126,27 @@ changes:
             arguments: '{"value":"Café"}'
             complete: true
         - expected: []
-  dotted_name_minimal:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_mixed_punctuation:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_multiple_segments:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_shared_prefix:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
 metadata_changes:
+  arg_json_null_ref: {}
+  arg_null_mixed_labels: {}
+  arg_string_null_ref: {}
+  dotted_name_minimal: {}
+  dotted_name_mixed_punctuation: {}
+  dotted_name_multiple_segments: {}
+  dotted_name_shared_prefix: {}
+  gpt_oss_control_marker_inside_argument_string: {}
+  gpt_oss_invalid_tool_body_then_empty_call: {}
+  gpt_oss_invalid_tool_body_then_valid_call: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   gpt_oss_quoted_message_header_literal: {}
   gpt_oss_quoted_truncated_tool_then_final: {}
   gpt_oss_tool_body_whitespace: {}
+  gpt_oss_truncated_tool_resynchronizes_at_next_message: {}
   guided_json_native_parameter_array_before_payload: {}
   guided_json_native_parameter_object_before_payload: {}
   guided_json_native_parameter_string_before_payload: {}
   guided_json_noncall_before_native_array_before_payload: {}
   guided_response_native_wrapper_whitespace_before_prose: {}
-  dotted_name_minimal: {}
-  dotted_name_mixed_punctuation: {}
-  dotted_name_multiple_segments: {}
-  dotted_name_shared_prefix: {}
 document_overrides:
   adjacent_calls_partial_header:
     capture_provenance:
@@ -108,6 +156,72 @@ document_overrides:
         crate_version: 0.7.13
         git_commit: 47ef952237deefe0643f94025272a558f249687d
         source_sha256: b1ad56b250e57723b971e180dee32e394b72abd41b0d262fbddb889ef0a7f6b5
+      inherited_from: null
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
       inherited_from: null
   gpt_oss_quoted_message_header_literal:
     capture_provenance:
@@ -122,6 +236,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   gpt_oss_tool_body_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.13
@@ -165,28 +285,4 @@ document_overrides:
         crate_version: 0.7.13
         git_commit: 47ef952237deefe0643f94025272a558f249687d
         source_sha256: b1ad56b250e57723b971e180dee32e394b72abd41b0d262fbddb889ef0a7f6b5
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.13
-      capture_origin: null
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.13
-      capture_origin: null
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.13
-      capture_origin: null
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.13
-      capture_origin: null
       inherited_from: null

@@ -24,7 +24,7 @@
 //! literal `<tool_call|>` inside a `<|"|>`-delimited string value is an argument
 //! value, so the plain `find` every other wrapped family uses would cut the value
 //! there (`I7`, case `7-2`). The scanner takes a grammar-aware
-//! [`crate::tool_calling::scan::InvokeScan`] for exactly that; see
+//! [`crate::tool_calling::scan::InvokeBoundary`] for exactly that; see
 //! `tool_calling/gemma4.rs`.
 //!
 //! The reasoning side needed the other extension. Gemma 4's opener is a marker

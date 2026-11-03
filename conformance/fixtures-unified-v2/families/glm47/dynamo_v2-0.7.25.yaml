@@ -5,6 +5,11 @@ provenance:
 document:
   mode: unified
 changes:
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_array_before_payload:
     observation:
       value:
@@ -339,6 +344,7 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   guided_json_after_reasoning:
     init:
       starting_state: None
