@@ -678,13 +678,14 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
         driver.quit(); server.shutdown(); server.server_close()
 
 
+@pytest.mark.parametrize('vertical', [False, True], ids=['normal', 'vertical'])
 @pytest.mark.parametrize('width', [480, 1600])
-def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_viewer, width):
+def test_complete_case_names_wrap_in_label_column(published_viewer, width, vertical):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
         driver.set_window_size(width, 1000)
-        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&search_tab-unified=7-tool-argument-text-preservation%20OR%20dotted_name")
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
         _ready(driver, 'tab-unified')
         geometry = driver.execute_script("""
             return [...document.querySelectorAll('.matrix-case-heading')].map(th => {
@@ -706,7 +707,7 @@ def test_vertical_complete_case_names_wrap_in_sticky_label_column(published_view
         assert geometry
         assert any('7-tool-argument-text-preservation' in item['label'] for item in geometry)
         assert any('dotted_name_minimal' in item['label'] for item in geometry)
-        expected_position = 'sticky' if width > 1280 else 'static'
+        expected_position = 'sticky' if not vertical or width > 1280 else 'static'
         assert all(item['sticky'] == expected_position and abs(item['width'] - item['labelWidth']) <= 1 for item in geometry), geometry
         assert all(not item['clipped'] and item['contained'] for item in geometry), geometry
         assert any(item['lineCount'] > 1 for item in geometry), geometry

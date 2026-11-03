@@ -834,11 +834,13 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, viewer_url, transposed
             const header=t.tHead.rows[0].cells[0], h=header.getBoundingClientRect();
             const labels=[...t.tBodies[0].querySelectorAll('tr > th:first-child')]
               .filter(cell=>{const r=cell.getBoundingClientRect();return r.top>=h.bottom&&r.bottom<innerHeight});
+            const shouldStick=!arguments[0];
             return getComputedStyle(header).position==='sticky' && labels.length>0
-              && labels.every(cell=>getComputedStyle(cell).position==='sticky'&&Math.abs(cell.getBoundingClientRect().left)<=1)
+              && labels.every(cell=>getComputedStyle(cell).position===(shouldStick?'sticky':'static')
+                && (!shouldStick||Math.abs(cell.getBoundingClientRect().left)<=1))
               && s.scrollTop===0 && s.scrollLeft===0 && scrollY>0 && scrollX>0
               && Math.abs(h.top)<=1 && h.width>0 && h.bottom<=innerHeight;
-        """))
+        """, transposed))
     finally:
         driver.set_window_size(size["width"], size["height"])
 
