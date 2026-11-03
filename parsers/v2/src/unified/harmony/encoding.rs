@@ -15,13 +15,8 @@ const VOCAB_SHA256: &str = "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5
 
 static HARMONY_GPT_OSS_ENCODING: OnceLock<Result<HarmonyEncoding>> = OnceLock::new();
 
-/// Returns the shared encoding without starting or waiting for initialization.
-pub fn initialized_harmony_gpt_oss_encoding() -> Option<&'static Result<HarmonyEncoding>> {
-    HARMONY_GPT_OSS_ENCODING.get()
-}
-
-/// Loads the GPT-OSS Harmony encoding once per process, coordinated across processes sharing its vocabulary.
-pub fn harmony_gpt_oss_encoding() -> &'static Result<HarmonyEncoding> {
+// Only v2 loaders participate; v1 and direct upstream callers do not take this lock.
+pub(super) fn harmony_gpt_oss_encoding() -> &'static Result<HarmonyEncoding> {
     HARMONY_GPT_OSS_ENCODING.get_or_init(|| {
         // Harmony's blocking HTTP client creates and drops a Tokio runtime, so load it outside async runtimes.
         std::thread::spawn(|| {
@@ -289,10 +284,11 @@ mod tests {
         let blocker = directory.path().join("not-a-directory");
         fs::write(&blocker, b"block cache creation")?;
         let cache = blocker.join("cache");
-        let output = test_subprocess("tests::subprocess_explicit_vocab_helper")?
-            .env("TIKTOKEN_ENCODINGS_BASE", &base)
-            .env("DYNAMO_HARMONY_EXPLICIT_TEST_CACHE", &cache)
-            .output()?;
+        let output =
+            test_subprocess("unified::harmony::encoding::tests::subprocess_explicit_vocab_helper")?
+                .env("TIKTOKEN_ENCODINGS_BASE", &base)
+                .env("DYNAMO_HARMONY_EXPLICIT_TEST_CACHE", &cache)
+                .output()?;
         assert!(
             output.status.success(),
             "explicit vocabulary failed with an unavailable cache: {}",
@@ -347,11 +343,11 @@ mod tests {
         if std::env::var_os("DYNAMO_HARMONY_ENCODING_STATE_TEST").is_none() {
             return;
         }
-        assert!(super::initialized_harmony_gpt_oss_encoding().is_none());
+        assert!(super::HARMONY_GPT_OSS_ENCODING.get().is_none());
         let result = super::harmony_gpt_oss_encoding();
         assert!(result.is_err());
         assert!(std::ptr::eq(
-            super::initialized_harmony_gpt_oss_encoding().unwrap(),
+            super::HARMONY_GPT_OSS_ENCODING.get().unwrap(),
             result,
         ));
         assert!(std::ptr::eq(super::harmony_gpt_oss_encoding(), result));
@@ -360,14 +356,15 @@ mod tests {
     #[test]
     fn cached_error_is_visible_without_reinitializing() -> Result<()> {
         let directory = tempfile::tempdir()?;
-        let output = test_subprocess("tests::subprocess_encoding_state_helper")?
-            .env("DYNAMO_HARMONY_ENCODING_STATE_TEST", "true")
-            .env("TIKTOKEN_ENCODINGS_BASE", directory.path().join("missing"))
-            .env(
-                "TIKTOKEN_RS_CACHE_DIR",
-                directory.path().join("unused-cache"),
-            )
-            .output()?;
+        let output =
+            test_subprocess("unified::harmony::encoding::tests::subprocess_encoding_state_helper")?
+                .env("DYNAMO_HARMONY_ENCODING_STATE_TEST", "true")
+                .env("TIKTOKEN_ENCODINGS_BASE", directory.path().join("missing"))
+                .env(
+                    "TIKTOKEN_RS_CACHE_DIR",
+                    directory.path().join("unused-cache"),
+                )
+                .output()?;
         assert!(
             output.status.success(),
             "{}",
@@ -391,8 +388,9 @@ mod tests {
             .as_ref()
             .map_err(|error| anyhow::anyhow!("{error:#}"))?;
         let text = "hello from Harmony";
-        let tokens = encoding.tokenizer().encode_ordinary(text);
-        assert_eq!(encoding.tokenizer().decode_utf8(&tokens)?, text);
+        let tokens = super::super::encode_harmony(text)?;
+        assert_eq!(super::super::decode_harmony(&tokens)?, text);
+        assert!(std::ptr::eq(encoding, super::super::harmony_encoding()?));
         fs::write(directory.join(format!("{worker}.complete")), b"complete")?;
         Ok(())
     }
@@ -409,13 +407,15 @@ mod tests {
         for worker in 0..6 {
             let log = fs::File::create(directory.path().join(format!("{worker}.log")))?;
             children.push(ChildGuard(
-                test_subprocess("tests::subprocess_real_encoding_helper")?
-                    .env("DYNAMO_HARMONY_REAL_VOCAB_TEST", directory.path())
-                    .env("DYNAMO_HARMONY_REAL_WORKER", worker.to_string())
-                    .env("TIKTOKEN_RS_CACHE_DIR", &cache)
-                    .stdout(Stdio::from(log.try_clone()?))
-                    .stderr(Stdio::from(log))
-                    .spawn()?,
+                test_subprocess(
+                    "unified::harmony::encoding::tests::subprocess_real_encoding_helper",
+                )?
+                .env("DYNAMO_HARMONY_REAL_VOCAB_TEST", directory.path())
+                .env("DYNAMO_HARMONY_REAL_WORKER", worker.to_string())
+                .env("TIKTOKEN_RS_CACHE_DIR", &cache)
+                .stdout(Stdio::from(log.try_clone()?))
+                .stderr(Stdio::from(log))
+                .spawn()?,
             ));
         }
         for worker in 0..children.len() {
@@ -517,7 +517,8 @@ mod tests {
                 "readiness from an earlier child would invalidate the lock observation"
             );
         }
-        let mut command = test_subprocess("tests::subprocess_lock_helper").unwrap();
+        let mut command =
+            test_subprocess("unified::harmony::encoding::tests::subprocess_lock_helper").unwrap();
         command
             .env("DYNAMO_HARMONY_LOCK_TEST_MODE", mode)
             .env("DYNAMO_HARMONY_LOCK_TEST_CACHE", cache_dir)

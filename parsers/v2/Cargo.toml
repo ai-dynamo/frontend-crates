@@ -14,9 +14,9 @@ test-utils = []
 arbitrary-precision = ["serde_json/arbitrary_precision"]
 
 [dependencies]
+sha2 = "0.10"
 dynamo-structural-tag.workspace = true
 openai-harmony = { workspace = true }
-dynamo-harmony.workspace = true
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["raw_value"] }
@@ -27,4 +27,5 @@ uuid = { workspace = true, features = ["v4", "serde"] }
 percent-encoding = { workspace = true }
 
 [dev-dependencies]
+tempfile.workspace = true
 tracing-subscriber = { workspace = true }
