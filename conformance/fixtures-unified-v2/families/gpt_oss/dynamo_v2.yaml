@@ -1,11 +1,11 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"b6ebf62e25b67aae93a12eec653b1e75d5308000825162142e5533c3a309f246","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"109941b1a21d16772e82a82bd89c989f009c68afd83038a93cfbf7be674925c1","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
 document:
   mode: unified
 provenance:
   origin:
     crate_version: 0.9.7
-    git_commit: 1b7b0903eb682e3e761719575239e4403bf192e8
-    source_sha256: 3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+    git_commit: 03e577c5b05101124af7def95b840b918656c630
+    source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
   status: captured
 records:
   arg_array_quoted_parameter_close:

@@ -1,11 +1,11 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"4b5b3485f46101a8546f3ef7a7d8c3278c10e857e2320ed009d3703faf445f6c","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"8fe43f521cb723a1f0356facf4427d4f4dd0a6a0f1eb5447307ee0c6063032e2","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
 document:
   mode: unified
 provenance:
   origin:
     crate_version: 0.9.7
-    git_commit: 1b7b0903eb682e3e761719575239e4403bf192e8
-    source_sha256: 3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+    git_commit: 03e577c5b05101124af7def95b840b918656c630
+    source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
   status: captured
 records:
   adjacent_calls_partial_header:
@@ -10057,10 +10057,10 @@ records:
       document:
         capture_origin:
           crate_version: 0.9.7
-          git_commit: 1b7b0903eb682e3e761719575239e4403bf192e8
-          source_sha256: 3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
         captured_with:
-          dynamo_v2: 0.9.7+source.3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
         mode: unified
         record_metadata:
           init:

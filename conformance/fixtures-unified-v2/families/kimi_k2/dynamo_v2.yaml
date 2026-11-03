@@ -1,11 +1,11 @@
-capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"80b74500a64a5abb4f26ea2431a941f2b6c1411037c93f3511824a2c845a7e8f","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"67793861f39bc2deceb9903ae6c5566d6b729b4aaa6b7c60fadc186350d2c89b","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
 document:
   mode: unified
 provenance:
   origin:
     crate_version: 0.9.7
-    git_commit: 1b7b0903eb682e3e761719575239e4403bf192e8
-    source_sha256: 3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+    git_commit: 03e577c5b05101124af7def95b840b918656c630
+    source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
   status: captured
 records:
   adjacent_calls_partial_header:

@@ -1,11 +1,11 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"ed062dfd1ebcfb854dcd5dbfb36161bbc4ee96c3f7dab0ef3b66cd780e1ad566","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.7.yaml","version":"0.9.7"}],"mode":"unified","payload_sha256":"5ba7f99c778386cfd2315a45896be8856c5515b41786c1182c6621239f0d0a20","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.9.7.yaml","surface":"unified","version":"0.9.7"}
 document:
   mode: unified
 provenance:
   origin:
     crate_version: 0.9.7
-    git_commit: 1b7b0903eb682e3e761719575239e4403bf192e8
-    source_sha256: 3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+    git_commit: 03e577c5b05101124af7def95b840b918656c630
+    source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
   status: captured
 records:
   adjacent_calls_partial_header:
@@ -26255,10 +26255,10 @@ records:
       document:
         capture_origin:
           crate_version: 0.9.7
-          git_commit: 1b7b0903eb682e3e761719575239e4403bf192e8
-          source_sha256: 3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+          git_commit: 03e577c5b05101124af7def95b840b918656c630
+          source_sha256: f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
         captured_with:
-          dynamo_v2: 0.9.7+source.3614d7e3a01774ec8d4c0888eb1e1f49ea87926f4a22dd51d643d0de61ddea39
+          dynamo_v2: 0.9.7+source.f1fbc4df90ee8ec06734f6b3743234601c71f0e627ac5b479418398528422c6f
         mode: unified
         record_metadata:
           init:
