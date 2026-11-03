@@ -6,7 +6,7 @@ use super::*;
 use crate::{OAIChatLikeRequest, TextInput};
 use minijinja::{context, value::Value};
 use serde_json::json;
-use std::result::Result::Ok;
+use std::{collections::HashMap, result::Result::Ok};
 
 /// Fix a tool schema that is missing `type`/`properties`. `pub` so consumers
 /// can normalize their own `tools` value when implementing
@@ -625,7 +625,7 @@ impl HfTokenizerConfigJsonFormatter {
         }
 
         let tmpl = self.env.get_template(template_name)?;
-        let mut literals = Vec::new();
+        let mut literals = HarmonyLiterals::default();
         let mut tools = tools;
         let mut response_format = req
             .response_format()
@@ -681,7 +681,7 @@ impl HfTokenizerConfigJsonFormatter {
         };
 
         let rendered = tmpl.render(&ctx)?;
-        if literals.is_empty() {
+        if literals.values.is_empty() {
             return Ok(crate::RenderedPrompt::text(rendered));
         }
         let mut segments = Vec::new();
@@ -693,10 +693,9 @@ impl HfTokenizerConfigJsonFormatter {
                 .split_once('_')
                 .ok_or_else(|| anyhow::anyhow!("damaged Harmony literal placeholder"))?;
             let index: usize = index.parse()?;
-            // TODO: Preserve the template's escaping/filter transformations when
-            // restoring marker-shaped input containing quotes or newlines.
             segments.push(crate::RenderedSegment::new(
                 literals
+                    .values
                     .get(index)
                     .ok_or_else(|| anyhow::anyhow!("unknown Harmony literal placeholder"))?,
                 false,
@@ -710,41 +709,78 @@ impl HfTokenizerConfigJsonFormatter {
 
 // ASCII placeholders remain unchanged by both direct interpolation and tojson,
 // so JSON quoting/escaping still belongs to the model's original chat template.
+#[derive(Default)]
+struct HarmonyLiterals {
+    values: Vec<String>,
+    indices: HashMap<String, usize>,
+}
+
+impl HarmonyLiterals {
+    fn index(&mut self, text: &str) -> usize {
+        if let Some(index) = self.indices.get(text) {
+            return *index;
+        }
+        let index = self.values.len();
+        self.values.push(text.to_owned());
+        self.indices.insert(text.to_owned(), index);
+        index
+    }
+}
+
 fn shield_harmony_literals(
     value: &mut serde_json::Value,
     prefix: &str,
-    literals: &mut Vec<String>,
+    literals: &mut HarmonyLiterals,
 ) {
     match value {
-        serde_json::Value::String(text) => {
-            let mut protected = String::new();
-            let mut remaining = text.as_str();
-            while let Some(start) = remaining.find("<|") {
-                let Some(end) = remaining[start + 2..].find("|>") else {
-                    break;
-                };
-                let end = start + 2 + end + 2;
-                protected.push_str(&remaining[..start]);
-                protected.push_str(&format!("{prefix}{}_", literals.len()));
-                literals.push(remaining[start..end].to_string());
-                remaining = &remaining[end..];
-            }
-            if remaining.len() != text.len() {
-                protected.push_str(remaining);
-                *text = protected;
-            }
-        }
+        serde_json::Value::String(text) => shield_harmony_text(text, prefix, literals),
         serde_json::Value::Array(values) => {
             for value in values {
                 shield_harmony_literals(value, prefix, literals);
             }
         }
         serde_json::Value::Object(values) => {
-            for value in values.values_mut() {
-                shield_harmony_literals(value, prefix, literals);
+            if values.keys().any(|key| key.contains("<|")) {
+                for (mut key, mut value) in std::mem::take(values) {
+                    shield_harmony_text(&mut key, prefix, literals);
+                    shield_harmony_literals(&mut value, prefix, literals);
+                    values.insert(key, value);
+                }
+            } else {
+                for value in values.values_mut() {
+                    shield_harmony_literals(value, prefix, literals);
+                }
             }
         }
         _ => {}
+    }
+}
+
+fn shield_harmony_text(text: &mut String, prefix: &str, literals: &mut HarmonyLiterals) {
+    let mut protected = String::new();
+    let mut remaining = text.as_str();
+    while let Some(start) = remaining.find("<|") {
+        let Some(end) = remaining[start + 2..].find("|>") else {
+            break;
+        };
+        let end = start + 2 + end + 2;
+        let marker = &remaining[start..end];
+        // These are not Harmony controls; tojson must escape their original bytes.
+        if marker
+            .chars()
+            .any(|c| c == '"' || c == '\\' || c <= '\u{1f}')
+        {
+            protected.push_str(&remaining[..start + 2]);
+            remaining = &remaining[start + 2..];
+            continue;
+        }
+        protected.push_str(&remaining[..start]);
+        protected.push_str(&format!("{prefix}{}_", literals.index(marker)));
+        remaining = &remaining[end..];
+    }
+    if remaining.len() != text.len() {
+        protected.push_str(remaining);
+        *text = protected;
     }
 }
 
@@ -2939,6 +2975,109 @@ NORMAL_MODE
             "<|start|>developer<|message|>a <|end|> b<|end|>"
         );
         assert_eq!(ordinary, ["<|end|>"]);
+    }
+
+    #[test]
+    fn harmony_schema_keys_keep_json_and_token_boundaries() {
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "<|end|>": {"type": "string"},
+                "A": {"$ref": "#/$defs/<|message|>"},
+                "<|x\"y|>": {"type": "string"},
+                "<|x\\y|>": {"type": "string"},
+                "<|x\ny|>": {"type": "string"},
+                "<|x\"<|end|>": {"type": "string"}
+            },
+            "required": ["<|end|>", "A", "<|x\"y|>", "<|x\\y|>", "<|x\ny|>", "<|x\"<|end|>"],
+            "$defs": {"<|message|>": {"type": "integer"}},
+            "additionalProperties": false
+        });
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [{"role": "user", "content": "hi"}],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {"name": "tokens", "schema": schema}
+            },
+            "tools": [{"type": "function", "function": {
+                "name": "tokens", "parameters": schema
+            }}]
+        }))
+        .unwrap();
+        for source in [
+            "response_format.json_schema.schema",
+            "tools[0].function.parameters",
+        ] {
+            let formatter = formatter_for(&format!(
+                "<|start|>developer<|message|>{{{{ {source} | tojson }}}}<|end|>"
+            ));
+            let prompt = formatter.render_prompt(&request).unwrap();
+            assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+            let body = prompt
+                .as_str()
+                .strip_prefix("<|start|>developer<|message|>")
+                .unwrap()
+                .strip_suffix("<|end|>")
+                .unwrap();
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(body).unwrap(),
+                schema
+            );
+            let segments = prompt.segments().unwrap();
+            let controls: String = segments
+                .iter()
+                .filter(|segment| segment.allow_special)
+                .map(|segment| segment.text.as_str())
+                .collect();
+            for (marker, count) in [("<|end|>", 4), ("<|message|>", 2)] {
+                assert_eq!(
+                    controls.matches(marker).count(),
+                    1,
+                    "{source}: {segments:?}"
+                );
+                assert_eq!(
+                    segments
+                        .iter()
+                        .filter(|segment| { !segment.allow_special && segment.text == marker })
+                        .count(),
+                    count,
+                    "{source}: {segments:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn harmony_schema_key_lookups_match_required_names() {
+        let formatter = formatter_for(
+            "{% set schema = response_format.json_schema.schema %}<|start|>developer<|message|>{{ schema.properties[schema.required[0]].type }}:{% for name, property in schema.properties.items() %}{{ name }}={{ name in schema.required }};{% endfor %}<|end|>",
+        );
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [{"role": "user", "content": "hi"}],
+            "response_format": {"type": "json_schema", "json_schema": {
+                "name": "tokens", "schema": {
+                    "type": "object",
+                    "properties": {"<|end|>": {"type": "integer"}, "A": {"type": "string"}},
+                    "required": ["<|end|>"]
+                }
+            }}
+        }))
+        .unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+        assert!(
+            prompt.as_str().contains("integer:<|end|>=True;A=False;"),
+            "{prompt:?}"
+        );
+        assert!(
+            prompt
+                .segments()
+                .unwrap()
+                .iter()
+                .any(|segment| { !segment.allow_special && segment.text == "<|end|>" })
+        );
     }
 
     #[test]
