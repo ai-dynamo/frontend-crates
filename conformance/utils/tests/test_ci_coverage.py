@@ -120,7 +120,7 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
         "conformance/viewer-catalog.json",
         "conformance/CONFORMANCE_v2.html",
         "conformance/fixtures-unified-v2/families/sample/dynamo_v2-0.8.0.yaml",
-        "conformance/fixtures/toolcalling/fixtures-stream-v1/dynamo_v2-0.7.18.tar.gz",
+        "conformance/fixtures-unified-v2/versions/dynamo_v2-0.7.18.tar.gz",
     ]
     untracked = ["conformance/fixtures-unified-v2/families/other/dynamo_v2.yaml"]
     for path in paths:
@@ -443,7 +443,7 @@ def test_browser_collection_declares_latest_and_history_dependencies(tmp_path, i
     selected = {node.split("::")[-1] for node in receipt["selected"]}
     latest = {"test_original_yaml_view_and_blob_download_preserve_source_bytes",
               "test_muse_spark_popup_preserves_message_phases"}
-    history = {"test_original_archive_view_and_blob_download_preserve_source_bytes",
+    history = {"test_historical_yaml_view_and_blob_download_preserve_source_bytes",
                "test_historical_muse_spark_popup_preserves_message_phases"}
     assert selected.intersection(latest) == (latest if scope == "publication" else set())
     assert selected.intersection(history) == (history if scope == "publication" and include_history else set())

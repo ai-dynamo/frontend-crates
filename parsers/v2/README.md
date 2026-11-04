@@ -4,7 +4,7 @@ Rust parsers for ordered reasoning, text, and tool-call output. Includes Unified
 
 This guide covers parser goals, grammar families, and contributor workflows for both [v1](../v1/) and v2.
 
-**Crate versions and corpus names differ.** `dynamo-parsers` / `dynamo_v1` is the batch/jail implementation. `dynamo-parsers-v2` / `dynamo_v2` includes incremental tool-only and Unified parsers. In conformance, **streaming v1** means non-Unified (`fixtures-stream-v1`, `TOOLCALLING.streamv1.*`); **v2** means Unified (`fixtures-unified-v2`). A `dynamo_v2-*` capture in `fixtures-stream-v1` is therefore valid. See [migration terminology](../../docs/PARSERS-V2-MIGRATION-PLAN.md#terminology) for the naming history.
+**Crate versions and corpus names differ.** `dynamo-parsers` / `dynamo_v1` is the batch/jail implementation. `dynamo-parsers-v2` / `dynamo_v2` includes incremental tool-only and Unified parsers. In conformance, **streaming v1** means non-Unified (`TOOLCALLING.streamv1.*`, now retired); **v2** means Unified (`fixtures-unified-v2`). Both parser implementation generations now use Unified conformance YAML; the old corpus is removed. See [migration terminology](../../docs/PARSERS-V2-MIGRATION-PLAN.md#terminology) for the naming history.
 
 **Pin and test the version you integrate.** Dynamo uses this published crate for compatible configurations, but its `0.x` API can change between minor releases. The [Dynamo routing guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing) owns serving selection. Library families and vendor registrations do not automatically add serving adapters or qualification.
 
@@ -224,11 +224,11 @@ New cases, capture jobs, and normal reports use `UNIFIED.*`. Register the family
 
 Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Latest parser tests read versionless recorded observations from `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Contributors run latest tests, recapture affected latest snapshots through the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md), and generate the latest report.
 
-Retain `TOOLCALLING.*` archives as historical evidence. Latest-only generation does not read them or derive GOLDEN from recorded results.
+The `TOOLCALLING.*` archive corpus is removed. Preserve historical Unified captures and Dynamo v1 comparisons measured against Unified requests. Latest-only generation does not read historical captures or derive GOLDEN from recorded results.
 
 ## Historical Fixture Format
 
-Historical archives use several schemas. Preserve their implementation keys, request bindings, and producer provenance; never relabel `dynamo_v2` as `dynamo_rust` or rewrite old observations into a current schema. See [fixture storage](../../conformance/fixtures/README.md) and the [capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
+Historical Unified captures use several schemas. Preserve their implementation keys, request bindings, and producer provenance; never relabel `dynamo_v2` as `dynamo_rust` or rewrite old observations into a current schema. See [fixture storage](../../conformance/README.md#layout) and the [capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 ## Adding A Day-0 Tool-Calling Parser
 
@@ -262,7 +262,7 @@ Use the [fixture files](#fixture-files-to-add) above for new families and scenar
 
 ### Retained historical fixture paths
 
-Historical batch, stream, batch-on-stream, and reasoning archives are retained under `conformance/fixtures/`; versioned Unified captures remain under `conformance/fixtures-unified-v2/`. See the [capture layout](../../conformance/README.md) for current ownership. These are retained observations, not seeds for new Unified GOLDEN or contributor capture requirements.
+The historical batch, stream, batch-on-stream, and Reasoning archive corpus is removed. Versioned Unified captures remain under `conformance/fixtures-unified-v2/`. See the [capture layout](../../conformance/README.md) for current ownership. These are retained observations, not seeds for new Unified GOLDEN or contributor capture requirements.
 
 ## How To Record Historical Divergences
 
@@ -304,7 +304,7 @@ Use the [current qualification instructions](../../conformance/README.md#current
 
 ## Reasoning Migration Status
 
-Unified already owns ordered reasoning, text, and tool events for its registered families. Retained v1 reasoning archives preserve their original implementation keys and observations; do not relabel them as new measurements. New scenarios use authored Unified inputs/GOLDEN and explicit recorded implementation results. Historical backfills are separate reviewed changes.
+Unified already owns ordered reasoning, text, and tool events for its registered families. The old v1 Reasoning archive corpus is removed. Unified history preserves original implementation keys and observations, including Dynamo v1 comparisons; do not relabel them as new measurements. New scenarios use authored Unified inputs/GOLDEN and explicit recorded implementation results. Historical backfills are separate reviewed changes.
 
 ### Muse Spark Open structural tags
 

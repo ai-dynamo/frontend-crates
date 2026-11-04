@@ -4,8 +4,7 @@
 
 `extract_fixtures.py` used to name its extraction directory by `manifest["snapshot"]`
 (a human-readable pin) alone. Shard content is not uniquely determined by that pin --
-a shard set can be re-pinned in place under an unchanged pin (it happened once, to
-fixtures-batch-on-stream-v1). When that happened, the stale-check failed and the code
+a shard set can be re-pinned in place under an unchanged pin. When that happened, the stale-check failed and the code
 ran `shutil.rmtree()` directly on the live, previously-published directory, then
 re-extracted in place -- while a concurrent, unlocked reader (a test in another git
 worktree) could still be
@@ -37,8 +36,6 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import extract_fixtures  # noqa: E402
-import check_family_coverage
-import fixture_snapshot  # noqa: E402
 from fixture_test_support import configure_extractor_root
 
 
@@ -53,7 +50,7 @@ def test_history_format_change_invalidates_extracted_snapshot(monkeypatch):
     assert extract_fixtures.fixtures_identity(shards) != current
 
 
-def _fake_extract_tarball(_tarball_path, dest_dir, verbose=False):
+def _fake_materialization(_tarball_path, dest_dir, verbose=False):
     """Stand-in for the real tar extraction: writes one marker file so the
     directory is non-empty and distinguishable, without needing a real
     tarball on disk."""
@@ -69,7 +66,7 @@ def cache_root(tmp_path, monkeypatch):
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _fake_extract_tarball(
+        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _fake_materialization(
             source, destination, verbose
         ),
     )
@@ -86,31 +83,6 @@ def _run_main(tmp_path, monkeypatch, manifest, argv=()):
     configure_extractor_root(tmp_path, monkeypatch, manifest_path=manifest_path)
     monkeypatch.setattr(sys, "argv", ["extract_fixtures.py", *argv])
     extract_fixtures.main()
-
-
-def test_legacy_only_keeps_full_snapshot_identity_and_materialization_separate(tmp_path, monkeypatch, cache_root, capsys):
-    legacy = _shard("toolcalling/a.tar.gz", "legacy")
-    unified = {**_shard(extract_fixtures.fixture_disposition.UNIFIED_HISTORY_PATH, "unified"), "format": "unified-history"}
-    manifest = {"snapshot": "20260101_000000", "shards": [legacy, unified]}
-    materialized = []
-
-    def materialize(shard, source, destination, *, derived_release_versions=None, verbose=False):
-        materialized.append(shard["path"])
-        (destination / ("unified" if shard.get("format") == "unified-history" else "toolcalling")).mkdir(parents=True)
-
-    monkeypatch.setattr(extract_fixtures, "materialize_shard", materialize)
-    _run_main(tmp_path, monkeypatch, manifest, ["--legacy-only"])
-    legacy_root = Path(capsys.readouterr().out.strip().splitlines()[-1])
-    assert materialized == [legacy["path"]]
-    assert not (legacy_root / "unified").exists()
-    _run_main(tmp_path, monkeypatch, manifest)
-    full_root = Path(capsys.readouterr().out.strip().splitlines()[-1])
-    assert full_root != legacy_root
-    assert (full_root / "unified").is_dir()
-    assert materialized == [legacy["path"], legacy["path"], unified["path"]]
-    _run_main(tmp_path, monkeypatch, manifest, ["--legacy-only"])
-    assert Path(capsys.readouterr().out.strip().splitlines()[-1]) == legacy_root
-    assert materialized == [legacy["path"], legacy["path"], unified["path"]]
 
 
 def test_concurrent_symlink_publishers_do_not_share_a_temp_path(tmp_path, monkeypatch):
@@ -236,36 +208,6 @@ def test_concurrent_refreshers_cannot_retarget_links_to_an_older_generation(
     assert os.readlink(cache_root / "toolcalling") == f"{current.name}/toolcalling"
 
 
-def test_python_consumers_resolve_an_immutable_snapshot_instead_of_stable_links(
-    cache_root, monkeypatch
-):
-    stale = cache_root / "stale"
-    current = cache_root / "current"
-    (stale / "toolcalling").mkdir(parents=True)
-    (current / "toolcalling").mkdir(parents=True)
-    (stale / "toolcalling" / "marker.txt").write_text("stale")
-    (current / "toolcalling" / "marker.txt").write_text("current")
-    (cache_root / "toolcalling").symlink_to(stale / "toolcalling")
-
-    monkeypatch.delenv("CONFORMANCE_FIXTURES_ROOT", raising=False)
-    commands = []
-    def extract(arguments, **kwargs):
-        commands.append(arguments)
-        return fixture_snapshot.subprocess.CompletedProcess(arguments, 0, stdout=f"{current}\n", stderr="")
-    monkeypatch.setattr(fixture_snapshot.subprocess, "run", extract)
-    fixture_snapshot.fixture_snapshot_root.cache_clear()
-    try:
-        resolved = fixture_snapshot.fixture_snapshot_root()
-        assert check_family_coverage.resolve_fixtures_root() == resolved
-    finally:
-        fixture_snapshot.fixture_snapshot_root.cache_clear()
-
-    assert commands == [[sys.executable, str(SRC / "extract_fixtures.py"), "--legacy-only", "--include-history"]]
-    assert resolved == current
-    assert (resolved / "toolcalling" / "marker.txt").read_text() == "current"
-    assert (cache_root / "toolcalling" / "marker.txt").read_text() == "stale"
-
-
 def test_two_shard_sets_under_the_same_pin_do_not_collide(cache_root, tmp_path, monkeypatch, capsys):
     """(A) A re-pin in place -- same `snapshot` stamp, different shard hashes --
     must produce two distinct, coexisting directories, not one rmtree-ing the
@@ -294,7 +236,7 @@ def test_interrupted_build_never_appears_at_the_published_name(cache_root, tmp_p
     single-rename step."""
 
     def _boom(_tarball_path, dest_dir, verbose=False):
-        # Mirror the real extract_tarball's mkdir-then-populate ordering (it
+        # Model a materializer's mkdir-then-populate ordering (it
         # creates dest_dir before writing any content) so the crash leaves a
         # realistic partial `.tmp.*` directory on disk to assert against,
         # not an early raise that never touches the filesystem at all.
@@ -322,13 +264,13 @@ def test_interrupted_build_never_appears_at_the_published_name(cache_root, tmp_p
 
 def test_identical_identity_is_a_cache_hit_not_a_rebuild(cache_root, tmp_path, monkeypatch, capsys):
     """(C) A second call with the identical shard content is a cache hit --
-    `extract_tarball` must not run again."""
+    `materialize_shard` must not run again."""
     manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
     _run_main(tmp_path, monkeypatch, manifest)
     capsys.readouterr()
 
     def _fail_if_called(*a, **k):
-        raise AssertionError("extract_tarball must not be called on a cache hit")
+        raise AssertionError("materialize_shard must not be called on a cache hit")
 
     monkeypatch.setattr(extract_fixtures, "materialize_shard", _fail_if_called)
     _run_main(tmp_path, monkeypatch, manifest)
@@ -354,7 +296,7 @@ def test_full_refresh_builds_a_new_generation_without_touching_the_old_one(cache
     """
     call_count = {"n": 0}
 
-    def _counting_extract_tarball(_tarball_path, dest_dir, verbose=False):
+    def _counting_materialization(_tarball_path, dest_dir, verbose=False):
         call_count["n"] += 1
         dest_dir.mkdir(parents=True, exist_ok=True)
         (dest_dir / "marker.txt").write_text(f"build #{call_count['n']}")
@@ -362,7 +304,7 @@ def test_full_refresh_builds_a_new_generation_without_touching_the_old_one(cache
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _counting_extract_tarball(
+        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _counting_materialization(
             source, destination, verbose
         ),
     )
@@ -377,7 +319,7 @@ def test_full_refresh_builds_a_new_generation_without_touching_the_old_one(cache
     out_v2 = capsys.readouterr()
     new_dir = Path(out_v2.out.strip())
 
-    assert call_count["n"] == 2, "extract_tarball must actually run again under --full-refresh"
+    assert call_count["n"] == 2, "materialize_shard must actually run again under --full-refresh"
     assert "built a new generation" in out_v2.err
     assert new_dir != old_dir, "the refresh must publish to a NEW path, never reuse the old one"
     assert new_dir.name.endswith(".refresh1"), new_dir.name
@@ -435,38 +377,6 @@ def test_full_refresh_with_missing_base_advances_past_the_current_generation(
     _run_main(tmp_path, monkeypatch, manifest)
     plain = Path(capsys.readouterr().out.strip())
     assert plain == refreshed
-
-
-def test_extracted_snapshot_dir_resolves_to_the_new_generation_after_full_refresh(
-    cache_root, tmp_path, monkeypatch, capsys
-):
-    """Same MUST finding, the other consumer the audit specifically asked to
-    be hunted for: `package_fixtures.py`'s `_extracted_snapshot_dir()` used
-    to reconstruct the bare `{pin}-{fid}` path directly instead of following
-    `resolve_current_generation`, so it also kept resolving to the abandoned
-    (possibly corrupted) generation after a refresh."""
-    package_fixtures_src = SRC
-    if str(package_fixtures_src) not in sys.path:
-        sys.path.insert(0, str(package_fixtures_src))
-    import package_fixtures  # noqa: E402  (sibling module, same sys.path entry as extract_fixtures)
-
-    manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
-    _run_main(tmp_path, monkeypatch, manifest)
-    capsys.readouterr()
-    _run_main(tmp_path, monkeypatch, manifest, argv=["--full-refresh"])
-    refreshed_dir = Path(capsys.readouterr().out.strip())
-    assert refreshed_dir.name.endswith(".refresh1")
-
-    manifest_path = tmp_path / "package_fixtures_manifest.json"
-    manifest_path.write_text(json.dumps(manifest))
-    monkeypatch.setattr(package_fixtures, "ROOT", tmp_path)
-    monkeypatch.setattr(package_fixtures, "MANIFEST_REL", manifest_path.relative_to(tmp_path))
-
-    resolved = package_fixtures._extracted_snapshot_dir()
-    assert resolved == refreshed_dir, (
-        "_extracted_snapshot_dir() must resolve to the refreshed generation, "
-        f"not the abandoned original; got {resolved}"
-    )
 
 
 def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tmp_path, monkeypatch, capsys):
@@ -612,7 +522,7 @@ def test_extraction_never_touches_an_older_published_directory(cache_root, tmp_p
     deliberately no orphan-cleanup sweep of any kind (removed after review:
     an mtime-based age gate could delete a directory a different,
     genuinely-still-running extraction is actively building into, since
-    `extract_tarball`'s `mkdir(exist_ok=True)` means the victim wouldn't
+    `materialize_shard`'s `mkdir(exist_ok=True)` means the victim wouldn't
     even notice and would go on to publish a corrupted "complete" state).
     Leftover `.tmp.*` dirs are an accepted disk-hygiene cost, not a
     correctness concern -- never referenced by any symlink, never mistaken
@@ -621,7 +531,7 @@ def test_extraction_never_touches_an_older_published_directory(cache_root, tmp_p
     _run_main(tmp_path, monkeypatch, manifest)
     published = [d for d in cache_root.iterdir() if not d.name.startswith(".")]
     assert len(published) == 1
-    marker = published[0] / "marker.txt"  # _fake_extract_tarball writes it at the extraction root
+    marker = published[0] / "marker.txt"  # _fake_materialization writes it at the extraction root
     old_time = 0  # 1970 -- as old as an mtime can be
     os.utime(published[0], (old_time, old_time))
 
