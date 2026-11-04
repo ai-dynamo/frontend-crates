@@ -12,6 +12,7 @@ use crate::tool_calling::arguments::{
     MAX_SCHEMA_DEPTH, ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number,
     normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
 };
+use crate::tool_calling::arguments::schema::literals_contradict_type;
 
 // Builds the marker that introduces an individual function invocation before attributes.
 fn invoke_start(config: &MiniMaxM3ParserConfig) -> String {
