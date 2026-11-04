@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k3","implementation":"vllm_python","lineage":[{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"71033ab54452946eab8401a355b925bd55df7741d333c442c6a3ee842f2b7c77","source":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
+capture_selection: {"family":"kimi_k3","implementation":"vllm_python","lineage":[{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"2dbb4da827425f4e2bdcbefc4c0ca00ed885c836face1cf2a989775c46b8df00","source":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
 document:
   mode: unified
 provenance:
@@ -8,6 +8,7 @@ provenance:
 records:
   adjacent_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: adjacent_calls_partial_header
       document:
@@ -67,6 +68,7 @@ records:
         semantic_sha256: 3614508e8b66afeb0f7804ce8825cd8362f72bf02d1347320ccdaff95fab8e64
   arg_array_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_array_quoted_parameter_close
       document:
@@ -193,6 +195,7 @@ records:
         semantic_sha256: 76555efb36180e6fe3a280f2a5d83fe0e1652f192ae32e098526e4b92df2ad7e
   arg_json_null_anyof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_anyof
       document:
@@ -308,6 +311,7 @@ records:
         semantic_sha256: 93228e52821651cf76a8b63f705aee2f51ac0afa42677cdde19a1ab9bb4b251d
   arg_json_null_const:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_const
       document:
@@ -423,6 +427,7 @@ records:
         semantic_sha256: 9ec493edcaa5ce2af549504b83a3c46c4b5d0fa156b3c414d944c8c1bd15af73
   arg_json_null_nullable:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_nullable
       document:
@@ -537,6 +542,7 @@ records:
         semantic_sha256: 63889b82809114faeed88dcf3e7ed3f10829e3e135d48dd5b63e587ed7b10201
   arg_json_null_oneof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_oneof
       document:
@@ -652,6 +658,7 @@ records:
         semantic_sha256: eefc9feb5572a99d69a48b45a9449846133dafe8889231cfeb6c028c1540107e
   arg_json_null_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_ref
       document:
@@ -770,6 +777,7 @@ records:
         semantic_sha256: 274a25c14ad63a45c95806874ce4a6517b26dee2795266a1fa39db9bb492d6d5
   arg_marker_in_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_marker_in_string
       document:
@@ -933,6 +941,7 @@ records:
         semantic_sha256: ef5b367d0a9bd243332d7580750b55a9014eeec12949716aa93e2ebc01aab02c
   arg_null_mixed_labels:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_null_mixed_labels
       document:
@@ -1102,6 +1111,7 @@ records:
         semantic_sha256: abc10d92399449907b75536e57b210c1aed5b44d0486d0c205519b4e9e69393c
   arg_numeric_14_const_decimal:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_decimal
       document:
@@ -1218,6 +1228,7 @@ records:
         semantic_sha256: e60b53a491ed777f80e713a0f51ca6b495f28e59eb437792cc4dbe8eaa098b96
   arg_numeric_14_const_exponent:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_exponent
       document:
@@ -1334,6 +1345,7 @@ records:
         semantic_sha256: 5b39391dc70707a54733238ddd10dd60c7b9b7ecea8a9885c75b51b1a6126a78
   arg_numeric_14_enum_decimal:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_decimal
       document:
@@ -1451,6 +1463,7 @@ records:
         semantic_sha256: 55758f18452d34a2ad8069c421e365e1be358dda549cba36906fa586c45ff821
   arg_numeric_14_enum_exponent:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_exponent
       document:
@@ -1568,6 +1581,7 @@ records:
         semantic_sha256: 1f7bf8250db98429529e2bce07cbe08cec5ebe232690491aa1a6b90e6f37eb8a
   arg_numeric_14_large_decimal:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_decimal
       document:
@@ -1683,6 +1697,7 @@ records:
         semantic_sha256: 7fb4684c887b9c3703d785720702e96423535467fc665ad075224418b28c6e65
   arg_numeric_14_large_exponent:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_exponent
       document:
@@ -1798,6 +1813,7 @@ records:
         semantic_sha256: 770bf45b4b0cc39aa82006a4c69320775dedfd775f2d9ebc28c2c2ddadbce0f2
   arg_numeric_14_negative:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative
       document:
@@ -1913,6 +1929,7 @@ records:
         semantic_sha256: 1b57f8afc1cc8374c618d5e90112b2005d478b3b584cabdca91c00ad3670634d
   arg_numeric_14_negative_exponent:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative_exponent
       document:
@@ -2028,6 +2045,7 @@ records:
         semantic_sha256: 3efeb0d12f7ca3aab2b625fbd37f7fabdf43bacf9ce374f43c1583b53ea5f013
   arg_numeric_14_zero_underflow:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_zero_underflow
       document:
@@ -2143,6 +2161,7 @@ records:
         semantic_sha256: a07610dfd8c6274463953fbca6a67af0b1f0936e76819d28fc92ca111ebc6c56
   arg_numeric_15_exponent:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_exponent
       document:
@@ -2256,6 +2275,7 @@ records:
         semantic_sha256: a530f9c0a7358f9521b001a04dab45f8305d72ce68d99385120e758eb1744563
   arg_numeric_15_negative:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_negative
       document:
@@ -2369,6 +2389,7 @@ records:
         semantic_sha256: db7e875ce57f61f6daa80d39882a0bfdf52f6985b5af78f53ebbc739f6237a37
   arg_numeric_15_ordinary:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_ordinary
       document:
@@ -2482,6 +2503,7 @@ records:
         semantic_sha256: ffa2b12ec7700ba0ac1c21610fae92ef524c11ba4366d0a28160bf9f0e2187af
   arg_numeric_15_quarter:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_quarter
       document:
@@ -2595,6 +2617,7 @@ records:
         semantic_sha256: 1012ca372abc3cd49fd83ef4e7ea4bb385e971189d925033be0521886ddaa0a5
   arg_numeric_15_round_down:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_down
       document:
@@ -2708,6 +2731,7 @@ records:
         semantic_sha256: 3d7c05f778025e52b376368681ec60a6cce5d31bba4eef069f0b6252845c2b6f
   arg_numeric_15_round_up:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_up
       document:
@@ -2821,6 +2845,7 @@ records:
         semantic_sha256: cb4cde9edb82cb74e6ea1ae40932f549ad163d26a93927007048cc3a21144f45
   arg_numeric_15_small:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_small
       document:
@@ -2934,6 +2959,7 @@ records:
         semantic_sha256: a9e3a5d37af3f1cd826f15b2547a84a7bfbf57612db0c5bb5add7b8653668122
   arg_numeric_nested_exact:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_nested_exact
       document:
@@ -3080,6 +3106,7 @@ records:
         semantic_sha256: 6ce503f451549caca8723606b18dad743c0bf93121896cf480f12c798bdb7524
   arg_numeric_overflow_siblings_finite:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_finite
       document:
@@ -3136,6 +3163,7 @@ records:
         semantic_sha256: 253ca28b53f1e5c21821a761ccd0d0feae65ea238105b324c601fc97061179a3
   arg_numeric_overflow_siblings_negative:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_negative
       document:
@@ -3192,6 +3220,7 @@ records:
         semantic_sha256: 1e4b084c1bc20a747cfd242e8900e2d22e969ddb48bb50dd6ac6ac6abd47bf70
   arg_numeric_overflow_siblings_positive:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_positive
       document:
@@ -3248,6 +3277,7 @@ records:
         semantic_sha256: bd3fbac047c245bd6f97ef059dc80c535d80ba8c91ad374a11937d143c8f9a35
   arg_object_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_object_quoted_parameter_close
       document:
@@ -3378,6 +3408,7 @@ records:
         semantic_sha256: 6b5c4415465703529f459d2960ead56ee97c2eb41cca5797ced57967348d9e4c
   arg_string_null:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null
       document:
@@ -3491,6 +3522,7 @@ records:
         semantic_sha256: 2fa6875a428d80006bcdd265dc48b4b0a3910421f5606bbc924d11dc98ac98b7
   arg_string_null_const:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_const
       document:
@@ -3606,6 +3638,7 @@ records:
         semantic_sha256: 223b017c2491cbdf72d8f9449ce79a4009ae0d8c9e861227536b30f2ef7b9c85
   arg_string_null_enum:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_enum
       document:
@@ -3722,6 +3755,7 @@ records:
         semantic_sha256: cf70226391b4e25a8f7109ff05f9c3db42f2cd385d1ffd6fc97dd5ec33e543b3
   arg_string_null_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_ref
       document:
@@ -3838,6 +3872,7 @@ records:
         semantic_sha256: 98eaef7157c4c2195bdb5ab0869e4e51e0b9d48384c0dec3c84800558b5df163
   arg_string_null_sibling_anyof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_sibling_anyof
       document:
@@ -3954,6 +3989,7 @@ records:
         semantic_sha256: 8eeee6a1153be7798ec1c1bbe65af9fc0c4b2d8cdec34ec6f6c891598738ee04
   arg_string_null_sibling_oneof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_sibling_oneof
       document:
@@ -4072,6 +4108,7 @@ records:
         semantic_sha256: 4297a36219506b0ab19a393bdd69e42f653faee573b0b9a56517650fa8bcf9b3
   arg_string_null_union:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_union
       document:
@@ -4187,6 +4224,7 @@ records:
         semantic_sha256: eb5dc8323a9ded7f8fbf6bd8cb7f51eec4e6e99bab734f15613af511cca0e8f0
   arg_string_null_untyped_branch:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_untyped_branch
       document:
@@ -4303,6 +4341,7 @@ records:
         semantic_sha256: 7bae2c227a2e2a767a516a7824917fc5fdc54d3874aa2101326deb66debdc339
   arg_unicode:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_unicode
       document:
@@ -4452,6 +4491,7 @@ records:
         semantic_sha256: eb5b55ffba2681efcf6f6f328019e5e9c5a326dc94f328779f7907ee8326121b
   blank_framing_after_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_after_reasoning
       document:
@@ -4641,6 +4681,7 @@ records:
         semantic_sha256: a4a35ed9789677e2f0732c169c21eb2bacb5d5e5d29f6e73f7833f0abeb0555e
   blank_framing_between_calls_single_chunk:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_between_calls_single_chunk
       document:
@@ -4753,6 +4794,7 @@ records:
         semantic_sha256: d423ef55abf7e52bb5dd73827c1d3dd7b102e350692e004abf432739bb14797a
   blank_framing_prose_after_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_prose_after_call
       document:
@@ -4964,6 +5006,7 @@ records:
         semantic_sha256: afc7a68b7f297fbd9da14871e5a4e1534923b531f55e87137bf4d88452648c94
   blank_framing_tool_only:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_tool_only
       document:
@@ -5175,6 +5218,7 @@ records:
         semantic_sha256: 9899e867b9a84017442d2298c5ccc4dcc573bd16fd347db4ce7d227859bb4d04
   blank_framing_with_prose:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_with_prose
       document:
@@ -5394,6 +5438,7 @@ records:
         semantic_sha256: eff027024412987c8781e71cfbd725e645f75a85f2641ef7e864b9494e65633d
   blank_output_without_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_output_without_call
       document:
@@ -5515,6 +5560,7 @@ records:
         semantic_sha256: c6e08e63118d882f4c39a27e0b2eb786185014c401db36b65f8ed9ba8922d788
   conditional_schema_number_types:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: conditional_schema_number_types
       document:
@@ -6161,6 +6207,7 @@ records:
         semantic_sha256: b0757064fd8c10b92cc6e186cfba18e0c161de9c357f5f39ce894e5de0305932
   dotted_name_minimal:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_minimal
       document:
@@ -6250,6 +6297,7 @@ records:
         semantic_sha256: e9f45417c8a37f70fe9230c7e20ff4d20ae19e7374d76bf87df2179bb6dc3e03
   dotted_name_mixed_punctuation:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_mixed_punctuation
       document:
@@ -6366,6 +6414,7 @@ records:
         semantic_sha256: ad07a0092ae99ac765f2809cf6d6643f6edd386ce9c212f9cbb3ab25bd2d884f
   dotted_name_multiple_segments:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_multiple_segments
       document:
@@ -6482,6 +6531,7 @@ records:
         semantic_sha256: fd388ff0da10e970590fba0d6a2b7b8e7c909d52aed2956112d02b15b9bfc21c
   dotted_name_shared_prefix:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_shared_prefix
       document:
@@ -6651,6 +6701,7 @@ records:
         semantic_sha256: b89ef108c321083c2b2e12f5da29bdd63cc308411395efef7a40044a85399068
   empty_args:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: empty_args
       document:
@@ -6776,6 +6827,7 @@ records:
         semantic_sha256: 71b02aa1c3ba54b11adc13159137821dd4b8a05263e4f13ef4832c48b748c964
   glm_ref_encoded_targets:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_encoded_targets
       document:
@@ -6948,6 +7000,7 @@ records:
         semantic_sha256: dd0a8d99fe266f69c3ef8424a5b15ff090b6ad048916a0ce3d01f50fe6c8c11f
   glm_ref_json_looking_strings:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_json_looking_strings
       document:
@@ -7142,6 +7195,7 @@ records:
         semantic_sha256: 6aa5bfef852c01e2225dd6138186aeae282c9012aff114023b81f3959bd3591b
   glm_ref_object:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_object
       document:
@@ -7261,6 +7315,7 @@ records:
         semantic_sha256: 1c20ec3b3654a29f84512699a420f6ef0f4deefd26709ec5a38c3c48fa1edf97
   glm_ref_scalar_types:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_scalar_types
       document:
@@ -7464,6 +7519,7 @@ records:
         semantic_sha256: cfaf0f1e543b9ca86babeef0305cce4ccfa6af0bd89c6f2fa53a89b6004d6651
   gpt_oss_control_marker_inside_argument_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_control_marker_inside_argument_string
       document:
@@ -7587,6 +7643,7 @@ records:
         semantic_sha256: 115772e3e05a41a70567dd30cb89e9568467c4388f07d79c21017f63c366db38
   gpt_oss_invalid_tool_body_then_empty_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_invalid_tool_body_then_empty_call
       document:
@@ -7734,6 +7791,7 @@ records:
         semantic_sha256: 0f917b42180a8df5dccb3eafded7592402b042f69c602364bc8228b06d3f85b6
   gpt_oss_invalid_tool_body_then_valid_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_invalid_tool_body_then_valid_call
       document:
@@ -7905,6 +7963,7 @@ records:
         semantic_sha256: 1ae14bce1a2544724bc8f64547cc084a9a8f2532adb7f68a990432896acce655
   gpt_oss_multiple_unknown_and_empty_tools:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_multiple_unknown_and_empty_tools
       document:
@@ -8052,6 +8111,7 @@ records:
         semantic_sha256: 4f45f767e3092da04d4716758209a2c6d7e0dbc3d55ee9d20c79bb3373434262
   gpt_oss_quoted_message_header_literal:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_quoted_message_header_literal
       document:
@@ -8206,6 +8266,7 @@ records:
         semantic_sha256: a3b2ac33fc2960233c009bdb6f58ee860113e13cec930912fe4a34cd774ab23a
   gpt_oss_quoted_truncated_tool_then_final:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_quoted_truncated_tool_then_final
       document:
@@ -8346,6 +8407,7 @@ records:
         semantic_sha256: 7af1d3052ddd010a8e795d132fa7c5cbfcd9fadcf8c63449c2ffb013897ada0d
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_truncated_tool_resynchronizes_at_next_message
       document:
@@ -8457,6 +8519,7 @@ records:
         semantic_sha256: 5391666f2977e1bad08779b6407acf02d94293c982fece89a56d4b53cc600f0c
   guided_json_after_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_after_reasoning
       document:
@@ -8564,6 +8627,7 @@ records:
         semantic_sha256: 74f667a6652e28e8df6617dff1a0e9fe494c6fd814c610ccfb5833ba6e7097e4
   guided_json_array_argument:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_array_argument
       document:
@@ -8743,6 +8807,7 @@ records:
         semantic_sha256: 77bdd17c051a3c1d547eec719902fee584ceabb646cd282f50750a76b7198c54
   guided_json_escaped_string_args:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_escaped_string_args
       document:
@@ -8832,6 +8897,7 @@ records:
         semantic_sha256: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
   guided_json_gt_in_argument_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_bare_opener
       document:
@@ -8923,6 +8989,7 @@ records:
         semantic_sha256: 7abeec1a60ed8db2edb1635d7e8b064521dcc050e1494e7acd2131f113456290
   guided_json_gt_in_argument_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_trailing_close
       document:
@@ -9022,6 +9089,7 @@ records:
         semantic_sha256: 198fea2d2dedadf25d724cb7ec92fbc16561c313233ccd6ec978843510638c0d
   guided_json_gt_in_argument_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_wrapped
       document:
@@ -9131,6 +9199,7 @@ records:
         semantic_sha256: 362c33b19077bb59cd4ce05521f2f41dddcffeed14bf823771a5788f7c8703c0
   guided_json_invalid_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_invalid_call
       document:
@@ -9220,6 +9289,7 @@ records:
         semantic_sha256: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
   guided_json_list_with_broken_element:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_list_with_broken_element
       document:
@@ -9309,6 +9379,7 @@ records:
         semantic_sha256: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
   guided_json_malformed_json:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_malformed_json
       document:
@@ -9398,6 +9469,7 @@ records:
         semantic_sha256: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
   guided_json_marker_inside_argument:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_marker_inside_argument
       document:
@@ -9499,6 +9571,7 @@ records:
         semantic_sha256: 54d510deb7d180cb64b07e858043c842143a5a7e2de6f3fe8d3b443a0ace95bb
   guided_json_named_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_named_tool
       document:
@@ -9588,6 +9661,7 @@ records:
         semantic_sha256: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
   guided_json_narrated_invoke_in_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_invoke_in_reasoning
       document:
@@ -9709,6 +9783,7 @@ records:
         semantic_sha256: 54c31192da356c11ce1d8207d42e8996c7b08761ead6569cac42c47abcbbaa9e
   guided_json_narrated_prefix_inside_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_prefix_inside_reasoning
       document:
@@ -9822,6 +9897,7 @@ records:
         semantic_sha256: 27b39fd2e2f99413c8f966cfbe74190ba2b9368a58b2fb5388ee1331c6b27683
   guided_json_native_markup_only:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_markup_only
       document:
@@ -9971,6 +10047,7 @@ records:
         semantic_sha256: 46c97b72edb06037be9a9f946c0ac1964b420f36e2f8eea933698facac1ec42d
   guided_json_native_parameter_array_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_array_before_payload
       document:
@@ -10134,6 +10211,7 @@ records:
         semantic_sha256: 8263013ea57a5c983d9bfd6c517a1add00e4fa23fd7223e10fdf0caeb89b49c5
   guided_json_native_parameter_object_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_object_before_payload
       document:
@@ -10295,6 +10373,7 @@ records:
         semantic_sha256: f3bb49635572c920f9af31549c8f4d15df7a6d655a5cf126aa7da7ce6868d8e8
   guided_json_native_parameter_string_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_string_before_payload
       document:
@@ -10455,6 +10534,7 @@ records:
         semantic_sha256: e513c26acea175e94fd4bd63b01aac260d806333af45083dbdc0ce8dd30d1701
   guided_json_noncall_before_native_array_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_noncall_before_native_array_before_payload
       document:
@@ -10618,6 +10698,7 @@ records:
         semantic_sha256: be4587b15ac19751e91139eed3ad246755738c24be5cdee3cbd615868cba0f40
   guided_json_orphan_reason_close_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_reason_close_before_payload
       document:
@@ -10713,6 +10794,7 @@ records:
         semantic_sha256: 431cdb9ed041cafe026d34b668359e1a2071f7988ad4ef17a8322985f9bb8a6a
   guided_json_orphan_tool_close_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_tool_close_before_payload
       document:
@@ -10812,6 +10894,7 @@ records:
         semantic_sha256: 1902722de6d5c08ad3cd96c24c9710510e1929116c0982a627bee10187d257bb
   guided_json_partial_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_partial_calls
       document:
@@ -10901,6 +10984,7 @@ records:
         semantic_sha256: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
   guided_json_prose_before_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_prose_before_reasoning
       document:
@@ -11193,6 +11277,7 @@ records:
         semantic_sha256: 3fa5bb1012df542fb709afc5e8a4b84be69584b9c2fafc6b87b85f982b5abea3
   guided_json_required_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_required_tool
       document:
@@ -11282,6 +11367,7 @@ records:
         semantic_sha256: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
   guided_json_schema_error_nameless_element_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_bare_opener
       document:
@@ -11373,6 +11459,7 @@ records:
         semantic_sha256: c14d326f03c1ba36605f7e438c4edba7e1014239455df70d2a80dfc4d28d37b1
   guided_json_schema_error_nameless_element_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_trailing_close
       document:
@@ -11472,6 +11559,7 @@ records:
         semantic_sha256: fc8fde3a7e24525fae9ab77caaa680bb077d03490f50440905415ff205865f17
   guided_json_schema_error_nameless_element_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_wrapped
       document:
@@ -11581,6 +11669,7 @@ records:
         semantic_sha256: 304cb0804b5279f1ba46fae065cc00c0afc4dbc99c75c065494370fd724a3131
   guided_json_schema_error_not_a_call_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_bare_opener
       document:
@@ -11672,6 +11761,7 @@ records:
         semantic_sha256: debee1c23bb371f7ea56e4520ee985de97041251c44ad96ee05474f8de2710ea
   guided_json_schema_error_not_a_call_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_trailing_close
       document:
@@ -11771,6 +11861,7 @@ records:
         semantic_sha256: e7bc6ee972e800e4b6ce759403a6735541fffe388d47c3e53790f660f8853b34
   guided_json_schema_error_not_a_call_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_wrapped
       document:
@@ -11880,6 +11971,7 @@ records:
         semantic_sha256: 99cd2e00fc7c2c40614ee574f1975ed05d1b67e15df1fa39032279648aa14c17
   guided_json_stray_prefix_before_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_stray_prefix_before_reasoning
       document:
@@ -11993,6 +12085,7 @@ records:
         semantic_sha256: ec3d24a602f9f0c6036b6c04ad3475c46931b74060996195bee0e53d3004ee40
   guided_json_syntax_error_bare_opener:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_bare_opener
       document:
@@ -12084,6 +12177,7 @@ records:
         semantic_sha256: 19626beb77b413df269445245a5d77105983d8eea79c547110e2fe060ef2fa37
   guided_json_syntax_error_trailing_close:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_trailing_close
       document:
@@ -12183,6 +12277,7 @@ records:
         semantic_sha256: 4e0db87768a0a822b7bf4e3253dd243e3024e33052e872a2051cd3e1a68175a8
   guided_json_syntax_error_wrapped:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_wrapped
       document:
@@ -12292,6 +12387,7 @@ records:
         semantic_sha256: 7e6623e1313a8af3117a207148742cf0c9776a9246fc0fd80254aefadbd23465
   guided_json_tool_close_after_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_close_after_payload
       document:
@@ -12391,6 +12487,7 @@ records:
         semantic_sha256: 941e650deb82bb167c0d21645ba905a297fdf7074045ce132a21976775627567
   guided_json_tool_open_before_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_open_before_payload
       document:
@@ -12490,6 +12587,7 @@ records:
         semantic_sha256: b3a31a35c8672b9ca1e252d22feea6b0ce1fae78a978799b880c5e2630f950b0
   guided_json_two_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_two_calls
       document:
@@ -12672,6 +12770,7 @@ records:
         semantic_sha256: 2ee35320961b180b6c91e0caf3a133b46cae20249e7d54160f54a5f43aaf16d1
   guided_json_wrapped_in_tool_markup:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_wrapped_in_tool_markup
       document:
@@ -13011,6 +13110,7 @@ records:
         semantic_sha256: a66a24d6f085ae85239a2c5daef2ba056d637e8c90116a03e0d48883e99680b5
   guided_response_native_wrapper_whitespace_before_prose:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_native_wrapper_whitespace_before_prose
       document:
@@ -13142,6 +13242,7 @@ records:
         semantic_sha256: 896a5e8d5b37891ab8aa822181baef50484a1c50425565ecdf41f0afb4cb3ad8
   guided_response_quoted_control_braces_named:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_quoted_control_braces_named
       document:
@@ -13237,6 +13338,7 @@ records:
         semantic_sha256: df889cf810d8602944a347e0a883a3ca330fa35ec049b06c63294d6750e5b962
   guided_response_quoted_control_braces_required:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_quoted_control_braces_required
       document:
@@ -13332,6 +13434,7 @@ records:
         semantic_sha256: 9bf343e0b1ab1d9d2f0bc422d25a744d8b36d20eb04133759dcbfeeb0981d400
   interrupted_reasoning_then_response:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: interrupted_reasoning_then_response
       document:
@@ -13615,6 +13718,7 @@ records:
         semantic_sha256: 5a78e6f3907836a559f8d8e026194a6fe986e7ea48eb80f601c3a342a088af7d
   kimi_k3_direct_json_response_recovery:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_direct_json_response_recovery
       document:
@@ -13688,6 +13792,7 @@ records:
         semantic_sha256: 81178979a52de1908e65235bf9f6e495047d810e01e80157b864afd2edef6094
   kimi_k3_direct_typed_response_recovery:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_direct_typed_response_recovery
       document:
@@ -13761,6 +13866,7 @@ records:
         semantic_sha256: 46734967eb51bf40339a32f95fe1d1f92bd512840278077d687f426db74eda3b
   kimi_k3_guided_native_wrapper:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_guided_native_wrapper
       document:
@@ -13914,6 +14020,7 @@ records:
         semantic_sha256: a15f068422e00ec19da93b4951a3e3d4b3adadd8452917871e6a10d70690002d
   kimi_k3_json_marker_then_long_field:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_json_marker_then_long_field
       document:
@@ -14250,6 +14357,7 @@ records:
         semantic_sha256: ba91a518254a46ffffe14ac32965c62913197aa7657b2227e95ea7ac0459bd29
   kimi_k3_json_missing_close_literal_response:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_json_missing_close_literal_response
       document:
@@ -14330,6 +14438,7 @@ records:
         semantic_sha256: 214cad4c848d10488069c2b26d0736e6cf6d7f2784edf6ba165dca9c0cfb4565
   kimi_k3_malformed_call_then_valid:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_malformed_call_then_valid
       document:
@@ -14493,6 +14602,7 @@ records:
         semantic_sha256: 49dccc630bad9866ba9759c01f93d21d47bdf2f9ef2250bbd0d807694d58c7ce
   kimi_k3_message_end_after_response:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_message_end_after_response
       document:
@@ -14616,6 +14726,7 @@ records:
         semantic_sha256: 9db000d8ae49afd66b3fb4893e43d0e82f37e14f4409b4322277c095a3fc2557
   kimi_k3_raw_json_arguments:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_raw_json_arguments
       document:
@@ -14779,6 +14890,7 @@ records:
         semantic_sha256: 4102ef0e24e4cec499ac55e80455d8b0fb10a6ff3e38cde831e11f9313380dce
   kimi_k3_raw_json_eof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_raw_json_eof
       document:
@@ -14898,6 +15010,7 @@ records:
         semantic_sha256: 62d67be90f3cc3b66d70e9073645dc16abae75d8d6f7e1a0e80eab78e1e8e4a0
   kimi_k3_spaced_xtml_markers:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_spaced_xtml_markers
       document:
@@ -15089,6 +15202,7 @@ records:
         semantic_sha256: f2c39885c6b65cc4b23b96f9fc704fbd299afce2dacecad057c8af38284b1cf0
   kimi_k3_typed_argument_values:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_typed_argument_values
       document:
@@ -15358,6 +15472,7 @@ records:
         semantic_sha256: 940069ea9d32b13c51cb0fe75c48f0245036870a03ac1c4e17de1cf7e486764d
   kimi_k3_typed_json_marker_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_typed_json_marker_payload
       document:
@@ -16419,6 +16534,7 @@ records:
         semantic_sha256: 41840b6ecfa765a9934e956d3482264883741865ad29761c27c610cd919b8ab9
   kimi_k3_typed_response_argument_literal:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_typed_response_argument_literal
       document:
@@ -16503,6 +16619,7 @@ records:
         semantic_sha256: ca068f312ed658a154fd022a402ba96291f5d379814d6e1c643d99f96f618be4
   kimi_k3_typed_response_marker_payload:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_typed_response_marker_payload
       document:
@@ -16584,6 +16701,7 @@ records:
         semantic_sha256: 0ab3252c641192603d0698cf7808516335b47f29c89ab30a0e923d3968475e51
   kimi_k3_typed_response_then_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_k3_typed_response_then_call
       document:
@@ -16674,6 +16792,7 @@ records:
         semantic_sha256: 2592400382212d08ace247f86e3f432f17a32e48339677589c619ac57460e996
   kimi_native_incremental_interfield_whitespace:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_native_incremental_interfield_whitespace
       document:
@@ -19208,6 +19327,7 @@ records:
         semantic_sha256: aedc72ea34c89440645696fc76de8ce8380b2206be732bd4cd4e4b78ba625382
   kimi_native_k3_json_count_content_chunk1024:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_native_k3_json_count_content_chunk1024
       document:
@@ -19294,6 +19414,7 @@ records:
         semantic_sha256: 811e0ee765150e8404af62355693779d5163ee822ead62d1ac968e84c4e9d4d3
   kimi_native_k3_json_count_content_chunk7:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_native_k3_json_count_content_chunk7
       document:
@@ -21796,6 +21917,7 @@ records:
         semantic_sha256: f8c1d3579584968857a3833ce22fbc47d1ea9abb32d81346af38d4643f0b328e
   kimi_native_k3_typed_count_content_chunk1024:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_native_k3_typed_count_content_chunk1024
       document:
@@ -21882,6 +22004,7 @@ records:
         semantic_sha256: 0b39f2050dd6fac957472ca0f1617988854025f5d978c997cca0037a658e6756
   kimi_native_k3_typed_count_content_chunk7:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_native_k3_typed_count_content_chunk7
       document:
@@ -24420,6 +24543,7 @@ records:
         semantic_sha256: c58f508b42f7b5885b544adba1defd0261064004145f1ac16f7034a5f1a07359
   kimi_native_rejected_next_header_progress:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: kimi_native_rejected_next_header_progress
       document:
@@ -26404,6 +26528,7 @@ records:
         semantic_sha256: cd5f8034620688b53a2241a92466d3dedec27c6cd9eca54e6919ff9cb8980edb
   local_schema_id_preserves_type:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: local_schema_id_preserves_type
       document:
@@ -26518,6 +26643,7 @@ records:
         semantic_sha256: 2869ce6f2f2008374b87ee12c7b319973059b6e5902d92af72dc02df694c0ab5
   malformed_json_then_two_valid_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: malformed_json_then_two_valid_calls
       document:
@@ -26579,6 +26705,7 @@ records:
         semantic_sha256: 0787ab8c2229e3c2d6391cdb11e439f4e66a0f0fb22982c92550526404a2caee
   missing_inner_closers_then_valid_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: missing_inner_closers_then_valid_call
       document:
@@ -26632,6 +26759,7 @@ records:
         semantic_sha256: 358ad471306f0b54f6db920c4f08ccdf2d085483ceacdf71d4b83f357df6f249
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: narrated_calls
       document:
@@ -26961,6 +27089,7 @@ records:
         semantic_sha256: b7c276e2a73de4502f6da7acafa40b15d52c7e1adf5b96306f4bda880b8d6f28
   native_quoted_control_in_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_in_reasoning
       document:
@@ -27056,6 +27185,7 @@ records:
         semantic_sha256: f3bab920ab1147992756871eb340bebffac282f807aef945e53e0f8bbb9983e7
   native_quoted_control_in_response:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_in_response
       document:
@@ -27151,6 +27281,7 @@ records:
         semantic_sha256: f24245070acb75fcbf2aef47b2e93099ba408cebfbcb26d13c8e60ef57bdecb5
   native_quoted_control_then_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_then_call
       document:
@@ -27291,6 +27422,7 @@ records:
         semantic_sha256: 2946a1731e5f56488dbb86a876bc57476b8086e8f8c361ef92974ec5bd3e5991
   native_quoted_incomplete_header:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_incomplete_header
       document:
@@ -27400,6 +27532,7 @@ records:
         semantic_sha256: 94eb9f4510587018b07e0355c0335e243e813a7aad5043fb7570de4196e8a67b
   native_single_quote_contraction_reasoning:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quote_contraction_reasoning
       document:
@@ -27495,6 +27628,7 @@ records:
         semantic_sha256: 499f79122fe3f3f45af256accdb5033c8f1a4cbacc92f9d5625df2200182bffc
   native_single_quote_contraction_response:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quote_contraction_response
       document:
@@ -27590,6 +27724,7 @@ records:
         semantic_sha256: b90a9973ed3c6bc1f570108ed70984a811725bc9e017e9878a980aad2e7d10b1
   native_single_quoted_word_control:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quoted_word_control
       document:
@@ -27685,6 +27820,7 @@ records:
         semantic_sha256: 1a50319c5b724f34f9b4789aff035e9a87465f6e759248b985401dc275b492fb
   native_unmatched_quote_then_call:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_unmatched_quote_then_call
       document:
@@ -27819,6 +27955,7 @@ records:
         semantic_sha256: 79992d70c0af63bf5588dd9f003903a885f6cb3509ca6f85dd201d3f91185ef4
   not_keyword_type_complement:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: not_keyword_type_complement
       document:
@@ -27960,6 +28097,7 @@ records:
         semantic_sha256: 94ea7c60118fc8732537a4c693ca25bec494bfb449df602b3471840930714188
   nullable_reference_alias_literals:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: nullable_reference_alias_literals
       document:
@@ -28113,6 +28251,7 @@ records:
         semantic_sha256: 9415b420875e30667e71b25ec444a4f03e1f53802b3e03c2775ba90d1745ace0
   orphan_close_after_prose:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: orphan_close_after_prose
       document:
@@ -28744,6 +28883,7 @@ records:
         semantic_sha256: b4112776c386372cb45b4470e4af8a46e92e61837e6d661ac5395b83087ab94c
   prefilled_reasoning_with_guided_json:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_with_guided_json
       document:
@@ -28985,6 +29125,7 @@ records:
         semantic_sha256: 613f3adfd437b9e160b2e80494491ee765d931eb22ac859a288715e3b83e0f05
   prefilled_response_reasoning_markers_literal:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_response_reasoning_markers_literal
       document:
@@ -29143,6 +29284,7 @@ records:
         semantic_sha256: ad73c06ef05bfabd5e7d23fe2bcca277b804f0b4f4e8200409fb70eb7f7f8ebe
   qwen_string_null:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: qwen_string_null
       document:
@@ -30213,6 +30355,7 @@ records:
         semantic_sha256: 120106ac486e719eb617e186de944cd469bca2c5e02e2d7731702eabb562386f
   reason_only:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_only
       document:
@@ -31013,6 +31156,7 @@ records:
         semantic_sha256: 75a9436666cb8e6e2fc76239225eac0c8202415942f671f139329ca9cbc1e16c
   reason_unterminated:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_unterminated
       document:
@@ -31108,6 +31252,7 @@ records:
         semantic_sha256: 2693804fe103da96878fbdb3a6040c029f196202786e25d864e56e34ba0ec37a
   reference_object_recursive_and_composed_types:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reference_object_recursive_and_composed_types
       document:
@@ -31320,6 +31465,7 @@ records:
         semantic_sha256: 220758f78a7738e34f93b91b6a200572bc001dbe15c29df807e469eda5fb215d
   retired__30_14:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: retired__30_14
       document:
@@ -31411,6 +31557,7 @@ records:
         semantic_sha256: 075e97406ff854285a6442f065c80271373cee4e185e8e64c102b44f41e07b39
   retired__31_33:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: retired__31_33
       document:
@@ -31741,6 +31888,7 @@ records:
         semantic_sha256: 61f18e00c5200961fc026f733cf0a8b8c5b797945149cbe2a9fc8759c7c890a4
   schema_const_array_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_array_allof
       document:
@@ -31860,6 +32008,7 @@ records:
         semantic_sha256: 95513c73a8173b7dcaf67f60a78290b491fa53f7d73d8dc831248e579e0d6a0e
   schema_const_array_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_array_bare
       document:
@@ -31977,6 +32126,7 @@ records:
         semantic_sha256: fcce904858e8242f02ed25a8ed04e07579d22fa458d4601b351e499c931b8f96
   schema_const_array_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_array_ref
       document:
@@ -32097,6 +32247,7 @@ records:
         semantic_sha256: 702eb30be2c3a9c03a71e6560113831e3edeb45ed02400b206455f5b13bc6060
   schema_const_array_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_array_typed
       document:
@@ -32215,6 +32366,7 @@ records:
         semantic_sha256: ef894f63416c993828502ed3a790ec1482b59df760a679b2c477a347ee7f85f9
   schema_const_boolean_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_boolean_allof
       document:
@@ -32334,6 +32486,7 @@ records:
         semantic_sha256: 934610bb47b588af78dc011155d78547dddffd4f2459c5b7cc5e0fea9f5969ff
   schema_const_boolean_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_boolean_bare
       document:
@@ -32451,6 +32604,7 @@ records:
         semantic_sha256: 2433502f67c6254b1894792b6b3fadba24df1f5d00889ab3ca335ab98966bcd9
   schema_const_boolean_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_boolean_ref
       document:
@@ -32571,6 +32725,7 @@ records:
         semantic_sha256: 2499d5796fc7ca5be53ac47e55865a74fb52aa86b66acb8039155de97b2e392c
   schema_const_boolean_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_boolean_typed
       document:
@@ -32689,6 +32844,7 @@ records:
         semantic_sha256: 66befe0153115587f89c5835a0229beaf50a2e1fc243ecdf3ae9993a48056a6e
   schema_const_entity_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_entity_allof
       document:
@@ -32808,6 +32964,7 @@ records:
         semantic_sha256: 117b4430eead27ef1a9d97fc584f737ec67b543d68e4bb43bd4196517e03de20
   schema_const_entity_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_entity_bare
       document:
@@ -32925,6 +33082,7 @@ records:
         semantic_sha256: 05d86094d5ca6cb1396154cf62c9f645a97166cd0024b8a8c5d188ff18f8e4eb
   schema_const_entity_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_entity_ref
       document:
@@ -33045,6 +33203,7 @@ records:
         semantic_sha256: 69dd68845904fb8154804cb5a5f7f7e471a40286df5a6a4ef6bbdc3ec116821d
   schema_const_entity_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_entity_typed
       document:
@@ -33163,6 +33322,7 @@ records:
         semantic_sha256: 7714a36d05250c84bd679ccfb336cbb9562038de53848b34a1bd5dc32d17c55a
   schema_const_null_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_null_allof
       document:
@@ -33282,6 +33442,7 @@ records:
         semantic_sha256: 714abb7365242320549fcd3d64665eb4874651320701af9ae91b98ca39b2c8ce
   schema_const_null_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_null_bare
       document:
@@ -33399,6 +33560,7 @@ records:
         semantic_sha256: e4b7f3db2c8704dacec7a52c4dbd838ded417b49e1be500c32a1138d8c06781a
   schema_const_null_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_null_ref
       document:
@@ -33519,6 +33681,7 @@ records:
         semantic_sha256: 8812f72b8b2232c778ec1d43e373d4c401a6db6f3847a19b3c94c78656cbff41
   schema_const_null_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_null_typed
       document:
@@ -33637,6 +33800,7 @@ records:
         semantic_sha256: 5f9da77d59122778ebaccded128c17589544563d61c9ea6c594633326f809a90
   schema_const_number_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_number_allof
       document:
@@ -33756,6 +33920,7 @@ records:
         semantic_sha256: b03515ed07d1abe577a437fc573009667df80aa9429f5cfbf7be590e046ef907
   schema_const_number_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_number_bare
       document:
@@ -33873,6 +34038,7 @@ records:
         semantic_sha256: f5590378b5abf01888ff03cb10746e0d7eb334a386626158ed61e26703649601
   schema_const_number_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_number_ref
       document:
@@ -33993,6 +34159,7 @@ records:
         semantic_sha256: 72e19114022d3b3ccd7fd00f0ff24a9740d463378799f13cd74de5ac5c46e848
   schema_const_number_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_number_typed
       document:
@@ -34111,6 +34278,7 @@ records:
         semantic_sha256: 539e62e90e514cf41259c22c545c34724ba3906ccdc26a15e6770c4edaabc615
   schema_const_numeric_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_numeric_bare
       document:
@@ -34166,6 +34334,7 @@ records:
         semantic_sha256: 35f4bfa8e9121eb9a132fa7dab1366633d2e738a966ec633f584bc5197cd9a71
   schema_const_object_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_object_allof
       document:
@@ -34285,6 +34454,7 @@ records:
         semantic_sha256: 62cc713b4f4eb3187d701ff3045f8cb740e6cadc529bf44f03e9ab7b967a0aee
   schema_const_object_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_object_bare
       document:
@@ -34402,6 +34572,7 @@ records:
         semantic_sha256: 761f8e879fde5e890123241fd77a5fefe982a20364b85f528b3b0b4fc884a5b6
   schema_const_object_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_object_ref
       document:
@@ -34522,6 +34693,7 @@ records:
         semantic_sha256: 76e7f235a374f3b376ff320f69df9801141ba4649fdb69fcebdec2ec2bf21b63
   schema_const_object_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_object_typed
       document:
@@ -34640,6 +34812,7 @@ records:
         semantic_sha256: 61c872f1e00f012ae476175896053a2e403423eb1817eeeca733149098f5b2f7
   schema_const_plain_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_plain_allof
       document:
@@ -34759,6 +34932,7 @@ records:
         semantic_sha256: e0f433f27c3dde0b3b14065f81acf9784394ff8243d4b874108109fa067ab267
   schema_const_plain_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_plain_bare
       document:
@@ -34876,6 +35050,7 @@ records:
         semantic_sha256: 99f8b973158f1bf9648557b768e56669fff7782d05a41dfda13e0b09a91839ab
   schema_const_plain_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_plain_ref
       document:
@@ -34996,6 +35171,7 @@ records:
         semantic_sha256: 606c4ba7aa7fadefbcddab89554875608c8eb5c1dd3d34cc0c302e09f0e31927
   schema_const_plain_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_plain_typed
       document:
@@ -35114,6 +35290,7 @@ records:
         semantic_sha256: bf74f0228754ce05790c3330af4fca222a76d9bcef8037808f9b0596801fd5c2
   schema_const_quoted_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_quoted_allof
       document:
@@ -35233,6 +35410,7 @@ records:
         semantic_sha256: b2fb144f961eab61017ef3f33d6260534ca1c57e3fa9f5df82aaf612e1765292
   schema_const_quoted_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_quoted_bare
       document:
@@ -35350,6 +35528,7 @@ records:
         semantic_sha256: b1bffffb30febe23708a797f93c0749edb76a872dd60b79693a55fa8b8ee2fb3
   schema_const_quoted_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_quoted_ref
       document:
@@ -35470,6 +35649,7 @@ records:
         semantic_sha256: d737b72d7ea7877908071200ff73ea55a6d5f6ab615218deae920414f574f873
   schema_const_quoted_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_quoted_typed
       document:
@@ -35588,6 +35768,7 @@ records:
         semantic_sha256: 02840fc3b8f0f9530202774df342f7f8e7026a397a97a117b111baf03603414e
   schema_const_space_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_space_allof
       document:
@@ -35707,6 +35888,7 @@ records:
         semantic_sha256: 3820afa4577edd50c3a0c4407b1aade3b202e0f3accc87e11741b4c3068a4bb6
   schema_const_space_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_space_bare
       document:
@@ -35824,6 +36006,7 @@ records:
         semantic_sha256: 80f25c914189cf82aa38fde002be9d60dfddb34f9d85eeb7d15ea30afa755b07
   schema_const_space_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_space_ref
       document:
@@ -35944,6 +36127,7 @@ records:
         semantic_sha256: 42b635a1cde823306e3124eafda3be5b3fa459d6d21c5d1ab7eb6319c8914ce6
   schema_const_space_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_space_typed
       document:
@@ -36062,6 +36246,7 @@ records:
         semantic_sha256: 3060d67d8bec6344e3f82773c80718c1ee73cfa63150633a2a7f600fe0a4430f
   schema_const_unicode_allof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_unicode_allof
       document:
@@ -36181,6 +36366,7 @@ records:
         semantic_sha256: 62219bdeaa021a8641bae8b0d49e09e28f7f796f1ed901b015fadcceccc54cdd
   schema_const_unicode_bare:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_unicode_bare
       document:
@@ -36298,6 +36484,7 @@ records:
         semantic_sha256: aa9c3b194fa942fb57f07b9c17de90531910146fa25aedf646565dba26384ecd
   schema_const_unicode_ref:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_unicode_ref
       document:
@@ -36418,6 +36605,7 @@ records:
         semantic_sha256: a9dafb1879c52ef993be06bfe650ad6333bb626a46d349450f300fde84278253
   schema_const_unicode_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_unicode_typed
       document:
@@ -36536,6 +36724,7 @@ records:
         semantic_sha256: 665bd3cb2f551e76b0a9c865059610a06e7d108a9b081bddaa78ad0d02ec566a
   schema_declared_array:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_array
       document:
@@ -36653,6 +36842,7 @@ records:
         semantic_sha256: 52c34629c0f19aaaf7371b2020e205475452a65785c8c9ecc023be93ca614f71
   schema_declared_boolean:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_boolean
       document:
@@ -36770,6 +36960,7 @@ records:
         semantic_sha256: b0cdb61142b2c23db3c00dc11c1a236b972963a6715755b13564921ba1999a60
   schema_declared_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_integer
       document:
@@ -36887,6 +37078,7 @@ records:
         semantic_sha256: 56f532eda1369f7be8cafbd7a811e9c9765418286911619d43868764b14bd2c9
   schema_declared_null:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_null
       document:
@@ -37004,6 +37196,7 @@ records:
         semantic_sha256: 10086be7d985360b11542f260b1be641b7f5f8bd06b5ee93ef427792afa2e927
   schema_declared_number:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_number
       document:
@@ -37121,6 +37314,7 @@ records:
         semantic_sha256: 787d6794b0a7d233c1bacda770d92752412a1a21736762478c89fdb65926f277
   schema_declared_object:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_object
       document:
@@ -37238,6 +37432,7 @@ records:
         semantic_sha256: d35454a1882984892dd4978fc580fe49f930811246fbbc31e2fd7f2290682c3e
   schema_declared_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_string
       document:
@@ -37355,6 +37550,7 @@ records:
         semantic_sha256: 2dbca93c3ba70acc717b2f055ac5fa303d8287edfb10d6cd36028ecefca64312
   schema_enum_const_narrowing:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_const_narrowing
       document:
@@ -37413,6 +37609,7 @@ records:
         semantic_sha256: b09be3c6adf4ff9eea59990fdaf7ce6e4d37d1022b6b63d53a315e4ece67daeb
   schema_enum_inferred_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_inferred_integer
       document:
@@ -37471,6 +37668,7 @@ records:
         semantic_sha256: 1a13d3e2acdd519ecbebdabf6292ce413b80197e4a9d06e5b4c85fa61114916b
   schema_enum_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_integer
       document:
@@ -37591,6 +37789,7 @@ records:
         semantic_sha256: 84bf6b298eedb7eb45e7a047d6d6ac1ffce283c40f6e2b3752dca8a4ea9a54b3
   schema_enum_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_string
       document:
@@ -37711,6 +37910,7 @@ records:
         semantic_sha256: 15596e6745313f650d6febcbf6725cae27e0531905fc1a6d5ddf6487d9ee20a3
   schema_escaped_ref_const:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_escaped_ref_const
       document:
@@ -37831,6 +38031,7 @@ records:
         semantic_sha256: f81e008ada98ebcaffd230e8a7bbf36a95dfd0e4f0cfa0a81a1a858cff08f57d
   schema_id_direct_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_id_direct_integer
       document:
@@ -37949,6 +38150,7 @@ records:
         semantic_sha256: 26fb0a7492e4655fca9add5610e6a45cefecba168fc74cbc0755a68b1603d890
   schema_integer_const_ambiguous:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_integer_const_ambiguous
       document:
@@ -38068,6 +38270,7 @@ records:
         semantic_sha256: f27df38588a3b251c70a931644d8acca30b613362a5b75087aa3b9a28cde6f88
   schema_intersection_anyof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_intersection_anyof
       document:
@@ -38189,6 +38392,7 @@ records:
         semantic_sha256: 1319a78c3f20c29ba198cc7ec29a24c7604c5c13dfe25402c85b30e800c43032
   schema_intersection_oneof:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_intersection_oneof
       document:
@@ -38310,6 +38514,7 @@ records:
         semantic_sha256: b60c387c39eb568eb8280187a9f20fa32e980f748a95aa8895e8ae4a46909af0
   schema_null_union_ambiguous:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_null_union_ambiguous
       document:
@@ -38429,6 +38634,7 @@ records:
         semantic_sha256: ff94eacbe980188c39a07451d0e162aeb981e95fb963674817dd528c8c7f1dd0
   schema_nullable_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_nullable_string
       document:
@@ -38547,6 +38753,7 @@ records:
         semantic_sha256: 392c7a2c505cab9eb83ae543011e3b9446878c619b46b586becb26f0c0cce3a0
   schema_object_const_union:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_object_const_union
       document:
@@ -38666,6 +38873,7 @@ records:
         semantic_sha256: 2fcdf642045a5781c53bd62a1a097c5e585d3da90c92d70133fd8331a2c29348
   schema_percent_ref_const:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_percent_ref_const
       document:
@@ -38786,6 +38994,7 @@ records:
         semantic_sha256: 769c4980ee5b4cc64520f62bab76a2ae20745277eaa64897f0445abed7f307e2
   schema_ref_sibling_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_ref_sibling_integer
       document:
@@ -38909,6 +39118,7 @@ records:
         semantic_sha256: 99ca1caf3d4fac006eeba09dbf7bac22430fd47271200ede8071d214a8688a1f
   schema_ref_union_anyof_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_ref_union_anyof_integer
       document:
@@ -39033,6 +39243,7 @@ records:
         semantic_sha256: 100b274ec77f0fd5b4b16eea2a9a0942ff8b57a8984561fa39c92ab577384378
   schema_ref_union_anyof_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_ref_union_anyof_string
       document:
@@ -39157,6 +39368,7 @@ records:
         semantic_sha256: 455df6d26274d0894b962a2f0c418a1b17675eed3f20fa5ccd2d35810024a9ff
   schema_ref_union_oneof_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_ref_union_oneof_integer
       document:
@@ -39281,6 +39493,7 @@ records:
         semantic_sha256: add5e227eebb42d1fb9157e50ef9f94689b5fdd99df23faa586c3c7613efd710
   schema_ref_union_oneof_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_ref_union_oneof_string
       document:
@@ -39405,6 +39618,7 @@ records:
         semantic_sha256: 50a6e25be4dbd3b8c6467dad082e94d7327b4acf72560fc8d78652964eaf7ac3
   schema_type_array_integer_null:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_type_array_integer_null
       document:
@@ -39524,6 +39738,7 @@ records:
         semantic_sha256: 05a803e3c08dcc9b623e60f41031dcdb44d57cb3bc587233cf31937b10901367
   schema_type_array_integer_null_null:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_type_array_integer_null_null
       document:
@@ -39643,6 +39858,7 @@ records:
         semantic_sha256: 1a65eb434e3a52613c5e6dd60c0034a5965b3609b5fc55c0669b6310eca0813a
   schema_type_array_string_integer:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_type_array_string_integer
       document:
@@ -39762,6 +39978,7 @@ records:
         semantic_sha256: e99a0168417150bd1736fad2fc51a0ba0d82bca4fb332fded5cd3039291bc7d0
   schema_union_anyof_array_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_array_reverse_string
       document:
@@ -39881,6 +40098,7 @@ records:
         semantic_sha256: 6eef25ebe324e4d936336d369c96d984a9a7cbefb42c094830362ff2b8146e82
   schema_union_anyof_array_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_array_reverse_typed
       document:
@@ -40000,6 +40218,7 @@ records:
         semantic_sha256: 2a88d02e0a7d904759f4d4ed171a12d0729c53167b4feb0b07ce6459d80895a1
   schema_union_anyof_array_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_array_string
       document:
@@ -40119,6 +40338,7 @@ records:
         semantic_sha256: 035d6420943c0d176b0a0f1a1e5dff7df12395ac3fc41b2dc41e85c9d803f89f
   schema_union_anyof_array_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_array_typed
       document:
@@ -40238,6 +40458,7 @@ records:
         semantic_sha256: d8dbc6cd11fdd550c80f5ce351ec4591060986054970a1c06a0aa5374829bd5f
   schema_union_anyof_boolean_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_boolean_reverse_string
       document:
@@ -40357,6 +40578,7 @@ records:
         semantic_sha256: 9ca9687f364fb5acc3b9e07c132c70a8ee8f9c0e1b64367f8bb4fb54454c54c3
   schema_union_anyof_boolean_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_boolean_reverse_typed
       document:
@@ -40476,6 +40698,7 @@ records:
         semantic_sha256: 5f8eba03022b1d66aef13e49649ade8edfe3b536bd0df110efa15b8a3a24a33e
   schema_union_anyof_boolean_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_boolean_string
       document:
@@ -40595,6 +40818,7 @@ records:
         semantic_sha256: 311f0f1b252f87ce8a9ee425982e3cfbf12eb9f14e9df63a76a1182391630c2b
   schema_union_anyof_boolean_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_boolean_typed
       document:
@@ -40714,6 +40938,7 @@ records:
         semantic_sha256: 564b08c73bd38fe5dd58d40dce18dbf2d6ceecaacf79499fcc0fa767b455bd10
   schema_union_anyof_integer_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_integer_reverse_string
       document:
@@ -40833,6 +41058,7 @@ records:
         semantic_sha256: b86ee59aa9a18150e78c8b3b5f8ec080cb22bd1e266461a0d70c5d8ad9bc396c
   schema_union_anyof_integer_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_integer_reverse_typed
       document:
@@ -40952,6 +41178,7 @@ records:
         semantic_sha256: bc523536d2b4cb0f9234f74afba40f6590fa7e9ed295535b272c80d86d539b1e
   schema_union_anyof_integer_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_integer_string
       document:
@@ -41071,6 +41298,7 @@ records:
         semantic_sha256: e507fc117cb2b82ce13b32e6740d10d422805ce16ed1b9aec55840b028c7deb8
   schema_union_anyof_integer_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_integer_typed
       document:
@@ -41190,6 +41418,7 @@ records:
         semantic_sha256: cf077f816724b3db276adade8bd2b1dc24a4d99392767764071a1036e76f480c
   schema_union_anyof_null_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_null_reverse_string
       document:
@@ -41309,6 +41538,7 @@ records:
         semantic_sha256: 0e3663cd227078ac3aba105de160d08ccd9584ffdf0f4992295c48c00a554415
   schema_union_anyof_null_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_null_reverse_typed
       document:
@@ -41428,6 +41658,7 @@ records:
         semantic_sha256: e03e74ce7124517b05734cbf4e4bb0863d3058c8859675ceca4d2932f82e7e79
   schema_union_anyof_null_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_null_string
       document:
@@ -41547,6 +41778,7 @@ records:
         semantic_sha256: 8123bc06b463ffa870bf98a000572c7ad8ddd135eaea88e9f00e0a458f4b7bf9
   schema_union_anyof_null_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_null_typed
       document:
@@ -41666,6 +41898,7 @@ records:
         semantic_sha256: 99d163b02f185845b7197964dd1c56637969d2c1f311200f7f2c989f452c67ca
   schema_union_anyof_number_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_number_reverse_string
       document:
@@ -41785,6 +42018,7 @@ records:
         semantic_sha256: 7731b6c1a4ff3a57e3bed8f97b416abf0166049e1c5604f4de6792368036dff5
   schema_union_anyof_number_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_number_reverse_typed
       document:
@@ -41904,6 +42138,7 @@ records:
         semantic_sha256: c0b1c6f6be63597eef1af13007e22ec58711098d6cb369a628e61fd4dfdff03d
   schema_union_anyof_number_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_number_string
       document:
@@ -42023,6 +42258,7 @@ records:
         semantic_sha256: 1583270db9610a29fa51e57b7108fbe2a99f40d0029d0de4b8a94f32ec42284b
   schema_union_anyof_number_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_number_typed
       document:
@@ -42142,6 +42378,7 @@ records:
         semantic_sha256: 435f442d148ee6ad012991c13e6d609ee6a64c11d53aeee812874875b3b30e02
   schema_union_anyof_object_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_object_reverse_string
       document:
@@ -42261,6 +42498,7 @@ records:
         semantic_sha256: 8423f3e28a670e8a4742a0fc7fdf6f188d7e9919ad4962e3bf1505d377b06fce
   schema_union_anyof_object_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_object_reverse_typed
       document:
@@ -42380,6 +42618,7 @@ records:
         semantic_sha256: 9e1c62160babfd36c76e5de0380175d2be0a0a9a2406be57310497390078edb3
   schema_union_anyof_object_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_object_string
       document:
@@ -42499,6 +42738,7 @@ records:
         semantic_sha256: a3c7d23973b5491fefceb5051278b85184150e2fb5731b84f72021228a3b439d
   schema_union_anyof_object_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_anyof_object_typed
       document:
@@ -42618,6 +42858,7 @@ records:
         semantic_sha256: 10c13724108b09963fcdff0bbf23681b0adba10af82fec0322a185b7ab57d4d4
   schema_union_oneof_array_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_array_reverse_string
       document:
@@ -42737,6 +42978,7 @@ records:
         semantic_sha256: a1c38858f2e1974dda598e3c9aa130ea62fbf191ba2e5e42caebed5361496c8e
   schema_union_oneof_array_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_array_reverse_typed
       document:
@@ -42856,6 +43098,7 @@ records:
         semantic_sha256: 26a66837e6e6a52980e6c53888d1e38c1bc75b0f635d01b105c2c51cec3398ee
   schema_union_oneof_array_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_array_string
       document:
@@ -42975,6 +43218,7 @@ records:
         semantic_sha256: fe265dbff1310728c8af0b8e9673df1e350eb4607b87189a9764f7c9268253f8
   schema_union_oneof_array_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_array_typed
       document:
@@ -43094,6 +43338,7 @@ records:
         semantic_sha256: 46d0d757d7fbc33a499d465ce89091666212c0f452c8601a212ecf548ad58f3d
   schema_union_oneof_boolean_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_boolean_reverse_string
       document:
@@ -43213,6 +43458,7 @@ records:
         semantic_sha256: 6c3e82baf63409233a43faa5aea67edb70b4a7d760e3fa7174d5a11dcc382977
   schema_union_oneof_boolean_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_boolean_reverse_typed
       document:
@@ -43332,6 +43578,7 @@ records:
         semantic_sha256: 8aaf7d61d9fad201be91a9d371dfb988a7cddf0fa0e5b17c57fef6762b3ff973
   schema_union_oneof_boolean_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_boolean_string
       document:
@@ -43451,6 +43698,7 @@ records:
         semantic_sha256: 09a0a2c8c4fc0115bcd717fa2604bf40dd3f789e81556a74e4366b41f4c1c58c
   schema_union_oneof_boolean_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_boolean_typed
       document:
@@ -43570,6 +43818,7 @@ records:
         semantic_sha256: fbd7ed2546c8f4aa02ad797d88663b08539ae421ea7a28442df40173233a3e30
   schema_union_oneof_integer_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_integer_reverse_string
       document:
@@ -43689,6 +43938,7 @@ records:
         semantic_sha256: ef96018ac1aaa90bdfa6d3ed19e569c0c50700f20fd593ff51c194ff8338ed9e
   schema_union_oneof_integer_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_integer_reverse_typed
       document:
@@ -43808,6 +44058,7 @@ records:
         semantic_sha256: 6d6962dccf582d40c997d589f07d888b3862bcef9d6e1be36840d8daa0f12719
   schema_union_oneof_integer_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_integer_string
       document:
@@ -43927,6 +44178,7 @@ records:
         semantic_sha256: 6edb51ea918203076d52c75c6c6792b6577ed26119285fb0a14f1ec6547c647c
   schema_union_oneof_integer_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_integer_typed
       document:
@@ -44046,6 +44298,7 @@ records:
         semantic_sha256: f8efc15d2ef1c5b6c2dc32d45a37585c6499e9a2f6696c8b27f8b20eeca2ba94
   schema_union_oneof_null_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_null_reverse_string
       document:
@@ -44165,6 +44418,7 @@ records:
         semantic_sha256: 69a9bbdcfec17414c2f2741e5201a7264d8128efa2079562833d2c2e99024e7a
   schema_union_oneof_null_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_null_reverse_typed
       document:
@@ -44284,6 +44538,7 @@ records:
         semantic_sha256: 8ff8d0d5ca676139527dc26595d94a21fb42b8e764a93fa77d44f353f4b77bed
   schema_union_oneof_null_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_null_string
       document:
@@ -44403,6 +44658,7 @@ records:
         semantic_sha256: dafc2dd9bb239e48bdfd5b1bc201d9e9ce567f955e08c2b955f6319252e6e4b5
   schema_union_oneof_null_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_null_typed
       document:
@@ -44522,6 +44778,7 @@ records:
         semantic_sha256: 5cc7e876e5242c6ffae87a809474286f35269dece2dee5f0d0ff4bafa2ac61a2
   schema_union_oneof_number_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_number_reverse_string
       document:
@@ -44641,6 +44898,7 @@ records:
         semantic_sha256: 9ba4b0c640c8d879c524ec1a051f40129a927191d91a0d279599863b9970afa9
   schema_union_oneof_number_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_number_reverse_typed
       document:
@@ -44760,6 +45018,7 @@ records:
         semantic_sha256: ce1588fee46484eebc5396f4d4c9dcd5fcaf1383e62995e1315fdd409de1ebd4
   schema_union_oneof_number_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_number_string
       document:
@@ -44879,6 +45138,7 @@ records:
         semantic_sha256: 225ab724aa46565ce86679ebaf9ab1d2696391168a11471531c8f77ead228a54
   schema_union_oneof_number_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_number_typed
       document:
@@ -44998,6 +45258,7 @@ records:
         semantic_sha256: 11727b1317116740ba4ecb823584cba68b25f5b4b42df8491ae2c00a8ff07b93
   schema_union_oneof_object_reverse_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_object_reverse_string
       document:
@@ -45117,6 +45378,7 @@ records:
         semantic_sha256: 80a08fa70f7583c96d1f20cb1d6262b79ed60aacd636afeb7dd87f6e4354e556
   schema_union_oneof_object_reverse_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_object_reverse_typed
       document:
@@ -45236,6 +45498,7 @@ records:
         semantic_sha256: b1a9fd3d8a1aa2a3a72ce9463d34fa0a09f6b87f164236e08d27e549d0a01db9
   schema_union_oneof_object_string:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_object_string
       document:
@@ -45355,6 +45618,7 @@ records:
         semantic_sha256: c68d8cf7082eabdf7afe49704f63a2e4eb1fbb6eb81be1b79db6fcecb53e1e6f
   schema_union_oneof_object_typed:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_union_oneof_object_typed
       document:
@@ -45474,6 +45738,7 @@ records:
         semantic_sha256: 4ab965b806718d1e3e36f463f5d52a33bb498645bf9c9ff150cb7ba8a0bc58b1
   text_before_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_before_tool
       document:
@@ -45651,6 +45916,7 @@ records:
         semantic_sha256: 8435e53c0bcce88f10220732596ce7b7ac966992079f45fabd8366d264aba958
   text_between_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_between_calls
       document:
@@ -45892,6 +46158,7 @@ records:
         semantic_sha256: baeae4c950a2fcd45c448ee7dc591f72b4d2732b48c92c3def61f5ac62c6c2d9
   text_only:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_only
       document:
@@ -46244,6 +46511,7 @@ records:
         semantic_sha256: c24c08022172b3cf20bf10a4cf6551bf283f384fb0e111a105549322e6e7f7d1
   text_sandwich:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_sandwich
       document:
@@ -46445,6 +46713,7 @@ records:
         semantic_sha256: 3fceff9f74c8d40d6489a3878bbe700e5d8ab7910c118c24c8606e9b25e916a7
   three_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: three_calls_partial_header
       document:
@@ -46513,6 +46782,7 @@ records:
         semantic_sha256: 5754e1844f45fcd463d11d12ca231370e610c119e5faa9b5ef551804da1e0188
   tool_block_never_closed_then_text:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_block_never_closed_then_text
       document:
@@ -46612,6 +46882,7 @@ records:
         semantic_sha256: e5884ca1f4d90fc5cb58ceec36f95c36c63955d4d1ea3578dc8a84ff0f90202c
   tool_body_whitespace:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_body_whitespace
       document:
@@ -46725,6 +46996,7 @@ records:
         semantic_sha256: ec0db8653be933d32df3f3a5a8530f76df371773dbd655e0ff6c8c0ab84a8443
   tool_in_reason:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_in_reason
       document:
@@ -47105,6 +47377,7 @@ records:
         semantic_sha256: bd47f7f8492bd2bdd8f1d5c0e2640244d3d0f4be81341db0507de281cbffecb5
   tool_markup_only_emits_nothing:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_markup_only_emits_nothing
       document:
@@ -47200,6 +47473,7 @@ records:
         semantic_sha256: d3b273f642b9f97498b0d3cfb9d1c5a77416d3f0b9e5ffda6f63edc222170533
   tool_no_close:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_no_close
       document:
@@ -47329,6 +47603,7 @@ records:
         semantic_sha256: eab7687f7e03cc173489e0c99710d874a07cc7816e544ccec3824a80e0ab221c
   tool_only:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_only
       document:
@@ -47478,6 +47753,7 @@ records:
         semantic_sha256: 078188d2aa011ade22ade119671104ca195aac6e64d44519dcd6eee04dfbe12c
   trailing_text_after_tool:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: trailing_text_after_tool
       document:
@@ -47925,6 +48201,7 @@ records:
         semantic_sha256: b6b09eb3e181fe0d08c9c048f0934df0a50b8f529b5032262c5acedf3ddb6a7d
   two_calls:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls
       document:
@@ -48118,6 +48395,7 @@ records:
         semantic_sha256: 3aba9d5b357d8e800cd3ab65f80ed3f9f8218053fdcb2caa2b6b62acd263f3c1
   two_calls_same_name:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls_same_name
       document:
@@ -48458,6 +48736,7 @@ records:
         semantic_sha256: 2211312adf9c91b3e20c82d7475888dae7f7accf76d8033a71b86b39fa527d42
   unused_reference_graph_parameter_types:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: unused_reference_graph_parameter_types
       document:
@@ -48664,6 +48943,7 @@ records:
         semantic_sha256: 589b05fe34b5babd65ebdb8963f2caef5c258de51adcc00b0212142a41e74edb
   xml_string_type_double_quoted_object:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_double_quoted_object
       document:
@@ -48781,6 +49061,7 @@ records:
         semantic_sha256: d1c6cfa68e23c7111c1b0a4e5213b64be700e1a3ed90ad1b39915391b9d469da
   xml_string_type_single_quoted_object:
     member: conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_single_quoted_object
       document:

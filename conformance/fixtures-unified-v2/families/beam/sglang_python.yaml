@@ -1,4 +1,4 @@
-capture_selection: {"family":"beam","implementation":"sglang_python","lineage":[{"family":"beam","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"bb07e5b1405f4ce29680f3ee2ca662acc75bc68c0bc838d39baa8b0bc1b2e0ef","source":"conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml","surface":"unified","version":"0.5.23"}
+capture_selection: {"family":"beam","implementation":"sglang_python","lineage":[{"family":"beam","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"af3eb10f7997e01d584bf48b204e4d4492b224e1e7b149bfdef97f336113653b","source":"conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml","surface":"unified","version":"0.5.23"}
 document:
   mode: unified
 provenance:
@@ -6431,6 +6431,7 @@ records:
         semantic_sha256: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
   guided_json_bare_tool_header_recovers_inside_a_thought:
     member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_bare_tool_header_recovers_inside_a_thought
       document:
@@ -8429,6 +8430,7 @@ records:
         semantic_sha256: 04c63f547d1fbd077ebb12038aec4cbcb0fda325733922574c42555c8ddf79a4
   guided_json_quoted_bare_header_after_payload:
     member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_quoted_bare_header_after_payload
       document:
@@ -8518,6 +8520,7 @@ records:
         semantic_sha256: 88b927472bc9e8e32273dd3570e25183171e55d47c17a9b2925574d8633031e2
   guided_json_quoted_bare_header_in_answer:
     member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_quoted_bare_header_in_answer
       document:
@@ -9912,6 +9915,7 @@ records:
         semantic_sha256: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
   guided_json_unterminated_reasoning_then_wrapped_payload:
     member: conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_unterminated_reasoning_then_wrapped_payload
       document:

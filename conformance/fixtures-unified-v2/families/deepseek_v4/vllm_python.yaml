@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v4","implementation":"vllm_python","lineage":[{"family":"deepseek_v4","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"1da247dcdee52f5716cc0a59a266f117a9f3348ed2ee1a9756c41dc682dd221e","source":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
+capture_selection: {"family":"deepseek_v4","implementation":"vllm_python","lineage":[{"family":"deepseek_v4","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"b18f277948b8ceb3aa8d92c6d906fe10991fd5b8865fff8e8bb0ec4dd66a2776","source":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
 document:
   mode: unified
 provenance:
@@ -8,6 +8,7 @@ provenance:
 records:
   adjacent_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: adjacent_calls_partial_header
       document:
@@ -67,6 +68,7 @@ records:
         semantic_sha256: 710387f679573565fd334d4b7410847e5d59b89b777183ceb3ff75bd47c82aed
   arg_array_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_array_quoted_parameter_close
       document:
@@ -151,6 +153,7 @@ records:
         semantic_sha256: 0ff9cb5bcd0c1e7deea90f163c457b3a800a6489cdc9072ba34c327233ef1c35
   arg_json_null_anyof:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_anyof
       document:
@@ -227,6 +230,7 @@ records:
         semantic_sha256: 4b25d2732e2b5fefb293b66909b0f5cf73d32f650c8fadbfaf27b0858e8b7270
   arg_json_null_const:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_const
       document:
@@ -303,6 +307,7 @@ records:
         semantic_sha256: 485f34252cd5a86a4148b41188de39bcdd6dfa0443a662c325d9c9531809dde2
   arg_json_null_nullable:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_nullable
       document:
@@ -378,6 +383,7 @@ records:
         semantic_sha256: eefb1a1086dcf37bcacb71c7df61f379e6adf06a3d9cfdca7ea181cc4f628a28
   arg_json_null_oneof:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_oneof
       document:
@@ -454,6 +460,7 @@ records:
         semantic_sha256: a943d6a764cb1c1009e3ff43e0d018eda1134f94dda1c591e6d2679cac9a922a
   arg_json_null_ref:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_ref
       document:
@@ -533,6 +540,7 @@ records:
         semantic_sha256: 6aaf9255136fc2bdac61c12ce29faf1cac9bef4f9f65aff765c473c051b83862
   arg_marker_in_string:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_marker_in_string
       document:
@@ -640,6 +648,7 @@ records:
         semantic_sha256: 51ce3bd9a1f9ba25a082a2f0b4638aa3087d9df3b1af5c23b8bbfe10518c71a4
   arg_null_mixed_labels:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_null_mixed_labels
       document:
@@ -745,6 +754,7 @@ records:
         semantic_sha256: c9221fef971c170c143d9d0ffd7ed94aff21dcec8d994bab7c4395282697e1e6
   arg_numeric_14_const_decimal:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_decimal
       document:
@@ -822,6 +832,7 @@ records:
         semantic_sha256: 0378d6735b79f6d4c37c1ce5858c003bcefe1044299e17d8d1208beefbdafe71
   arg_numeric_14_const_exponent:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_exponent
       document:
@@ -899,6 +910,7 @@ records:
         semantic_sha256: e6783a9680467a3037f57fbf2d0ed809ea6c0fc7a8b35539cdb661a9ff3ec76d
   arg_numeric_14_enum_decimal:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_decimal
       document:
@@ -977,6 +989,7 @@ records:
         semantic_sha256: eaf10098d97d7958150123953b335b28b2b6bb47b8598ba1f833d41bef2dc414
   arg_numeric_14_enum_exponent:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_exponent
       document:
@@ -1055,6 +1068,7 @@ records:
         semantic_sha256: c416b8cd11e444a96f8800260563c8fbb6a7918c6b265d189bb63354a2f4ab1f
   arg_numeric_14_large_decimal:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_decimal
       document:
@@ -1131,6 +1145,7 @@ records:
         semantic_sha256: c21262407fdd7a5b3802305d57abf41a4743b02e59d48e99230e26ba2cde95a7
   arg_numeric_14_large_exponent:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_exponent
       document:
@@ -1207,6 +1222,7 @@ records:
         semantic_sha256: 0770f7e6c451e79d66d1f7d6470043059c667c2eb2f2d8e74fbb3d84b1419418
   arg_numeric_14_negative:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative
       document:
@@ -1283,6 +1299,7 @@ records:
         semantic_sha256: 429c6245c94017074feaa6e9721c0be316fccfd1a04f87397dc9efece457187f
   arg_numeric_14_negative_exponent:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative_exponent
       document:
@@ -1359,6 +1376,7 @@ records:
         semantic_sha256: 6e2d71e5d30630e3c7bc916c997c19fd01ba20fd1cfd2afdb5e1900f6489619c
   arg_numeric_14_zero_underflow:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_zero_underflow
       document:
@@ -1435,6 +1453,7 @@ records:
         semantic_sha256: 95592bc113dbfec9aaf52792d6deeb63ef23c15f7a14775ed3ce5ed59e8d0a37
   arg_numeric_15_exponent:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_exponent
       document:
@@ -1509,6 +1528,7 @@ records:
         semantic_sha256: ad01e44b5f334ef038b3425b26c6fdf8cb69cfafe8d21412d069f2b552365608
   arg_numeric_15_negative:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_negative
       document:
@@ -1583,6 +1603,7 @@ records:
         semantic_sha256: 92e76b0afb861bac225dcdb7432fb1848977c36b17bc5a0e48fc168bbb99f6d6
   arg_numeric_15_ordinary:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_ordinary
       document:
@@ -1657,6 +1678,7 @@ records:
         semantic_sha256: 27ed5f06b322428623846a07b6853a0f038891a0b0d729f93e40b3cd96ec8bd1
   arg_numeric_15_quarter:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_quarter
       document:
@@ -1731,6 +1753,7 @@ records:
         semantic_sha256: 212dd0f935663cceab2f65a465ca16c3662e43faf20ad50c3b1edbc066cd30ab
   arg_numeric_15_round_down:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_down
       document:
@@ -1805,6 +1828,7 @@ records:
         semantic_sha256: b2fb852e084974ce1351b93297afc292bd4a51b84b3c518a88a77af48ac89d1d
   arg_numeric_15_round_up:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_up
       document:
@@ -1879,6 +1903,7 @@ records:
         semantic_sha256: af0834e5a700cb04b2e7178f1e1ec214ca36589389b23b5ddaa383092b3583eb
   arg_numeric_15_small:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_small
       document:
@@ -1953,6 +1978,7 @@ records:
         semantic_sha256: 77960ad3213bb16951a6a9a27bcaeb67a447315b9bb9aaac72020772e259de1c
   arg_numeric_nested_exact:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_nested_exact
       document:
@@ -2050,6 +2076,7 @@ records:
         semantic_sha256: be03d6b086c1042f5d1729a535c0cb40410551e9753a2c2ff85b475a5a5ebd8a
   arg_numeric_overflow_siblings_finite:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_finite
       document:
@@ -2110,6 +2137,7 @@ records:
         semantic_sha256: 2d0d2c86ea5336ff8e3a86e40e0d20b968912f9a5d67bebb2d8af6333ebf1e51
   arg_numeric_overflow_siblings_negative:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_negative
       document:
@@ -2170,6 +2198,7 @@ records:
         semantic_sha256: 88a2633218736bb64997517f3b405bb77dfc95279a54812346d8173d73e89103
   arg_numeric_overflow_siblings_positive:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_positive
       document:
@@ -2230,6 +2259,7 @@ records:
         semantic_sha256: 0f4ae6a37f80f5eca6aea411bf9bca9ee88d1044370ab5d409e3fdd0c8e9f030
   arg_object_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_object_quoted_parameter_close
       document:
@@ -2318,6 +2348,7 @@ records:
         semantic_sha256: 65b68f503a8f4599175d6080d53f0cdcb6e91b43b1a887864a5cd4d6d9cb7bd0
   arg_string_null:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null
       document:
@@ -2392,6 +2423,7 @@ records:
         semantic_sha256: fa5b682c79c28e393dd3d7944fb6a3237e44bc10d0dfbefe5368368d01175ba9
   arg_string_null_const:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_const
       document:
@@ -2465,6 +2497,7 @@ records:
         semantic_sha256: fc6589cf6b04940819bce0d2ef03222098b779f095aa7c1e5dc90c34a11c53e7
   arg_string_null_enum:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_enum
       document:
@@ -2539,6 +2572,7 @@ records:
         semantic_sha256: 43ee5c1c7c94ed13cb0c7d6861bd8225bb536b1e8b3914eb5040024de049e7ac
   arg_string_null_ref:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_ref
       document:
@@ -2616,6 +2650,7 @@ records:
         semantic_sha256: 0a77462a1d2c29ac79fc4cde550759011b96514f5a224ecfb899037a8e38ae1b
   arg_string_null_sibling_anyof:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_sibling_anyof
       document:
@@ -2690,6 +2725,7 @@ records:
         semantic_sha256: 39755ece419745df93a7921f7ccdec3a27a7ccc04f24476d3164816bd90b5487
   arg_string_null_sibling_oneof:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_sibling_oneof
       document:
@@ -2766,6 +2802,7 @@ records:
         semantic_sha256: d603bc4ebb3957c3705d4b6328e1d4cb95f3abec75b2ee060a505f117803dca5
   arg_string_null_union:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_union
       document:
@@ -2839,6 +2876,7 @@ records:
         semantic_sha256: 5d51b4481c58935db3276720ef047b26c067d94a324a4b6326fa5181b70acfd9
   arg_string_null_untyped_branch:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_untyped_branch
       document:
@@ -2913,6 +2951,7 @@ records:
         semantic_sha256: a3231c95bab994cba5a9f375c45ed076d15831da445b34cca7a7388b897c5292
   arg_unicode:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_unicode
       document:
@@ -3023,6 +3062,7 @@ records:
         semantic_sha256: eddd60fe337c2a971027895330d7deb477483e511603a89620a16d75fa22bc59
   blank_output_without_call:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_output_without_call
       document:
@@ -3114,6 +3154,7 @@ records:
         semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
   conditional_schema_number_types:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: conditional_schema_number_types
       document:
@@ -3211,6 +3252,7 @@ records:
         semantic_sha256: a2e34838c7c65d1c3d90825b57a7737447b50da5d19eeebacf8848ed6984b4ba
   content_then_reason:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: content_then_reason
       document:
@@ -3314,6 +3356,7 @@ records:
         semantic_sha256: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
   content_then_reason_then_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: content_then_reason_then_tool
       document:
@@ -3438,6 +3481,7 @@ records:
         semantic_sha256: c7b85f5602d80349bc6c32d0feb9acf90fbe8c4a24801a9e9eecd68cb48aa979
   deepseek_v41_mixed_control_text_in_string:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: deepseek_v41_mixed_control_text_in_string
       document:
@@ -3572,6 +3616,7 @@ records:
         semantic_sha256: ea6ae376587011bb11a7758790e5023b84742e182b7fd2e34c2722ca6ff0ea98
   dotted_name_minimal:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_minimal
       document:
@@ -3633,6 +3678,7 @@ records:
         semantic_sha256: a2a13464cdeb2d275f48df7e707ed2e6fae20ad41d935279e1f69d826498f38e
   dotted_name_mixed_punctuation:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_mixed_punctuation
       document:
@@ -3710,6 +3756,7 @@ records:
         semantic_sha256: e4fe2c407ef89006eeff13b9d9e4d7fb39441147b26ba81a5eeb3f8917af1898
   dotted_name_multiple_segments:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_multiple_segments
       document:
@@ -3787,6 +3834,7 @@ records:
         semantic_sha256: 85283d4ed88b080befacee2e2e2518b42eed236a374e9bd569b1d6867ba7418a
   dotted_name_shared_prefix:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_shared_prefix
       document:
@@ -3900,6 +3948,7 @@ records:
         semantic_sha256: 684774766b30a05a2e8b5f026c740caad9d522c3aad1f16742813d29dc2529a5
   dsml_bare_invoke_four_lf:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_bare_invoke_four_lf
       document:
@@ -4049,6 +4098,7 @@ records:
         semantic_sha256: d9f8226dd3e763246d9887a4c19b4e1377ac3a1d69ff6555160e48646cdef242
   dsml_bare_invoke_two_lf:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_bare_invoke_two_lf
       document:
@@ -4190,6 +4240,7 @@ records:
         semantic_sha256: d4e182dc5dd3ae981bda2163beae3c2d7a02899c27742774d097b72af912028f
   dsml_empty_content_separator:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_empty_content_separator
       document:
@@ -4332,6 +4383,7 @@ records:
         semantic_sha256: 4c3f8adb1895191bff5203b8174ab8b576f37bf51328b93b40b1d7b2681d4025
   dsml_no_separator:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_no_separator
       document:
@@ -4472,6 +4524,7 @@ records:
         semantic_sha256: 4ead4db318981ea967d8c55ead4bc4f5f7cb3131f7c61f94e7d6782b028c48b7
   dsml_reasoning_then_separator:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_reasoning_then_separator
       document:
@@ -4624,6 +4677,7 @@ records:
         semantic_sha256: 212180064d146c3921ba7913b5c73c247e063a681b1cda7a04f768420f31e967
   dsml_separator_four_lf:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_separator_four_lf
       document:
@@ -4774,6 +4828,7 @@ records:
         semantic_sha256: e51cc691c76a2ad772c20e60900eb49ada80efa14eea10be9156247218ea8d64
   dsml_separator_two_lf:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_separator_two_lf
       document:
@@ -4920,6 +4975,7 @@ records:
         semantic_sha256: 67f2d7b55ddb0d88380a63b39587ab57bceae65c30e503fc0d49afc06f95a8b8
   dsml_whitespace_content_separator:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dsml_whitespace_content_separator
       document:
@@ -5066,6 +5122,7 @@ records:
         semantic_sha256: 2f2bd72f6f337cf778aa6f7e8991ec8d59f4551066539d4169653cd2b1c7af06
   empty_args:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: empty_args
       document:
@@ -5163,6 +5220,7 @@ records:
         semantic_sha256: 3ccb6b7c7848d869074aa5b4dae8a67c5ea16d933a265b83ff29ae9556c87658
   glm_ref_encoded_targets:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_encoded_targets
       document:
@@ -5268,6 +5326,7 @@ records:
         semantic_sha256: 145a58d50a3db718c315336821735c4083768e7fff0f645137031f89119f4488
   glm_ref_json_looking_strings:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_json_looking_strings
       document:
@@ -5390,6 +5449,7 @@ records:
         semantic_sha256: d3277b74cceceee3c7bda2b129669db3c7d594eef39929bd1175ee9e62372241
   glm_ref_object:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_object
       document:
@@ -5471,6 +5531,7 @@ records:
         semantic_sha256: e5b0a91059802463886e7688c1cd90d80ff356729e2cc1c84fb7213ba2c182ef
   glm_ref_scalar_types:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: glm_ref_scalar_types
       document:
@@ -5593,6 +5654,7 @@ records:
         semantic_sha256: 8935a0ed00a39e75c89fe78a26f62468d931c26d3aefde4309440fddaa283916
   gpt_oss_control_marker_inside_argument_string:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_control_marker_inside_argument_string
       document:
@@ -5660,6 +5722,7 @@ records:
         semantic_sha256: b725a474004ca0c433cad804dd341702fccb4452784c170a9e705546d6356648
   gpt_oss_invalid_tool_body_then_empty_call:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_invalid_tool_body_then_empty_call
       document:
@@ -5719,6 +5782,7 @@ records:
         semantic_sha256: 45619059c8ae9a3d1310433a84fad9ec838d680fc674a050850d6c138ee7f5d6
   gpt_oss_invalid_tool_body_then_valid_call:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_invalid_tool_body_then_valid_call
       document:
@@ -5784,6 +5848,7 @@ records:
         semantic_sha256: fe97817e54f2b00748cb6ef19a9cd70100e4f054e197ba6a5b02ba22d4fb7496
   gpt_oss_multiple_unknown_and_empty_tools:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_multiple_unknown_and_empty_tools
       document:
@@ -5847,6 +5912,7 @@ records:
         semantic_sha256: 7db2ea67f4e6ce4e2ab4fd37b6e2b5b160ad85af2a6ff8d20e959a8596981c25
   guided_json_after_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_after_reasoning
       document:
@@ -5946,6 +6012,7 @@ records:
         semantic_sha256: 9348dd38350a4606e62d922ab84c2d0e4771c2274c64cd683bc8dd3b7465d48b
   guided_json_array_argument:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_array_argument
       document:
@@ -6121,6 +6188,7 @@ records:
         semantic_sha256: 164c139c4598b9a5aebcf2d2165bba5f2f80ef1b762cc97749a54de9b1910538
   guided_json_escaped_string_args:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_escaped_string_args
       document:
@@ -6210,6 +6278,7 @@ records:
         semantic_sha256: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
   guided_json_gt_in_argument_bare_opener:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_bare_opener
       document:
@@ -6303,6 +6372,7 @@ records:
         semantic_sha256: d225c892650f3a57e93b2f6ce784319ea345919dc016db3884c4a5f04633f026
   guided_json_gt_in_argument_trailing_close:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_trailing_close
       document:
@@ -6396,6 +6466,7 @@ records:
         semantic_sha256: b39ccfdbd5d46b84139f2b2b0ed2b49cdb7f2bbe5b0b2ffe8fa9bd85fecdbacc
   guided_json_gt_in_argument_wrapped:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_wrapped
       document:
@@ -6485,6 +6556,7 @@ records:
         semantic_sha256: 951496265c5b07fa899d813c2d79077213f08c54868b21f8ed134ee32ea9ccef
   guided_json_invalid_call:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_invalid_call
       document:
@@ -6574,6 +6646,7 @@ records:
         semantic_sha256: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
   guided_json_list_with_broken_element:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_list_with_broken_element
       document:
@@ -6663,6 +6736,7 @@ records:
         semantic_sha256: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
   guided_json_malformed_json:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_malformed_json
       document:
@@ -6752,6 +6826,7 @@ records:
         semantic_sha256: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
   guided_json_marker_inside_argument:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_marker_inside_argument
       document:
@@ -6851,6 +6926,7 @@ records:
         semantic_sha256: ca789bd52e78fed52bfd5121d5635d208d5c53561d5803dd3cb0d3d5d2cf36fe
   guided_json_named_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_named_tool
       document:
@@ -6940,6 +7016,7 @@ records:
         semantic_sha256: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
   guided_json_narrated_invoke_in_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_invoke_in_reasoning
       document:
@@ -7039,6 +7116,7 @@ records:
         semantic_sha256: 2dd60417904da58c76a35379d7237ee1530862dbeefc7e53f48617292cf9bda2
   guided_json_narrated_prefix_inside_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_prefix_inside_reasoning
       document:
@@ -7140,6 +7218,7 @@ records:
         semantic_sha256: 40d48b17229abea508793543649fed42668ef04fa70b5af13eb9c0f27924be6a
   guided_json_native_markup_only:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_markup_only
       document:
@@ -7250,6 +7329,7 @@ records:
         semantic_sha256: 1854b7f12c17c0eb86be906be6d0f27806082e8503b50d205c9e9280e6002d01
   guided_json_native_parameter_array_before_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_array_before_payload
       document:
@@ -7377,6 +7457,7 @@ records:
         semantic_sha256: cbf33087df8acdd7ed8c159954d030d5acc48633b7e31a1d086ac0ccf64be101
   guided_json_native_parameter_object_before_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_object_before_payload
       document:
@@ -7502,6 +7583,7 @@ records:
         semantic_sha256: ac9106e9c0a1a4b863692d5b13719608d5201d0b0b01ce69a8b3a14ed9b236ce
   guided_json_native_parameter_string_before_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_string_before_payload
       document:
@@ -7626,6 +7708,7 @@ records:
         semantic_sha256: aa229061edb756d6654d7e85a967fee7c71fdc3aef869f188a1fa0c71ceb279a
   guided_json_noncall_before_native_array_before_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_noncall_before_native_array_before_payload
       document:
@@ -7753,6 +7836,7 @@ records:
         semantic_sha256: 626ca596ce85b335514489bb1bc0ed76646505cabf757ce9e9b99effe153f1c0
   guided_json_orphan_reason_close_before_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_reason_close_before_payload
       document:
@@ -7844,6 +7928,7 @@ records:
         semantic_sha256: a5500df8d15d33e91db98982739fcd3dcee56713895c983c78a2a684b68cc26c
   guided_json_orphan_tool_close_before_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_tool_close_before_payload
       document:
@@ -7937,6 +8022,7 @@ records:
         semantic_sha256: 28de211431f948c151b2a5d63900e49c623ab07d2cd410b58b80548b553d6547
   guided_json_partial_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_partial_calls
       document:
@@ -8026,6 +8112,7 @@ records:
         semantic_sha256: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
   guided_json_prose_before_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_prose_before_reasoning
       document:
@@ -8302,6 +8389,7 @@ records:
         semantic_sha256: 0b98d9ea003826c68b37d3ed9503a5992495030bc5bd1a15bc963b89892623d6
   guided_json_required_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_required_tool
       document:
@@ -8391,6 +8479,7 @@ records:
         semantic_sha256: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
   guided_json_schema_error_nameless_element_bare_opener:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_bare_opener
       document:
@@ -8480,6 +8569,7 @@ records:
         semantic_sha256: 510e751a5f8e7c0cb79a36860ce3c0d2eb6cf3f47e9b5410a3d1c907159da90c
   guided_json_schema_error_nameless_element_trailing_close:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_trailing_close
       document:
@@ -8573,6 +8663,7 @@ records:
         semantic_sha256: 278f3eef275dbd3d15b00c07626b2c669a76b55b26d07bbf52a783c2ca49d4ab
   guided_json_schema_error_nameless_element_wrapped:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_wrapped
       document:
@@ -8662,6 +8753,7 @@ records:
         semantic_sha256: 80e01110f9acd2aa4a971ac0809cd70583083db8f7c934e55afbf3d3fb071fba
   guided_json_schema_error_not_a_call_bare_opener:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_bare_opener
       document:
@@ -8751,6 +8843,7 @@ records:
         semantic_sha256: 2df76061d9fe631e82023ac37e307d8001c65955c59e84ad7516c18d0d999bed
   guided_json_schema_error_not_a_call_trailing_close:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_trailing_close
       document:
@@ -8844,6 +8937,7 @@ records:
         semantic_sha256: cd350ec2858172437ea707a9da68d446105e35399ec22f26604ede3e6e5c909c
   guided_json_schema_error_not_a_call_wrapped:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_wrapped
       document:
@@ -8933,6 +9027,7 @@ records:
         semantic_sha256: d1cdb8491ae1b8150f18b6dc671c26e32324a672a4387420577ccfde40314904
   guided_json_stray_prefix_before_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_stray_prefix_before_reasoning
       document:
@@ -9034,6 +9129,7 @@ records:
         semantic_sha256: b8dc0523c6171b1e839c10f21bbe29e8a97fb2f3c70826c5c6fa400b1957e09f
   guided_json_syntax_error_bare_opener:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_bare_opener
       document:
@@ -9123,6 +9219,7 @@ records:
         semantic_sha256: 9fce802c662294b7e40d3b42f7f126874f84fae33b0c8fedd4fac359c0fe790e
   guided_json_syntax_error_trailing_close:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_trailing_close
       document:
@@ -9216,6 +9313,7 @@ records:
         semantic_sha256: 88c04b98dcb69eeb298ee91989d5cdcca5080758a4bb3546e2893d2d3b2eb058
   guided_json_syntax_error_wrapped:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_wrapped
       document:
@@ -9305,6 +9403,7 @@ records:
         semantic_sha256: 68c0826394bb4ffd8b9fb6746ce288e848f1059e7003ccff2f6bd3d42772e51b
   guided_json_tool_close_after_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_close_after_payload
       document:
@@ -9398,6 +9497,7 @@ records:
         semantic_sha256: 0b0fb5206e195ec3648f1666c964063482b485a407248ac25e305115be618f2d
   guided_json_tool_open_before_payload:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_open_before_payload
       document:
@@ -9485,6 +9585,7 @@ records:
         semantic_sha256: 268fc94c9eccd7226445f1d75371c99e9b5fed201e064bf853224f7e06e275c2
   guided_json_two_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_two_calls
       document:
@@ -9661,6 +9762,7 @@ records:
         semantic_sha256: 8da3f9290721c5c0d0a0b30093636a8570f0d6eb40c8db828992615676985af4
   guided_json_wrapped_in_tool_markup:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_wrapped_in_tool_markup
       document:
@@ -9750,6 +9852,7 @@ records:
         semantic_sha256: 46e92d3f66ce031f70270026a992b1d63643d0ddc20403d25a43d15918f8c82f
   guided_quoted_reasoning_closer_named:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_quoted_reasoning_closer_named
       document:
@@ -9853,6 +9956,7 @@ records:
         semantic_sha256: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
   guided_quoted_reasoning_closer_required:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_quoted_reasoning_closer_required
       document:
@@ -9956,6 +10060,7 @@ records:
         semantic_sha256: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
   guided_response_native_wrapper_whitespace_before_prose:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_native_wrapper_whitespace_before_prose
       document:
@@ -10076,6 +10181,7 @@ records:
         semantic_sha256: 227af3cd1cc66fa4ead0d037a84884a0420352ef8193c0f3352ef1e6c6480af6
   guided_response_quoted_control_braces_named:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_quoted_control_braces_named
       document:
@@ -10173,6 +10279,7 @@ records:
         semantic_sha256: e1b753e60a4b76849fbf321fc31e4ab17d4d3d187690759206ae6c2905b01569
   guided_response_quoted_control_braces_required:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_quoted_control_braces_required
       document:
@@ -10270,6 +10377,7 @@ records:
         semantic_sha256: d8f3590b617177676ed52e86922241585457be0873fbfdd0c212e49aeccfae1a
   guided_response_rejected_header_quote_ownership:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_rejected_header_quote_ownership
       document:
@@ -10328,6 +10436,7 @@ records:
         semantic_sha256: 0f41122dd6f50d5a28992d64cd95bdbe60931193ab6bc9c0d315ee2cb87e4757
   interstitial_text:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: interstitial_text
       document:
@@ -10454,6 +10563,7 @@ records:
         semantic_sha256: 73bf14253b490d9312aa906dc9669c2af01d54f8d391ea6a58a4929dab27d737
   local_schema_id_preserves_type:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: local_schema_id_preserves_type
       document:
@@ -10529,6 +10639,7 @@ records:
         semantic_sha256: 96c011031fe10e203b36c868c1afa5842163abbcf8af3dcbfc11ae40d812f669
   malformed_json_then_two_valid_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: malformed_json_then_two_valid_calls
       document:
@@ -10607,6 +10718,7 @@ records:
         semantic_sha256: 47d44fbc177d4fa2972e154079aabd372c389373bbcc57b94f1c888a86ef9ec0
   missing_inner_closers_then_valid_call:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: missing_inner_closers_then_valid_call
       document:
@@ -10669,6 +10781,7 @@ records:
         semantic_sha256: 1d726e4d7cbcded3da29a342412cef259e71ffa7917532c2dc31755ffdaf0401
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: narrated_calls
       document:
@@ -10837,6 +10950,7 @@ records:
         semantic_sha256: d3e217a494cc20d0b6370d7a741667d2874cdf661b0f2f3ce22bdd428916e436
   native_quoted_control_in_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_in_reasoning
       document:
@@ -10932,6 +11046,7 @@ records:
         semantic_sha256: cd13fe797c0e310f8325940e9ae2053e6de57817fd310b08a17805837fdfb5e4
   native_quoted_control_in_response:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_in_response
       document:
@@ -11029,6 +11144,7 @@ records:
         semantic_sha256: ce740c7b97681e2fe84466d5c48d43e4a791d405cbd6d0fc687a4645db770c7f
   native_quoted_control_then_call:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_then_call
       document:
@@ -11158,6 +11274,7 @@ records:
         semantic_sha256: cd315a5698d0555dbf11752e5856d31b67c537039df4ea715621b3f89ede5e3e
   native_quoted_incomplete_header:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_incomplete_header
       document:
@@ -11266,6 +11383,7 @@ records:
         semantic_sha256: a5e13756a637db063cae59e60858c329b65f52a0e8a8c0650b34396bb42bd5c0
   native_single_quote_contraction_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quote_contraction_reasoning
       document:
@@ -11359,6 +11477,7 @@ records:
         semantic_sha256: 2938b04536bb934a68dcd2e6dad6cc4e86af4613aaaf4b22d01c85fcf055364c
   native_single_quote_contraction_response:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quote_contraction_response
       document:
@@ -11456,6 +11575,7 @@ records:
         semantic_sha256: 38c99362c05e6e436e53c3b9de934d4c4827edc1924f424a8c12b304a0cf67a3
   native_single_quoted_word_control:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quoted_word_control
       document:
@@ -11553,6 +11673,7 @@ records:
         semantic_sha256: eefa887d200e1f2d5a12de395526b7219b41f594070263e3c05e63084a4e5f91
   native_unmatched_quote_then_call:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_unmatched_quote_then_call
       document:
@@ -11674,6 +11795,7 @@ records:
         semantic_sha256: c507debfe3be3c599e2625ca84e55aed8319caaee67d17d223e653c9c66ecefc
   not_keyword_type_complement:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: not_keyword_type_complement
       document:
@@ -11765,6 +11887,7 @@ records:
         semantic_sha256: 6edaf171887b2d67e9bf6be6f5cd7eab1a80bde47c11bf71fac65f2b7c3d9130
   nullable_reference_alias_literals:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: nullable_reference_alias_literals
       document:
@@ -11868,6 +11991,7 @@ records:
         semantic_sha256: d09b8dd2fb228b7cbb62f779af12f3e14d6a5c4a9e5af164b07e5741c1609498
   orphan_close_after_prose:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: orphan_close_after_prose
       document:
@@ -11961,6 +12085,7 @@ records:
         semantic_sha256: e1204ca536cf9dc3f1f6e961d4df86cb4a71338fe5bd448af91804a692fc9d7b
   prefilled_reasoning_redundant_opener:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_redundant_opener
       document:
@@ -12081,6 +12206,7 @@ records:
         semantic_sha256: 2a7defb75f1e13c93fe1a4892a61ed29120c18a60509c77b10bd4444575b722d
   prefilled_reasoning_then_text:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_then_text
       document:
@@ -12178,6 +12304,7 @@ records:
         semantic_sha256: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
   prefilled_reasoning_then_text_then_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_then_text_then_tool
       document:
@@ -12302,6 +12429,7 @@ records:
         semantic_sha256: 7232a9331297a279b04594f622221b18a831ab58dca48f1d66c680dceccedc88
   prefilled_reasoning_truncated:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_truncated
       document:
@@ -12407,6 +12535,7 @@ records:
         semantic_sha256: ff01fd4ef27d324ad1ee7d522b97276d14edecc20f9af92eefff8f68b9cd7883
   prefilled_reasoning_with_guided_json:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_with_guided_json
       document:
@@ -12504,6 +12633,7 @@ records:
         semantic_sha256: f8be7bfb62ba76e8388e3debc3e1558ccf2d7bf01a54c46375a8e3b86f60032e
   prefilled_reasoning_with_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_with_tool
       document:
@@ -12742,6 +12872,7 @@ records:
         semantic_sha256: 0b1d9824f43b6e2ee803a046e2c662d190c8a5a6e9271f5d01b6ee6f552cc6f6
   qwen_string_null:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: qwen_string_null
       document:
@@ -12818,6 +12949,7 @@ records:
         semantic_sha256: 36b7490bd67a9e93c4f25a0cd21ac02915cf3110c589e25108e8b8838bc4ccbc
   reason_after_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_after_tool
       document:
@@ -12946,6 +13078,7 @@ records:
         semantic_sha256: 35711e56ddedba60062617a2e2a868bc7bf204af525a91e06beaf24f8a7e90b8
   reason_between_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_between_calls
       document:
@@ -13091,6 +13224,7 @@ records:
         semantic_sha256: a611757ac03c5fc668bf2ef53d996895abc61fee76dd462c4eb5b048fa59df79
   reason_interleaved:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_interleaved
       document:
@@ -13244,6 +13378,7 @@ records:
         semantic_sha256: e7888bc6d5e8e0fd8a1e263f08bf412d905bc7de6b66c01aef14f8cd036ee575
   reason_markup_in_arg:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_markup_in_arg
       document:
@@ -13363,6 +13498,7 @@ records:
         semantic_sha256: 9a35114de9bd2d4c760d9cfe512ca493d2705f9aa15e86680443da559ad4ee3c
   reason_markup_in_arg_with_text:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_markup_in_arg_with_text
       document:
@@ -13488,6 +13624,7 @@ records:
         semantic_sha256: 7d6ed494371cc200753ab004167e5cd0a07be9e07e3b3e3a6add41c2f4de54e2
   reason_only:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_only
       document:
@@ -13581,6 +13718,7 @@ records:
         semantic_sha256: b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5
   reason_then_content:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_then_content
       document:
@@ -13680,6 +13818,7 @@ records:
         semantic_sha256: 1d265326d010d8b480499269e4a6c9d37589d7b90f257fecbe845e9f9ae9a947
   reason_then_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_then_tool
       document:
@@ -13800,6 +13939,7 @@ records:
         semantic_sha256: 71370b976cb6dbd4d46bfe14f01ac1d9a88f783e65a4885240d88e4d1e60f243
   reason_tool_reason_tool_reason:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_tool_reason_tool_reason
       document:
@@ -13959,6 +14099,7 @@ records:
         semantic_sha256: bc35fb976102bd614960f62a61de14db98273772ad84558399ca9fde420f3c87
   reason_tool_text_reason_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_tool_text_reason_tool
       document:
@@ -14114,6 +14255,7 @@ records:
         semantic_sha256: 586a80359108ac2b715e5cf1765b34b74c704dad43a45a1133e6e058675ddf01
   reason_unterminated:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_unterminated
       document:
@@ -14205,6 +14347,7 @@ records:
         semantic_sha256: 6681944af0bc996378ee85b771af8f34380668a46a7e49aa2f35612175318c08
   reference_object_recursive_and_composed_types:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reference_object_recursive_and_composed_types
       document:
@@ -14342,6 +14485,7 @@ records:
         semantic_sha256: 1499d18556500066e839bdd3ea57e2cf10d001146621049d02348fe809ad11b2
   retired__30_14:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: retired__30_14
       document:
@@ -14435,6 +14579,7 @@ records:
         semantic_sha256: 164975491563c0f4193a6e2daf0eacbe6ca838a2424b07fab94ebaea76970ea3
   retired__31_33:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: retired__31_33
       document:
@@ -14558,6 +14703,7 @@ records:
         semantic_sha256: bb42cc7ece0ebc136f9b9c8943614c0da2873bb7b303ab29a0402d9e26451cf9
   retired__31_38:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: retired__31_38
       document:
@@ -14661,6 +14807,7 @@ records:
         semantic_sha256: 275700efcb81eeab130805345da7269919388cba0319a64106fc44f268f3d750
   retired__31_40:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: retired__31_40
       document:
@@ -16378,6 +16525,7 @@ records:
         semantic_sha256: 9060c04e9d24bd65c7763bd38285a1014623c103db68ae69e1bafc8c57983737
   schema_const_numeric_bare:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_numeric_bare
       document:
@@ -18575,6 +18723,7 @@ records:
         semantic_sha256: 6a21a6c1f81a0121236547d157736a321f830fb98320ed179039504f9f3c1023
   schema_enum_const_narrowing:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_const_narrowing
       document:
@@ -18636,6 +18785,7 @@ records:
         semantic_sha256: 0dcad2764de37f3f2911e91278566d5aeaa20541b7bdec8b055aca5574c0e7a0
   schema_enum_inferred_integer:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_inferred_integer
       document:
@@ -24019,6 +24169,7 @@ records:
         semantic_sha256: ae9790c974ec1a0185e94a4102b1600666b72271db2fa417a33e7a2db82b910a
   structured_response_after_reasoning:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: structured_response_after_reasoning
       document:
@@ -24098,6 +24249,7 @@ records:
         semantic_sha256: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
   text_before_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_before_tool
       document:
@@ -24214,6 +24366,7 @@ records:
         semantic_sha256: 6aa421e0dc802304f37c21c4247a367e8172c8aa0542f2c870ceca4c55e7f399
   text_between_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_between_calls
       document:
@@ -24353,6 +24506,7 @@ records:
         semantic_sha256: b1b01f808ff928f264641d1fefec3b0a3f0e3bb9f45b367db508884f4314e0e3
   text_only:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_only
       document:
@@ -24442,6 +24596,7 @@ records:
         semantic_sha256: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
   text_reason_tool_text_reason_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_reason_tool_text_reason_tool
       document:
@@ -24601,6 +24756,7 @@ records:
         semantic_sha256: 7437edbb9be50aca4b6a9acf78a64eb087f5c8f86c3ba386735debdc758acb9a
   text_sandwich:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_sandwich
       document:
@@ -24719,6 +24875,7 @@ records:
         semantic_sha256: 6c2d5dfc01da25532f01f62de8d451f198526e5c318dc20501441fbb76afdfc8
   three_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: three_calls_partial_header
       document:
@@ -24787,6 +24944,7 @@ records:
         semantic_sha256: cd91b9ffc1849569a7ef8371845abde4348bdcad5ef7d3c6494f20b8fe4f132a
   tool_block_never_closed_then_text:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_block_never_closed_then_text
       document:
@@ -24874,6 +25032,7 @@ records:
         semantic_sha256: e34f8d022ca2bbf28945fb9acd703f245593fabbe4381cde5a7b9352e2ec0f0b
   tool_in_reason:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_in_reason
       document:
@@ -24996,6 +25155,7 @@ records:
         semantic_sha256: 71a0b665988d7607721b5feef95a2cfc0fbd6d8aaccba320b2d139e6d519b844
   tool_in_reason_with_text:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_in_reason_with_text
       document:
@@ -25124,6 +25284,7 @@ records:
         semantic_sha256: 067b40a538946a10582dfff681d8ae9f1ec68ad279c786d4f4368a304b5ebfd3
   tool_markup_only_emits_nothing:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_markup_only_emits_nothing
       document:
@@ -25213,6 +25374,7 @@ records:
         semantic_sha256: 3f684e38ec6b03a9ab602e818ef2d0ab9aa0aafc19ddf3a3b694165c1cd6d15c
   tool_no_close:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_no_close
       document:
@@ -25319,6 +25481,7 @@ records:
         semantic_sha256: 0733b54a78cf111eae00cade0eb69a09bce1540046e314b7f24303702432c06d
   tool_only:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_only
       document:
@@ -25429,6 +25592,7 @@ records:
         semantic_sha256: d12dbf972f56dc22f023016f521fa57bf11ec214e9e86279ff41b8b300447c27
   trailing_text_after_tool:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: trailing_text_after_tool
       document:
@@ -25541,6 +25705,7 @@ records:
         semantic_sha256: f1d9ebe54c3f5024cb56c1f19228b615657858946da574a5c92d0e1322f72593
   truncated_tool_eof:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: truncated_tool_eof
       document:
@@ -25648,6 +25813,7 @@ records:
         semantic_sha256: 8a9eb3dc53c2c5ea2000c8218d352692daafd1b84befbfe4b937ef4e4de31e63
   two_adjacent_reason_spans:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_adjacent_reason_spans
       document:
@@ -25763,6 +25929,7 @@ records:
         semantic_sha256: e3ee307214ba9614e2905612a2d4d90cf08d1589d7dfa821915934f730bd48cf
   two_calls:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls
       document:
@@ -25900,6 +26067,7 @@ records:
         semantic_sha256: c8427037ca6e004fa3cd8f6c92f26347e9911243dbdfcd7b5c4e71b1dd8397a6
   two_calls_same_name:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls_same_name
       document:
@@ -26037,6 +26205,7 @@ records:
         semantic_sha256: 705ecb1e20c55791e95baf2823883d7aa646139fd4c36abf4eb67365fd9e7ddb
   two_reason_spans:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_reason_spans
       document:
@@ -26148,6 +26317,7 @@ records:
         semantic_sha256: 146922888215906a77df4f335b4b49c0d2e34e8f9e062482be0182882ddbcc35
   unused_reference_graph_parameter_types:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: unused_reference_graph_parameter_types
       document:
@@ -26290,6 +26460,7 @@ records:
         semantic_sha256: 0a6b8cc56c72e491f32004ed5d83e187873f05028f0446e9657e99638560a30d
   xml_string_type_double_quoted_object:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_double_quoted_object
       document:
@@ -26368,6 +26539,7 @@ records:
         semantic_sha256: e60bdad052450102af6cf521b6b2e9096be93bc2df6ffe88d0efb5025590246f
   xml_string_type_single_quoted_object:
     member: conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_single_quoted_object
       document:

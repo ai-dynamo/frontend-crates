@@ -2050,23 +2050,25 @@ def test_frozen_snapshot_proof_keeps_its_executed_members_after_authored_growth(
 
 
 def test_retained_kimi_sparse_history_preserves_observation_origins(history_source):
-    root = history_source / 'conformance/fixtures-unified-v2'
-    store = unified_history.load_store(root)
-    history = store.histories['kimi_k3', 'sglang_python_batch']
-    capture_id = max(history.captures, key=lambda name: unified_history._capture_release_sort_key(name.removeprefix('sglang_python_batch-')))
-    snapshot = history.complete_snapshot(capture_id)
-    assert snapshot['records']
-    members = history.snapshot_members[capture_id]
-    assert set(snapshot['records']) == set(members)
-    assert any(not unified_history.typed_equal(record['value']['document']['capture_origin'], snapshot['provenance']['origin'])
-               for record in snapshot['records'].values())
-    resolved = history.resolve(capture_id)
-    for case, wrapped in snapshot['records'].items():
-        assert wrapped['member'] == members[case]
-        assert wrapped['value'] == resolved[case]
-    family = store.families['kimi_k3']
-    version = capture_id.removeprefix('sglang_python_batch-')
-    unified_history._validate_complete_snapshot(root / f'families/kimi_k3/{capture_id}.yaml', snapshot, family, 'sglang_python_batch', version)
+    with capture_sources.history_view(Path(__file__).resolve().parents[3], history_source) as view:
+        root = view / 'conformance/fixtures-unified-v2'
+        store = unified_history.load_store(root)
+        history = store.histories['kimi_k3', 'sglang_python_batch']
+        # This retained checkpoint deduplicates observations; a fresh full capture need not.
+        capture_id = 'sglang_python_batch-0.5.14'
+        snapshot = history.complete_snapshot(capture_id)
+        assert snapshot['records']
+        members = history.snapshot_members[capture_id]
+        assert set(snapshot['records']) == set(members)
+        assert any(not unified_history.typed_equal(record['value']['document']['capture_origin'], snapshot['provenance']['origin'])
+                   for record in snapshot['records'].values())
+        resolved = history.resolve(capture_id)
+        for case, wrapped in snapshot['records'].items():
+            assert wrapped['member'] == members[case]
+            assert wrapped['value'] == resolved[case]
+        family = store.families['kimi_k3']
+        version = capture_id.removeprefix('sglang_python_batch-')
+        unified_history._validate_complete_snapshot(root / f'families/kimi_k3/{capture_id}.yaml', snapshot, family, 'sglang_python_batch', version)
 
 
 def test_routed_sparse_history_keeps_requests_precedence_and_lazy_fragments(tmp_path, monkeypatch):

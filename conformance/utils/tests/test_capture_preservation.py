@@ -138,7 +138,14 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             history = store.histories[row["family"], row["implementation"]]
             original = history.complete_snapshot(f"{row['implementation']}-{row['version']}", source_member=row["source"])
             authored = unified_history.load_yaml(view / capture_sources.STORE / "families" / row["family"] / "inputs_and_golden.yaml")
-            assert typed_equal(capture_sources.independent_snapshot(original, authored), snapshot), row["path"]
+            expected = capture_sources.independent_snapshot(original, authored)
+            # Fresh execution receipts omit retired requests; legacy latest snapshots can retain them.
+            retired = {key for key, case in authored["cases"].items() if case.get("lifecycle", "active") == "retired"}
+            for key in retired & snapshot["records"].keys():
+                assert typed_equal(snapshot["records"][key], expected["records"][key]), (row["path"], key)
+            for document in (expected, snapshot):
+                document["records"] = {key: record for key, record in document["records"].items() if key not in retired}
+            assert typed_equal(expected, snapshot), row["path"]
 
 
 @pytest.mark.parametrize("suppressed", [False, True])

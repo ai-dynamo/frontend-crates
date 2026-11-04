@@ -1,4 +1,4 @@
-capture_selection: {"family":"nemotron_v3","implementation":"vllm_python","lineage":[{"family":"nemotron_v3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"864d49426e962e757e8a5919497966f8bbd2dbc72e7c64f5da796c583bfc9a39","source":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
+capture_selection: {"family":"nemotron_v3","implementation":"vllm_python","lineage":[{"family":"nemotron_v3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"4b1caa0c593f24742fa3d6704e1f56e328ff83a23f1e88ee00c13c8bf95c4e57","source":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
 document:
   mode: unified
 provenance:
@@ -8,6 +8,7 @@ provenance:
 records:
   adjacent_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: adjacent_calls_partial_header
       document:
@@ -115,6 +116,7 @@ records:
         semantic_sha256: a5c980fbdaa672fe9ed3f0f6e291b7b536296c50c96c35b924962fd4d318a7af
   arg_array_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_array_quoted_parameter_close
       document:
@@ -613,6 +615,7 @@ records:
         semantic_sha256: 90e5764923e335fffb444c7ab28c77a44ae668283627eea666356f0ae90e68e2
   arg_json_null_ref:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_ref
       document:
@@ -849,6 +852,7 @@ records:
         semantic_sha256: 09e0b1ec674f1ff440bad9fe5be3d77adfadf06a684946740dcaacc09a64325b
   arg_null_mixed_labels:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_null_mixed_labels
       document:
@@ -1014,6 +1018,7 @@ records:
         semantic_sha256: 59b1792f5fa7c753bb2e59718771cf77efebf19efe666cf1e0f6cd37e48afc35
   arg_numeric_14_const_decimal:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_decimal
       document:
@@ -1097,6 +1102,7 @@ records:
         semantic_sha256: 57dc9ceb1df1fdaca894aeb4b7e6db7078542b8c24dd0ffd63803ab2850d20e8
   arg_numeric_14_const_exponent:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_exponent
       document:
@@ -1180,6 +1186,7 @@ records:
         semantic_sha256: 34aa8189353c132b476b7feb99546bab1249d06c8ec606d62fa865396c2fcd47
   arg_numeric_14_enum_decimal:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_decimal
       document:
@@ -1264,6 +1271,7 @@ records:
         semantic_sha256: 50ae9beed4883be9cfac34adc31a2eefc35ef3e8731c4389e8ae530a495ecdad
   arg_numeric_14_enum_exponent:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_exponent
       document:
@@ -1348,6 +1356,7 @@ records:
         semantic_sha256: e723b25b4f0eecf3d57a55896f9b114bf184b251d8d29dc66d2d5f2e280fd542
   arg_numeric_14_fraction_fallback:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_fraction_fallback
       document:
@@ -1430,6 +1439,7 @@ records:
         semantic_sha256: 8535e55feb96bd1650963784def3a0c1ae57a3e68d96d7be8fe171206ec8704b
   arg_numeric_14_fraction_near_integer:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_fraction_near_integer
       document:
@@ -1512,6 +1522,7 @@ records:
         semantic_sha256: 0fa2996a97ecdf87ca5c943be2c4b021bfa5903691e0a30f769a2066f1e01db1
   arg_numeric_14_fraction_underflow:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_fraction_underflow
       document:
@@ -1594,6 +1605,7 @@ records:
         semantic_sha256: 2307a7e801574f394667ae1ecf7d131741fd191a1a5ec287629d8086ae6a3f11
   arg_numeric_14_large_decimal:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_decimal
       document:
@@ -1676,6 +1688,7 @@ records:
         semantic_sha256: f58b4ed5c7563ca6bc4d11b2f4253a8db614044dadd300a28a4575b437a563dc
   arg_numeric_14_large_exponent:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_exponent
       document:
@@ -1758,6 +1771,7 @@ records:
         semantic_sha256: a42f811f106b0dcdbdb68593a40cd1e0966360f2315828c8edc87e7abbfbdfbd
   arg_numeric_14_negative:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative
       document:
@@ -1840,6 +1854,7 @@ records:
         semantic_sha256: a6082284c316341cb58fa3e4747e098897c2d30f8ee93fd1b538dfa5ca4ac320
   arg_numeric_14_negative_exponent:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative_exponent
       document:
@@ -1922,6 +1937,7 @@ records:
         semantic_sha256: 65e74d90ddb859592518b04bcecb078caece5f1b22f989308d9817225fe79355
   arg_numeric_14_zero_underflow:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_zero_underflow
       document:
@@ -2004,6 +2020,7 @@ records:
         semantic_sha256: 5b1998868a00a9d288d660d84a77f3a88d3ee15c294366c8b6eaea5e3e50ad9b
   arg_numeric_15_exponent:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_exponent
       document:
@@ -2084,6 +2101,7 @@ records:
         semantic_sha256: 1bfd44fa2112f41ece9a137cb39f57e0a15023205efc8afc0127a90f7836a369
   arg_numeric_15_negative:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_negative
       document:
@@ -2164,6 +2182,7 @@ records:
         semantic_sha256: 2b77b0dcd3e74b258899958da29d3cbf6115863acc5661a399b3f972bb03ac4a
   arg_numeric_15_ordinary:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_ordinary
       document:
@@ -2244,6 +2263,7 @@ records:
         semantic_sha256: c60d6badadf6dbc9b91886320fc9b313b95954abc41eb915455edcad360e9bd2
   arg_numeric_15_quarter:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_quarter
       document:
@@ -2324,6 +2344,7 @@ records:
         semantic_sha256: 7ae0417e7848564330fd0c3cf99cc7527cd57952edb51b7241136c2a34708957
   arg_numeric_15_round_down:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_down
       document:
@@ -2404,6 +2425,7 @@ records:
         semantic_sha256: c32dc07b604a53331521b0ac4d21ed466d39b65adf4ab98b8a3df009fa3f2afb
   arg_numeric_15_round_up:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_up
       document:
@@ -2484,6 +2506,7 @@ records:
         semantic_sha256: 6f391264dcfb83af6faf996fe27a306b976969f23cfc8ad3129c9facf57da072
   arg_numeric_15_small:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_small
       document:
@@ -2564,6 +2587,7 @@ records:
         semantic_sha256: 35c791f9fe1d21f39c4a8d67721c152946e2b14e4655067c66dfa86ba4e83504
   arg_numeric_nested_exact:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_nested_exact
       document:
@@ -2709,6 +2733,7 @@ records:
         semantic_sha256: 1cc7bed26918598186e3e37ccfc19ed8dd09b8408ce03e7048417dd722dadbca
   arg_numeric_overflow_siblings_finite:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_finite
       document:
@@ -2805,6 +2830,7 @@ records:
         semantic_sha256: 5147f68556d593e69e3da9ec4da9d34b737df9955f13772ad63044eea1b856e1
   arg_numeric_overflow_siblings_negative:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_negative
       document:
@@ -2901,6 +2927,7 @@ records:
         semantic_sha256: 89ba826e4aca8643a3dec1534e827c402a7d2a6d256d4afb219a04ab3ce0b700
   arg_numeric_overflow_siblings_positive:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_positive
       document:
@@ -2997,6 +3024,7 @@ records:
         semantic_sha256: b1bad7f8b0f976042eec86f6f8a647813e4fe6fc72039cbf7fb45a4d8da97bf0
   arg_object_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_object_quoted_parameter_close
       document:
@@ -3877,6 +3905,7 @@ records:
         semantic_sha256: 825874eab4f2d87bb29807ab547e1fa29bfe15ea0406aa36d43f75c5ee66cb7f
   blank_framing_after_reasoning:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_after_reasoning
       document:
@@ -4059,6 +4088,7 @@ records:
         semantic_sha256: d190f8bebe0dc4bc2ca3087c97c0353be469b0a7e11d911bc074a141462f6083
   blank_framing_between_calls_single_chunk:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_between_calls_single_chunk
       document:
@@ -4220,6 +4250,7 @@ records:
         semantic_sha256: a97a97b3761bb38b46c0d436bcec1564fcbe24ce537298dcb93ac6eac9bc6c85
   blank_framing_incomplete_call:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_incomplete_call
       document:
@@ -4347,6 +4378,7 @@ records:
         semantic_sha256: 87edd5e87914960855aac5be187f49f4b5de6009895ac0634f2ca5eb6a903130
   blank_framing_prose_after_call:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_prose_after_call
       document:
@@ -4510,6 +4542,7 @@ records:
         semantic_sha256: 3e092974d72ef5cf3dc94309395d1274c570f466a91ff5eb8cd88c6fd156ba21
   blank_framing_tool_only:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_tool_only
       document:
@@ -4669,6 +4702,7 @@ records:
         semantic_sha256: ff4f9786360718ee21dbae8f7456d6314019d9ee987411cf59f9cb67e90fdc79
   blank_framing_with_prose:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_with_prose
       document:
@@ -4841,6 +4875,7 @@ records:
         semantic_sha256: 2bde40cfcdf8a90074673afd3ce2ad04c05b55f43d9ae22ed84afb084559ed48
   blank_output_without_call:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_output_without_call
       document:
@@ -4944,6 +4979,7 @@ records:
         semantic_sha256: 8c6b43542f03a1e166037a7b6d72551c79451876b4dbe865d91c9692fb6a1f8b
   conditional_schema_number_types:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: conditional_schema_number_types
       document:
@@ -5800,6 +5836,7 @@ records:
         semantic_sha256: 4ac2180e98e8f7dd681d498f0a48c909a929c1730b95a3db36904d73015d06a1
   dotted_name_minimal:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_minimal
       document:
@@ -5884,6 +5921,7 @@ records:
         semantic_sha256: aaeaba7df6ff49d304d0142877771c87d8cb8d72cdf3a0026329e51c2c1221b2
   dotted_name_mixed_punctuation:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_mixed_punctuation
       document:
@@ -5996,6 +6034,7 @@ records:
         semantic_sha256: 1dec8ac8efd783544b850f568da7d9cb31c96b7c54cbb19a9a5e5a068159b986
   dotted_name_multiple_segments:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_multiple_segments
       document:
@@ -6108,6 +6147,7 @@ records:
         semantic_sha256: 2d84bb27b057d398db91a6f9b8d3f9429c5a228470e2e1549daefb01c1b585d4
   dotted_name_shared_prefix:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_shared_prefix
       document:
@@ -7112,6 +7152,7 @@ records:
         semantic_sha256: 0d809afd659e8b26324e090d62da612b685512eda6360a04ba8370c308a752e1
   gpt_oss_multiple_unknown_and_empty_tools:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_multiple_unknown_and_empty_tools
       document:
@@ -9182,6 +9223,7 @@ records:
         semantic_sha256: 5fba74326e95f4e6438e668e1b90392bd233190c1b4b59367917ac83bf3aa532
   guided_json_native_parameter_string_before_payload:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_string_before_payload
       document:
@@ -9305,6 +9347,7 @@ records:
         semantic_sha256: 0734389166889daabe2b52b3f00148d23578f7c33b6a62c183e897c8e744953d
   guided_json_noncall_before_native_array_before_payload:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_noncall_before_native_array_before_payload
       document:
@@ -11837,6 +11880,7 @@ records:
         semantic_sha256: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
   guided_response_native_wrapper_whitespace_before_prose:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_native_wrapper_whitespace_before_prose
       document:
@@ -12582,6 +12626,7 @@ records:
         semantic_sha256: 1a2d89caf68a6cc2b45bf029cd4e7f838567ba1c18c484fc262436302a436216
   missing_inner_closers_then_valid_call:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: missing_inner_closers_then_valid_call
       document:
@@ -12638,6 +12683,7 @@ records:
         semantic_sha256: 01adec742d39d3726aaf9028c588e236147f06dd90a72bf7f0a417fb90b4ccbf
   narrated_bare_invoke_in_unterminated_thought:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: narrated_bare_invoke_in_unterminated_thought
       document:
@@ -12748,6 +12794,7 @@ records:
         semantic_sha256: 027127fd13e0f1881114a373f0a65cb19d96fe8adc5efe5f65ae05691d32c5f5
   narrated_bare_invoke_then_wrapped_call:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: narrated_bare_invoke_then_wrapped_call
       document:
@@ -14062,6 +14109,7 @@ records:
         semantic_sha256: 920fda132599b6c72d0f776b2f21d8b7879ed204ac1f1a97cb565ae4526ae8a8
   not_keyword_type_complement:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: not_keyword_type_complement
       document:
@@ -17586,6 +17634,7 @@ records:
         semantic_sha256: eba79edb6d109929f4fb05c7ae733150a0f9461f200ad9821e40fc16d4588280
   reference_object_recursive_and_composed_types:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reference_object_recursive_and_composed_types
       document:
@@ -20129,6 +20178,7 @@ records:
         semantic_sha256: 7e0fcb7f866680206ceb52a113269f5503d1a3aa80cfebc7636560be11eaf48b
   schema_const_numeric_bare:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_numeric_bare
       document:
@@ -23267,6 +23317,7 @@ records:
         semantic_sha256: 7943b1a471b6202451450aff8fc469e762da5a4ceca47c4c54862d234cd6374c
   schema_enum_const_narrowing:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_const_narrowing
       document:
@@ -23352,6 +23403,7 @@ records:
         semantic_sha256: c875cd332a7abd42900cffd94f27660314455601749daa179031311bb07324f6
   schema_enum_inferred_integer:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_inferred_integer
       document:
@@ -31995,6 +32047,7 @@ records:
         semantic_sha256: 58a0aca713810dca284bed92e359e9631f5d257481519d8868daa3b778c12005
   three_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: three_calls_partial_header
       document:
@@ -34075,6 +34128,7 @@ records:
         semantic_sha256: 8fc5b0d9a4b49a1e9e9d7be82d0b628050891a65159297328dcb8cc44c61d813
   xml_custom_type_double_quoted_object:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_custom_type_double_quoted_object
       document:
@@ -34188,6 +34242,7 @@ records:
         semantic_sha256: 02107f4ea44e35d3c25803da68d1269dc4a3414ad0c041e170591ea9ae981668
   xml_custom_type_single_quoted_object:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_custom_type_single_quoted_object
       document:
@@ -34300,6 +34355,7 @@ records:
         semantic_sha256: fe4c0bacb7f466b780c91a28b1d1427849fef6f126cc9d98a8088b6fbd8e6e6f
   xml_string_type_double_quoted_object:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_double_quoted_object
       document:
@@ -34415,6 +34471,7 @@ records:
         semantic_sha256: 2f6c93cfceddd7f4c24fcba0d5be19cc15e99ea551356e0ae6d257f03d3114a4
   xml_string_type_single_quoted_object:
     member: conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_single_quoted_object
       document:

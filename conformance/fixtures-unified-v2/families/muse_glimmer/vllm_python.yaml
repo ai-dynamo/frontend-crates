@@ -1,4 +1,4 @@
-capture_selection: {"family":"muse_glimmer","implementation":"vllm_python","lineage":[{"family":"muse_glimmer","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"62aaec13ee7ef60b60479ebf12f8a5b9a4f94c0db526c125668723c0bacb8cbe","source":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
+capture_selection: {"family":"muse_glimmer","implementation":"vllm_python","lineage":[{"family":"muse_glimmer","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"8e4d68e51923275a096a7cb69b6ed0a7eec44ef905379ce04ac8b25892420fbb","source":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml","surface":"unified","version":"0.32.0"}
 document:
   mode: unified
 provenance:
@@ -8,6 +8,7 @@ provenance:
 records:
   adjacent_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: adjacent_calls_partial_header
       document:
@@ -67,6 +68,7 @@ records:
         semantic_sha256: e59fd647ef7ea049cd990fe737329c649a9d7889550548e9d7da2e9aa4e297be
   arg_array_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_array_quoted_parameter_close
       document:
@@ -466,6 +468,7 @@ records:
         semantic_sha256: ac03150dfb907e34e7503d8b89dc45dd49e3e55708854a58b6441c92a85d8c5d
   arg_json_null_ref:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_ref
       document:
@@ -663,6 +666,7 @@ records:
         semantic_sha256: 416e2616cf21f289c06eaedaf9912a9f72fbc85a7f098ee155c3be6d051fa054
   arg_null_mixed_labels:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_null_mixed_labels
       document:
@@ -764,6 +768,7 @@ records:
         semantic_sha256: abd87670c935a8c941d1914683a8671be9edfbb95afb0e2b5808609a4ae8f672
   arg_numeric_14_const_decimal:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_decimal
       document:
@@ -844,6 +849,7 @@ records:
         semantic_sha256: 811cc3d9fd0ad8212e7399139895af404627a4916c22c27aa9e16a6f2f47f970
   arg_numeric_14_const_exponent:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_exponent
       document:
@@ -924,6 +930,7 @@ records:
         semantic_sha256: cd08d996a53f36b30eeb86c8927e22002c54e8f376f4a6439db1ed94a6512c03
   arg_numeric_14_enum_decimal:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_decimal
       document:
@@ -1005,6 +1012,7 @@ records:
         semantic_sha256: 39f98eba514a990b0d70831a59ff35346064c62ad0e43abb80a566c1dd1b0642
   arg_numeric_14_enum_exponent:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_exponent
       document:
@@ -1086,6 +1094,7 @@ records:
         semantic_sha256: 0e0f52e7cfe341d5c44aee1cdf391b8dae5ac97507a9ee9849d9cc8ffef5126b
   arg_numeric_14_large_decimal:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_decimal
       document:
@@ -1165,6 +1174,7 @@ records:
         semantic_sha256: 30dbf45e5241709339527e33375f1579bfc3107e1915866f6e756318ecffe525
   arg_numeric_14_large_exponent:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_exponent
       document:
@@ -1244,6 +1254,7 @@ records:
         semantic_sha256: ad5c9f826e13f288cefccd2cc8ffbc5f47d0fe7b7d60e899c91a5234e0825850
   arg_numeric_14_negative:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative
       document:
@@ -1323,6 +1334,7 @@ records:
         semantic_sha256: 20a0b4606268dd088fb4e85c189aa467bdc414d61e4c9765c9ace080a144becf
   arg_numeric_14_negative_exponent:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative_exponent
       document:
@@ -1402,6 +1414,7 @@ records:
         semantic_sha256: 5ada68442ae2ed878a971afb9b7ac969c0d6e168369a91dd7de0a66b82fa6882
   arg_numeric_14_zero_underflow:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_zero_underflow
       document:
@@ -1481,6 +1494,7 @@ records:
         semantic_sha256: 826d14757dcf9721e61339f53e9b3b064c4b5b0e32af3a128bf48678b289af03
   arg_numeric_15_exponent:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_exponent
       document:
@@ -1558,6 +1572,7 @@ records:
         semantic_sha256: adb5f02a5bbe80b4a176a760ed2c580dcc392b24252d0f86fb4830a4ddca8b08
   arg_numeric_15_negative:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_negative
       document:
@@ -1635,6 +1650,7 @@ records:
         semantic_sha256: f13ac4a93924abdd4698e288b50f72caad2ae353b2638aa88dec52dccb7b9930
   arg_numeric_15_ordinary:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_ordinary
       document:
@@ -1712,6 +1728,7 @@ records:
         semantic_sha256: 6c54a999df47f2b381ef552b15e026a1a09b81cfb2e94ad8bcc624c2f0452da9
   arg_numeric_15_quarter:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_quarter
       document:
@@ -1789,6 +1806,7 @@ records:
         semantic_sha256: bb91946d18bce3396c0064ca58e54366ffefd6ff1306917798b7f0d101a1cf05
   arg_numeric_15_round_down:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_down
       document:
@@ -1866,6 +1884,7 @@ records:
         semantic_sha256: aaf4947da8f3b9f6eb55b613062e4e0b5cabb406e685c50167b52a4db3506085
   arg_numeric_15_round_up:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_up
       document:
@@ -1943,6 +1962,7 @@ records:
         semantic_sha256: 2ce3646713c53c1be23d416ee314e18398bcf57876b8e20546a76906de43ee14
   arg_numeric_15_small:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_small
       document:
@@ -2020,6 +2040,7 @@ records:
         semantic_sha256: 0ffafd122c4791ef9a6e9d0ae40db8a50eb187cfb80af31cfafc22b588790b84
   arg_numeric_nested_exact:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_nested_exact
       document:
@@ -2114,6 +2135,7 @@ records:
         semantic_sha256: 17061b9ed7af71022817e0089155ce66308b7531b05fa93be3a4c383a6af27df
   arg_numeric_overflow_siblings_finite:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_finite
       document:
@@ -2185,6 +2207,7 @@ records:
         semantic_sha256: c7bcba99b77ce1604723d2d23e00ef55217a9cb09d05c39304d5b26b3f9382e1
   arg_numeric_overflow_siblings_negative:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_negative
       document:
@@ -2256,6 +2279,7 @@ records:
         semantic_sha256: 81d5ceb323074860a255cb46ba323f39215658ecad6a8e0a60dae7ab7da2de6f
   arg_numeric_overflow_siblings_positive:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_positive
       document:
@@ -2327,6 +2351,7 @@ records:
         semantic_sha256: d471258024476f545b34c316db4ef457c62245dfefbf6745608010d4b190133c
   arg_object_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_object_quoted_parameter_close
       document:
@@ -2651,6 +2676,7 @@ records:
         semantic_sha256: 4f001079d6dd58d50ec3c7eaa4b8c41027fbe2310f210781d47ed706f5d70042
   arg_string_null_ref:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_ref
       document:
@@ -3165,6 +3191,7 @@ records:
         semantic_sha256: 1e66b1f2321f4255ad5c05602312be62e710ba8e3ed03c2ad7da2bacf7bce591
   blank_framing_after_reasoning:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_after_reasoning
       document:
@@ -3303,6 +3330,7 @@ records:
         semantic_sha256: 03a8e2ea82c41e1ef220f4fbcc902be9b4426161694a06b099582bed7bdf9d93
   blank_framing_between_calls_single_chunk:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_between_calls_single_chunk
       document:
@@ -3432,6 +3460,7 @@ records:
         semantic_sha256: 628fe38932831aaa14f81114a898a70d586e89a004b1753ad5480d0133c4d6c0
   blank_framing_prose_after_call:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_prose_after_call
       document:
@@ -3563,6 +3592,7 @@ records:
         semantic_sha256: 49eada9bd51943687cf41eab72f72dace0b0d0978f7bc763f0ac5a85fb1e0f77
   blank_framing_tool_only:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_tool_only
       document:
@@ -3694,6 +3724,7 @@ records:
         semantic_sha256: 0492e2b0b933adf2b295915a0f237509ba13bdef643aabb115e31dd0617abc4c
   blank_framing_with_prose:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_with_prose
       document:
@@ -3827,6 +3858,7 @@ records:
         semantic_sha256: 877d9c1afb9a26e7d72586c7bb7b3a14de238e95af9e219f6df9f4d330a57c2f
   blank_output_without_call:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_output_without_call
       document:
@@ -3920,6 +3952,7 @@ records:
         semantic_sha256: 29100324e159669f00e18e159fffd58f862b76f87ef941ad0914f61d84ae44ad
   conditional_schema_number_types:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: conditional_schema_number_types
       document:
@@ -4355,6 +4388,7 @@ records:
         semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
   dotted_name_minimal:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_minimal
       document:
@@ -4424,6 +4458,7 @@ records:
         semantic_sha256: f9d96f6e097650655e69c3d66d0d18148bed74892edf19af2b93f200497109b9
   dotted_name_mixed_punctuation:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_mixed_punctuation
       document:
@@ -4504,6 +4539,7 @@ records:
         semantic_sha256: 080d9b87468aa5423876d88ce92cce33c4eb7995c201f7e06fc7c6b5ba0df4af
   dotted_name_multiple_segments:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_multiple_segments
       document:
@@ -4584,6 +4620,7 @@ records:
         semantic_sha256: e38e9bc77860e64a9ce05e42e9b2c7b96ffe9b3a42e61ea2930ac1cae515b62f
   dotted_name_shared_prefix:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: dotted_name_shared_prefix
       document:
@@ -5225,6 +5262,7 @@ records:
         semantic_sha256: 96dd78142067b82bb7c14666ae8da51a2feddfcb2210efa12c334134e991bdeb
   gpt_oss_multiple_unknown_and_empty_tools:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_multiple_unknown_and_empty_tools
       document:
@@ -5319,6 +5357,7 @@ records:
         semantic_sha256: 1595c19deba4d2603b8160e5b3773d34151ec06114466927cab13c5e13036d4f
   gpt_oss_quoted_message_header_literal:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_quoted_message_header_literal
       document:
@@ -5401,6 +5440,7 @@ records:
         semantic_sha256: a695672e0f73e26890ed299f73ca143524104bc63d9bec3dd06df30a4245d250
   gpt_oss_quoted_truncated_tool_then_final:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_quoted_truncated_tool_then_final
       document:
@@ -5459,6 +5499,7 @@ records:
         semantic_sha256: 827b69565f95f705d7073654f23b741d71bac21b3d1f9c429563007a544ff26a
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: gpt_oss_truncated_tool_resynchronizes_at_next_message
       document:
@@ -6840,6 +6881,7 @@ records:
         semantic_sha256: 2428de24fb46db892f60dc97af20425b201ef6af9d2767519a97940658d92b8b
   guided_json_native_parameter_string_before_payload:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_string_before_payload
       document:
@@ -6932,6 +6974,7 @@ records:
         semantic_sha256: 988a38133540e9538a0ce2898e71e219de590d596ebc468a9484ed8beddda086
   guided_json_noncall_before_native_array_before_payload:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_noncall_before_native_array_before_payload
       document:
@@ -9168,6 +9211,7 @@ records:
         semantic_sha256: ecb3e5a854cb5070157463717ace718f8c2ab1651dc54c2cf017813a28945b47
   guided_response_native_wrapper_whitespace_before_prose:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_native_wrapper_whitespace_before_prose
       document:
@@ -9436,6 +9480,7 @@ records:
         semantic_sha256: e4cf6ec0478d651cf359ab658505ec4dbe3a360364983acc4df45da743b482dc
   interrupted_reasoning_then_response:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: interrupted_reasoning_then_response
       document:
@@ -9789,6 +9834,7 @@ records:
         semantic_sha256: 6fc5ae94578218d433a32cfefaaf22bc1a65665b45da5c28bcb0338ce615f5a7
   missing_inner_closers_then_valid_call:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: missing_inner_closers_then_valid_call
       document:
@@ -9861,6 +9907,7 @@ records:
         semantic_sha256: 79c818d6502dffe51f576d958ff51f95171659e297a53ef72151956a6168ec7a
   muse_opaque_declared_invoke:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: muse_opaque_declared_invoke
       document:
@@ -9956,6 +10003,7 @@ records:
         semantic_sha256: 42442ae1f6a74fecb6454564055a0b19feb1bb6dbae90e7cbb8c50a1b556c5f2
   muse_opaque_undeclared_invoke:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: muse_opaque_undeclared_invoke
       document:
@@ -10396,6 +10444,7 @@ records:
         semantic_sha256: 6a982cca4c1916b8e76f44510ad476ef5cecd8aa8a0f89d442f5cc80ddb7b6cf
   muse_recovery_second_parameter:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: muse_recovery_second_parameter
       document:
@@ -10494,6 +10543,7 @@ records:
         semantic_sha256: 560e61672e9a71f50d3162155ad922031df8630a0f7cad4f16b7cd5109a6c0a5
   muse_unterminated_parameter_then_call:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: muse_unterminated_parameter_then_call
       document:
@@ -10591,6 +10641,7 @@ records:
         semantic_sha256: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
   muse_unterminated_parameter_then_empty_call:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: muse_unterminated_parameter_then_empty_call
       document:
@@ -10685,6 +10736,7 @@ records:
         semantic_sha256: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
   muse_unterminated_reasoning_guided:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: muse_unterminated_reasoning_guided
       document:
@@ -10773,6 +10825,7 @@ records:
         semantic_sha256: c1ba543cddab942b3f5f75b652c8461bfea528bf12207e54c6e6bdc09f2cec3b
   muse_unterminated_reasoning_native:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: muse_unterminated_reasoning_native
       document:
@@ -11817,6 +11870,7 @@ records:
         semantic_sha256: c41e7a54a5e757db3f56395959266291cae01fe14d274f7776b563c8cd35bd9e
   not_keyword_type_complement:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: not_keyword_type_complement
       document:
@@ -14293,6 +14347,7 @@ records:
         semantic_sha256: 9ea322bd442ec9f43d41b97e7cfe1a0d09ef095cdd4c0383292c21ca439be89d
   reference_object_recursive_and_composed_types:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: reference_object_recursive_and_composed_types
       document:
@@ -16719,6 +16774,7 @@ records:
         semantic_sha256: 4104379d04b4eac64aaa9cb6230f9577c7e699eb1715a5a27731782e731ee693
   schema_const_numeric_bare:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_numeric_bare
       document:
@@ -19002,6 +19058,7 @@ records:
         semantic_sha256: 20893291f74dc459415804cb28df25c4e04743935b274440e5825aa3f23fd838
   schema_enum_const_narrowing:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_const_narrowing
       document:
@@ -19071,6 +19128,7 @@ records:
         semantic_sha256: 61c0d13626723287cfa70829714f913feb015d5e3e0695d506ca472592adfae7
   schema_enum_inferred_integer:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_inferred_integer
       document:
@@ -25372,6 +25430,7 @@ records:
         semantic_sha256: 03aa8233467a3246b468a174cd2035aef23f1b9b4b8619b52ac03d9e0c311e98
   three_calls_partial_header:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: three_calls_partial_header
       document:
@@ -26932,6 +26991,7 @@ records:
         semantic_sha256: 8d50ccff57bc7c997be92abf22ab821a6f10e18c51d3dfabf9bcbf6b38466ccc
   xml_string_type_double_quoted_object:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_double_quoted_object
       document:
@@ -27013,6 +27073,7 @@ records:
         semantic_sha256: 14f684c1955adc9d51673da59bb0272e14bf135da74cd4d3e56c9e59122f2761
   xml_string_type_single_quoted_object:
     member: conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_single_quoted_object
       document:

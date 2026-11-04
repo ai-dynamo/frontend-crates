@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"sglang_python","lineage":[{"family":"minimax_m3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"2f320a17091cc00274f1f66d557dc0eecb0b1881cda7573c923cbb86c729bd6a","source":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml","surface":"unified","version":"0.5.23"}
+capture_selection: {"family":"minimax_m3","implementation":"sglang_python","lineage":[{"family":"minimax_m3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"48a1e300d23ecb1b4cd7a90bcd1e5a1eadada763eb31b3e35a367d848ba7b402","source":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml","surface":"unified","version":"0.5.23"}
 document:
   mode: unified
 provenance:
@@ -8,6 +8,7 @@ provenance:
 records:
   arg_array_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_array_quoted_parameter_close
       document:
@@ -69,6 +70,7 @@ records:
         semantic_sha256: fb95f37a250aeb28486a965ce99333883e9ebfb77dbd0021ed91f1efa7412b1c
   arg_json_null:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null
       document:
@@ -417,6 +419,7 @@ records:
         semantic_sha256: 7942c36602ac57840f0660c45f459ded9cee57dd76a59e909df922095b293d76
   arg_json_null_nullable:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_json_null_nullable
       document:
@@ -710,6 +713,7 @@ records:
         semantic_sha256: 04e7517ae2f2e0c2df308f64b77ff3c8cf043d81c36959359a5bafcda50f2998
   arg_marker_in_string:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_marker_in_string
       document:
@@ -942,6 +946,7 @@ records:
         semantic_sha256: 92a3fc8e8760f6e01278df66dc44422e02061f109cc72c4888048dfbd8baea68
   arg_numeric_14_const_decimal:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_decimal
       document:
@@ -1001,6 +1006,7 @@ records:
         semantic_sha256: 3ab40fe85ff95f480021e71cb9ffa97b38eae54730879a27a06915855fff04d9
   arg_numeric_14_const_exponent:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_const_exponent
       document:
@@ -1060,6 +1066,7 @@ records:
         semantic_sha256: 3e439687bee8df6322ccc98b2d06fdb6106152e45c90c2d6099be2b84f9705f7
   arg_numeric_14_enum_decimal:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_decimal
       document:
@@ -1120,6 +1127,7 @@ records:
         semantic_sha256: 517ec9cf9cb4139918b30e0d84b6cf608fec5e05cf0d98f4e7155cc3c7ef89d4
   arg_numeric_14_enum_exponent:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_enum_exponent
       document:
@@ -1180,6 +1188,7 @@ records:
         semantic_sha256: d8418a96f19a72102f2d9dcd14c10e3f36c4f83bfcc6e15c909e616b239f5c25
   arg_numeric_14_fraction_fallback:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_fraction_fallback
       document:
@@ -1238,6 +1247,7 @@ records:
         semantic_sha256: a6746d50f21e170baa496768bd6b4875cf6548ece4512275db0c166ee475f49c
   arg_numeric_14_fraction_near_integer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_fraction_near_integer
       document:
@@ -1296,6 +1306,7 @@ records:
         semantic_sha256: 90ced15df3f2d99b8fcd4363eb1e22fd91b2506c00e7387b7307961b208a13f6
   arg_numeric_14_fraction_underflow:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_fraction_underflow
       document:
@@ -1354,6 +1365,7 @@ records:
         semantic_sha256: 2aa8c28219669da792100b15be2e4c77af1dfc7489c19360fd6283204c0f0178
   arg_numeric_14_large_decimal:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_decimal
       document:
@@ -1410,6 +1422,7 @@ records:
         semantic_sha256: 983f5c3bf07e7535e75c198402b6395b5664448cf7748996c79b32474408e3f5
   arg_numeric_14_large_exponent:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_large_exponent
       document:
@@ -1466,6 +1479,7 @@ records:
         semantic_sha256: f740a541d0fb56903b3212342da0dced98176c453fa0f164901e04cc7434441a
   arg_numeric_14_negative:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative
       document:
@@ -1522,6 +1536,7 @@ records:
         semantic_sha256: 1ff1ed140d0453fb1b82added122d14d786281b6b147591aed736a46074d5bfd
   arg_numeric_14_negative_exponent:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_negative_exponent
       document:
@@ -1578,6 +1593,7 @@ records:
         semantic_sha256: 1e43ba7974a6c83818badfa9ea0c19256f4ffba58f7c87db7b27abdf04bc1946
   arg_numeric_14_zero_underflow:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_14_zero_underflow
       document:
@@ -1634,6 +1650,7 @@ records:
         semantic_sha256: a7ca4d4ab804331bc1c1e6b616993114b0a1e5f9c87862ea95a00b83a5ee2fb0
   arg_numeric_15_exponent:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_exponent
       document:
@@ -1690,6 +1707,7 @@ records:
         semantic_sha256: b9e0c60207bd1a097cce58917cecbeacd0362b18195b145a88a1bbf1e822fe38
   arg_numeric_15_negative:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_negative
       document:
@@ -1746,6 +1764,7 @@ records:
         semantic_sha256: 5f361034a9d1264bb1a743d2214da30e6b762dd2fbb2db89b887e0974191a195
   arg_numeric_15_ordinary:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_ordinary
       document:
@@ -1802,6 +1821,7 @@ records:
         semantic_sha256: 1a86c5afd1091d164b60f1d528c601dec5f88a31ba95c5f828be4dffec1ca593
   arg_numeric_15_quarter:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_quarter
       document:
@@ -1858,6 +1878,7 @@ records:
         semantic_sha256: b720886928fcf8e13b329ef23f48c77a0007efff56a62527aeba6e57e935a8fc
   arg_numeric_15_round_down:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_down
       document:
@@ -1914,6 +1935,7 @@ records:
         semantic_sha256: 4740fbac4198e2ec0d8154c8605d45d2b766ceb8790ac29fb3652d5685e2d5a9
   arg_numeric_15_round_up:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_round_up
       document:
@@ -1970,6 +1992,7 @@ records:
         semantic_sha256: 33f10163ce0849eef44b2abed2b5880ca04e77990ae770c040595b8c1e141a83
   arg_numeric_15_small:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_15_small
       document:
@@ -2026,6 +2049,7 @@ records:
         semantic_sha256: 79a9a8e966f166909c482db1f6afd90153fe0b6ee3e88a9b9fdbaae3dd0f75b4
   arg_numeric_nested_exact:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_nested_exact
       document:
@@ -2092,6 +2116,7 @@ records:
         semantic_sha256: 157306b06361c6241e848ffc344ee696d966d192c420f1a7886a184092ce4f76
   arg_numeric_overflow_siblings_finite:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_finite
       document:
@@ -2154,6 +2179,7 @@ records:
         semantic_sha256: edcff88ca31a9ab246ef6744011a0fa3bd0ac9a99f32320efe2d3175470f17b7
   arg_numeric_overflow_siblings_negative:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_negative
       document:
@@ -2206,6 +2232,7 @@ records:
         semantic_sha256: 8937b49c563bde9dd31beeab5f4f2970fcb74d97fa19c8bc039b2b9f4535125a
   arg_numeric_overflow_siblings_positive:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_numeric_overflow_siblings_positive
       document:
@@ -2258,6 +2285,7 @@ records:
         semantic_sha256: 91f2e4d688bb0eda1eedc41a07c53dc29c76d7724a44f1a672278c9154c1bae0
   arg_object_quoted_parameter_close:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_object_quoted_parameter_close
       document:
@@ -2323,6 +2351,7 @@ records:
         semantic_sha256: 71e13ec8d1a5dbcefbf5840a0403873ab77576ca561ff0c2235c6d4479687e73
   arg_string_null:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null
       document:
@@ -2554,6 +2583,7 @@ records:
         semantic_sha256: 08bff320ff3f10ff6d992e8a676604593f3b80e0b056cf397ee69bafb42ad48e
   arg_string_null_enum:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_enum
       document:
@@ -2732,6 +2762,7 @@ records:
         semantic_sha256: 87311a137122b445e6c874c3e2621262c074b58298527628f497e33e71005519
   arg_string_null_sibling_anyof:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_sibling_anyof
       document:
@@ -2851,6 +2882,7 @@ records:
         semantic_sha256: 5f0162b8b352d1c0e69eca4d4c6acf03fa07c7cf7fb7a40a67903b5177b301e1
   arg_string_null_sibling_oneof:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_sibling_oneof
       document:
@@ -3087,6 +3119,7 @@ records:
         semantic_sha256: e02fe8dfd42eedc4802d0c7e74c1e92c6a71cbaa10e1af50f5344b019c7ea4e7
   arg_string_null_untyped_branch:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_string_null_untyped_branch
       document:
@@ -3206,6 +3239,7 @@ records:
         semantic_sha256: 14cf0cbb7bad71b0932a42823231071eee641e88c92a6ac67a49038b43a186e3
   arg_unicode:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: arg_unicode
       document:
@@ -3358,6 +3392,7 @@ records:
         semantic_sha256: 0c58e6181b7623c88f1befd92b65ef8a27f9beb90ac054835c11d63100317c0d
   blank_framing_after_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_after_reasoning
       document:
@@ -3550,6 +3585,7 @@ records:
         semantic_sha256: 8d40727d63ea4545d5594ed626afb71ce7bfb3958c42e4209ae62e0133c7ca21
   blank_framing_between_calls_single_chunk:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_between_calls_single_chunk
       document:
@@ -3682,6 +3718,7 @@ records:
         semantic_sha256: ceb17b015fed73f758cb17300d0d86fe45a8d016874883823cef09fdb34123c5
   blank_framing_prose_after_call:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_prose_after_call
       document:
@@ -3860,6 +3897,7 @@ records:
         semantic_sha256: 8cd3d2a2c23e905a5be2aa16178434a783d02a048b01dcb6b9db1517ac258c0e
   blank_framing_tool_only:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_tool_only
       document:
@@ -4038,6 +4076,7 @@ records:
         semantic_sha256: de4ff590d7de3dab82726506bc6a378c15780319a3044c191f9ff959b64053d7
   blank_framing_with_prose:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_framing_with_prose
       document:
@@ -4220,6 +4259,7 @@ records:
         semantic_sha256: 7415d2ba453f4a2cfc0583570aafccba6ebf7b8d2c3012e0e0c066de4e6150aa
   blank_output_without_call:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: blank_output_without_call
       document:
@@ -4459,6 +4499,7 @@ records:
         semantic_sha256: 7ad49023062d5577bda240e90f7301d0457056a98da89365a6bb1beb2c34b142
   content_then_reason:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: content_then_reason
       document:
@@ -4563,6 +4604,7 @@ records:
         semantic_sha256: db561736ba17f622a9e042839abfdab69c18660ad440fefe37364128bbb213a6
   content_then_reason_then_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: content_then_reason_then_tool
       document:
@@ -4731,6 +4773,7 @@ records:
         semantic_sha256: 8d9bd33e33bfaebdb80bcb614f0546ba3aa167237c147862101602de3185a050
   deepseek_v41_mixed_control_text_in_string:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: deepseek_v41_mixed_control_text_in_string
       document:
@@ -4939,6 +4982,7 @@ records:
         semantic_sha256: d5fe67e27858fcf5d25ce172ed89c8e3cf08b693f0e952c730bd9de0b3bdb840
   empty_args:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: empty_args
       document:
@@ -5807,6 +5851,7 @@ records:
         semantic_sha256: 5c8ad3bcceedd46bc27b57e2f2d3b216050483bc13cd3217fba51389ae314427
   guided_json_after_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_after_reasoning
       document:
@@ -5892,6 +5937,7 @@ records:
         semantic_sha256: 0c1570608301d48ba2f0dab6d0e339896963cd4290f66c7acea503cfad2a680e
   guided_json_array_argument:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_array_argument
       document:
@@ -5974,6 +6020,7 @@ records:
         semantic_sha256: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
   guided_json_bare_tool_header_recovers_inside_a_thought:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_bare_tool_header_recovers_inside_a_thought
       document:
@@ -6063,6 +6110,7 @@ records:
         semantic_sha256: e29c4101429e79cd2075a9eac18af0dad5b2033f9a0471fb241627b466a1f8d1
   guided_json_escaped_string_args:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_escaped_string_args
       document:
@@ -6145,6 +6193,7 @@ records:
         semantic_sha256: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
   guided_json_gt_in_argument_bare_opener:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_bare_opener
       document:
@@ -6231,6 +6280,7 @@ records:
         semantic_sha256: 04f58630ac0432e0ae4915303d72b3797516a9841d0bc60b41ae16fead247c21
   guided_json_gt_in_argument_named_bare_opener:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_named_bare_opener
       document:
@@ -6317,6 +6367,7 @@ records:
         semantic_sha256: 0212fb18bd4625b2cfc5ad3e0f67c9d9f687780bdde365daf5a5ec2cba414b09
   guided_json_gt_in_argument_trailing_close:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_trailing_close
       document:
@@ -6402,6 +6453,7 @@ records:
         semantic_sha256: 5ef69f045812758bcb2c6827fefe07ff1fd43883ddce85d39d9e4e5b3e2bd17a
   guided_json_gt_in_argument_wrapped:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_gt_in_argument_wrapped
       document:
@@ -6491,6 +6543,7 @@ records:
         semantic_sha256: c17e98f1964bdc45148e3a01152fbfdacb82a94fbe18c0cf22ed88ef445b9cbb
   guided_json_invalid_call:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_invalid_call
       document:
@@ -6573,6 +6626,7 @@ records:
         semantic_sha256: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
   guided_json_list_with_broken_element:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_list_with_broken_element
       document:
@@ -6655,6 +6709,7 @@ records:
         semantic_sha256: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
   guided_json_malformed_json:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_malformed_json
       document:
@@ -6737,6 +6792,7 @@ records:
         semantic_sha256: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
   guided_json_marker_inside_argument:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_marker_inside_argument
       document:
@@ -6821,6 +6877,7 @@ records:
         semantic_sha256: ee7d252d845dcc26a2d4bd2a7fe4d24b4caae17cf0571f25b696b58c2896ca21
   guided_json_named_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_named_tool
       document:
@@ -6903,6 +6960,7 @@ records:
         semantic_sha256: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
   guided_json_narrated_invoke_in_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_invoke_in_reasoning
       document:
@@ -6992,6 +7050,7 @@ records:
         semantic_sha256: 0647d45328e9decc88931fa2492df68559a3067881315192f77454603100b088
   guided_json_narrated_prefix_inside_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_narrated_prefix_inside_reasoning
       document:
@@ -7079,6 +7138,7 @@ records:
         semantic_sha256: a9661927212792ce0513c418ba4705fa16244b873db2730889313d8286dc0a06
   guided_json_native_markup_only:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_markup_only
       document:
@@ -7184,6 +7244,7 @@ records:
         semantic_sha256: 2a8298dc09a42a8b4d8c0cea8e9e84c44a3641a3009fede6e7132c1ce204ac56
   guided_json_native_parameter_array_before_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_array_before_payload
       document:
@@ -7265,6 +7326,7 @@ records:
         semantic_sha256: 1a93ba5ceea8a0339712c16c1a1e3a1ef36b8244557c53da4be36e8ad98e10d0
   guided_json_native_parameter_body_inside_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_body_inside_reasoning
       document:
@@ -7366,6 +7428,7 @@ records:
         semantic_sha256: 47e4bb5e052d6241d5d2790cb6a0493445b26e929f0c0b00a1d8af6c062566c7
   guided_json_native_parameter_object_before_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_object_before_payload
       document:
@@ -7447,6 +7510,7 @@ records:
         semantic_sha256: 05a21eb66a6f6b8ada23b9ffbbeedf6dfef4b90173ee3c3984c87f67451262a2
   guided_json_native_parameter_string_before_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_native_parameter_string_before_payload
       document:
@@ -7528,6 +7592,7 @@ records:
         semantic_sha256: fc6f632da62544f58b7142434cbc476d1fd26fab4e4963f86a3419bb8b9a4352
   guided_json_noncall_before_native_array_before_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_noncall_before_native_array_before_payload
       document:
@@ -7609,6 +7674,7 @@ records:
         semantic_sha256: 4298db40757529704896006396affcd28a9137c134dbaab71d870df4024cbe7a
   guided_json_orphan_reason_close_before_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_reason_close_before_payload
       document:
@@ -7692,6 +7758,7 @@ records:
         semantic_sha256: 7e6a278dbfc164f53312a0cdc4324ed8acdab6c910d6c89f426fdb34238f02f8
   guided_json_orphan_tool_close_before_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_orphan_tool_close_before_payload
       document:
@@ -7778,6 +7845,7 @@ records:
         semantic_sha256: d27b4f01bba9eff23d64ecef2f31094176e4a892a7f740e799a62bad1bc4ab00
   guided_json_partial_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_partial_calls
       document:
@@ -7860,6 +7928,7 @@ records:
         semantic_sha256: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
   guided_json_prose_before_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_prose_before_reasoning
       document:
@@ -7946,6 +8015,7 @@ records:
         semantic_sha256: 4637b3efa9033cbbbb749cd92b757439f7ae45e886ae276948ced445dca03342
   guided_json_quoted_bare_header_after_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_quoted_bare_header_after_payload
       document:
@@ -8031,6 +8101,7 @@ records:
         semantic_sha256: 61b2f8d2a8bb975efac4167fb35fa10a2e0d75647350aa9d7591dc7fdbddc292
   guided_json_quoted_bare_header_in_answer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_quoted_bare_header_in_answer
       document:
@@ -8117,6 +8188,7 @@ records:
         semantic_sha256: 629e4f619cb8854329c0473f405e907c7042109052748a99337997cd460a4e1b
   guided_json_reasoning_markers_inside_native_parameter:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_reasoning_markers_inside_native_parameter
       document:
@@ -8221,6 +8293,7 @@ records:
         semantic_sha256: dbaa0596b2d6791eccfa86ba84530f7cfe56ab188a24d9134de4dd4c6c37995d
   guided_json_required_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_required_tool
       document:
@@ -8303,6 +8376,7 @@ records:
         semantic_sha256: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
   guided_json_schema_error_nameless_element_bare_opener:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_bare_opener
       document:
@@ -8388,6 +8462,7 @@ records:
         semantic_sha256: b283590bc734e58f4fd7b62bb01ca2b15365c2745e50a1486cc4dfd2885ca322
   guided_json_schema_error_nameless_element_trailing_close:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_trailing_close
       document:
@@ -8473,6 +8548,7 @@ records:
         semantic_sha256: dc29a24b84e380af47d2a79fbc1720f4c8d4e6cba716db8bac1ee0031fc1e243
   guided_json_schema_error_nameless_element_wrapped:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_nameless_element_wrapped
       document:
@@ -8562,6 +8638,7 @@ records:
         semantic_sha256: 26df131d2d2bf1681a5f05beb5019729ed99df9fc0e94edad86d721684913d9b
   guided_json_schema_error_not_a_call_bare_opener:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_bare_opener
       document:
@@ -8647,6 +8724,7 @@ records:
         semantic_sha256: 18ecc5ecf4301a47afb7e57011d1b7f6d5781a14ca698452dda3731c6cd575c9
   guided_json_schema_error_not_a_call_trailing_close:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_trailing_close
       document:
@@ -8732,6 +8810,7 @@ records:
         semantic_sha256: 4a708930ab996b1c05fffb4f97990bcef8cfcda1c87381865fef255017fa3211
   guided_json_schema_error_not_a_call_wrapped:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_schema_error_not_a_call_wrapped
       document:
@@ -8821,6 +8900,7 @@ records:
         semantic_sha256: 7b8b2f00c9f4b537e7a519f1510b73b5af3eb60837ed92926ceb7ac65bab71f8
   guided_json_stray_prefix_before_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_stray_prefix_before_reasoning
       document:
@@ -8909,6 +8989,7 @@ records:
         semantic_sha256: d551134a4b6feba742c4d7387cfad711f22cfaf6f677c99498bb51006f25f56f
   guided_json_syntax_error_bare_opener:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_bare_opener
       document:
@@ -8994,6 +9075,7 @@ records:
         semantic_sha256: 67273563e903adfaa860e51017c89f72373d8300a4552d39fe84375c1e1c61f6
   guided_json_syntax_error_trailing_close:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_trailing_close
       document:
@@ -9079,6 +9161,7 @@ records:
         semantic_sha256: 25a85bb37fcd8035702a0aaa382c1dc4b72ef5146c58cc15518ed1267800c529
   guided_json_syntax_error_wrapped:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_syntax_error_wrapped
       document:
@@ -9168,6 +9251,7 @@ records:
         semantic_sha256: 4620345822b3502e17de09314a493376195d40a2d2cfda8606901e7169cb8b83
   guided_json_tool_close_after_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_close_after_payload
       document:
@@ -9253,6 +9337,7 @@ records:
         semantic_sha256: dca95ac3cd5b279cbc80338f78070c89853fa9b074bbdf55cba5bd78bc232022
   guided_json_tool_open_before_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_tool_open_before_payload
       document:
@@ -9339,6 +9424,7 @@ records:
         semantic_sha256: 2b5654648f871547479becf43431a81cf2e666e34ea1fd2aa8b15c69b81aa99e
   guided_json_two_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_two_calls
       document:
@@ -9421,6 +9507,7 @@ records:
         semantic_sha256: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
   guided_json_unterminated_reasoning_then_wrapped_payload:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_unterminated_reasoning_then_wrapped_payload
       document:
@@ -9511,6 +9598,7 @@ records:
         semantic_sha256: d0537efcfef3489174e4c189c4941ced8151ac86fa646b4a00eb2b9c9e847705
   guided_json_wrapped_in_tool_markup:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_json_wrapped_in_tool_markup
       document:
@@ -9600,6 +9688,7 @@ records:
         semantic_sha256: 5c8b844548c05f561518bf2419c2a33203914d1b3dbbc754c08d46b450e0d64a
   guided_native_after_prefilled_reasoning_named:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_native_after_prefilled_reasoning_named
       document:
@@ -9707,6 +9796,7 @@ records:
         semantic_sha256: bc59a1ab32fe8a15f363f23a2ad689b7c4a973e6c9b72384522bb371592d1f93
   guided_native_after_prefilled_reasoning_required:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_native_after_prefilled_reasoning_required
       document:
@@ -9814,6 +9904,7 @@ records:
         semantic_sha256: 486cfa4e49e477bdc7533a82663f13383fbb4c4d3a72b9a11921705c9aa16fa1
   guided_quoted_reasoning_closer_named:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_quoted_reasoning_closer_named
       document:
@@ -9900,6 +9991,7 @@ records:
         semantic_sha256: 2d6027050269b33d36393f6a6c7465f2b55eda122749ab836635ee3c7cd2448d
   guided_quoted_reasoning_closer_required:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_quoted_reasoning_closer_required
       document:
@@ -9986,6 +10078,7 @@ records:
         semantic_sha256: 105321c3ed3cd0fe09dfa65a73f5082c63b280b82a1a00ddb6b3be80deb194fa
   guided_response_native_wrapper_whitespace_before_prose:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_native_wrapper_whitespace_before_prose
       document:
@@ -10067,6 +10160,7 @@ records:
         semantic_sha256: 70d7123afdb355c8356f1ae7ca82fd0e7685737b3590fd789421027c7b6440c6
   guided_response_quoted_control_braces_named:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_quoted_control_braces_named
       document:
@@ -10153,6 +10247,7 @@ records:
         semantic_sha256: 1aab90d877118ebd9c6fbafcba1cf7259b55fdfa42295aa34b6ad51be8d433cc
   guided_response_quoted_control_braces_required:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: guided_response_quoted_control_braces_required
       document:
@@ -10239,6 +10334,7 @@ records:
         semantic_sha256: a8cce50f426566e08a510ef95f12c54c1799a6fef0215b6cfc5d4f5fff9eb2ad
   interstitial_text:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: interstitial_text
       document:
@@ -10405,6 +10501,7 @@ records:
         semantic_sha256: e50913ba517c886ab3777a8e9830e2d2f8714d3c28ae546cf798299c8a7c6cfb
   local_schema_id_preserves_type:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: local_schema_id_preserves_type
       document:
@@ -10519,6 +10616,7 @@ records:
         semantic_sha256: 421fb719d4ca10662eff897885864eb4e9eeba5f3b8f46c46c79da7fb93129a0
   malformed_json_then_two_valid_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: malformed_json_then_two_valid_calls
       document:
@@ -10605,6 +10703,7 @@ records:
         semantic_sha256: 7e7ea1591864dd858536242772c56912199c1e5146721cf2df7c823480b32f78
   missing_inner_closers_then_valid_call:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: missing_inner_closers_then_valid_call
       document:
@@ -10663,6 +10762,7 @@ records:
         semantic_sha256: e9cadcd91aaee6ab6d150e20ad9d51ec051b5b4babb324eb7b8256499590e6d3
   narrated_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: narrated_calls
       document:
@@ -10963,6 +11063,7 @@ records:
         semantic_sha256: d9d7767fc07ae24051347d41a18ebd1c878e52b618a53847dcd3f2487aed0428
   native_quoted_control_in_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_in_reasoning
       document:
@@ -11049,6 +11150,7 @@ records:
         semantic_sha256: f969091db9c5d6a03f4d1725c8182a380d3ed062ec797d273e1a52b6072fd0c6
   native_quoted_control_in_response:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_in_response
       document:
@@ -11135,6 +11237,7 @@ records:
         semantic_sha256: 543d331c555be2db08d4d4a4182fe7a4150c66ab4910494932b2dde9df1edf6c
   native_quoted_control_then_call:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_control_then_call
       document:
@@ -11244,6 +11347,7 @@ records:
         semantic_sha256: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
   native_quoted_incomplete_header:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_quoted_incomplete_header
       document:
@@ -11338,6 +11442,7 @@ records:
         semantic_sha256: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
   native_single_quote_contraction_reasoning:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quote_contraction_reasoning
       document:
@@ -11424,6 +11529,7 @@ records:
         semantic_sha256: d273e87ab478d3b8da15020945a146c3c07d1030fac9a81b36cdd1bcc99f541a
   native_single_quote_contraction_response:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quote_contraction_response
       document:
@@ -11510,6 +11616,7 @@ records:
         semantic_sha256: e33413aa3749f755662ca1aaceb5ec9d30f120c84cb7f46e4506ea1098a3e45f
   native_single_quoted_word_control:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_single_quoted_word_control
       document:
@@ -11596,6 +11703,7 @@ records:
         semantic_sha256: b0b910ff77ea112990d5cc47dc50756613cb752578c2f48cb091d48ef3cb8fd6
   native_unmatched_quote_then_call:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: native_unmatched_quote_then_call
       document:
@@ -11993,6 +12101,7 @@ records:
         semantic_sha256: 5c4459471b314f52605d049fd05c4f206117a70c27552ecc43cacd9af5fef108
   orphan_close_after_prose:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: orphan_close_after_prose
       document:
@@ -12089,6 +12198,7 @@ records:
         semantic_sha256: f62014d0352dce8af8e83959c9be89c214eeaedf6d7bf793a9474402e91a235c
   prefilled_reasoning_redundant_opener:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_redundant_opener
       document:
@@ -12197,6 +12307,7 @@ records:
         semantic_sha256: bb5cf0541028a843873efa0fd101119258f31de1c40eec14d74acc28e76d1864
   prefilled_reasoning_then_text:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_then_text
       document:
@@ -12281,6 +12392,7 @@ records:
         semantic_sha256: efa524e5766b641da14414232f884164d8a406286124b20f383ffbfac2a9b2b3
   prefilled_reasoning_then_text_then_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_then_text_then_tool
       document:
@@ -12388,6 +12500,7 @@ records:
         semantic_sha256: 02b8af9752051d19ccc2d0a76c059989f339b77b67c8e735d15453911fd5b8d3
   prefilled_reasoning_truncated:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_truncated
       document:
@@ -12484,6 +12597,7 @@ records:
         semantic_sha256: 8061f261c0e7b55a61c9017d66d6224d36704686d5983f04961e89296312fec9
   prefilled_reasoning_with_guided_json:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_with_guided_json
       document:
@@ -12568,6 +12682,7 @@ records:
         semantic_sha256: 9eaadae222a58266ba0e7a5a8b4280d0200ba014d0cabe58aa7cf77512eca3eb
   prefilled_reasoning_with_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_reasoning_with_tool
       document:
@@ -12675,6 +12790,7 @@ records:
         semantic_sha256: eb63ddc993a71227a9b1e7367d63239c35c30d22aac65dfb16b3c9780a410f3a
   prefilled_response_reasoning_markers_literal:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: prefilled_response_reasoning_markers_literal
       document:
@@ -12783,6 +12899,7 @@ records:
         semantic_sha256: 994a5cc49e2775f3609782ea14e61aa289b7c9904d3e7300dc7405038c6ac7bf
   reason_after_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_after_tool
       document:
@@ -12963,6 +13080,7 @@ records:
         semantic_sha256: dd10083d6aa7734d3299f87e6f2cf56b743fad3edb7ede2dcf10c2e3d62f0260
   reason_between_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_between_calls
       document:
@@ -13195,6 +13313,7 @@ records:
         semantic_sha256: 157d54840f78566d15795a442f70ea280182fc9dda581af7f1768410844542bb
   reason_interleaved:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_interleaved
       document:
@@ -13441,6 +13560,7 @@ records:
         semantic_sha256: 14670b26b577b8e558c1fab4245ab715af20f834457d64d4108112fbdbd244a9
   reason_markup_in_arg:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_markup_in_arg
       document:
@@ -13599,6 +13719,7 @@ records:
         semantic_sha256: afc0233c34e044aafac1333d4fc5de4904f1a520e27260c637570153af591558
   reason_markup_in_arg_with_text:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_markup_in_arg_with_text
       document:
@@ -13767,6 +13888,7 @@ records:
         semantic_sha256: 226ddfc213396c17c799598b32631a633ce289d2a62ea7da10ae21da8ee228d3
   reason_only:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_only
       document:
@@ -13859,6 +13981,7 @@ records:
         semantic_sha256: 26d644d7f617f9818561b3b6d854773d0583a1c8de63661dc7c02405e5b7d32a
   reason_then_content:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_then_content
       document:
@@ -13957,6 +14080,7 @@ records:
         semantic_sha256: 348760a3ac526a04064cbcce596dba6e63c4f2f2859509887380716658e41285
   reason_then_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_then_tool
       document:
@@ -14119,6 +14243,7 @@ records:
         semantic_sha256: cbe6a2ffc7fc658a38192a8538f35a6c4fd77f04505aef6d8e6d61f578b86968
   reason_tool_reason_tool_reason:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_tool_reason_tool_reason
       document:
@@ -14379,6 +14504,7 @@ records:
         semantic_sha256: 502c595073b9257f50530f11eea69ba82a8cf22bf136a4314f4bdc86bfe204c6
   reason_tool_text_reason_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_tool_text_reason_tool
       document:
@@ -14629,6 +14755,7 @@ records:
         semantic_sha256: b4a5b2d77ee5976c14fdff06422c0d1eccf37ca01edef71d7b0971c42683aaf8
   reason_unterminated:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: reason_unterminated
       document:
@@ -15284,6 +15411,7 @@ records:
         semantic_sha256: 73c91eb6dbd95a391241eea03c44867c920120c4b109b7502c505c7609a39e62
   schema_const_array_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_array_typed
       document:
@@ -15761,6 +15889,7 @@ records:
         semantic_sha256: b7167fb0c16729c94173658cd902c8569569e7ff33cbf0ef4b2bdbd7de4aae90
   schema_const_boolean_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_boolean_typed
       document:
@@ -16238,6 +16367,7 @@ records:
         semantic_sha256: 00c4e87b9598a0a0604308e06c2c982b2855f75218ae3eb97509cfd1ef0c3f73
   schema_const_entity_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_entity_typed
       document:
@@ -16715,6 +16845,7 @@ records:
         semantic_sha256: 1a0185cd514e38e214181a04d8bac22da485b17a71a61f113644f18d45d8b3e9
   schema_const_null_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_null_typed
       document:
@@ -17192,6 +17323,7 @@ records:
         semantic_sha256: 01eef0d6f06d379dc6d83eec448672f933fc644bdc884b73337532105ed2cfe3
   schema_const_number_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_number_typed
       document:
@@ -17313,6 +17445,7 @@ records:
         semantic_sha256: b0e962ce3af64b4e7e17fab1194d3f93b5b0a6a4fa7cbb319160132aaa514eca
   schema_const_numeric_bare:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_numeric_bare
       document:
@@ -17729,6 +17862,7 @@ records:
         semantic_sha256: 7542ea13553358ede816172a56388c4282bc5bb1e350792a3827b2546a21b490
   schema_const_object_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_object_typed
       document:
@@ -18206,6 +18340,7 @@ records:
         semantic_sha256: 7b7b0d6638fa887c061eb00a83af0f60a6cdb0681be92383dab65add714f78d1
   schema_const_plain_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_plain_typed
       document:
@@ -18683,6 +18818,7 @@ records:
         semantic_sha256: e368a54e968403bbe27a6759b1ba422af02cf5e35b7cd8bf52e0204abfad8ed6
   schema_const_quoted_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_quoted_typed
       document:
@@ -19160,6 +19296,7 @@ records:
         semantic_sha256: 37670538b3f9f6b7334a424b77a3d1116987fe0de82c3ef565da621e934dcb9d
   schema_const_space_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_space_typed
       document:
@@ -19637,6 +19774,7 @@ records:
         semantic_sha256: 506184b2793e01c4fb28296c0f45ad93a547f87cc0fa317599bca3e400592cbb
   schema_const_unicode_typed:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_const_unicode_typed
       document:
@@ -19758,6 +19896,7 @@ records:
         semantic_sha256: d4e4c628f16f44861e719b3dbb89c3a4586262f8db5d754f551f8c1436cbfb38
   schema_declared_array:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_array
       document:
@@ -19875,6 +20014,7 @@ records:
         semantic_sha256: b2945f6fdcc2b77b0d49726352cb79daafd40a5caf82cd1b14134db7633977c8
   schema_declared_boolean:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_boolean
       document:
@@ -19992,6 +20132,7 @@ records:
         semantic_sha256: 49b43f3f818de7da4dcb0a18e8f1c259dbfbf20e31934cad06b065633295e96d
   schema_declared_integer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_integer
       document:
@@ -20109,6 +20250,7 @@ records:
         semantic_sha256: bc40973403f2367dcb21fc097399ec7f5e172d4ccfebeb0f8b680fbddbf78cca
   schema_declared_null:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_null
       document:
@@ -20226,6 +20368,7 @@ records:
         semantic_sha256: 986622acea5bb1d3f6826755ab5a8b3010f33a6a3be13992a09a57a00251eb6c
   schema_declared_number:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_number
       document:
@@ -20343,6 +20486,7 @@ records:
         semantic_sha256: 7cc08a599b972c8a32ec5fd8bfdd947f939532a19e8d218aa157e49d576c3e68
   schema_declared_object:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_object
       document:
@@ -20460,6 +20604,7 @@ records:
         semantic_sha256: 72a77b24bd02f3bfd6d56eb35e19123e4c910fb978fb9554bc4093a3b0545015
   schema_declared_string:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_declared_string
       document:
@@ -20580,6 +20725,7 @@ records:
         semantic_sha256: d97ccd91515af9cb2e8738900802977952f56157b00f1bee214f6b8f8122290f
   schema_enum_const_narrowing:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_const_narrowing
       document:
@@ -20643,6 +20789,7 @@ records:
         semantic_sha256: 16cc6891dbb73b05d6b097ef33f256b652e00ec8f127adde7d21f28af465c2d9
   schema_enum_inferred_integer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_inferred_integer
       document:
@@ -20706,6 +20853,7 @@ records:
         semantic_sha256: b69ae28541de99bfab3b13b6d3991225a37ca3d9ffeecc7807ea472a671fdd8b
   schema_enum_integer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_integer
       document:
@@ -20826,6 +20974,7 @@ records:
         semantic_sha256: fdee6bc8fb609bada04c067540aba3a5b3f0ec1a7040a1707d37d74de9620bca
   schema_enum_string:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_enum_string
       document:
@@ -21069,6 +21218,7 @@ records:
         semantic_sha256: 94fe51b7c71127fd88da3abcaedc981228cb5412a6fc3412325057d17e736474
   schema_id_direct_integer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_id_direct_integer
       document:
@@ -21667,6 +21817,7 @@ records:
         semantic_sha256: 7be22109ca2ca3e5349ed7b42cdd06f0a656d9dabffff1371c107c9f31708acf
   schema_nullable_string:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_nullable_string
       document:
@@ -22027,6 +22178,7 @@ records:
         semantic_sha256: 621252652938fd730a95077575929e2c03961f3ff9ff6214019dccd7069e7ae9
   schema_ref_sibling_integer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_ref_sibling_integer
       document:
@@ -22646,6 +22798,7 @@ records:
         semantic_sha256: 01c4f44a759687bd2515ee3d063fd612d53ed96bc87d33c53e4fcb5e66b42682
   schema_type_array_integer_null:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_type_array_integer_null
       document:
@@ -22765,6 +22918,7 @@ records:
         semantic_sha256: 34f14c79ddd7f8d845bf2b1d3b47bf031777a05cab8edb2330ad684c81bd6ff2
   schema_type_array_integer_null_null:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_type_array_integer_null_null
       document:
@@ -22884,6 +23038,7 @@ records:
         semantic_sha256: c9dc28b895128cf3c7ed8d7d5f78dca835fba7fb4c40e643b81c8844f816efe6
   schema_type_array_string_integer:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: schema_type_array_string_integer
       document:
@@ -28718,6 +28873,7 @@ records:
         semantic_sha256: cbd9fe74f1ad5ae0862ba28dd7371c37c9ee4ecb7259d3f9afbaf84fc734961c
   text_before_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_before_tool
       document:
@@ -28874,6 +29030,7 @@ records:
         semantic_sha256: 5c31ab80a76f8de08ff350d4d4ca0cf7ddb5273b5d464b19c9b78100271abb83
   text_between_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_between_calls
       document:
@@ -29100,6 +29257,7 @@ records:
         semantic_sha256: cfe8739bdf249255acc58033f89affbbd01696c816f5de8c5aa8ed0e1bc9bb77
   text_only:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_only
       document:
@@ -29188,6 +29346,7 @@ records:
         semantic_sha256: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
   text_reason_tool_text_reason_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_reason_tool_text_reason_tool
       document:
@@ -29444,6 +29603,7 @@ records:
         semantic_sha256: 9f513ca980e13d4d8d532fba0302e6bc40f4c39ef6d9b1339968c37e3a33de1e
   text_sandwich:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: text_sandwich
       document:
@@ -29606,6 +29766,7 @@ records:
         semantic_sha256: 7f7e7a893030d65c255ad8bcaaac2d402afad21a6c1443053b94d441e45b6cfd
   tool_block_never_closed_then_text:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_block_never_closed_then_text
       document:
@@ -29698,6 +29859,7 @@ records:
         semantic_sha256: 34d55b136396e4ae83b74fb4bee50513a60569c64f5cc8fb6a2fc7a8d618af04
   tool_in_reason:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_in_reason
       document:
@@ -29886,6 +30048,7 @@ records:
         semantic_sha256: 9dfd1ebf0343af74d0ff2f7f659b2b82309166cc40021849f22525d98d1d8087
   tool_in_reason_with_text:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_in_reason_with_text
       document:
@@ -30086,6 +30249,7 @@ records:
         semantic_sha256: 19cfed0ccd84431e89bac1a7e95a95fb3e789ad1011ed4bc35f3260a32956977
   tool_markup_only_emits_nothing:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_markup_only_emits_nothing
       document:
@@ -30180,6 +30344,7 @@ records:
         semantic_sha256: 3567e219e5b0b53000ec06a12a1a7919a116552f43b6ce1dd2787d5e277e17eb
   tool_no_close:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_no_close
       document:
@@ -30324,6 +30489,7 @@ records:
         semantic_sha256: 53640b0bd4e7a96cb4c5f30f28a210cf7f46ea4359707de2bcfe77815c13772e
   tool_only:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: tool_only
       document:
@@ -30476,6 +30642,7 @@ records:
         semantic_sha256: 486e7227a2ba5a6bcbcc02f4805184f84d263f70eb2123193dd13780413d6803
   trailing_text_after_tool:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: trailing_text_after_tool
       document:
@@ -30634,6 +30801,7 @@ records:
         semantic_sha256: 98f5f1866c4e5da685f131fee7aa9c881ccfbbade46fdd8a8f2fd88dcbc200c8
   truncated_tool_eof:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: truncated_tool_eof
       document:
@@ -30767,6 +30935,7 @@ records:
         semantic_sha256: 1bc6bae36ccb78d2df4d92437c145e89f5533193e5b5eb443b635522be722ca5
   two_adjacent_reason_spans:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_adjacent_reason_spans
       document:
@@ -30885,6 +31054,7 @@ records:
         semantic_sha256: de82e2a49aa0f4e8e0d5b7dc5e0c6fe8c4deb9885c0bd776d934795077e3e5d0
   two_calls:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls
       document:
@@ -31107,6 +31277,7 @@ records:
         semantic_sha256: cb92c12e844a1f3b5893a1789c3a5ceeeb6c4f2327cd875dd29eacbaed284005
   two_calls_same_name:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_calls_same_name
       document:
@@ -31329,6 +31500,7 @@ records:
         semantic_sha256: ec5b4b87a1a76f57f09f2327e21019238c0db736bfe06508933bb0f9c374b359
   two_reason_spans:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: two_reason_spans
       document:
@@ -31443,6 +31615,7 @@ records:
         semantic_sha256: d03208d5f5e62dc85e998d1a7357218a5781ed6a85a99ac66fdc09aa9ef6e7d0
   unused_reference_graph_parameter_types:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: unused_reference_graph_parameter_types
       document:
@@ -31650,6 +31823,7 @@ records:
         semantic_sha256: c87d491342c9de4765f7d5bf28d2d45eb9c4cf9157c9ad20b814b14928b1dc44
   xml_string_type_double_quoted_object:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_double_quoted_object
       document:
@@ -31710,6 +31884,7 @@ records:
         semantic_sha256: fc5d54cf19384af0f3af5cdab9e3f8eaf7d76627e9f90b474abcc34f0e1a5b2d
   xml_string_type_single_quoted_object:
     member: conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml
+    suppress_inherited_from: true
     value:
       case_key: xml_string_type_single_quoted_object
       document:

@@ -232,6 +232,8 @@ def _prompt_token_ids(case, family):
         marker = "<|open|>think<|sep|>"
     elif family == "gemma4":
         marker = "<|channel>"
+    elif family == "minimax_m3":
+        marker = "<mm:think>"
     else:
         marker = "<think>"
     if marker not in markers:

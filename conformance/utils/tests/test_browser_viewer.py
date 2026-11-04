@@ -1376,20 +1376,21 @@ def test_unified_slots_migrate_tab_scoped_legacy_url_after_tab_canonicalization(
 
 
 def test_unified_capture_slots_survive_reload_with_url_state(published_viewer):
+    peer_version = _published_capture(published_viewer, "vllm_python")["version"]
     server, _requests = _server(root=published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
-        driver.get(f"{base}/?tab=tab-unified&slots_tab-unified=dynamo_v2%400.7.24,none,vllm_python%400.31.0&keep=1#saved")
+        driver.get(f"{base}/?tab=tab-unified&slots_tab-unified=dynamo_v2%400.7.24,none,vllm_python%40{peer_version}&keep=1#saved")
         _ready(driver, 'tab-unified')
-        expected = {'reference': None, 'selected': ['dynamo', 'vllm_python@0.31.0']}
+        expected = {'reference': None, 'selected': ['dynamo', f'vllm_python@{peer_version}']}
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == expected
-        assert dict(parse_qsl(urlsplit(driver.current_url).query))['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@0.31.0"
+        assert dict(parse_qsl(urlsplit(driver.current_url).query))['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@{peer_version}"
         driver.refresh()
         _ready(driver, 'tab-unified')
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == expected
         params = dict(parse_qsl(urlsplit(driver.current_url).query))
-        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@0.31.0"
+        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@{peer_version}"
         assert params['keep'] == '1'
         assert urlsplit(driver.current_url).fragment == 'saved'
     finally:
@@ -1510,18 +1511,19 @@ def test_popup_heading_uses_case_id_before_description(published_viewer, vertica
 
 
 def test_unified_slots_migrate_legacy_stream_candidate_keys(published_viewer):
+    peer_version = _published_capture(published_viewer, "vllm_python")["version"]
     server, _requests = _server(root=published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
-        driver.get(f"{base}/?tab=tab-toolcalling-streamv1&base_tab-toolcalling-streamv1=dynamo_v2-0-7-22&cmp_tab-toolcalling-streamv1=vllm_python-0-31-0&keep=1#saved")
+        driver.get(f"{base}/?tab=tab-toolcalling-streamv1&base_tab-toolcalling-streamv1=dynamo_v2-0-7-22&cmp_tab-toolcalling-streamv1=vllm_python-{peer_version.replace('.', '-')}&keep=1#saved")
         _ready(driver, 'tab-unified')
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {
-            'reference': None, 'selected': ['dynamo', 'vllm_python@0.31.0']
+            'reference': None, 'selected': ['dynamo', f'vllm_python@{peer_version}']
         }
         params = dict(parse_qsl(urlsplit(driver.current_url).query))
         assert params['tab'] == 'tab-unified'
-        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@0.31.0"
+        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@{peer_version}"
         assert params['keep'] == '1'
         assert not any(key.startswith(('base_', 'cmp_')) for key in params)
         assert urlsplit(driver.current_url).fragment == 'saved'
