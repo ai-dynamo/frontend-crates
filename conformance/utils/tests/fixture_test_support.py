@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parents[3]
 
 def copy_publication_modules(root):
     tools = Path(capture_sources.__file__).parent
-    for name in ("capture_sources.py", "ci_publication_cache.py", "dynamo_version.py", "capture_versions.py", "verify_publication_transport.py", "yaml_fast.py", "unified_archives.py", "execution_manifests.py", "impls.py", "viewer_codec.py", "parser_families.yaml"):
+    for name in ("capture_sources.py", "normalized_yaml.py", "ci_publication_cache.py", "dynamo_version.py", "capture_versions.py", "verify_publication_transport.py", "yaml_fast.py", "unified_archives.py", "execution_manifests.py", "impls.py", "viewer_codec.py", "parser_families.yaml"):
         target = root / "conformance/utils/src" / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(tools / name, target)

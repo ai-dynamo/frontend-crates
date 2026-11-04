@@ -30,6 +30,7 @@ import yaml_fast  # noqa: F401
 import capture_sources
 import dynamo_version
 import unified_history
+import normalized_yaml
 import unified_archives
 import generation_workers
 import unified_taxonomy
@@ -293,7 +294,7 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
     retained_scenarios = {
         case["scenario"]
         for _name, data in capture_sources.authored_sources(root)
-        for case in yaml.safe_load(data)["cases"].values()
+        for case in unified_history._parse_yaml(ROOT / _name, data)["cases"].values()
     }
     split_scenarios = [
         scenario
@@ -390,6 +391,8 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
         },
         "unified_taxonomy": {
             scenario: {
+                **({"description": gen_unified_golden.SCENARIO_SUMMARIES[scenario]}
+                   if scenario in gen_unified_golden.SCENARIO_SUMMARIES else {}),
                 "canonical_label": unified_taxonomy.case_label(scenario),
                 "group": identity[0],
                 "suffix": identity[1],
@@ -604,8 +607,16 @@ def _catalog_document_index(unified_root: Path, *, generation=None) -> tuple[lis
         document = yaml.safe_load(data)
         if not isinstance(document, dict):
             raise ValueError(f"Unified source must contain a mapping: {name}")
+        source_schema = document.get("schema_version")
+        if source_schema == normalized_yaml.SCHEMA:
+            if "family" in document:
+                document = normalized_yaml.expand_family(document)
+            else:
+                authored_path = unified_root / Path(name).parent / "inputs_and_golden.yaml"
+                authored = unified_history._parse_yaml_raw(authored_path, authored_path.read_bytes())
+                document = normalized_yaml.expand_snapshot(document, authored)
         parts = PurePosixPath(name).parts
-        indexed = {"schema_version": document.get("schema_version")}
+        indexed = {"schema_version": source_schema if "input_document" in document else document.get("schema_version")}
         if parts[0] == "families" and len(parts) == 3 and parts[2] == "inputs_and_golden.yaml":
             indexed["active_cases"] = [case for case, item in (document.get("cases") or {}).items()
                                         if item.get("lifecycle", "active") != "retired"]

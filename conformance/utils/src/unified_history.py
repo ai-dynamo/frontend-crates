@@ -36,6 +36,7 @@ import execution_manifests
 import unified_taxonomy
 import unified_archives
 import generation_workers
+import normalized_yaml
 from viewer_codec import canonical_typed, decode_typed, typed_equal
 
 
@@ -133,7 +134,7 @@ def load_yaml(path: Path) -> dict:
     return _parse_yaml(path, path.read_text(encoding="utf-8"))
 
 
-def _parse_yaml(path: Path, text: str | bytes) -> dict:
+def _parse_yaml_raw(path: Path, text: str | bytes) -> dict:
     try:
         value = yaml.load(text, Loader=StrictLoader)
     except ValueError as exc:
@@ -143,6 +144,17 @@ def _parse_yaml(path: Path, text: str | bytes) -> dict:
     if not isinstance(value, dict):
         raise ValueError(f"YAML document must be a mapping: {path}")
     return value
+
+
+def _parse_yaml(path: Path, text: str | bytes) -> dict:
+    document = _parse_yaml_raw(path, text)
+    if document.get("schema_version") != normalized_yaml.SCHEMA:
+        return document
+    if "family" in document:
+        return normalized_yaml.expand_family(document)
+    authored_path = path.parent / FAMILY_DOCUMENT_NAME
+    authored = _parse_yaml_raw(authored_path, authored_path.read_bytes())
+    return normalized_yaml.expand_snapshot(document, authored)
 
 
 def dump_yaml(value: dict, *, shared_metadata: bool = False) -> str:
@@ -668,6 +680,8 @@ def _validate_capture_provenance(
     if status not in CAPTURE_PROVENANCE_STATUSES:
         raise ValueError(f"invalid capture provenance status in {path}: {status!r}")
 
+    if "+source." in runtime_version and status != "captured":
+        raise ValueError(f"qualified capture identity requires captured origin: {path}")
     if status == "captured":
         _require_keys(provenance, {"status", "origin"}, {"status", "origin"}, f"{path}.provenance")
         _validate_source_origin(provenance["origin"], f"{path}.provenance.origin", runtime_version)
@@ -1285,7 +1299,7 @@ def mutate_authored_store(root: Path, mutate: Callable[[Store], Any]) -> list[Pa
                 continue
             _validate_family(family.path, family.document)
             candidate = Path(temporary) / f"{index}.yaml"
-            candidate.write_text(dump_yaml(family.document))
+            candidate.write_text(_render_document((family.path, family.document))[1])
             pairs.append((candidate, family.path))
         if pairs:
             publish_paths_transactionally(pairs, backup_parent=root.parent)
@@ -1941,6 +1955,11 @@ def _materialized_case_path(
 
 def _render_document(item: tuple[Path, dict]) -> tuple[Path, str]:
     path, document = item
+    if path.name == FAMILY_DOCUMENT_NAME and set(document) == FAMILY_KEYS:
+        raw = _parse_yaml_raw(path, path.read_bytes()) if path.exists() else None
+        if raw is None or raw.get("schema_version") == normalized_yaml.SCHEMA:
+            frozen = normalized_yaml.expand_requests(raw).values() if raw is not None else ()
+            document = normalized_yaml.encode_family(document, frozen)
     return path, dump_yaml(document, shared_metadata=path.parent.name in {"executions", "receipts"})
 
 
@@ -2130,16 +2149,19 @@ def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *
         for resource, data in sources:
             documents[resource["path"]] = yaml.load(data, Loader=StrictLoader)
     families = {}
+    authored_sources = {}
     for resource in local:
         if resource["kind"] == "inputs-and-golden":
-            families[resource["family"]] = _validate_family(root / resource["path"], documents[resource["path"]])
+            raw = documents[resource["path"]]
+            authored_sources[resource["family"]] = raw
+            families[resource["family"]] = _validate_family(root / resource["path"], normalized_yaml.expand_family(raw))
     histories = {}
     for resource in local:
         if resource["kind"] != "history":
             continue
         name, implementation, version = resource["family"], resource["implementation"], resource["version"]
         path = root / resource["path"]
-        document = documents[resource["path"]]
+        document = normalized_yaml.expand_snapshot(documents[resource["path"]], authored_sources[name])
         _validate_complete_snapshot(path, document, families[name], implementation, version)
         for record in document["records"].values():
             origin = source_index.get(record["member"])
@@ -2201,16 +2223,8 @@ def materialize_store(
     for family_name, family in sorted(store.families.items()):
         if not include_current_inputs:
             continue
-        input_metadata = family.document.get("input_document") or {
-            "family": family_name,
-            "mode": "unified",
-            "model_label": family_name,
-        }
-        golden_metadata = family.document.get("golden_document") or {
-            "family": family_name,
-            "mode": "unified",
-            "captured_with": {"golden": "v1"},
-        }
+        input_metadata = family.document.get("input_document") or {"family": family_name}
+        golden_metadata = family.document.get("golden_document") or {"family": family_name}
         for case in family.cases.values():
             if case["lifecycle"] != "active":
                 continue
@@ -2664,7 +2678,7 @@ def _add_bound_legacy_cases(
             len(stimulus.keys() & {"ref", "inline"}) != 1
             or not isinstance(stimulus.get("semantic_sha256"), str)
             or not stimulus["semantic_sha256"]
-            or (origin is not None and origin.get("crate_version") != capture["runtime_version"])
+            or (origin is not None and origin.get("crate_version") != provenance_release_version(capture["runtime_version"]))
         ):
             return False
 
@@ -3047,7 +3061,7 @@ def _update_from_loose(
                         if (
                             captured_with.get(implementation) != runtime_version
                             and isinstance(origin, dict)
-                            and origin.get("crate_version") == runtime_version
+                            and origin.get("crate_version") == provenance_release_version(runtime_version)
                         ):
                             provenance_enrichments.append(case_id)
                         continue
@@ -3250,8 +3264,8 @@ def _sync_current_corpus(
             store.families[family_name] = Family(
                 family_name,
                 {
-                    "input_document": {"family": family_name, "mode": "unified", "model_label": family_name},
-                    "golden_document": {"family": family_name, "mode": "unified", "captured_with": {"golden": "v1"}},
+                    "input_document": {"family": family_name},
+                    "golden_document": {"family": family_name},
                     "cases": {},
                 },
                 family_path,
@@ -3392,12 +3406,15 @@ def _sync_current_corpus(
                     "request": new_request,
                     "golden": golden_document["cases"][case_key],
                 }
-                family.document["input_document"] = {
-                    key: value for key, value in input_document.items() if key != "cases"
-                }
-                family.document["golden_document"] = {
-                    key: value for key, value in golden_document.items() if key != "cases"
-                }
+                for header, supplied in (("input_document", input_document), ("golden_document", golden_document)):
+                    metadata = {key: value for key, value in supplied.items() if key != "cases"}
+                    if set(family.document[header]) == {"family"}:
+                        legacy = {"family": family_name, "mode": "unified", **(
+                            {"model_label": family_name} if header == "input_document" else {"captured_with": {"golden": "v1"}})}
+                        if any(key not in legacy or not typed_equal(value, legacy[key]) for key, value in metadata.items()):
+                            raise ValueError("custom authored metadata cannot be discarded by normalized storage")
+                        metadata = {"family": family_name}
+                    family.document[header] = metadata
         for case in cases.values():
             case.setdefault("description", None)
             case.setdefault("policy", [])

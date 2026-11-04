@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+import { expandFamily, expandSnapshot } from './normalization.js';
 import { sha256, createWorkerParser, validateResource, resourceMetrics } from './data.js';
 import { canonicalJson, sameValue, getField, hasField, setField, deleteField, mergeMappings, mappingEntries, isMapping } from './values.js';
 import { compareVersions, provenanceReleaseVersion, unifiedCaptureVersionPattern, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, selectedUnifiedSnapshot } from './model.js';
@@ -155,7 +156,12 @@ function origin(value, where, version = null) {
   if (Object.hasOwn(value, 'git_commit') && !/^[0-9a-f]{40}$/.test(value.git_commit)) throw new Error(`${where} has invalid git commit`);
 }
 
+function validateCaptureVersion({ version, path }) {
+  if (typeof version !== 'string' || !unifiedCaptureVersionPattern.test(version)) throw new Error(`${path} invalid Unified capture version`);
+}
+
 function validateCaptureProvenance(provenance, implementation, version, where) {
+  if (version.includes('+source.') && provenance.status !== 'captured') throw new Error(`${where} qualified capture identity requires captured origin`);
   if (provenance.status === 'captured') {
     keys(provenance, ['status', 'origin'], ['status', 'origin'], `${where}.provenance`);
     origin(provenance.origin, `${where}.provenance.origin`, version);
@@ -200,7 +206,7 @@ export async function validateUnifiedSnapshot(snapshot, inputDocument, resource)
   const fields = ['schema_version', 'provenance', 'document', 'records'];
   keys(snapshot, fields, [...fields, 'execution_proof', 'historical_evidence', 'capture_selection'], path);
   if (snapshot.schema_version !== 2n && snapshot.schema_version !== 2) throw new Error(`${path} invalid Unified snapshot schema`);
-  if (typeof version !== 'string' || !unifiedCaptureVersionPattern.test(version)) throw new Error(`${path} invalid Unified capture version`);
+  validateCaptureVersion(resource);
   const provenance = mapping(snapshot.provenance, `${path}.provenance`);
   validateCaptureProvenance(provenance, implementation, version, path);
   mapping(snapshot.document, `${path}.document`);
@@ -379,32 +385,14 @@ export async function expandUnifiedExecution(document, executionManifest, resour
 
 export async function validateUnifiedCapture(document, inputDocument, resource, executionManifest = null) {
   const { path, implementation, version } = resource;
-  if (typeof version !== 'string' || !unifiedCaptureVersionPattern.test(version)) throw new Error(`${path} invalid Unified capture version`);
+  validateCaptureVersion(resource);
   if (Object.hasOwn(document, 'schema_version')) return validateUnifiedSnapshot(document, inputDocument, resource);
   if (Object.hasOwn(document, 'execution')) document = await expandUnifiedExecution(document, executionManifest, resource);
   return validateCapturePayload(document, inputDocument, resource);
 }
 
-async function validateCapturePayload(document, inputDocument, resource) {
-  const { path, implementation, version } = resource;
-  if (typeof version !== 'string' || !unifiedCaptureVersionPattern.test(version)) throw new Error(`${path} invalid Unified capture version`);
-  const fields = ['provenance', 'document', 'changes', 'metadata_changes', 'document_overrides'];
-  keys(document, fields, [...fields, 'parent', 'execution_proof'], path);
-  if (Object.hasOwn(document, 'parent') && (typeof document.parent !== 'string' || !document.parent.startsWith(`${implementation}-`)
-      || compareVersions(document.parent.slice(implementation.length + 1), version) >= 0)) throw new Error(`${path} invalid capture parent`);
-  const provenance = mapping(document.provenance, `${path}.provenance`);
-  if (provenance.status === 'captured') {
-    keys(provenance, ['status', 'origin'], ['status', 'origin'], `${path}.provenance`);
-    origin(provenance.origin, `${path}.provenance.origin`, version);
-  } else if (provenance.status === 'legacy') {
-    keys(provenance, ['status', 'captured_with'], ['status', 'captured_with'], `${path}.provenance`);
-    if (!sameValue(provenance.captured_with, { [implementation]: version })) throw new Error(`${path} has inconsistent capture identity`);
-  } else throw new Error(`${path} has invalid capture provenance status`);
-  if (Object.hasOwn(document, 'execution_proof')) await validateExecutionProof(document.execution_proof, inputDocument, provenance, implementation, version, path);
-  mapping(document.document, `${path}.document`);
-  if (['capture_origin', 'captured_with'].some((field) => hasField(document.document, field))) throw new Error(`${path} repeats derived provenance`);
-  for (const field of ['changes', 'metadata_changes', 'document_overrides']) stringMapping(document[field], `${path}.${field}`);
-  for (const [caseId, change] of Object.entries(document.changes)) {
+async function validateChanges(changes, inputDocument, path) {
+  for (const [caseId, change] of Object.entries(changes)) {
     const where = `${path}:${caseId}`;
     if (!Object.hasOwn(inputDocument.cases, caseId)) throw new Error(`${where} is an unknown case`);
     const input = inputDocument.cases[caseId];
@@ -427,6 +415,22 @@ async function validateCapturePayload(document, inputDocument, resource) {
     } else string(getField(payload, 'code'), `${where}.observation.${outcomes[0]}.code`);
   }
     }
+}
+
+async function validateCapturePayload(document, inputDocument, resource) {
+  const { path, implementation, version } = resource;
+  validateCaptureVersion(resource);
+  const fields = ['provenance', 'document', 'changes', 'metadata_changes', 'document_overrides'];
+  keys(document, fields, [...fields, 'parent', 'execution_proof'], path);
+  if (Object.hasOwn(document, 'parent') && (typeof document.parent !== 'string' || !document.parent.startsWith(`${implementation}-`)
+      || compareVersions(document.parent.slice(implementation.length + 1), version) >= 0)) throw new Error(`${path} invalid capture parent`);
+  const provenance = mapping(document.provenance, `${path}.provenance`);
+  validateCaptureProvenance(provenance, implementation, version, path);
+  if (Object.hasOwn(document, 'execution_proof')) await validateExecutionProof(document.execution_proof, inputDocument, provenance, implementation, version, path);
+  mapping(document.document, `${path}.document`);
+  if (['capture_origin', 'captured_with'].some((field) => hasField(document.document, field))) throw new Error(`${path} repeats derived provenance`);
+  for (const field of ['changes', 'metadata_changes', 'document_overrides']) stringMapping(document[field], `${path}.${field}`);
+  await validateChanges(document.changes, inputDocument, path);
   for (const field of ['metadata_changes', 'document_overrides']) {
     for (const [caseId, value] of Object.entries(document[field])) {
       if (!Object.hasOwn(inputDocument.cases, caseId)) throw new Error(`${path}:${caseId} is an unknown metadata case`);
@@ -450,6 +454,7 @@ async function validateCapturePayload(document, inputDocument, resource) {
 const originalSourcesByPath = new WeakMap();
 
 export async function validateResolvedUnified(records, inputDocument, resource, originals) {
+  validateCaptureVersion(resource);
   stringMapping(records, resource.path);
   let sourceByPath = originalSourcesByPath.get(originals);
   if (!sourceByPath) {
@@ -471,10 +476,11 @@ export async function validateResolvedUnified(records, inputDocument, resource, 
         || compareVersions(provenanceReleaseVersion(getField(capturedWith, resource.implementation)), resource.version) > 0) {
       throw new Error(`resolved observation has a false producer identity: ${caseId}`);
     }
+    if (getField(capturedWith, resource.implementation).includes('+source.') && !hasField(value.document, 'capture_origin')) throw new Error(`${resource.path}:${caseId} qualified producer requires captured origin`);
     if (hasField(value.document, 'capture_origin')) origin(getField(value.document, 'capture_origin'), `${resource.path}:${caseId}.capture_origin`, getField(capturedWith, resource.implementation));
     Object.defineProperty(changes, caseId, { value: { case_key: value.case_key, stimulus: value.stimulus, observation: value.observation }, enumerable: true });
   }
-  await validateCapturePayload({ provenance: { status: 'legacy', captured_with: { [resource.implementation]: resource.version } }, document: {}, changes, metadata_changes: {}, document_overrides: {} }, inputDocument, resource);
+  await validateChanges(changes, inputDocument, resource.path);
   validateResolvedRecordContracts(new Map(Object.entries(records)), resource.implementation, resource.record_contract, resource.path);
   return records;
 }
@@ -660,7 +666,7 @@ export class FixtureResources {
     const input = this.inputResources.get(family) || this.catalog.sources.unified.find(item => item.kind === 'inputs-and-golden' && item.family === family);
     if (!input) throw new Error(`Unified input and GOLDEN document missing for ${family}`);
     const parsedInputs = input.format === 'typed-json-v1' ? await this.snapshot(input) : await this.yaml(input, null, true);
-    const inputDocument = parsedInputs.value;
+    const inputDocument = await expandFamily(parsedInputs.value);
     if (!inputDocument) throw new Error(`Unified input and GOLDEN document missing for ${family}`);
     const aliases = this.catalog.metadata.unified_aliases;
     if (!aliases?.canonical || typeof aliases.canonical !== 'object' || Array.isArray(aliases.canonical) || !Object.keys(aliases.canonical).length || Object.values(aliases.canonical).some(value => typeof value !== 'string')) throw new Error('missing canonical Unified case owners');
@@ -710,7 +716,9 @@ export class FixtureResources {
     const identity = JSON.stringify([input, file].map(resource => [resource.path, resource.sha256, resource.size]));
     return cachedTask(this.captures, identity, async () => {
       const parsed = await this.yaml(file, null, true);
-      const document = await validateUnifiedSnapshot(parsed.value, inputDocument, file);
+      const authored = (await this.yaml(input, null, true)).value;
+      const expanded = await expandSnapshot(parsed.value, authored);
+      const document = await validateUnifiedSnapshot(expanded, inputDocument, file);
       return { ...file, document, bytes: parsed.sourceBytes };
     });
   }

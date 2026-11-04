@@ -313,7 +313,8 @@ def _e2e_ids_from_descriptions() -> dict[str, set[str]]:
     out: dict[str, set[str]] = {}
     for spec in (*CLEAN, *EDGE):
         scenario, desc = spec[0], spec[1]
-        ids = set(_E2E_TAG.findall(desc))
+        descriptions = desc.values() if isinstance(desc, dict) else (desc,)
+        ids = {artifact for description in descriptions for artifact in _E2E_TAG.findall(description)}
         if ids:
             out.setdefault(numbered_id(scenario), set()).update(ids)
     return out
@@ -1001,7 +1002,7 @@ def test_every_authored_case_survives_emission_and_reload():
 @pytest.mark.parametrize("family", [family for family in FAMILIES if G._MANIFEST[family].get("grammar")])
 def test_inherited_family_preserves_published_chunk_schedules(family):
     path = UTILS.parent / "fixtures-unified-v2" / "families" / family / "inputs_and_golden.yaml"
-    historical = yaml.safe_load(path.read_text())["cases"]
+    historical = unified_history.load_yaml(path)["cases"]
     cases = build_cases(family)
     for record in historical.values():
         if record["lifecycle"] != "active":
@@ -1282,7 +1283,7 @@ def test_reference_backfills_require_request_bound_version_receipts(authored_uni
         if family.name == "qwen3":
             introduced.add(numbered_id("arg_string_null_ref"))
         introduced_at = (0, 7, 29) if family.name == "beam" else (0, 7, 18)
-        if tuple(int(part) for part in version.split(".")) >= introduced_at:
+        if unified_history._capture_release_sort_key(version)[0] >= introduced_at:
             measured = {family.cases[key]["display_id"] for key in document["records"]}
             missing = introduced - measured
             if missing:
@@ -2014,7 +2015,7 @@ def _assert_missing_inner_closers(family: str, case: dict) -> list[dict]:
     raw = case["input"]
     assert case["input_chunks"] == [raw]
     assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
-    prefix = G.MISSING_INNER_CLOSERS_PREFIX[family]
+    prefix = G.MISSING_INNER_CLOSERS[family][0]
     native_raw = raw.removeprefix(G.control_tokens(family)[1])
     assert native_raw.startswith(prefix)
     inner_closers = {
@@ -2026,11 +2027,82 @@ def _assert_missing_inner_closers(family: str, case: dict) -> list[dict]:
     assert "unfinished" in prefix and inner_closers[family] not in prefix
     paris = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}]
     assert _native_input_calls(family, native_raw[len(prefix):]) == paris
-    assert case["golden"] == paris
+    if family == "glm47":
+        assert native_raw == (
+            "<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>"
+            "<tool_call>get_weather<arg_key>location</arg_key><arg_value>Paris</arg_value></tool_call>"
+        )
+        expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "unfinished"}}] + paris
+    elif family == "gemma4":
+        # The second quote closes the original string, leaving bare Paris where
+        # an object separator/closer is required; this really is malformed.
+        assert native_raw == (
+            '<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>'
+            '<|tool_call>call:get_weather{location:<|"|>Paris<|"|>}<tool_call|>'
+        )
+        expected = paris
+    else:
+        openers = {
+            "beam": '<rfl:parameter name="location">', "qwen3": "<parameter=location>",
+            "minimax_m3": "]<]minimax[>[<location>",
+            "deepseek_v4": '<｜DSML｜parameter name="location" string="true">',
+            "deepseek_v41": '<｜DSML｜ parameter name="location" string="true">',
+            "kimi_k3": '<|open|>argument key="location" type="string"<|sep|>',
+            "muse_glimmer": '<atem:parameter name="location">',
+        }
+        start = native_raw.index(openers[family]) + len(openers[family])
+        end = native_raw.index(inner_closers[family], start)
+        if family in {"beam", "qwen3"}:
+            start += int(native_raw[start:start + 1] == "\n")
+            end -= int(native_raw[end - 1:end] == "\n")
+        value = native_raw[start:end]
+        assert value.startswith("unfinished") and value.endswith("Paris")
+        assert inner_closers[family] not in value
+        # Re-encode a known literal independently of GOLDEN. Header-shaped
+        # bytes cannot become calls while this parameter still owns them.
+        sentinel = "ORACLE_LITERAL_SENTINEL"
+        head, tail = G.r_tool(family, "get_weather", "location", sentinel, 0).split(sentinel)
+        assert head.replace("\n", "") == native_raw[:start].replace("\n", "")
+        assert tail.replace("\n", "") == native_raw[end:].replace("\n", "")
+        expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": value}}]
+    assert case["golden"] == expected
     assert case["tools"] == [{"name": "get_weather", "parameters": {
         "type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"],
     }}]
+    # Cross-family normalization represents the shared stimulus's Paris suffix,
+    # not equivalent emitted calls; full native outputs are checked above.
     return paris
+
+
+_INNER_CLOSER_FAMILIES = (
+    "beam", "qwen3", "nemotron_v3", "deepseek_v4", "deepseek_v41", "minimax_m3",
+    "kimi_k3", "muse_glimmer", "muse_spark", "glm47", "gemma4",
+)
+
+
+@pytest.mark.parametrize("family", _INNER_CLOSER_FAMILIES)
+def test_inner_closer_oracle_checks_the_complete_native_input(family):
+    case = build_cases(family)[f"UNIFIED.missing_inner_closers_then_valid_call.{family}"]
+    _assert_missing_inner_closers(family, case)
+    shared = G.SCENARIO_SUMMARIES["missing_inner_closers_then_valid_call"]
+    assert case["description"].startswith(shared)
+    assert "Native mode, default initialization" in shared
+    grammar = G.unified_grammar_family(family)
+    if grammar == "muse_spark":
+        grammar = "muse_glimmer"
+    assert G.MISSING_INNER_CLOSERS[grammar][1] in case["description"]
+    assert ("two calls" if grammar == "glm47" else "only" if grammar == "gemma4" else "one get_weather") in case["description"]
+
+
+@pytest.mark.parametrize("family", _INNER_CLOSER_FAMILIES)
+def test_inner_closer_oracle_rejects_incorrect_call_boundaries(family):
+    case = json.loads(json.dumps(build_cases(family)[f"UNIFIED.missing_inner_closers_then_valid_call.{family}"]))
+    paris = {"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}
+    case["golden"] = ([paris] if family != "gemma4" else [
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"location": "unfinished"}}, paris,
+    ])
+    with pytest.raises(AssertionError):
+        _assert_missing_inner_closers(family, case)
 
 
 
@@ -2813,7 +2885,7 @@ def test_single_call_variants_keep_the_shared_weather_example():
 @pytest.mark.parametrize("family", ["gpt_oss", "kimi_k2", "kimi_k3"])
 def test_retired_whitespace_request_preserves_lookup_history(family):
     path = SRC.parents[2] / f"conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
-    cases = yaml.safe_load(path.read_text())["cases"]
+    cases = unified_history.load_yaml(path)["cases"]
     retained = cases["gpt_oss_tool_body_whitespace"]
     assert retained["lifecycle"] == "retired"
     assert retained["display_id"] is None
@@ -2828,7 +2900,7 @@ def test_retired_whitespace_request_preserves_lookup_history(family):
 
 def test_retired_harmony_eof_case_keeps_its_history_and_shared_contract():
     path = SRC.parents[2] / "conformance/fixtures-unified-v2/families/gpt_oss/inputs_and_golden.yaml"
-    cases = yaml.safe_load(path.read_text())["cases"]
+    cases = unified_history.load_yaml(path)["cases"]
     retired = cases["gpt_oss_truncated_tool_at_eof_is_dropped"]
     parent = cases["tool_no_close"]
     assert retired["lifecycle"] == "retired"

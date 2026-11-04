@@ -9,6 +9,7 @@ import { resolve, dirname } from 'node:path';
 import { createNodeResourceStore } from './data.js';
 import { initializeDevelopmentParser } from './yaml_data.js';
 initializeDevelopmentParser();
+import { expandFamily, expandSnapshot, isNormalized } from './normalization.js';
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
 import { selectedCellOutcome } from './model.js';
@@ -289,7 +290,15 @@ async function readOracleCapture(reader, file, input) {
     })));
     execution = { ...execution, receipts };
   }
-  const document = await validateUnifiedCapture(parsed.value, input, file, execution);
+  let value = parsed.value;
+  if (isNormalized(value)) {
+    const inputPath = file.path.replace(/[^/]+$/, 'inputs_and_golden.yaml');
+    const authoredResource = originals.find(item => item.path === inputPath && item.kind === 'inputs-and-golden');
+    assert(authoredResource, `normalized request library not indexed: ${inputPath}`);
+    const authored = await reader.yaml(authoredResource, null, true);
+    value = await expandSnapshot(value, authored.value);
+  }
+  const document = await validateUnifiedCapture(value, input, file, execution);
   return { ...file, document, bytes: parsed.sourceBytes };
 }
 const authoredFamilies = new Set(originals.filter(item => item.kind === 'inputs-and-golden').map(item => item.family));
@@ -303,7 +312,8 @@ for (const inputResource of inputResources) {
   const family = inputResource.family;
   const snapshot = await readSnapshot(inputResource);
   const original = originals.find(item => item.family === family && item.kind === 'inputs-and-golden');
-  const { value: yaml } = await authoredReader.yaml(original, null, true);
+  const { value: rawYaml } = await authoredReader.yaml(original, null, true);
+  const yaml = await expandFamily(rawYaml);
   assert(sameValue(snapshot, yaml), `authored JSON differs from YAML: ${family}`);
   validateUnifiedInputs(snapshot, family, inputResource.path, catalog.metadata.unified_aliases);
   authoredComparisons += 1;
@@ -458,7 +468,7 @@ const { FixtureResources } = await import('./resources.js');
 const { buildPage, buildTab, pageMetadata } = await import('./presentation.js');
 
 const { tabCandidates, selectedUnifiedFamilies } = await import('./model.js');
-const { classifyUnified, compareLegacyVersions, resolveUnified } = await import('./model.js');
+const { classifyUnified, compareLegacyVersions, compareVersions, resolveUnified } = await import('./model.js');
 const { leafCells } = await import('./model.js');
 const { columnKeysFor, tabPresentation } = await import('./presentation.js');
 const { sameValue } = await import('./values.js');
@@ -518,8 +528,9 @@ function validateTab(tab, loadedKeys = null) {
     assert.ok(descriptor.source.version);
     const owner = `${descriptor.source.implementation}@${descriptor.source.mode}`;
     const prior = sources.get(owner);
-    if (prior) assert.ok(compareLegacyVersions(prior, descriptor.source.version) >= 0);
+    if (prior) assert.ok(compareVersions(prior, descriptor.source.version) >= 0);
     sources.set(owner, descriptor.source.version);
+    assert.ok(descriptor.control.label.includes(descriptor.source.version));
     assert.ok(!descriptor.control.label.includes('+source.'));
     if (spec.mode === 'stream') assert.ok(!descriptor.source.version.match(/\.patch\d+$/));
   }

@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Capture origin validation shared by refresh, explode, and capture harnesses.
+"""Validate capture origins shared by refresh, export, and capture harnesses.
 
-Unified capture directories and rendered columns are keyed only by the crate
-semantic version. The first capture of that version retains its source digest as
-origin metadata; later checkouts with the same version do not create another
-capture identity. The digest covers parser crates, the split-path protocol
-dependency, and workspace build inputs; conformance outputs are excluded so a
-capture cannot change its own origin.
+Conformance selections and filenames use only crate versions. The legacy
+producer protocol retains source-qualified identities as provenance, never as
+selectable versions. The digest covers parser crates, the split-path protocol
+dependency, and workspace build inputs. Conformance outputs are excluded so a
+capture cannot change its own producer identity.
 """
 
 import argparse
@@ -287,9 +286,8 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     _validate_provenance_origin(repo_root, recorded)
     version = current["crate_version"]
     tag = f"dynamo-parsers-v2-v{version}"
-    # The Unified publisher converts every producer label to a plain semantic
-    # version, so source-qualified output cannot be recorded under an existing
-    # release whose tag points at different parser source.
+    # Keep the frozen release tag as an independent source check even when
+    # an unpublished producer carries a source-qualified provenance identity.
     if _git(repo_root, "tag", "--list", tag).strip():
         released_source = source_fingerprint(repo_root, f"refs/tags/{tag}")
         if released_source != current["source_sha256"]:

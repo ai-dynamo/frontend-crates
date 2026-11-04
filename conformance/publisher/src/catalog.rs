@@ -156,7 +156,9 @@ fn document(name: &str, bytes: &[u8]) -> Result<(Value, Option<Value>, Option<Va
         let stem = file.strip_suffix(".yaml").context("non YAML source")?;
         let (implementation, version) = stem.split_once('-').context("invalid capture identity")?;
         Release::parse(version)?;
-        if node.get("schema_version") != Some(&Node::Int(2.into())) {
+        if node.get("schema_version") != Some(&Node::Int(2.into()))
+            && !crate::normalization::is_normalized(&node)
+        {
             indexed["execution"] = node
                 .get("execution")
                 .map(Node::string)
@@ -164,7 +166,15 @@ fn document(name: &str, bytes: &[u8]) -> Result<(Value, Option<Value>, Option<Va
                 .map_or(Value::Null, |reference| json!(reference));
             return Ok((indexed, None, None));
         }
-        let mut summary = record_summary(node.field("records")?)?;
+        let summary_records;
+        let records = if crate::normalization::is_normalized(&node) {
+            summary_records = crate::normalization::summary_records(&node)?;
+            indexed["schema_version"] = json!(2);
+            &summary_records
+        } else {
+            node.field("records")?
+        };
+        let mut summary = record_summary(records)?;
         summary["family"] = json!(family);
         summary["implementation"] = json!(implementation);
         summary["version"] = json!(version);
@@ -278,7 +288,9 @@ fn document_cached(
         include_str!("catalog.rs"),
         include_str!("yaml.rs"),
         include_str!("source.rs"),
-        include_str!("history.rs")
+        include_str!("history.rs"),
+        include_str!("normalization.rs"),
+        include_str!("../../src/normalization.rs")
     ]))?);
     if let Some(payload) =
         cache.and_then(|directory| crate::conversion_cache::read(directory, &key))

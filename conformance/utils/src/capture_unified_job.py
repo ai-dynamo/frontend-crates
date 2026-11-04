@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 import yaml
+import normalized_yaml
 
 from capture_stimulus import validate_family_scoped_cases
 
@@ -64,15 +65,16 @@ def _case_job(family: str, case_id: str, case: dict, *, mode: str) -> dict:
 
 def build_job(input_root: Path, family: str, *, mode: str = "unified") -> dict:
     path = _family_path(input_root, family)
-    document = yaml.safe_load(path.read_text())
-    if not isinstance(document, dict):
+    raw = yaml.safe_load(path.read_text())
+    if not isinstance(raw, dict):
         raise ValueError(f"{path}: expected a YAML mapping")
+    document = normalized_yaml.expand_family(raw)
     input_document = document.get("input_document") or {}
     if input_document.get("family") != family:
         raise ValueError(
             f"{path}: input_document.family={input_document.get('family')!r} does not match {family!r}"
         )
-    if input_document.get("mode") != "unified":
+    if raw.get("schema_version") != normalized_yaml.SCHEMA and input_document.get("mode") != "unified":
         raise ValueError(f"{path}: input_document.mode must be 'unified'")
     cases = document.get("cases")
     if not isinstance(cases, dict):

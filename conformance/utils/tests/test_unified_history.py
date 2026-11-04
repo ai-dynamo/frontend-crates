@@ -1573,10 +1573,20 @@ def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path):
     assert inherited["inherited_from"] == "0.5.0"
     assert inherited["captured_with"] == {"dynamo_v2": "0.5.0"}
 @pytest.mark.parametrize("version", ["0.5.1.patch1", "0.5.1+source." + "a" * 64])
-def test_history_rejects_patch_and_source_qualified_filenames(tmp_path, version):
+def test_history_rejects_patch_and_unbound_source_filenames(tmp_path, version):
     _write_family(tmp_path)
     _write_capture(tmp_path, version, {"text_only": _change()})
 
+    with pytest.raises(ValueError, match="capture identity differs|qualified capture identity requires captured origin"):
+        unified_history.load_store(tmp_path)
+
+
+def test_source_qualified_selection_is_rejected_even_with_matching_origin(tmp_path):
+    _write_family(tmp_path)
+    version = "0.5.1+source." + "a" * 64
+    _write_capture(tmp_path, version, {"text_only": _change()}, provenance={
+        "status":"captured", "origin":{"crate_version":"0.5.1","source_sha256":"a"*64}
+    })
     with pytest.raises(ValueError, match="capture identity differs"):
         unified_history.load_store(tmp_path)
 
