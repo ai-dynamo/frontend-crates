@@ -82,7 +82,7 @@ def test_descriptive_ids_and_all_published_aliases():
     assert len(set(labels)) == len(labels)
     for scenario in UNIFIED_TAX:
         label = case_label(scenario)
-        assert re.fullmatch(r"[\w]+-[\w]+", label), label
+        assert re.fullmatch(r"[\w]+(?:-[\w]+)+", label), label
         legacy = taxonomy.legacy_case_label(scenario)
         if len(taxonomy._LABEL_OWNERS[legacy]) > 1:
             with pytest.raises(ValueError, match="conflicting Unified alias ownership"):
@@ -97,7 +97,7 @@ def test_descriptive_ids_and_all_published_aliases():
     for alias, scenario in taxonomy.LEGACY_CASE_LABELS.items():
         assert historical_case_label(alias) == case_label(scenario)
     for probe in CONFORMANCE_CASES:
-        assert case_label("schema_" + probe["name"]) == "7-" + probe["name"]
+        assert case_label("schema_" + probe["name"]) == taxonomy.ARGUMENT_SECTIONS[taxonomy.argument_section("schema_" + probe["name"])] + "-" + probe["name"]
     assert historical_case_label("31-29", family="gemma4") == case_label(
         "gemma4_guided_json_visible_call_prose_before_reasoning")
     assert historical_case_label("31.a") == case_label("guided_json_invalid_call")
@@ -794,9 +794,9 @@ def test_schema_null_cases_keep_their_native_inputs_and_history():
     assert "<arg_value>null</arg_value>" in glm["input"]
     assert glm["tools"] == string["tools"]
     assert glm["golden"] == string["golden"]
-    assert numbered_id("arg_string_null") == "UNIFIED.7-arg_string_null"
-    assert numbered_id("arg_json_null") == "UNIFIED.7-arg_json_null"
-    assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-arg_json_null"
+    assert numbered_id("arg_string_null") == "UNIFIED.7-tool-argument-nullability-arg_string_null"
+    assert numbered_id("arg_json_null") == "UNIFIED.7-tool-argument-nullability-arg_json_null"
+    assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-tool-argument-nullability-arg_json_null"
 
 
 @pytest.mark.parametrize("family", NATIVE_FAMILIES)
@@ -930,7 +930,7 @@ def test_deepseek_mixed_control_string_preserves_the_historical_id():
     assert value == G._DS41_MIXED_STRING
     assert "<think>quoted</think>" in value
     assert '&amp; "x"' + "\\" + "\n" in value
-    assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-deepseek_v41_mixed_control_text_in_string"
+    assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string"
 
 
 @pytest.mark.parametrize("family", NATIVE_FAMILIES)
@@ -1027,7 +1027,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 267 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 5
+    assert len(UNIFIED_TAX) == 268 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1276,11 +1276,11 @@ def test_reference_backfills_require_request_bound_version_receipts(authored_uni
         snapshots += 1
         family = authored_unified_store.families[resource["family"]]
         version = resource["version"]
-        introduced = {"UNIFIED.7-unused_reference_graph_parameter_types", "UNIFIED.7-nullable_reference_alias_literals", "UNIFIED.7-local_schema_id_preserves_type"}
+        introduced = {numbered_id(name) for name in ("unused_reference_graph_parameter_types", "nullable_reference_alias_literals", "local_schema_id_preserves_type")}
         if family.name != "glm47":
-            introduced |= {f"UNIFIED.7-glm_ref_{suffix}" for suffix in ("object", "encoded_targets", "json_looking_strings", "scalar_types")}
+            introduced |= {numbered_id(f"glm_ref_{suffix}") for suffix in ("object", "encoded_targets", "json_looking_strings", "scalar_types")}
         if family.name == "qwen3":
-            introduced.add("UNIFIED.7-arg_string_null_ref")
+            introduced.add(numbered_id("arg_string_null_ref"))
         introduced_at = (0, 7, 29) if family.name == "beam" else (0, 7, 18)
         if tuple(int(part) for part in version.split(".")) >= introduced_at:
             measured = {family.cases[key]["display_id"] for key in document["records"]}
@@ -2007,6 +2007,33 @@ def _assert_malformed_recovery(family, case):
     return echoes
 
 
+def _assert_missing_inner_closers(family: str, case: dict) -> list[dict]:
+    family = G.unified_grammar_family(family)
+    if family == "muse_spark":
+        family = "muse_glimmer"
+    raw = case["input"]
+    assert case["input_chunks"] == [raw]
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    prefix = G.MISSING_INNER_CLOSERS_PREFIX[family]
+    native_raw = raw.removeprefix(G.control_tokens(family)[1])
+    assert native_raw.startswith(prefix)
+    inner_closers = {
+        "beam": "</rfl:parameter>", "minimax_m3": "]<]minimax[>[</location>",
+        "qwen3": "</parameter>", "glm47": "</arg_value>",
+        "deepseek_v4": "</｜DSML｜parameter>", "deepseek_v41": "</｜DSML｜ parameter>",
+        "gemma4": '<|"|>}', "kimi_k3": "<|close|>argument", "muse_glimmer": "</atem:parameter>",
+    }
+    assert "unfinished" in prefix and inner_closers[family] not in prefix
+    paris = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}]
+    assert _native_input_calls(family, native_raw[len(prefix):]) == paris
+    assert case["golden"] == paris
+    assert case["tools"] == [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"],
+    }}]
+    return paris
+
+
+
 _GUIDED_NATIVE_RECOVERY_SCENARIOS = (
     "guided_json_native_markup_only",
     "guided_native_after_prefilled_reasoning_required",
@@ -2046,6 +2073,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
     family = G.unified_grammar_family(family)
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
+        return
+    if scenario == "missing_inner_closers_then_valid_call":
+        _assert_missing_inner_closers(family, case)
         return
     if scenario.startswith("kimi_native_"):
         _assert_kimi_native_golden(scenario, case)
@@ -2226,6 +2256,8 @@ def _assert_cross_family_contract(corpus):
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
+                      else _assert_missing_inner_closers(family, case)
+                      if scenario == "missing_inner_closers_then_valid_call"
                       else _logical_events(scenario, family, case["golden"]))
             if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
                 raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "minimax_m3"} else 2

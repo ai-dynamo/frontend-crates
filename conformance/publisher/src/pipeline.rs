@@ -929,7 +929,6 @@ pub fn projection(catalog: &Value) -> Result<Value> {
         "markers",
         "unified",
         "unified_presentation",
-        "folds",
         "unified_taxonomy",
         "unified_aliases",
         "unified_leak_markers",
@@ -982,9 +981,6 @@ pub fn projection(catalog: &Value) -> Result<Value> {
             .collect::<Vec<_>>()
     );
     metadata["selection_policy"] = json!({"unified":metadata["selection_policy"].get("unified").cloned().unwrap_or(json!({}))});
-    if metadata.get("folds").is_none() {
-        metadata["folds"] = json!({});
-    }
     let mut result = json!({});
     if let Some(generation) = catalog.get("capture_generation") {
         result["capture_generation"] = generation.clone();
@@ -1020,6 +1016,39 @@ pub fn projection(catalog: &Value) -> Result<Value> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn resealed_family_cache_rejects_nested_oracles_and_conflicting_identities()
+    -> anyhow::Result<()> {
+        let directory = tempfile::tempdir()?;
+        let key = "a".repeat(64);
+        let raw = "input_document: {family: sample}\ngolden_document: {family: sample}\ncases:\n  one:\n    lifecycle: active\n    scenario: tool_only\n    description: one\n    policy: []\n    display_id: UNIFIED.1-tool_only\n    historical_ids: []\n    request: {input: one, init: {}, finish_reason: stop, tools: [], chunks: []}\n    golden: {assembled: []}\n";
+        let aliases = serde_json::json!({"canonical":{"tool_only":"1-tool_only","reason_only":"10-reason_only"},"families":{},"owners":{"1-tool_only":["tool_only"],"10-reason_only":["reason_only"]}});
+        let authored = crate::yaml::load_str(raw)?;
+        let valid = serde_json::json!({"authored":authored.typed(),"snapshots":[]});
+        crate::conversion_cache::write(directory.path(), &key, &valid)?;
+        assert!(super::read_family_cache(directory.path(), &key, "sample", &aliases).is_some());
+        for (from, to) in [
+            (
+                "golden: {assembled: []}",
+                "golden: {assembled: [], variants: [{assembled: []}]}",
+            ),
+            (
+                "display_id: UNIFIED.1-tool_only",
+                "display_id: UNIFIED.10-reason_only",
+            ),
+        ] {
+            let invalid = crate::yaml::load_str(&raw.replace(from, to))?;
+            let payload = serde_json::json!({"authored":invalid.typed(),"snapshots":[]});
+            crate::conversion_cache::write(directory.path(), &key, &payload)?;
+            assert!(
+                crate::conversion_cache::read(directory.path(), &key).is_some(),
+                "checksum admission alone must succeed"
+            );
+            assert!(super::read_family_cache(directory.path(), &key, "sample", &aliases).is_none());
+        }
+        Ok(())
+    }
+
     #[test]
     fn unified_projection_preserves_producer_display_identity() -> anyhow::Result<()> {
         let producer = serde_json::json!({"crate_version":"12.3.4","kind":"unpublished"});

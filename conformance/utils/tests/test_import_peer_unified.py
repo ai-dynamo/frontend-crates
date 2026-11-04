@@ -20,6 +20,7 @@ from capture_unified_job import build_job
 from import_peer_unified import digest, import_capture, import_capture_groups, main
 from capture_stimulus import assemble_stream
 from conformance.utils.tests.test_unified_history import _add_backfill_case, _change, _request, _write_capture, _write_family
+from gen_unified_golden import r_reason
 
 
 def _receipted_jobs(store, root, implementation, mode, versions=("0.25.1", "0.26.0"), family="gemma4"):
@@ -321,8 +322,8 @@ def test_existing_older_backfill_preserves_later_provenance(peer_capture):
     later = history.resolve(f"{implementation}-0.26.0")
     job.write_text(json.dumps(build_job(store / "families", "gemma4")))
     payload = unified_history.load_yaml(capture)
-    payload["results"]["UNIFIED.new_case.gemma4"] = {
-        "capture_input": _request("new"), "assembled": [{"kind": "text", "text": "new"}],
+    payload["results"]["UNIFIED.reason_only.gemma4"] = {
+        "capture_input": _request(r_reason("gemma4", "new")), "assembled": [{"kind": "text", "text": "new"}],
         "chunks": [[{"kind": "text", "text": "new"}]],
     }
     capture.write_text(unified_history.dump_yaml(payload))

@@ -6,6 +6,8 @@ import gzip
 import json
 import re
 import shutil
+import socket
+import struct
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -99,14 +101,63 @@ def _server(prefix: str = "", gate=None, gate_path: str | None = None, fault=Non
             if should_hold:
                 gate[0].set()
                 assert gate[1].wait(60), "delayed resource was never released"
-            matches_fault = fault and fault["path"] in path
-            if matches_fault and not fault["used"]:
-                fault["used"] = True
-                if fault["kind"] == "missing":
-                    self.send_error(404)
+            with gate_lock:
+                matches_fault = fault and fault["path"] in path
+                kind = None
+                if matches_fault:
+                    if "responses" in fault:
+                        responses = fault["responses"]
+                        if isinstance(responses, dict):
+                            responses = responses.get(resource_path, [])
+                        kind = responses.pop(0) if responses else None
+                    elif not fault["used"]:
+                        fault["used"] = True
+                        kind = fault["kind"]
+            if kind is not None:
+                if isinstance(kind, dict):
+                    self.send_response(200)
+                    self.send_header("Connection", "close")
+                    for name, value in kind["headers"].items():
+                        self.send_header(name, value)
+                    self.end_headers()
+                    try:
+                        self.wfile.write(kind["body"])
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+                    self.close_connection = True
+                    return
+                if kind == "reset":
+                    self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+                    self.connection.close()
+                    return
+                if kind in {"timeout", "trickle"}:
+                    data = Path(self.translate_path(self.path)).read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    try:
+                        if kind == "timeout":
+                            threading.Event().wait(0.15)
+                            self.wfile.write(data)
+                        else:
+                            for byte in data:
+                                self.wfile.write(bytes([byte]))
+                                self.wfile.flush()
+                                threading.Event().wait(0.01)
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+                    return
+                if isinstance(kind, int) or kind == "missing":
+                    self.send_response(kind if isinstance(kind, int) else 404)
+                    self.send_header("X-GitHub-Request-Id", "fixture-request")
+                    if "retry_after" in fault:
+                        self.send_header("Retry-After", fault["retry_after"])
+                    if "location" in fault:
+                        self.send_header("Location", fault["location"])
+                    self.end_headers()
                     return
                 data = Path(self.translate_path(self.path)).read_bytes()
-                data = b"version https://git-lfs.github.com/spec/v1\n" if fault["kind"] == "pointer" else data[:-1] + bytes([data[-1] ^ 1])
+                data = b"version https://git-lfs.github.com/spec/v1\n" if kind == "pointer" else data[:-1] + bytes([data[-1] ^ 1])
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write(data)
@@ -605,6 +656,58 @@ def test_resource_failures_remain_transport_errors_and_retry(kind, transport_pub
     finally:
         driver.quit()
         server.shutdown()
+
+
+def test_deployment_change_reloads_selected_history_and_hides_old_totals(historical_published_viewer):
+    site = historical_published_viewer
+    catalog = runtime_catalog(site)
+    current = {item['version'] for item in catalog['capture_generation']['current']
+               if item['implementation'] == 'dynamo_v1_jail'}
+    index = next(item['recipe_index']['path'] for item in catalog['sources']['unified']
+                 if item['kind'] == 'inputs-and-golden')
+    fault = {'path': 'conformance/', 'responses': {}}
+    server, requests = _server(root=site, fault=fault)
+    driver = _driver()
+    try:
+        driver.get(f'http://127.0.0.1:{server.server_port}/index.html?keep=1#saved')
+        _ready(driver, 'tab-unified')
+        select = Select(driver.find_element(By.CSS_SELECTOR, '[data-slot-capture="0"]'))
+        identity = next(option.get_attribute('value') for option in select.options
+                        if option.get_attribute('value').startswith('dynamo_v1_jail@')
+                        and option.get_attribute('value').split('@')[1] not in current)
+        assert '/' + index not in requests, 'latest embedded results must leave the historical index cold'
+        updated = {**publication_metadata(site), 'revision': 'b' * 40,
+                   'source_commit_sha': 'b' * 40, 'resolved_catalog_revision': 'b' * 64}
+        response = lambda body: {'headers': {'Content-Type': 'application/octet-stream', 'Content-Length': str(len(body))}, 'body': body}
+        fault['responses']['/' + index] = [response(b'replacement input index')]
+        fault['responses']['/conformance/viewer-publication.json'] = [response(json.dumps(updated).encode())]
+        driver.execute_script("""
+            const panel = document.getElementById('tab-unified');
+            new MutationObserver(() => {
+                if (!['loading', 'error'].includes(panel.dataset.loadState)) return;
+                const history = JSON.parse(sessionStorage.getItem('test-load-transitions') || '[]');
+                history.push({state: panel.dataset.loadState,
+                    summariesHidden: [...panel.querySelectorAll('.capture-summary')]
+                        .every(summary => getComputedStyle(summary).visibility === 'hidden')});
+                sessionStorage.setItem('test-load-transitions', JSON.stringify(history));
+            }).observe(panel, {attributes: true, attributeFilter: ['data-load-state']});
+        """)
+        select.select_by_value(identity)
+        WebDriverWait(driver, 30).until(lambda _driver: requests.count('/index.html') >= 2)
+        _ready(driver, 'tab-unified')
+        query = dict(parse_qsl(urlsplit(driver.current_url).query))
+        assert identity in query['slots_tab-unified'] and query['keep'] == '1'
+        assert urlsplit(driver.current_url).fragment == 'saved'
+        assert driver.find_element(By.CSS_SELECTOR, '[data-slot-capture="0"]').get_attribute('value') == identity
+        summary = driver.find_element(By.CSS_SELECTOR, '.capture-summary')
+        assert summary.is_displayed() and summary.get_attribute('data-capture') == identity
+        transitions = driver.execute_script("return JSON.parse(sessionStorage.getItem('test-load-transitions'))")
+        assert any(item['state'] == 'error' for item in transitions), transitions
+        assert all(item['summariesHidden'] for item in transitions), transitions
+        assert not driver.find_elements(By.CSS_SELECTOR, '.load-status[role="alert"]')
+        assert not any(fault['responses'].values()), 'the mismatch and new publication must both be observed'
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
 
 
 def test_unified_controls_render_before_fixtures_and_detailed_view_stays_on_unified(transport_published_viewer):
@@ -1650,7 +1753,7 @@ def test_nemotron_default_reasoning_popup_describes_family_default(published_vie
 
 
 @pytest.mark.parametrize('vertical', [False, True])
-def test_shared_parent_displays_missing_child_capture(historical_published_viewer, vertical):
+def test_expanded_variant_displays_its_own_missing_capture(historical_published_viewer, vertical):
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
@@ -1660,7 +1763,7 @@ def test_shared_parent_displays_missing_child_capture(historical_published_viewe
         result = driver.execute_script("""
             const host = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
                 const cell = window.__conformanceCellModel(node);
-                return cell?.family === 'kimi_k3' && cell.sub === 'tool_only'
+                return cell?.family === 'kimi_k3' && cell.sub === 'tool_body_whitespace'
                     && node.getBoundingClientRect().height > 0;
             });
             if (!host) return null;
@@ -1670,14 +1773,14 @@ def test_shared_parent_displays_missing_child_capture(historical_published_viewe
             return {identity:candidate.identity,
                     status:window.__conformanceCaptureOutcome(cell, key, 'golden'),
                     painted:host.querySelector('[data-capture="' + key + '"]').className,
-                    variants:Object.fromEntries(cell.variants.map(variant=>[
-                      variant.sub,window.__conformanceCaptureOutcome(variant, key, 'golden')]))};
+                    case_id:cell.case_id,variants:cell.variants || []};
         """)
         assert result is not None
         assert result['identity'] == 'dynamo_v2@0.9.0'
         assert result['status'] == 'missing'
         assert 'status-missing' in result['painted']
-        assert result['variants'] == {'tool_body_whitespace': 'missing', 'tool_only': 'pass'}
+        assert result['variants'] == []
+        assert result['case_id'] == 'UNIFIED.1-tool_only_leading_json_body_whitespace'
     finally:
         driver.quit()
         server.shutdown()
@@ -1731,23 +1834,43 @@ def _assert_numeric_argument_popup(site):
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
         _ready(driver, "tab-unified")
-        scenario = driver.execute_script("""
-            const cell = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
-                const model = window.__conformanceCellModel(node);
-                return model?.family === 'qwen3' && model.variants?.some(leaf => leaf.sub === 'arg_numeric_15_round_down');
-            });
-            return cell && window.__conformanceCellModel(cell).sub;
-        """)
-        assert scenario
+        scenario = 'arg_numeric_15_round_down'
         popup = _popup_for_scenario(driver, 'qwen3', scenario)
-        variants = popup.find_elements(By.CSS_SELECTOR, '.case-variant')
-        assert len(variants) == 7
-        variant = next(node for node in variants
-                       if 'arg_numeric_15_round_down' in node.find_element(By.CSS_SELECTOR, '.ttip-head').text)
-        output = variant.find_element(By.CSS_SELECTOR, '.ttip-final [data-cand="dynamo"]')
+        assert not popup.find_elements(By.CSS_SELECTOR, '.case-variant')
+        output = popup.find_element(By.CSS_SELECTOR, '.ttip-final [data-cand="dynamo"]')
         assert '9007199254740992.5' in output.text
         assert '9007199254740992.0' not in output.text
         assert 'cand-diverge' not in output.get_attribute('class').split()
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("kind", ["cell", "grammar"])
+def test_renamed_case_popup_urls_keep_the_same_case(published_viewer, vertical, kind):
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        previous = "UNIFIED.1-tool_body_whitespace"
+        current = "UNIFIED.1-tool_only_leading_json_body_whitespace"
+        for identity in (previous, current):
+            popup_key = [kind, "tab-unified", identity]
+            if kind == "cell":
+                popup_key.append("kimi_k3")
+            query = urlencode({"tab": "tab-unified", "vertical": int(vertical), "popup": json.dumps(popup_key)})
+            driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+            _ready(driver, "tab-unified")
+            popup = WebDriverWait(driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+            assert "tool_only_leading_json_body_whitespace" in popup.text
+            assert "get_weather" in popup.text and "Paris" in popup.text
+            expected = [kind, "tab-unified", current]
+            if kind == "cell":
+                expected.append("kimi_k3")
+            actual = driver.execute_script("return JSON.parse(new URL(location.href).searchParams.get('popup'))")
+            assert actual == expected
     finally:
         driver.quit()
         server.shutdown()

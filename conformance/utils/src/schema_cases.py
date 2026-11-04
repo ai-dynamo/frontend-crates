@@ -67,13 +67,13 @@ def schema_group(name: str) -> str:
 
 # Report sections reuse the schema classification without changing fixture IDs.
 ARGUMENT_SECTIONS = {
-    "text": "Text preservation",
-    "numeric": "TC Argument fidelity",
-    "declared": "Declared types and enums",
-    "nullable": "Type arrays and null interpretation",
-    "const": "String constants",
-    "union": "Unions, intersections, and ambiguous values",
-    "reference": "References and schema IDs",
+    "text": "7-tool-argument-text-preservation",
+    "numeric": "7-tool-argument-numeric-precision",
+    "declared": "7-tool-argument-declared-types",
+    "nullable": "7-tool-argument-nullability",
+    "const": "7-tool-argument-constants",
+    "union": "7-tool-argument-unions-and-intersections",
+    "reference": "7-tool-argument-schema-references",
 }
 _SCHEMA_SECTION = {
     "declared": "declared", "enum": "declared", "nullable": "nullable",
@@ -97,6 +97,8 @@ def argument_section(scenario: str) -> str:
         return "nullable"
     if scenario in {"not_keyword_type_complement", "conditional_schema_number_types"}:
         return "union"
+    if scenario == "enum_contradicting_declared_type":
+        return "declared"
     return "reference"
 
 

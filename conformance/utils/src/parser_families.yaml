@@ -671,7 +671,7 @@ unified_display:
     4: TC Malformed envelope
     5: TC Truncation / recovery
     6: TC Empty body
-    7: TC Argument fidelity
+    7: 7-tool-argument-interpretation
     8: TC Content position
     10: Reasoning span
     11: Reasoning ↔ tool interleaving

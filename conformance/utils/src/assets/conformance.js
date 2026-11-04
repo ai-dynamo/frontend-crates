@@ -1134,8 +1134,9 @@ window.initializeConformanceController = function (hooks = {}) {
   document.querySelectorAll(WIRE_ON_LOAD).forEach(attachTooltip);
 
   function restorePinnedTooltip() {
-    const stateKey = new URLSearchParams(window.location.search).get('popup');
-    if (!stateKey) return;
+    const requestedKey = new URLSearchParams(window.location.search).get('popup');
+    if (!requestedKey) return;
+    const stateKey = hooks.normalizePopupKey ? hooks.normalizePopupKey(requestedKey) : requestedKey;
     const panel = activePanel();
     const transposed = document.body.classList.contains('transpose-mode');
     const cell = panel && Array.from(panel.querySelectorAll('[data-ttip-key][data-ttip-click="pin"]'))

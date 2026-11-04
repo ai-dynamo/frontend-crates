@@ -27,11 +27,15 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         _ready(driver, "tab-unified")
         before = counts(driver)
         families = driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)")
-        folded = driver.execute_script("""
+        individual_case = driver.execute_script("""
             const model=window.__conformanceModel;
-            const column=model.columns.find(column=>column.desc&&model.rows.some(row=>row.cells[column.sub]?.variants));
-            return {description:column.desc,id:column.case_id};
+            const column=model.columns.find(column=>column.case_id==='UNIFIED.10-reason_then_content_interrupted');
+            const cells=model.rows.map(row=>row.cells[column.sub]).filter(Boolean);
+            return {description:column.desc,id:column.case_id,
+                independent:cells.length>0&&cells.every(cell=>!cell.variants)};
         """)
+        assert individual_case["description"]
+        assert individual_case["independent"]
 
         def search(value):
             field = driver.find_element("css selector", "[data-case-search]")
@@ -73,7 +77,7 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == query
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         assert counts(driver) == after
-        for value in ["description:" + json.dumps(folded["description"], ensure_ascii=False), folded["id"]]:
+        for value in ["description:" + json.dumps(individual_case["description"], ensure_ascii=False), individual_case["id"]]:
             search(value)
             assert counts(driver)["dynamo"]["total"] > 0
         search('"__no_such_test__"')
@@ -220,11 +224,16 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
                 const table=document.querySelector('.comparison-matrix'), segments=[...table.querySelectorAll('.matrix-segments > i')];
                 return {segments:segments.length, addedContent:segments.some(segment=>segment.childElementCount || segment.textContent.trim()),
                   after:Boolean(table.compareDocumentPosition(document.querySelector('.case-descriptions'))&Node.DOCUMENT_POSITION_FOLLOWING),
-                  width:table.querySelector('.matrix-cell').getBoundingClientRect().width};
+                  width:table.querySelector('.matrix-cell').getBoundingClientRect().width,
+                  markWidth:table.querySelector('.matrix-segments').getBoundingClientRect().width,
+                  fontSize:parseFloat(getComputedStyle(table).fontSize)};
             """)
             assert result["segments"] > 0 and not result["addedContent"], result
             assert result["after"], result
-            assert abs(result["width"] - (42 if vertical else 30)) <= 1, result
+            if vertical and stacked:
+                assert 0 <= result['width'] - result['markWidth'] <= result['fontSize'], result
+            else:
+                assert abs(result["width"] - (42 if vertical else 30)) <= 1, result
             assert counts(driver) == before
 
         driver.find_element("css selector", "[data-view-detailed]").click()
@@ -249,7 +258,7 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
 
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
-@pytest.mark.parametrize("width", [800, 480])
+@pytest.mark.parametrize("width", [1600, 800, 480])
 def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked, width):
     server, _ = _server(root=published_viewer)
     driver = _driver()
@@ -276,15 +285,19 @@ def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked, width):
             const table=document.querySelector('.comparison-matrix'), wrapper=table.parentElement;
             const header=table.tHead.rows[0].cells[0].getBoundingClientRect();
             const labels=[...table.tBodies[0].querySelectorAll('tr > th:first-child')]
-              .map(cell=>cell.getBoundingClientRect()).filter(rect=>rect.top>=header.bottom&&rect.bottom<innerHeight);
-            return {top:header.top,labels:labels.map(rect=>rect.left),x:scrollX,y:scrollY,
-              labelLeft:Math.max(0,table.getBoundingClientRect().left),
+              .map(cell=>({rect:cell.getBoundingClientRect(),position:getComputedStyle(cell).position}))
+              .filter(({rect})=>rect.top>=header.bottom&&rect.bottom<innerHeight);
+            return {top:header.top,labels:labels.map(({rect})=>rect.left),x:scrollX,y:scrollY,
+              positions:labels.map(label=>label.position),tableLeft:table.getBoundingClientRect().left,
               overflow:document.scrollingElement.scrollWidth>document.documentElement.clientWidth,
               innerX:wrapper.scrollLeft,innerY:wrapper.scrollTop};
         """)
         assert abs(geometry["top"]) <= 1, geometry
         assert geometry["labels"], geometry
-        assert all(abs(left - geometry["labelLeft"]) <= 1 for left in geometry["labels"]), geometry
+        sticky = not vertical or width > 1280
+        assert all(position == ('sticky' if sticky else 'static') for position in geometry['positions']), geometry
+        label_left = max(0, geometry['tableLeft']) if sticky else geometry['tableLeft']
+        assert all(abs(left - label_left) <= 1 for left in geometry["labels"]), geometry
         assert bool(geometry["x"]) == geometry["overflow"], geometry
         assert geometry["innerX"] == geometry["innerY"] == 0, geometry
     finally:
@@ -303,16 +316,33 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
             _choose_engine(driver, 1, "sglang")
             _ready(driver, "tab-unified")
             driver.find_element("css selector", "[data-layout='stacked']").click()
-        for width, label_width in [(2048, 220), (480, 150)]:
+        for width in (2048, 480):
             driver.set_window_size(width, 1000)
+            if vertical and stacked:
+                WebDriverWait(driver, 10).until(lambda page: page.execute_script("""
+                    const table=document.querySelector('.comparison-matrix');
+                    return table.querySelector('.matrix-cell').getBoundingClientRect().width
+                      - table.querySelector('.matrix-segments').getBoundingClientRect().width
+                      <= parseFloat(getComputedStyle(table).fontSize);
+                """))
             geometry = driver.execute_script("""
                 const table=document.querySelector('.comparison-matrix');
                 return {label:table.tHead.rows[0].cells[0].getBoundingClientRect().width,
+                  labelTrack:parseFloat(getComputedStyle(table.querySelector('.matrix-label-column')).width),
+                  cellTrack:parseFloat(getComputedStyle(table).getPropertyValue('--matrix-cell-width')),
+                  tracks:[...table.querySelectorAll('.matrix-result-column')].map(col=>col.getBoundingClientRect().width),
                   cells:[...table.querySelectorAll('.matrix-cell')].map(c=>c.getBoundingClientRect().width),
                   header:table.tHead.getBoundingClientRect().height};
             """)
+            label_width = geometry['labelTrack'] if vertical else (220 if width > 700 else 150)
             assert abs(geometry["label"] - label_width) <= 1, geometry
-            assert geometry["cells"] and all(abs(w - (42 if vertical else 30)) <= 1 for w in geometry["cells"]), geometry
+            assert geometry['cells'], geometry
+            if vertical and stacked:
+                assert all(abs(w - geometry['tracks'][index % len(geometry['tracks'])]) <= 1
+                           for index, w in enumerate(geometry['cells'])), geometry
+            else:
+                assert all(abs(w - geometry['cellTrack']) <= 1 for w in geometry['cells']), geometry
+                assert abs(geometry['cellTrack'] - (42 if vertical else 30)) <= 1, geometry
             if not vertical:
                 assert geometry["header"] <= 100, geometry
             assert not driver.find_elements("css selector", ".matrix-summary")
@@ -385,6 +415,61 @@ def test_stacked_families_are_grouped_and_legend_matches_visible_colors(publishe
             assert result["grouped"], result
             assert result["separators"], result
             assert result["separatorWidth"] == "3px", result
+
+            def compact_spacing(browser):
+                return browser.execute_script("""
+                  const table = document.querySelector('.comparison-matrix');
+                  const rows = [...table.tBodies[0].querySelectorAll('tr:not(.matrix-category-row)')];
+                  const vertical = document.body.classList.contains('transpose-mode');
+                  let cells;
+                  if (vertical) {
+                    const row = rows.find(row => [...row.querySelectorAll('.matrix-cell')].slice(0,3)
+                      .every(cell => cell.querySelector('.matrix-segments')));
+                    cells = [...row.querySelectorAll('.matrix-cell')].slice(0,3);
+                  } else {
+                    const group = rows.slice(0,3);
+                    const index = [...group[0].querySelectorAll('.matrix-cell')].findIndex((cell,index) =>
+                      group.every(row => row.querySelectorAll('.matrix-cell')[index].querySelector('.matrix-segments')));
+                    cells = group.map(row => row.querySelectorAll('.matrix-cell')[index]);
+                  }
+                  const boxes = cells.map(cell => cell.querySelector('.matrix-segments').getBoundingClientRect());
+                  const gaps = boxes.slice(1).map((box,index) => vertical
+                    ? box.left-boxes[index].right : box.top-boxes[index].bottom);
+                  const limit = parseFloat(getComputedStyle(table).fontSize)/2 + 1;
+                  return gaps.every(gap => gap >= 0 && gap <= limit) && {gaps,
+                    contained: boxes.every((box,index) => {
+                      const cell=cells[index].getBoundingClientRect();
+                      return box.left>=cell.left-1 && box.right<=cell.right+1
+                        && box.top>=cell.top-1 && box.bottom<=cell.bottom+1;
+                    })};
+                """)
+
+            spacing = WebDriverWait(driver, 10).until(compact_spacing)
+            assert spacing['contained'], spacing
+
+            separator = driver.execute_script("""
+              const table=document.querySelector('.comparison-matrix');
+              const font=parseFloat(getComputedStyle(table).fontSize);
+              if(document.body.classList.contains('transpose-mode')) {
+                const cell=[...table.querySelectorAll('td.matrix-cell.matrix-family-end')].find(cell =>
+                  cell.querySelector('.matrix-segments') && cell.nextElementSibling?.querySelector('.matrix-segments'));
+                const edge=cell.getBoundingClientRect().right, border=parseFloat(getComputedStyle(cell).borderRightWidth);
+                return {font,before:edge-border-cell.querySelector('.matrix-segments').getBoundingClientRect().right,
+                  after:cell.nextElementSibling.querySelector('.matrix-segments').getBoundingClientRect().left-edge};
+              }
+              const row=[...table.querySelectorAll('tbody tr.matrix-family-end')].find(row =>
+                [...row.querySelectorAll('.matrix-cell')].some((cell,index) => cell.querySelector('.matrix-segments')
+                  && row.nextElementSibling.querySelectorAll('.matrix-cell')[index]?.querySelector('.matrix-segments')));
+              const cells=[...row.querySelectorAll('.matrix-cell')], next=row.nextElementSibling;
+              const index=cells.findIndex((cell,index) => cell.querySelector('.matrix-segments')
+                && next.querySelectorAll('.matrix-cell')[index]?.querySelector('.matrix-segments'));
+              const nextCell=next.querySelectorAll('.matrix-cell')[index], edge=nextCell.getBoundingClientRect().top;
+              return {font,before:edge-cells[index].querySelector('.matrix-segments').getBoundingClientRect().bottom,
+                after:nextCell.querySelector('.matrix-segments').getBoundingClientRect().top-edge
+                  -parseFloat(getComputedStyle(nextCell).borderTopWidth)};
+            """)
+            assert separator['before'] >= separator['font'] / 2, separator
+            assert separator['after'] >= separator['font'] / 2, separator
 
         assert_groups_and_legend()
         driver.find_element("css selector", "[data-case-search]").send_keys("dotted_name_minimal")
@@ -491,7 +576,9 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             if vertical:
                 assert full in header.text
             else:
-                assert re.fullmatch(r"\d+-\d+", header.text)
+                column = driver.execute_script("return window.__conformanceTooltipModel(arguments[0]).popupCase", header)
+                marker = '{}' if column.get('schemas') else ''
+                assert re.fullmatch(r"\d+-\d+" + re.escape(marker), header.text)
                 assert full not in header.text
                 assert header.rect["width"] < 100
                 ActionChains(driver).move_to_element(label).perform()
@@ -546,7 +633,8 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         search.send_keys("dotted_name_minimal")
         after = counts(driver)
         assert 0 < after["dynamo"]["total"] < before["dynamo"]["total"]
-        assert driver.find_element("css selector", "[data-focus='problems']").get_attribute("aria-pressed") == "true"
+        assert not driver.find_element("css selector", "[data-focus='problems']").is_enabled()
+        assert driver.find_element("css selector", "[data-focus='all']").get_attribute('aria-pressed') == 'true'
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == "dotted_name_minimal"
         driver.find_element("css selector", "[data-theme-toggle]").click()
         assert counts(driver) == after
@@ -594,28 +682,165 @@ def test_source_sha_appears_once_on_second_line(published_viewer):
         driver.quit(); server.shutdown(); server.server_close()
 
 
-def test_vertical_stacked_problems_focus_dims_uncaptured_outputs(published_viewer):
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("stacked", [False, True])
+def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical, stacked):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
-        driver.set_window_size(1920, 1100)
-        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&layout_tab-unified=stacked")
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&layout_tab-unified={'stacked' if stacked else 'split'}")
         _ready(driver, "tab-unified")
-        _choose_engine(driver, 1, "dynamo")
+        _choose_engine(driver, 1, "sglang")
         _ready(driver, "tab-unified")
-        driver.find_element("css selector", "[data-focus='problems']").click()
-        result = driver.execute_script("""
-            const statuses = ['documented','diverge','error','leak'];
-            const cells = [...document.querySelectorAll('.comparison-matrix .matrix-cell:not(.filtered-cell)')];
-            return cells.map(cell => {
-                const outcomes = [...cell.querySelectorAll('.matrix-segments > i')]
-                  .flatMap(node => [...node.classList].filter(name => name.startsWith('status-')).map(name => name.slice(7)));
-                return {outcomes, dimmed: cell.classList.contains('focus-dim'), hasProblem: outcomes.some(status => statuses.includes(status))};
-            });
+        before = counts(driver)
+        inventory = driver.execute_script("""
+            return [...document.querySelectorAll('.matrix-cell[role=button]')].map(cell => ({
+                label: cell.getAttribute('aria-label').split('; ').slice(0, 2),
+                statuses: [...cell.querySelectorAll('.matrix-segments > i')].map(node =>
+                    [...node.classList].find(c => c.startsWith('status-')).slice(7))
+            }));
         """)
-        assert result
-        assert all(item["dimmed"] == (not item["hasProblem"]) for item in result), result
-        assert any("missing" in item["outcomes"] and item["dimmed"] for item in result)
+        assert inventory
+        all_button = driver.find_element('css selector', "[data-focus='all']")
+        assert all_button.tag_name == 'button'
+        assert all_button.get_attribute('aria-pressed') == 'true'
+        assert len(driver.find_elements('css selector', '[data-focus]')) == 3
+        assert driver.execute_script("return [...document.querySelectorAll('[data-focus][aria-pressed=true]')].length") == 1
+        all_button.click()
+        assert all_button.get_attribute('aria-pressed') == 'true'
+        for focus, statuses in [('disagreements', ['diverge']), ('problems', ['documented', 'diverge', 'error', 'leak'])]:
+            expected = [cell for cell in inventory if any(status in statuses for status in cell['statuses'])]
+            button = driver.find_element("css selector", f"[data-focus='{focus}']")
+            assert button.text == ('Disagreements' if focus == 'disagreements' else 'Problems')
+            assert button.is_enabled() == bool(expected)
+            if not expected:
+                continue
+            button.click()
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'false'
+            assert button.get_attribute('aria-pressed') == 'true'
+            assert driver.execute_script("return [...document.querySelectorAll('[data-focus][aria-pressed=true]')].length") == 1
+            assert counts(driver) == before
+            labels = driver.execute_script("""
+                return [...document.querySelectorAll('.matrix-cell[role=button]')]
+                    .map(cell => cell.getAttribute('aria-label').split('; ').slice(0, 2));
+            """)
+            assert {pair[0] for pair in labels} == {cell['label'][0] for cell in expected}
+            assert {pair[1] for pair in labels} == {cell['label'][1] for cell in expected}
+            assert len(driver.find_elements('css selector', '.matrix-cell[role=button]')) < len(inventory)
+            if stacked:
+                # Every retained capture/model axis has at least one matching result.
+                assert driver.execute_script("""
+                    const allowed = arguments[0], vertical = arguments[1];
+                    const rows = [...document.querySelectorAll('.comparison-matrix tbody tr:not(.matrix-category-row)')];
+                    const cells = rows.map(row => [...row.querySelectorAll('.matrix-cell')]);
+                    const matches = cell => [...cell.querySelectorAll('.matrix-segments > i')].some(node =>
+                        allowed.some(status => node.classList.contains('status-' + status)));
+                    return vertical ? cells[0].every((_,i) => cells.some(row => matches(row[i])))
+                        : cells.every(row => row.some(matches));
+                """, statuses, vertical)
+            driver.refresh()
+            _ready(driver, 'tab-unified')
+            assert driver.find_element('css selector', f"[data-focus='{focus}']").get_attribute('aria-pressed') == 'true'
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'false'
+            assert counts(driver) == before
+            driver.find_element('css selector', f"[data-focus='{focus}']").click()
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'true'
+            driver.find_element('css selector', '[data-focus=all]').click()
+            assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'true'
+            assert len(driver.find_elements('css selector', '.matrix-cell[role=button]')) == len(inventory)
+        driver.find_element('css selector', '[data-focus=problems]').click()
+        field = driver.find_element('css selector', '[data-case-search]')
+        field.send_keys('__no_matching_case__')
+        assert driver.find_element('css selector', '[data-focus=all]').get_attribute('aria-pressed') == 'true'
+        assert not driver.find_element('css selector', '[data-focus=problems]').is_enabled()
+        assert not driver.find_element('css selector', '[data-focus=disagreements]').is_enabled()
+        assert not driver.find_elements('css selector', '.matrix-category-heading, .matrix-case-heading')
+        assert 'focus_tab-unified' not in parse_qs(urlsplit(driver.current_url).query)
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize('vertical', [False, True])
+@pytest.mark.parametrize('stacked', [False, True])
+def test_explicit_schema_markers_follow_case_descriptions(published_viewer, vertical, stacked):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(1600, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&view=details")
+        _ready(driver, 'tab-unified')
+        if stacked:
+            _choose_engine(driver, 1, 'sglang')
+            _ready(driver, 'tab-unified')
+            driver.find_element('css selector', '[data-layout="stacked"]').click()
+        result = driver.execute_script("""
+            const model = window.__conformanceModel, view = window.__conformanceComparison.view;
+            const check = (node, column) => {
+                const markers = node.querySelectorAll('.case-schema-indicator');
+                return markers.length === (column.schemas?.length ? 1 : 0)
+                    && [...markers].every(marker => marker.textContent === '{}'
+                        && marker.getAttribute('aria-label') === 'Has explicit schema.'
+                        && marker.getBoundingClientRect().width > 0);
+            };
+            const headings = [...document.querySelectorAll('.matrix-case-heading')];
+            const descriptions = [...document.querySelectorAll('.case-descriptions .gloss-desc')];
+            const columns = model.glossary.flatMap(group => group.rows).map(pair => model.columns.find(column => column.label === pair[0]));
+            return {withSchema: view.columns.some(column => column.schemas?.length),
+                withoutSchema: view.columns.some(column => !column.schemas?.length),
+                headings: headings.length === view.columns.length && headings.every((node, i) => check(node, view.columns[i])),
+                descriptions: descriptions.length === columns.length && descriptions.every((node, i) => check(node, columns[i]))};
+        """)
+        assert all(result.values()), result
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize('width', [480, 1600])
+def test_complete_case_names_wrap_in_label_column(published_viewer, width):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(width, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1")
+        _ready(driver, 'tab-unified')
+        for font_size in (10, 11, 12):
+            before = driver.execute_script("""
+                const table = document.querySelector('.comparison-matrix');
+                return {fontSize: parseFloat(getComputedStyle(table).fontSize),
+                    width: table.style.getPropertyValue('--matrix-label-width')};
+            """)
+            driver.execute_script("document.querySelector('.comparison-matrix').style.fontSize=arguments[0]+'px'", font_size)
+            WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
+                const width = document.querySelector('.comparison-matrix').style.getPropertyValue('--matrix-label-width');
+                return Boolean(width) && (arguments[0].fontSize === arguments[1] || width !== arguments[0].width);
+            """, before, font_size))
+            geometry = driver.execute_script("""
+                return [...document.querySelectorAll('.matrix-case-heading')].map(th => {
+                    const table = th.closest('table'), text = th.querySelector('.matrix-case-text'), rect = text.getBoundingClientRect();
+                    const range = document.createRange(); range.selectNodeContents(text);
+                    const boxes = [...range.getClientRects()];
+                    const lineTops = [];
+                    for (const box of boxes) if (!lineTops.some(top => Math.abs(top - box.top) < 4)) lineTops.push(box.top);
+                    return {label: text.textContent, sticky: getComputedStyle(th).position,
+                        width: th.getBoundingClientRect().width,
+                        labelWidth: parseFloat(getComputedStyle(table.querySelector('.matrix-label-column')).width),
+                        lineCount: lineTops.length,
+                        lineLefts: lineTops.map(top => Math.min(...boxes.filter(box => Math.abs(box.top - top) < 4).map(box => box.left))),
+                        indent: parseFloat(getComputedStyle(text).fontSize),
+                        clipped: text.scrollWidth > text.clientWidth || text.scrollHeight > text.clientHeight,
+                        contained: boxes.every(box => box.left >= rect.left - 1 && box.right <= rect.right + 1
+                            && box.top >= rect.top - 1 && box.bottom <= rect.bottom + 1)};
+                });
+            """)
+            assert geometry
+            assert any('7-tool-argument-text-preservation' in item['label'] for item in geometry)
+            assert any('dotted_name_minimal' in item['label'] for item in geometry)
+            expected_position = 'sticky' if width > 1280 else 'static'
+            assert all(item['sticky'] == expected_position and abs(item['width'] - item['labelWidth']) <= 1 for item in geometry), geometry
+            assert all(not item['clipped'] and item['contained'] for item in geometry), geometry
+            assert any(item['lineCount'] == 2 for item in geometry), (font_size, geometry)
+            assert any(item['lineLefts'][0] + item['indent'] - 2 <= min(item['lineLefts'][1:]) for item in geometry if len(item['lineLefts']) > 1), (font_size, geometry)
+            assert all(item['lineCount'] <= 2 for item in geometry), [(item['label'], item['lineCount'], item['width']) for item in geometry if item['lineCount'] > 2]
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 

@@ -66,6 +66,7 @@ UNIFIED_TAX = {
     "malformed_json_then_two_valid_calls": (5, "4"),
     "dsml_unterminated_parameter_then_empty_call": (5, "dsml_empty"),
     "dsml_unterminated_parameter_then_call": (5, "dsml_call"),
+    "missing_inner_closers_then_valid_call": (5, "6"),
     # Group 6 — Empty body (streamv1.6)
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
@@ -76,6 +77,7 @@ UNIFIED_TAX = {
     "conditional_schema_number_types": (7, "30"),
     "reference_object_recursive_and_composed_types": (7, "31"),
     "arg_array_quoted_parameter_close": (7, "28"),
+    "enum_contradicting_declared_type": (7, "32"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_numeric_nested_exact": (7, "20.nested_exact"),
@@ -310,24 +312,29 @@ def tax(scenario):
 _DISPLAY_GROUP = UNIFIED_DISPLAY["group_overrides"]
 
 
-def display_tax(scenario):
+def display_tax(scenario, families=None):
     group, sub = tax(scenario)
+    if families is not None and len(families) == 1:
+        return next(iter(families)), sub
     parent = case_fold(scenario)
     if parent and parent[0] != scenario:
         return display_tax(parent[0])[0], sub
     return _DISPLAY_GROUP.get(scenario, group), sub
 
 
-def display_section(scenario):
-    group, _ = display_tax(scenario)
+def display_section(scenario, families=None):
+    group, _ = display_tax(scenario, families)
+    if families is not None and len(families) == 1:
+        label = UNIFIED_GROUP_LABEL.get(group) or f"Family-specific tests: {group}"
+        return f"unified_g{group}", label
     if group == 7:
         section = argument_section((case_fold(scenario) or (scenario, ""))[0])
         return f"unified_g7_{section}", ARGUMENT_SECTIONS[section]
     return f"unified_g{group}", UNIFIED_GROUP_LABEL.get(group, "Other")
 
 
-def display_sort_key(scenario):
-    group, _ = display_tax(scenario)
+def display_sort_key(scenario, families=None):
+    group, _ = display_tax(scenario, families)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))
     section_rank = list(ARGUMENT_SECTIONS).index(argument_section((case_fold(scenario) or (scenario, ""))[0])) if group == 7 else 0
     return group_key, section_rank, case_description(scenario), scenario
@@ -336,16 +343,17 @@ def display_sort_key(scenario):
 DISPLAY_PREFIXES = {group: tuple(prefixes) for group, prefixes in UNIFIED_DISPLAY["prefixes"].items()}
 
 
-def display_case_labels(scenarios):
+def display_case_labels(scenarios, scenario_families=None):
     """Display ranks belong to the visible corpus, never to capture identities."""
     labels = {}
     counts = {}
-    for scenario in sorted(set(scenarios), key=display_sort_key):
-        group, _ = display_tax(scenario)
+    families = scenario_families or {}
+    for scenario in sorted(set(scenarios), key=lambda name: display_sort_key(name, families.get(name))):
+        group, _ = display_tax(scenario, families.get(scenario))
         full_prefix, compact_prefix = DISPLAY_PREFIXES.get(group, (str(group), str(group)))
         counts[compact_prefix] = counts.get(compact_prefix, 0) + 1
         labels[scenario] = {
-            "label": f"{full_prefix}-{case_description(scenario)}",
+            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{case_description(scenario)}",
             "compact_prefix": compact_prefix,
             "display_number": counts[compact_prefix],
         }
@@ -433,29 +441,30 @@ class CaseVariant(NamedTuple):
     label: str
     # Visual folding alone cannot qualify a new semantic axis for other families.
     coverage_parent: str | None = None
+    name_suffix: str | None = None
 
 
 SHARED_CASE_VARIANTS = {
-    "interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Elided reasoning close"),
+    "interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Interrupted", name_suffix="interrupted"),
     "reason_markup_in_arg_consistent": CaseVariant("reason_markup_in_arg", "Consistent example prose", "reason_markup_in_arg"),
     "reason_markup_in_arg_with_text_consistent": CaseVariant("reason_markup_in_arg_with_text", "Consistent example prose", "reason_markup_in_arg_with_text"),
     **{scenario + "_pr424": CaseVariant(scenario, "Retained #424 delivery / input", scenario)
        for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items() if active},
-    **{scenario: CaseVariant(scenario.removeprefix("harmony_"), "Harmony partial header", scenario.removeprefix("harmony_"))
+    **{scenario: CaseVariant(scenario.removeprefix("harmony_"), "Harmony partial header", scenario.removeprefix("harmony_"), "harmony_partial_header")
        for scenario in UNIFIED_TAX if scenario.startswith("harmony_")},
-    "gpt_oss_multiple_unknown_and_empty_tools": CaseVariant("two_calls", "Empty body and unoffered names"),
-    "gpt_oss_control_marker_inside_argument_string": CaseVariant("arg_marker_in_string", "Native controls in arguments"),
-    "gpt_oss_truncated_tool_resynchronizes_at_next_message": CaseVariant("tool_no_close", "Next message recovery"),
-    "gpt_oss_interrupted_reasoning_then_tool": CaseVariant("tool_in_reason", "Interrupted Harmony reasoning", "tool_in_reason"),
-    "gpt_oss_interrupted_reasoning_then_tool_with_text": CaseVariant("tool_in_reason_with_text", "Interrupted Harmony reasoning", "tool_in_reason_with_text"),
+    "gpt_oss_multiple_unknown_and_empty_tools": CaseVariant("two_calls", "Empty body and unoffered names", name_suffix="empty_body_and_unoffered_names"),
+    "gpt_oss_control_marker_inside_argument_string": CaseVariant("arg_marker_in_string", "Native controls in arguments", name_suffix="native_controls_in_arguments"),
+    "gpt_oss_truncated_tool_resynchronizes_at_next_message": CaseVariant("tool_no_close", "Next message recovery", name_suffix="next_message_recovery"),
+    "gpt_oss_interrupted_reasoning_then_tool": CaseVariant("tool_in_reason", "Interrupted Harmony reasoning", "tool_in_reason", "interrupted_harmony_reasoning"),
+    "gpt_oss_interrupted_reasoning_then_tool_with_text": CaseVariant("tool_in_reason_with_text", "Interrupted Harmony reasoning", "tool_in_reason_with_text", "interrupted_harmony_reasoning"),
     "gpt_oss_interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Elided reasoning close"),
     "kimi_k3_elided_think_close_to_response": CaseVariant("reason_then_content", "Elided Kimi K3 reasoning close", "gpt_oss_interrupted_reasoning_then_response"),
-    "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call"),
-    "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call"),
-    "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
-    "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
-    "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response"),
-    "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header"),
+    "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call", name_suffix="invalid_text_then_empty_call"),
+    "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call", name_suffix="truncated_json_then_valid_call"),
+    "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
+    "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
+    "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response", name_suffix="malformed_argument_then_visible_response"),
+    "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header", name_suffix="quoted_closer_and_response_header"),
 }
 _SHARED_VARIANT_PARENTS = {variant.parent for variant in SHARED_CASE_VARIANTS.values()}
 
@@ -489,7 +498,7 @@ GROUP_DESCRIPTION_PREFIXES = {
 }
 
 
-def case_description(scenario):
+def original_case_description(scenario):
     """The tested behavior, independent of its ordering and display placement."""
     if scenario.startswith("schema_"):
         return scenario.removeprefix("schema_")
@@ -499,8 +508,27 @@ def case_description(scenario):
     return scenario
 
 
+def case_description(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    if variant and variant.name_suffix and scenario not in RETIRED_SCENARIOS:
+        return f"{case_description(variant.parent)}_{variant.name_suffix}"
+    return original_case_description(scenario)
+
+
+def previous_case_label(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    group = tax(scenario)[0]
+    if variant and scenario not in RETIRED_SCENARIOS:
+        group = previous_case_label(variant.parent).split("-", 1)[0]
+    return f"{group}-{case_description(scenario)}"
+
+
 def case_label(scenario):
-    return f"{tax(scenario)[0]}-{case_description(scenario)}"
+    previous = previous_case_label(scenario)
+    if previous.startswith("7-"):
+        related = (case_fold(scenario) or (scenario, ""))[0]
+        return f"{ARGUMENT_SECTIONS[argument_section(related)]}-{previous[2:]}"
+    return previous
 
 
 def numbered_id(scenario):
@@ -577,6 +605,24 @@ LEGACY_CASE_LABELS = {
 }
 
 
+LEGACY_CASE_LABELS.update({
+    "6-empty_args_no_close": "empty_args_no_close",
+    "6-optional_args_no_close": "optional_args_no_close",
+    "32-guided_native_after_prefilled_reasoning_named": "guided_native_after_prefilled_reasoning_named",
+    "32-guided_native_after_prefilled_reasoning_required": "guided_native_after_prefilled_reasoning_required",
+    "8-commentary_then_tool": "commentary_then_tool",
+})
+LEGACY_CASE_LABELS.update({previous_case_label(scenario): scenario for scenario in UNIFIED_TAX})
+
+
+# Historical YAML and shared links keep their original descriptive identities.
+LEGACY_CASE_LABELS.update({
+    f"{tax(scenario)[0]}-{original_case_description(scenario)}": scenario
+    for scenario in UNIFIED_TAX
+    if case_label(scenario) != f"{tax(scenario)[0]}-{original_case_description(scenario)}"
+})
+
+
 def _label_owners(scenario_labels, historical_labels):
     owners = {}
     for scenario, labels in scenario_labels.items():
@@ -633,11 +679,6 @@ def scenario_for_label(label, family=None, scenario=None):
     if len(owners) > 1:
         raise ValueError(f"conflicting Unified alias ownership: {label}: {sorted(owners)}")
     owner = next(iter(owners), None)
-    if owner is not None and family:
-        family_names = sorted({name for name, _label in FAMILY_LEGACY_CASE_LABELS}, key=len, reverse=True)
-        owner_family = next((name for name in family_names if owner.startswith(f"{name}_")), None)
-        if owner_family is not None and owner_family != family:
-            return None
     return owner
 
 

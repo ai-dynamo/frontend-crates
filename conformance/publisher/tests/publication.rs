@@ -62,7 +62,7 @@ fn fixture(root: &Path) -> Result<()> {
         "conformance/fixtures-manifest.json",
         b"{\"shards\":[]}",
     )?;
-    let mut catalog = json!({"schema":1,"snapshot":"fixture","sources":{"archives":[],"unified":[{"path":path,"sha256":codec::sha256(family),"size":family.len(),"kind":"inputs-and-golden","family":"sample","implementation":null,"version":null}],"candidates":[]},"metadata":{"tabs":[],"source_hashes":{}}});
+    let mut catalog = json!({"schema":1,"snapshot":"fixture","sources":{"archives":[],"unified":[{"path":path,"sha256":codec::sha256(family),"size":family.len(),"kind":"inputs-and-golden","family":"sample","implementation":null,"version":null}],"candidates":[]},"metadata":{"tabs":[],"source_hashes":{},"unified_aliases":{"canonical":{"sample":"1"},"owners":{"1":["sample"]},"families":{}}}});
     catalog["revision"] = json!(codec::sha256(&serde_json::to_vec(&sorted(&catalog))?));
     put(
         root,

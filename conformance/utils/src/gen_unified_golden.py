@@ -2835,6 +2835,47 @@ EDGE.append((
 ))
 
 
+# The first call loses its inner closers but
+# keeps the outer close, then a complete call follows. Scoped to grammars with inner
+# closers; Kimi K2 arguments are bare JSON, which 5-malformed_json_then_two_valid_calls
+# already covers.
+MISSING_INNER_CLOSERS_PREFIX = {
+    "beam": '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|>',
+    "minimax_m3": ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>',
+    "deepseek_v4": '<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls>',
+    "deepseek_v41": '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls>',
+    "gemma4": '<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>',
+    "glm47": "<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>",
+    "kimi_k3": '<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|>',
+    "muse_glimmer": '<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name="get_weather">\n<atem:parameter name="location">unfinished</atem:function_calls><|eom|>',
+    "qwen3": "<tool_call><function=get_weather><parameter=location>unfinished</tool_call>",
+}
+MISSING_INNER_CLOSERS_FOLLOWING = {
+    "qwen3": "<tool_call><function=get_weather><parameter=location>Paris</parameter></function></tool_call>",
+}
+
+EDGE.append((
+    "missing_inner_closers_then_valid_call",
+    "The first call's argument value is missing its inner closers (Qwen3: </parameter> and </function>) but keeps the outer call close; a complete get_weather(location=Paris) follows. Deliver the entire native input in one push, then finish. Reject the incomplete call and return only the complete one.",
+    ["I2", "I7", "P2"],
+    [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "single_chunk": True},
+    OnlyFamilies({
+        family: (
+            prefix + MISSING_INNER_CLOSERS_FOLLOWING.get(
+                family, r_tool(family, "get_weather", "location", "Paris", 0)),
+            D("UNSUPPORTED", "No peer capture recorded."), M,
+        )
+        for family, prefix in MISSING_INNER_CLOSERS_PREFIX.items()
+    }),
+    {family: [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"location": {"type": "string"}},
+        "required": ["location"],
+    }}] for family in MISSING_INNER_CLOSERS_PREFIX},
+))
+
+
 DEEPSEEK_V41_REDUNDANT_SCENARIOS = {
     "prefilled_reasoning_with_tool": "reason_then_tool",
     "prefilled_reasoning_then_text_then_tool": "interstitial_text",
@@ -3291,6 +3332,17 @@ _REFERENCE_CASES = (
         {"category": {"label": "Garden Tools", "children": []},
          "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]},
          "retries": 37, "dry_run": False},
+    ),
+    (
+        "enum_contradicting_declared_type",
+        'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer.',
+        {"type": "object", "properties": {
+            "metrics": {"type": "array", "items": {"type": "string"},
+                        "enum": ["temperature", "humidity", "co2"]},
+            "count": {"type": "integer", "enum": ["auto"]},
+        }},
+        {"metrics": '["temperature","humidity"]', "count": "5"},
+        {"metrics": ["temperature", "humidity"], "count": 5},
     ),
 )
 for scenario, description, parameters, raw_arguments, arguments in _REFERENCE_CASES:

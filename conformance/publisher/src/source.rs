@@ -734,7 +734,9 @@ fn request_digest(node: &Node) -> Result<String> {
 pub fn canonical_alias(alias: &str, family: &str, metadata: &Value) -> Result<String> {
     let original = alias.strip_prefix("UNIFIED.").unwrap_or(alias);
     let mut key = original.to_string();
-    if let Some(value) = key.strip_suffix(&format!(".{family}")) {
+    if !family.is_empty()
+        && let Some(value) = key.strip_suffix(&format!(".{family}"))
+    {
         key = value.to_string();
     }
     if let Some(scenario) = metadata["family_scenarios"][family]
@@ -767,10 +769,11 @@ pub fn canonical_alias(alias: &str, family: &str, metadata: &Value) -> Result<St
             "conflicting Unified alias ownership: {alias}"
         );
         if let Some(owner) = owners.first().and_then(Value::as_str) {
-            if metadata["owner_families"]
-                .get(owner)
-                .and_then(Value::as_str)
-                .is_some_and(|f| f != family)
+            if !family.is_empty()
+                && metadata["owner_families"]
+                    .get(owner)
+                    .and_then(Value::as_str)
+                    .is_some_and(|f| f != family)
             {
                 return Ok(original.to_string());
             }
@@ -781,6 +784,37 @@ pub fn canonical_alias(alias: &str, family: &str, metadata: &Value) -> Result<St
         }
     }
     Ok(original.to_string())
+}
+
+fn golden(node: &Node) -> Result<()> {
+    fields(node, &["assembled"], &[])?;
+    for event in node.field("assembled")?.array()? {
+        let kind = event.field("kind")?.string()?;
+        let keys: &[&str] = match kind {
+            "tool_call" => &["kind", "name", "arguments"],
+            "text" | "reasoning" => &["kind", "text"],
+            "message_start" => &["kind", "phase"],
+            "message_end" => &["kind"],
+            _ => anyhow::bail!("invalid GOLDEN event kind"),
+        };
+        fields(event, keys, &[])?;
+        if matches!(kind, "text" | "reasoning") {
+            event.field("text")?.string()?;
+        }
+        if kind == "tool_call" && event.field("name")? != &Node::Null {
+            event.field("name")?.string()?;
+        }
+        if kind == "message_start" {
+            ensure!(
+                matches!(
+                    event.field("phase")?.string()?,
+                    "commentary" | "final_answer"
+                ),
+                "invalid GOLDEN message phase"
+            );
+        }
+    }
+    Ok(())
 }
 
 pub fn family(node: &Node, name: &str, alias_metadata: &Value) -> Result<()> {
@@ -798,6 +832,7 @@ pub fn family(node: &Node, name: &str, alias_metadata: &Value) -> Result<()> {
             "family identity mismatch"
         );
     }
+    let mut active_scenarios = BTreeSet::new();
     let mut aliases = BTreeSet::new();
     let mut canonical_owners = BTreeMap::new();
     for (id, case) in node.field("cases")?.mapping()? {
@@ -831,8 +866,30 @@ pub fn family(node: &Node, name: &str, alias_metadata: &Value) -> Result<()> {
                 !description.string()?.is_empty(),
                 "active case needs description"
             );
-            case.field("scenario")?.string()?;
-            case.field("golden")?.mapping()?;
+            let scenario = case.field("scenario")?.string()?;
+            ensure!(
+                active_scenarios.insert(scenario),
+                "duplicate active scenario"
+            );
+            golden(case.field("golden")?)?;
+            if let Some(canonical) = alias_metadata
+                .get("canonical")
+                .filter(|v| !v.as_object().is_none_or(|m| m.is_empty()))
+            {
+                let expected = canonical
+                    .get(scenario)
+                    .and_then(Value::as_str)
+                    .context("unknown active scenario")?;
+                for alias in std::iter::once(case.field("display_id")?)
+                    .chain(case.field("historical_ids")?.array()?.iter())
+                {
+                    let alias = alias.string()?;
+                    ensure!(
+                        canonical_alias(alias, name, alias_metadata)? == expected,
+                        "case ID does not own scenario: {scenario}: {alias}"
+                    );
+                }
+            }
         }
         for tag in case.field("policy")?.array()? {
             tag.string()?;
@@ -1517,6 +1574,52 @@ pub fn batch_records(records: &Node) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn one_request_and_oracle_per_active_identity() -> Result<()> {
+        let raw = "input_document: {family: sample}\ngolden_document: {family: sample}\ncases:\n  one:\n    lifecycle: active\n    scenario: tool_only\n    description: one\n    policy: []\n    display_id: UNIFIED.1-tool_only\n    historical_ids: []\n    request: {input: one, init: {}, finish_reason: stop, tools: [], chunks: []}\n    golden: {assembled: []}\n";
+        let aliases = serde_json::json!({"canonical":{"tool_only":"1-tool_only","reason_only":"10-reason_only"},"families":{},"owners":{"1-tool_only":["tool_only"],"10-reason_only":["reason_only"]}});
+        let original = yaml::load_str(raw)?;
+        family(&original, "sample", &aliases)?;
+        for (from, to) in [
+            (
+                "display_id: UNIFIED.1-tool_only",
+                "display_id: UNIFIED.10-reason_only",
+            ),
+            (
+                "historical_ids: []",
+                "historical_ids: [UNIFIED.10-reason_only]",
+            ),
+            (
+                "golden: {assembled: []}",
+                "golden: {assembled: [], variants: [{assembled: []}]}",
+            ),
+            ("golden: {assembled: []}", "golden: {}"),
+            (
+                "golden: {assembled: []}",
+                "golden: {assembled: [[{kind: text, text: second}]]}",
+            ),
+            (
+                "request: {input: one, init: {}, finish_reason: stop, tools: [], chunks: []}",
+                "request: [{input: one}, {input: two}]",
+            ),
+        ] {
+            assert!(
+                family(&yaml::load_str(&raw.replace(from, to))?, "sample", &aliases).is_err(),
+                "{to}"
+            );
+        }
+        let mut duplicate = original.clone();
+        let mut cases = duplicate.field("cases")?.clone();
+        let mut second = cases.field("one")?.clone();
+        second.set("display_id", Node::Str("UNIFIED.unknown".into()))?;
+        cases.set("second", second)?;
+        duplicate.set("cases", cases)?;
+        assert!(family(&duplicate, "sample", &aliases).is_err());
+        let multiple=raw.replace("assembled: []","assembled: [{kind: tool_call, name: a, arguments: {}}, {kind: tool_call, name: b, arguments: {}}]");
+        family(&yaml::load_str(&multiple)?, "sample", &aliases)?;
+        Ok(())
+    }
+
     #[test]
     fn source_qualified_origin_binds_release_and_hash() -> anyhow::Result<()> {
         let record = super::yaml::load_str(&format!(

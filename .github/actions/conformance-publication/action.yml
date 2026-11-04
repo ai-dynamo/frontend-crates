@@ -5,11 +5,16 @@ description: Restore one matching site, source catalog, and native publisher for
 runs:
   using: composite
   steps:
-    - name: Download candidate native publication
-      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-      with:
-        name: conformance-native-publication
-        path: ${{ runner.temp }}/native-publication
+    - name: Restore latest publication by creation time
+      id: restore
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: python3 conformance/utils/src/ci_publication_finalize.py restore
+    - name: Rebuild matching qualification tools for a partial rerun
+      if: ${{ steps.restore.outputs.recovered == 'true' }}
+      shell: bash
+      run: python3 conformance/utils/src/ci_publication.py recover
     - name: Restore matching publication inputs
       shell: bash
       run: |

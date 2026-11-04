@@ -362,12 +362,12 @@ def test_capture_workflow_archives_and_advances_new_loose_capture(split_evidence
         unified_history.materialize_store(view, loose, store=store)
     capture_directory = loose / "dynamo_v2-0.5.3"
     (loose / "dynamo_v2-0.5.2").rename(capture_directory)
-    capture_path = capture_directory / "gemma4/UNIFIED.1-1.yaml"
+    capture_path = capture_directory / "gemma4/UNIFIED.3-1.yaml"
     document = unified_history.load_yaml(capture_path)
     document["captured_with"]["dynamo_v2"] = "0.5.3"
     document.pop("inherited_from", None)
-    document["cases"]["UNIFIED.1-1"]["assembled"][0]["text"] = "changed"
-    document["cases"]["UNIFIED.1-1"]["chunks"][0]["expected"][0]["text"] = "changed"
+    document["cases"]["UNIFIED.3-1"]["assembled"][0]["text"] = "changed"
+    document["cases"]["UNIFIED.3-1"]["chunks"][0]["expected"][0]["text"] = "changed"
     capture_path.write_text(unified_history.dump_yaml(document))
 
     result = publish_current_capture.publish_loose(root, history, loose)
@@ -400,11 +400,11 @@ def test_current_extraction_invalidates_unified_authored_cache(split_evidence, t
 
     extract_fixtures._extract(args)
     second = Path(capsys.readouterr().out.strip().splitlines()[-1])
-    materialized = unified_history.load_yaml(second / "unified/inputs/gemma4/UNIFIED.1-1.yaml")
+    materialized = unified_history.load_yaml(second / "unified/inputs/gemma4/UNIFIED.3-1.yaml")
     assert second != first
-    assert materialized["cases"]["UNIFIED.1-1"]["description"] == "updated authored description"
-    original = unified_history.load_yaml(first / "unified/inputs/gemma4/UNIFIED.1-1.yaml")
-    assert original["cases"]["UNIFIED.1-1"]["description"] == "plain text"
+    assert materialized["cases"]["UNIFIED.3-1"]["description"] == "updated authored description"
+    original = unified_history.load_yaml(first / "unified/inputs/gemma4/UNIFIED.3-1.yaml")
+    assert original["cases"]["UNIFIED.3-1"]["description"] == "plain text"
 
 
 def test_current_extraction_rejects_authored_mutation_during_materialization(split_evidence, tmp_path, monkeypatch):
@@ -436,7 +436,7 @@ def test_current_extraction_keeps_refreshed_generation_selected(split_evidence, 
     args = SimpleNamespace(info=False, dry_run=False, full_refresh=False)
     extract_fixtures._extract(args)
     initial = Path(capsys.readouterr().out.strip().splitlines()[-1])
-    input_path = "unified/inputs/gemma4/UNIFIED.1-1.yaml"
+    input_path = "unified/inputs/gemma4/UNIFIED.3-1.yaml"
     initial_bytes = (initial / input_path).read_bytes()
 
     args.full_refresh = True
