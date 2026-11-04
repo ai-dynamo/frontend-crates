@@ -21,6 +21,10 @@ pub(crate) struct SchemaFacts<'a> {
     #[cfg(not(test))]
     remaining_work: usize,
     pub(crate) exhausted: bool,
+    // The schema the current top-level query started at, and whether it lies
+    // inside a nested `$id` resource of the root, found on first use.
+    entry: Option<&'a Value>,
+    entry_scope: Option<(&'a Value, bool)>,
 }
 
 impl<'a> SchemaFacts<'a> {
@@ -30,6 +34,8 @@ impl<'a> SchemaFacts<'a> {
             path: Vec::new(),
             remaining_work: MAX_SCHEMA_WORK,
             exhausted: false,
+            entry: None,
+            entry_scope: None,
         }
     }
 
@@ -78,17 +84,34 @@ impl<'a> SchemaFacts<'a> {
     }
 
     // A nested `$id` rebases the references inside it, not its other keywords.
-    // When this walk passed through such a node, leave its references unknown
-    // rather than resolving them against the root.
-    fn resolve_scoped_ref(&self, reference: &str) -> Option<&'a Value> {
+    // When this walk started inside or passed through such a resource, leave its
+    // references unknown rather than resolving them against the root.
+    fn resolve_scoped_ref(&mut self, reference: &str) -> Option<&'a Value> {
         let scoped = self
             .path
             .iter()
-            .any(|node| !std::ptr::eq(*node, self.root) && node.get("$id").is_some());
+            .any(|node| !std::ptr::eq(*node, self.root) && node.get("$id").is_some())
+            || self.entry_in_nested_resource();
         if scoped {
             return None;
         }
         resolve_local_schema_ref(reference, self.root)
+    }
+
+    // A walk that starts below the root, such as one for a nested XML child,
+    // cannot see the resources enclosing its entry schema on its path.
+    fn entry_in_nested_resource(&mut self) -> bool {
+        let Some(entry) = self.entry else {
+            return false;
+        };
+        match self.entry_scope {
+            Some((cached, nested)) if std::ptr::eq(cached, entry) => nested,
+            _ => {
+                let nested = within_nested_resource(self.root, entry);
+                self.entry_scope = Some((entry, nested));
+                nested
+            }
+        }
     }
 
     fn with_schema<T>(
@@ -100,6 +123,9 @@ impl<'a> SchemaFacts<'a> {
         if !self.spend_work() || self.path.len() >= MAX_SCHEMA_DEPTH {
             self.exhausted = true;
             return fallback;
+        }
+        if self.path.is_empty() {
+            self.entry = Some(schema);
         }
         let Some(schema) = self.resolve_ref(schema) else {
             return fallback;
@@ -289,7 +315,8 @@ impl<'a> SchemaFacts<'a> {
             MAX_SCHEMA_DEPTH,
             self.remaining_work.min(MAX_NULL_SCHEMA_NODES),
         );
-        let result = walker.matches(schema, 0, 0, false);
+        let nested = within_nested_resource(self.root, schema);
+        let result = walker.matches(schema, 0, 0, nested);
         self.remaining_work = walker.remaining;
         if walker.exhausted {
             self.exhausted = true;
@@ -384,21 +411,18 @@ impl<'a> SchemaFacts<'a> {
                 return Fit::Rejects;
             }
             let mut fit = Fit::Fits;
-            let literal_mismatch = node
-                .get("const")
-                .is_some_and(|literal| !candidate.equals(literal))
-                || node
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|literals| {
-                        !literals.iter().any(|literal| candidate.equals(literal))
-                    });
-            if literal_mismatch {
-                // Literals that contradict the declared type do not decide it.
-                if !literals_contradict_type(schema) {
-                    return Fit::Rejects;
+            let constant = node.get("const").map(|literal| candidate.equals(literal));
+            let enumerated = node
+                .get("enum")
+                .and_then(Value::as_array)
+                .map(|literals| candidate.equals_any(literals));
+            for matched in [constant, enumerated].into_iter().flatten() {
+                match matched {
+                    Some(true) => {}
+                    // Literals that contradict the declared type do not decide it.
+                    Some(false) if !literals_contradict_type(schema) => return Fit::Rejects,
+                    Some(false) | None => fit = Fit::Unproven,
                 }
-                fit = Fit::Unproven;
             }
             if UNEVALUATED_FOR_ANY_KIND
                 .iter()
@@ -861,11 +885,25 @@ impl Candidate<'_> {
         }
     }
 
-    fn equals(self, literal: &Value) -> bool {
+    // None when an equality cannot be decided exactly.
+    fn equals(self, literal: &Value) -> Option<bool> {
         match self {
-            Self::Text(text) => literal.as_str() == Some(text),
+            Self::Text(text) => Some(literal.as_str() == Some(text)),
             Self::Json(value) => json_equal(literal, value),
         }
+    }
+
+    // Proven equal to one literal, proven unequal to all, or unknown.
+    fn equals_any(self, literals: &[Value]) -> Option<bool> {
+        let mut decided = true;
+        for literal in literals {
+            match self.equals(literal) {
+                Some(true) => return Some(true),
+                Some(false) => {}
+                None => decided = false,
+            }
+        }
+        decided.then_some(false)
     }
 
     // Keywords that can reject this candidate's kind and that `value_fit` does
@@ -935,45 +973,130 @@ fn json_kind(value: &Value) -> Option<&'static str> {
 }
 
 // JSON Schema compares literals by value and type: 1 equals 1.0, "1" does not
-// equal 1. An integer is never rounded to f64: against a float it compares
-// with the exact integer that float denotes, if any.
-fn json_equal(left: &Value, right: &Value) -> bool {
+// equal 1. Integers compare exactly and floats as f64, the way JSON readers
+// decode them; an integer is never rounded to compare with a float. None when
+// the comparison cannot be decided exactly.
+fn json_equal(left: &Value, right: &Value) -> Option<bool> {
     match (left, right) {
-        (Value::Number(left), Value::Number(right)) => match (left.is_f64(), right.is_f64()) {
-            (false, false) => left == right,
-            (true, true) => left.as_f64() == right.as_f64(),
-            _ => exact_integer(left).is_some_and(|left| exact_integer(right) == Some(left)),
-        },
+        (Value::Number(left), Value::Number(right)) => numbers_equal(left, right),
         (Value::Array(left), Value::Array(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .zip(right)
-                    .all(|(left, right)| json_equal(left, right))
+            if left.len() != right.len() {
+                return Some(false);
+            }
+            all_equal(left.iter().zip(right))
         }
         (Value::Object(left), Value::Object(right)) => {
-            left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, left)| right.get(key).is_some_and(|right| json_equal(left, right)))
+            if left.len() != right.len() || !left.keys().all(|key| right.contains_key(key)) {
+                return Some(false);
+            }
+            all_equal(left.iter().map(|(key, left)| (left, &right[key])))
         }
-        _ => left == right,
+        _ => Some(left == right),
     }
 }
 
-// The integer a JSON number denotes exactly, including an integral float such
-// as `2.0`. None for a fraction or a float beyond i128, which equals no stored
-// integer; with arbitrary precision, an integer beyond 64 bits is also None.
-fn exact_integer(number: &serde_json::Number) -> Option<i128> {
-    if let Some(integer) = number.as_i64() {
-        return Some(integer.into());
+// A proven difference decides; otherwise any undecided pair leaves it unknown.
+fn all_equal<'v>(pairs: impl Iterator<Item = (&'v Value, &'v Value)>) -> Option<bool> {
+    let mut decided = true;
+    for (left, right) in pairs {
+        match json_equal(left, right) {
+            Some(false) => return Some(false),
+            Some(true) => {}
+            None => decided = false,
+        }
     }
-    if let Some(integer) = number.as_u64() {
-        return Some(integer.into());
-    }
-    let float = number.as_f64().filter(|_| number.is_f64())?;
-    (float.fract() == 0.0 && float.abs() < i128::MAX as f64).then_some(float as i128)
+    decided.then_some(true)
 }
+
+fn numbers_equal(left: &serde_json::Number, right: &serde_json::Number) -> Option<bool> {
+    match (left.is_f64(), right.is_f64()) {
+        (true, true) => Some(left.as_f64() == right.as_f64()),
+        (false, false) => Some(match (exact_integer(left), exact_integer(right)) {
+            (Some(left), Some(right)) => left == right,
+            // Beyond i128, an integer has a single JSON spelling.
+            _ => left == right,
+        }),
+        _ => {
+            let (integer, float) = if left.is_f64() {
+                (right, left)
+            } else {
+                (left, right)
+            };
+            let float = float.as_f64()?;
+            if float.fract() != 0.0 {
+                return Some(false);
+            }
+            // A float at or beyond 2^127 exceeds every i128.
+            exact_integer(integer)
+                .map(|integer| float.abs() < i128::MAX as f64 && integer == float as i128)
+        }
+    }
+}
+
+// The exact value of a JSON integer. With arbitrary precision, an integer
+// beyond 64 bits is parsed from its spelling; None beyond i128.
+fn exact_integer(number: &serde_json::Number) -> Option<i128> {
+    number
+        .as_i64()
+        .map(i128::from)
+        .or_else(|| number.as_u64().map(i128::from))
+        .or_else(|| number.to_string().parse().ok())
+}
+
+// Whether `target` lies inside a nested `$id` resource of `root`, searching
+// schema positions only. An unfinished search counts as nested, which leaves
+// references unknown rather than resolving them against the wrong resource.
+fn within_nested_resource(root: &Value, target: &Value) -> bool {
+    fn search(
+        root: &Value,
+        schema: &Value,
+        target: &Value,
+        nested: bool,
+        budget: &mut usize,
+    ) -> Option<bool> {
+        if std::ptr::eq(schema, target) {
+            return Some(nested);
+        }
+        let node = schema.as_object()?;
+        if *budget == 0 {
+            return Some(true);
+        }
+        *budget -= 1;
+        let nested = nested
+            || (!std::ptr::eq(schema, root) && node.get("$id").and_then(Value::as_str).is_some());
+        let mut visit = |child: &Value| search(root, child, target, nested, budget);
+        node.iter()
+            .find_map(|(keyword, value)| match (keyword.as_str(), value) {
+                (
+                    "properties" | "patternProperties" | "$defs" | "definitions"
+                    | "dependentSchemas",
+                    Value::Object(children),
+                ) => children.values().find_map(&mut visit),
+                ("allOf" | "anyOf" | "oneOf" | "prefixItems" | "items", Value::Array(children)) => {
+                    children.iter().find_map(&mut visit)
+                }
+                (
+                    "items"
+                    | "additionalItems"
+                    | "additionalProperties"
+                    | "not"
+                    | "if"
+                    | "then"
+                    | "else"
+                    | "contains"
+                    | "propertyNames"
+                    | "unevaluatedItems"
+                    | "unevaluatedProperties",
+                    child,
+                ) => visit(child),
+                _ => None,
+            })
+    }
+    let mut budget = MAX_SCOPE_SEARCH_NODES;
+    search(root, root, target, false, &mut budget).unwrap_or(false)
+}
+
+const MAX_SCOPE_SEARCH_NODES: usize = 4096;
 
 const MAX_NULL_SCHEMA_REF_DEPTH: usize = 16;
 const MAX_NULL_SCHEMA_NODES: usize = 4096;
@@ -1382,13 +1505,57 @@ mod native_text_tests {
                 "42",
                 string,
             ),
+            // 2^64 equals the negated float constant, including when arbitrary
+            // precision keeps the integer beyond 64 bits.
+            (
+                json!({"type": ["string", "number"], "not": {"const": 18446744073709551616.0}}),
+                "18446744073709551616",
+                string,
+            ),
         ] {
             assert_eq!(typed(parameter.clone(), raw), expected, "{parameter} {raw}");
         }
     }
 
+    // A walk for a nested child starts below the root, so it must still treat
+    // the child's enclosing `$id` resource as rebasing its references.
+    #[test]
+    fn walks_entered_inside_a_nested_resource_leave_its_references_unknown() {
+        let schema = json!({
+            "type": "object",
+            "$defs": {"T": {"type": "integer"}, "N": {"type": ["integer", "null"]}},
+            "properties": {
+                "payload": {
+                    "$id": "https://example.test/payload",
+                    "$defs": {"T": {"type": "boolean"}},
+                    "type": "object",
+                    "properties": {
+                        "value": {"anyOf": [{"$ref": "#/$defs/T"}, {"type": "string"}]},
+                        "nullable": {"$ref": "#/$defs/N"}
+                    }
+                },
+                "plain": {"anyOf": [{"$ref": "#/$defs/T"}, {"type": "string"}]}
+            }
+        });
+        let payload = &schema["properties"]["payload"]["properties"];
+        let facts = SchemaFacts::new(&schema);
+        assert_eq!(
+            facts.native_text_type(&payload["value"], "42"),
+            Some(NativeText::String)
+        );
+        assert_eq!(
+            facts.native_text_type(&schema["properties"]["plain"], "42"),
+            Some(NativeText::Json("integer"))
+        );
+        assert_eq!(
+            SchemaFacts::new(&schema).permits_null(&payload["nullable"]),
+            None
+        );
+    }
+
     #[test]
     fn numbers_compare_exactly() {
+        let parsed = |text: &str| serde_json::from_str::<Value>(text).unwrap();
         for (left, right, equal) in [
             (json!(1), json!(1.0), true),
             (json!(-0.0), json!(0), true),
@@ -1398,12 +1565,18 @@ mod native_text_tests {
                 false,
             ),
             (json!(u64::MAX), json!(18446744073709551615.0), false),
+            (
+                parsed("18446744073709551616"),
+                json!(18446744073709551616.0),
+                true,
+            ),
             (json!(1), json!(1.5), false),
             (json!(1.5), json!(1.5), true),
             (json!({"n": [1]}), json!({"n": [1.0]}), true),
+            (json!({"n": [1]}), json!({"n": [1], "m": 2}), false),
         ] {
-            assert_eq!(json_equal(&left, &right), equal, "{left} {right}");
-            assert_eq!(json_equal(&right, &left), equal, "{right} {left}");
+            assert_eq!(json_equal(&left, &right), Some(equal), "{left} {right}");
+            assert_eq!(json_equal(&right, &left), Some(equal), "{right} {left}");
         }
     }
 }
