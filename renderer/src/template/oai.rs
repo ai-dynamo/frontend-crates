@@ -699,15 +699,9 @@ impl HfTokenizerConfigJsonFormatter {
             Some(now) => {
                 let now = chrono::DateTime::<chrono::Local>::from(now);
                 let strftime_now = Value::from_function(move |format: &str| {
-                    use std::fmt::Write as _;
-                    let mut text = String::new();
-                    write!(text, "{}", now.format(format)).map_err(|_| {
-                        minijinja::Error::new(
-                            minijinja::ErrorKind::InvalidOperation,
-                            format!("invalid strftime format {format:?}"),
-                        )
-                    })?;
-                    Ok::<_, minijinja::Error>(Value::from_safe_string(text))
+                    Ok::<_, minijinja::Error>(Value::from_safe_string(
+                        now.format(format).to_string(),
+                    ))
                 });
                 context! { ..ctx, strftime_now => strftime_now }
             }
@@ -923,6 +917,9 @@ mod tests {
         }
         fn messages(&self) -> Value {
             self.inner.messages()
+        }
+        fn should_add_generation_prompt(&self) -> bool {
+            self.inner.should_add_generation_prompt()
         }
         fn render_instant(&self) -> Option<std::time::SystemTime> {
             Some(self.instant)

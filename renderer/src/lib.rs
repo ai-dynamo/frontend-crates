@@ -256,12 +256,15 @@ pub trait OAIChatLikeRequest {
     fn model(&self) -> String;
     fn messages(&self) -> Value;
 
-    /// Instant every clock-reading template function observes in this render.
+    /// Instant `strftime_now` observes in this render.
     ///
     /// `None` reads the wall clock, which is the historical behaviour. `Some`
     /// pins `strftime_now` for the render, so a template that embeds a date
     /// renders identically on every attempt and a deferred render cannot
     /// disagree with the instant the caller captured for it.
+    ///
+    /// The `Llama3DateTime` context mixin is not pinned by this and still reads
+    /// the wall clock when a template requests it.
     ///
     /// This is per request, not per formatter: one formatter renders many
     /// requests, each chronologically distinct.

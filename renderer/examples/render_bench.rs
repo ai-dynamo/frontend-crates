@@ -19,8 +19,10 @@
 use std::time::{Duration, Instant};
 
 use dynamo_protocols::types::CreateChatCompletionRequest;
-use dynamo_renderer::{ChatTemplate, ContextMixins, OAIPromptFormatter, PromptFormatter, RenderMode};
-use serde_json::{Value, json};
+use dynamo_renderer::{
+    ChatTemplate, ContextMixins, OAIPromptFormatter, PromptFormatter, RenderMode,
+};
+use serde_json::json;
 
 /// Conversation turns in the benchmark request.
 const TURNS: usize = 16;
@@ -47,14 +49,31 @@ fn request() -> CreateChatCompletionRequest {
     let mut messages = Vec::with_capacity(TURNS + 1);
     messages.push(json!({"role": "system", "content": "You are a helpful assistant."}));
     for turn in 0..TURNS {
-        let role = if turn % 2 == 0 { "user" } else { "assistant" };
-        messages.push(json!({
-            "role": role,
-            "content": format!(
-                "turn {turn}: the quick brown fox jumps over the lazy dog, \
-                 then it does so again to make the content realistic in length"
-            ),
-        }));
+        let text = format!(
+            "turn {turn}: the quick brown fox jumps over the lazy dog, \
+             then it does so again to make the content realistic in length"
+        );
+        if turn % 2 == 0 {
+            messages.push(json!({"role": "user", "content": text}));
+        } else {
+            // Carry the fields the Adaptive path rewrites -- reasoning injection
+            // and tool-call argument normalization -- so the two modes do
+            // genuinely different work and a regression inside that block is
+            // visible instead of being measured on no-op data.
+            messages.push(json!({
+                "role": "assistant",
+                "content": text,
+                "reasoning_content": format!("reasoning for turn {turn}"),
+                "tool_calls": [{
+                    "id": format!("call_{turn}"),
+                    "type": "function",
+                    "function": {
+                        "name": "lookup",
+                        "arguments": "{\"city\": \"Paris\", \"unit\": \"c\"}"
+                    }
+                }],
+            }));
+        }
     }
     serde_json::from_value(json!({"model": "bench", "messages": messages}))
         .expect("benchmark request is well formed")
@@ -84,16 +103,11 @@ fn main() {
     let mut sink = 0usize;
 
     for mode in modes {
-        let PromptFormatter::OAI(formatter) = PromptFormatter::from_parts_with_mode(
-            template(),
-            ContextMixins::new(&[]),
-            true,
-            mode,
-        )
-        .expect("formatter builds")
-        else {
-            panic!("expected an OAI formatter");
-        };
+        // `PromptFormatter` has a single variant, so this pattern is irrefutable;
+        // a `let ... else` here trips `irrefutable_let_patterns`, which CI denies.
+        let PromptFormatter::OAI(formatter) =
+            PromptFormatter::from_parts_with_mode(template(), ContextMixins::new(&[]), true, mode)
+                .expect("formatter builds");
 
         for _ in 0..WARMUP_RENDERS {
             sink += formatter.render(&req).expect("render succeeds").len();
@@ -127,8 +141,5 @@ fn main() {
     }
 
     // Keep the sink observable so the loop above cannot be optimised away.
-    if sink == 0 {
-        eprintln!("no bytes rendered");
-    }
-    let _: Value = json!({ "sink": sink });
+    std::hint::black_box(sink);
 }

@@ -7,11 +7,18 @@
 //! adapted where the load-time probe found the template rejects them, so a
 //! conversation renders instead of raising.
 //!
-//! [`RenderMode::Verbatim`] sends the messages through unmodified. A caller that
-//! must reproduce another renderer byte-for-byte — an input tokenizer counting
-//! what `transformers` would have counted, for example — needs the template to
-//! see exactly the conversation the request carried, because every adaptation
-//! changes the bytes it would count.
+//! [`RenderMode::Verbatim`] applies no probe-driven message-shape adaptation, so
+//! the template evaluates the conversation the request carried rather than one
+//! reshaped to suit it. Every adaptation changes the bytes a counting caller
+//! would see, which is why a counting caller needs this mode.
+//!
+//! Verbatim is scoped to that adaptation and nothing else. It is **not** a claim
+//! of byte compatibility with another renderer: the template source is still
+//! syntax-normalized and adapts a few known model templates, a typed request's
+//! custom tool calls are still projected into function-call shape before
+//! rendering, and the Jinja environment still supplies this crate's own filters.
+//! Comparing rendered bytes against a different library remains a separate
+//! question this mode does not answer.
 //!
 //! This is a property of the formatter, not of one render: it decides which
 //! contract the instance implements and is fixed at construction. The instant a
@@ -25,13 +32,16 @@ pub enum RenderMode {
     #[default]
     Adaptive,
 
-    /// Render the supplied messages exactly as given.
+    /// Apply no probe-driven message-shape adaptation.
     ///
-    /// No message-shape adaptation is applied: system turns are not demoted
-    /// into user turns, consecutive user turns are not coalesced, content
-    /// arrays are not normalized, and reasoning/tool-call arguments are passed
-    /// through as given. A template that rejects the supplied shape returns an
-    /// error rather than rendering a rewritten conversation.
+    /// System turns are not demoted into user turns, consecutive user turns are
+    /// not coalesced, content arrays are not normalized, and reasoning/tool-call
+    /// arguments are passed through as given. A template that rejects the
+    /// supplied shape returns an error rather than rendering a rewritten
+    /// conversation.
+    ///
+    /// This covers message adaptation only; see the module docs for what it does
+    /// not promise.
     Verbatim,
 }
 
