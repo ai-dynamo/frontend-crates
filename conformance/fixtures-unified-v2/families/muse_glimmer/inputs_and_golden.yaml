@@ -1206,6 +1206,23 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_7f03b4392817a770:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        metrics:
+          type: array
+          items:
+            type: string
+          enum:
+          - temperature
+          - humidity
+          - co2
+        count:
+          type: integer
+          enum:
+          - auto
   tools_edce2cf72af57686:
   - name: schema_probe
     parameters:
@@ -6419,6 +6436,19 @@ requests:
     - 7
     - 57
     finish_step: true
+  94d20fa84ffee9f530b00bec28e09d857284fbd8ec33ceec8ac3ad5f13d0c41c:
+    input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
+
+      <atem:invoke name="capture_payload">
+
+      <atem:parameter name="metrics">["temperature","humidity"]</atem:parameter>
+
+      <atem:parameter name="count">5</atem:parameter>
+
+      </atem:invoke>
+
+      </atem:function_calls><|eom|>'
+    tools: tools_7f03b4392817a770
   960b6a1851b6102fc8627614490324a22d9773da8cedbf39717e81dabc39c4eb:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14079,3 +14109,19 @@ cases:
           <atem:invoke name="get_weather">
 
           <atem:parameter name="location">Paris'
+  enum_contradicting_declared_type:
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
+    request: 94d20fa84ffee9f530b00bec28e09d857284fbd8ec33ceec8ac3ad5f13d0c41c
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        metrics:
+        - temperature
+        - humidity
+        count: 5

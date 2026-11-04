@@ -1637,6 +1637,23 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_7f03b4392817a770:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        metrics:
+          type: array
+          items:
+            type: string
+          enum:
+          - temperature
+          - humidity
+          - co2
+        count:
+          type: integer
+          enum:
+          - auto
   tools_cf41a9070d48bbd7:
   - name: schema_probe
     parameters:
@@ -8068,6 +8085,9 @@ requests:
     - 11
     - 17
     finish_step: true
+  f21e708b681cfb13164aaff14779dcafa135b2c5b2782adeb6c0d797bde8296d:
+    input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="capture_payload">]<]minimax[>[<metrics>["temperature","humidity"]]<]minimax[>[</metrics>]<]minimax[>[<count>5]<]minimax[>[</count>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    tools: tools_7f03b4392817a770
   f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1:
     init:
       starting_state: None
@@ -12008,3 +12028,19 @@ cases:
       name: get_weather
       arguments:
         location: unfinished]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>Paris
+  enum_contradicting_declared_type:
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
+    request: f21e708b681cfb13164aaff14779dcafa135b2c5b2782adeb6c0d797bde8296d
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        metrics:
+        - temperature
+        - humidity
+        count: 5

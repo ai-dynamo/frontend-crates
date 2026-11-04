@@ -1349,6 +1349,23 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_7f03b4392817a770:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        metrics:
+          type: array
+          items:
+            type: string
+          enum:
+          - temperature
+          - humidity
+          - co2
+        count:
+          type: integer
+          enum:
+          - auto
   tools_d1fedfe44119e682:
   - name: get_weather
     parameters:
@@ -5968,6 +5985,17 @@ requests:
     - 11
     - 23
     finish_step: true
+  b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962:
+    input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="metrics">
+
+      ["temperature","humidity"]
+
+      </rfl:parameter><rfl:parameter name="count">
+
+      5
+
+      </rfl:parameter><|call|>'
+    tools: tools_7f03b4392817a770
   b157b148473eb6865701d3d7cee5b42fa8b62b1470d2b67d7735f547e24c115d:
     input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -11637,3 +11665,19 @@ cases:
         location: 'unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
 
           Paris'
+  enum_contradicting_declared_type:
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
+    request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        metrics:
+        - temperature
+        - humidity
+        count: 5

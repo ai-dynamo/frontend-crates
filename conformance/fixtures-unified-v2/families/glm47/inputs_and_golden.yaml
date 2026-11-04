@@ -1238,6 +1238,23 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_7f03b4392817a770:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        metrics:
+          type: array
+          items:
+            type: string
+          enum:
+          - temperature
+          - humidity
+          - co2
+        count:
+          type: integer
+          enum:
+          - auto
   tools_cd12f492b367f507:
   - name: capture_payload
     parameters:
@@ -4353,6 +4370,9 @@ requests:
     - 12
     - 12
     finish_step: true
+  9c54c5a5b6d5a7ab55549dbca23802a6358961be93971fce6894fd218f4e9fd8:
+    input: <tool_call>capture_payload<arg_key>metrics</arg_key><arg_value>["temperature","humidity"]</arg_value><arg_key>count</arg_key><arg_value>5</arg_value></tool_call>
+    tools: tools_7f03b4392817a770
   9d436633af0c5f9e00fdb31d0abf3fc111ac6b9dca10f164ce44a383faa41c2d:
     input: <tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value><arg_key>count</arg_key><arg_value>42</arg_value></tool_call>
     tools: tools_cd12f492b367f507
@@ -10100,3 +10120,19 @@ cases:
       name: get_weather
       arguments:
         location: Paris
+  enum_contradicting_declared_type:
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
+    request: 9c54c5a5b6d5a7ab55549dbca23802a6358961be93971fce6894fd218f4e9fd8
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        metrics:
+        - temperature
+        - humidity
+        count: 5
