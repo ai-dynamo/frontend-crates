@@ -11,13 +11,14 @@ import unified_taxonomy as taxonomy
 from conformance.utils.tests.fixture_test_support import run_node_contract
 
 
-def test_exact_fold_dimensions_and_section_order():
+def test_exact_fold_dimensions_and_section_order() -> None:
     groups = {}
     for case in CONFORMANCE_CASES:
         scenario = "schema_" + case["name"]
         fold = schema_fold(scenario)
         if fold:
             groups.setdefault(fold[0], []).append((scenario, fold[1]))
+    assert groups.pop("schema_const_numeric_bare") == [("schema_const_numeric_bare", "Direct")]
     assert len(groups) == 22
     for parent, children in groups.items():
         assert len(children) == 4
@@ -27,7 +28,7 @@ def test_exact_fold_dimensions_and_section_order():
         assert parent in {scenario for scenario, _ in children}
     ordered = sorted((scenario for scenario in taxonomy.UNIFIED_TAX if taxonomy.display_tax(scenario)[0] == 7),
                      key=taxonomy.display_sort_key)
-    assert len(ordered) == 173
+    assert len(ordered) == 177
     assert {f"arg_numeric_overflow_siblings_{variant}" for variant in ("finite", "positive", "negative")} <= set(ordered)
     assert taxonomy.case_fold("gpt_oss_quoted_message_header_literal")[0] == "arg_marker_in_string"
     assert "gpt_oss_quoted_message_header_literal" in ordered

@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use super::builder::{
-    ToolCallFormatBuildContext, resolve_tools_to_include, uses_declared_tool_schema,
-};
+use super::builder::{ToolCallFormatBuildContext, declared_tool_schema, resolve_tools_to_include};
 use super::format::*;
 use crate::tool_calling::ToolChoice;
 #[cfg(test)]
 use dynamo_structural_tag::kimi_k3::*;
+use dynamo_structural_tag::schema::canonicalize_embedded_schemas;
 
 pub(crate) fn build_kimi_k3(
     ctx: &ToolCallFormatBuildContext<'_>,
@@ -16,21 +15,26 @@ pub(crate) fn build_kimi_k3(
     if tools.is_empty() {
         return Ok(None);
     }
-    let relaxed = serde_json::Value::Bool(true);
+    // K3 resolves `$ref`s itself (percent-decoding them) to type its XTML
+    // arguments, so it must see the schema as written. Only the JSON schemas it
+    // hands on to the backend are canonicalized, below, after it has built.
+    let schemas: Vec<_> = tools
+        .iter()
+        .map(|tool| declared_tool_schema(tool, ctx.strict_schema()))
+        .collect();
     let selected: Vec<_> = tools
         .iter()
-        .map(|tool| dynamo_structural_tag::Tool {
+        .zip(&schemas)
+        .map(|(tool, parameters)| dynamo_structural_tag::Tool {
             name: &tool.name,
-            parameters: if uses_declared_tool_schema(tool, ctx.strict_schema()) {
-                tool.parameters.as_ref().unwrap_or(&relaxed)
-            } else {
-                &relaxed
-            },
+            parameters,
         })
         .collect();
     if matches!(ctx.tool_choice, ToolChoice::Auto) {
-        return dynamo_structural_tag::kimi_k3::build_auto(&selected, ctx.stop_after_first())
-            .map(Some);
+        let mut tag =
+            dynamo_structural_tag::kimi_k3::build_auto(&selected, ctx.stop_after_first())?;
+        canonicalize_embedded_schemas(&mut tag.format);
+        return Ok(Some(tag));
     }
     let response = if matches!(ctx.tool_choice, ToolChoice::Named(_)) {
         Format::ConstString(ConstStringFormat {
@@ -44,13 +48,15 @@ pub(crate) fn build_kimi_k3(
             ],
         })
     };
-    Ok(Some(dynamo_structural_tag::kimi_k3::build(
+    let mut tag = dynamo_structural_tag::kimi_k3::build(
         &selected,
         at_least_one,
         ctx.stop_after_first(),
         response,
         false,
-    )?))
+    )?;
+    canonicalize_embedded_schemas(&mut tag.format);
+    Ok(Some(tag))
 }
 
 #[cfg(test)]
@@ -100,6 +106,43 @@ mod tests {
             parallel_tool_calls: None,
             schema_mode: StructuralTagSchemaMode::Auto,
             starts_in_reasoning: false,
+        }
+    }
+
+    #[test]
+    fn escaped_pointers_reach_k3_intact_and_embedded_schemas_are_canonical() {
+        // PR #516 review: K3 percent-decodes `#/properties/a%25b` itself; a
+        // pre-decoded `#/properties/a%b` would fail its string resolution. The
+        // object argument it forwards as JSON still gets the backend spelling.
+        let tools = vec![ToolDefinition {
+            name: "pick".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "a%b": {"type": "string"},
+                    "copy": {"$ref": "#/properties/a%25b"},
+                    "payload": {"$ref": "#/$defs/registry~1Model"}
+                },
+                "$defs": {"registry/Model": {"type": "object", "properties": {"id": {"type": "integer"}}}},
+                "required": ["a%b", "copy", "payload"]
+            })),
+            strict: Some(true),
+        }];
+        for choice in [ToolChoice::Required, ToolChoice::Auto] {
+            let value = serde_json::to_value(
+                build_kimi_k3(&context(&choice, &tools))
+                    .expect("escaped pointers must still resolve")
+                    .unwrap(),
+            )
+            .unwrap()
+            .to_string();
+            assert_eq!(
+                value.matches(r#"key=\"copy\" type=\"string\""#).count(),
+                1,
+                "{value}"
+            );
+            assert!(value.contains("registry_Model"), "{value}");
+            assert!(!value.contains("registry~1Model"), "{value}");
         }
     }
 

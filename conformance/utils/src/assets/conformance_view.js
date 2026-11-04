@@ -988,6 +988,7 @@
       ? '<span class="case-schema-indicator" role="img" aria-label="Has explicit schema.">{}</span>'
       : '';
   }
+  window.__conformanceSchemaIndicatorHtml = schemaIndicatorHtml;
 
   function subHeadersHtml(tab) {
     var cols = tab.columns || [];
@@ -1279,7 +1280,7 @@
         const column = columns.get(pair[0]);
         const reference = column?.display_number != null ? ' (' + compactCaseLabelHtml(column) + ')' : '';
         h += '<tr><td class="sub">' + escapeHtml(column?.case_id || prefix + pair[0]) + reference + '</td>'
-          + '<td class="gloss-desc">' + escapeHtml(pair[1]) + '</td></tr>';
+          + '<td class="gloss-desc">' + escapeHtml(pair[1]) + (column ? schemaIndicatorHtml(column) : '') + '</td></tr>';
       });
     });
     h += '</tbody></table></div>';

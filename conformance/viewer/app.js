@@ -111,6 +111,31 @@ export async function discoverHistory(baseUrl, catalog, { fetchImpl = globalThis
   return history;
 }
 
+export async function reloadChangedPublication(baseUrl, previous, {
+  fetchImpl = globalThis.fetch.bind(globalThis), storage, reload = () => location.reload(), isCurrent = () => true,
+} = {}) {
+  const identity = metadata => metadata?.schema === 1 && !metadata.source_checkout
+    && /^[a-f0-9]{64}$/.test(metadata.resolved_catalog_revision)
+    ? metadata.resolved_catalog_revision : null;
+  const oldIdentity = identity(previous);
+  if (!oldIdentity) return null;
+  const current = identity(await loadPublication(baseUrl, { fetchImpl }));
+  if (!current || current === oldIdentity || !isCurrent()) return null;
+  // A CDN can briefly serve the old HTML alongside new data. Allow one automatic
+  // reload per publication, then leave a manual action instead of a reload loop.
+  try {
+    const session = storage || globalThis.sessionStorage;
+    const key = 'conformance-publication-reload:' + baseUrl.href;
+    if (session.getItem(key) === current) return 'stale';
+    session.setItem(key, current);
+  } catch (error) {
+    if (['SecurityError', 'QuotaExceededError'].includes(error.name)) return 'stale';
+    throw error;
+  }
+  reload();
+  return 'reloading';
+}
+
 // Cache population may finish after navigation, but only the latest selection paints.
 export class SelectionLoader {
   constructor({ build, paint, state }) { this.build = build; this.paint = paint; this.state = state; this.generation = 0; this.pending = 0; }
@@ -124,7 +149,7 @@ export class SelectionLoader {
       this.paint(tabId, model, selection);
       this.state(tabId, 'ready');
     } catch (error) {
-      if (generation === this.generation) this.state(tabId, 'error', error);
+      if (generation === this.generation) await this.state(tabId, 'error', error, selection);
     } finally { this.pending--; }
   }
 }
@@ -318,6 +343,17 @@ async function initialize() {
   let controller;
   let slotOwner;
   let comparison;
+  async function recoverLoadError(notice, generation) {
+    const isCurrent = () => generation === loader.generation && panel.dataset.loadState === 'error';
+    const expected = publication && {...publication,
+      resolved_catalog_revision: historyAvailable ? catalog.revision : publication.resolved_catalog_revision};
+    const changed = await reloadChangedPublication(baseUrl, expected, { isCurrent });
+    if (!changed || !isCurrent()) return;
+    notice.textContent = changed === 'reloading'
+      ? 'Report updated. Reloading the selected captures... ' : 'Report updated since this page loaded. ';
+    const reload = document.createElement('button'); reload.textContent = 'Reload report';
+    reload.addEventListener('click', () => location.reload()); notice.appendChild(reload);
+  }
   const loader = new SelectionLoader({
     async build(tabId, selection) {
       const generation = loader.generation;
@@ -337,14 +373,17 @@ async function initialize() {
       panel.querySelector('.load-status')?.remove();
       const labels = selection?.selected.map(key => descriptors.find(item => item.control.key === key)?.control.label || key);
       loading.set(`selection:${tabId}`, state === 'loading' ? labels?.join(', ') || 'selected fixtures' : null);
+      let failureNotice;
       if (state === 'error') {
         const notice = document.createElement('div'); notice.className = 'load-status'; notice.setAttribute('role', 'alert');
         notice.textContent = `Fixture load failed: ${error.message} `;
         const retry = document.createElement('button'); retry.textContent = 'Retry'; retry.addEventListener('click', () => load(panel)); notice.appendChild(retry);
         panel.querySelector('.capture-slots').appendChild(notice);
+        failureNotice = notice;
       }
       controller.refreshPopupLayout();
       window.scrollTo(scroll.x, scroll.y);
+      if (failureNotice) return recoverLoadError(failureNotice, loader.generation);
     },
     paint(tabId, model, selection) {
       const started = performance.now();

@@ -658,6 +658,58 @@ def test_resource_failures_remain_transport_errors_and_retry(kind, transport_pub
         server.shutdown()
 
 
+def test_deployment_change_reloads_selected_history_and_hides_old_totals(historical_published_viewer):
+    site = historical_published_viewer
+    catalog = runtime_catalog(site)
+    current = {item['version'] for item in catalog['capture_generation']['current']
+               if item['implementation'] == 'dynamo_v1_jail'}
+    index = next(item['recipe_index']['path'] for item in catalog['sources']['unified']
+                 if item['kind'] == 'inputs-and-golden')
+    fault = {'path': 'conformance/', 'responses': {}}
+    server, requests = _server(root=site, fault=fault)
+    driver = _driver()
+    try:
+        driver.get(f'http://127.0.0.1:{server.server_port}/index.html?keep=1#saved')
+        _ready(driver, 'tab-unified')
+        select = Select(driver.find_element(By.CSS_SELECTOR, '[data-slot-capture="0"]'))
+        identity = next(option.get_attribute('value') for option in select.options
+                        if option.get_attribute('value').startswith('dynamo_v1_jail@')
+                        and option.get_attribute('value').split('@')[1] not in current)
+        assert '/' + index not in requests, 'latest embedded results must leave the historical index cold'
+        updated = {**publication_metadata(site), 'revision': 'b' * 40,
+                   'source_commit_sha': 'b' * 40, 'resolved_catalog_revision': 'b' * 64}
+        response = lambda body: {'headers': {'Content-Type': 'application/octet-stream', 'Content-Length': str(len(body))}, 'body': body}
+        fault['responses']['/' + index] = [response(b'replacement input index')]
+        fault['responses']['/conformance/viewer-publication.json'] = [response(json.dumps(updated).encode())]
+        driver.execute_script("""
+            const panel = document.getElementById('tab-unified');
+            new MutationObserver(() => {
+                if (!['loading', 'error'].includes(panel.dataset.loadState)) return;
+                const history = JSON.parse(sessionStorage.getItem('test-load-transitions') || '[]');
+                history.push({state: panel.dataset.loadState,
+                    summariesHidden: [...panel.querySelectorAll('.capture-summary')]
+                        .every(summary => getComputedStyle(summary).visibility === 'hidden')});
+                sessionStorage.setItem('test-load-transitions', JSON.stringify(history));
+            }).observe(panel, {attributes: true, attributeFilter: ['data-load-state']});
+        """)
+        select.select_by_value(identity)
+        WebDriverWait(driver, 30).until(lambda _driver: requests.count('/index.html') >= 2)
+        _ready(driver, 'tab-unified')
+        query = dict(parse_qsl(urlsplit(driver.current_url).query))
+        assert identity in query['slots_tab-unified'] and query['keep'] == '1'
+        assert urlsplit(driver.current_url).fragment == 'saved'
+        assert driver.find_element(By.CSS_SELECTOR, '[data-slot-capture="0"]').get_attribute('value') == identity
+        summary = driver.find_element(By.CSS_SELECTOR, '.capture-summary')
+        assert summary.is_displayed() and summary.get_attribute('data-capture') == identity
+        transitions = driver.execute_script("return JSON.parse(sessionStorage.getItem('test-load-transitions'))")
+        assert any(item['state'] == 'error' for item in transitions), transitions
+        assert all(item['summariesHidden'] for item in transitions), transitions
+        assert not driver.find_elements(By.CSS_SELECTOR, '.load-status[role="alert"]')
+        assert not any(fault['responses'].values()), 'the mismatch and new publication must both be observed'
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 def test_unified_controls_render_before_fixtures_and_detailed_view_stays_on_unified(transport_published_viewer):
     started, release = threading.Event(), threading.Event()
     server, requests = _server(root=transport_published_viewer, gate=(started, release), gate_path=_published_capture_index(transport_published_viewer), external=True)

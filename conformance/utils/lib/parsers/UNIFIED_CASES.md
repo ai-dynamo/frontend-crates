@@ -118,6 +118,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-tool
 - **`5-tool_no_close`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv1.5.a.
 - **`5-orphan_close_after_prose`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
 - **`5-malformed_json_then_two_valid_calls`** (`malformed_json_then_two_valid_calls`) Across all native Unified families, an unfinished native JSON/string body with explicit call closers precedes `echo(value="é")` and `echo(value="Café")`. The authored `input_chunks: [input]` delivers one `push()`, then `finish()`. Marker-aligned delivery masks the Kimi K3 defect: published `dynamo-parsers-v2` versions `0.7.13` and `0.7.14` lose the first echo; `0.7.15`, now published, preserves both. During capture qualification, the candidate moved to `0.7.15` after `0.7.14` was published; its earlier unpublished checkpoint was retired rather than relabeled as released output. K2 retains the malformed call as `{}`; Qwen3, GLM47, DeepSeek V4, and Muse retain its malformed object value as a literal string. Those five families preserve both echoes in both versions. Gemma4 returns no calls and DeepSeek V4.1 raises a JSON parse error in both versions; their goldens still require both echoes, and both remain red. Parser fixes for these two failures are outside this change.
+- **`5-missing_inner_closers_then_valid_call`** (`missing_inner_closers_then_valid_call`) An unfinished raw argument is closed only by its outer call wrapper, then a complete Paris call follows. Reject the incomplete call and retain only Paris. Native inputs cover Beam, DeepSeek V4/V4.1, Gemma4, GLM47, Kimi K3, MiniMax M3, Muse Glimmer/Spark, Qwen3, and Nemotron V3. Kimi K2 and GPT-OSS use bare JSON arguments, already covered by `5-malformed_json_then_two_valid_calls`.
 
 ### Group 6 — TC Empty body (TOOLCALLING.streamv1.6)
 - **`6-empty_args`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv1.6.a.
@@ -138,6 +139,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-tool
 - **`7-unused_reference_graph_parameter_types`** (`unused_reference_graph_parameter_types`) An unused compact reference graph precedes directly typed integer, boolean, and string fields. It must not change their types or discard the complete call.
 - **`7-nullable_reference_alias_literals`** (`nullable_reference_alias_literals`) Nullable aliases to string `const: "null"` and `enum: ["null"]` retain the schema-valid string null values.
 - **`7-local_schema_id_preserves_type`** (`local_schema_id_preserves_type`) A local `$id` disables unsupported reference traversal without discarding a directly declared integer type.
+- **`7-tool-argument-declared-types-enum_contradicting_declared_type`** (`enum_contradicting_declared_type`) Shared-family regression for ai-dynamo/frontend-crates#526 and #527: an `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides. The array text `["temperature","humidity"]` is a list and `5` is an integer for `{"type": "integer", "enum": ["auto"]}`. Schema-driven grammars (Qwen3, Nemotron v3, GLM, MiniMax M3, Beam) must ignore the contradicting literals; explicitly typed grammars carry the types on the wire. The strict schema oracle exempts this case because the schema admits no value literally.
 - **`7-arg_numeric_nested_exact`** (`arg_numeric_nested_exact`) Nested objects and arrays preserve a large fractional number, an underflow-sized exponent, and positive and negative integers beyond the exact binary64 range.
 - **`7-tool-argument-unions-and-intersections-not_keyword_type_complement`** (`not_keyword_type_complement`) Shared-family regression for [ai-dynamo/dynamo#17662](https://github.com/ai-dynamo/dynamo/issues/17662): a `not` keyword constrains the argument to the complement of the negated type. `not string` makes bare `-2500` an integer; `not integer` keeps bare `42` the string `"42"`. Schema-driven grammars (Qwen3, Nemotron v3, GLM, MiniMax) must infer the type; explicitly typed grammars carry it on the wire.
 - **`7-tool-argument-unions-and-intersections-conditional_schema_number_types`** (`conditional_schema_number_types`) Shared-family regression for ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number (`21.5`); an integer `if` with a numeric `else` keeps `37` an integer.
@@ -188,7 +190,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-tool
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 283 of the 420 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 288 of the 425 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
 - The 137 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
@@ -536,9 +538,9 @@ Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`,
 |---|---:|
 | `7-tool-argument-text-preservation` | 7 |
 | `7-tool-argument-numeric-precision` | 23 |
-| `7-tool-argument-declared-types` | 12 |
+| `7-tool-argument-declared-types` | 14 |
 | `7-tool-argument-nullability` | 19 |
-| `7-tool-argument-constants` | 40 |
+| `7-tool-argument-constants` | 41 |
 | `7-tool-argument-unions-and-intersections` | 55 |
 | `7-tool-argument-schema-references` | 15 |
 

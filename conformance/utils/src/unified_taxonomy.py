@@ -64,6 +64,7 @@ UNIFIED_TAX = {
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
     "orphan_close_after_prose": (5, "3"),
     "malformed_json_then_two_valid_calls": (5, "4"),
+    "missing_inner_closers_then_valid_call": (5, "6"),
     # Group 6 — Empty body (streamv1.6)
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
@@ -74,6 +75,7 @@ UNIFIED_TAX = {
     "conditional_schema_number_types": (7, "30"),
     "reference_object_recursive_and_composed_types": (7, "31"),
     "arg_array_quoted_parameter_close": (7, "28"),
+    "enum_contradicting_declared_type": (7, "32"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
     "arg_numeric_nested_exact": (7, "20.nested_exact"),

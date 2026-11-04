@@ -18780,7 +18780,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
-    historical_ids: [UNIFIED.7-conditional_schema_number_types]
+    historical_ids:
+    - UNIFIED.7-conditional_schema_number_types
     request:
       input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="amount">
 
@@ -18854,7 +18855,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
-    historical_ids: [UNIFIED.7-not_keyword_type_complement]
+    historical_ids:
+    - UNIFIED.7-not_keyword_type_complement
     request:
       input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="count">
 
@@ -18919,7 +18921,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
-    historical_ids: [UNIFIED.7-reference_object_recursive_and_composed_types]
+    historical_ids:
+    - UNIFIED.7-reference_object_recursive_and_composed_types
     request:
       input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="category">
 
@@ -19030,3 +19033,237 @@ cases:
               children: []
           retries: 37
           dry_run: false
+  schema_enum_inferred_integer:
+    lifecycle: active
+    scenario: schema_enum_inferred_integer
+    description: 'Schema probe enum_inferred_integer: independently authored value 2 under {"enum": [1, 2, 4]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        2
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              enum:
+              - 1
+              - 2
+              - 4
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          2
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 2
+  schema_const_numeric_bare:
+    lifecycle: active
+    scenario: schema_const_numeric_bare
+    description: 'Schema probe const_numeric_bare: independently authored value 3 under {"const": 3}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-constants-const_numeric_bare
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        3
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              const: 3
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          3
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 3
+  schema_enum_const_narrowing:
+    lifecycle: active
+    scenario: schema_enum_const_narrowing
+    description: 'Schema probe enum_const_narrowing: independently authored value 1 under {"enum": [1, "auto"], "const": 1}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_const_narrowing
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        1
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              enum:
+              - 1
+              - auto
+              const: 1
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          1
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 1
+  missing_inner_closers_then_valid_call:
+    lifecycle: active
+    scenario: missing_inner_closers_then_valid_call
+    description: 'The first call''s argument value is missing its inner closers (Qwen3: </parameter> and </function>) but keeps the outer call close; a complete get_weather(location=Paris) follows. Deliver the entire native input in one push, then finish. Reject the incomplete call and return only the complete one.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-missing_inner_closers_then_valid_call
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
+
+        Paris
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
+
+          Paris
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: Paris
+  enum_contradicting_declared_type:
+    lifecycle: active
+    scenario: enum_contradicting_declared_type
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
+    request:
+      input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="metrics">
+
+        ["temperature","humidity"]
+
+        </rfl:parameter><rfl:parameter name="count">
+
+        5
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            metrics:
+              type: array
+              items:
+                type: string
+              enum:
+              - temperature
+              - humidity
+              - co2
+            count:
+              type: integer
+              enum:
+              - auto
+      chunks:
+      - delta_text: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="metrics">
+
+          ["temperature","humidity"]
+
+          </rfl:parameter><rfl:parameter name="count">
+
+          5
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          metrics:
+          - temperature
+          - humidity
+          count: 5

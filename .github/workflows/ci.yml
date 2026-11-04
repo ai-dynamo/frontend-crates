@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: conformance-artifacts-${{ github.run_id }}
+  cancel-in-progress: false
+
 env:
   CONFORMANCE_INCLUDE_HISTORY: "true"
   CONFORMANCE_COVERAGE: exhaustive
@@ -179,6 +183,14 @@ jobs:
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
+      - name: Retain generated site if candidate packaging failed
+        if: ${{ !cancelled() && failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-site-candidate
+          path: ${{ runner.temp }}/pages/
+          retention-days: 7
+          if-no-files-found: ignore
 
   conformance-fixtures:
     needs: prepare
@@ -223,6 +235,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      actions: read
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -261,10 +274,12 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    outputs:
+      validation: ${{ steps.accounting.outcome }}
     permissions:
       contents: read
       pages: read
-      pull-requests: write
+      actions: read
     steps:
       - name: Checkout qualified source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -274,27 +289,25 @@ jobs:
       - name: Install gate dependencies
         run: python3 conformance/utils/src/ci_plan.py --setup
       - name: Require every validation job
+        shell: bash
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
           printf '%s\n' "$NEEDS_JSON" > "$RUNNER_TEMP/validation-results.json"
-          python3 conformance/utils/src/verify_ci_selection.py --job-results "$RUNNER_TEMP/validation-results.json"
+          python3 conformance/utils/src/verify_ci_selection.py --job-results "$RUNNER_TEMP/validation-results.json" 2>&1 | tee "$RUNNER_TEMP/validation-jobs.log"
       - name: Restore qualified publication
         uses: ./.github/actions/conformance-publication
-      - name: Download complete collection baseline
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: conformance-test-baseline
-          path: ${{ runner.temp }}/baseline-selection
-      - name: Download every test assignment
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          pattern: conformance-selection-*
-          merge-multiple: true
-          path: ${{ runner.temp }}/assignments
+      - name: Restore latest accounting transfers by creation time
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 conformance/utils/src/ci_publication_finalize.py receipts
+      - name: Select fresh or retained receipts once per artifact
+        run: python3 conformance/utils/src/ci_publication.py selections
       - name: Account for every collected test before publication
+        id: accounting
+        shell: bash
         run: |
-          python3 conformance/utils/src/verify_ci_selection.py --baseline "$RUNNER_TEMP/baseline-selection" --selections "$RUNNER_TEMP/assignments" --require-history --publication "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA"
+          python3 conformance/utils/src/verify_ci_selection.py --baseline "$RUNNER_TEMP/baseline-selection" --selections "$RUNNER_TEMP/assignments" --require-history --publication "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA" 2>&1 | tee "$RUNNER_TEMP/validation-accounting.log"
 
       - name: Configure GitHub Pages
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -305,16 +318,17 @@ jobs:
         with:
           path: ${{ runner.temp }}/pages
 
-      - name: Comment on PR
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/pull-request/') }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          PR_NUMBER="${GITHUB_REF_NAME#pull-request/}"
-          gh pr comment "$PR_NUMBER" \
-            --repo "$GITHUB_REPOSITORY" \
-            --edit-last --create-if-none \
-            --body "📊 **Parser conformance viewer** validated — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+      - name: Retain validation results and diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-validation
+          path: |
+            ${{ runner.temp }}/validation-results.json
+            ${{ runner.temp }}/validation-jobs.log
+            ${{ runner.temp }}/validation-accounting.log
+          retention-days: 7
+          if-no-files-found: error
 
   minimax-structural-tags:
     needs: prepare
@@ -350,6 +364,7 @@ jobs:
       contents: read
       pages: write
       id-token: write
+      actions: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -366,6 +381,17 @@ jobs:
       - name: Check candidate is still current main
         id: current
         run: python3 conformance/utils/src/ci_publication.py current
+      - name: Check Pages transfer availability after cleanup
+        if: ${{ steps.current.outputs.current == 'true' }}
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 conformance/utils/src/ci_publication.py pages-needed
+      - name: Recreate Pages transfer for a deployment rerun
+        if: ${{ steps.pages.outputs.needed == 'true' }}
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        with:
+          path: ${{ runner.temp }}/pages
       - name: Deploy GitHub Pages
         if: ${{ steps.current.outputs.current == 'true' }}
         id: deployment
@@ -385,3 +411,39 @@ jobs:
             ${{ runner.temp }}/conformance-delivery.json
             ${{ runner.temp }}/conformance-deployment.json
           if-no-files-found: error
+
+  finalize-publication:
+    needs: [conformance-table, deploy-pages]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NEEDS_JSON: ${{ toJSON(needs) }}
+    steps:
+      - name: Checkout finalization tools
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Collect generated site and available evidence
+        id: collect
+        run: python3 conformance/utils/src/ci_publication_finalize.py collect
+      # Reruns have a new artifact namespace. Never use overwrite: it deletes
+      # the previous publication before the replacement upload can succeed.
+      - name: Retain one downloadable publication
+        if: ${{ steps.collect.outputs.available == 'true' }}
+        id: publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-publication
+          path: ${{ runner.temp }}/conformance-publication/
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Link publication from summary and PR
+        if: ${{ steps.publication.outputs.artifact-id != '' }}
+        env:
+          ARTIFACT_ID: ${{ steps.publication.outputs.artifact-id }}
+        run: python3 conformance/utils/src/ci_publication_finalize.py announce --artifact-id "$ARTIFACT_ID"
