@@ -22,11 +22,11 @@ kimi_k2: {}
 nemotron_v3:
   UNIFIED.enum_contradicting_declared_type.nemotron_v3:
     golden:
-      note: 'FIXME (v2 defect): the Qwen-family XML resolver still lets the enum literals veto the declared type, so the array and integer stay text (fixed by #527).'
+      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
       actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
 qwen3:
   UNIFIED.enum_contradicting_declared_type.qwen3:
     golden:
-      note: 'FIXME (v2 defect): the Qwen-family XML resolver still lets the enum literals veto the declared type, so the array and integer stay text (fixed by #527).'
+      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
       actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
 minimax_m3: {}

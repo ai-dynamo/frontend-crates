@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, rankUnifiedColumns, validateCaseColumns, caseSchemas } from './model.js';
+import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, rankUnifiedColumns, validateCaseColumns, caseSchemas, compareVersions } from './model.js';
 import { isMapping, hasField, getField, compareText, mappingEntries, mergeMappings, deleteField, sameValue } from './values.js';
 import { materializeUnifiedRecord, canonicalUnifiedLabel } from './resources.js';
 
@@ -51,6 +51,15 @@ export function columnKeysFor(metadata) {
 }
 
 const missingCapture = { unavailable: 'Output not yet captured', unavailable_code: 'missing_capture' };
+
+
+function captureParserRoute(source, family, metadata, recorded) {
+  if (source.implementation !== 'dynamo_v2') return 'unified';
+  if (recorded) return recorded;
+  const since = metadata.unified_presentation.parser_generations[family]?.native_unified_since;
+  if (since) return compareVersions(source.version, since) < 0 ? 'split' : 'unified';
+  return source.native_unified_families?.includes(family) ? 'unified' : null;
+}
 
 
 export async function unifiedPanel(catalog, reader, { selected = null, reference = undefined } = {}) {
@@ -106,7 +115,9 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         const equalRank = prior && prior.bindingRank === bindingRank;
         const conflict = equalRank && (prior.conflict || (!sameValue(prior.value, value)
           && new Error(`conflicting historical aliases in ${descriptor.control.key}: ${family}/${current.id}`)));
-        captures.set(current.input.scenario, { value, bindingRank, conflict, inherited: getField(value, 'inherited_from') });
+        captures.set(current.input.scenario, { value, bindingRank, conflict,
+          inherited: hasField(value, 'producer_origin') ? null : getField(value, 'inherited_from') ?? getField(projected, 'inherited_from'),
+          parserPath: getField(value, 'parser_path') ?? getField(projected, 'parser_path') });
       }
       // A later exact binding can supersede conflicts among retired stimuli.
       for (const capture of captures.values()) if (capture.conflict) throw capture.conflict;
@@ -169,6 +180,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         const { source, control } = descriptor;
         const history = histories.get(`${family}\0${control.key}`);
         const capture = history.get(scenario);
+        const parseMode = captureParserRoute(source, family, metadata, capture?.parserPath);
         let failure = capture ? Object.fromEntries(['unavailable', 'unavailable_code', 'error'].filter((key) => hasField(capture.value, key)).map((key) => [key, getField(capture.value, key)])) : {};
         const isDynamo = control.impl === 'dynamo';
         if (!capturesFamily(source, family)) {
@@ -184,7 +196,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
           && withoutSyntheticFinishStep(request) === request
           && sameValue(withoutSyntheticFinishStep(captureInput), requestIdentity(request));
         const stream = metadata.selection_policy.unified.capture_contracts?.[source.implementation]?.assembled === 'stream';
-        const events = !capture || hasFailure ? null : getField(capture.value, 'parser_path') === 'split' ? getField(capture.value, 'assembled', []) : stream ? unifiedEvents(capture.value, {recordedFallback: source.implementation === 'dynamo_v2'}) : getField(capture.value, 'assembled', []);
+        const events = !capture || hasFailure ? null : parseMode === 'split' ? getField(capture.value, 'assembled', []) : stream ? unifiedEvents(capture.value, {recordedFallback: source.implementation === 'dynamo_v2'}) : getField(capture.value, 'assembled', []);
         const verdict = failed ? 'ERROR' : events === null ? null : classifyUnified(family, gold, events, metadata.unified_leak_markers);
         let block;
         if (events === null) {
@@ -193,10 +205,15 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
           block = { events, verdict };
           if (isDynamo) {
             if (control.key === 'dynamo') block.todo = null;
-            block.explanation = getField(capture.value, 'parser_path') === 'split' ? 'v1 reasoning + v2 tool parsing.' : capture.inherited ? `Inherited from v2 ${capture.inherited}.` : null;
+            const route = parseMode === 'split' ? 'v1 reasoning + v2 tool parsing.' : null;
+            const inheritance = capture.inherited
+              ? `Inherited from v2 ${capture.inherited}; selected release route: ${parseMode === 'unified' ? 'UnifiedParser' : parseMode || 'unknown'}.` : null;
+            block.explanation = [route, inheritance].filter(Boolean).join(' ') || null;
           }
         }
-        results.set(control.key, { chunks, events, verdict, failure, block, syntheticFinish });
+        const label = source.implementation === 'dynamo_v2' && parseMode
+          ? control.label.replace(/recorded history|UnifiedParser/, parseMode === 'unified' ? 'UnifiedParser' : parseMode) : control.label;
+        results.set(control.key, { chunks, events, verdict, failure, block, syntheticFinish, parseMode, label });
         comparisons[control.key] = { value: events !== null ? ['events', canonicalUnifiedEvents(events)] : failed && (isDynamo || Object.hasOwn(failure, 'error')) ? ['failure'] : ['absent'],
           leak: Number(verdict === 'LEAK'), err: Number(control.key === 'dynamo' ? failed : Object.hasOwn(failure, 'error')),
           na: Number(events === null && !Object.hasOwn(failure, 'error')) };
@@ -217,7 +234,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
           input: { kind: chunks.length || finish ? 'chunks' : 'text', text: request.input, chunks, finish, family: markerFamily },
           candidates: tooltipOrder.map(({ control }) => control.key === 'golden'
             ? { key: 'golden', label: control.label, impl: 'golden', version: null, parse_mode: 'unified', leak: false, pin_first: true, block: { events: gold } }
-            : { key: control.key, label: control.label, impl: control.impl, version: control.version, parse_mode: 'unified', leak: results.get(control.key).verdict === 'LEAK', block: results.get(control.key).block }),
+            : { key: control.key, label: results.get(control.key).label, impl: control.impl, version: control.version, parse_mode: results.get(control.key).parseMode, leak: results.get(control.key).verdict === 'LEAK', block: results.get(control.key).block }),
           baseline: null, reasons, dynamo_notes: [], refs: [], leak_note: null, na_note: null } };
     }
     const modelLabel = family;

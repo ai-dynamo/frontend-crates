@@ -325,7 +325,8 @@ def display_tax(scenario, families=None):
 def display_section(scenario, families=None):
     group, _ = display_tax(scenario, families)
     if families is not None and len(families) == 1:
-        label = UNIFIED_GROUP_LABEL.get(group) or f"Family-specific tests: {group}"
+        label_key = UNIFIED_DISPLAY["family_label_aliases"].get(group, group)
+        label = UNIFIED_GROUP_LABEL.get(label_key) or f"Family-specific tests: {group}"
         return f"unified_g{group}", label
     if group == 7:
         section = argument_section((case_fold(scenario) or (scenario, ""))[0])

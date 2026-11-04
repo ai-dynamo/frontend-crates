@@ -476,7 +476,7 @@ export async function validateResolvedUnified(records, inputDocument, resource, 
         || compareVersions(provenanceReleaseVersion(getField(capturedWith, resource.implementation)), resource.version) > 0) {
       throw new Error(`resolved observation has a false producer identity: ${caseId}`);
     }
-    if (getField(capturedWith, resource.implementation).includes('+source.') && !hasField(value.document, 'capture_origin')) throw new Error(`${resource.path}:${caseId} qualified producer requires captured origin`);
+    // Preserved legacy overrides can retain a qualified producer without an origin.
     if (hasField(value.document, 'capture_origin')) origin(getField(value.document, 'capture_origin'), `${resource.path}:${caseId}.capture_origin`, getField(capturedWith, resource.implementation));
     Object.defineProperty(changes, caseId, { value: { case_key: value.case_key, stimulus: value.stimulus, observation: value.observation }, enumerable: true });
   }

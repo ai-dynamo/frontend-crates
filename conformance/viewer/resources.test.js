@@ -415,7 +415,11 @@ const qualifiedSources = [{ ...snapshotResource, kind: 'history' }];
 await validateResolvedUnified({ id: qualifiedRecord }, inputs, snapshotResource, qualifiedSources);
 const unboundQualified = structuredClone(qualifiedRecord);
 delete unboundQualified.value.document.capture_origin;
-await assert.rejects(validateResolvedUnified({id:unboundQualified},inputs,snapshotResource,qualifiedSources), /requires captured origin/);
+await validateResolvedUnified({id:unboundQualified},inputs,snapshotResource,qualifiedSources);
+assert.equal(Object.hasOwn(unboundQualified.value.document, 'capture_origin'), false);
+const missingCheckpointOrigin = structuredClone(snapshot);
+missingCheckpointOrigin.provenance = { status: 'captured' };
+await assert.rejects(validateUnifiedCapture(missingCheckpointOrigin, inputs, snapshotResource), /origin/);
 for (const version of ['bad.version', qualifiedProducer, '0.9.7+source.a']) {
   await assert.rejects(validateResolvedUnified({}, {cases:{}}, {...snapshotResource,version}, []), /invalid Unified capture version/);
   await assert.rejects(validateUnifiedCapture(snapshot, inputs, {...snapshotResource,version}), /invalid Unified capture version/);

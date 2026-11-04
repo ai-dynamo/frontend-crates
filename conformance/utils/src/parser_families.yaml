@@ -357,6 +357,7 @@ unified:
       dynamo_v1: ["gpt_oss", "harmony"]
     registry: harmony
     native: true
+    native_unified_since: "0.7.28"
     # Retained native capture qualified before the next family release.
     unrouted_native_capture: "0.7.28"
     guided_tool_output: true
@@ -660,6 +661,7 @@ unified_batch:
 
 # Reader-facing grouping and comparison defaults; capture identities remain in code.
 unified_display:
+  family_label_aliases: {gemma4: gemma, glm47: glm5, kimi_k3: kimi}
   comparison_defaults: [dynamo, null, null]
   comparison_slot_engines: [dynamo, sglang, vllm]
   comparison_languages: [python, rust]
