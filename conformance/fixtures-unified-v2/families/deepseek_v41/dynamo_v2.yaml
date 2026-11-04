@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","version":"0.9.9"}],"mode":"unified","payload_sha256":"035f3c7a22b5e0b6a0f0120c2fb2527016909d4d4a82d42ffdfd98ead23ce49f","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","surface":"unified","version":"0.9.9"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","version":"0.9.9"}],"mode":"unified","payload_sha256":"8a7bec5f21be719402f3db317dff4ef908709ca568ea8cfeda4839e70672bca0","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","surface":"unified","version":"0.9.9"}
 document:
   mode: unified
 provenance:
@@ -4291,7 +4291,7 @@ records:
               type: object
         semantic_sha256: e867d133b0676c716e0bea576f759d90c9a680c54b1f0ba80b8b161e166bb653
   dsml_unterminated_parameter_then_call:
-    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.6.yaml
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml
     value:
       case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
       stimulus:
@@ -4371,7 +4371,7 @@ records:
         captured_with:
           dynamo_v2: 0.9.6
   dsml_unterminated_parameter_then_empty_call:
-    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.6.yaml
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml
     value:
       case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
       stimulus:
