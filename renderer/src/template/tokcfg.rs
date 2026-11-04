@@ -108,6 +108,38 @@ impl ChatTemplate {
             Either::Right(ref added) => Some(added.content.clone()),
         }
     }
+
+    /// Spellings the tokenizer turns into one added token, each with whether it
+    /// is `special`: every `added_tokens_decoder` entry, the
+    /// `additional_special_tokens`, and the bos/eos/unk literals. Whitespace-only
+    /// spellings are dropped; a spelling listed twice is special if either
+    /// entry says so. Sorted for a stable result.
+    pub(crate) fn added_token_spellings(&self) -> Vec<(String, bool)> {
+        fn insert(spellings: &mut HashMap<String, bool>, spelling: Option<String>, special: bool) {
+            if let Some(spelling) = spelling
+                && !spelling.trim().is_empty()
+            {
+                *spellings.entry(spelling).or_insert(false) |= special;
+            }
+        }
+        let mut spellings = HashMap::new();
+        for token in self.added_tokens_decoder.iter().flat_map(HashMap::values) {
+            insert(
+                &mut spellings,
+                Some(token.content.clone()),
+                token.special.unwrap_or(false),
+            );
+        }
+        for token in self.additional_special_tokens.iter().flatten() {
+            insert(&mut spellings, Some(token.clone()), true);
+        }
+        insert(&mut spellings, self.bos_tok(), true);
+        insert(&mut spellings, self.eos_tok(), true);
+        insert(&mut spellings, self.unk_tok(), true);
+        let mut spellings: Vec<_> = spellings.into_iter().collect();
+        spellings.sort();
+        spellings
+    }
 }
 
 #[allow(dead_code)]

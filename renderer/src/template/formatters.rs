@@ -794,9 +794,12 @@ impl HfTokenizerConfigJsonFormatter {
         let default_template_handles_native_tools = handles_native_tools("default");
         let tool_use_template_handles_native_tools = handles_native_tools("tool_use");
 
+        let control_markers = super::oai::ControlMarkers::from_config(&config);
+
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
+            control_markers,
             mixins: Arc::new(mixins),
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             requires_content_arrays,
