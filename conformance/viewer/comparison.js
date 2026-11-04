@@ -67,11 +67,17 @@ function horizontalCellExtra(cell) {
 }
 
 function fitStackedResultColumns(table) {
-  const mark = table.querySelector('.matrix-segments');
+  const mark = table.querySelector(':scope > tbody > tr > td.matrix-cell > .matrix-segments');
   if (!mark) return;
-  const boundary = table.querySelector('.matrix-cell.matrix-family-end');
-  const extra = Math.max(horizontalCellExtra(mark.closest('td')), boundary ? horizontalCellExtra(boundary) : 0);
-  table.style.setProperty('--matrix-cell-width', (mark.getBoundingClientRect().width + extra) + 'px');
+  const cells = [...mark.closest('tr').cells].filter(cell => cell.classList.contains('matrix-cell'));
+  const tracks = [...table.querySelectorAll(':scope > colgroup > .matrix-result-column')];
+  const markWidth = mark.getBoundingClientRect().width;
+  let total = 0;
+  tracks.forEach((track, index) => {
+    const width = markWidth + horizontalCellExtra(cells[index]);
+    track.style.width = width + 'px'; total += width;
+  });
+  table.style.setProperty('--matrix-result-width', total + 'px');
 }
 
 function fitVerticalCaseLabels(table) {
@@ -319,6 +325,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       if (stacked) for (const [groupIndex,family] of familyGroups.entries()) for (const row of family.rows) for (const [index,k] of rowKeys(row).entries()) {
         const tr = tbody.insertRow(); tr.dataset.family = family.key;
         if (groupIndex > 0 && row === family.rows[0] && index === 0) tr.classList.add('matrix-family-start');
+        if (groupIndex < familyGroups.length - 1 && row === family.rows.at(-1) && index === rowKeys(row).length - 1) tr.classList.add('matrix-family-end');
         const label = (row.model_label || row.family) + ' / ';
         const th = heading(tr,label + captureLabel(k));
         th.title = label + candidate(k)?.label; th.setAttribute('aria-label', th.title);
@@ -343,8 +350,13 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const labelTrack = document.createElement('col'); labelTrack.className = 'matrix-label-column';
     tracks.appendChild(labelTrack);
     if (resultColumns) {
-      const resultTracks = document.createElement('col'); resultTracks.className = 'matrix-result-column'; resultTracks.span = resultColumns;
-      tracks.appendChild(resultTracks);
+      if (vertical && stacked) for (let index = 0; index < resultColumns; index++) {
+        const track = document.createElement('col'); track.className = 'matrix-result-column'; tracks.appendChild(track);
+      }
+      else {
+        const resultTracks = document.createElement('col'); resultTracks.className = 'matrix-result-column'; resultTracks.span = resultColumns;
+        tracks.appendChild(resultTracks);
+      }
     }
     table.insertBefore(tracks,thead);
     if (observedMatrix) labelResizeObserver.unobserve(observedMatrix);

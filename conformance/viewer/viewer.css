@@ -61,7 +61,7 @@ body { background: var(--page-bg); color: var(--ink); }
 .matrix-category-heading button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 /* Use the page scrollport for both axes so sticky labels need no nested scroll box. */
 .comparison-matrix-scroll { overflow: visible; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); }
-.comparison-matrix { --matrix-label-width: 220px; --matrix-cell-width: 30px; width: calc(var(--matrix-label-width) + var(--matrix-cell-width) * var(--matrix-result-columns)); table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; }
+.comparison-matrix { --matrix-label-width: 220px; --matrix-cell-width: 30px; --matrix-family-gap: .7em; width: calc(var(--matrix-label-width) + var(--matrix-result-width, calc(var(--matrix-cell-width) * var(--matrix-result-columns)))); table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; }
 .comparison-ui.layout-vertical .comparison-matrix { --matrix-cell-width: 42px; }
 .matrix-label-column { width: var(--matrix-label-width); }
 .matrix-result-column { width: var(--matrix-cell-width); }
@@ -83,7 +83,11 @@ body { background: var(--page-bg); color: var(--ink); }
 .comparison-matrix thead tr > th:first-child { z-index: 5; }
 .comparison-matrix .matrix-cell { height: 22px; padding: 4px 2px; cursor: pointer; }
 .comparison-ui.layout-stacked .matrix-cell { height: auto; padding: .1em; }
-.comparison-ui.layout-stacked:not(.layout-vertical) .comparison-matrix tbody tr > th:first-child { padding-block: .1em; }
+.comparison-ui.layout-stacked:not(.layout-vertical) .comparison-matrix tbody th { padding-block: .1em; }
+.comparison-ui.layout-stacked.layout-vertical .comparison-matrix .matrix-family-end { padding-right: var(--matrix-family-gap); }
+.comparison-ui.layout-stacked.layout-vertical .comparison-matrix .matrix-family-end + * { padding-left: var(--matrix-family-gap); }
+.comparison-ui.layout-stacked:not(.layout-vertical) .comparison-matrix tbody tr.matrix-family-start > * { padding-top: var(--matrix-family-gap); }
+.comparison-ui.layout-stacked:not(.layout-vertical) .comparison-matrix tbody tr.matrix-family-end > * { padding-bottom: var(--matrix-family-gap); }
 .comparison-matrix .filtered-cell { text-align: center; }
 .comparison-matrix .matrix-cell:focus-visible,.comparison-matrix .matrix-case-heading:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .matrix-segments { display: flex; height: 22px; border-radius: 4px; overflow: hidden; }

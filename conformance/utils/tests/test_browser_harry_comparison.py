@@ -326,13 +326,18 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
                 return {label:table.tHead.rows[0].cells[0].getBoundingClientRect().width,
                   labelTrack:parseFloat(getComputedStyle(table.querySelector('.matrix-label-column')).width),
                   cellTrack:parseFloat(getComputedStyle(table).getPropertyValue('--matrix-cell-width')),
+                  tracks:[...table.querySelectorAll('.matrix-result-column')].map(col=>col.getBoundingClientRect().width),
                   cells:[...table.querySelectorAll('.matrix-cell')].map(c=>c.getBoundingClientRect().width),
                   header:table.tHead.getBoundingClientRect().height};
             """)
             label_width = geometry['labelTrack'] if vertical else (220 if width > 700 else 150)
             assert abs(geometry["label"] - label_width) <= 1, geometry
-            assert geometry["cells"] and all(abs(w - geometry['cellTrack']) <= 1 for w in geometry["cells"]), geometry
-            if not (vertical and stacked):
+            assert geometry['cells'], geometry
+            if vertical and stacked:
+                assert all(abs(w - geometry['tracks'][index % len(geometry['tracks'])]) <= 1
+                           for index, w in enumerate(geometry['cells'])), geometry
+            else:
+                assert all(abs(w - geometry['cellTrack']) <= 1 for w in geometry['cells']), geometry
                 assert abs(geometry['cellTrack'] - (42 if vertical else 30)) <= 1, geometry
             if not vertical:
                 assert geometry["header"] <= 100, geometry
@@ -437,6 +442,30 @@ def test_stacked_families_are_grouped_and_legend_matches_visible_colors(publishe
 
             spacing = WebDriverWait(driver, 10).until(compact_spacing)
             assert spacing['contained'], spacing
+
+            separator = driver.execute_script("""
+              const table=document.querySelector('.comparison-matrix');
+              const font=parseFloat(getComputedStyle(table).fontSize);
+              if(document.body.classList.contains('transpose-mode')) {
+                const cell=[...table.querySelectorAll('td.matrix-cell.matrix-family-end')].find(cell =>
+                  cell.querySelector('.matrix-segments') && cell.nextElementSibling?.querySelector('.matrix-segments'));
+                const edge=cell.getBoundingClientRect().right, border=parseFloat(getComputedStyle(cell).borderRightWidth);
+                return {font,before:edge-border-cell.querySelector('.matrix-segments').getBoundingClientRect().right,
+                  after:cell.nextElementSibling.querySelector('.matrix-segments').getBoundingClientRect().left-edge};
+              }
+              const row=[...table.querySelectorAll('tbody tr.matrix-family-end')].find(row =>
+                [...row.querySelectorAll('.matrix-cell')].some((cell,index) => cell.querySelector('.matrix-segments')
+                  && row.nextElementSibling.querySelectorAll('.matrix-cell')[index]?.querySelector('.matrix-segments')));
+              const cells=[...row.querySelectorAll('.matrix-cell')], next=row.nextElementSibling;
+              const index=cells.findIndex((cell,index) => cell.querySelector('.matrix-segments')
+                && next.querySelectorAll('.matrix-cell')[index]?.querySelector('.matrix-segments'));
+              const nextCell=next.querySelectorAll('.matrix-cell')[index], edge=nextCell.getBoundingClientRect().top;
+              return {font,before:edge-cells[index].querySelector('.matrix-segments').getBoundingClientRect().bottom,
+                after:nextCell.querySelector('.matrix-segments').getBoundingClientRect().top-edge
+                  -parseFloat(getComputedStyle(nextCell).borderTopWidth)};
+            """)
+            assert separator['before'] >= separator['font'] / 2, separator
+            assert separator['after'] >= separator['font'] / 2, separator
 
         assert_groups_and_legend()
         driver.find_element("css selector", "[data-case-search]").send_keys("dotted_name_minimal")
