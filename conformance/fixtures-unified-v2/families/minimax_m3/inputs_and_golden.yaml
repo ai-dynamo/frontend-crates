@@ -19049,3 +19049,152 @@ cases:
         name: schema_probe
         arguments:
           value: 42
+  schema_float_const_integer_precision:
+    lifecycle: active
+    scenario: schema_float_const_integer_precision
+    description: 'Schema probe float_const_integer_precision: independently authored value "9007199254740993" under {"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-float_const_integer_precision
+    historical_ids: []
+    request:
+      input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>9007199254740993]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              anyOf:
+              - const: 9007199254740992.0
+              - type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>9007199254740993]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '9007199254740993'
+  schema_overlapping_oneOf_union:
+    lifecycle: active
+    scenario: schema_overlapping_oneOf_union
+    description: 'Schema probe overlapping_oneOf_union: independently authored value "42" under {"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-overlapping_oneOf_union
+    historical_ids: []
+    request:
+      input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              oneOf:
+              - type:
+                - string
+                - integer
+              - type: integer
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '42'
+  schema_type_array_string_integer_minimum:
+    lifecycle: active
+    scenario: schema_type_array_string_integer_minimum
+    description: 'Schema probe type_array_string_integer_minimum: independently authored value "42" under {"type": ["string", "integer"], "minimum": 100}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_minimum
+    historical_ids: []
+    request:
+      input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - string
+              - integer
+              minimum: 100
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '42'
+  schema_type_array_string_integer_not_const:
+    lifecycle: active
+    scenario: schema_type_array_string_integer_not_const
+    description: 'Schema probe type_array_string_integer_not_const: independently authored value "42" under {"type": ["string", "integer"], "not": {"const": 42}}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_not_const
+    historical_ids: []
+    request:
+      input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - string
+              - integer
+              not:
+                const: 42
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>42]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '42'

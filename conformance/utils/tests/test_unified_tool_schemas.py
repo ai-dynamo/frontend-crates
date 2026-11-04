@@ -57,7 +57,7 @@ def test_schema_guard_null_type():
     ({"x": True}, {"type": ["null", "object"], "properties": {"x": {"type": "integer"}}}),
     ([1.5], {"type": ["null", "array"], "items": {"type": "integer"}}),
     (None, {"type": ["null", "unsupported"]}),
-    (None, {"type": ["null", "integer"], "minimum": 0}),
+    (None, {"type": ["null", "integer"], "maximum": 0}),
 ])
 def test_schema_guard_rejects_nested_values_and_unsupported_constraints(value, schema):
     with pytest.raises(AssertionError):
@@ -66,6 +66,8 @@ def test_schema_guard_rejects_nested_values_and_unsupported_constraints(value, s
 
 @pytest.mark.parametrize("schema, valid, invalid", [
     ({"anyOf": [{"type": "string"}, {"type": "null"}]}, ["text", None], [1, False, []]),
+    # `minimum` constrains numbers only.
+    ({"type": ["string", "integer"], "minimum": 100}, ["42", 100], [42, 99]),
     ({"oneOf": [{"type": "integer"}, {"type": "null"}]}, [2, 2.0, None], [1.5, True, "2"]),
     ({"oneOf": [{"type": "number"}, {"type": "integer"}]}, [1.5], [2, 2.0, None]),
     ({"const": None}, [None], ["null", 0, False]),

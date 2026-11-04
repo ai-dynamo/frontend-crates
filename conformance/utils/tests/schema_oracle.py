@@ -107,7 +107,8 @@ def matches_schema(
         return False
     if not contradicted and "enum" in schema and not any(_json_equal(value, item) for item in schema["enum"]):
         return False
-    if "minimum" in schema and (type(value) not in (int, float) or value < schema["minimum"]):
+    # `minimum` constrains numbers only; other values pass it.
+    if "minimum" in schema and type(value) in (int, float, Decimal) and value < schema["minimum"]:
         return False
     if "anyOf" in schema and not any(
         matches_schema(value, branch, root_schema, _references, nullable)
