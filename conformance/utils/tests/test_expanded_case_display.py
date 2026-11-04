@@ -33,6 +33,7 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history() -> Non
         "schema_enum_inferred_integer",
         "schema_const_numeric_bare",
         "schema_enum_const_narrowing",
+        "schema_declared_integer_boolean_number_order",
     }
     for family, document in store.families.items():
         for key, case in document.cases.items():
