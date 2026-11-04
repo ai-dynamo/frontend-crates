@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.6...dynamo-parsers-v11.0.7) - 2026-11-04
+
+### Bug fixes
+
+- *(parsers-v2)* Let a declared type win over contradicting MiniMax-M3 literals ([#526](https://github.com/ai-dynamo/frontend-crates/pull/526))
+
 ## [11.0.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.5...dynamo-parsers-v11.0.6) - 2026-11-04
 
 ### Bug fixes
