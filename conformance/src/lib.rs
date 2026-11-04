@@ -9,5 +9,6 @@ pub mod arguments;
 pub mod normalization;
 
 mod runner;
+mod yaml_normalization;
 
 pub use runner::{CaseFailure, CaseUnsupported, RunOptions, RunReport, run_unified_family};
