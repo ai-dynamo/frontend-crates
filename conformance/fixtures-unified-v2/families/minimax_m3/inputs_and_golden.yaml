@@ -12307,7 +12307,7 @@ cases:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: 42
   schema_union_anyof_array_reverse_string:
     lifecycle: active
     scenario: schema_union_anyOf_array_reverse_string

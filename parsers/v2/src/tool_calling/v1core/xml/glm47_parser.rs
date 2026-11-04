@@ -14,11 +14,9 @@ use uuid::Uuid;
 use super::super::ToolDefinition;
 use super::super::config::Glm47ParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
-#[cfg(test)]
-use crate::tool_calling::arguments::schema_type_match;
 use crate::tool_calling::arguments::{
-    ParsedValue, coerce_integral_number, normalize_decimal_spelling, parsed_json_literal,
-    raw_number_literal, schema_has_type, schema_permits_null,
+    NativeText, ParsedValue, SchemaFacts, coerce_integral_number, normalize_decimal_spelling,
+    parsed_json_literal, raw_number_literal, schema_permits_null,
 };
 
 /// Render a tool_call block snippet for logs. Bounded so a huge truncated
@@ -453,9 +451,10 @@ fn get_param_schema_type<'a>(
             "string"
         });
     }
-    // Prefer string in unions because JSON-looking text is ambiguous.
-    if schema_has_type(schema, param, "string", raw) {
-        return Some("string");
+    match SchemaFacts::new(schema).native_text_type(param, raw) {
+        Some(NativeText::Json(kind)) => return Some(kind),
+        Some(NativeText::String) => return Some("string"),
+        None => {}
     }
     if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
         return Some(schema_type);
@@ -482,7 +481,7 @@ fn get_param_schema_type<'a>(
     candidates
         .iter()
         .copied()
-        .find(|candidate| schema_has_type(schema, param, candidate, raw))
+        .find(|candidate| SchemaFacts::new(schema).has_type(Some(param), candidate))
 }
 
 /// Parse a single GLM-4.7 tool call block
@@ -672,21 +671,19 @@ mod tests {
                 serde_json::json!({"anyOf": [{"const": raw}, {"type": "integer"}]}),
                 serde_json::json!({"allOf": [{"const": raw}, {"minLength": 1}]}),
             ] {
+                // Text that is a JSON integer takes the admitted integer branch.
+                let expected = if parameter.get("anyOf").is_some() && raw.trim() == "42" {
+                    serde_json::json!(42)
+                } else {
+                    serde_json::json!(raw)
+                };
                 assert_eq!(
                     parse_schema_value(parameter.clone(), raw),
-                    serde_json::json!(raw),
+                    expected,
                     "schema={parameter}, raw={raw:?}"
                 );
             }
         }
-        assert_eq!(
-            parse_schema_value(
-                serde_json::json!({"anyOf": [{"const": "42"}, {"type": "integer"}]}),
-                " 42 "
-            ),
-            serde_json::json!(42),
-            "a string constant must match raw text, not its trimmed spelling"
-        );
     }
 
     #[test]
@@ -743,9 +740,13 @@ mod tests {
             ),
             (serde_json::json!({"$ref": "#/$defs/Choice"}), "auto", true),
             (serde_json::json!({"$ref": "#/$defs/Choice"}), "42", false),
+            // A string constant matches the raw text, not its trimmed spelling.
+            (serde_json::json!({"const": "42"}), "42", true),
+            (serde_json::json!({"const": "42"}), " 42 ", false),
         ] {
             assert_eq!(
-                schema_has_type(&schema, &parameter, "string", raw),
+                SchemaFacts::new(&schema).native_text_type(&parameter, raw)
+                    == Some(NativeText::String),
                 expected,
                 "schema={parameter}, raw={raw:?}"
             );
@@ -753,17 +754,55 @@ mod tests {
     }
 
     #[test]
-    fn string_constant_unions_keep_existing_ambiguity_rules() {
+    fn ambiguous_text_prefers_admitted_json_values() {
         for (parameter, raw, expected) in [
             (
                 serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
                 "42",
-                serde_json::json!("42"),
+                serde_json::json!(42),
             ),
             (
                 serde_json::json!({"anyOf": [{"const": "42"}, {"type": "integer"}]}),
                 "42",
-                serde_json::json!("42"),
+                serde_json::json!(42),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": "{\"x\":1}"}, {"type": "object"}]}),
+                "{\"x\":1}",
+                serde_json::json!({"x": 1}),
+            ),
+            // Not JSON integers, so the string branch keeps the exact text.
+            (
+                serde_json::json!({"type": ["string", "integer"]}),
+                "007",
+                serde_json::json!("007"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "integer"]}),
+                "1e3",
+                serde_json::json!("1e3"),
+            ),
+            // The value must satisfy the literals, not only their types.
+            (
+                serde_json::json!({"anyOf": [{"enum": [1, 2]}, {"type": "string"}]}),
+                "3",
+                serde_json::json!("3"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"type": "string", "enum": ["auto"]}, {"type": "integer"}]}),
+                "42",
+                serde_json::json!(42),
+            ),
+            (
+                serde_json::json!({"enum": [1, "a"]}),
+                "1",
+                serde_json::json!(1),
+            ),
+            // Integer literals compare exactly, not through f64.
+            (
+                serde_json::json!({"anyOf": [{"const": 9007199254740993_u64}, {"type": "string"}]}),
+                "9007199254740992",
+                serde_json::json!("9007199254740992"),
             ),
             (
                 serde_json::json!({"anyOf": [{"const": "null"}, {"type": "null"}]}),
@@ -811,8 +850,14 @@ mod tests {
     }
 
     #[test]
-    fn type_hints_bound_reference_depth() {
-        for (references, expected) in [(16, serde_json::json!(42)), (17, serde_json::json!("42"))] {
+    fn type_hints_bound_reference_chains() {
+        use crate::tool_calling::arguments::MAX_SCHEMA_WORK;
+        // Each walk has its own work budget, so the limit is one budget of references.
+        for (references, expected) in [
+            (16, serde_json::json!(42)),
+            (MAX_SCHEMA_WORK - 1, serde_json::json!(42)),
+            (MAX_SCHEMA_WORK + 1, serde_json::json!("42")),
+        ] {
             let mut definitions = serde_json::Map::new();
             for index in 0..references {
                 definitions.insert(
@@ -841,25 +886,50 @@ mod tests {
     }
 
     #[test]
-    fn branching_reference_cycles_exhaust_a_shared_budget() {
-        let reference = serde_json::json!({"$ref": "#/$defs/Cycle"});
-        let schema = serde_json::json!({
-            "$defs": {"Cycle": {"anyOf": vec![reference.clone(); 8]}},
-            "properties": {"value": reference}
-        });
-        let mut remaining = 64;
+    fn wide_unions_type_within_one_walk_budget() {
+        let mut branches: Vec<Value> = (0..600)
+            .map(|index| serde_json::json!({"const": format!("c{index}")}))
+            .collect();
+        branches.push(serde_json::json!({"type": "integer"}));
+        let parameter = serde_json::json!({"anyOf": branches});
         assert_eq!(
-            schema_type_match(
-                &schema,
-                &schema["properties"]["value"],
-                "string",
-                "value",
-                0,
-                &mut remaining
-            ),
+            parse_schema_value(parameter.clone(), "42"),
+            serde_json::json!(42)
+        );
+        assert_eq!(parse_schema_value(parameter, "c7"), serde_json::json!("c7"));
+    }
+
+    #[test]
+    fn branching_references_exhaust_the_work_budget() {
+        // Each level doubles the paths to the integer leaf; the work budget stops
+        // the walk and the value stays untyped text.
+        let mut definitions = serde_json::Map::new();
+        for level in 0..24 {
+            let next = serde_json::json!({"$ref": format!("#/$defs/L{}", level + 1)});
+            definitions.insert(
+                format!("L{level}"),
+                serde_json::json!({"anyOf": [next.clone(), next]}),
+            );
+        }
+        definitions.insert("L24".into(), serde_json::json!({"type": "integer"}));
+        let schema = serde_json::json!({
+            "$defs": definitions,
+            "properties": {"value": {"$ref": "#/$defs/L0"}}
+        });
+        // The integer leaf would admit 42, so None shows the walk ran out of budget.
+        assert_eq!(
+            SchemaFacts::new(&schema).native_text_type(&schema["properties"]["value"], "42"),
             None
         );
-        assert_eq!(remaining, 0);
+
+        let tools = vec![ToolDefinition {
+            name: "probe".into(),
+            parameters: Some(schema),
+        }];
+        let wire = "<tool_call>probe<arg_key>value</arg_key><arg_value>42</arg_value></tool_call>";
+        let (calls, _) = try_tool_call_parse_glm47(wire, &get_test_config(), Some(&tools)).unwrap();
+        let arguments: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(arguments["value"], serde_json::json!("42"));
     }
 
     #[test]
@@ -1288,31 +1358,72 @@ mod tests {
     }
 
     #[test]
-    fn test_string_schema_keeps_json_looking_values_verbatim() {
-        for param_schema in [
-            serde_json::json!({"type": "string"}),
-            serde_json::json!({"type": ["string"]}),
-            serde_json::json!({"type": ["string", "null"]}),
-            serde_json::json!({"type": ["null", "string"]}),
-            serde_json::json!({"type": ["object", "array", "string"]}),
-            serde_json::json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
-            serde_json::json!({"oneOf": [{"type": "null"}, {"type": "string"}]}),
-            serde_json::json!({"allOf": [{"type": "string"}]}),
-            serde_json::json!({"allOf": [{"minLength": 1}, {"type": "string"}]}),
-            serde_json::json!({"allOf": [
-                {"anyOf": [
-                    {"type": "null"},
-                    {"oneOf": [{"type": "array"}, {"type": "string"}]}
-                ]},
-                {"minLength": 1}
-            ]}),
-            serde_json::json!({"oneOf": [
-                {"type": "null"}, {"allOf": [{"type": "string"}, {"minLength": 1}]}
-            ]}),
-            serde_json::json!({"anyOf": [
-                {"type": "object"},
-                {"oneOf": [{"type": "array"}, {"type": ["null", "string"]}]}
-            ]}),
+    fn json_looking_text_stays_verbatim_unless_its_json_type_is_admitted() {
+        // A schema that also admits an object or array takes that JSON value.
+        for (param_schema, admits_object, admits_array) in [
+            (serde_json::json!({"type": "string"}), false, false),
+            (serde_json::json!({"type": ["string"]}), false, false),
+            (
+                serde_json::json!({"type": ["string", "null"]}),
+                false,
+                false,
+            ),
+            (
+                serde_json::json!({"type": ["null", "string"]}),
+                false,
+                false,
+            ),
+            (
+                serde_json::json!({"type": ["object", "array", "string"]}),
+                true,
+                true,
+            ),
+            (
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+                false,
+                false,
+            ),
+            (
+                serde_json::json!({"oneOf": [{"type": "null"}, {"type": "string"}]}),
+                false,
+                false,
+            ),
+            (
+                serde_json::json!({"allOf": [{"type": "string"}]}),
+                false,
+                false,
+            ),
+            (
+                serde_json::json!({"allOf": [{"minLength": 1}, {"type": "string"}]}),
+                false,
+                false,
+            ),
+            (
+                serde_json::json!({"allOf": [
+                    {"anyOf": [
+                        {"type": "null"},
+                        {"oneOf": [{"type": "array"}, {"type": "string"}]}
+                    ]},
+                    {"minLength": 1}
+                ]}),
+                false,
+                true,
+            ),
+            (
+                serde_json::json!({"oneOf": [
+                    {"type": "null"}, {"allOf": [{"type": "string"}, {"minLength": 1}]}
+                ]}),
+                false,
+                false,
+            ),
+            (
+                serde_json::json!({"anyOf": [
+                    {"type": "object"},
+                    {"oneOf": [{"type": "array"}, {"type": ["null", "string"]}]}
+                ]}),
+                true,
+                true,
+            ),
         ] {
             let config = get_test_config();
             let tools = vec![ToolDefinition {
@@ -1349,11 +1460,18 @@ mod tests {
             let args: HashMap<String, Value> =
                 serde_json::from_str(&calls[0].function.arguments).unwrap();
 
-            assert_eq!(
-                args["object_text"],
-                Value::String("{\"key\": \"value\"}".to_string())
-            );
-            assert_eq!(args["array_text"], Value::String("[1, 2, 3]".to_string()));
+            let object_text = if admits_object {
+                serde_json::json!({"key": "value"})
+            } else {
+                serde_json::json!("{\"key\": \"value\"}")
+            };
+            let array_text = if admits_array {
+                serde_json::json!([1, 2, 3])
+            } else {
+                serde_json::json!("[1, 2, 3]")
+            };
+            assert_eq!(args["object_text"], object_text, "{param_schema}");
+            assert_eq!(args["array_text"], array_text, "{param_schema}");
             assert_eq!(args["quoted_text"], Value::String("\"quoted\"".to_string()));
             assert_eq!(args["payload"], serde_json::json!({"key": "value"}));
             assert_eq!(

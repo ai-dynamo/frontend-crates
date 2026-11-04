@@ -39,7 +39,7 @@ import pytest  # noqa: E402
 import yaml  # noqa: E402
 
 import gen_unified_golden as G  # noqa: E402
-from schema_cases import CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, schema_arguments  # noqa: E402
+from schema_cases import CONFORMANCE_CASES, JSON_FIRST_FAMILIES, XML_COMPATIBILITY_CASES, schema_arguments  # noqa: E402
 import unified_history  # noqa: E402
 import unified_archives
 from fixture_test_support import retained_source_bytes
@@ -2101,8 +2101,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                     schema = _fixture_property_schema(parameters, key)
                     # Families whose wire carries untyped text values: the authoring
                     # contract types them against the declared schema (a literal
-                    # `null` for a nullable property, JSON for a non-string one).
-                    if G.unified_grammar_family(family) not in {"qwen3", "glm47", "beam", "minimax_m3"} or not isinstance(value, str):
+                    # `null` for a nullable property, then JSON first: an admitted
+                    # non-string JSON value wins over the string).
+                    if G.unified_grammar_family(family) not in JSON_FIRST_FAMILIES or not isinstance(value, str):
                         continue
                     if scenario in {probe["name"] for probe in XML_COMPATIBILITY_CASES} and schema == {"type": "custom"}:
                         assert family == "qwen3"
@@ -2110,21 +2111,25 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                         continue
                     if value == "null" and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
-                    elif (not matches_schema(value, schema, parameters)
-                          or (G.unified_grammar_family(family) in ("qwen3", "beam") and scenario in {
-                              "schema_integer_const_ambiguous", "schema_object_const_union",
-                              "schema_type_array_string_integer",
-                          }) or (family == "minimax_m3" and scenario in {
-                              "schema_integer_const_ambiguous", "schema_object_const_union",
-                          }) or family == "qwen3"):
-                        try:
-                            decoded = json.loads(value, parse_float=Decimal)
-                        except json.JSONDecodeError:
-                            continue
-                        if matches_schema(decoded, schema, parameters) and (
-                            family != "qwen3" or not isinstance(decoded, str)
-                        ):
-                            candidate["arguments"][key] = decoded
+                        continue
+                    try:
+                        decoded = json.loads(value, parse_float=Decimal)
+                    except json.JSONDecodeError:
+                        continue
+                    if not matches_schema(decoded, schema, parameters):
+                        continue
+                    # This validator counts an integral float spelling such as 1.0
+                    # as an integer while the parsers count it as a number, so that
+                    # spelling alone stays off the JSON-first path.
+                    json_first = isinstance(decoded, (bool, int, list, dict)) or (
+                        isinstance(decoded, Decimal) and decoded != decoded.to_integral_value()
+                    )
+                    if family == "qwen3":
+                        json_first = not isinstance(decoded, str)
+                    if json_first or (
+                        family != "qwen3" and not matches_schema(value, schema, parameters)
+                    ):
+                        candidate["arguments"][key] = decoded
         else:
             candidates = []
             for value in _json_values(raw, exact_numbers=True):
@@ -2320,8 +2325,8 @@ def _assert_cross_family_contract(corpus):
                 # Exact input/output assertions above precede normalization of
                 # this documented exception; unrelated guided cases stay strict.
                 events = [event for event in events if event["kind"] != "tool_call"]
-            if scenario in {"schema_integer_const_ambiguous", "schema_object_const_union", "schema_type_array_string_integer"}:
-                probe = next(probe for probe in CONFORMANCE_CASES if scenario == f"schema_{probe['name']}")
+            probe = next((probe for probe in CONFORMANCE_CASES if scenario == f"schema_{probe['name']}"), None)
+            if probe is not None and "text_value" in probe:
                 expected_events = [{"kind": "tool_call", "name": "schema_probe", "arguments": schema_arguments(family, probe)}]
                 assert json.dumps(events, sort_keys=True) == json.dumps(expected_events, sort_keys=True)
                 assert matches_schema(events[0]["arguments"], case["tools"][0]["parameters"])

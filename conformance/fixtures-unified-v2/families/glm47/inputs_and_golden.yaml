@@ -13566,7 +13566,7 @@ cases:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: 42
   schema_integer_const_ambiguous:
     lifecycle: active
     scenario: schema_integer_const_ambiguous
@@ -13613,7 +13613,7 @@ cases:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: 42
   schema_null_union_ambiguous:
     lifecycle: active
     scenario: schema_null_union_ambiguous
@@ -13707,7 +13707,8 @@ cases:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '{"x":1}'
+          value:
+            x: 1
   guided_json_native_parameter_array_before_payload:
     lifecycle: active
     scenario: guided_json_native_parameter_array_before_payload

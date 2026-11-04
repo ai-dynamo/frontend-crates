@@ -28,12 +28,8 @@ deepseek_v41:
       actual: tool_call f {"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}
 
 glm47:
-  # TODO: the GLM typer resolves `$ref`/`allOf`/unions but not `not` or
-  # `if`/`then`/`else` (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
-  UNIFIED.not_keyword_type_complement.glm47:
-    golden:
-      note: 'FIXME (v2 defect): GLM typing ignores `not`; the negated-string integer stays the string "-2500".'
-      actual: 'tool_call capture_payload {"count":"-2500","text":"42"}'
+  # TODO: the GLM typer shares the MiniMax M3 schema facts, which resolve `not`
+  # but not `if`/`then`/`else` (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
   UNIFIED.conditional_schema_number_types.glm47:
     golden:
       note: 'FIXME (v2 defect): GLM typing ignores `if`/`then`/`else`; both numbers stay strings.'

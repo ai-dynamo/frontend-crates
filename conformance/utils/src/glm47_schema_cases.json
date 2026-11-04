@@ -1779,10 +1779,11 @@
       ]
     },
     "value": "42",
+    "text_value": 42,
     "raw": "42",
     "grammar": false,
     "conformance": false,
-    "note": "Existing unrestricted string hint wins; parser-only compatibility control, string 42 is schema-invalid."
+    "note": "Parser-only control. v1 keeps its legacy string hint, the schema-invalid \"42\"; the shared native-text policy returns the admitted integer (text_value)."
   },
   {
     "name": "type_array_string_integer",
@@ -1793,6 +1794,7 @@
       ]
     },
     "value": "42",
+    "text_value": 42,
     "raw": "42"
   },
   {
@@ -1864,6 +1866,7 @@
       ]
     },
     "value": "42",
+    "text_value": 42,
     "raw": "42"
   },
   {
@@ -1879,6 +1882,9 @@
       ]
     },
     "value": "{\"x\":1}",
+    "text_value": {
+      "x": 1
+    },
     "raw": "{\"x\":1}",
     "xgrammar_min": "0.2.7"
   },

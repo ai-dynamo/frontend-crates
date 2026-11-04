@@ -4,6 +4,9 @@
 #[path = "../../tests/glm47_schema_matrix.rs"]
 mod matrix;
 
+// v1 keeps its legacy string preference.
+const JSON_FIRST: bool = false;
+
 use dynamo_parsers::tool_calling::{
     StructuralTagSchemaMode, ToolCallConfig, ToolCallFormatBuildContext, ToolChoice,
     ToolDefinition, try_tool_call_parse_aggregate,
@@ -70,14 +73,14 @@ async fn authored_schema_matrix_preserves_types_and_literals() {
         };
         results.push(
             json!({"name":case.name, "schema":case.parameters(), "wire":case.wire(),
-            "expected":case.expected(), "actual":actual,
+            "expected":case.expected(JSON_FIRST), "actual":actual,
             "tag":tag, "builder_error":builder_error}),
         );
-        if actual != case.expected() {
+        if actual != case.expected(JSON_FIRST) {
             failures.push(format!(
                 "{}: expected {}, got {}",
                 case.name,
-                case.expected(),
+                case.expected(JSON_FIRST),
                 actual
             ));
         }
@@ -92,7 +95,7 @@ async fn authored_schemas_accept_valid_and_reject_invalid_wires() {
     let mut probes = Vec::new();
     for case in matrix::cases().into_iter().filter(|case| case.grammar) {
         let actual = arguments(&case).await;
-        assert_eq!(actual, case.expected(), "{}", case.name);
+        assert_eq!(actual, case.expected(JSON_FIRST), "{}", case.name);
         let built = build(&[tool(&case)], StructuralTagSchemaMode::Auto);
         if expects_builder_error(&case) {
             let error = format!("{:#}", built.unwrap_err());
@@ -117,7 +120,7 @@ async fn authored_schemas_accept_valid_and_reject_invalid_wires() {
             let mut tool = tool(&case);
             tool.strict = strict;
             let enforce = mode == StructuralTagSchemaMode::Strict || strict != Some(false);
-            let mut probe = case.probe(build(&[tool], mode).unwrap(), case.expected());
+            let mut probe = case.probe(build(&[tool], mode).unwrap(), case.expected(JSON_FIRST));
             probe["name"] = json!(format!("strict_{strict:?}_{mode:?}"));
             if !enforce {
                 probe["accept"] = probe["reject"].take();
