@@ -23214,7 +23214,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    historical_ids: []
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
     request:
       input: '<tool_call>
 

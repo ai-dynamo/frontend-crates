@@ -16626,7 +16626,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    historical_ids: []
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
     request:
       input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="metrics" string="false">["temperature","humidity"]</｜DSML｜ parameter><｜DSML｜ parameter name="count" string="false">5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       init:

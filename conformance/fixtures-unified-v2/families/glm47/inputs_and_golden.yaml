@@ -16543,7 +16543,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    historical_ids: []
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
     request:
       input: <tool_call>capture_payload<arg_key>metrics</arg_key><arg_value>["temperature","humidity"]</arg_value><arg_key>count</arg_key><arg_value>5</arg_value></tool_call>
       init:

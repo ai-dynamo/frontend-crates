@@ -18783,7 +18783,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    historical_ids: []
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
     request:
       input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="capture_payload">]<]minimax[>[<metrics>["temperature","humidity"]]<]minimax[>[</metrics>]<]minimax[>[<count>5]<]minimax[>[</count>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
       init:

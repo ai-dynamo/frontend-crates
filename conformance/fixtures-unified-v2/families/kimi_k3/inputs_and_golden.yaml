@@ -23839,7 +23839,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    historical_ids: []
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
     request:
       input: <|open|>tools<|sep|><|open|>call tool="capture_payload" index="1"<|sep|><|open|>argument key="metrics" type="array"<|sep|>["temperature","humidity"]<|close|>argument<|sep|><|open|>argument key="count" type="integer"<|sep|>5<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
       init:
