@@ -32,6 +32,15 @@ import zlib
 
 MAX_PACK = 1024 * 1024
 MAX_RESOURCE = 1024 * 1024 * 1024
+# A freshly deployed GitHub Pages site answers 503 (and 404 for new paths) for a
+# short while after `deploy-pages` reports success. These statuses are retried
+# every PROPAGATION_BACKOFF_SECONDS only while a propagation deadline is in force;
+# a healthy 200 is unaffected and the per-attempt transient retry below still applies.
+PROPAGATION_STATUSES = frozenset({404, 502, 503, 504})
+PROPAGATION_BACKOFF_SECONDS = 10.0
+# Seconds the delivery check may wait for propagation; set by the deployed-site
+# delivery run, absent (no wait) for local servers and unit tests.
+PROPAGATION_ENV = "CONFORMANCE_PAGES_PROPAGATION_SECONDS"
 
 
 def require(condition, message):
@@ -99,7 +108,37 @@ def _http_request_ids(headers):
             if key.lower() in {"x-github-request-id", "x-request-id", "x-served-by", "x-cache"}}
 
 
-def _scan_http_resources(root, base_url, paths, update, deadline=None, timeout=HTTP_TIMEOUT):
+def open_published(request, *, timeout=HTTP_TIMEOUT, propagation_deadline=0.0, backoff=PROPAGATION_BACKOFF_SECONDS,
+                   opener=None, clock=time.monotonic, sleep=time.sleep, log=None):
+    """Open a published URL, retrying propagation failures until the deadline.
+
+    With ``propagation_deadline`` of 0 this is a single ``opener`` call. Otherwise
+    an HTTP 404/502/503/504 or a connection error is retried every ``backoff``
+    seconds until ``propagation_deadline`` seconds have elapsed since the first
+    attempt; the last error is then raised unchanged. Any other failure is raised
+    immediately, so a genuinely broken publication still fails fast.
+    """
+    opener = build_opener(_NoRedirect()).open if opener is None else opener
+    started = clock()
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            return opener(request, timeout=timeout)
+        except (HTTPError, URLError) as error:
+            status = error.code if isinstance(error, HTTPError) else None
+            propagating = status in PROPAGATION_STATUSES if status is not None else True
+            elapsed = clock() - started
+            if not propagating or elapsed + backoff > propagation_deadline:
+                raise
+            if log is not None:
+                reason = f"HTTP {status}" if status is not None else f"connection error: {error.reason}"
+                log(f"publication not yet reachable ({reason}) after {elapsed:.0f}s, attempt {attempt}; "
+                    f"retrying in {backoff:.0f}s: {request.full_url}")
+            sleep(backoff)
+
+
+def _scan_http_resources(root, base_url, paths, update, deadline=None, timeout=HTTP_TIMEOUT, propagation_deadline=0.0):
     started = time.monotonic()
     deadline = started + HTTP_BUDGET if deadline is None else deadline
     records = _http_records(base_url, paths)
@@ -127,7 +166,11 @@ def _scan_http_resources(root, base_url, paths, update, deadline=None, timeout=H
             error = None
             retry_after = None
             try:
-                with opener.open(request, timeout=min(timeout, remaining)) as response:
+                # While Pages propagates, wait bounded inside this attempt (never past
+                # the remaining verification budget) before the transient retry applies.
+                with open_published(request, timeout=min(timeout, remaining),
+                                    propagation_deadline=min(propagation_deadline, remaining), opener=opener.open,
+                                    log=lambda message: print(message, flush=True)) as response:
                     entry["status"] = response.status
                     entry["request_ids"] = _http_request_ids(response.headers)
                     require(response.status == 200 and response.url == request.full_url,
@@ -206,9 +249,10 @@ def _scan_http_resources(root, base_url, paths, update, deadline=None, timeout=H
         workers.shutdown(wait=False, cancel_futures=True)
 
 
-def _http_scan_process(connection, root, base_url, paths, deadline, timeout):
+def _http_scan_process(connection, root, base_url, paths, deadline, timeout, propagation_deadline):
     try:
-        result = _scan_http_resources(root, base_url, paths, lambda path, record: connection.send(("resource", path, record)), deadline, timeout)
+        result = _scan_http_resources(root, base_url, paths, lambda path, record: connection.send(("resource", path, record)), deadline, timeout,
+                                      propagation_deadline=propagation_deadline)
         connection.send(("result", result))
     except Exception as error:
         # Process supervisor preserves the original failure and traceback across IPC.
@@ -220,10 +264,10 @@ def _http_scan_process(connection, root, base_url, paths, deadline, timeout):
         connection.close()
 
 
-def _run_http_scan(root, base_url, paths, update, deadline):
+def _run_http_scan(root, base_url, paths, update, deadline, propagation_deadline=0.0):
     context = multiprocessing.get_context("spawn")
     receiver, sender = context.Pipe(duplex=False)
-    worker = context.Process(target=_http_scan_process, args=(sender, root, base_url, paths, deadline, HTTP_TIMEOUT))
+    worker = context.Process(target=_http_scan_process, args=(sender, root, base_url, paths, deadline, HTTP_TIMEOUT, propagation_deadline))
     expires = deadline + HTTP_TIMEOUT
     worker.start()
     sender.close()
@@ -271,8 +315,10 @@ def update_delivery_report(path, *, check=None, browser_journey=None):
     print(f"delivery report: {path}", flush=True)
 
 
-def _verify_http_resources(root, base_url, paths):
+def _verify_http_resources(root, base_url, paths, propagation_deadline=None):
     started = time.monotonic()
+    if propagation_deadline is None:
+        propagation_deadline = float(os.environ.get(PROPAGATION_ENV, "0"))
     records = _http_records(base_url, paths)
     report = {"base_url": base_url, "resources": records, "success": False}
     report_path = os.environ.get("CONFORMANCE_DELIVERY_REPORT")
@@ -284,7 +330,9 @@ def _verify_http_resources(root, base_url, paths):
     try:
         deadline = float(os.environ.get("CONFORMANCE_DELIVERY_DEADLINE", started + HTTP_BUDGET))
         require(deadline > started, "verification budget exhausted before scan")
-        result = _run_http_scan(root, base_url, paths, lambda path, record: records.__setitem__(path, record), deadline)
+        # Keyword on purpose: tests substitute _scan_http_resources for _run_http_scan.
+        result = _run_http_scan(root, base_url, paths, lambda path, record: records.__setitem__(path, record), deadline,
+                                propagation_deadline=propagation_deadline)
         report["success"] = True
         return result
     except Exception as error:
@@ -299,21 +347,21 @@ def _verify_http_resources(root, base_url, paths):
         update_delivery_report(report_path, check=report)
 
 
-def verify_http_publication(root, base_url):
+def verify_http_publication(root, base_url, *, propagation_deadline=None):
     parsed = urlsplit(base_url)
     require(parsed.scheme in {"http", "https"} and parsed.netloc and not parsed.username
             and not parsed.query and not parsed.fragment, "publication URL must be an HTTP directory")
     root = Path(root).resolve(strict=True)
     require((root / "index.html").is_file(), "qualified publication lacks index.html")
     paths = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
-    return _verify_http_resources(root, base_url, paths)
+    return _verify_http_resources(root, base_url, paths, propagation_deadline)
 
 
-def verify_http_publication_identity(root, base_url):
+def verify_http_publication_identity(root, base_url, *, propagation_deadline=None):
     root = Path(root).resolve(strict=True)
     relative = "conformance/viewer-publication.json"
     require((root / relative).is_file(), "qualified history lacks publication identity")
-    return _verify_http_resources(root, base_url, [relative])
+    return _verify_http_resources(root, base_url, [relative], propagation_deadline)
 
 
 def decompress(data, limit):
