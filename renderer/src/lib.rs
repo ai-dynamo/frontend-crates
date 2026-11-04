@@ -39,10 +39,10 @@ pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
 mod python;
-mod render_options;
+mod render_mode;
 mod template;
 
-pub use render_options::RenderOptions;
+pub use render_mode::RenderMode;
 
 pub use template::{
     ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, kimi_k3_formatter_for,
@@ -255,6 +255,19 @@ impl std::error::Error for PromptRenderError {}
 pub trait OAIChatLikeRequest {
     fn model(&self) -> String;
     fn messages(&self) -> Value;
+
+    /// Instant every clock-reading template function observes in this render.
+    ///
+    /// `None` reads the wall clock, which is the historical behaviour. `Some`
+    /// pins `strftime_now` for the render, so a template that embeds a date
+    /// renders identically on every attempt and a deferred render cannot
+    /// disagree with the instant the caller captured for it.
+    ///
+    /// This is per request, not per formatter: one formatter renders many
+    /// requests, each chronologically distinct.
+    fn render_instant(&self) -> Option<std::time::SystemTime> {
+        None
+    }
     /// Preserve Responses replay metadata that typed Chat messages cannot express.
     /// Typed messages remain available for media collection.
     fn template_messages_json_override(&self) -> Option<serde_json::Value> {

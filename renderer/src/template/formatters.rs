@@ -625,24 +625,23 @@ impl HfTokenizerConfigJsonFormatter {
         mixins: ContextMixins,
         exclude_tools_when_tool_choice_none: bool,
     ) -> anyhow::Result<Self> {
-        Self::with_render_options(
+        Self::with_render_mode(
             config,
             mixins,
             exclude_tools_when_tool_choice_none,
-            crate::RenderOptions::default(),
+            crate::RenderMode::default(),
         )
     }
 
-    /// Build a formatter that evaluates templates according to `render_options`.
+    /// Build a formatter that implements `render_mode`.
     ///
-    /// [`crate::RenderOptions::default`] reproduces [`Self::with_options`]
-    /// exactly. Use [`crate::RenderOptions::strict_at`] to render messages
-    /// verbatim from a pinned instant.
-    pub fn with_render_options(
+    /// [`crate::RenderMode::default`] reproduces [`Self::with_options`] exactly.
+    /// [`crate::RenderMode::Verbatim`] renders the supplied messages as given.
+    pub fn with_render_mode(
         config: ChatTemplate,
         mixins: ContextMixins,
         exclude_tools_when_tool_choice_none: bool,
-        render_options: crate::RenderOptions,
+        render_mode: crate::RenderMode,
     ) -> anyhow::Result<Self> {
         let mut env = JinjaEnvironment::default().env();
 
@@ -817,7 +816,7 @@ impl HfTokenizerConfigJsonFormatter {
             env,
             config,
             mixins: Arc::new(mixins),
-            render_options,
+            render_mode,
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             requires_content_arrays,
             exclude_tools_when_tool_choice_none,

@@ -116,10 +116,30 @@ impl PromptFormatter {
         context: ContextMixins,
         exclude_tools_when_tool_choice_none: bool,
     ) -> Result<PromptFormatter> {
-        let formatter = HfTokenizerConfigJsonFormatter::with_options(
+        Self::from_parts_with_mode(
             config,
             context,
             exclude_tools_when_tool_choice_none,
+            crate::RenderMode::default(),
+        )
+    }
+
+    /// Build a formatter that implements `render_mode`.
+    ///
+    /// [`crate::RenderMode::default`] reproduces [`Self::from_parts`].
+    /// [`crate::RenderMode::Verbatim`] sends the request's messages to the
+    /// template exactly as supplied.
+    pub fn from_parts_with_mode(
+        config: ChatTemplate,
+        context: ContextMixins,
+        exclude_tools_when_tool_choice_none: bool,
+        render_mode: crate::RenderMode,
+    ) -> Result<PromptFormatter> {
+        let formatter = HfTokenizerConfigJsonFormatter::with_render_mode(
+            config,
+            context,
+            exclude_tools_when_tool_choice_none,
+            render_mode,
         )?;
         Ok(Self::OAI(Arc::new(formatter)))
     }
@@ -172,10 +192,9 @@ struct HfTokenizerConfigJsonFormatter {
     env: Environment<'static>,
     config: ChatTemplate,
     mixins: Arc<ContextMixins>,
-    /// How this formatter evaluates templates: message-shape adaptation and the
-    /// instant every clock-reading template function observes. Default keeps
-    /// the adaptive behaviour and the wall clock.
-    render_options: crate::RenderOptions,
+    /// Which contract this formatter implements: adaptive message shaping, or
+    /// rendering the supplied messages verbatim.
+    render_mode: crate::RenderMode,
     supports_add_generation_prompt: bool,
     requires_content_arrays: bool,
     /// When true, strip tool definitions from the chat template when tool_choice is "none".

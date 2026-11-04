@@ -587,14 +587,14 @@ impl HfTokenizerConfigJsonFormatter {
 
         let mut messages_for_template = crate::messages_to_json(req)?;
 
-        // Strict rendering sends the conversation to the template exactly as
+        // Verbatim rendering sends the conversation to the template exactly as
         // supplied. Every rewrite below exists so a shape the template would
         // reject renders anyway, and each one changes the bytes a counting
-        // caller sees, so strict mode skips all of them -- including the
+        // caller sees, so verbatim mode skips all of them -- including the
         // capability rejections, which would otherwise refuse a request the
-        // template itself accepts. A strict render of a shape the template
+        // template itself accepts. A verbatim render of a shape the template
         // rejects is an error, which is the answer the caller asked for.
-        if !self.render_options.strict {
+        if self.render_mode.adapts_messages() {
             crate::reject_unsupported_partial_assistant(&messages_for_template)?;
             crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
 
@@ -695,7 +695,7 @@ impl HfTokenizerConfigJsonFormatter {
         // `strftime_now` per render pins every call in this render to one
         // instant without touching the shared environment. Concurrent renders
         // therefore cannot observe another render's instant.
-        let ctx = match self.render_options.now {
+        let ctx = match req.render_instant() {
             Some(now) => {
                 let now = chrono::DateTime::<chrono::Local>::from(now);
                 let strftime_now = Value::from_function(move |format: &str| {
@@ -899,10 +899,7 @@ mod tests {
         assert!(prompt.segments().unwrap().last().unwrap().allow_special);
     }
 
-    fn formatter_with_render_options(
-        template: &str,
-        options: crate::RenderOptions,
-    ) -> SysFormatter {
+    fn formatter_with_render_mode(template: &str, mode: crate::RenderMode) -> SysFormatter {
         let ct: SysChatTemplate = serde_json::from_value(json!({
             "chat_template": template,
             "bos_token": "<s>",
@@ -910,11 +907,30 @@ mod tests {
             "unk_token": "<unk>",
         }))
         .unwrap();
-        SysFormatter::with_render_options(ct, SysMixins::new(&[]), true, options).unwrap()
+        SysFormatter::with_render_mode(ct, SysMixins::new(&[]), true, mode).unwrap()
+    }
+
+    /// A request that carries the render instant the way a producer adapter
+    /// does, since the protocol request type has no such field.
+    struct TimedRequest {
+        inner: NvCreateChatCompletionRequest,
+        instant: std::time::SystemTime,
+    }
+
+    impl crate::OAIChatLikeRequest for TimedRequest {
+        fn model(&self) -> String {
+            self.inner.model()
+        }
+        fn messages(&self) -> Value {
+            self.inner.messages()
+        }
+        fn render_instant(&self) -> Option<std::time::SystemTime> {
+            Some(self.instant)
+        }
     }
 
     #[test]
-    fn strict_render_leaves_reasoning_out_of_content() {
+    fn verbatim_render_leaves_reasoning_out_of_content() {
         let template = "{% for m in messages %}{{ m.role }}:{{ m.content }}|{% endfor %}";
         let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
             "model": "m",
@@ -925,7 +941,7 @@ mod tests {
         }))
         .unwrap();
 
-        let adaptive = formatter_with_render_options(template, crate::RenderOptions::default())
+        let adaptive = formatter_with_render_mode(template, crate::RenderMode::Adaptive)
             .render(&request)
             .unwrap();
         assert!(
@@ -933,35 +949,38 @@ mod tests {
             "adaptive rendering injects reasoning into content, got {adaptive:?}"
         );
 
-        let strict = formatter_with_render_options(
-            template,
-            crate::RenderOptions::strict_at(std::time::SystemTime::UNIX_EPOCH),
-        )
-        .render(&request)
-        .unwrap();
+        let verbatim = formatter_with_render_mode(template, crate::RenderMode::Verbatim)
+            .render(&request)
+            .unwrap();
         assert!(
-            !strict.contains("because"),
-            "strict rendering must not inject reasoning, got {strict:?}"
+            !verbatim.contains("because"),
+            "verbatim rendering must not inject reasoning, got {verbatim:?}"
         );
-        assert!(strict.contains("ok"), "content survives, got {strict:?}");
+        assert!(
+            verbatim.contains("ok"),
+            "content survives, got {verbatim:?}"
+        );
     }
 
     #[test]
-    fn strict_render_pins_strftime_now_to_the_given_instant() {
+    fn render_instant_pins_strftime_now() {
         let instant =
             std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
         let expected = chrono::DateTime::<chrono::Local>::from(instant)
             .format("%Y-%m-%d %H:%M")
             .to_string();
-        let formatter = formatter_with_render_options(
+        let formatter = formatter_with_render_mode(
             "{{ strftime_now('%Y-%m-%d %H:%M') }}",
-            crate::RenderOptions::strict_at(instant),
+            crate::RenderMode::Verbatim,
         );
-        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
-            "model": "m",
-            "messages": [{"role": "user", "content": "hi"}]
-        }))
-        .unwrap();
+        let request = TimedRequest {
+            inner: serde_json::from_value(json!({
+                "model": "m",
+                "messages": [{"role": "user", "content": "hi"}]
+            }))
+            .unwrap(),
+            instant,
+        };
         assert_eq!(formatter.render(&request).unwrap(), expected);
     }
 
