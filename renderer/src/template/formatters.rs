@@ -625,6 +625,25 @@ impl HfTokenizerConfigJsonFormatter {
         mixins: ContextMixins,
         exclude_tools_when_tool_choice_none: bool,
     ) -> anyhow::Result<Self> {
+        Self::with_render_options(
+            config,
+            mixins,
+            exclude_tools_when_tool_choice_none,
+            crate::RenderOptions::default(),
+        )
+    }
+
+    /// Build a formatter that evaluates templates according to `render_options`.
+    ///
+    /// [`crate::RenderOptions::default`] reproduces [`Self::with_options`]
+    /// exactly. Use [`crate::RenderOptions::strict_at`] to render messages
+    /// verbatim from a pinned instant.
+    pub fn with_render_options(
+        config: ChatTemplate,
+        mixins: ContextMixins,
+        exclude_tools_when_tool_choice_none: bool,
+        render_options: crate::RenderOptions,
+    ) -> anyhow::Result<Self> {
         let mut env = JinjaEnvironment::default().env();
 
         let chat_template = config.chat_template.as_ref().ok_or(anyhow::anyhow!(
@@ -798,6 +817,7 @@ impl HfTokenizerConfigJsonFormatter {
             env,
             config,
             mixins: Arc::new(mixins),
+            render_options,
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             requires_content_arrays,
             exclude_tools_when_tool_choice_none,

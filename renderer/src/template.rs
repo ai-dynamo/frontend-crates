@@ -172,6 +172,10 @@ struct HfTokenizerConfigJsonFormatter {
     env: Environment<'static>,
     config: ChatTemplate,
     mixins: Arc<ContextMixins>,
+    /// How this formatter evaluates templates: message-shape adaptation and the
+    /// instant every clock-reading template function observes. Default keeps
+    /// the adaptive behaviour and the wall clock.
+    render_options: crate::RenderOptions,
     supports_add_generation_prompt: bool,
     requires_content_arrays: bool,
     /// When true, strip tool definitions from the chat template when tool_choice is "none".

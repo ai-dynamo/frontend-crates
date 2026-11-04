@@ -587,6 +587,14 @@ impl HfTokenizerConfigJsonFormatter {
 
         let mut messages_for_template = crate::messages_to_json(req)?;
 
+        // Strict rendering sends the conversation to the template exactly as
+        // supplied. Every rewrite below exists so a shape the template would
+        // reject renders anyway, and each one changes the bytes a counting
+        // caller sees, so strict mode skips all of them -- including the
+        // capability rejections, which would otherwise refuse a request the
+        // template itself accepts. A strict render of a shape the template
+        // rejects is an error, which is the answer the caller asked for.
+        if !self.render_options.strict {
         crate::reject_unsupported_partial_assistant(&messages_for_template)?;
         crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
 
@@ -622,6 +630,7 @@ impl HfTokenizerConfigJsonFormatter {
             inject_reasoning_content_into_messages(&mut messages_for_template);
         } else if template_requires_reasoning_string {
             join_reasoning_content_segments_in_messages(&mut messages_for_template);
+        }
         }
 
         let tmpl = self.env.get_template(template_name)?;
@@ -680,6 +689,29 @@ impl HfTokenizerConfigJsonFormatter {
             context! { ..ctx, ..extra }
         } else {
             ctx
+        };
+
+        // A context variable shadows a global of the same name, so binding
+        // `strftime_now` per render pins every call in this render to one
+        // instant without touching the shared environment. Concurrent renders
+        // therefore cannot observe another render's instant.
+        let ctx = match self.render_options.now {
+            Some(now) => {
+                let now = chrono::DateTime::<chrono::Local>::from(now);
+                let strftime_now = Value::from_function(move |format: &str| {
+                    use std::fmt::Write as _;
+                    let mut text = String::new();
+                    write!(text, "{}", now.format(format)).map_err(|_| {
+                        minijinja::Error::new(
+                            minijinja::ErrorKind::InvalidOperation,
+                            format!("invalid strftime format {format:?}"),
+                        )
+                    })?;
+                    Ok::<_, minijinja::Error>(Value::from_safe_string(text))
+                });
+                context! { ..ctx, strftime_now => strftime_now }
+            }
+            None => ctx,
         };
 
         let rendered = tmpl.render(&ctx)?;
@@ -865,6 +897,71 @@ mod tests {
         assert_eq!(ordinary, ["<|channel|>", "<|message|>", "<|call|>"]);
         assert!(prompt.segments().unwrap()[0].allow_special);
         assert!(prompt.segments().unwrap().last().unwrap().allow_special);
+    }
+
+    fn formatter_with_render_options(
+        template: &str,
+        options: crate::RenderOptions,
+    ) -> SysFormatter {
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": template,
+            "bos_token": "<s>",
+            "eos_token": "</s>",
+            "unk_token": "<unk>",
+        }))
+        .unwrap();
+        SysFormatter::with_render_options(ct, SysMixins::new(&[]), true, options).unwrap()
+    }
+
+    #[test]
+    fn strict_render_leaves_reasoning_out_of_content() {
+        let template = "{% for m in messages %}{{ m.role }}:{{ m.content }}|{% endfor %}";
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "m",
+            "messages": [
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "ok", "reasoning_content": "because"}
+            ]
+        }))
+        .unwrap();
+
+        let adaptive = formatter_with_render_options(template, crate::RenderOptions::default())
+            .render(&request)
+            .unwrap();
+        assert!(
+            adaptive.contains("because"),
+            "adaptive rendering injects reasoning into content, got {adaptive:?}"
+        );
+
+        let strict = formatter_with_render_options(
+            template,
+            crate::RenderOptions::strict_at(std::time::SystemTime::UNIX_EPOCH),
+        )
+        .render(&request)
+        .unwrap();
+        assert!(
+            !strict.contains("because"),
+            "strict rendering must not inject reasoning, got {strict:?}"
+        );
+        assert!(strict.contains("ok"), "content survives, got {strict:?}");
+    }
+
+    #[test]
+    fn strict_render_pins_strftime_now_to_the_given_instant() {
+        let instant = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+        let expected = chrono::DateTime::<chrono::Local>::from(instant)
+            .format("%Y-%m-%d %H:%M")
+            .to_string();
+        let formatter = formatter_with_render_options(
+            "{{ strftime_now('%Y-%m-%d %H:%M') }}",
+            crate::RenderOptions::strict_at(instant),
+        );
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "m",
+            "messages": [{"role": "user", "content": "hi"}]
+        }))
+        .unwrap();
+        assert_eq!(formatter.render(&request).unwrap(), expected);
     }
 
     fn formatter_for_templates(default: &str, tool_use: &str) -> SysFormatter {

@@ -39,7 +39,10 @@ pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
 mod python;
+mod render_options;
 mod template;
+
+pub use render_options::RenderOptions;
 
 pub use template::{
     ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, kimi_k3_formatter_for,
