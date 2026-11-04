@@ -132,13 +132,14 @@ impl<'a> SchemaFacts<'a> {
                 "array" => value.is_array(),
                 _ => false,
             };
-            if schema
+            if (schema
                 .get("const")
                 .is_some_and(|value| !matches_value(value))
                 || schema
                     .get("enum")
                     .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(matches_value))
+                    .is_some_and(|values| !values.iter().any(matches_value)))
+                && !literals_contradict_type(schema)
             {
                 return false;
             }
@@ -297,18 +298,19 @@ impl<'a> SchemaFacts<'a> {
             if schema == &Value::Bool(false) {
                 return true;
             }
-            if schema.get("type").is_some_and(|ty| {
-                ty.as_str() != Some("string")
-                    && !ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "string"))
-            }) || schema
+            let literal_rejects = schema
                 .get("const")
                 .is_some_and(|value| value.as_str() != Some(raw))
                 || schema
                     .get("enum")
                     .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(|value| value.as_str() == Some(raw)))
+                    .is_some_and(|values| !values.iter().any(|value| value.as_str() == Some(raw)));
+            if schema.get("type").is_some_and(|ty| {
+                ty.as_str() != Some("string")
+                    && !ty
+                        .as_array()
+                        .is_some_and(|types| types.iter().any(|ty| ty == "string"))
+            }) || (literal_rejects && !literals_contradict_type(schema))
             {
                 return true;
             }
@@ -386,25 +388,14 @@ impl<'a> SchemaFacts<'a> {
             }
             // Literal constraints can establish a type even without `type`.
             // Intersect them with explicit types so an enum cannot widen a
-            // sibling constraint. Ambiguous unions still preserve strings.
-            let literal_matches = |value: &Value| match expected {
-                "string" => value.is_string(),
-                "boolean" => value.is_boolean(),
-                "null" => value.is_null(),
-                "object" => value.is_object(),
-                "array" => value.is_array(),
-                "number" => value.is_number(),
-                "integer" => {
-                    value.is_i64()
-                        || value.is_u64()
-                        || value.as_f64().is_some_and(|number| number.fract() == 0.0)
-                }
-                _ => false,
-            };
-            if infer_literals && let Some(value) = schema.get("const") {
+            // sibling constraint, unless no literal fits the declared type at
+            // all. Ambiguous unions still preserve strings.
+            let literal_matches = |value: &Value| literal_satisfies(expected, value);
+            let own_literals = infer_literals && !literals_contradict_type(schema);
+            if own_literals && let Some(value) = schema.get("const") {
                 constraint = Some(constraint.unwrap_or(true) && literal_matches(value));
             }
-            if infer_literals && let Some(values) = schema.get("enum").and_then(Value::as_array) {
+            if own_literals && let Some(values) = schema.get("enum").and_then(Value::as_array) {
                 constraint = Some(constraint.unwrap_or(true) && values.iter().any(literal_matches));
             }
             for key in ["anyOf", "oneOf"] {
@@ -643,6 +634,60 @@ impl<'a> SchemaFacts<'a> {
     }
 }
 
+const JSON_TYPES: [&str; 7] = [
+    "string", "number", "integer", "boolean", "object", "array", "null",
+];
+
+fn literal_satisfies(name: &str, value: &Value) -> bool {
+    match name {
+        "string" => value.is_string(),
+        "boolean" => value.is_boolean(),
+        "null" => value.is_null(),
+        "object" => value.is_object(),
+        "array" => value.is_array(),
+        "number" => value.is_number(),
+        "integer" => {
+            value.is_i64()
+                || value.is_u64()
+                || value.as_f64().is_some_and(|number| number.fract() == 0.0)
+        }
+        _ => false,
+    }
+}
+
+// True when a node declares only JSON types and no `enum`/`const` value is an
+// instance of any of them, as when an array's `enum` is written beside `type`
+// instead of under `items`. Typing then follows the declared `type`, as stock
+// SGLang does; literals that fit the declared type still narrow it.
+pub(crate) fn literals_contradict_type(schema: &Value) -> bool {
+    let enumerated = schema.get("enum").and_then(Value::as_array);
+    let constant = schema.get("const");
+    if enumerated.is_none() && constant.is_none() {
+        return false;
+    }
+    let declared = match schema.get("type") {
+        Some(name @ Value::String(_)) => std::slice::from_ref(name),
+        Some(Value::Array(names)) if !names.is_empty() => names.as_slice(),
+        _ => return false,
+    };
+    // A custom type name may admit any literal, so it never contradicts one.
+    if !declared
+        .iter()
+        .all(|name| name.as_str().is_some_and(|name| JSON_TYPES.contains(&name)))
+    {
+        return false;
+    }
+    !constant
+        .into_iter()
+        .chain(enumerated.into_iter().flatten())
+        .any(|value| {
+            declared
+                .iter()
+                .filter_map(Value::as_str)
+                .any(|name| literal_satisfies(name, value))
+        })
+}
+
 fn intersect_type_hints(left: Option<bool>, right: Option<bool>) -> Option<bool> {
     match (left, right) {
         (Some(false), _) | (_, Some(false)) => Some(false),
@@ -806,6 +851,8 @@ impl<'a> NullSchemaWalker<'a> {
                 return Some(false);
             }
         }
+        // Unlike typing, null still intersects literals that contradict `type`:
+        // only a proven match may produce JSON null, and GLM-4.7 shares this walker.
         if schema.get("const").is_some_and(|value| !value.is_null())
             || schema
                 .get("enum")
@@ -966,8 +1013,23 @@ pub(crate) fn schema_type_match(
 
 #[cfg(test)]
 mod structural_type_tests {
-    use super::SchemaFacts;
+    use super::{SchemaFacts, literals_contradict_type};
     use serde_json::json;
+
+    #[test]
+    fn literals_contradict_only_declared_json_types() {
+        for (schema, contradicts) in [
+            (json!({"type": "array", "enum": ["a", "b"]}), true),
+            (json!({"type": "integer", "const": "auto"}), true),
+            (json!({"type": "integer", "enum": []}), true),
+            (json!({"type": "string", "enum": ["a", 1]}), false),
+            (json!({"type": "custom", "enum": []}), false),
+            (json!({"type": ["integer", 5], "enum": ["a"]}), false),
+            (json!({"enum": ["a"]}), false),
+        ] {
+            assert_eq!(literals_contradict_type(&schema), contradicts, "{schema}");
+        }
+    }
 
     #[test]
     fn referenced_type_intersects_structural_siblings() {

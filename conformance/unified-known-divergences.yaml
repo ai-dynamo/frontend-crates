@@ -36,8 +36,16 @@ glm47:
       actual: 'tool_call capture_payload {"amount":"21.5","retries":"37"}'
 deepseek_v4: {}
 kimi_k2: {}
-nemotron_v3: {}
-qwen3: {}
+nemotron_v3:
+  UNIFIED.enum_contradicting_declared_type.nemotron_v3:
+    golden:
+      note: 'FIXME (v2 defect): the Qwen-family XML resolver still lets the enum literals veto the declared type, so the array and integer stay text (fixed by #527).'
+      actual: 'tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}'
+qwen3:
+  UNIFIED.enum_contradicting_declared_type.qwen3:
+    golden:
+      note: 'FIXME (v2 defect): the Qwen-family XML resolver still lets the enum literals veto the declared type, so the array and integer stay text (fixed by #527).'
+      actual: 'tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}'
 minimax_m3:
   # TODO: the MiniMax M3 typer resolves `not` but not `if`/`then`/`else`
   # (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
