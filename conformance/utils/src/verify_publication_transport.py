@@ -38,6 +38,9 @@ MAX_RESOURCE = 1024 * 1024 * 1024
 # a healthy 200 is unaffected and the per-attempt transient retry below still applies.
 PROPAGATION_STATUSES = frozenset({404, 502, 503, 504})
 PROPAGATION_BACKOFF_SECONDS = 10.0
+# Seconds the delivery check may wait for propagation; set by the deployed-site
+# delivery run, absent (no wait) for local servers and unit tests.
+PROPAGATION_ENV = "CONFORMANCE_PAGES_PROPAGATION_SECONDS"
 
 
 def require(condition, message):
@@ -312,8 +315,10 @@ def update_delivery_report(path, *, check=None, browser_journey=None):
     print(f"delivery report: {path}", flush=True)
 
 
-def _verify_http_resources(root, base_url, paths, propagation_deadline=0.0):
+def _verify_http_resources(root, base_url, paths, propagation_deadline=None):
     started = time.monotonic()
+    if propagation_deadline is None:
+        propagation_deadline = float(os.environ.get(PROPAGATION_ENV, "0"))
     records = _http_records(base_url, paths)
     report = {"base_url": base_url, "resources": records, "success": False}
     report_path = os.environ.get("CONFORMANCE_DELIVERY_REPORT")
@@ -342,7 +347,7 @@ def _verify_http_resources(root, base_url, paths, propagation_deadline=0.0):
         update_delivery_report(report_path, check=report)
 
 
-def verify_http_publication(root, base_url, *, propagation_deadline=0.0):
+def verify_http_publication(root, base_url, *, propagation_deadline=None):
     parsed = urlsplit(base_url)
     require(parsed.scheme in {"http", "https"} and parsed.netloc and not parsed.username
             and not parsed.query and not parsed.fragment, "publication URL must be an HTTP directory")
@@ -352,7 +357,7 @@ def verify_http_publication(root, base_url, *, propagation_deadline=0.0):
     return _verify_http_resources(root, base_url, paths, propagation_deadline)
 
 
-def verify_http_publication_identity(root, base_url, *, propagation_deadline=0.0):
+def verify_http_publication_identity(root, base_url, *, propagation_deadline=None):
     root = Path(root).resolve(strict=True)
     relative = "conformance/viewer-publication.json"
     require((root / relative).is_file(), "qualified history lacks publication identity")

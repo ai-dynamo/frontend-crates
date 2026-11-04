@@ -44,8 +44,9 @@ from capture_versions import capture_release_sort_key
 
 # How long the delivery check may wait for a freshly deployed GitHub Pages site to
 # serve the new revision (main runs f9ea1b2e, 6252b6f4 and 7a2e8f96 saw HTTP 503
-# right after `deploy-pages` succeeded; the next run was green). The wait is
-# capped by the delivery budget (CONFORMANCE_DELIVERY_DEADLINE).
+# right after `deploy-pages` succeeded; the next run was green). Handed to the
+# transport through CONFORMANCE_PAGES_PROPAGATION_SECONDS and capped by the
+# delivery budget (CONFORMANCE_DELIVERY_DEADLINE).
 PAGES_PROPAGATION_SECONDS = 300.0
 
 
@@ -60,6 +61,7 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
     cleanup = ExitStack()
     if configured:
         base = configured.rstrip("/")
+        monkeypatch.setenv(transport.PROPAGATION_ENV, str(PAGES_PROPAGATION_SECONDS))
     else:
         server, _requests = _server(prefix="/frontend-crates", root=site)
         cleanup.callback(server.server_close)
@@ -71,10 +73,11 @@ def test_publication_delivery_matches_qualified_artifact(historical_published_vi
         # trusting a successful HTTP response or a revision label on an older site.
         # A deployed site may still answer 503/404 while Pages propagates, so the
         # public checks wait bounded; the local server must answer at once.
-        propagation = PAGES_PROPAGATION_SECONDS if configured else 0.0
-        verify_http_publication_identity(site, base, propagation_deadline=propagation)
-        verify_http_publication(site, base, propagation_deadline=propagation)
-        verify_http_publication_identity(site, base, propagation_deadline=propagation)
+        # The transport reads the propagation wait from the environment, so the
+        # check calls keep their signature; the local server must answer at once.
+        verify_http_publication_identity(site, base)
+        verify_http_publication(site, base)
+        verify_http_publication_identity(site, base)
         driver = _driver()
         cleanup.callback(driver.quit)
         driver.get(f"{base}/index.html?tab=tab-unified")
