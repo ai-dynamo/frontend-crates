@@ -104,7 +104,7 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             for row in current:
                 history = store.histories[row["family"], row["implementation"]]
                 selected = f"{row['implementation']}-{row['version']}"
-                snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+                snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
                 assert typed_equal({case: record["value"] for case, record in snapshot["records"].items()}, history.resolve(selected))
                 header, payload = capture_sources.read(ROOT, row["path"]).split(b"\n", 1)
                 assert json.loads(header.removeprefix(b"capture_selection: "))["payload_sha256"] == hashlib.sha256(payload).hexdigest()
@@ -112,7 +112,7 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             return
         store = unified_history.load_store(view / capture_sources.STORE)
         for row in current:
-            snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+            snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
             header, payload = capture_sources.read(ROOT, row["path"]).split(b"\n", 1)
             assert json.loads(header.removeprefix(b"capture_selection: "))["payload_sha256"] == hashlib.sha256(payload).hexdigest()
             snapshot.pop(capture_sources.SELECTION)
@@ -128,7 +128,7 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
                 continue
             history = store.histories[row["family"], row["implementation"]]
             original = history.complete_snapshot(f"{row['implementation']}-{row['version']}", source_member=row["source"])
-            authored = yaml.safe_load(capture_sources.read(view, f"{capture_sources.STORE}/families/{row['family']}/inputs_and_golden.yaml"))
+            authored = unified_history.load_yaml(view / capture_sources.STORE / "families" / row["family"] / "inputs_and_golden.yaml")
             assert typed_equal(capture_sources.independent_snapshot(original, authored), snapshot), row["path"]
 
 
@@ -234,7 +234,7 @@ def test_current_legacy_matches_existing_resolvers(history_source, tmp_path):
     cases = 0
     for row in current:
         assert Path(row["path"]).stem == row["implementation"]
-        snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+        snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
         identity = row["surface"], row["family"], row["implementation"], row["version"]
         assert typed_equal(snapshot["documents"], expected[identity]), row["path"]
         corpus_path = capture_sources.LEGACY_CORPORA[row["surface"]]

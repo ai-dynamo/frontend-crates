@@ -448,9 +448,10 @@
         + escapeHtml(c.label) + '</th>';
     });
     var body = '';
-    if (input.kind === 'chunks' && input.chunks && input.chunks.length) {
-      var deltaHtml = chunkDeltaHtml(input, ctx);
-      input.chunks.forEach(function (ch, i) {
+    var chunks = (input.chunks || []).concat(input.finish ? [input.finish] : []);
+    if (input.kind === 'chunks' && chunks.length) {
+      var deltaHtml = chunkDeltaHtml(Object.assign({}, input, { chunks: chunks }), ctx);
+      chunks.forEach(function (ch, i) {
         var row = '<tr><td class="cin">' + deltaHtml[i];
         if (ch.finish_reason) {
           row += '<span class="fr"> finish=' + escapeHtml(String(ch.finish_reason)) + '</span>';

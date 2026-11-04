@@ -11,6 +11,7 @@
 // The copied historical harness supplies this cfg without editing old manifests.
 #![allow(unexpected_cfgs)]
 
+pub mod authored;
 pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
 pub mod unified_capture;

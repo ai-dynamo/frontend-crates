@@ -25,6 +25,7 @@ import os
 import re
 from pathlib import Path
 
+import normalized_yaml
 import yaml
 
 import markers
@@ -2742,7 +2743,7 @@ EDGE += [
 
 
 def _entry(spec, fam):
-    """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
+    """Resolve shared or family-specific authored metadata for `fam`."""
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
         if fam == "muse_spark" and fam not in spec and "muse_glimmer" in spec:
             return spec["muse_glimmer"]
@@ -2835,44 +2836,80 @@ EDGE.append((
 ))
 
 
-# The first call loses its inner closers but
-# keeps the outer close, then a complete call follows. Scoped to grammars with inner
-# closers; Kimi K2 arguments are bare JSON, which 5-malformed_json_then_two_valid_calls
-# already covers.
-MISSING_INNER_CLOSERS_PREFIX = {
-    "beam": '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|>',
-    "minimax_m3": ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>',
-    "deepseek_v4": '<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls>',
-    "deepseek_v41": '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls>',
-    "gemma4": '<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>',
-    "glm47": "<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>",
-    "kimi_k3": '<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|>',
-    "muse_glimmer": '<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name="get_weather">\n<atem:parameter name="location">unfinished</atem:function_calls><|eom|>',
-    "qwen3": "<tool_call><function=get_weather><parameter=location>unfinished</tool_call>",
+# Keep this published stimulus intact: apparent outer closers are still raw
+# argument data in most of these grammars. GLM and Gemma have different boundaries.
+MISSING_INNER_CLOSERS = {
+    'beam': ('<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|>', '</rfl:parameter>', None),
+    'minimax_m3': (']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>', ']<]minimax[>[</location>', None),
+    'deepseek_v4': ('<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls>', '</｜DSML｜parameter>', None),
+    'deepseek_v41': ('<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls>', '</｜DSML｜ parameter>', None),
+    'gemma4': ('<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>', '<|"|>', None),
+    'glm47': ('<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>', '</arg_value>', None),
+    'kimi_k3': ('<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|>', '<|close|>argument<|sep|>', None),
+    'muse_glimmer': ('<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name="get_weather">\n<atem:parameter name="location">unfinished</atem:function_calls><|eom|>', '</atem:parameter>', None),
+    'qwen3': ('<tool_call><function=get_weather><parameter=location>unfinished</tool_call>', '</parameter>', '<tool_call><function=get_weather><parameter=location>Paris</parameter></function></tool_call>'),
 }
-MISSING_INNER_CLOSERS_FOLLOWING = {
-    "qwen3": "<tool_call><function=get_weather><parameter=location>Paris</parameter></function></tool_call>",
+
+SCENARIO_SUMMARIES = {
+    "missing_inner_closers_then_valid_call": 'Native mode, default initialization: outer-close-looking bytes precede a call-shaped header while an argument is open. Deliver the whole input in one push, then finish.',
+}
+
+
+def _missing_inner_closers_case(family, prefix, closer, following):
+    if following is None:
+        following = r_tool(family, "get_weather", "location", "Paris", 0)
+    paris = {"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}
+    if family == "gemma4":
+        golden = [paris]
+        explanation = (
+            'The second <|"|> closes the original string, leaving bare Paris where an object '
+            'separator or closer is required. Discard that malformed candidate and recover only '
+            'the complete get_weather(location=Paris) call.'
+        )
+    elif family == "glm47":
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "unfinished"}}, paris]
+        explanation = (
+            "The outer </tool_call> can terminate GLM's final argument without </arg_value>. "
+            "Preserve get_weather(location=unfinished), then emit the separate get_weather(location=Paris): two calls."
+        )
+    else:
+        value = "unfinished" + prefix.partition("unfinished")[2] + following.partition(closer)[0]
+        if family == "beam":
+            value = value.removesuffix("\n")
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": value}}]
+        explanation = (
+            f"For this input, {closer} ends the raw string argument. Earlier outer-close-looking markers "
+            "and the following call-shaped header are literal argument data. Emit one get_weather "
+            "call whose location contains those bytes through Paris; do not dispatch a nested call."
+        )
+    description = (
+        SCENARIO_SUMMARIES["missing_inner_closers_then_valid_call"] + " Oracle: " + explanation
+    )
+    return prefix + following, golden, description
+
+
+MISSING_INNER_CLOSERS_CASES = {
+    family: _missing_inner_closers_case(family, *stimulus)
+    for family, stimulus in MISSING_INNER_CLOSERS.items()
 }
 
 EDGE.append((
     "missing_inner_closers_then_valid_call",
-    "The first call's argument value is missing its inner closers (Qwen3: </parameter> and </function>) but keeps the outer call close; a complete get_weather(location=Paris) follows. Deliver the entire native input in one push, then finish. Reject the incomplete call and return only the complete one.",
+    {family: description for family, (_wire, _golden, description) in MISSING_INNER_CLOSERS_CASES.items()},
     ["I2", "I7", "P2"],
     [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop", "single_chunk": True},
     OnlyFamilies({
         family: (
-            prefix + MISSING_INNER_CLOSERS_FOLLOWING.get(
-                family, r_tool(family, "get_weather", "location", "Paris", 0)),
-            D("UNSUPPORTED", "No peer capture recorded."), M,
+            wire, D("UNSUPPORTED", "No peer capture recorded."), M, golden,
         )
-        for family, prefix in MISSING_INNER_CLOSERS_PREFIX.items()
+        for family, (wire, golden, _description) in MISSING_INNER_CLOSERS_CASES.items()
     }),
     {family: [{"name": "get_weather", "parameters": {
         "type": "object", "properties": {"location": {"type": "string"}},
         "required": ["location"],
-    }}] for family in MISSING_INNER_CLOSERS_PREFIX},
+    }}] for family in MISSING_INNER_CLOSERS},
 ))
 
 
@@ -4624,7 +4661,7 @@ def _build_cases(fam):
 
 @lru_cache(maxsize=16)
 def _historical_cases(document_text):
-    return yaml.safe_load(document_text)["cases"]
+    return normalized_yaml.expand_family(yaml.safe_load(document_text))["cases"]
 
 
 def _preserve_historical_requests(cases, family):
@@ -4648,7 +4685,10 @@ def _preserve_historical_requests(cases, family):
                 continue
             raise KeyError(f"historical {family} case disappeared: {scenario}")
         # Validation callers mutate returned cases; isolate the cached canonical record.
-        case["golden"] = deepcopy(old_case["golden"]["assembled"])
+        # This published stimulus had a shared Paris-only oracle that violated
+        # raw-value ownership and GLM recovery; retain the independent correction.
+        if scenario != "missing_inner_closers_then_valid_call":
+            case["golden"] = deepcopy(old_case["golden"]["assembled"])
         if scenario.endswith("_pr424"):
             case["description"] = old_case["description"]
         request = deepcopy(old_case["request"])
@@ -4807,7 +4847,7 @@ def _build_edge_cases(fam, specs):
                 "`init` and cannot honour this request mode",
             )
         case = {
-            "description": desc,
+            "description": _entry(desc, fam),
             "policy": _entry(policy, fam),
             "input": inp,
             "golden": g,

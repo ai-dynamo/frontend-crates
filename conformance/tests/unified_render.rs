@@ -924,6 +924,7 @@ fn render_unified_conformance_html() {
                 "tools": common::unified_tool_schemas_for_case(case.tools.as_ref()),
                 "golden": case.golden,
                 "dynamo": got,
+                "parser_path": "unified",
                 "dynamo_error": error,
                 "dynamo_verdict": dclass,
                 "vllm_verdict": vx.map(|e| if e.verdict == "match" { "MATCH".to_string() } else { e.class.clone().unwrap_or_else(|| "DIVERGE".into()) }),

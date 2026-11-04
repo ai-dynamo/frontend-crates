@@ -77,7 +77,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       if (cases.has(input.scenario)) throw new Error(`duplicate active Unified scenario: ${family}/${input.scenario}`);
       cases.set(input.scenario, { id, input });
       for (const alias of [input.display_id, ...input.historical_ids]) activeAliases.set(canonicalUnifiedLabel(alias, family, metadata.unified_aliases), { id, input });
-      if (!descriptions.has(input.scenario)) descriptions.set(input.scenario, input.description);
+      if (!descriptions.has(input.scenario)) descriptions.set(input.scenario, metadata.unified_taxonomy[input.scenario]?.description ?? input.description);
     }
     byFamily.set(family, cases);
     for (const descriptor of chosen) {
@@ -101,11 +101,12 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         const prior = captures.get(current.input.scenario);
         // Retired aliases can retain an older stimulus under the same display ID.
         // Prefer an exact request binding without weakening real conflict checks.
-        if (prior && !prior.bindingFailure && reason) continue;
-        const equalRank = prior && Boolean(prior.bindingFailure) === Boolean(reason);
+        const bindingRank = reason ? 0 : sameValue(requestIdentity(current.input.request), getField(value, 'capture_input')) ? 2 : 1;
+        if (prior && prior.bindingRank > bindingRank) continue;
+        const equalRank = prior && prior.bindingRank === bindingRank;
         const conflict = equalRank && (prior.conflict || (!sameValue(prior.value, value)
           && new Error(`conflicting historical aliases in ${descriptor.control.key}: ${family}/${current.id}`)));
-        captures.set(current.input.scenario, { value, bindingFailure: reason, conflict, inherited: getField(value, 'inherited_from') });
+        captures.set(current.input.scenario, { value, bindingRank, conflict, inherited: getField(value, 'inherited_from') });
       }
       // A later exact binding can supersede conflicts among retired stimuli.
       for (const capture of captures.values()) if (capture.conflict) throw capture.conflict;
@@ -178,6 +179,10 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         const failed = Object.hasOwn(failure, 'error');
         const hasFailure = Object.keys(failure).length > 0;
         const chunks = capture && !hasFailure ? unifiedChunkDeltas(capture.value) : [];
+        const captureInput = capture && getField(capture.value, 'capture_input');
+        const syntheticFinish = !hasFailure && captureInput && chunks.length === request.chunks.length + 1
+          && withoutSyntheticFinishStep(request) === request
+          && sameValue(withoutSyntheticFinishStep(captureInput), requestIdentity(request));
         const stream = metadata.selection_policy.unified.capture_contracts?.[source.implementation]?.assembled === 'stream';
         const events = !capture || hasFailure ? null : getField(capture.value, 'parser_path') === 'split' ? getField(capture.value, 'assembled', []) : stream ? unifiedEvents(capture.value, {recordedFallback: source.implementation === 'dynamo_v2'}) : getField(capture.value, 'assembled', []);
         const verdict = failed ? 'ERROR' : events === null ? null : classifyUnified(family, gold, events, metadata.unified_leak_markers);
@@ -191,7 +196,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
             block.explanation = getField(capture.value, 'parser_path') === 'split' ? 'v1 reasoning + v2 tool parsing.' : capture.inherited ? `Inherited from v2 ${capture.inherited}.` : null;
           }
         }
-        results.set(control.key, { chunks, events, verdict, failure, block });
+        results.set(control.key, { chunks, events, verdict, failure, block, syntheticFinish });
         comparisons[control.key] = { value: events !== null ? ['events', canonicalUnifiedEvents(events)] : failed && (isDynamo || Object.hasOwn(failure, 'error')) ? ['failure'] : ['absent'],
           leak: Number(verdict === 'LEAK'), err: Number(control.key === 'dynamo' ? failed : Object.hasOwn(failure, 'error')),
           na: Number(events === null && !Object.hasOwn(failure, 'error')) };
@@ -199,6 +204,9 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       const init = getField(request, 'init') || {};
       const chunks = request.chunks.map((chunk, index) => ({ delta_text: getField(chunk, 'delta_text', ''), finish_reason: null,
         expected: Object.fromEntries(chosen.map(({ control }) => [control.key, results.get(control.key).chunks[index] || []])) }));
+      // Recorder-only finish output must remain visible without changing the authored chunk schedule.
+      const finish = chosen.some(({ control }) => results.get(control.key).syntheticFinish)
+        ? { delta_text: '‹finish›', expected: Object.fromEntries(chosen.map(({ control }) => [control.key, results.get(control.key).chunks[request.chunks.length] || []])) } : null;
       const current = results.get('dynamo');
       const reasons = current && ['MERGE', 'ORDER'].includes(current.verdict) ? [{ label: 'stream vs final message', reason: "Final output changes event order or combines separate events." }] : [];
       // Scope applicability stays independent of selection, so an empty Reference
@@ -206,7 +214,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       cells[scenario] = { kind: 'cell', case_id: caseId, family, sub: scenario, col_group: taxonomy.section, band: band(scenario), status: referenceKey !== null && comparisons[referenceKey]?.err ? 'problem' : 'ok', red_on_diff: true,
         cmp: equivalenceEntries(comparisons), facts: [], tooltip: { head: `${caseId} (${scenario}) — ${family}`, description: input.description + (input.policy.length ? `  [policy: ${input.policy.join(', ')}]` : ''),
           init: { starting_state: 'None', tool_output_mode: 'Native', named_tool: null, ...Object.fromEntries(mappingEntries(init)) }, finish_reason: request.finish_reason || 'stop',
-          input: { kind: chunks.length ? 'chunks' : 'text', text: request.input, chunks, family: markerFamily },
+          input: { kind: chunks.length || finish ? 'chunks' : 'text', text: request.input, chunks, finish, family: markerFamily },
           candidates: tooltipOrder.map(({ control }) => control.key === 'golden'
             ? { key: 'golden', label: control.label, impl: 'golden', version: null, parse_mode: 'unified', leak: false, pin_first: true, block: { events: gold } }
             : { key: control.key, label: control.label, impl: control.impl, version: control.version, parse_mode: 'unified', leak: results.get(control.key).verdict === 'LEAK', block: results.get(control.key).block }),
@@ -277,15 +285,26 @@ function requestIdentity(request) {
     chunks: (getField(request, 'chunks') || []).map((chunk) => Object.fromEntries(mappingEntries(chunk).filter(([key]) => ['delta_text', 'token_ids', 'finish_reason'].includes(key)))) };
 }
 
+function withoutSyntheticFinishStep(request) {
+  const chunks = getField(request, 'chunks');
+  // Match capture_stimulus.py: a recorder finish operation is not additional model input.
+  if (chunks.length && sameValue(chunks.at(-1), { delta_text: '‹finish›' })
+      && chunks.slice(0, -1).map(chunk => getField(chunk, 'delta_text', '')).join('') === getField(request, 'input')) {
+    return mergeMappings(request, { chunks: chunks.slice(0, -1) });
+  }
+  return request;
+}
+
 export function unifiedComparisonFailure(request, captured) {
   const original = getField(captured, 'capture_input');
   if (!original) return 'Original input missing';
-  const expected = requestIdentity(request);
+  const expected = withoutSyntheticFinishStep(requestIdentity(request));
   if (isMapping(original) && getField(original, 'tools') == null) return 'Original tool schema missing';
   if (expected.tools == null) return 'Tool schema missing';
   const originalKeys = mappingEntries(original).map(([key]) => key);
   if (!isMapping(original) || originalKeys.some((key) => typeof key !== 'string') || !sameValue(originalKeys.sort(compareText), Object.keys(expected).sort(compareText))) throw new Error('incomplete capture input binding');
-  const changed = Object.keys(expected).filter((key) => !sameValue(getField(original, key), expected[key]));
+  const normalized = withoutSyntheticFinishStep(original);
+  const changed = Object.keys(expected).filter((key) => !sameValue(getField(normalized, key), expected[key]));
   return changed.length ? `Request mismatch (${changed.join(', ')})` : null;
 }
 

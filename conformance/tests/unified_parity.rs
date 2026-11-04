@@ -377,6 +377,54 @@ fn string_quote_controls_survive_every_split_for_every_family() {
     );
 }
 
+#[test]
+fn missing_inner_closers_obey_family_argument_ownership() {
+    let mut covered = std::collections::BTreeSet::new();
+    for file in load_native_golden() {
+        for (id, case) in file.cases {
+            if !id.contains("missing_inner_closers_then_valid_call") {
+                continue;
+            }
+            covered.insert(file.family.clone());
+            let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            for (schedule, chunks) in splittings(&case.input) {
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools).unwrap(),
+                    case.golden,
+                    "{id}: {schedule}"
+                );
+            }
+            for split in (0..=case.input.len()).filter(|i| case.input.is_char_boundary(*i)) {
+                let chunks = vec![case.input[..split].into(), case.input[split..].into()];
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools).unwrap(),
+                    case.golden,
+                    "{id}: split {split}"
+                );
+            }
+        }
+    }
+    assert_eq!(
+        covered,
+        [
+            "beam",
+            "deepseek_v4",
+            "deepseek_v41",
+            "gemma4",
+            "glm47",
+            "kimi_k3",
+            "minimax_m3",
+            "muse_glimmer",
+            "muse_spark",
+            "nemotron_v3",
+            "qwen3",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect()
+    );
+}
+
 /// Report assembled event disagreements without treating observations as the oracle.
 #[test]
 fn unified_parser_matches_the_golden_oracle() {
@@ -462,12 +510,17 @@ fn golden_only_change_warns_through_real_corpus_execution() {
         .join("deepseek_v41/inputs_and_golden.yaml");
     // Preserve request scalar spellings and change only the first authored oracle.
     let source = std::fs::read_to_string(&path).unwrap();
-    assert!(source.contains("          city: Paris\n"));
+    let field = if source.starts_with("schema_version: 3\n") {
+        "        city: Paris\n"
+    } else {
+        "          city: Paris\n"
+    };
+    assert!(source.contains(field));
     std::fs::write(
         &path,
         source.replacen(
-            "          city: Paris\n",
-            "          city: capture-warning-regression\n",
+            field,
+            &field.replace("Paris", "capture-warning-regression"),
             1,
         ),
     )

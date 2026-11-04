@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.12]
+
+### Bug fixes
+
+- Infer conditional and negated argument types while preserving Beam coercion order and GLM enum literals.
+
 ## [0.9.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.10...dynamo-parsers-v2-v0.9.11) - 2026-11-05
 
 ### Features

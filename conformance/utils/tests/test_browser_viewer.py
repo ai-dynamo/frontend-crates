@@ -34,6 +34,7 @@ if str(SRC) not in sys.path:
 import unified_history
 import capture_sources
 import ci_publication_cache
+from capture_versions import capture_release_sort_key, UNIFIED_VERSION_RE
 from browser_helpers import raw_view_download, settle
 
 
@@ -335,6 +336,29 @@ def test_historical_reference_switch_recolors_matrix(historical_published_viewer
         server.shutdown()
         server.server_close()
 
+@pytest.mark.parametrize("publication", ["published_viewer", "historical_published_viewer"])
+def test_published_selectors_show_only_version_numbers(request, publication):
+    site = request.getfixturevalue(publication)
+    server, _requests = _server(root=site)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified")
+        for reload in (False, True):
+            if reload:
+                driver.refresh()
+            _ready(driver, "tab-unified")
+            candidates = driver.execute_script("return window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === 'tab-unified').candidates")
+            versions = [item["version"] for item in candidates if item["key"] != "golden"]
+            assert versions and all(UNIFIED_VERSION_RE.fullmatch(version) for version in versions)
+            labels = driver.execute_script("return [...document.querySelectorAll('#tab-unified select[data-slot-capture] option')].map(option => option.textContent)")
+            assert labels and all("+source." not in label for label in labels)
+            assert all(not re.search(r"[0-9a-f]{40,64}", label) for label in labels)
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(historical_published_viewer):
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
@@ -356,7 +380,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 version = item["version"]
                 minor = tuple(int(part) for part in version.split(".")[:2])
                 current = newest_v2_by_minor.get(minor)
-                if current is None or tuple(int(part) for part in version.split(".")) > tuple(int(part) for part in current["version"].split(".")):
+                if current is None or capture_release_sort_key(version) > capture_release_sort_key(current["version"]):
                     newest_v2_by_minor[minor] = item
             elif item["key"].startswith(("dynamo_v1@", "dynamo_v1_jail@")):
                 producer = item["key"].split("@", 1)[0]
@@ -364,7 +388,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 major = int(version.split(".", 1)[0])
                 line = (producer, major)
                 newest_v1_by_producer_major[line] = max(newest_v1_by_producer_major.get(line, version), version,
-                                                         key=lambda value: tuple(int(part) for part in value.split(".")))
+                                                         key=capture_release_sort_key)
         expected = {item["key"] for item in newest_v2_by_minor.values()}
         expected.update(f"{producer}@{version}" for (producer, _major), version in newest_v1_by_producer_major.items())
         for producer in ("dynamo_v2", "dynamo_v1", "dynamo_v1_jail"):
@@ -429,7 +453,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
             for version in available_versions:
                 major = version.split(".", 1)[0]
                 newest_by_major[major] = max(newest_by_major.get(major, version), version,
-                                             key=lambda value: tuple(int(part) for part in value.split(".")))
+                                             key=capture_release_sort_key)
             recent = sorted(set(available_versions), key=unified_history._capture_release_sort_key, reverse=True)[:2]
             assert selected_versions == set(newest_by_major.values()) | set(recent), producer
         v2_values = {option.get_attribute("value") for option in dynamo_options
@@ -447,7 +471,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
             version = item["version"]
             minor = tuple(int(part) for part in version.split(".")[:2])
             current = newest_by_minor.get(minor)
-            if current is None or tuple(int(part) for part in version.split(".")) > tuple(int(part) for part in current["version"].split(".")):
+            if current is None or capture_release_sort_key(version) > capture_release_sort_key(current["version"]):
                 newest_by_minor[minor] = item
         recent_v2 = sorted(available_v2_versions,
                            key=lambda item: unified_history._capture_release_sort_key(item["version"]), reverse=True)[:2]

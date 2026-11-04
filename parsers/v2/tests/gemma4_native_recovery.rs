@@ -15,6 +15,9 @@ use dynamo_parsers_v2::tool_calling::gemma4::{
     boundary_examined_bytes, incomplete_header_examined_bytes, reset_boundary_examined_bytes,
 };
 
+#[path = "../../../conformance/tests/common/authored.rs"]
+mod authored;
+
 fn weather_tools() -> Vec<Tool> {
     vec![Tool {
         name: "get_weather".into(),
@@ -194,22 +197,20 @@ fn assert_both_adapters_at_chunk_sizes(
 #[test]
 fn unified_5_4_uses_unchanged_corpus_schemas_through_available_public_adapters() {
     for family in ["gemma4", "deepseek_v41"] {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
-            "../../conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
-        ));
-        let document: serde_yaml::Value =
-            serde_yaml::from_str(&std::fs::read_to_string(path).expect("authored corpus"))
-                .expect("corpus YAML");
+        let document = authored::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../conformance"),
+            family,
+        );
         let case = &document["cases"]["malformed_json_then_two_valid_calls"];
         assert!(
             case["historical_ids"]
-                .as_sequence()
+                .as_array()
                 .expect("historical IDs")
-                .contains(&serde_yaml::Value::String("UNIFIED.5-4".into()))
+                .contains(&serde_json::json!("UNIFIED.5-4"))
         );
         let request = &case["request"];
         let tools: Vec<Tool> =
-            serde_yaml::from_value(request["tools"].clone()).expect("authored schemas");
+            serde_json::from_value(request["tools"].clone()).expect("authored schemas");
         let input = request["input"].as_str().expect("authored input");
         for chunks in chunkings(input) {
             assert_adapters(
