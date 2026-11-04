@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{has_unsupported_schema_ref_scope, resolve_local_schema_ref};
+use super::{has_unsupported_schema_ref_scope, literals_contradict_type, resolve_local_schema_ref};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -52,12 +52,13 @@ pub(crate) fn categorize_type(name: &str) -> Option<SchemaType> {
 pub(crate) fn collect_allowed_types(
     root: &Value,
     schema: &Value,
+    literals: LiteralTypes<'_>,
     remaining: &mut usize,
 ) -> (HashSet<SchemaType>, bool) {
     let mut active_refs = HashSet::new();
     let mut context = TypeConstraintContext {
         inherited_nullable: false,
-        literals: LiteralTypes::All,
+        literals,
         refs_allowed: !has_unsupported_schema_ref_scope(root),
         has_type_constraints: false,
     };
@@ -78,6 +79,8 @@ pub(crate) fn collect_allowed_types(
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LiteralTypes<'a> {
     All,
+    // Beam and MiniMax keep the declared type when no literal has that type.
+    DeclaredFirst,
     // GLM keeps mixed string enums ambiguous for scalar coercion.
     ScalarHints,
     StringHint(&'a str),
@@ -175,15 +178,16 @@ fn collect_type_constraints(
     if !out.is_empty() {
         constraints.push(out);
     }
-    if context.literals != LiteralTypes::None
-        && let Some(value) = schema.get("const")
-    {
+    let infer_literals = context.literals != LiteralTypes::None
+        && (context.literals != LiteralTypes::DeclaredFirst || !literals_contradict_type(schema));
+    if infer_literals && let Some(value) = schema.get("const") {
         context.has_type_constraints = true;
         constraints.push(literal_type_constraints(value, context.literals));
     }
-    if let Some(values) = schema.get("enum").and_then(Value::as_array)
+    if infer_literals
+        && let Some(values) = schema.get("enum").and_then(Value::as_array)
         && match context.literals {
-            LiteralTypes::All => true,
+            LiteralTypes::All | LiteralTypes::DeclaredFirst => true,
             LiteralTypes::StringHint(raw) => values.iter().any(|value| value.as_str() == Some(raw)),
             LiteralTypes::ScalarHints => values.iter().all(|value| !value.is_string()),
             LiteralTypes::None => false,
@@ -250,8 +254,10 @@ fn collect_type_constraints(
                     &mut option_context,
                 ) {
                     Some(types) => alternatives.push(types),
-                    None if context.literals != LiteralTypes::All
-                        && !option_context.has_type_constraints => {}
+                    None if !matches!(
+                        context.literals,
+                        LiteralTypes::All | LiteralTypes::DeclaredFirst
+                    ) && !option_context.has_type_constraints => {}
                     None => unknown = true,
                 }
             }

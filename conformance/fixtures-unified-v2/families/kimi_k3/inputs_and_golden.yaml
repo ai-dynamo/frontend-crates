@@ -1435,6 +1435,20 @@ tools:
           anyOf:
           - const: null
           - type: string
+  tools_87f9a4e69313cc76:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - integer
+          - boolean
+          - number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_d3a7035c9b3abb76:
   - name: schema_probe
     parameters:
@@ -6789,6 +6803,9 @@ requests:
     - 5
     - 7
     finish_step: true
+  9ed04aa9935c42092da3b4aa1b56de217cf5ada64dc8ec8d405b2ea7c290198f:
+    input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="integer"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+    tools: tools_87f9a4e69313cc76
   a07610dfd8c6274463953fbca6a67af0b1f0936e76819d28fc92ca111ebc6c56:
     input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="value" type="number"<|sep|>0.0e-400<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_3b9cefdb4fbe7e81
@@ -16554,12 +16571,12 @@ cases:
       arguments:
         location: unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris
   enum_contradicting_declared_type:
-    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     historical_ids:
     - UNIFIED.7-enum_contradicting_declared_type
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: 2a9fc38602fc106d6aec60c67c373651ccdecf0e5692fb6d2724bc7a7bead870
     golden:
     - kind: tool_call
@@ -16569,3 +16586,14 @@ cases:
         - temperature
         - humidity
         count: 5
+  schema_declared_integer_boolean_number_order:
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    request: 9ed04aa9935c42092da3b4aa1b56de217cf5ada64dc8ec8d405b2ea7c290198f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 1
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order

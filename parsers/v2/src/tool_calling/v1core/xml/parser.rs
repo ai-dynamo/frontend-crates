@@ -16,7 +16,7 @@ use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 #[cfg(test)]
 use crate::tool_calling::arguments::schema::types::exact_schema_types;
 use crate::tool_calling::arguments::schema::types::{
-    SchemaType, categorize_type, collect_allowed_types, value_category,
+    LiteralTypes, SchemaType, categorize_type, collect_allowed_types, value_category,
 };
 use crate::tool_calling::arguments::{
     ParsedValue, coerce_integral_number, normalize_decimal_spelling, parsed_json_literal,
@@ -480,7 +480,8 @@ impl SchemaCoercion {
             .get("type")
             .and_then(Value::as_str)
             .map(str::to_lowercase);
-        let (allowed_types, has_type_constraints) = collect_allowed_types(root, schema, remaining);
+        let (allowed_types, has_type_constraints) =
+            collect_allowed_types(root, schema, LiteralTypes::All, remaining);
         Self {
             direct_type,
             allowed_types,

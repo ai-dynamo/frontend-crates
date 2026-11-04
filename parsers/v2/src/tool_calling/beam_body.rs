@@ -20,7 +20,7 @@
 //! * the last duplicate key wins and keeps its first position.
 
 use crate::tool_calling::arguments::schema::types::{
-    SchemaType, categorize_type, collect_allowed_types,
+    LiteralTypes, SchemaType, categorize_type, collect_allowed_types,
 };
 use crate::tool_calling::arguments::{
     coerce_integral_number, is_integer_literal, normalize_decimal_spelling,
@@ -796,20 +796,27 @@ pub fn typed_parameters(parameters: &Value) -> Value {
 /// the reference's union rule in [`framing_types`], because the grammar that emitted the
 /// bytes used that rule; see [`JsonKeys`].
 pub fn schema_types(schema: &Value) -> Vec<String> {
-    effective_types(schema, collect_allowed_types(schema, schema, &mut 4096).0).0
+    effective_types(
+        schema,
+        collect_allowed_types(schema, schema, LiteralTypes::DeclaredFirst, &mut 4096).0,
+    )
+    .0
 }
 
 fn effective_types(schema: &Value, allowed: HashSet<SchemaType>) -> (Vec<String>, bool) {
     let admits = |kind: &str| categorize_type(kind).is_some_and(|kind| allowed.contains(&kind));
     let mut types = framing_types(schema);
     types.retain(|kind| admits(kind));
+    let declared_integer = types
+        .iter()
+        .any(|kind| categorize_type(kind) == Some(SchemaType::Integer));
     for kind in JSON_TYPES {
         if admits(kind) && !types.iter().any(|existing| existing == kind) {
             types.push(kind.to_string());
         }
     }
     let admits_integer = allowed.contains(&SchemaType::Integer);
-    if types.iter().any(|kind| kind == "number") {
+    if !declared_integer && types.iter().any(|kind| kind == "number") {
         types.retain(|kind| kind != "integer");
     }
     (types, admits_integer)
@@ -975,11 +982,12 @@ pub(crate) struct ParameterSchema {
 impl ParameterSchema {
     fn new(root: &Value, schema: &Value) -> Self {
         let prepared = typed_schema(schema, root, &BTreeSet::new());
-        let (allowed, constrained) = collect_allowed_types(root, schema, &mut 4096);
+        let (allowed, constrained) =
+            collect_allowed_types(root, schema, LiteralTypes::DeclaredFirst, &mut 4096);
         let allowed = if constrained {
             allowed
         } else {
-            collect_allowed_types(root, &prepared, &mut 4096).0
+            collect_allowed_types(root, &prepared, LiteralTypes::DeclaredFirst, &mut 4096).0
         };
         let (types, admits_integer) = effective_types(&prepared, allowed);
         Self {
