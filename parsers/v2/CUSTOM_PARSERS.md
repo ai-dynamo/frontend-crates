@@ -90,7 +90,7 @@ Built-in aliases canonicalize together: registering `qwen3` also shadows `qwen3_
 
 ## 4. What the contract requires
 
-These are the responsibilities a unified parser carries, and the reasons they exist. A parser that violates one will look correct in a demo and fail in production. The built-in conformance corpus exercises several of them for the families it ships; it cannot check factory/global-state isolation or your parser's own `reset` and error behaviour, and it does not run your parser at all until you enrol it (see below).
+These are the responsibilities a unified parser carries, and the reasons they exist. A parser that violates one will look correct in a demo and fail in production. The built-in corpus checks authored outputs and adjacent interleaved stream pairs for the families it ships. Your parser still needs its own lifecycle, reset and error-recovery tests, and must be registered before the runner can evaluate it (see below).
 
 | | Requirement |
 |---|---|
@@ -118,13 +118,30 @@ All have defaults, so implement only what your grammar needs.
 
 The conformance corpus is the useful part of this repo — the cases you have not thought of: malformed envelopes, markers split mid-token, marker-looking text inside a JSON string, reasoning interleaved with calls.
 
-Running the workspace command below does NOT exercise a vendor parser. There is no flag that points the suite at a registered family: the suite iterates `builtin_unified_families()`, and a vendor registration deliberately does not enrol itself there. Adding your family means adding cases to the corpus and wiring it into the harness. Until you do, a green run says nothing about your parser.
+`cargo test --workspace --all-targets --locked` runs the built-in suites; it does not select a vendor parser. For an external parser, add `dynamo-conformance-fixtures-v2` from the same frontend-crates Git revision as a dev dependency, register your factory under the corpus family you want to evaluate, and call the public runner from your own integration test:
 
-```bash
-cargo test --workspace --all-targets --locked
+```toml
+[dependencies]
+dynamo-parsers-v2 = { git = "https://github.com/ai-dynamo/frontend-crates.git", rev = "16d894e50fbb0761e1c6ed68f34f677d5c201be0", version = "=0.9.10" }
+
+[dev-dependencies]
+dynamo-conformance-fixtures-v2 = { git = "https://github.com/ai-dynamo/frontend-crates.git", rev = "16d894e50fbb0761e1c6ed68f34f677d5c201be0", version = "=0.1.0" }
 ```
 
-A family with no cases would otherwise report as covered while nothing measured it, which is why enrolment is deliberate rather than automatic.
+```rust
+#[test]
+fn parser_matches_qwen3_corpus() -> anyhow::Result<()> {
+    dynamo_parsers_v2::register_unified_parser("qwen3", my_parser_factory);
+    let report = dynamo_conformance_fixtures_v2::run_unified_family(
+        "qwen3",
+        &dynamo_conformance_fixtures_v2::RunOptions::default(),
+    )?;
+    assert_eq!(report.exit_code(false), 0, "{report:#?}");
+    Ok(())
+}
+```
+
+Then run `cargo test --locked --test parser_conformance -- --nocapture` in your project. The report compares assembled output with the authored GOLDEN and checks every UTF-8 split, stream/batch parity, and adjacent stream pairs for isolation. Cases requiring structural-tag generation constraints are listed as unsupported because this runner exercises parser output only; `exit_code(true)` treats those cases as failures, while `exit_code(false)` allows the explicit unsupported list. A registered family with no active authored cases is an error rather than a zero-case pass.
 
 ## 7. Alignment with peer traits
 
