@@ -122,10 +122,10 @@ The conformance corpus is the useful part of this repo — the cases you have no
 
 ```toml
 [dependencies]
-dynamo-parsers-v2 = { git = "https://github.com/ai-dynamo/frontend-crates.git", rev = "7a000de90a0c4180efd8a59487592fe798cb0d25", version = "=0.9.9" }
+dynamo-parsers-v2 = { git = "https://github.com/ai-dynamo/frontend-crates.git", rev = "16d894e50fbb0761e1c6ed68f34f677d5c201be0", version = "=0.9.10" }
 
 [dev-dependencies]
-dynamo-conformance-fixtures-v2 = { git = "https://github.com/ai-dynamo/frontend-crates.git", rev = "7a000de90a0c4180efd8a59487592fe798cb0d25", version = "=0.1.0" }
+dynamo-conformance-fixtures-v2 = { git = "https://github.com/ai-dynamo/frontend-crates.git", rev = "16d894e50fbb0761e1c6ed68f34f677d5c201be0", version = "=0.1.0" }
 ```
 
 ```rust
