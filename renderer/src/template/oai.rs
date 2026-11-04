@@ -595,42 +595,42 @@ impl HfTokenizerConfigJsonFormatter {
         // template itself accepts. A strict render of a shape the template
         // rejects is an error, which is the answer the caller asked for.
         if !self.render_options.strict {
-        crate::reject_unsupported_partial_assistant(&messages_for_template)?;
-        crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
+            crate::reject_unsupported_partial_assistant(&messages_for_template)?;
+            crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
 
-        if system_normalization.is_required() {
-            normalize_system_messages(&mut messages_for_template, system_normalization);
-        }
+            if system_normalization.is_required() {
+                normalize_system_messages(&mut messages_for_template, system_normalization);
+            }
 
-        messages_for_template = may_be_fix_msg_content(
-            messages_for_template,
-            self.requires_content_arrays,
-            self.image_placeholder_template,
-        );
+            messages_for_template = may_be_fix_msg_content(
+                messages_for_template,
+                self.requires_content_arrays,
+                self.image_placeholder_template,
+            );
 
-        // Pre-parse JSON-string `arguments` into objects — but only for templates
-        // that unconditionally `| tojson` them. Templates that branch on
-        // `tool_call.arguments is string` (Qwen3, Hermes) want the raw string
-        // verbatim so the rendered bytes match what the model emitted on the
-        // prior turn. Re-serializing through minijinja's compact `tojson` here
-        // breaks append-only prefix matching across multi-step tool use.
-        if !template_handles_tool_calls_args_string {
-            normalize_tool_calls_arguments_in_messages(&mut messages_for_template);
-        }
-        // Legacy `function_call.arguments` is always normalized — the
-        // `arguments is string` opt-out only covers the modern `tool_calls`
-        // branch.
-        normalize_function_call_arguments_in_messages(&mut messages_for_template);
+            // Pre-parse JSON-string `arguments` into objects — but only for templates
+            // that unconditionally `| tojson` them. Templates that branch on
+            // `tool_call.arguments is string` (Qwen3, Hermes) want the raw string
+            // verbatim so the rendered bytes match what the model emitted on the
+            // prior turn. Re-serializing through minijinja's compact `tojson` here
+            // breaks append-only prefix matching across multi-step tool use.
+            if !template_handles_tool_calls_args_string {
+                normalize_tool_calls_arguments_in_messages(&mut messages_for_template);
+            }
+            // Legacy `function_call.arguments` is always normalized — the
+            // `arguments is string` opt-out only covers the modern `tool_calls`
+            // branch.
+            normalize_function_call_arguments_in_messages(&mut messages_for_template);
 
-        // Inject reasoning_content as <think> blocks into content — but only if
-        // the template doesn't handle it natively. Templates like Nemotron and
-        // Qwen3 reference reasoning_content directly in their Jinja logic; injecting
-        // would produce duplicate <think> blocks.
-        if !template_handles_reasoning {
-            inject_reasoning_content_into_messages(&mut messages_for_template);
-        } else if template_requires_reasoning_string {
-            join_reasoning_content_segments_in_messages(&mut messages_for_template);
-        }
+            // Inject reasoning_content as <think> blocks into content — but only if
+            // the template doesn't handle it natively. Templates like Nemotron and
+            // Qwen3 reference reasoning_content directly in their Jinja logic; injecting
+            // would produce duplicate <think> blocks.
+            if !template_handles_reasoning {
+                inject_reasoning_content_into_messages(&mut messages_for_template);
+            } else if template_requires_reasoning_string {
+                join_reasoning_content_segments_in_messages(&mut messages_for_template);
+            }
         }
 
         let tmpl = self.env.get_template(template_name)?;
@@ -948,7 +948,8 @@ mod tests {
 
     #[test]
     fn strict_render_pins_strftime_now_to_the_given_instant() {
-        let instant = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+        let instant =
+            std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
         let expected = chrono::DateTime::<chrono::Local>::from(instant)
             .format("%Y-%m-%d %H:%M")
             .to_string();
