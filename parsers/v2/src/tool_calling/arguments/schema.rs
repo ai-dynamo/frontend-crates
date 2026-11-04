@@ -355,14 +355,13 @@ impl<'a> SchemaFacts<'a> {
             && let Some(kind) = json_kind(value)
             && self.typed(schema, kind)?
         {
-            match self.fit(schema, Candidate::Json(value))? {
+            match self.fit(schema, Candidate::Json(value)) {
                 Fit::Fits => return Some(NativeText::Json(kind)),
                 Fit::Unproven => unproven = Some(NativeText::Json(kind)),
                 Fit::Rejects => {}
             }
         }
-        if self.typed(schema, "string")? && self.fit(schema, Candidate::Text(raw))? != Fit::Rejects
-        {
+        if self.typed(schema, "string")? && self.fit(schema, Candidate::Text(raw)) != Fit::Rejects {
             return Some(NativeText::String);
         }
         unproven
@@ -376,10 +375,12 @@ impl<'a> SchemaFacts<'a> {
         (!facts.exhausted).then_some(typed)
     }
 
-    fn fit(&self, schema: &'a Value, candidate: Candidate<'_>) -> Option<Fit> {
+    // An unfinished walk proves nothing, so the candidate stays Unproven: an
+    // admitted string then wins over a JSON value it could not decide.
+    fn fit(&self, schema: &'a Value, candidate: Candidate<'_>) -> Fit {
         let mut facts = SchemaFacts::new(self.root);
         let fit = facts.value_fit(schema, candidate);
-        (!facts.exhausted).then_some(fit)
+        if facts.exhausted { Fit::Unproven } else { fit }
     }
 
     // A literal branch such as `const: "auto"` must not hide an alternative that
@@ -1011,11 +1012,13 @@ fn all_equal<'v>(pairs: impl Iterator<Item = (&'v Value, &'v Value)>) -> Option<
 fn numbers_equal(left: &serde_json::Number, right: &serde_json::Number) -> Option<bool> {
     match (left.is_f64(), right.is_f64()) {
         (true, true) => Some(left.as_f64() == right.as_f64()),
-        (false, false) => Some(match (exact_integer(left), exact_integer(right)) {
-            (Some(left), Some(right)) => left == right,
-            // Beyond i128, an integer has a single JSON spelling.
-            _ => left == right,
-        }),
+        (false, false) => match (exact_integer(left), exact_integer(right)) {
+            (Some(left), Some(right)) => Some(left == right),
+            // Beyond i128, an integer has a single JSON spelling. With arbitrary
+            // precision, other numbers beyond f64, such as `1e400`, stay undecided.
+            _ if integer_spelling(left) && integer_spelling(right) => Some(left == right),
+            _ => None,
+        },
         _ => {
             let (integer, float) = if left.is_f64() {
                 (right, left)
@@ -1026,9 +1029,10 @@ fn numbers_equal(left: &serde_json::Number, right: &serde_json::Number) -> Optio
             if float.fract() != 0.0 {
                 return Some(false);
             }
-            // A float at or beyond 2^127 exceeds every i128.
-            exact_integer(integer)
-                .map(|integer| float.abs() < i128::MAX as f64 && integer == float as i128)
+            // An integral float outside [-2^127, 2^127) equals no i128.
+            exact_integer(integer).map(|integer| {
+                (i128::MIN as f64..i128::MAX as f64).contains(&float) && integer == float as i128
+            })
         }
     }
 }
@@ -1043,9 +1047,18 @@ fn exact_integer(number: &serde_json::Number) -> Option<i128> {
         .or_else(|| number.to_string().parse().ok())
 }
 
+fn integer_spelling(number: &serde_json::Number) -> bool {
+    let spelling = number.to_string();
+    let digits = spelling.strip_prefix('-').unwrap_or(&spelling);
+    !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+}
+
 // Whether `target` lies inside a nested `$id` resource of `root`, searching
 // schema positions only. An unfinished search counts as nested, which leaves
 // references unknown rather than resolving them against the wrong resource.
+// A schema a caller composed from copies, such as the union of several
+// variant declarations, is not found by identity: it counts as nested when the
+// root has any nested resource.
 fn within_nested_resource(root: &Value, target: &Value) -> bool {
     fn search(
         root: &Value,
@@ -1053,6 +1066,7 @@ fn within_nested_resource(root: &Value, target: &Value) -> bool {
         target: &Value,
         nested: bool,
         budget: &mut usize,
+        any_nested: &mut bool,
     ) -> Option<bool> {
         if std::ptr::eq(schema, target) {
             return Some(nested);
@@ -1062,9 +1076,11 @@ fn within_nested_resource(root: &Value, target: &Value) -> bool {
             return Some(true);
         }
         *budget -= 1;
-        let nested = nested
-            || (!std::ptr::eq(schema, root) && node.get("$id").and_then(Value::as_str).is_some());
-        let mut visit = |child: &Value| search(root, child, target, nested, budget);
+        let resource =
+            !std::ptr::eq(schema, root) && node.get("$id").and_then(Value::as_str).is_some();
+        *any_nested |= resource;
+        let nested = nested || resource;
+        let mut visit = |child: &Value| search(root, child, target, nested, budget, any_nested);
         node.iter()
             .find_map(|(keyword, value)| match (keyword.as_str(), value) {
                 (
@@ -1092,8 +1108,8 @@ fn within_nested_resource(root: &Value, target: &Value) -> bool {
                 _ => None,
             })
     }
-    let mut budget = MAX_SCOPE_SEARCH_NODES;
-    search(root, root, target, false, &mut budget).unwrap_or(false)
+    let (mut budget, mut any_nested) = (MAX_SCOPE_SEARCH_NODES, false);
+    search(root, root, target, false, &mut budget, &mut any_nested).unwrap_or(any_nested)
 }
 
 const MAX_SCOPE_SEARCH_NODES: usize = 4096;
@@ -1347,10 +1363,6 @@ mod structural_type_tests {
     #[test]
     fn nested_ids_scope_only_their_references() {
         let id = "https://example.com/v";
-        let root = json!({"$defs": {
-            "Nullable": {"type": ["integer", "null"]},
-            "Scoped": {"$id": "https://example.com/t", "type": ["integer", "null"]},
-        }});
         for (schema, permits) in [
             (json!({"$id": id, "type": ["integer", "null"]}), Some(true)),
             (json!({"$id": id, "type": "integer"}), Some(false)),
@@ -1369,8 +1381,16 @@ mod structural_type_tests {
             (json!(true), Some(true)),
             (json!(false), Some(false)),
         ] {
+            // Each case is a parameter of the root, as parsers pass them.
+            let root = json!({
+                "$defs": {
+                    "Nullable": {"type": ["integer", "null"]},
+                    "Scoped": {"$id": "https://example.com/t", "type": ["integer", "null"]},
+                },
+                "properties": {"case": schema},
+            });
             assert_eq!(
-                SchemaFacts::new(&root).permits_null(&schema),
+                SchemaFacts::new(&root).permits_null(&root["properties"]["case"]),
                 permits,
                 "{schema}"
             );
@@ -1517,6 +1537,18 @@ mod native_text_tests {
         }
     }
 
+    // A walk cut short by the depth limit proves nothing, so the admitted
+    // string wins instead of leaving the choice to type hints.
+    #[test]
+    fn an_unfinished_walk_leaves_json_unproven() {
+        let mut negated = json!({"const": 42});
+        for _ in 0..66 {
+            negated = json!({"not": negated});
+        }
+        let parameter = json!({"type": ["string", "integer"], "not": negated});
+        assert_eq!(typed(parameter, "42"), Some(NativeText::String));
+    }
+
     // A walk for a nested child starts below the root, so it must still treat
     // the child's enclosing `$id` resource as rebasing its references.
     #[test]
@@ -1551,6 +1583,18 @@ mod native_text_tests {
             SchemaFacts::new(&schema).permits_null(&payload["nullable"]),
             None
         );
+        // A schema composed from copies cannot be located in the root, so any
+        // nested resource there leaves its references unknown.
+        let composed = json!({"allOf": [payload["value"].clone()]});
+        assert_eq!(
+            facts.native_text_type(&composed, "42"),
+            Some(NativeText::String)
+        );
+        let plain_root = json!({"$defs": {"T": {"type": "integer"}}});
+        assert_eq!(
+            SchemaFacts::new(&plain_root).native_text_type(&composed, "42"),
+            Some(NativeText::Json("integer"))
+        );
     }
 
     #[test]
@@ -1570,6 +1614,11 @@ mod native_text_tests {
                 json!(18446744073709551616.0),
                 true,
             ),
+            (
+                parsed("-170141183460469231731687303715884105728"),
+                json!(-(2f64.powi(127))),
+                true,
+            ),
             (json!(1), json!(1.5), false),
             (json!(1.5), json!(1.5), true),
             (json!({"n": [1]}), json!({"n": [1.0]}), true),
@@ -1578,5 +1627,23 @@ mod native_text_tests {
             assert_eq!(json_equal(&left, &right), Some(equal), "{left} {right}");
             assert_eq!(json_equal(&right, &left), Some(equal), "{right} {left}");
         }
+    }
+
+    // Arbitrary precision keeps numbers beyond f64 that only their spelling
+    // identifies; only integer spellings can be compared that way.
+    #[cfg(feature = "arbitrary-precision")]
+    #[test]
+    fn numbers_beyond_f64_compare_only_as_integers() {
+        let parsed = |text: &str| serde_json::from_str::<Value>(text).unwrap();
+        assert_eq!(json_equal(&parsed("1e400"), &parsed("10e399")), None);
+        let beyond_i128 = parsed("340282366920938463463374607431768211457");
+        assert_eq!(json_equal(&beyond_i128, &beyond_i128.clone()), Some(true));
+        assert_eq!(
+            json_equal(
+                &beyond_i128,
+                &parsed("340282366920938463463374607431768211458")
+            ),
+            Some(false)
+        );
     }
 }
