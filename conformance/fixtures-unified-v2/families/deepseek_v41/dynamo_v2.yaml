@@ -1,30 +1,29 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.11.yaml","version":"0.9.11"}],"mode":"unified","payload_sha256":"99bb9820fa60da2ba211a21283575d161eabcaf6ccb85092c90f7f7508adafe1","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.11.yaml","surface":"unified","version":"0.9.11"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.11.yaml","version":"0.9.11"}],"mode":"unified","payload_sha256":"89841453a7ae521ce851915128cdb5dc56ba42ca4a63d161a5c5bf0d03bdfbac","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.11.yaml","surface":"unified","version":"0.9.11"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_3192f982d32f7af9
+  origin: origin_14e55b042aac1813
 origins:
-  origin_3192f982d32f7af9:
+  origin_14e55b042aac1813:
     crate_version: 0.9.11
     source_sha256: 7e96a513e7db7fcee2dec3edd4807fc6dff4cdd49a01f87678144dc6f9550551
-    git_commit: e9f11436891f55984a91e8b6ccc631517d51b932
+    git_commit: 6ec6928849fcf9a6e731512ab4557d1ff582a9b6
 producers:
-  producer_75ba61079c4d66d1:
+  producer_f2e20a624b0dd0bb:
     captured_with:
       dynamo_v2: 0.9.11
-    capture_origin: origin_3192f982d32f7af9
+    capture_origin: origin_14e55b042aac1813
 contexts:
-  context_0d4685a6e9e3281d:
-    family: deepseek_v41
+  context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.11.yaml
-  producer: producer_75ba61079c4d66d1
-  context: context_0d4685a6e9e3281d
+  producer: producer_f2e20a624b0dd0bb
+  context: context_cdf0b3c0134ec96f
 records:
   adjacent_calls_partial_header:
     case_key: UNIFIED.2-adjacent_calls_partial_header
@@ -1286,6 +1285,36 @@ records:
       - expected: []
       - expected: []
       - expected: []
+  dsml_unterminated_parameter_then_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
+    request: d67b8fb3a7a01e870ef85f9370d0717234d774674f058d04fd3bfdf1ad140074
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}'
+          complete: true
+      - expected: []
+  dsml_unterminated_parameter_then_empty_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    request: ca1b33a058b56adbf2218580f8480958134c20fa8248789759f10bb6ffe708bd
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{}'
+          complete: true
   dsml_whitespace_content_separator:
     case_key: UNIFIED.dsml-whitespace_content_separator
     request: d2fa00655a99354fc2dfb51f4fd1675514795b3e4ce0b77431954184b0c37b8e
@@ -1339,6 +1368,21 @@ records:
           arguments: '{}'
           complete: true
       - expected: []
+      - expected: []
+  enum_contradicting_declared_type:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    request: 1aeec006a7115773b7ae26a1635c837201d4d1a8ed2d18291235910f61781995
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"metrics":["temperature","humidity"],"count":5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"metrics":["temperature","humidity"],"count":5}'
+          complete: true
       - expected: []
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
@@ -4386,6 +4430,21 @@ records:
           complete: true
       - expected: []
       - expected: []
+  schema_declared_integer_boolean_number_order:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    request: 91d986497fd60267e93d67690752e600b58bd7579d14bc0bfc41a520e61ae27a
+    output:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments: '{"value":1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value":1}'
+          complete: true
+      - expected: []
   schema_declared_null:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_null
     request: 5a59c9763946a88256188394628f2399ad090e48357f86c8bddda48e8989e8c1
@@ -6470,34 +6529,4 @@ records:
           arguments: '{"value":"{''a'':1}"}'
           complete: true
       - expected: []
-      - expected: []
-  schema_declared_integer_boolean_number_order:
-    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
-    request: 91d986497fd60267e93d67690752e600b58bd7579d14bc0bfc41a520e61ae27a
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value":1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value":1}'
-          complete: true
-      - expected: []
-  enum_contradicting_declared_type:
-    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    request: 1aeec006a7115773b7ae26a1635c837201d4d1a8ed2d18291235910f61781995
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"metrics":["temperature","humidity"],"count":5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"metrics":["temperature","humidity"],"count":5}'
-          complete: true
       - expected: []

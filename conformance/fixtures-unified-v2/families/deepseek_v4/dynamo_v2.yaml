@@ -1,30 +1,29 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml","version":"0.9.11"}],"mode":"unified","payload_sha256":"1b5381de25ad709595da6d892799f4874b276d8b2d39d327ac13e412faf47fba","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml","surface":"unified","version":"0.9.11"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml","version":"0.9.11"}],"mode":"unified","payload_sha256":"12b36214d383687924c08fcc8a28d61cc8d8c6dbf502661f8feceffcb8e795b4","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml","surface":"unified","version":"0.9.11"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_3192f982d32f7af9
+  origin: origin_14e55b042aac1813
 origins:
-  origin_3192f982d32f7af9:
+  origin_14e55b042aac1813:
     crate_version: 0.9.11
     source_sha256: 7e96a513e7db7fcee2dec3edd4807fc6dff4cdd49a01f87678144dc6f9550551
-    git_commit: e9f11436891f55984a91e8b6ccc631517d51b932
+    git_commit: 6ec6928849fcf9a6e731512ab4557d1ff582a9b6
 producers:
-  producer_75ba61079c4d66d1:
+  producer_f2e20a624b0dd0bb:
     captured_with:
       dynamo_v2: 0.9.11
-    capture_origin: origin_3192f982d32f7af9
+    capture_origin: origin_14e55b042aac1813
 contexts:
-  context_29ab037219e24df6:
-    family: deepseek_v4
+  context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml
-  producer: producer_75ba61079c4d66d1
-  context: context_29ab037219e24df6
+  producer: producer_f2e20a624b0dd0bb
+  context: context_cdf0b3c0134ec96f
 records:
   adjacent_calls_partial_header:
     case_key: UNIFIED.2-adjacent_calls_partial_header
@@ -1503,6 +1502,44 @@ records:
       - expected: []
       - expected: []
       - expected: []
+  dsml_unterminated_parameter_then_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
+    request: b06b0ec19eef6394df2973e92c46d16ce08f91b060b782ce509f195d35336e0f
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"}'
+          complete: true
+      - expected: []
+  dsml_unterminated_parameter_then_empty_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    request: d8b621a0dd49e49562dbc9f56b5c2aaf51ac7adb5ff80f98125ed8a137c23b15
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{}'
+          complete: true
+      - expected: []
   dsml_whitespace_content_separator:
     case_key: UNIFIED.dsml-whitespace_content_separator
     request: 2f2bd72f6f337cf778aa6f7e8991ec8d59f4551066539d4169653cd2b1c7af06
@@ -1564,6 +1601,25 @@ records:
           arguments: '{}'
           complete: true
       - expected: []
+      - expected: []
+  enum_contradicting_declared_type:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    request: 6ae82c3f95e17e8ab184637c5aae8fa1db0d631324b3c2e70838929d8cab5fcd
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"metrics":["temperature","humidity"],"count":5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"metrics":["temperature","humidity"],"count":5}'
+          complete: true
       - expected: []
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
@@ -5049,6 +5105,25 @@ records:
           complete: true
       - expected: []
       - expected: []
+  schema_declared_integer_boolean_number_order:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    request: 1b5b6f105b8b2d95e99bfb11af6ec8f001afa1d7b54eaf1d1d4c53cfb7b658c0
+    output:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments: '{"value":1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: schema_probe
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"value":1}'
+          complete: true
+      - expected: []
   schema_declared_null:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_null
     request: 733c4e10751b6865e89196db0d6f2540f12ced75c510585f25593b01f3a8e614
@@ -7527,42 +7602,4 @@ records:
           arguments: '{"value":"{''a'':1}"}'
           complete: true
       - expected: []
-      - expected: []
-  schema_declared_integer_boolean_number_order:
-    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
-    request: 1b5b6f105b8b2d95e99bfb11af6ec8f001afa1d7b54eaf1d1d4c53cfb7b658c0
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value":1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: ''
-          complete: false
-        - kind: tool_call
-          name: null
-          arguments: '{"value":1}'
-          complete: true
-      - expected: []
-  enum_contradicting_declared_type:
-    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    request: 6ae82c3f95e17e8ab184637c5aae8fa1db0d631324b3c2e70838929d8cab5fcd
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"metrics":["temperature","humidity"],"count":5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: ''
-          complete: false
-        - kind: tool_call
-          name: null
-          arguments: '{"metrics":["temperature","humidity"],"count":5}'
-          complete: true
       - expected: []
