@@ -11242,12 +11242,12 @@ cases:
       arguments:
         value: 1
   enum_contradicting_declared_type:
-    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     historical_ids:
     - UNIFIED.7-enum_contradicting_declared_type
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: 3841ded4852b9df0ca58a0643ab8bbbbbae8af5f8313b2059e28c37df463a23a
     golden:
     - kind: tool_call
@@ -11258,9 +11258,9 @@ cases:
         - humidity
         count: 5
   schema_declared_integer_boolean_number_order:
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     request: f4fe746fd760e4bbd82060380d44a4e2fb3f57c04b8c32eef4e05376b1653516
     golden:
     - kind: tool_call

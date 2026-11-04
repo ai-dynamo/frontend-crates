@@ -13454,12 +13454,12 @@ cases:
       arguments:
         location: unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris
   enum_contradicting_declared_type:
-    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     historical_ids:
     - UNIFIED.7-enum_contradicting_declared_type
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: 8b5319fa3a29cf21fa7159d65d9842746c512441301a736a99a63f9d1e47efba
     golden:
     - kind: tool_call
@@ -13470,9 +13470,9 @@ cases:
         - humidity
         count: 5
   schema_declared_integer_boolean_number_order:
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
-    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     request: fe552b5a83f6bacb5d7c5ab47b9d088ffc19a6ebc69ef36379c7301ba33bfa05
     golden:
     - kind: tool_call
