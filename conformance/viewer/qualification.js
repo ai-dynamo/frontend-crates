@@ -803,7 +803,11 @@ async function checkUnifiedBatch(batch) {
         for (const descriptor of batch.filter(item => catalog.capture_generation?.mode !== 'latest' && item.source.implementation === 'dynamo_v2' && compareLegacyVersions(item.source.version, '0.7.29') < 0)) {
           const comparison = cell.cmp[descriptor.control.key];
           assert.equal(comparison.na, 1, `Beam ${scenario}: ${descriptor.source.version} predates its introduction`);
-          assert.equal(comparison.sig, 0);
+          assert.equal(selectedCaptureOutcome(cell, descriptor.control.key), 'missing');
+          const historical = cell.tooltip.candidates.find(item => item.key === descriptor.control.key);
+          assert.equal(historical.block.unavailable_code, 'missing_capture');
+          assert.equal(Object.hasOwn(historical.block, 'events'), false);
+          assert.notEqual(comparison.sig, cell.cmp.golden.sig, `Beam ${scenario}: unmeasured history must not match GOLDEN`);
         }
       }
     }

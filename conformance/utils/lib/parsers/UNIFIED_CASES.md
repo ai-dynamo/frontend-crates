@@ -455,17 +455,19 @@ Nemotron 3 frames each Qwen3-Coder call with a newline on both sides, so a tool-
 
 Inputs render each whitespace run as the family's own visible-text segment: bare text for the marker-pair grammars, a `to=user` message for Muse, a `response` channel for Kimi K3, and a `final` message for GPT-OSS and Beam. The five shared `blank_framing` cases cover Beam, Gemma 4, GLM, GPT-OSS, Kimi K2, Kimi K3, MiniMax M3, Muse Glimmer, Muse Spark, Qwen3, and Nemotron 3; `5-blank_framing_incomplete_call` covers Qwen3 and Nemotron 3. Nemotron V3 inherits Qwen3's inputs with its default `</think>` prefix; its own GOLDEN comes from `INHERITED_GOLDEN` in the generator. DeepSeek V4 and V4.1 are excluded because their parsers own the call framing: the encoder's `"\n\n"` separator is consumed and any other whitespace stays content (see the DSML framing section). `3-blank_output_without_call` applies to every family. Current observations are recorded in versionless latest Dynamo snapshots. Published versioned captures, including 0.8.1, and their historical request bindings remain unchanged; this update does not back-capture older releases.
 
-### Gemma-specific
+### Gemma 4 guided call-prefix boundaries
 
 - **`gemma-guided_json_visible_call_prose_before_reasoning`** and **`gemma-guided_json_malformed_call_prefix_before_reasoning`** cover Gemma 4 guided call-prefix boundaries.
 
-### GLM 5-specific
+### GLM argument handling
 
 - **`glm5-parameterless_call_shape_inside_argument`** (`glm47_parameterless_call_shape_inside_argument`) places an offered parameterless-call shape inside an open GLM argument value. The embedded close/open markers remain argument data and must not dispatch a second call.
 
-### Kimi-specific
+### Kimi native progress and recovery
 Native Kimi progress cases `kimi-9` through `kimi-14` use `write_file(count: integer, content: string)` with count before a 4096-character content value. Each K2 JSON, K3 typed, and K3 JSON form has 7-byte and 1024-byte delivery schedules, with separate pauses after 3072 content characters, the remaining 1024, value closure, call closure, and section closure. Per-chunk deltas retain native identity and index and stay incomplete until the native call boundary resolves; K3 may require the following section fence or EOF to disambiguate a call closer. These specific envelopes and native ID rules apply to Kimi only. Other parser families retain their existing shared progress cases. Cases `kimi-15` and `kimi-16` preserve malformed trailing syntax whitespace and valid-object trailing-garbage recovery under one-character delivery. Case `kimi-17` withholds ambiguous native markers inside an unterminated string so EOF recovery preserves append-only raw arguments; Unified assembly projects the completed malformed arguments to an empty object. These exercise K2 native recovery; K3 uses a different typed/native boundary contract. Case `kimi-18` covers long inter-field whitespace in typed K3 with seven-character delivery; the work regression doubles that whitespace under one-character delivery and counts lookahead work. Case `kimi-19` releases literal string bytes after a complete invalid next-argument header, before the real value closer.
 
+
+### Kimi K3 XTML
 
 - **`kimi-typed_argument_values`** through **`kimi-guided_native_wrapper`** cover Kimi K3 XTML typed arguments, raw JSON blocks, spacing variants, message termination, reasoning closure, recovery, and guided wrappers.
 

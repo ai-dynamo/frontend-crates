@@ -276,6 +276,8 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
             "generation": generation,
             "label": label,
             "native_unified_v2": has_native_v2,
+            **({"native_unified_since": declaration["native_unified_since"]}
+               if "native_unified_since" in declaration else {}),
         }
         unified_parser_generations[family] = native
         if registry_family in gen_unified_golden.V1_SPLIT_FAMILIES:

@@ -51,6 +51,38 @@ const input = { lifecycle: 'active', scenario: 'tool_only', description: 'Shared
 catalog.metadata.unified_taxonomy.tool_only.description = 'Explicit shared summary.';
 const document = { input_document: { family: 'qwen3' }, golden_document: { family: 'qwen3' }, cases: { id: input } };
 const identity = { path: 'capture.yaml', implementation: 'dynamo_v2', version: '1.0.0' };
+for (const [version, recorded, nativeFamilies, boundary, expected] of [
+  ['0.7.27', undefined, [], '0.7.28', 'split'],
+  ['0.7.28', undefined, [], '0.7.28', 'unified'],
+  ['0.7.29', 'split', ['qwen3'], '0.7.28', 'split'],
+  ['0.7.27', 'unified', [], '0.7.28', 'unified'],
+  ['0.7.27', undefined, [], undefined, null],
+  ['0.7.27', undefined, ['qwen3'], undefined, 'unified'],
+]) {
+  const routeCatalog = structuredClone(catalog);
+  routeCatalog.sources.candidates.push({ mode: 'unified', implementation: 'dynamo_v2', version,
+    native_unified_families: nativeFamilies });
+  routeCatalog.metadata.unified_presentation.parser_generations.qwen3.native_unified_since = boundary;
+  const routes = { provenance: { status: 'captured', origin: { crate_version: version, source_sha256: 'a'.repeat(64) } },
+    document: recorded === undefined ? {} : { parser_path: recorded },
+    changes: { id: { case_key: input.display_id, stimulus: { ref: 'current' }, observation: { value: {
+      assembled: [{ kind: 'text', text: 'assembled' }], chunks: [{ expected: [{ kind: 'text', text: 'stream' }] }],
+    } } } },
+    metadata_changes: {}, document_overrides: { id: { capture_provenance: {
+      captured_with: { dynamo_v2: '0.7.24' }, capture_origin: null, inherited_from: '0.7.24',
+    } } } };
+  const routeReader = { unifiedInputs: async () => ({ value: document }),
+    unified: async () => ({ records: resolveUnified([{ ...identity, version, document: routes }], version) }) };
+  const key = `dynamo@${version}`;
+  const routePanel = await unifiedPanel(routeCatalog, routeReader, { selected: [key], reference: null });
+  const candidate = toolOnlyCell(routePanel).tooltip.candidates.find(candidate => candidate.key === key);
+  assert.equal(candidate.parse_mode, expected, `${version}: recorded=${recorded}, native=${nativeFamilies}, boundary=${boundary}`);
+  assert.ok(candidate.label.includes(expected === 'unified' ? 'UnifiedParser' : expected === 'split' ? 'split' : 'recorded history'));
+  assert.deepEqual(candidate.block.events, [{ kind: 'text', text: expected === 'split' ? 'assembled' : 'stream' }]);
+  assert.ok(candidate.block.explanation.includes('Inherited from v2 0.7.24'));
+  assert.ok(candidate.block.explanation.includes(`selected release route: ${expected === 'unified' ? 'UnifiedParser' : expected || 'unknown'}`));
+  if (expected === 'split') assert.ok(candidate.block.explanation.includes('v1 reasoning + v2 tool parsing.'));
+}
 for (const observation of [{ error: { code: 'panic', detail: 'parser failed' } }, { value: { assembled: [], chunks: [{ expected: [] }] } },
   ...['unsupported_request_mode', 'unsupported_capture_mode', 'unsupported_family', 'source_unavailable'].map(code => ({ unavailable: { code, detail: 'Capability unavailable' } }))]) {
   const capture = { provenance: { status: 'captured', origin: { crate_version: '1.0.0', source_sha256: 'a'.repeat(64) } },
