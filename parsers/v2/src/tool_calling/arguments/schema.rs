@@ -314,13 +314,7 @@ impl<'a> SchemaFacts<'a> {
                         .is_some_and(|values| {
                             !values.iter().any(|value| value.as_str() == Some(raw))
                         });
-            if schema.get("type").is_some_and(|ty| {
-                ty.as_str() != Some("string")
-                    && !ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "string"))
-            }) || (literal_rejects && !literals_contradict_type(schema))
-            {
+            if literal_rejects && !literals_contradict_type(schema) {
                 return true;
             }
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
