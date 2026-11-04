@@ -196,6 +196,32 @@ def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
     assert invoke_header_prefix("gpt_oss") == ""
 
 
+def _assert_dsml_recovery_input(family, scenario, case):
+    assert family in {"deepseek_v4", "deepseek_v41"}
+    gap = " " if family == "deepseek_v41" else ""
+    invoke_end = f"</｜DSML｜{gap}invoke>"
+    first, trailing = case["input"].split(invoke_end, 1)
+    assert f'<｜DSML｜{gap}parameter' in first
+    assert f'</｜DSML｜{gap}parameter>' not in first
+    expected = [{"kind": "tool_call", "name": "f", "arguments": {}}] if scenario.endswith("empty_call") else [
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+    ]
+    assert _native_input_calls(family, trailing) == expected
+    assert case["golden"] == expected
+    assert tax(scenario)[0] == 5
+
+
+@pytest.mark.parametrize("scenario", [
+    "dsml_unterminated_parameter_then_empty_call",
+    "dsml_unterminated_parameter_then_call",
+])
+def test_dsml_recovery_cases_keep_a_complete_trailing_invoke(scenario):
+    assert set(G.scenario_families(scenario)) == {"deepseek_v4", "deepseek_v41"}
+    for family in G.scenario_families(scenario):
+        case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+        _assert_dsml_recovery_input(family, scenario, case)
+
+
 def test_request_scoped_cases_never_claim_vllm_match() -> None:
     for family in FAMILIES:
         for case_id, case in build_cases(family).items():
@@ -1001,7 +1027,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 266 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
+    assert len(UNIFIED_TAX) == 268 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1298,27 +1324,19 @@ def test_reference_backfill_binding_rejects_unproven_older_results(corruption):
             _assert_reference_backfill_record(record, document, request, "0.1.0")
 
 
-def test_retained_unified_captures_cover_the_current_corpus(authored_unified_store):
+def test_latest_unified_captures_cover_the_current_corpus(authored_unified_store):
     store = authored_unified_store
     captured = set()
-    # Coverage is a latest-capture assertion, independent of the parity shard.
-    catalog = json.loads((UTILS.parent / "viewer-catalog.json").read_bytes())
-    resources = [row for row in catalog["sources"]["unified"]
-                 if row["kind"] == "history" and row["implementation"] == "dynamo_v2"]
-    latest = {}
-    for row in resources:
-        if row["family"] not in latest or unified_history._capture_release_sort_key(row["version"]) > unified_history._capture_release_sort_key(latest[row["family"]]["version"]):
-            latest[row["family"]] = row
     root = UTILS.parent / "fixtures-unified-v2"
-    selected = [_store_resource(row) for row in latest.values()]
-    with unified_history._store_read_lock(root):
-        for resource, data in unified_archives.read_sources(root, selected):
-            document = yaml.load(data, Loader=unified_history.StrictLoader)
-            family = resource["family"]
-            for case_id in document["records"]:
-                case = store.families[family].cases[case_id]
-                case_key = case["display_id"] or case["historical_ids"][0]
-                captured.add((family, historical_unified_case_key(family, case_key)))
+    latest, _ = unified_history.selected_materialization_store(root, ["latest:dynamo_v2"])
+    for (family, implementation), history in latest.histories.items():
+        if implementation != "dynamo_v2":
+            continue
+        selected = history.ordered_capture_ids()[-1]
+        for case_id in history.resolve(selected):
+            case = store.families[family].cases[case_id]
+            case_key = case["display_id"] or case["historical_ids"][0]
+            captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
         for family in NATIVE_FAMILIES for case_id in build_cases(family)
@@ -2061,6 +2079,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
         return
     if scenario.startswith("kimi_native_"):
         _assert_kimi_native_golden(scenario, case)
+    if scenario in {"dsml_unterminated_parameter_then_call", "dsml_unterminated_parameter_then_empty_call"}:
+        _assert_dsml_recovery_input(family, scenario, case)
+        return
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:

@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","version":"0.9.9"}],"mode":"unified","payload_sha256":"cc5bae5a98585fb7d628abdefa2146b1b36bcd9bb376aef2689e60c1c539160c","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","surface":"unified","version":"0.9.9"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.6.yaml","version":"0.9.6"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","version":"0.9.9"}],"mode":"unified","payload_sha256":"8a7bec5f21be719402f3db317dff4ef908709ca568ea8cfeda4839e70672bca0","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml","surface":"unified","version":"0.9.9"}
 document:
   mode: unified
 provenance:
@@ -4290,6 +4290,166 @@ records:
               properties: {}
               type: object
         semantic_sha256: e867d133b0676c716e0bea576f759d90c9a680c54b1f0ba80b8b161e166bb653
+  dsml_unterminated_parameter_then_call:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml
+    value:
+      case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
+      stimulus:
+        semantic_sha256: d67b8fb3a7a01e870ef85f9370d0717234d774674f058d04fd3bfdf1ad140074
+        inline:
+          input: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: '{"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}'
+              complete: true
+          - expected: []
+      document:
+        family: deepseek_v41
+        mode: unified
+        capture_origin:
+          crate_version: 0.9.6
+          source_sha256: a5f7eceb4878f86075e54e75dac2c4d763ca5bc28a6db26623bdb2ddd39b0329
+          git_commit: 56b0f3217092b29a1a0848844013b0abbad85fd1
+        captured_with:
+          dynamo_v2: 0.9.6
+  dsml_unterminated_parameter_then_empty_call:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml
+    value:
+      case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+      stimulus:
+        semantic_sha256: ca1b33a058b56adbf2218580f8480958134c20fa8248789759f10bb6ffe708bd
+        inline:
+          input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="f"></｜DSML｜ invoke></｜DSML｜ calls>
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="f"></｜DSML｜ invoke></｜DSML｜ calls>
+      observation:
+        value:
+          assembled:
+          - kind: tool_call
+            name: f
+            arguments: '{}'
+          chunks:
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: f
+              arguments: '{}'
+              complete: true
+      document:
+        family: deepseek_v41
+        mode: unified
+        capture_origin:
+          crate_version: 0.9.6
+          source_sha256: a5f7eceb4878f86075e54e75dac2c4d763ca5bc28a6db26623bdb2ddd39b0329
+          git_commit: 56b0f3217092b29a1a0848844013b0abbad85fd1
+        captured_with:
+          dynamo_v2: 0.9.6
   dsml_whitespace_content_separator:
     member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.9.yaml
     value:
