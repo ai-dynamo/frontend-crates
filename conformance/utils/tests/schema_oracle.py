@@ -61,8 +61,9 @@ def matches_schema(
     root_schema = schema if root_schema is None else root_schema
     nullable = _inherited_nullable or schema.get("nullable") is True
     if "$id" in schema:
-        # Corpus $id controls are scalar declarations; reference scopes remain unsupported.
-        assert schema.keys() <= {"$id", "type", "const", "enum"}, schema
+        # An embedded resource: `#` references inside it resolve against it.
+        assert schema.keys() <= {"$id", "type", "const", "enum", "$defs", "$ref"}, schema
+        root_schema = schema
     assert schema.keys() <= {
         "$id", "type", "properties", "items", "anyOf", "oneOf", "const", "enum",
         "nullable", "minLength", "required", "$ref", "$defs", "definitions",
@@ -71,10 +72,12 @@ def matches_schema(
     }, schema
     if "$ref" in schema:
         reference = schema["$ref"]
-        assert reference not in _references, ("cyclic schema reference", reference)
+        # The resource's base URI keeps equal fragments in two resources distinct.
+        resolved = root_schema.get("$id", "") + reference
+        assert resolved not in _references, ("cyclic schema reference", resolved)
         target = _local_reference(root_schema, reference)
         if not matches_schema(
-            value, target, root_schema, _references + (reference,), nullable
+            value, target, root_schema, _references + (resolved,), nullable
         ):
             return False
         siblings = {key: item for key, item in schema.items() if key != "$ref"}

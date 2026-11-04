@@ -37,11 +37,15 @@ fn build(tools: &[ToolDefinition], mode: StructuralTagSchemaMode) -> anyhow::Res
 
 // Preserve these parser-positive inputs while asserting that v1 never emits a
 // grammar which silently discards their constraining $ref siblings.
-fn expects_builder_error(case: &matrix::Case) -> bool {
-    matches!(
-        case.name.as_str(),
-        "ref_sibling_integer" | "unresolved_ref_with_type" | "cyclic_ref_with_type"
-    )
+// The $ref sibling the v1 builder cannot prove redundant, where it must refuse.
+fn expected_builder_error(case: &matrix::Case) -> Option<&'static str> {
+    match case.name.as_str() {
+        "ref_sibling_integer" | "unresolved_ref_with_type" | "cyclic_ref_with_type" => {
+            Some("$ref sibling `type`")
+        }
+        "ref_nested_id_scope" => Some("$ref sibling `$defs`"),
+        _ => None,
+    }
 }
 
 async fn arguments(case: &matrix::Case) -> Value {
@@ -60,13 +64,9 @@ async fn authored_schema_matrix_preserves_types_and_literals() {
     for case in matrix::cases() {
         let actual = arguments(&case).await;
         let built = build(&[tool(&case)], StructuralTagSchemaMode::Auto);
-        let (tag, builder_error) = if expects_builder_error(&case) {
+        let (tag, builder_error) = if let Some(sibling) = expected_builder_error(&case) {
             let error = format!("{:#}", built.unwrap_err());
-            assert!(
-                error.contains("$ref sibling `type`"),
-                "{}: {error}",
-                case.name
-            );
+            assert!(error.contains(sibling), "{}: {error}", case.name);
             (None, Some(error))
         } else {
             (Some(built.unwrap()), None)
@@ -97,13 +97,9 @@ async fn authored_schemas_accept_valid_and_reject_invalid_wires() {
         let actual = arguments(&case).await;
         assert_eq!(actual, case.expected(JSON_FIRST), "{}", case.name);
         let built = build(&[tool(&case)], StructuralTagSchemaMode::Auto);
-        if expects_builder_error(&case) {
+        if let Some(sibling) = expected_builder_error(&case) {
             let error = format!("{:#}", built.unwrap_err());
-            assert!(
-                error.contains("$ref sibling `type`"),
-                "{}: {error}",
-                case.name
-            );
+            assert!(error.contains(sibling), "{}: {error}", case.name);
         } else {
             probes.push(case.probe(built.unwrap(), actual));
         }

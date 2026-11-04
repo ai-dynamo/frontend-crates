@@ -1778,12 +1778,11 @@
         }
       ]
     },
-    "value": "42",
-    "text_value": 42,
+    "value": 42,
+    "v1_value": "42",
     "raw": "42",
     "grammar": false,
-    "conformance": false,
-    "note": "Parser-only control. v1 keeps its legacy string hint, the schema-invalid \"42\"; the shared native-text policy returns the admitted integer (text_value)."
+    "note": "The enum restricts the string branch to \"auto\", so only the integer admits 42. v1 keeps its legacy string hint, the schema-invalid \"42\" (v1_value)."
   },
   {
     "name": "type_array_string_integer",
@@ -1945,5 +1944,45 @@
     "value": 1,
     "raw": "1",
     "invalid_raw": ["auto", "2"]
+  },
+  {
+    "name": "type_array_string_number_decimal",
+    "schema": {"type": ["string", "number"]},
+    "value": "1.5",
+    "text_value": 1.5,
+    "raw": "1.5"
+  },
+  {
+    "name": "type_array_string_integer_leading_zero",
+    "schema": {"type": ["string", "integer"]},
+    "value": "007",
+    "raw": "007",
+    "note": "007 is not a JSON integer, so the string branch keeps the exact text."
+  },
+  {
+    "name": "enum_string_literal_boolean_union",
+    "schema": {"anyOf": [{"enum": ["True", "False"]}, {"type": "boolean"}]},
+    "value": "True",
+    "raw": "True",
+    "note": "True is not JSON, and the string enum admits it."
+  },
+  {
+    "name": "enum_integer_union_string_nonmember",
+    "schema": {"anyOf": [{"enum": [1, 2]}, {"type": "string"}]},
+    "value": "3",
+    "raw": "3",
+    "note": "The integer 3 is not an enum member, so only the string branch admits it."
+  },
+  {
+    "name": "ref_nested_id_scope",
+    "schema": {"$ref": "#/$defs/Scoped"},
+    "defs": {
+      "Scoped": {"$id": "https://example.test/scoped", "$defs": {"T": {"type": "string"}}, "$ref": "#/$defs/T"},
+      "T": {"type": "integer"}
+    },
+    "value": "42",
+    "raw": "42",
+    "grammar": false,
+    "note": "The nested $id rebases its reference to its own string T, not the root's integer T."
   }
 ]
