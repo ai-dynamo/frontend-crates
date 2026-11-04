@@ -9809,12 +9809,12 @@ cases:
       arguments:
         location: Paris
   enum_contradicting_declared_type:
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     historical_ids:
     - UNIFIED.7-enum_contradicting_declared_type
-    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
-    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: 62f274f01d66b9ef50feb725e027836e60ac912d13a598ab9db183ae4d534bc4
     golden:
     - kind: tool_call

@@ -12388,12 +12388,12 @@ cases:
       arguments:
         location: unfinished]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>Paris
   enum_contradicting_declared_type:
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     historical_ids:
     - UNIFIED.7-enum_contradicting_declared_type
-    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
-    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: f21e708b681cfb13164aaff14779dcafa135b2c5b2782adeb6c0d797bde8296d
     golden:
     - kind: tool_call
