@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.8...dynamo-parsers-v2-v0.9.9) - 2026-11-04
+
+### Bug fixes
+
+- *(structural-tag)* Canonicalize escaped local $ref targets before grammar compilation ([#516](https://github.com/ai-dynamo/frontend-crates/pull/516))
+
 ## [0.9.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.6...dynamo-parsers-v2-v0.9.7) - 2026-11-03
 
 ### Bug fixes
