@@ -754,6 +754,41 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
         driver.quit(); server.shutdown(); server.server_close()
 
 
+@pytest.mark.parametrize('vertical', [False, True])
+@pytest.mark.parametrize('stacked', [False, True])
+def test_explicit_schema_markers_follow_case_descriptions(published_viewer, vertical, stacked):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(1600, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&view=details")
+        _ready(driver, 'tab-unified')
+        if stacked:
+            _choose_engine(driver, 1, 'sglang')
+            _ready(driver, 'tab-unified')
+            driver.find_element('css selector', '[data-layout="stacked"]').click()
+        result = driver.execute_script("""
+            const model = window.__conformanceModel, view = window.__conformanceComparison.view;
+            const check = (node, column) => {
+                const markers = node.querySelectorAll('.case-schema-indicator');
+                return markers.length === (column.schemas?.length ? 1 : 0)
+                    && [...markers].every(marker => marker.textContent === '{}'
+                        && marker.getAttribute('aria-label') === 'Has explicit schema.'
+                        && marker.getBoundingClientRect().width > 0);
+            };
+            const headings = [...document.querySelectorAll('.matrix-case-heading')];
+            const descriptions = [...document.querySelectorAll('.case-descriptions .gloss-desc')];
+            const columns = model.glossary.flatMap(group => group.rows).map(pair => model.columns.find(column => column.label === pair[0]));
+            return {withSchema: view.columns.some(column => column.schemas?.length),
+                withoutSchema: view.columns.some(column => !column.schemas?.length),
+                headings: headings.length === view.columns.length && headings.every((node, i) => check(node, view.columns[i])),
+                descriptions: descriptions.length === columns.length && descriptions.every((node, i) => check(node, columns[i]))};
+        """)
+        assert all(result.values()), result
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 @pytest.mark.parametrize('width', [480, 1600])
 def test_complete_case_names_wrap_in_label_column(published_viewer, width):
     server, _ = _server(root=published_viewer)

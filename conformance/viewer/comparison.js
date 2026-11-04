@@ -247,6 +247,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       const compact = column.display_number == null ? html(column.label) : window.__compactCaseLabelHtml(column);
       th.innerHTML = '<span class="matrix-case-label" data-hover-hint="Click to show ' + html(column.label) + '"><span class="matrix-case-text">'
         + (vertical ? html(column.label) + (column.display_number == null ? '' : ' (' + compact + ')') : compact)
+        + window.__conformanceSchemaIndicatorHtml(column)
         + '</span></span><div class="ttip"></div>';
       th.setAttribute('aria-label', column.case_id || column.label);
       th.dataset.ttipCenter = '1';
