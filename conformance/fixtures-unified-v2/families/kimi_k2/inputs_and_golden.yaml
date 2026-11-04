@@ -581,6 +581,23 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_7f03b4392817a770:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        metrics:
+          type: array
+          items:
+            type: string
+          enum:
+          - temperature
+          - humidity
+          - co2
+        count:
+          type: integer
+          enum:
+          - auto
   tools_c98829c1934a2d66:
   - name: schema_probe
     parameters:
@@ -3314,6 +3331,9 @@ requests:
     - 17
     - 26
     finish_step: true
+  3841ded4852b9df0ca58a0643ab8bbbbbae8af5f8313b2059e28c37df463a23a:
+    input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.capture_payload:0<|tool_call_argument_begin|>{"metrics": ["temperature", "humidity"], "count": 5}<|tool_call_end|><|tool_calls_section_end|>'
+    tools: tools_7f03b4392817a770
   38eeb95dc5f0dfda4ad1904666efe26b007d9967c374cccee8235b038e3f4dd3:
     init:
       starting_state: None
@@ -10942,3 +10962,19 @@ cases:
       name: schema_probe
       arguments:
         value: 1
+  enum_contradicting_declared_type:
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
+    request: 3841ded4852b9df0ca58a0643ab8bbbbbae8af5f8313b2059e28c37df463a23a
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        metrics:
+        - temperature
+        - humidity
+        count: 5
