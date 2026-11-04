@@ -95,6 +95,11 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
     ("audio_url", "audio"),
 ];
 
+/// A `custom` part as the template sees it: its `kind`, never its payload.
+fn custom_marker(part: &serde_json::Value) -> serde_json::Value {
+    json!({"type": "custom", "kind": part.get("kind")})
+}
+
 /// Project Custom payloads out of template input and normalize native media tags.
 fn convert_media_url_to_placeholder(
     content_array: &mut [serde_json::Value],
@@ -103,7 +108,7 @@ fn convert_media_url_to_placeholder(
     for part in content_array {
         let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
         if part_type == "custom" {
-            *part = serde_json::json!({"type": "custom", "kind": part.get("kind")});
+            *part = custom_marker(part);
         } else if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type)
         {
             *part = serde_json::json!({"type": target_type});
@@ -210,6 +215,8 @@ enum ContentPart<'a> {
     Text(Option<&'a str>),
     /// A media part of this modality.
     Media(&'static str),
+    /// Dynamo's `custom` part, which vLLM does not have.
+    Custom,
     Other,
 }
 
@@ -222,6 +229,7 @@ fn content_part(part: &serde_json::Value) -> ContentPart<'_> {
         Some("image_url") => ContentPart::Media("image"),
         Some("video_url") => ContentPart::Media("video"),
         Some("audio_url" | "input_audio") => ContentPart::Media("audio"),
+        Some("custom") => ContentPart::Custom,
         _ => ContentPart::Other,
     }
 }
@@ -275,8 +283,11 @@ fn flatten_parts_to_string(
             ContentPart::Text(text) => texts.extend(text.filter(|text| !text.is_empty())),
             ContentPart::Media(modality) => {
                 // vLLM adds the audio item only for a video with a URL.
-                let audio_track =
-                    modality == "video" && use_audio_in_video && !part["video_url"].is_null();
+                let audio_track = modality == "video"
+                    && use_audio_in_video
+                    && part["video_url"]["url"]
+                        .as_str()
+                        .is_some_and(|url| !url.is_empty());
                 for modality in std::iter::once(modality).chain(audio_track.then_some("audio")) {
                     let n = media_counts.entry(modality).or_default();
                     *n += 1;
@@ -295,7 +306,7 @@ fn flatten_parts_to_string(
                     }
                 }
             }
-            ContentPart::Other => {
+            ContentPart::Custom | ContentPart::Other => {
                 return Err(PromptRenderError::invalid_request(format!(
                     "content part type {} is not supported with the `string` chat template content format",
                     part["type"]
@@ -334,9 +345,9 @@ fn flatten_parts_to_string(
     Ok(lines.join("\n"))
 }
 
-/// The fields of the part types handled here, which vLLM's `openai` format
-/// drops. Any other field, such as TranslateGemma's `source_lang_code`, reaches
-/// the template. vLLM's list also covers part types Dynamo does not accept.
+/// vLLM's `_KNOWN_CONTENT_PART_FIELDS`: every field of its content-part types,
+/// which its `openai` format drops. Any other field, such as TranslateGemma's
+/// `source_lang_code`, reaches the template.
 const KNOWN_CONTENT_PART_FIELDS: &[&str] = &[
     "type",
     "text",
@@ -346,6 +357,16 @@ const KNOWN_CONTENT_PART_FIELDS: &[&str] = &[
     "audio_url",
     "input_audio",
     "uuid",
+    "audio_embeds",
+    "closed",
+    "data",
+    "file",
+    "image_embeds",
+    "image_pil",
+    "name",
+    "prompt_cache_breakpoint",
+    "thinking",
+    "video_embeds",
 ];
 
 /// One part in vLLM's `openai` format: text, or media reduced to its modality,
@@ -354,6 +375,7 @@ fn openai_part(part: serde_json::Value) -> Option<serde_json::Value> {
     let mut wrapped = match content_part(&part) {
         ContentPart::Text(text) => json!({"type": "text", "text": text?}),
         ContentPart::Media(modality) => json!({"type": modality}),
+        ContentPart::Custom => return Some(custom_marker(&part)),
         // Passed through as `Auto` does; only `String` must reject what it cannot flatten.
         ContentPart::Other => return Some(part),
     };
@@ -801,8 +823,8 @@ impl HfTokenizerConfigJsonFormatter {
                 let use_audio_in_video = req
                     .mm_processor_kwargs()
                     .and_then(|kwargs| kwargs.get("use_audio_in_video"))
-                    .and_then(serde_json::Value::as_bool)
-                    .unwrap_or(false);
+                    // vLLM tests the flag with Python truthiness, as Jinja does.
+                    .is_some_and(|flag| Value::from_serialize(flag).is_true());
                 flatten_msg_content_to_string(
                     &mut messages_for_template,
                     media_placeholders,
@@ -4217,21 +4239,22 @@ NORMAL_MODE
             flatten(messages, false).unwrap(),
             json!(["<|image_2|>\nsee <|image_1|> here"])
         );
-        // Only a video with a URL adds an audio item.
+        // Only a video with a non-empty URL adds an audio item.
         let messages = json!([{"role": "user", "content": [
             {"type": "video_url", "video_url": {"url": "y"}},
             {"type": "video_url", "video_url": null, "uuid": "cached"},
+            {"type": "video_url", "video_url": {"url": ""}, "uuid": "cached"},
             {"type": "input_audio", "input_audio": {"data": "", "format": "wav"}},
             {"type": "text", "text": "x"}
         ]}]);
         assert_eq!(
             flatten(messages, true).unwrap(),
-            json!(["<video>\n<video>\n<|audio_1|>\n<|audio_2|>\nx"])
+            json!(["<video>\n<video>\n<video>\n<|audio_1|>\n<|audio_2|>\nx"])
         );
 
         for content in [
             json!([{"type": "text", "text": "<|image_1|><|image_1|>"}, &image]),
-            json!([{"type": "file", "file": {}}]),
+            json!([{"type": "custom", "kind": "chemistry", "fields": {}}]),
         ] {
             let error = flatten(json!([{"role": "user", "content": content}]), false).unwrap_err();
             assert!(
@@ -4252,7 +4275,8 @@ NORMAL_MODE
             {"role": "user", "content": [
                 {"type": "text", "text": "look", "source_lang_code": "en"},
                 {"type": "image_url", "image_url": {"url": "x"}, "uuid": "i", "target_lang_code": "de"},
-                {"type": "input_audio", "input_audio": {"data": "", "format": "wav"}}
+                {"type": "input_audio", "input_audio": {"data": "", "format": "wav"}},
+                {"type": "custom", "kind": "chemistry", "fields": {"data_base64": "x"}}
             ]},
             {"role": "assistant", "content": [{"type": "refusal", "refusal": "no"}]},
             {"role": "assistant"},
@@ -4270,7 +4294,8 @@ NORMAL_MODE
                 [
                     {"type": "text", "text": "look", "source_lang_code": "en"},
                     {"type": "image", "target_lang_code": "de"},
-                    {"type": "audio"}
+                    {"type": "audio"},
+                    {"type": "custom", "kind": "chemistry"}
                 ],
                 [{"type": "text", "text": "no"}],
                 [],
@@ -4296,7 +4321,8 @@ NORMAL_MODE
                     {"type": "video_url", "video_url": {"url": "https://example.com/v.mp4"}}
                 ]}
             ],
-            "mm_processor_kwargs": {"use_audio_in_video": true}
+            // vLLM reads the flag with Python truthiness.
+            "mm_processor_kwargs": {"use_audio_in_video": 1}
         }))
         .unwrap();
         let render = |content_format| {

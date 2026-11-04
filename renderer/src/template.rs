@@ -163,6 +163,15 @@ impl PromptFormatter {
             context,
             exclude_tools_when_tool_choice_none,
         )?;
+        // Like vLLM, warn when the forced format disagrees with the template.
+        if matches!(content_format, ChatTemplateContentFormat::String(_))
+            && formatter.requires_content_arrays
+        {
+            tracing::warn!(
+                "chat template content format is `string`, but the template renders text only \
+                 from content arrays, so message text may be dropped"
+            );
+        }
         formatter.content_format = content_format;
         Ok(Self::OAI(Arc::new(formatter)))
     }
