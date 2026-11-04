@@ -1416,6 +1416,20 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_87f9a4e69313cc76:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - integer
+          - boolean
+          - number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_6943558dd8046b7b:
   - name: schema_probe
     parameters:
@@ -6206,6 +6220,13 @@ requests:
     - 16
     - 8
     finish_step: true
+  c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      1
+
+      </rfl:parameter><|call|>'
+    tools: tools_87f9a4e69313cc76
   c4ea5ec9c4b7ef735540930c40ad0509e2907d4630dd699848db01a8bf5f368e:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -11666,12 +11687,12 @@ cases:
 
           Paris'
   enum_contradicting_declared_type:
-    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     policy:
     - I7
-    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     historical_ids:
     - UNIFIED.7-enum_contradicting_declared_type
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
     golden:
     - kind: tool_call
@@ -11681,3 +11702,14 @@ cases:
         - temperature
         - humidity
         count: 5
+  schema_declared_integer_boolean_number_order:
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    request: c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 1
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order

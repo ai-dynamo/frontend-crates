@@ -346,6 +346,9 @@ fn beam_preserves_declared_coercion_preference() {
     for (schema, expected) in [
         (json!({"type":["boolean","number"]}), json!(true)),
         (json!({"type":["number","boolean"]}), json!(1)),
+        (json!({"type":["integer","boolean","number"]}), json!(1)),
+        (json!({"type":["boolean","integer","number"]}), json!(true)),
+        (json!({"type":["number","boolean","integer"]}), json!(1)),
         (
             json!({"anyOf":[{"type":"boolean"},{"type":"number"}]}),
             json!(true),
@@ -401,4 +404,55 @@ fn beam_negation_infers_null_and_object_values() {
             json!({"value":expected}),
         );
     }
+}
+
+#[test]
+fn minimax_declared_types_override_only_contradicting_literals() {
+    for (schema, raw, expected) in [
+        (json!({"type":"integer","enum":["auto"]}), "5", json!(5)),
+        (
+            json!({"type":"integer","enum":["auto"]}),
+            "auto",
+            json!("auto"),
+        ),
+        (json!({"type":"number","const":"auto"}), "21.5", json!(21.5)),
+        (
+            json!({"type":"boolean","const":"auto"}),
+            "true",
+            json!(true),
+        ),
+        (json!({"type":"string","enum":[1]}), "42", json!("42")),
+        (
+            json!({"type":["integer","boolean"],"enum":[true]}),
+            "1",
+            json!(true),
+        ),
+    ] {
+        for parameter in [
+            schema.clone(),
+            json!({"$ref":"#/$defs/Choice"}),
+            json!({"allOf":[schema.clone()]}),
+            json!({"if":true,"then":schema.clone()}),
+        ] {
+            check(
+                "minimax_m3",
+                json!({"type":"object","$defs":{"Choice":schema},"properties":{"value":parameter}}),
+                &[("value", raw)],
+                json!({"value":expected}),
+            );
+        }
+    }
+}
+
+#[test]
+fn beam_declared_types_override_misplaced_enums() {
+    check(
+        "beam",
+        json!({"type":"object","properties":{
+            "metrics":{"type":"array","items":{"type":"string"},"enum":["temperature","humidity"]},
+            "count":{"type":"integer","enum":["auto"]}
+        }}),
+        &[("metrics", r#"["temperature","humidity"]"#), ("count", "5")],
+        json!({"metrics":["temperature","humidity"],"count":5}),
+    );
 }
