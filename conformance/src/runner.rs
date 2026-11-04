@@ -88,6 +88,7 @@ struct FamilyConfig {
 
 #[derive(Deserialize)]
 struct FamilyFixtures {
+    schema_version: Option<u64>,
     cases: BTreeMap<String, CaseMetadata>,
 }
 
@@ -276,7 +277,16 @@ fn load_active_cases(text: &str, options: &RunOptions) -> Result<Vec<ActiveCase>
     let mut selected_rows = BTreeMap::new();
     let mut known_active_ids = BTreeSet::new();
     for (key, metadata) in fixtures.cases {
-        if metadata.lifecycle.as_deref() != Some("active") {
+        if metadata
+            .lifecycle
+            .as_deref()
+            .unwrap_or(if fixtures.schema_version == Some(3) {
+                "active"
+            } else {
+                ""
+            })
+            != "active"
+        {
             continue;
         }
         let id = metadata
@@ -308,8 +318,47 @@ fn load_active_cases(text: &str, options: &RunOptions) -> Result<Vec<ActiveCase>
         );
     }
 
-    let cases = serde_yaml::Deserializer::from_str(text)
-        .deserialize_map(SelectedFixtures(&selected_rows))?;
+    let cases = if fixtures.schema_version == Some(3) {
+        let mut document: serde_yaml::Value = serde_yaml::from_str(text)?;
+        let rows = document
+            .get_mut("cases")
+            .and_then(serde_yaml::Value::as_mapping_mut)
+            .context("missing normalized cases")?;
+        rows.retain(|key, _| {
+            key.as_str()
+                .is_some_and(|key| selected_rows.contains_key(key))
+        });
+        let requests: BTreeSet<String> = rows
+            .values()
+            .filter_map(|row| {
+                row.get("request")
+                    .and_then(serde_yaml::Value::as_str)
+                    .map(str::to_owned)
+            })
+            .collect();
+        document
+            .get_mut("requests")
+            .and_then(serde_yaml::Value::as_mapping_mut)
+            .context("missing normalized requests")?
+            .retain(|key, _| key.as_str().is_some_and(|key| requests.contains(key)));
+        let expanded = crate::normalization::family(&document).map_err(anyhow::Error::msg)?;
+        let rows = expanded.get("cases").context("missing expanded cases")?;
+        rows.as_mapping()
+            .context("invalid expanded cases")?
+            .iter()
+            .map(|(key, value)| {
+                let key = key.as_str().context("invalid expanded case key")?;
+                Ok((
+                    key.to_owned(),
+                    serde_yaml::from_value(value.clone())
+                        .with_context(|| format!("parse active case {}", selected_rows[key]))?,
+                ))
+            })
+            .collect::<Result<BTreeMap<_, CaseFixture>>>()?
+    } else {
+        serde_yaml::Deserializer::from_str(text)
+            .deserialize_map(SelectedFixtures(&selected_rows))?
+    };
     let mut active = Vec::new();
     for (key, case) in cases {
         let id = selected_rows[&key].clone();
@@ -730,6 +779,32 @@ mod tests {
     }
 
     #[test]
+    fn normalized_selection_preserves_unicode_and_ignores_unselected_bodies() -> Result<()> {
+        use crate::normalization::Value;
+        let request: serde_yaml::Value = serde_yaml::from_str(
+            "input: 'é😀on'\ninit: {}\nfinish_reason: stop\ntools: []\nchunks: [{delta_text: 'é'}, {delta_text: ''}, {delta_text: '😀on'}]",
+        )?;
+        let identity = request.digest().map_err(anyhow::Error::msg)?;
+        let text = format!(
+            "schema_version: 3\nfamily: sample\nrequest_defaults: {{init: {{}}, finish_reason: stop}}\ntools: {{empty: []}}\nrequests:\n  {identity}: {{input: 'é😀on', tools: empty, chunk_sizes: [1, 0, 3]}}\n  broken: {{bad: request}}\ncases:\n  selected: {{description: probe, display_id: selected, request: {identity}, golden: []}}\n  other: {{display_id: other, request: broken, golden: broken}}\n"
+        );
+        let options = RunOptions {
+            case_ids: Some(BTreeSet::from(["selected".into()])),
+            ..RunOptions::default()
+        };
+        let cases = load_active_cases(&text, &options)?;
+        assert_eq!(cases.len(), 1);
+        assert_eq!(cases[0].input, "é😀on");
+        assert_eq!(cases[0].chunks, ["é", "", "😀on"]);
+        assert!(load_active_cases(&text, &RunOptions::default()).is_err());
+        assert!(load_active_cases(&text.replace("[1, 0, 3]", "[1, 0, 2]"), &options).is_err());
+        assert!(
+            load_active_cases(&text.replace("input: 'é😀on'", "input: 'é😀no'"), &options).is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
     fn every_builtin_family_loads_its_complete_active_corpus() -> Result<()> {
         let families: BTreeSet<_> = builtin_unified_families()
             .iter()
@@ -745,7 +820,16 @@ mod tests {
             let expected = index
                 .cases
                 .values()
-                .filter(|case| case.lifecycle.as_deref() == Some("active"))
+                .filter(|case| {
+                    case.lifecycle
+                        .as_deref()
+                        .unwrap_or(if index.schema_version == Some(3) {
+                            "active"
+                        } else {
+                            ""
+                        })
+                        == "active"
+                })
                 .count();
             let cases = load_active_cases(&text, &RunOptions::default())
                 .with_context(|| format!("family {family}"))?;
