@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.2.2-kimi-k3.1-pro-dev.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.2.1...dynamo-renderer-v8.2.2-kimi-k3.1-pro-dev.1) - 2026-11-04
+
+### Features
+
+- Add Kimi K3.1 Pro rendering support: `model_type: kimi_k31` selects the native XTML formatter and `medium` thinking effort is accepted ([#546](https://github.com/ai-dynamo/frontend-crates/pull/546))
+
 ## [8.2.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.2.0...dynamo-renderer-v8.2.1) - 2026-10-27
 
 ### Bug fixes
