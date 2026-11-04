@@ -46,7 +46,9 @@
 //! a reasoning marker inside it is argument data, not a control token (`I7`).
 
 use std::collections::HashSet;
+use std::sync::OnceLock;
 
+use crate::tool_calling::debug::env_is_truthy;
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
 use crate::unified::{
     GuidedChannel, GuidedChannelState, GuidedTurnScope, Kind, MalformedToolCall,
@@ -1628,6 +1630,12 @@ pub(crate) trait InvokeEmitter {
     }
 }
 
+/// Whether quotes in model output can make a reasoning or tool-call marker literal text.
+fn quote_aware_parsing() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| !env_is_truthy("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING"))
+}
+
 #[derive(Clone, Default)]
 struct ProseQuoteState {
     quote: Option<char>,
@@ -1666,6 +1674,7 @@ impl ProseQuoteState {
                 self.quote = None;
             }
         } else if self.quote.is_none()
+            && quote_aware_parsing()
             && matches!(character, '"' | '\'' | '`')
             && !(character == '\'' && self.previous.is_some_and(char::is_alphanumeric))
         {
