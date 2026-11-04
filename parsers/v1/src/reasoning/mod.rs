@@ -9,6 +9,7 @@ mod gpt_oss_parser;
 mod granite_parser;
 mod inkling_parser;
 mod minimax_append_think_parser;
+pub mod stream;
 
 // Re-export main types and functions for convenience
 pub(crate) use crate::tool_calling::config::MINIMAX_M3_TOOL_NAMESPACE;
