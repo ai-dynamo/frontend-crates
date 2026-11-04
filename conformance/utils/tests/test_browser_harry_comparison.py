@@ -258,7 +258,7 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
 
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
-@pytest.mark.parametrize("width", [800, 480])
+@pytest.mark.parametrize("width", [1600, 800, 480])
 def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked, width):
     server, _ = _server(root=published_viewer)
     driver = _driver()
@@ -285,15 +285,19 @@ def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked, width):
             const table=document.querySelector('.comparison-matrix'), wrapper=table.parentElement;
             const header=table.tHead.rows[0].cells[0].getBoundingClientRect();
             const labels=[...table.tBodies[0].querySelectorAll('tr > th:first-child')]
-              .map(cell=>cell.getBoundingClientRect()).filter(rect=>rect.top>=header.bottom&&rect.bottom<innerHeight);
-            return {top:header.top,labels:labels.map(rect=>rect.left),x:scrollX,y:scrollY,
-              labelLeft:Math.max(0,table.getBoundingClientRect().left),
+              .map(cell=>({rect:cell.getBoundingClientRect(),position:getComputedStyle(cell).position}))
+              .filter(({rect})=>rect.top>=header.bottom&&rect.bottom<innerHeight);
+            return {top:header.top,labels:labels.map(({rect})=>rect.left),x:scrollX,y:scrollY,
+              positions:labels.map(label=>label.position),tableLeft:table.getBoundingClientRect().left,
               overflow:document.scrollingElement.scrollWidth>document.documentElement.clientWidth,
               innerX:wrapper.scrollLeft,innerY:wrapper.scrollTop};
         """)
         assert abs(geometry["top"]) <= 1, geometry
         assert geometry["labels"], geometry
-        assert all(abs(left - geometry["labelLeft"]) <= 1 for left in geometry["labels"]), geometry
+        sticky = not vertical or width > 1280
+        assert all(position == ('sticky' if sticky else 'static') for position in geometry['positions']), geometry
+        label_left = max(0, geometry['tableLeft']) if sticky else geometry['tableLeft']
+        assert all(abs(left - label_left) <= 1 for left in geometry["labels"]), geometry
         assert bool(geometry["x"]) == geometry["overflow"], geometry
         assert geometry["innerX"] == geometry["innerY"] == 0, geometry
     finally:
@@ -572,7 +576,9 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             if vertical:
                 assert full in header.text
             else:
-                assert re.fullmatch(r"\d+-\d+", header.text)
+                column = driver.execute_script("return window.__conformanceTooltipModel(arguments[0]).popupCase", header)
+                marker = '{}' if column.get('schemas') else ''
+                assert re.fullmatch(r"\d+-\d+" + re.escape(marker), header.text)
                 assert full not in header.text
                 assert header.rect["width"] < 100
                 ActionChains(driver).move_to_element(label).perform()
