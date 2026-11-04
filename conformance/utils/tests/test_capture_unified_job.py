@@ -27,10 +27,10 @@ def test_batch_cli_emits_bound_requests_and_golden(monkeypatch, capsys):
     assert any(case["request"]["init"]["starting_state"] == "Reasoning" for case in job["cases"])
 
 
-def test_existing_family_job_is_stable_and_preserves_request_shape():
+def test_existing_family_job_is_stable_and_preserves_request_shape() -> None:
     job = capture_unified_job.build_job(ROOT, "gemma4")
     assert job["family"] == "gemma4"
-    assert len(job["cases"]) == 282
+    assert len(job["cases"]) == 286
     assert {
         f"UNIFIED.{scenario}.gemma4"
         for scenario in (

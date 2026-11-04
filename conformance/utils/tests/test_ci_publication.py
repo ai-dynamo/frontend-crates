@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 import os
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -133,3 +134,146 @@ def test_phase_cli_rejects_missing_or_misplaced_context(arguments, monkeypatch):
     with pytest.raises(SystemExit) as failure:
         ci_publication.main()
     assert failure.value.code == 2
+
+
+@pytest.mark.parametrize("remote,current", [("a" * 40, True), ("b" * 40, False)])
+def test_only_current_main_candidate_can_deploy(publication, monkeypatch, remote, current):
+    metadata = publication.site / "conformance/viewer-publication.json"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text('{"revision":"' + "a" * 40 + '"}')
+    calls = []
+    def run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=f"{remote}\trefs/heads/main\n")
+    monkeypatch.setattr(publication, "run", run)
+    assert publication.current() is current
+    assert calls == [["git", "ls-remote", "--exit-code", "origin", "refs/heads/main"]]
+    assert Path(os.environ["GITHUB_OUTPUT"]).read_text() == f"current={str(current).lower()}\n"
+    report = (publication.temporary / "conformance-deployment.json").read_text()
+    assert ('"outcome": "current"' if current else '"outcome": "superseded"') in report
+
+
+@pytest.mark.parametrize("fault", ["metadata", "remote", "network"])
+def test_deployment_admission_fails_closed(publication, monkeypatch, fault):
+    metadata = publication.site / "conformance/viewer-publication.json"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text('{"revision":"' + ("b" if fault == "metadata" else "a") * 40 + '"}')
+    def run(command, **kwargs):
+        if fault == "network":
+            raise subprocess.CalledProcessError(128, command)
+        return subprocess.CompletedProcess(command, 0, stdout="unrecognized response")
+    monkeypatch.setattr(publication, "run", run)
+    with pytest.raises((ValueError, subprocess.CalledProcessError)):
+        publication.current()
+    assert not Path(os.environ["GITHUB_OUTPUT"]).exists()
+
+
+def test_partial_rerun_rebuilds_binary_and_restores_frozen_sources(publication, monkeypatch):
+    site, catalogs = _package(publication)
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "example/repo")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    retained = publication.temporary / "retained-publication"
+    retained.mkdir()
+    (retained / "publication-status.json").write_text(json.dumps({"commit": "a" * 40,
+        "run_url": "https://github.com/example/repo/actions/runs/123"}))
+    metadata = retained / "conformance/viewer-publication.json"
+    metadata.parent.mkdir()
+    metadata.write_text(json.dumps({"revision": "a" * 40}))
+    nested = metadata.parent / "nested/publication-status.json"
+    nested.parent.mkdir()
+    nested.write_bytes(b"reader-facing nested resource")
+    nested_evidence = metadata.parent / "nested/ci-evidence/provenance.json"
+    nested_evidence.parent.mkdir()
+    nested_evidence.write_bytes(b"reader-facing nested provenance")
+    for name, content in site.items():
+        path = retained / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    for name, content in catalogs.items():
+        path = retained / "ci-evidence/publication-inputs" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    (retained / "ci-evidence/publication-inputs/cache-manifest.json").write_text('{"identity":"frozen"}')
+    for name in ("conformance-test-baseline", "conformance-selection-conformance-check-0"):
+        path = retained / "ci-evidence" / name / (name + ".json")
+        path.parent.mkdir()
+        path.write_text('{"revision":"current"}')
+    calls = []
+    monkeypatch.setattr(publication, "python", lambda *args, **kwargs: calls.append(args))
+    monkeypatch.setattr(publication, "build", lambda: publication.publisher.write_bytes(b"rebuilt executable"))
+    publication.recover()
+    assert calls[0] == ("ci_publication_cache.py", "context-check", "--context", publication.context)
+    assert calls[-1][-1] == "frozen"
+    assert publication.publisher.read_bytes() == b"rebuilt executable"
+    assert (publication.site / "index.html").read_bytes() == site["index.html"]
+    assert not (publication.site / "ci-evidence").exists()
+    assert not (publication.site / "publication-status.json").exists()
+    assert (publication.site / "conformance/nested/publication-status.json").read_bytes() == nested.read_bytes()
+    assert (publication.site / "conformance/nested/ci-evidence/provenance.json").read_bytes() == nested_evidence.read_bytes()
+
+
+@pytest.mark.parametrize("commit,run", [("b" * 40, "123"), ("a" * 40, "999")])
+def test_recovery_rejects_foreign_publication_before_building(publication, monkeypatch, commit, run):
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "example/repo")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    retained = publication.temporary / "retained-publication"
+    retained.mkdir()
+    (retained / "publication-status.json").write_text(json.dumps({"commit": commit,
+        "run_url": f"https://github.com/example/repo/actions/runs/{run}"}))
+    with pytest.raises(ValueError, match="does not match this run"):
+        publication.recover()
+    assert not publication.publisher.exists()
+
+
+@pytest.mark.parametrize("present", [False, True])
+def test_deployment_recreates_only_missing_pages_transfer(publication, monkeypatch, present):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "example/repo")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    artifacts = [{"name": "github-pages", "expired": False}] if present else []
+    monkeypatch.setattr(publication, "run", lambda *args, **kwargs:
+                        subprocess.CompletedProcess(args, 0, stdout=json.dumps([{"artifacts": []}, {"artifacts": artifacts}])))
+    publication.pages_needed()
+    assert Path(os.environ["GITHUB_OUTPUT"]).read_text() == f"needed={str(not present).lower()}\n"
+
+
+def test_partial_cleanup_restores_accounting_even_when_native_transfer_survives(publication, monkeypatch):
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "example/repo")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    publication.payload.mkdir()
+    (publication.payload / "native-pages.tar").write_bytes(b"surviving native transfer")
+    retained = publication.temporary / "retained-publication"
+    baseline = retained / "ci-evidence/conformance-test-baseline/complete.json"
+    baseline.parent.mkdir(parents=True)
+    baseline.write_bytes(b"complete baseline")
+    assignment = retained / "ci-evidence/conformance-selection-conformance-check-0/selected.json"
+    assignment.parent.mkdir()
+    assignment.write_bytes(b"previous assignment")
+    (retained / "publication-status.json").write_text(json.dumps({"commit": "a" * 40,
+        "run_url": "https://github.com/example/repo/actions/runs/123"}))
+    publication.selections()
+    assert (publication.temporary / "baseline-selection/complete.json").read_bytes() == b"complete baseline"
+    assert (publication.temporary / "assignments/selected.json").read_bytes() == b"previous assignment"
+    assert (publication.payload / "native-pages.tar").read_bytes() == b"surviving native transfer"
+    fresh = publication.temporary / "fresh-selections/conformance-selection-conformance-check-0/new-uuid.json"
+    fresh.parent.mkdir(parents=True)
+    fresh.write_bytes(b"fresh assignment")
+    untouched = retained / "ci-evidence/conformance-selection-conformance-check-1/other-uuid.json"
+    untouched.parent.mkdir()
+    untouched.write_bytes(b"untouched lane")
+    publication.selections()
+    assert sorted(path.name for path in (publication.temporary / "assignments").iterdir()) == ["new-uuid.json", "other-uuid.json"]
+    assert (publication.temporary / "assignments/new-uuid.json").read_bytes() == b"fresh assignment"
+    fresh_baseline = publication.temporary / "fresh-baseline/new-baseline-uuid.json"
+    fresh_baseline.parent.mkdir()
+    fresh_baseline.write_bytes(b"fresh complete baseline")
+    publication.selections()
+    assert [path.name for path in (publication.temporary / "baseline-selection").iterdir()] == [fresh_baseline.name]
+    assert (publication.temporary / "baseline-selection" / fresh_baseline.name).read_bytes() == fresh_baseline.read_bytes()
+
+
+def test_missing_baseline_fails_even_when_download_failure_was_expected(publication):
+    with pytest.raises(ValueError, match="baseline is unavailable"):
+        publication.selections()

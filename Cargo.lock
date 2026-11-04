@@ -1219,7 +1219,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "11.0.1"
+version = "11.0.5"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1243,7 +1243,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.9.6"
+version = "0.9.8"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",
@@ -1253,6 +1253,8 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2 0.10.9",
+ "tempfile",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -1288,7 +1290,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "10.0.0"
+version = "10.1.0"
 dependencies = [
  "anyhow",
  "chrono",

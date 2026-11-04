@@ -455,7 +455,7 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     jobs = workflow["jobs"]
     assert jobs["conformance-table"]["if"] == "${{ always() }}"
     for name, job in jobs.items():
-        if name not in {"conformance-table", "deploy-pages"}:
+        if name not in {"conformance-table", "deploy-pages", "finalize-publication"}:
             assert "if" not in job, name
     assert workflow["env"] == {"CONFORMANCE_INCLUDE_HISTORY": "true", "CONFORMANCE_COVERAGE": "exhaustive"}
     assert jobs["conformance-fixtures"]["needs"] == "prepare"
@@ -465,7 +465,7 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     assert matrix["strategy"]["fail-fast"] is False
     assert matrix["strategy"]["matrix"] == {"include": "${{ fromJSON(needs.prepare.outputs.validation_matrix) }}"}
     assert matrix["runs-on"] == "ubuntu-24.04"
-    assert matrix["permissions"] == {"contents": "read"}
+    assert matrix["permissions"] == {"contents": "read", "actions": "read"}
     assert "conformance-check" in jobs["conformance-table"]["needs"]
     assert all("strategy.job-total" not in step.get("run", "") for step in matrix["steps"])
     execute = next(step for step in matrix["steps"] if "--run" in step.get("run", ""))
@@ -769,8 +769,15 @@ def test_only_history_can_replace_public_main_site():
     deploy_steps = jobs["deploy-pages"]["steps"]
     deployment = next(i for i, step in enumerate(deploy_steps) if step.get("id") == "deployment")
     smoke = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py delivery" in step.get("run", ""))
-    assert deployment < smoke
+    admission = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py current" in step.get("run", ""))
+    assert admission < deployment < smoke
+    for index in (deployment, smoke):
+        assert deploy_steps[index]["if"] == "${{ steps.current.outputs.current == 'true' }}"
+    evidence = deploy_steps[-1]
+    assert evidence["if"] == "${{ always() }}"
+    assert evidence["with"]["if-no-files-found"] == "error"
     assert deploy_steps[smoke]["env"]["PUBLICATION_URL"] == "${{ steps.deployment.outputs.page_url }}"
+    assert deploy_steps[smoke]["env"]["CONFORMANCE_DELIVERY_REPORT"] == "${{ runner.temp }}/conformance-delivery.json"
     assert jobs["deploy-pages"]["concurrency"]["cancel-in-progress"] is False
     for job_name, target in (("pages-build", "ci_publication.py identify"), ("conformance-table", "--job-results")):
         steps = jobs[job_name]["steps"]
@@ -779,12 +786,13 @@ def test_only_history_can_replace_public_main_site():
         assert install < invocation
 
 
-def test_publication_identification_bootstraps_without_site_packages():
+@pytest.mark.parametrize("script,phase", [("ci_publication_cache.py", "identify"), ("ci_publication_finalize.py", "collect")])
+def test_publication_tools_bootstrap_without_site_packages(script, phase):
     root = Path(__file__).resolve().parents[3]
-    result = subprocess.run([sys.executable, "-S", "conformance/utils/src/ci_publication_cache.py", "--help"],
+    result = subprocess.run([sys.executable, "-S", f"conformance/utils/src/{script}", "--help"],
                             cwd=root, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
-    assert "identify" in result.stdout
+    assert phase in result.stdout
 
 
 def test_sealed_release_context_qualifies_a_shallow_checkout(tmp_path):

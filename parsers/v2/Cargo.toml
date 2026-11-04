@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "dynamo-parsers-v2"
-version = "0.9.6"
+version = "0.9.8"
 edition.workspace = true
 license = "Apache-2.0"
 description = "Token-incremental tool-call streaming parsers for Dynamo"
@@ -14,6 +14,7 @@ test-utils = []
 arbitrary-precision = ["serde_json/arbitrary_precision"]
 
 [dependencies]
+sha2 = "0.10"
 dynamo-structural-tag.workspace = true
 openai-harmony = { workspace = true }
 anyhow = { workspace = true }
@@ -26,4 +27,5 @@ uuid = { workspace = true, features = ["v4", "serde"] }
 percent-encoding = { workspace = true }
 
 [dev-dependencies]
+tempfile.workspace = true
 tracing-subscriber = { workspace = true }

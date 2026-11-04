@@ -48,8 +48,42 @@ mod tests {
     use serde_json::json;
 
     use super::{GLM47, THINK_BEGIN, THINK_END, TOOL_CALL_END, TOOL_CALL_MARKERS};
+    use crate::Tool;
     use crate::structural_tag::test_support::{build, tools};
     use crate::structural_tag::{StructuralTagSchemaMode, StructuralTagToolChoice};
+
+    /// PR #516 review (rmccorm4): the v2 GLM builder forwards the schema to the
+    /// backend without resolving `$ref`s, so it takes the canonical spelling —
+    /// decoded exactly once, to the literal key XGrammar resolves.
+    #[test]
+    fn escaped_pointers_are_decoded_once_in_the_forwarded_schema() {
+        let tools = [Tool {
+            name: "pick".to_string(),
+            description: None,
+            parameters: json!({
+                "type": "object",
+                "properties": {
+                    "a%20b": {"type": "integer"},
+                    "a b": {"type": "string"},
+                    "copy": {"$ref": "#/properties/a%2520b"}
+                },
+                "required": ["a%20b", "a b", "copy"]
+            }),
+            strict: Some(true),
+        }];
+        let actual = build(
+            &GLM47,
+            StructuralTagToolChoice::Required,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+            false,
+        );
+        let schema = &actual["format"]["tags"][0]["content"]["json_schema"];
+        assert_eq!(schema["properties"]["copy"]["$ref"], "#/properties/a%20b");
+        assert_eq!(schema["properties"]["a%20b"], json!({"type": "integer"}));
+        assert_eq!(schema["properties"]["a b"], json!({"type": "string"}));
+    }
 
     #[test]
     fn auto_builds_glm_triggered_dispatch() {
