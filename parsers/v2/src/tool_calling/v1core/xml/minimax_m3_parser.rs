@@ -878,6 +878,27 @@ mod tests {
                 "42",
             ),
             (json!({"const": "42"}), "42", "\"42\""),
+            // JSON wins only when it provably fits.
+            (
+                json!({"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}),
+                "42",
+                "\"42\"",
+            ),
+            (
+                json!({"type": ["string", "integer"], "not": {"const": 42}}),
+                "42",
+                "\"42\"",
+            ),
+            (
+                json!({"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740993",
+                "\"9007199254740993\"",
+            ),
+            (
+                json!({"type": ["string", "integer"], "minimum": 100}),
+                "42",
+                "\"42\"",
+            ),
         ] {
             assert_eq!(
                 convert_scalar_value(raw, Some(&schema), &schema)

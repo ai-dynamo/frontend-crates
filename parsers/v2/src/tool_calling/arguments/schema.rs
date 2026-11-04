@@ -305,95 +305,163 @@ impl<'a> SchemaFacts<'a> {
     }
 
     // The shared policy for native text whose wire format cannot mark strings.
-    // Text that is valid JSON for a non-string value the schema admits becomes
-    // that value; otherwise text the schema admits as a string stays verbatim.
-    // `007` and `1e3` are not JSON integers, so they stay text under
-    // `["string", "integer"]`. None leaves the choice to the caller's conversions.
+    // A JSON value proven to fit the schema wins; otherwise text the schema
+    // admits as a string stays verbatim; otherwise a typed JSON value whose fit
+    // is unproven wins over no answer. `007` and `1e3` are not JSON integers, so
+    // they stay text under `["string", "integer"]`. None leaves the choice to
+    // the caller's conversions.
     pub(crate) fn native_text_type(&self, schema: &'a Value, raw: &str) -> Option<NativeText> {
         let trimmed = raw.trim();
-        // Strings and null cannot become `Json`; only these bytes start other values.
-        if matches!(
-            trimmed.as_bytes().first(),
-            Some(b'{' | b'[' | b't' | b'f' | b'-' | b'0'..=b'9')
-        ) && let Ok(value) = serde_json::from_str::<Value>(trimmed)
-            && let Some(kind) = json_kind(&value)
+        // Strings and null cannot become `Json`; only these bytes start other
+        // values. A container is decoded only when the schema can type it, so a
+        // string-only parameter never builds a JSON tree from its text.
+        let value = match trimmed.as_bytes().first() {
+            Some(b'{') if !self.typed(schema, "object")? => None,
+            Some(b'[') if !self.typed(schema, "array")? => None,
+            Some(b'{' | b'[' | b't' | b'f' | b'-' | b'0'..=b'9') => {
+                serde_json::from_str::<Value>(trimmed).ok()
+            }
+            _ => None,
+        };
+        let mut unproven = None;
+        if let Some(value) = &value
+            && let Some(kind) = json_kind(value)
+            && self.typed(schema, kind)?
         {
-            match self.admits(schema, kind, &value) {
-                Some(true) => return Some(NativeText::Json(kind)),
-                Some(false) => {}
-                None => return None,
+            match self.fit(schema, Candidate::Json(value))? {
+                Fit::Fits => return Some(NativeText::Json(kind)),
+                Fit::Unproven => unproven = Some(NativeText::Json(kind)),
+                Fit::Rejects => {}
             }
         }
-        self.admits(schema, "string", &Value::String(raw.to_string()))?
-            .then_some(NativeText::String)
+        if self.typed(schema, "string")? && self.fit(schema, Candidate::Text(raw))? != Fit::Rejects
+        {
+            return Some(NativeText::String);
+        }
+        unproven
     }
 
     // Each walk gets its own work budget, so typing one value costs no more
     // capacity than a single query. Exhaustion leaves the answer unknown.
-    fn admits(&self, schema: &'a Value, kind: &str, value: &Value) -> Option<bool> {
-        let mut types = SchemaFacts::new(self.root);
-        let typed = types.has_type(Some(schema), kind);
-        let mut literals = SchemaFacts::new(self.root);
-        let rejected = literals.rejects_value(schema, value);
-        (!types.exhausted && !literals.exhausted).then_some(typed && !rejected)
+    fn typed(&self, schema: &'a Value, kind: &str) -> Option<bool> {
+        let mut facts = SchemaFacts::new(self.root);
+        let typed = facts.has_type(Some(schema), kind);
+        (!facts.exhausted).then_some(typed)
+    }
+
+    fn fit(&self, schema: &'a Value, candidate: Candidate<'_>) -> Option<Fit> {
+        let mut facts = SchemaFacts::new(self.root);
+        let fit = facts.value_fit(schema, candidate);
+        (!facts.exhausted).then_some(fit)
     }
 
     // A literal branch such as `const: "auto"` must not hide an alternative that
-    // admits the value, such as 42. Only reject known type/literal contradictions
-    // here; this coercion helper is not a schema validator.
-    pub(crate) fn rejects_value(&mut self, schema: &'a Value, value: &Value) -> bool {
-        self.with_schema(schema, false, |walker, schema| {
-            if schema == &Value::Bool(false) {
-                return true;
-            }
-            let literal_rejects = schema
-                .get("const")
-                .is_some_and(|literal| !json_equal(literal, value))
-                || schema
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|literals| {
-                        !literals.iter().any(|literal| json_equal(literal, value))
-                    });
-            if schema.get("type").is_some_and(|ty| {
+    // admits the value, such as 42. `Fits` is a proof, so `oneOf` and `not` are
+    // decided exactly; this is not a validator, so any keyword it does not
+    // evaluate leaves the candidate `Unproven`.
+    pub(crate) fn value_fit(&mut self, schema: &'a Value, candidate: Candidate<'_>) -> Fit {
+        self.with_schema(schema, Fit::Unproven, |walker, schema| {
+            let Some(node) = schema.as_object() else {
+                return match schema.as_bool() {
+                    Some(true) => Fit::Fits,
+                    Some(false) => Fit::Rejects,
+                    None => Fit::Unproven,
+                };
+            };
+            if node.get("type").is_some_and(|ty| {
                 !ty.as_str().map_or_else(
                     || {
                         ty.as_array().is_some_and(|types| {
                             types
                                 .iter()
                                 .filter_map(Value::as_str)
-                                .any(|ty| literal_satisfies(ty, value))
+                                .any(|ty| candidate.is(ty))
                         })
                     },
-                    |ty| literal_satisfies(ty, value),
+                    |ty| candidate.is(ty),
                 )
-            }) || (literal_rejects && !literals_contradict_type(schema))
-            {
-                return true;
+            }) {
+                return Fit::Rejects;
             }
-            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = walker.resolve_scoped_ref(reference)
-                && walker.rejects_value(target, value)
-            {
-                return true;
+            let mut fit = Fit::Fits;
+            let literal_mismatch = node
+                .get("const")
+                .is_some_and(|literal| !candidate.equals(literal))
+                || node
+                    .get("enum")
+                    .and_then(Value::as_array)
+                    .is_some_and(|literals| {
+                        !literals.iter().any(|literal| candidate.equals(literal))
+                    });
+            if literal_mismatch {
+                // Literals that contradict the declared type do not decide it.
+                if !literals_contradict_type(schema) {
+                    return Fit::Rejects;
+                }
+                fit = Fit::Unproven;
             }
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let rejected = if keyword == "allOf" {
-                        branches
-                            .iter()
-                            .any(|branch| walker.rejects_value(branch, value))
-                    } else {
-                        branches
-                            .iter()
-                            .all(|branch| walker.rejects_value(branch, value))
-                    };
-                    if rejected {
-                        return true;
+            if UNEVALUATED_FOR_ANY_KIND
+                .iter()
+                .chain(candidate.unevaluated_keywords())
+                .any(|keyword| node.contains_key(*keyword))
+            {
+                fit = Fit::Unproven;
+            }
+            if let Some(reference) = node.get("$ref") {
+                fit = fit.and(
+                    match reference
+                        .as_str()
+                        .and_then(|reference| walker.resolve_scoped_ref(reference))
+                    {
+                        Some(target) => walker.value_fit(target, candidate),
+                        None => Fit::Unproven,
+                    },
+                );
+            }
+            if let Some(branches) = node.get("allOf").and_then(Value::as_array) {
+                for branch in branches {
+                    fit = fit.and(walker.value_fit(branch, candidate));
+                    if fit == Fit::Rejects {
+                        return fit;
                     }
                 }
             }
-            false
+            if let Some(branches) = node.get("anyOf").and_then(Value::as_array) {
+                let mut any = Fit::Rejects;
+                for branch in branches {
+                    any = any.max(walker.value_fit(branch, candidate));
+                    if any == Fit::Fits {
+                        break;
+                    }
+                }
+                fit = fit.and(any);
+            }
+            if let Some(branches) = node.get("oneOf").and_then(Value::as_array) {
+                let (mut fits, mut unproven) = (0, 0);
+                for branch in branches {
+                    match walker.value_fit(branch, candidate) {
+                        Fit::Fits => fits += 1,
+                        Fit::Unproven => unproven += 1,
+                        Fit::Rejects => {}
+                    }
+                    if fits > 1 {
+                        break;
+                    }
+                }
+                fit = fit.and(match (fits, unproven) {
+                    (1, 0) => Fit::Fits,
+                    (0, 0) | (2.., _) => Fit::Rejects,
+                    _ => Fit::Unproven,
+                });
+            }
+            if let Some(negated) = node.get("not") {
+                fit = fit.and(match walker.value_fit(negated, candidate) {
+                    Fit::Fits => Fit::Rejects,
+                    Fit::Rejects => Fit::Fits,
+                    Fit::Unproven => Fit::Unproven,
+                });
+            }
+            fit
         })
     }
 
@@ -763,6 +831,96 @@ pub(crate) enum NativeText {
     String,
 }
 
+// What the evaluated keywords prove about one candidate; ordered so that
+// constraints that all apply take the minimum and alternatives the maximum.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum Fit {
+    Rejects,
+    Unproven,
+    Fits,
+}
+
+impl Fit {
+    fn and(self, other: Self) -> Self {
+        self.min(other)
+    }
+}
+
+// A typing candidate: the verbatim text, or the JSON value it decodes to.
+#[derive(Clone, Copy)]
+pub(crate) enum Candidate<'v> {
+    Text(&'v str),
+    Json(&'v Value),
+}
+
+impl Candidate<'_> {
+    fn is(self, name: &str) -> bool {
+        match self {
+            Self::Text(_) => name == "string",
+            Self::Json(value) => literal_satisfies(name, value),
+        }
+    }
+
+    fn equals(self, literal: &Value) -> bool {
+        match self {
+            Self::Text(text) => literal.as_str() == Some(text),
+            Self::Json(value) => json_equal(literal, value),
+        }
+    }
+
+    // Keywords that can reject this candidate's kind and that `value_fit` does
+    // not evaluate. Keywords for other kinds and annotations never apply.
+    fn unevaluated_keywords(self) -> &'static [&'static str] {
+        match self {
+            Self::Text(_) | Self::Json(Value::String(_)) => &[
+                "minLength",
+                "maxLength",
+                "pattern",
+                "format",
+                "contentEncoding",
+                "contentMediaType",
+                "contentSchema",
+            ],
+            Self::Json(Value::Number(_)) => &[
+                "minimum",
+                "maximum",
+                "exclusiveMinimum",
+                "exclusiveMaximum",
+                "multipleOf",
+            ],
+            Self::Json(Value::Object(_)) => &[
+                "properties",
+                "required",
+                "additionalProperties",
+                "patternProperties",
+                "propertyNames",
+                "minProperties",
+                "maxProperties",
+                "dependentRequired",
+                "dependentSchemas",
+                "dependencies",
+                "unevaluatedProperties",
+            ],
+            Self::Json(Value::Array(_)) => &[
+                "items",
+                "prefixItems",
+                "additionalItems",
+                "contains",
+                "minContains",
+                "maxContains",
+                "minItems",
+                "maxItems",
+                "uniqueItems",
+                "unevaluatedItems",
+            ],
+            Self::Json(Value::Bool(_) | Value::Null) => &[],
+        }
+    }
+}
+
+// Keywords `value_fit` does not evaluate that can reject a value of any kind.
+const UNEVALUATED_FOR_ANY_KIND: [&str; 3] = ["if", "$dynamicRef", "$recursiveRef"];
+
 // Integer kind requires an integer spelling; `1.0` and integers beyond 64 bits
 // are numbers here, so their existing typed paths stay unchanged.
 fn json_kind(value: &Value) -> Option<&'static str> {
@@ -777,16 +935,15 @@ fn json_kind(value: &Value) -> Option<&'static str> {
 }
 
 // JSON Schema compares literals by value and type: 1 equals 1.0, "1" does not
-// equal 1. Integers compare exactly; f64 is used only when either side is a float.
+// equal 1. An integer is never rounded to f64: against a float it compares
+// with the exact integer that float denotes, if any.
 fn json_equal(left: &Value, right: &Value) -> bool {
     match (left, right) {
-        (Value::Number(left), Value::Number(right)) => {
-            if left.is_f64() || right.is_f64() {
-                left.as_f64() == right.as_f64()
-            } else {
-                left == right
-            }
-        }
+        (Value::Number(left), Value::Number(right)) => match (left.is_f64(), right.is_f64()) {
+            (false, false) => left == right,
+            (true, true) => left.as_f64() == right.as_f64(),
+            _ => exact_integer(left).is_some_and(|left| exact_integer(right) == Some(left)),
+        },
         (Value::Array(left), Value::Array(right)) => {
             left.len() == right.len()
                 && left
@@ -802,6 +959,20 @@ fn json_equal(left: &Value, right: &Value) -> bool {
         }
         _ => left == right,
     }
+}
+
+// The integer a JSON number denotes exactly, including an integral float such
+// as `2.0`. None for a fraction or a float beyond i128, which equals no stored
+// integer; with arbitrary precision, an integer beyond 64 bits is also None.
+fn exact_integer(number: &serde_json::Number) -> Option<i128> {
+    if let Some(integer) = number.as_i64() {
+        return Some(integer.into());
+    }
+    if let Some(integer) = number.as_u64() {
+        return Some(integer.into());
+    }
+    let float = number.as_f64().filter(|_| number.is_f64())?;
+    (float.fract() == 0.0 && float.abs() < i128::MAX as f64).then_some(float as i128)
 }
 
 const MAX_NULL_SCHEMA_REF_DEPTH: usize = 16;
@@ -1119,6 +1290,120 @@ mod structural_type_tests {
                 permits,
                 "{schema}"
             );
+        }
+    }
+}
+
+#[cfg(test)]
+mod native_text_tests {
+    use super::{NativeText, SchemaFacts, json_equal};
+    use serde_json::{Value, json};
+
+    fn typed(parameter: Value, raw: &str) -> Option<NativeText> {
+        let schema = json!({"type": "object", "properties": {"value": parameter}});
+        SchemaFacts::new(&schema).native_text_type(&schema["properties"]["value"], raw)
+    }
+
+    #[test]
+    fn json_wins_only_when_its_fit_is_proven() {
+        let integer = Some(NativeText::Json("integer"));
+        let string = Some(NativeText::String);
+        for (parameter, raw, expected) in [
+            // `oneOf` admits a value matching exactly one branch.
+            (
+                json!({"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}),
+                "42",
+                string,
+            ),
+            (
+                json!({"oneOf": [{"type": ["string", "integer"]}, {"const": 42}]}),
+                "42",
+                string,
+            ),
+            (
+                json!({"oneOf": [{"const": "auto"}, {"type": "integer"}]}),
+                "42",
+                integer,
+            ),
+            // `not` excludes literals as well as types.
+            (
+                json!({"type": ["string", "integer"], "not": {"const": 42}}),
+                "42",
+                string,
+            ),
+            (
+                json!({"type": ["string", "integer"], "not": {"enum": [42]}}),
+                "42",
+                string,
+            ),
+            (
+                json!({"type": ["string", "integer"], "not": {"const": 7}}),
+                "42",
+                integer,
+            ),
+            (json!({"not": {"type": "string"}}), "-2500", integer),
+            // An integer is not rounded to a neighboring float constant.
+            (
+                json!({"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740993",
+                string,
+            ),
+            (
+                json!({"anyOf": [{"type": "integer", "const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740993",
+                string,
+            ),
+            (
+                json!({"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740992",
+                integer,
+            ),
+            (
+                json!({"anyOf": [{"const": {"n": 9007199254740992.0}}, {"type": "string"}]}),
+                r#"{"n":9007199254740993}"#,
+                string,
+            ),
+            // A keyword the walk does not evaluate leaves JSON unproven, so an
+            // admitted string wins; without one, the typed JSON value still does.
+            (
+                json!({"type": ["string", "integer"], "minimum": 100}),
+                "42",
+                string,
+            ),
+            (json!({"type": "integer", "minimum": 100}), "42", integer),
+            (
+                json!({"anyOf": [{"type": "string"}, {"type": "object", "properties": {"x": {"type": "integer"}}}]}),
+                r#"{"x":1}"#,
+                string,
+            ),
+            (json!({"type": "integer", "enum": ["auto"]}), "5", integer),
+            (
+                json!({"type": ["string", "integer"], "$ref": "#/$defs/Missing"}),
+                "42",
+                string,
+            ),
+        ] {
+            assert_eq!(typed(parameter.clone(), raw), expected, "{parameter} {raw}");
+        }
+    }
+
+    #[test]
+    fn numbers_compare_exactly() {
+        for (left, right, equal) in [
+            (json!(1), json!(1.0), true),
+            (json!(-0.0), json!(0), true),
+            (
+                json!(9007199254740993_u64),
+                json!(9007199254740992.0),
+                false,
+            ),
+            (json!(u64::MAX), json!(18446744073709551615.0), false),
+            (json!(1), json!(1.5), false),
+            (json!(1.5), json!(1.5), true),
+            (json!({"n": [1]}), json!({"n": [1.0]}), true),
+        ] {
+            assert_eq!(json_equal(&left, &right), equal, "{left} {right}");
+            assert_eq!(json_equal(&right, &left), equal, "{right} {left}");
         }
     }
 }

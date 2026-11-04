@@ -824,6 +824,29 @@ mod tests {
                 "\"hello\"",
                 serde_json::json!("\"hello\""),
             ),
+            // JSON wins only when it provably fits: an integer matching both
+            // `oneOf` branches, a negated literal, a float constant that the
+            // integer only rounds to, and an unevaluated bound keep the string.
+            (
+                serde_json::json!({"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}),
+                "42",
+                serde_json::json!("42"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "integer"], "not": {"const": 42}}),
+                "42",
+                serde_json::json!("42"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740993",
+                serde_json::json!("9007199254740993"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "integer"], "minimum": 100}),
+                "42",
+                serde_json::json!("42"),
+            ),
         ] {
             assert_eq!(
                 parse_schema_value(parameter.clone(), raw),
