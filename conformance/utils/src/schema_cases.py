@@ -216,7 +216,7 @@ def native_call_wire(family: str, name: str, values: dict[str, Any], raw_values:
         params = "".join(f"{marker}<{key}>{value}{marker}</{key}>" for key, value in raw_values.items())
         return f'{marker}<tool_call>{marker}<invoke name="{name}">{params}{marker}</invoke>{marker}</tool_call>'
     # These grammars have an existing independently authored Unified renderer.
-    if family in ("glm47", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "muse_spark"):
+    if family in ("glm47", "hy_v4", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "muse_spark"):
         return renderer(family, name, values, 0, raw_values)
     raise ValueError(f"no schema grammar renderer for registered family {family}")
 

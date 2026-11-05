@@ -217,6 +217,59 @@
         }
       ]
     },
+    "hy_v4": {
+      "input_chunks": [
+        "<tool_calls:opensource><tool_call:opensource>f<arg_key:opensource>a</arg_key:opensource><arg_value:opensource>1</arg_value:opensource></tool_call:opensource><tool_call:opensource>g",
+        "<arg_key:opensource>b</arg_key:opensource><arg_value:opensource>2</arg_value:opensource></tool_call:opensource></tool_calls:opensource>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
     "kimi_k2": {
       "input_chunks": [
         "<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{\"a\":\"1\"}<|tool_call_end|><|tool_call_begin|>functions.",
@@ -714,6 +767,81 @@
         "",
         "<tool_call>f<arg_key>x</arg_key><arg_value>1</arg_value></tool_call><tool_call>g",
         "<arg_key>x</arg_key><arg_value>2</arg_value></tool_call><tool_call>h<arg_key>x</arg_key><arg_value>3</arg_value></tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "hy_v4": {
+      "input_chunks": [
+        "",
+        "<tool_calls:opensource><tool_call:opensource>f<arg_key:opensource>x</arg_key:opensource><arg_value:opensource>1</arg_value:opensource></tool_call:opensource><tool_call:opensource>g",
+        "<arg_key:opensource>x</arg_key:opensource><arg_value:opensource>2</arg_value:opensource></tool_call:opensource><tool_call:opensource>h<arg_key:opensource>x</arg_key:opensource><arg_value:opensource>3</arg_value:opensource></tool_call:opensource></tool_calls:opensource>",
         ""
       ],
       "tools": [

@@ -669,9 +669,9 @@ async function checkRebaseContracts(tab, reader) {
       .filter(([, families]) => families.includes(row.family)).map(([scenario]) => scenario).sort();
     assert.deepEqual(actual, expected, `${row.family}: every applicable shared variant remains a leaf`);
   }
-  for (const scenario of ['default_reasoning_without_opener', 'default_reasoning_tool_without_closer']) {
-    assert.equal(columns.get(scenario).group_key, 'unified_gnemotron_v3');
-  }
+  // Nemotron v3 and Hy4 both default to reasoning, so these cases use shared sections.
+  assert.equal(columns.get('default_reasoning_without_opener').group_key, 'unified_g10');
+  assert.equal(columns.get('default_reasoning_tool_without_closer').group_key, 'unified_g12');
   const groups = new Map(tab.column_groups.map(group => [group.key, group]));
   const argumentGroups = tab.column_groups.filter(group => group.key.startsWith('unified_g7_'));
   const argumentColumns = tab.columns.filter(column => column.group_key.startsWith('unified_g7_'));
@@ -734,7 +734,7 @@ function checkDottedNameContracts(tab, loadedKeys) {
     dotted_name_multiple_segments: [{ kind: 'tool_call', name: 'server.tools.weather', arguments: { location: 'Beijing' } }],
     dotted_name_shared_prefix: [{ kind: 'tool_call', name: 'server.weather', arguments: { location: 'Beijing' } }, { kind: 'tool_call', name: 'server.time', arguments: { timezone: 'Asia/Shanghai' } }],
   };
-  const families = ['beam', 'deepseek_v4', 'deepseek_v41', 'gemma4', 'glm47', 'gpt_oss', 'kimi_k2', 'kimi_k3', 'muse_glimmer', 'muse_spark', 'nemotron_v3', 'qwen3'];
+  const families = ['beam', 'deepseek_v4', 'deepseek_v41', 'gemma4', 'glm47', 'gpt_oss', 'hy_v4', 'kimi_k2', 'kimi_k3', 'muse_glimmer', 'muse_spark', 'nemotron_v3', 'qwen3'];
   for (const family of families) {
     const row = tab.rows.find(item => item.family === family);
     assert.ok(row, `${family}: dotted-name family is rendered`);

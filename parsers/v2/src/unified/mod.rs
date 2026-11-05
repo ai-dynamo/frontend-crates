@@ -56,6 +56,7 @@ pub mod gemma4;
 pub mod glm47;
 mod guided_cursor;
 pub mod harmony;
+pub mod hy_v4;
 pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod minimax_m3;
@@ -6683,6 +6684,7 @@ unified_registry! {
     "kimi_k2"              => kimi_k2::kimi_k2_unified,
     "kimi_k3" | "kimi-k3"   => kimi_k3::kimi_k3_unified,
     "gpt_oss" | "harmony"   => harmony::gpt_oss_unified,
+    "hy_v4"                => hy_v4::hy_v4_unified,
 }
 
 /// Stderr instrumentation for the unified path under `DYNAMO_PARSERS_DEBUG`.

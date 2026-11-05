@@ -28,7 +28,7 @@ def test_unified_parallel_boundaries_preserve_the_authored_stream_stimulus():
             assert case["tools"] == source["tools"]
             assert "".join(case["input_chunks"]) == case["input"]
             expected_chunks = list(source["input_chunks"])
-            if family == "nemotron_v3":
-                expected_chunks[0] = "</think>" + expected_chunks[0]
+            # Default-reasoning families close their implicit thought first.
+            expected_chunks[0] = unified.default_response_prefix(family) + expected_chunks[0]
             assert case["input_chunks"] == expected_chunks
             assert case["input_chunks"][-1] == ""

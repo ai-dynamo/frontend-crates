@@ -188,6 +188,10 @@ def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
             # native call in the message header, so neither has a body prefix.
             assert prefix == ""
             continue
+        if family == "hy_v4":
+            # Hy4's invoke opener is a complete tag inside the plural block.
+            assert prefix == "<tool_call:opensource>"
+            continue
         assert prefix
         assert prefix == prefix.lstrip()
         if family != "deepseek_v41":
@@ -1354,7 +1358,12 @@ def _family_value(scenario, family):
     family = G.unified_grammar_family(family)
     if scenario == "guided_json_noncall_before_native_array_before_payload":
         return "{}" + _family_value("guided_json_native_parameter_array_before_payload", family)
+    if scenario == "glm47_parameterless_call_shape_inside_argument":
+        call_open, call_close = _GLM_STYLE_MARKERS[family][:2]
+        return f"before {call_close}{call_open}get_weather{call_close} after"
     reason_open, reason_close, _, _ = control_tokens(family)
+    if scenario == "default_reasoning_tool_without_closer":
+        return f"{reason_open}雪{reason_close}"
     marker = G._NATIVE_QUOTED_CONTROL.get(family, control_tokens(family)[2])
     if family == "beam":
         # Beam's markers are special tokens, so a quotation never keeps one literal
@@ -1409,6 +1418,7 @@ def _family_value(scenario, family):
             "deepseek_v41": "</｜DSML｜ invoke>",
             "gemma4": "}<tool_call|>",
             "glm47": "</tool_call>",
+            "hy_v4": "</tool_call:opensource>",
             "kimi_k2": "<|tool_call_end|>",
             "kimi_k3": "<|close|>call<|sep|>",
             "muse_glimmer": "</atem:function_calls>",
@@ -1648,6 +1658,13 @@ def _atem_parameter_end(raw, value_start):
     return raw.find("</atem:parameter>", minimum)
 
 
+_GLM_STYLE_MARKERS = {
+    "glm47": ("<tool_call>", "</tool_call>", "<arg_key>", "</arg_key>", "<arg_value>", "</arg_value>"),
+    "hy_v4": ("<tool_call:opensource>", "</tool_call:opensource>", "<arg_key:opensource>",
+              "</arg_key:opensource>", "<arg_value:opensource>", "</arg_value:opensource>"),
+}
+
+
 def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
     """Read authored complete argument fields, not runtime recovery decisions.
 
@@ -1657,12 +1674,14 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
     """
     if family == "minimax_m3":
         return _m3_input_calls(raw, tools, exact_numbers=exact_numbers)
-    if family == "glm47":
+    if family in _GLM_STYLE_MARKERS:
+        # GLM's block is its invoke; Hy4 nests the same invoke in a plural block.
+        call_open, call_close, key_open, key_close, value_open, value_close = _GLM_STYLE_MARKERS[family]
         calls = []
         cursor = 0
         while True:
             header = re.search(
-                r'(?:<tool_call>|\A)([A-Za-z0-9_.-]+)(?=<arg_key>|</tool_call>)',
+                rf'(?:{re.escape(call_open)}|\A)([A-Za-z0-9_.-]+)(?={re.escape(key_open)}|{re.escape(call_close)})',
                 raw[cursor:],
             )
             if header is None:
@@ -1670,25 +1689,25 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
             name = header[1]
             at = cursor + header.end()
             arguments = {}
-            while raw.startswith("<arg_key>", at):
-                key_end = raw.find("</arg_key>", at)
+            while raw.startswith(key_open, at):
+                key_end = raw.find(key_close, at)
                 assert key_end >= 0, (family, "unterminated argument key", raw)
-                key = raw[at + len("<arg_key>"):key_end]
-                value_start = key_end + len("</arg_key>")
-                assert raw.startswith("<arg_value>", value_start), (
+                key = raw[at + len(key_open):key_end]
+                value_start = key_end + len(key_close)
+                assert raw.startswith(value_open, value_start), (
                     family, "missing argument value", raw,
                 )
-                value_start += len("<arg_value>")
-                value_end = raw.find("</arg_value>", value_start)
+                value_start += len(value_open)
+                value_end = raw.find(value_close, value_start)
                 if value_end < 0:
                     break
                 arguments[key] = raw[value_start:value_end]
-                at = value_end + len("</arg_value>")
+                at = value_end + len(value_close)
             calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
-            outer_end = raw.find("</tool_call>", at)
+            outer_end = raw.find(call_close, at)
             if outer_end < 0:
                 return calls
-            cursor = outer_end + len("</tool_call>")
+            cursor = outer_end + len(call_close)
 
     if family == "beam":
         # Independent authoring-contract decoder for the Beam wire (not the parser):
@@ -1954,6 +1973,7 @@ def _assert_malformed_recovery(family, case):
         "kimi_k3": '<|open|>call tool="echo"',
         "qwen3": "<tool_call>\n<function=echo>",
         "glm47": "<tool_call>echo",
+        "hy_v4": "<tool_call:opensource>echo",
         "deepseek_v4": '<｜DSML｜invoke name="echo">',
         "deepseek_v41": '<｜DSML｜ invoke name="echo">',
         "gemma4": "<|tool_call>call:echo{",
@@ -1983,6 +2003,7 @@ def _assert_malformed_recovery(family, case):
     closers = {
         "kimi_k2": "<|tool_call_end|>", "kimi_k3": "<|close|>json<|sep|><|close|>call<|sep|>",
         "qwen3": "</parameter>\n</function>\n</tool_call>", "glm47": "</arg_value></tool_call>",
+        "hy_v4": "</arg_value:opensource></tool_call:opensource>",
         "deepseek_v4": "</｜DSML｜parameter></｜DSML｜invoke>",
         "deepseek_v41": "</｜DSML｜ parameter></｜DSML｜ invoke>",
         "gemma4": "}}<tool_call|>", "muse_glimmer": "</atem:invoke>", "muse_spark": "</atem:invoke>",
@@ -1996,7 +2017,7 @@ def _assert_malformed_recovery(family, case):
     bad = []
     if family == "kimi_k2":
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
-    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3"}:
+    elif family in {"qwen3", "glm47", "hy_v4", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
     assert case["golden"] == bad + echoes
     if family != "gpt_oss":
@@ -2019,7 +2040,7 @@ def _assert_missing_inner_closers(family: str, case: dict) -> list[dict]:
     assert native_raw.startswith(prefix)
     inner_closers = {
         "beam": "</rfl:parameter>", "minimax_m3": "]<]minimax[>[</location>",
-        "qwen3": "</parameter>", "glm47": "</arg_value>",
+        "qwen3": "</parameter>", "glm47": "</arg_value>", "hy_v4": "</arg_value:opensource>",
         "deepseek_v4": "</｜DSML｜parameter>", "deepseek_v41": "</｜DSML｜ parameter>",
         "gemma4": '<|"|>}', "kimi_k3": "<|close|>argument", "muse_glimmer": "</atem:parameter>",
     }
@@ -2102,7 +2123,7 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                     # Families whose wire carries untyped text values: the authoring
                     # contract types them against the declared schema (a literal
                     # `null` for a nullable property, JSON for a non-string one).
-                    if G.unified_grammar_family(family) not in {"qwen3", "glm47", "beam", "minimax_m3"} or not isinstance(value, str):
+                    if G.unified_grammar_family(family) not in {"qwen3", "glm47", "hy_v4", "beam", "minimax_m3"} or not isinstance(value, str):
                         continue
                     if scenario in {probe["name"] for probe in XML_COMPATIBILITY_CASES} and schema == {"type": "custom"}:
                         assert family == "qwen3"
@@ -2260,7 +2281,7 @@ def _assert_cross_family_contract(corpus):
                       if scenario == "missing_inner_closers_then_valid_call"
                       else _logical_events(scenario, family, case["golden"]))
             if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
-                raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "minimax_m3"} else 2
+                raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "hy_v4", "minimax_m3"} else 2
                 assert case["tools"] == []
                 assert events == [{"kind": "tool_call", "name": "run", "arguments": {}},
                                   {"kind": "tool_call", "name": "not_offered", "arguments": {"x": raw_value}}]
@@ -2485,10 +2506,13 @@ def test_generic_case_scope_rejects_single_family_semantic_variants(monkeypatch)
             _assert_generic_cases_span_families({"two_calls": set(NATIVE_FAMILIES), scenario: {"gpt_oss"}})
 
 
-def test_default_reasoning_cases_use_a_named_family_section():
+def test_default_reasoning_cases_use_their_shared_sections():
+    # Every family whose default initialization opens reasoning shares these cases.
+    default_reasoning = {family for family in G.FAMILIES if G._MANIFEST[family].get("default_reasoning")}
+    assert default_reasoning == {"nemotron_v3", "hy_v4"}
     for scenario in ("default_reasoning_without_opener", "default_reasoning_tool_without_closer"):
-        assert G.scenario_families(scenario) == {"nemotron_v3"}
-        assert taxonomy.display_tax(scenario)[0] == "nemotron_v3"
+        assert G.scenario_families(scenario) == default_reasoning
+        assert taxonomy.display_tax(scenario)[0] == taxonomy.tax(scenario)[0]
         assert taxonomy.tax(scenario)[0] in {10, 12}
 
 

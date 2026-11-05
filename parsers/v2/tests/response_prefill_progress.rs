@@ -555,6 +555,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
     for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
         let closer = match dynamo_parsers_v2::canonical_unified_family(family).unwrap() {
             "minimax_m3" => "</mm:think>",
+            "hy_v4" => "</think:opensource>",
             "beam" => "<|end|>",
             "gemma4" => "<channel|>",
             "gpt_oss" => "<|end|>",
@@ -570,8 +571,10 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
             ] {
                 let starts_in_reasoning = state == UnifiedParserStartingState::Reasoning
                     || (state == UnifiedParserStartingState::None
-                        && dynamo_parsers_v2::canonical_unified_family(family)
-                            == Some("nemotron_v3"));
+                        && matches!(
+                            dynamo_parsers_v2::canonical_unified_family(family),
+                            Some("nemotron_v3" | "hy_v4")
+                        ));
                 for (args_head, args_tail) in ["", " ", "x"].into_iter().flat_map(|preceding| {
                     let path = serde_json::to_string(preceding).unwrap();
                     [

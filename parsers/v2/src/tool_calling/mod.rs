@@ -9,6 +9,7 @@ pub mod dsml;
 pub mod gemma4;
 pub mod glm47;
 pub mod harmony;
+pub mod hy_v4;
 pub(crate) mod json_prefix;
 pub mod kimi_k2;
 pub mod kimi_k3;

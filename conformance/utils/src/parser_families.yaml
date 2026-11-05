@@ -20,6 +20,7 @@ families:
   deepseek_v4:    {vllm_python: deepseek_v4,    vllm_rust: deepseek_v4,  sglang_python: deepseekv4,  dynamo_v2: deepseek_v4, preferred_input: text}
   gemma4:         {vllm_python: gemma4,         vllm_rust: gemma4,       sglang_python: gemma4,      dynamo_v2: gemma4,      preferred_input: text}
   glm47:          {vllm_python: glm47,          vllm_rust: glm47,        sglang_python: glm47,       dynamo_v2: glm47,       preferred_input: text}
+  hy_v4:          {vllm_python: hy_v4,          vllm_rust: null,         sglang_python: hunyuan,     dynamo_v2: hy_v4,       preferred_input: text}
   hermes:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: hermes,      dynamo_v2: null,        preferred_input: text}
   # inkling uses vLLM's unified parser (vllm/parser/inkling.py), not the legacy ToolParserManager
   # the capture harness drives, so a `check.sh vllm` refresh needs unified-parser support.
@@ -112,6 +113,14 @@ markers:
     leak: ['<|"|>']
   glm47:
     pairs: [["<tool_call>", "</tool_call>"], ["<arg_key>", "</arg_key>"], ["<arg_value>", "</arg_value>"]]
+  hy_v4:
+    # Tencent Hy4 wraps back-to-back GLM-style invokes in one plural block; every
+    # marker carries the checkpoint's `:opensource` suffix.
+    pairs:
+      - ["<tool_calls:opensource>", "</tool_calls:opensource>"]
+      - ["<tool_call:opensource>", "</tool_call:opensource>"]
+      - ["<arg_key:opensource>", "</arg_key:opensource>"]
+      - ["<arg_value:opensource>", "</arg_value:opensource>"]
   hermes:
     pairs: [["<tool_call>", "</tool_call>"]]
   inkling:
@@ -283,6 +292,19 @@ unified:
     tool_parser: glm47
     golden_spec: glm47.yaml
     leak_markers: ["<tool_call>", "</tool_call>", "<arg_key>", "</arg_key>", "<arg_value>", "</arg_value>"]
+  hy_v4:
+    default_reasoning: true
+    capture_pipelines:
+      vllm_python: ["hy_v4", "hy_v4"]
+      sglang_python: ["hunyuan", "hunyuan"]
+    vllm_tokenizer_markers: ["<think:opensource>", "</think:opensource>", "<tool_calls:opensource>", "</tool_calls:opensource>", "<tool_call:opensource>", "</tool_call:opensource>", "<arg_key:opensource>", "</arg_key:opensource>", "<arg_value:opensource>", "</arg_value:opensource>"]
+    registry: hy_v4
+    native: true
+    reasoning_grammar: hy_v4
+    reasoning_parser: hy_v4
+    tool_parser: hy_v4
+    golden_spec: hy_v4.yaml
+    leak_markers: ["<tool_calls:opensource>", "</tool_calls:opensource>", "<tool_call:opensource>", "</tool_call:opensource>", "<arg_key:opensource>", "</arg_key:opensource>", "<arg_value:opensource>", "</arg_value:opensource>"]
   kimi_k2:
     capture_pipelines:
       vllm_python: ["kimi_k2", "kimi_k2"]
@@ -689,7 +711,7 @@ unified_display:
     51: Prefilled Response — malformed
     deepseek_v4: 'Single Family Test: DeepSeek V4-specific tests'
     gemma: 'Single Family Test: Gemma 4 guided call-prefix boundaries'
-    glm5: 'Single Family Test: GLM argument handling'
+    glm5: 'Family-specific tests: GLM and Hy4 argument handling'
     deepseek: 'Single Family Test: DeepSeek V4.1 DSML invocation bodies'
     deepseek_v41: 'Single Family Test: DeepSeek V4.1-specific tests'
     kimi_k2: 'Single Family Test: Kimi K2-specific tests'
@@ -703,8 +725,6 @@ unified_display:
     beam: 'Single Family Test: Beam-specific'
     dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
   group_overrides:
-    default_reasoning_without_opener: nemotron_v3
-    default_reasoning_tool_without_closer: nemotron_v3
     kimi_native_k2_count_content_chunk7: kimi_k2
     kimi_native_k2_count_content_chunk1024: kimi_k2
     kimi_native_trailing_syntax_whitespace: kimi_k2

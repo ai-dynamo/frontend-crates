@@ -26,7 +26,7 @@ HISTORY_CONTRACT = MODEL_CONTRACTS["structuralRequestHistory"]
 
 
 def test_structural_case_has_one_shared_id_and_explicit_builder_scope():
-    assert scenario_families(SCENARIO) == {"gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark"}
+    assert scenario_families(SCENARIO) == {"gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark", "hy_v4"}
     assert numbered_id(SCENARIO) == "UNIFIED.36-structured_response_after_reasoning"
     assert f"UNIFIED.{SCENARIO}.nemotron_v3" not in build_cases("nemotron_v3")
     assert "UNIFIED.guided_response_native_wrapper_whitespace_before_prose.nemotron_v3" in build_cases("nemotron_v3")
@@ -135,5 +135,9 @@ def test_structural_history_contract_retains_every_family_including_muse_spark()
     with pytest.raises(AssertionError, match="missing structural family evidence"):
         _assert_required_resources(rows)
     rows.append({"kind": "history", "implementation": "dynamo_v2", "family": "muse_spark", "version": "0.7.28", "path": "muse_spark/0.7.28"})
+    with pytest.raises(AssertionError, match="missing structural family evidence"):
+        _assert_required_resources(rows)
+    # Hy4's first Dynamo capture already carries the structured request.
+    rows.append({"kind": "history", "implementation": "dynamo_v2", "family": "hy_v4", "version": "0.10.0", "path": "hy_v4/0.10.0"})
     _assert_required_resources(rows)
     assert {row["family"] for row in rows} == scenario_families(SCENARIO)

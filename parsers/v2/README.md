@@ -119,13 +119,17 @@ Reasoning families:
 | **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
 | **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair; Muse Spark additionally reserves `commentary` as visible text | No v1 implementation; v2 `unified/muse_glimmer.rs`, `unified/muse_spark.rs` | Muse Glimmer, Muse Spark |
 
-The built-in Unified registry in `src/unified/mod.rs` contains `deepseek_v4`, `deepseek_v41`, `gemma4`, `glm47`, `qwen3` / `qwen3_coder`, `nemotron_v3` / `nemotron3`, `muse_glimmer`, `muse_spark` / `muse_spark_open`, `beam`, `kimi_k2`, `kimi_k3` / `kimi-k3`, and `gpt_oss` / `harmony`. `builtin_unified_families()` includes aliases; `canonical_unified_family()` resolves them. The separate tool-only registry is `src/tool_calling/registry.rs` and also includes MiniMax M2/M3; their presence there does not imply Unified support.
+The built-in Unified registry in `src/unified/mod.rs` contains `deepseek_v4`, `deepseek_v41`, `gemma4`, `glm47`, `qwen3` / `qwen3_coder`, `nemotron_v3` / `nemotron3`, `muse_glimmer`, `muse_spark` / `muse_spark_open`, `beam`, `kimi_k2`, `kimi_k3` / `kimi-k3`, `hy_v4`, and `gpt_oss` / `harmony`. `builtin_unified_families()` includes aliases; `canonical_unified_family()` resolves them. The separate tool-only registry is `src/tool_calling/registry.rs` and also includes MiniMax M2/M3; their presence there does not imply Unified support.
 
 DeepSeek V4.1 uses Unified family `deepseek_v41` for its distinct reasoning and JSON-body behavior. The legacy tool-only `deepseek_v4` selector also accepts spaced V4.1 DSML tags; that compatibility is not a replacement for the Unified V4.1 factory.
 
 ## MiniMax M3
 
 MiniMax M3 uses Unified family `minimax_m3` for reasoning and tool calls. Native structural tags require schemas the backend can represent without excluding valid argument values. Schemas allowing unrestricted string arguments require fallback: Dynamo uses guided JSON for required or named tool choices, while unforced auto requests remain unconstrained. Guided JSON preserves the requested schema; argument validation remains the caller’s responsibility.
+
+## Tencent Hy4
+
+Tencent Hy4 uses Unified family `hy_v4`. Every call of a turn sits back to back inside one `<tool_calls:opensource>` block, and each `<tool_call:opensource>` invoke is the GLM name plus `<arg_key:opensource>`/`<arg_value:opensource>` pairs, typed by the shared GLM argument typer. The default prompt ends with an open `<think:opensource>`, so with no explicit starting state output begins in reasoning, as with Nemotron 3 Ultra; a `no_think` prompt closes the block itself and callers pass `Response`. The family has no v1 parser and no tool-only `ToolParser` entry. Its conformance corpus is `conformance/fixtures-unified-v2/families/hy_v4/`.
 
 ## Nemotron 3 Ultra
 

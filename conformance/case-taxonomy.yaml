@@ -687,6 +687,9 @@ suite_exemptions:
     toolcalling.batch: harmony_text is the text-driven conformance variant of harmony; the v1 batch corpus is captured under the harmony family.
   muse_glimmer:
     toolcalling.batch: muse has no v1 batch parser; it is captured through the legacy stream-v1 and unified corpora only.
+  hy_v4:
+    toolcalling.batch: Hy4 has no v1 batch parser; its corpus is authored for the UnifiedParser only.
+    toolcalling.stream: Hy4 was added after the legacy stream corpus was retired; the Unified corpus owns its incremental coverage.
 
 # Pre-taxonomy coverage gaps, grandfathered so the lint stays green on the current
 # corpus while still holding NEW families to the full bar. Each entry is a backfill

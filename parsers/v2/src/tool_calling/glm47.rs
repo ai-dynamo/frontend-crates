@@ -56,9 +56,20 @@ fn spec() -> WrappedBlockSpec {
     }
 }
 
+/// Types one GLM-style invoke. Every marker comes from `config`, so grammars that
+/// share GLM's `NAME<arg_key>K</arg_key><arg_value>V</arg_value>` body (Hy4) reuse it.
 pub(crate) struct Glm47Emitter {
     config: Glm47ParserConfig,
     tools: Vec<ToolDefinition>,
+}
+
+impl Glm47Emitter {
+    pub(crate) fn new(config: Glm47ParserConfig, tools: &[Tool]) -> Self {
+        Self {
+            config,
+            tools: tools.iter().map(ToolDefinition::from).collect(),
+        }
+    }
 }
 
 impl InvokeEmitter for Glm47Emitter {
@@ -67,14 +78,19 @@ impl InvokeEmitter for Glm47Emitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
-        let call = match parse_glm47_invoke(invoke, &self.config, Some(&self.tools)) {
+        // GLM's scanner already consumed the opener; a wrapped grammar passes it along.
+        let body = invoke
+            .strip_prefix(self.config.tool_call_start.as_str())
+            .unwrap_or(invoke);
+        let call = match parse_glm47_invoke(body, &self.config, Some(&self.tools)) {
             Ok(call) => call,
             Err(error) => {
                 tracing::warn!(
                     why = "glm47_unparseable_invoke",
+                    tool_call_start = %self.config.tool_call_start,
                     tool_index,
                     error = %error,
-                    "GLM stream dropped a delimited invoke that failed value typing"
+                    "GLM-style stream dropped a delimited invoke that failed value typing"
                 );
                 return Ok(None);
             }
@@ -82,7 +98,10 @@ impl InvokeEmitter for Glm47Emitter {
         Ok(Some(ToolCallDelta {
             tool_index,
             name: Some(call.function.name),
-            arguments: reorder_arguments(&call.function.arguments, &source_arg_key_order(invoke)),
+            arguments: reorder_arguments(
+                &call.function.arguments,
+                &source_arg_key_order(body, &self.config),
+            ),
             complete: true,
         }))
     }
@@ -278,10 +297,7 @@ fn glm47_boundary() -> Box<dyn InvokeBoundary> {
 pub(crate) fn glm47_scanner(tools: &[Tool]) -> WrappedBlockScanner<Glm47Emitter> {
     WrappedBlockScanner::new(
         spec(),
-        Glm47Emitter {
-            config: Glm47ParserConfig::default(),
-            tools: tools.iter().map(ToolDefinition::from).collect(),
-        },
+        Glm47Emitter::new(Glm47ParserConfig::default(), tools),
     )
 }
 
@@ -381,19 +397,20 @@ fn trailing_holdback_len(text: &str) -> usize {
     text.len() - name_start
 }
 
-fn source_arg_key_order(block: &str) -> Vec<String> {
+fn source_arg_key_order(block: &str, config: &Glm47ParserConfig) -> Vec<String> {
+    let (key_start, key_end) = (config.arg_key_start.as_str(), config.arg_key_end.as_str());
     let mut names = Vec::new();
     let mut cursor = 0;
-    while let Some(relative) = block[cursor..].find(ARG_KEY_START) {
-        let start = cursor + relative + ARG_KEY_START.len();
-        let Some(end) = block[start..].find(ARG_KEY_END) else {
+    while let Some(relative) = block[cursor..].find(key_start) {
+        let start = cursor + relative + key_start.len();
+        let Some(end) = block[start..].find(key_end) else {
             break;
         };
         let name = block[start..start + end].trim();
         if !name.is_empty() {
             names.push(name.to_string());
         }
-        cursor = start + end + ARG_KEY_END.len();
+        cursor = start + end + key_end.len();
     }
     names
 }
