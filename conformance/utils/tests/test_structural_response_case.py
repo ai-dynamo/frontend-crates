@@ -135,5 +135,9 @@ def test_structural_history_contract_retains_every_family_including_muse_spark()
     with pytest.raises(AssertionError, match="missing structural family evidence"):
         _assert_required_resources(rows)
     rows.append({"kind": "history", "implementation": "dynamo_v2", "family": "muse_spark", "version": "0.7.28", "path": "muse_spark/0.7.28"})
+    with pytest.raises(AssertionError, match="missing structural family evidence"):
+        _assert_required_resources(rows)
+    # Hy4's first Dynamo capture already carries the structured request.
+    rows.append({"kind": "history", "implementation": "dynamo_v2", "family": "hy_v4", "version": "0.10.0", "path": "hy_v4/0.10.0"})
     _assert_required_resources(rows)
     assert {row["family"] for row in rows} == scenario_families(SCENARIO)

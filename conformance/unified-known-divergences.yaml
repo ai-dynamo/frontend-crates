@@ -114,8 +114,8 @@ hy_v4:
       actual: 'text "I mean <think:opensource>self literal</think:opensource>f<arg_key:opensource>x</arg_key:opensource><arg_value:opensource>{\"city\":\"Rome\"}</arg_value:opensource></tool_call:opensource>" | tool_call get_weather {"city":"Paris"}'
   UNIFIED.guided_json_native_parameter_string_before_payload.hy_v4:
     golden:
-      note: 'FIXME (v2 defect): a native invoke before the guided payload leaks its tags as text and its JSON-looking value dispatches a call.'
-      actual: 'text "I mean <think:opensource>self literal</think:opensource>f<arg_key:opensource>x</arg_key:opensource><arg_value:opensource>" | tool_call get_weather {"city":"Rome"} | text "</arg_value:opensource>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"'
+      note: 'FIXME (v2 defect): a native invoke before the guided payload leaks its tags and value as text.'
+      actual: 'text "I mean <think:opensource>self literal</think:opensource>f<arg_key:opensource>x</arg_key:opensource><arg_value:opensource>\"[{\\\"name\\\":\\\"get_weather\\\",\\\"arguments\\\":{\\\"city\\\":\\\"Rome\\\"}}]\"</arg_value:opensource></tool_call:opensource>" | tool_call get_weather {"city":"Paris"}'
   UNIFIED.guided_json_noncall_before_native_array_before_payload.hy_v4:
     golden:
       note: 'FIXME (v2 defect): a native invoke before the guided payload leaks its tags as text and its JSON-looking value dispatches a call.'
