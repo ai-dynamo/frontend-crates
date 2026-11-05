@@ -194,7 +194,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-tool
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 291 of the 428 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 301 of the 438 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
 - The 137 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
@@ -395,6 +395,17 @@ The shared `35-guided_json_native_parameter_object_before_payload`, `35-guided_j
 - **`40-prefilled_reasoning_then_text`** (`prefilled_reasoning_then_text`) reasoning → prose, no call. Pins that closing a prefilled thought returns the stream to VISIBLE content rather than leaving it in reasoning, which would swallow the whole answer.
 - **`40-native_quoted_control_in_reasoning`** (`native_quoted_control_in_reasoning`) A quoted native control marker inside a prefilled reasoning span remains literal reasoning text.
 - **`40-native_single_quote_contraction_reasoning`** (`native_single_quote_contraction_reasoning`) A control marker inside a contraction-bearing quote remains literal in prefilled reasoning.
+
+### Possessives after quoted names
+
+The `quoted_name_*` cases cover an ASCII possessive apostrophe immediately after a closed backtick span or double-quoted name. The authored schedule separates the closing span, apostrophe, and `s`, so the parser must retain bounded context across chunks. Each case has its own input, request, GOLDEN, and column.
+
+- **`40-quoted_name_backtick_possessive_reasoning`** and **`40-quoted_name_double_quote_possessive_reasoning`** preserve the genuine reasoning closer after `` `load_config`'s `` or `"load_config"'s`, followed by code containing additional quotes. The final answer remains visible text.
+- **`40-quoted_name_backtick_possessive_then_call`** and **`40-quoted_name_double_quote_possessive_then_call`** preserve the same possessive reasoning, extract the following real native call, and retain the trailing answer.
+- **`34-quoted_name_backtick_possessive_guided`** and **`34-quoted_name_double_quote_possessive_guided`** end prefilled reasoning at its real closer and extract a required guided JSON call whose string argument contains backticks.
+- **`40-quoted_name_backtick_nonpossessive_some`**, **`40-quoted_name_backtick_nonpossessive_s_name`**, **`40-quoted_name_double_quote_nonpossessive_some`**, and **`40-quoted_name_double_quote_nonpossessive_s_name`** retain a genuine single quotation after the quoted name: `some` and `s_name` are not the suffix `s` followed by a word boundary, so their embedded reasoning closer stays literal.
+
+All ten scenarios apply to DeepSeek V4/V4.1, Gemma4, GLM47, Kimi K2/K3, MiniMax M3, Muse Glimmer/Spark, Qwen3, and the grammar-sharing Nemotron v3. Each family uses its own reasoning delimiters, text framing, and native call encoding. Beam and GPT-OSS/Harmony are excluded because their control-token semantics do not use this prose quotation heuristic. The v1 split scanner does not implement this apostrophe state; no legacy fixture is added or relabeled. Peer observations remain unmeasured until separately captured.
 
 ### Group 41 — Prefilled reasoning, malformed
 - **`41-prefilled_reasoning_redundant_opener`** (`prefilled_reasoning_redundant_opener`) The backend re-emits the `<think>` the prompt already wrote. Exactly one echo is consumed, not leaked; a second would be stray markup and stripped (I3). The only case where a prefilled stream legitimately carries an opener.

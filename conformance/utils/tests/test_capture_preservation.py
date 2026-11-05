@@ -28,6 +28,15 @@ from test_unified_history import _store, _write_capture
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def test_latest_unified_records_download_their_selected_complete_snapshot():
+    for row in capture_sources.current(ROOT)["captures"]:
+        if row["surface"] != "unified":
+            continue
+        snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
+        for case, record in snapshot["records"].items():
+            assert record["member"] == row["source"], (row["path"], case)
+
+
 def test_preserved_history_matches_committed_baseline(history_source):
     pin = capture_sources.history_pin(ROOT, history_source)
     inventory = capture_sources.verify(history_source, pin)

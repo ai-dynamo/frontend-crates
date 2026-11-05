@@ -1028,7 +1028,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 268 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
+    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1390,6 +1390,15 @@ def _family_value(scenario, family):
         "guided_quoted_reasoning_closer_required",
     }:
         return f"The literal 'doesn't {reason_close} marker' stays quoted."
+    if scenario in {
+        "quoted_name_backtick_nonpossessive_some",
+        "quoted_name_backtick_nonpossessive_s_name",
+        "quoted_name_double_quote_nonpossessive_some",
+        "quoted_name_double_quote_nonpossessive_s_name",
+    }:
+        quote = "`" if scenario.startswith("quoted_name_backtick_") else '"'
+        word = "some" if scenario.endswith("_some") else "s_name"
+        return f"{quote}load_config{quote}'{word} {reason_close} marker' stays quoted."
     if scenario in {
         "guided_response_quoted_control_braces_named",
         "guided_response_quoted_control_braces_required",
