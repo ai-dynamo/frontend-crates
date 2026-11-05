@@ -617,26 +617,14 @@ impl Default for JinjaEnvironment {
 impl HfTokenizerConfigJsonFormatter {
     #[cfg(test)]
     pub fn new(config: ChatTemplate, mixins: ContextMixins) -> anyhow::Result<Self> {
-        Self::with_options(config, mixins, true)
-    }
-
-    pub fn with_options(
-        config: ChatTemplate,
-        mixins: ContextMixins,
-        exclude_tools_when_tool_choice_none: bool,
-    ) -> anyhow::Result<Self> {
-        Self::with_render_mode(
-            config,
-            mixins,
-            exclude_tools_when_tool_choice_none,
-            crate::RenderMode::default(),
-        )
+        Self::with_render_mode(config, mixins, true, crate::RenderMode::default())
     }
 
     /// Build a formatter that implements `render_mode`.
     ///
-    /// [`crate::RenderMode::default`] reproduces [`Self::with_options`] exactly.
-    /// [`crate::RenderMode::Verbatim`] renders the supplied messages as given.
+    /// [`crate::RenderMode::default`] reproduces the historical adaptive
+    /// rendering exactly. [`crate::RenderMode::Verbatim`] applies no
+    /// probe-driven message-shape adaptation.
     pub fn with_render_mode(
         config: ChatTemplate,
         mixins: ContextMixins,

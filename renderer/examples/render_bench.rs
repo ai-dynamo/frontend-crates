@@ -19,9 +19,7 @@
 use std::time::{Duration, Instant};
 
 use dynamo_protocols::types::CreateChatCompletionRequest;
-use dynamo_renderer::{
-    ChatTemplate, ContextMixins, OAIPromptFormatter, PromptFormatter, RenderMode,
-};
+use dynamo_renderer::{ChatTemplate, ContextMixins, PromptFormatter, RenderMode};
 use serde_json::json;
 
 /// Conversation turns in the benchmark request.
