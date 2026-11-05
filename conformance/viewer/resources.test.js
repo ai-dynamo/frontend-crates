@@ -348,7 +348,15 @@ const { resolveUnified, resolveUnifiedSeries, selectedUnifiedSnapshot, compareVe
 const qualifiedProducer = '0.7.25+source.' + 'a'.repeat(64);
 assert.equal(provenanceReleaseVersion(qualifiedProducer), '0.7.25');
 assert.equal(unifiedCaptureVersionPattern.test(qualifiedProducer), false);
+assert.throws(() => compareVersions(qualifiedProducer, '0.7.25'), /invalid capture version/);
 for (const invalid of ['0.7.25+source.a', '0.7.25+other.abc', '0.7.25+source./bad']) assert.throws(() => provenanceReleaseVersion(invalid));
+for (const invalid of [qualifiedProducer,'0.7.25+source.a','0.7.25+other.abc','0.7.25+source.'+'A'.repeat(64)]) {
+  for (const peer of ['0.7.25','0.7.25.patch1']) {
+    assert.throws(() => compareVersions(invalid,peer), /invalid capture version/);
+    assert.throws(() => compareVersions(peer,invalid), /invalid capture version/);
+  }
+}
+
 
 
 assert.equal(canonicalJson({ z: 9007199254740993n, a: [1, 1n, 1e-7, 1e16, -0] }), '{"a":[1.0,1,1e-07,1e+16,-0.0],"z":9007199254740993}');
@@ -405,6 +413,18 @@ qualifiedRecord.value.document = {
 };
 const qualifiedSources = [{ ...snapshotResource, kind: 'history' }];
 await validateResolvedUnified({ id: qualifiedRecord }, inputs, snapshotResource, qualifiedSources);
+const unboundQualified = structuredClone(qualifiedRecord);
+delete unboundQualified.value.document.capture_origin;
+await validateResolvedUnified({id:unboundQualified},inputs,snapshotResource,qualifiedSources);
+assert.equal(Object.hasOwn(unboundQualified.value.document, 'capture_origin'), false);
+const missingCheckpointOrigin = structuredClone(snapshot);
+missingCheckpointOrigin.provenance = { status: 'captured' };
+await assert.rejects(validateUnifiedCapture(missingCheckpointOrigin, inputs, snapshotResource), /origin/);
+for (const version of ['bad.version', qualifiedProducer, '0.9.7+source.a']) {
+  await assert.rejects(validateResolvedUnified({}, {cases:{}}, {...snapshotResource,version}, []), /invalid Unified capture version/);
+  await assert.rejects(validateUnifiedCapture(snapshot, inputs, {...snapshotResource,version}), /invalid Unified capture version/);
+}
+
 for (const badLabel of ['0.1.0+source.' + 'b'.repeat(64), '0.0.9+source.' + 'a'.repeat(64)]) {
   const invalid = structuredClone(qualifiedRecord);
   invalid.value.document.captured_with.dynamo_v2 = badLabel;
@@ -745,7 +765,7 @@ const { canonicalUnifiedLabel } = await import('./resources.js');
   const before = structuredClone(first);
   resolveUnified([first], '0.6.1');
   assert.deepEqual(first, before);
-  assert.throws(() => compareVersions('0.6.1+source.' + 'a'.repeat(64), '0.6.1'), /invalid capture version/);
+
   assert.equal(canonicalUnifiedLabel('UNIFIED.31.a', 'qwen3', metadata.unified_aliases), 'UNIFIED.31-guided_json_invalid_call');
   assert.equal(canonicalUnifiedLabel('UNIFIED.31-29', 'qwen3', metadata.unified_aliases), 'UNIFIED.31-29');
 

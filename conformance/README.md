@@ -14,16 +14,34 @@ Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Un
 Contributors edit parsers and independently authored inputs/GOLDEN, recapture affected latest Dynamo v2 snapshots, run tests, and generate the latest report. Capture changes use normal PR review. CI executes current native Dynamo v2 cases: differences from GOLDEN produce warnings; differences from recorded YAML fail. Generated publication JSON stays outside Git.
 
 ## Latest captures and retained history
+
+### Normalized current YAML
+
+Current authored cases and latest captures use `schema_version: 3`. This number identifies the storage format. Parser release versions belong to captured observations. Authored files have one `family` header and no GOLDEN producer/version label.
+
+Each family's `inputs_and_golden.yaml` owns frozen `requests` keyed by their complete request SHA-256, reusable ordered `tools` lists, explicit `request_defaults`, and `cases`. Cases reference their request and contain one GOLDEN event list. Default active lifecycle, empty policy/alias lists, and a scenario equal to the case key may be omitted. Older requests needed by current peer observations remain in the frozen library when an authored case changes. Readers resolve definitions and verify request digests before using them.
+
+A request stores its input once. `chunk_sizes` records Unicode scalar counts in delivery order, including zero-length chunks; `finish_step: true` adds the recorder's terminal row. Readers require the sizes to cover the complete input. Literal finish-marker text inside the input remains part of its counted chunks. Exceptional schedules retain explicit `chunks`, and non-string YAML chunk values retain their complete mappings. Initialization overrides replace the complete default initialization object.
+
+Latest capture files share immutable request definitions with their family file. They store origins, producers and record contexts once, select common references through `record_defaults`, and retain explicit exceptions. Record contexts are complete replacements. Observations retain final output, every chunk delta, completion metadata, errors and unavailable results. Selection versions remain separate from the actual producer identity.
+
+Python, native Rust and browser readers expand the format into the existing validated case/observation model. Historical capture files and archives retain their original bytes and compatibility readers. To normalize current files or check that their representation is canonical, run:
+
+```bash
+python3 conformance/utils/src/normalize_current.py --root .
+python3 conformance/utils/src/normalize_current.py --root . --check
+```
+
 ### Historical back-captures
 
 Back-capture is useful, but not absolutely needed. There is no need to back-capture everything or rerun every historical version when adding a case. Capture the current candidate; use a relevant baseline when needed to demonstrate a before/after change. State which versions actually ran and leave uncaptured results explicitly unmeasured. Preserve existing historical inputs, observations, and provenance; never label current output as an older parser result.
 
 
-The implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Add 77 complete versionless latest files beside the existing captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`, across 12 families, including Muse Spark. Batch and jail variants remain separate implementations. Authored requests and GOLDEN stay in each family's `inputs_and_golden.yaml`.
+The earlier implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Versionless latest observations live beside retained captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`. Batch and jail variants remain separate implementations. Authored cases and their frozen request library stay in each family's `inputs_and_golden.yaml`.
 
-No backfill is needed. Keep all 689 existing versioned v2 capture files, all 12 authored input/GOLDEN files, and existing legacy archives unchanged at their original paths. Versioned v2 files will be removed in later PRs. Historical moves, archive expansion, and new compression are deferred.
+No backfill is needed. Historical versioned captures and legacy archives retain their original bytes and paths. Current authored requests and GOLDEN retain their values through storage normalization. Versioned capture removal, historical moves, and archive expansion remain separate work.
 
-Each latest file contains complete records and sealed request bindings, so it needs no historical parent. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
+Each latest capture contains complete observation records and resolves sealed request references through its current family file. These files require no historical parent. All selectable conformance versions and capture filenames use plain version numbers, including local candidates and published latest/history reports. Source hashes and Git revisions belong only in provenance metadata; they must never appear as version suffixes or selectable versions. The writer, source readers, native publisher, browser model, and publication qualification reject such selections. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
 
 ### Generate the latest or history report
 

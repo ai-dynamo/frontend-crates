@@ -727,7 +727,7 @@ fn request_json(node: &Node) -> Result<String> {
     })
 }
 
-fn request_digest(node: &Node) -> Result<String> {
+pub(crate) fn request_digest(node: &Node) -> Result<String> {
     Ok(sha256(request_json(node)?.as_bytes()))
 }
 
@@ -1016,6 +1016,29 @@ fn observation(node: &Node) -> Result<()> {
     Ok(())
 }
 
+fn capture_provenance(provenance: &Node, implementation: &str, version: &str) -> Result<()> {
+    ensure!(
+        !version.contains("+source.") || provenance.field("status")?.string()? == "captured",
+        "qualified capture identity requires captured origin"
+    );
+    match provenance.field("status")?.string()? {
+        "captured" => {
+            fields(provenance, &["status", "origin"], &[])?;
+            origin(provenance.field("origin")?, Some(version))?;
+        }
+        "legacy" => {
+            fields(provenance, &["status", "captured_with"], &[])?;
+            let with = provenance.field("captured_with")?;
+            ensure!(
+                with.mapping()?.len() == 1 && with.field(implementation)?.string()? == version,
+                "legacy provenance mismatch"
+            );
+        }
+        _ => anyhow::bail!("invalid capture provenance"),
+    }
+    Ok(())
+}
+
 pub fn capture(node: &Node, authored: &Node, implementation: &str, version: &str) -> Result<()> {
     capture_with_proof_requests(node, authored, implementation, version, None)
 }
@@ -1039,21 +1062,7 @@ fn capture_with_proof_requests(
         &["parent", "execution_proof"],
     )?;
     let provenance = node.field("provenance")?;
-    match provenance.field("status")?.string()? {
-        "captured" => {
-            fields(provenance, &["status", "origin"], &[])?;
-            origin(provenance.field("origin")?, Some(version))?;
-        }
-        "legacy" => {
-            fields(provenance, &["status", "captured_with"], &[])?;
-            let with = provenance.field("captured_with")?;
-            ensure!(
-                with.mapping()?.len() == 1 && with.field(implementation)?.string()? == version,
-                "legacy provenance mismatch"
-            );
-        }
-        _ => anyhow::bail!("invalid capture provenance"),
-    }
+    capture_provenance(provenance, implementation, version)?;
     let document = node.field("document")?;
     document.mapping()?;
     ensure!(
@@ -1188,21 +1197,7 @@ pub fn resolved_snapshot<'a>(
         "invalid Unified snapshot schema"
     );
     let provenance = node.field("provenance")?;
-    match provenance.field("status")?.string()? {
-        "captured" => {
-            fields(provenance, &["status", "origin"], &[])?;
-            origin(provenance.field("origin")?, Some(version))?;
-        }
-        "legacy" => {
-            fields(provenance, &["status", "captured_with"], &[])?;
-            let with = provenance.field("captured_with")?;
-            ensure!(
-                with.mapping()?.len() == 1 && with.field(implementation)?.string()? == version,
-                "legacy provenance mismatch"
-            );
-        }
-        _ => anyhow::bail!("invalid snapshot provenance"),
-    }
+    capture_provenance(provenance, implementation, version)?;
     let document = node.field("document")?;
     document.mapping()?;
     ensure!(
@@ -1391,6 +1386,17 @@ pub fn load_history(
         );
         let bytes = verified(root, resource)?;
         let raw = yaml::load_str(std::str::from_utf8(&bytes)?)?;
+        let raw = if crate::normalization::is_normalized(&raw) {
+            let input_path = format!("{STORE}/families/{family}/inputs_and_golden.yaml");
+            let input = admission
+                .index
+                .get(&input_path)
+                .context("missing normalized request library")?;
+            let bytes = verified(root, input)?;
+            crate::normalization::snapshot(&raw, &yaml::load_str(std::str::from_utf8(&bytes)?)?)?
+        } else {
+            raw
+        };
         if raw.get("schema_version") == Some(&Node::Int(2.into())) {
             let records = resolved_snapshot(&raw, authored, family, implementation, version)
                 .with_context(|| member.to_string())?;

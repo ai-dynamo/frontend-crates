@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
+from capture_versions import capture_release_sort_key
 import ci_coverage
 import capture_sources
 import unified_archives
@@ -300,7 +301,7 @@ def test_startup_publication_is_content_addressed_and_default_scoped(published_v
         assert not (site / "conformance" / path).exists()
     reference = catalog["metadata"]["selection_policy"]["unified"]["reference"]
     candidates = [candidate for candidate in catalog["sources"]["candidates"] if candidate["implementation"] == reference]
-    selected = max(candidates, key=lambda candidate: tuple(int(part) for part in candidate["version"].split(".")))
+    selected = max(candidates, key=lambda candidate: capture_release_sort_key(candidate["version"]))
     families = selected["native_unified_families" if reference == "dynamo_v2" else "capture_families"]
     defaults = [resource for resource in catalog["sources"]["unified"] if (resource["kind"] == "inputs-and-golden" and resource["family"] in families) or (resource["implementation"] == reference and resource["version"] == selected["version"])]
     default_packs = {}

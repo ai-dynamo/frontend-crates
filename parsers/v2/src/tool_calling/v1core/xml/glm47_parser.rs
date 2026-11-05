@@ -457,7 +457,10 @@ fn get_param_schema_type<'a>(
     if schema_has_type(schema, param, "string", raw) {
         return Some("string");
     }
-    if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
+    if let Some(schema_type) = param.get("type").and_then(Value::as_str)
+        && (crate::tool_calling::arguments::schema::types::categorize_type(schema_type).is_none()
+            || schema_has_type(schema, param, schema_type, raw))
+    {
         return Some(schema_type);
     }
     // Select a scalar hint from a union using the JSON value, not branch order.
@@ -841,7 +844,7 @@ mod tests {
     }
 
     #[test]
-    fn branching_reference_cycles_exhaust_a_shared_budget() {
+    fn branching_reference_cycles_stop_before_expanding_a_shared_budget() {
         let reference = serde_json::json!({"$ref": "#/$defs/Cycle"});
         let schema = serde_json::json!({
             "$defs": {"Cycle": {"anyOf": vec![reference.clone(); 8]}},
@@ -859,7 +862,7 @@ mod tests {
             ),
             None
         );
-        assert_eq!(remaining, 0);
+        assert!(remaining > 0 && remaining < 64);
     }
 
     #[test]

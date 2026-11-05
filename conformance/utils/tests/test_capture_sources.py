@@ -36,6 +36,24 @@ def pin_history(root):
     return {"schema": 1, "source_revision": "a" * 40, "inventory_sha256": sources.digest(data)}
 
 
+@pytest.mark.parametrize("qualifier", ["+source." + "a" * 64, "+sha.abc", "+local"])
+def test_current_selection_rejects_source_hashes(tmp_path, qualifier):
+    family = tmp_path / sources.STORE / "families/gemma4"
+    family.mkdir(parents=True)
+    version = "0.9.7" + qualifier
+    row = {"surface": "unified", "family": "gemma4", "implementation": "dynamo_v2",
+           "mode": "unified", "version": version,
+           "source": f"{sources.STORE}/families/gemma4/dynamo_v2-{version}.yaml"}
+    body = b"records: {}\n"
+    with pytest.raises(ValueError, match="invalid Unified capture version"):
+        sources.selected_bytes(body, row, [])
+    # Simulate a malformed preexisting header independently of the guarded writer.
+    header = {**row, "payload_sha256": sources.digest(body), "lineage": []}
+    (family / "dynamo_v2.yaml").write_bytes(b"capture_selection: " + sources.encoded(header).rstrip(b"\n") + b"\n" + body)
+    with pytest.raises(ValueError, match="invalid Unified capture version"):
+        sources.current(tmp_path)
+
+
 @pytest.mark.parametrize("compressed", [False, True])
 def test_retained_inventory_keeps_provenance_and_version_archives(tmp_path, compressed):
     store = tmp_path / sources.STORE
@@ -1002,6 +1020,16 @@ def test_latest_preparation_uses_the_copied_manifest(split_evidence, tmp_path, m
     assert root_reads == 1
     monkeypatch.setattr(sources, "read", original_read)
     sources.verify_prepared(view)
+
+
+@pytest.mark.parametrize("mode", ["batch", "stream", "reasoning", "batch-on-stream"])
+@pytest.mark.parametrize("version", ["0.9.7+source." + "a" * 64, "Dynamo parser v2"])
+def test_capture_writer_rejects_non_version_selections(split_evidence, mode, version):
+    root, history, capture, _path = split_evidence
+    before = sources.current(root)
+    with pytest.raises(ValueError, match="invalid Unified capture version"):
+        publish_current_capture.publish(root, history, capture, "demo", "dynamo_v2", version, mode)
+    assert sources.current(root) == before
 
 
 @pytest.mark.parametrize("mode", ["batch", "stream", "reasoning", "batch-on-stream"])
