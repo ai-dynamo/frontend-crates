@@ -35,9 +35,9 @@ fn commentary_block_regex() -> &'static Regex {
         // Name is `[\w.\-]+` (alphanumeric / dot / hyphen / underscore).
         // Between name and `<|message|>` we tolerate optional
         // `<|constrain|>json`, bare `code`, or nothing (non-greedy `.*?`).
-        // Both an assistant handoff and an assistant turn end can close a directed call.
+        // Consume complete JSON strings before considering either action stop.
         Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+).*?<\|message\|>(?P<args>.*?)<\|(?:call|return)\|>",
+            r#"(?s)(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+).*?<\|message\|>(?P<args>(?:"(?:\\.|[^"\\])*"|[^"]|")*?)<\|(?:call|return)\|>"#,
         )
         .expect("commentary block regex")
     })
@@ -278,6 +278,7 @@ fn contains_harmony_message_boundary(text: &str) -> bool {
     ["<|start|>", "<|end|>", "<|channel|>", "<|message|>"]
         .iter()
         .any(|marker| text.contains(marker))
+        && serde_json::from_str::<Value>(text).is_err()
 }
 
 /// Extract calls via regex when harmony's strict tokenizer rejects the input
@@ -619,6 +620,24 @@ mod tests {
         let (name, arguments) = extract_name_and_args(calls[0].clone());
         assert_eq!(name, "lookup");
         assert_eq!(arguments, serde_json::json!({"city": "Paris"}));
+    }
+
+    #[tokio::test]
+    async fn test_harmony_end_markers_inside_json_strings_are_arguments() {
+        let arguments = serde_json::json!({
+            "text": "<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|> \\\"quoted\\\""
+        });
+        for ending in ["<|call|>", "<|return|>"] {
+            let text =
+                format!("<|channel|>commentary to=functions.lookup<|message|>{arguments}{ending}");
+            let (calls, _) = parse_tool_calls_harmony_complete(&text, &Default::default(), None)
+                .await
+                .unwrap();
+            assert_eq!(calls.len(), 1, "ending={ending}");
+            let (name, actual) = extract_name_and_args(calls[0].clone());
+            assert_eq!(name, "lookup");
+            assert_eq!(actual, arguments);
+        }
     }
 
     #[tokio::test]
