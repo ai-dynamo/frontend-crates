@@ -3448,6 +3448,25 @@ requests:
     - 5
     - 7
     finish_step: true
+  396a4eb1d783857239a86bf77d68c892bd8dc7cd56903d190f4ead9c30b0f175:
+    input: '`load_config`''some <|close|>think<|sep|> marker'' stays quoted.<|close|>think<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 4
+    - 1
+    - 21
+    - 22
+    - 21
+    - 80
   3aba9d5b357d8e800cd3ab65f80ed3f9f8218053fdcb2caa2b6b62acd263f3c1:
     input: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="g" index="2"<|sep|><|open|>argument key="y" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_cbf47ccf5fd2ef00
@@ -5473,6 +5492,25 @@ requests:
     - 5
     - 7
     finish_step: true
+  75e288077ed4452475ea664d928662b54d4a2d524014fa70c2f04279e25c2ae0:
+    input: '`load_config`''s_name <|close|>think<|sep|> marker'' stays quoted.<|close|>think<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 6
+    - 1
+    - 21
+    - 22
+    - 21
+    - 80
   761f8e879fde5e890123241fd77a5fefe982a20364b85f528b3b0b4fc884a5b6:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>{"x":1}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_a59dec8969ac978b
@@ -6669,6 +6707,22 @@ requests:
     - 5
     - 7
     finish_step: true
+  9aa8ad886efb69aa70ae2951bc432bb0d283ecab6ca3b10cf40efb4e4464ee18:
+    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+      <|close|>think<|sep|>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 1
+    - 45
+    - 21
+    - 57
   9ba4b0c640c8d879c524ec1a051f40129a927191d91a0d279599863b9970afa9:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>auto<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_799032ba2fa9936f
@@ -6964,6 +7018,26 @@ requests:
     - 5
     - 7
     finish_step: true
+  a3ca6a73e2bc4f3c40a9ec322f9219e98b06b333815b23fd186262ca9a454817:
+    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+      <|close|>think<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 1
+    - 45
+    - 21
+    - 186
+    - 80
   a4a35ed9789677e2f0732c169c21eb2bacb5d5e5d29f6e73f7833f0abeb0555e:
     input: '<|open|>think<|sep|>Check weather.<|close|>think<|sep|><|open|>response<|sep|>
 
@@ -9552,6 +9626,22 @@ requests:
     - 8
     - 7
     finish_step: true
+  c80fed84e4346e2af78044070d72d40d56524b729d5a042ec825e1adb03f8d1a:
+    input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+      <|close|>think<|sep|>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 1
+    - 45
+    - 21
+    - 57
   c9ab4436eaf7e42b898826713fa686d684f5b9bdd3fa63abcec17100be91fe09:
     input: <|open|>tools<|sep|><|open|>call tool="log" index="1"<|sep|><|open|>argument key="note" type="string"<|sep|><|open|>think<|sep|>reconsider<|close|>think<|sep|><|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_cbf47ccf5fd2ef00
@@ -10722,6 +10812,26 @@ requests:
     - 5
     - 7
     finish_step: true
+  ea0581466951022dbfa8eb19fee6e2d23d4c109913172ad7064c3bd814581698:
+    input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+      <|close|>think<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 1
+    - 45
+    - 21
+    - 186
+    - 80
   eab7687f7e03cc173489e0c99710d874a07cc7816e544ccec3824a80e0ab221c:
     input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|>
     tools: tools_cbf47ccf5fd2ef00
@@ -11076,6 +11186,62 @@ requests:
     - 7
     - 14
     finish_step: true
+  f2e602482e3fc23f472ad72eb804a05ac933618f97d5b0fcb6fd2505f8ea9469:
+    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+      <|close|>think<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 1
+    - 45
+    - 101
+  f33af7c24557d9dd6247c82f011ef1a9980222258e1592e452f811124fa68aeb:
+    input: '"load_config"''s_name <|close|>think<|sep|> marker'' stays quoted.<|close|>think<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 6
+    - 1
+    - 21
+    - 22
+    - 21
+    - 80
+  f3728c7aeb60fe75e7d7d4662caeeb29d213270eaccd1bf1b1cf965b0a718208:
+    input: '"load_config"''some <|close|>think<|sep|> marker'' stays quoted.<|close|>think<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 4
+    - 1
+    - 21
+    - 22
+    - 21
+    - 80
   f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1:
     init:
       starting_state: None
@@ -11191,6 +11357,24 @@ requests:
     - 5
     - 7
     finish_step: true
+  f61d81e650340a0d36f9f7453767f573dc96425cd20531e02f55f24a7f208fc4:
+    input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+      <|close|>think<|sep|><|open|>response<|sep|>
+
+
+      I''ve found the bug in `app.py`.<|close|>response<|sep|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 13
+    - 1
+    - 1
+    - 45
+    - 101
   f81e008ada98ebcaffd230e8a7bbf36a95dfd0e4f0cfa0a81a1a858cff08f57d:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>"hello"<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_d7ee0d5304d6d110
@@ -16587,9 +16771,9 @@ cases:
         - humidity
         count: 5
   schema_declared_integer_boolean_number_order:
-    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     request: 9ed04aa9935c42092da3b4aa1b56de217cf5ada64dc8ec8d405b2ea7c290198f
     golden:
     - kind: tool_call
@@ -16597,3 +16781,177 @@ cases:
       arguments:
         value: 1
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+  quoted_name_backtick_possessive_reasoning:
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_backtick_possessive_reasoning
+    request: f2e602482e3fc23f472ad72eb804a05ac933618f97d5b0fcb6fd2505f8ea9469
+    golden:
+    - kind: reasoning
+      text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+        '
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'
+  quoted_name_backtick_possessive_then_call:
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_backtick_possessive_then_call
+    request: a3ca6a73e2bc4f3c40a9ec322f9219e98b06b333815b23fd186262ca9a454817
+    golden:
+    - kind: reasoning
+      text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'
+  quoted_name_backtick_possessive_guided:
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.34-quoted_name_backtick_possessive_guided
+    request: 9aa8ad886efb69aa70ae2951bc432bb0d283ecab6ca3b10cf40efb4e4464ee18
+    golden:
+    - kind: reasoning
+      text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: '`Paris`'
+  quoted_name_backtick_nonpossessive_some:
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_some
+    request: 396a4eb1d783857239a86bf77d68c892bd8dc7cd56903d190f4ead9c30b0f175
+    golden:
+    - kind: reasoning
+      text: '`load_config`''some <|close|>think<|sep|> marker'' stays quoted.'
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'
+  quoted_name_backtick_nonpossessive_s_name:
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
+    request: 75e288077ed4452475ea664d928662b54d4a2d524014fa70c2f04279e25c2ae0
+    golden:
+    - kind: reasoning
+      text: '`load_config`''s_name <|close|>think<|sep|> marker'' stays quoted.'
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'
+  quoted_name_double_quote_possessive_reasoning:
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_double_quote_possessive_reasoning
+    request: f61d81e650340a0d36f9f7453767f573dc96425cd20531e02f55f24a7f208fc4
+    golden:
+    - kind: reasoning
+      text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+        '
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'
+  quoted_name_double_quote_possessive_then_call:
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_double_quote_possessive_then_call
+    request: ea0581466951022dbfa8eb19fee6e2d23d4c109913172ad7064c3bd814581698
+    golden:
+    - kind: reasoning
+      text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'
+  quoted_name_double_quote_possessive_guided:
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.34-quoted_name_double_quote_possessive_guided
+    request: c80fed84e4346e2af78044070d72d40d56524b729d5a042ec825e1adb03f8d1a
+    golden:
+    - kind: reasoning
+      text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: '`Paris`'
+  quoted_name_double_quote_nonpossessive_some:
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
+    request: f3728c7aeb60fe75e7d7d4662caeeb29d213270eaccd1bf1b1cf965b0a718208
+    golden:
+    - kind: reasoning
+      text: '"load_config"''some <|close|>think<|sep|> marker'' stays quoted.'
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'
+  quoted_name_double_quote_nonpossessive_s_name:
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
+    request: f33af7c24557d9dd6247c82f011ef1a9980222258e1592e452f811124fa68aeb
+    golden:
+    - kind: reasoning
+      text: '"load_config"''s_name <|close|>think<|sep|> marker'' stays quoted.'
+    - kind: text
+      text: '
+
+
+        I''ve found the bug in `app.py`.'

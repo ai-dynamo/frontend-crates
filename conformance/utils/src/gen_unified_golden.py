@@ -17,6 +17,7 @@ render -> explode -> package, exactly like every other conformance fixture shard
 Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
 import argparse
+from collections.abc import Iterator
 from functools import cache
 import json
 from copy import deepcopy
@@ -3676,6 +3677,66 @@ def _native_quoted_control_cases():
 
 
 EDGE += list(_native_quoted_control_cases())
+
+
+def _quoted_name_possessive_cases() -> Iterator[tuple]:
+    # Beam and Harmony consume control-token identities, not prose quote guesses.
+    families = sorted(UNIFIED_FAMILIES - {"beam", "gpt_oss", "qwen3_coder", "nemotron_v3"})
+    for span, quote in (("backtick", "`"), ("double_quote", '"')):
+        name = f"{quote}load_config{quote}"
+        tail = " check is fine, but `open('/tmp/x')` is not.\n"
+        reasoning = name + "'s" + tail
+        answer = "\n\nI've found the bug in `app.py`."
+        for output in ("reasoning", "then_call", "guided"):
+            inputs, chunks = {}, {}
+            for family in families:
+                closer = control_tokens(family)[1]
+                if output == "reasoning":
+                    suffix = closer + r_text(family, answer)
+                    pieces = [name, "'", "s", tail, suffix]
+                    golden = [{"kind": "reasoning", "text": reasoning}, {"kind": "text", "text": answer}]
+                elif output == "then_call":
+                    pieces = [name, "'", "s", tail, closer,
+                              r_tool(family, "get_weather", "city", "Paris", 0), r_text(family, answer)]
+                    golden = [{"kind": "reasoning", "text": reasoning},
+                              {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+                              {"kind": "text", "text": answer}]
+                else:
+                    payload = json.dumps({"name": "get_weather", "arguments": {"city": "`Paris`"}})
+                    pieces = [name, "'", "s", tail, closer, payload]
+                    golden = [{"kind": "reasoning", "text": reasoning},
+                              {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "`Paris`"}}]
+                inputs[family] = ("".join(pieces), M, M, golden)
+                chunks[family] = pieces
+            yield (
+                f"quoted_name_{span}_possessive_{output}",
+                "A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.",
+                ["I2", "I5", "I7"], [],
+                {"starting_state": "Reasoning",
+                 "tool_output_mode": "GuidedJson" if output == "guided" else "Native", "named_tool": None},
+                {"finish_reason": "stop", "input_chunks": chunks}, OnlyFamilies(inputs),
+            )
+        for word in ("some", "s_name"):
+            inputs, chunks = {}, {}
+            for family in families:
+                closer = control_tokens(family)[1]
+                prefix = name + "'" + word + " "
+                tail = " marker' stays quoted."
+                reasoning = prefix + closer + tail
+                pieces = [name, "'", word, " ", closer, tail, closer, r_text(family, answer)]
+                golden = [{"kind": "reasoning", "text": reasoning}, {"kind": "text", "text": answer}]
+                inputs[family] = ("".join(pieces), M, M, golden)
+                chunks[family] = pieces
+            yield (
+                f"quoted_name_{span}_nonpossessive_{word}",
+                "A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.",
+                ["I5", "I7"], [],
+                {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+                {"finish_reason": "stop", "input_chunks": chunks}, OnlyFamilies(inputs),
+            )
+
+
+EDGE += list(_quoted_name_possessive_cases())
 
 
 EDGE.append((
