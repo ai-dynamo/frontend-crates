@@ -221,12 +221,9 @@ impl Encoder for HuggingFaceTokenizer {
                 .with_truncation(None)
                 .expect("removing truncation cannot fail");
             trusted.with_post_processor(None::<tokenizers::processors::PostProcessorWrapper>);
-            // The ordinary tokenizer has no added vocabulary at all, so every
-            // added-token spelling in request text goes through the normalizer,
-            // pre-tokenizer and model like any other text. HF's own
-            // `encode_special_tokens` switch is not enough: it skips only
+            // No added vocabulary at all: `encode_special_tokens` skips only
             // `special: true` entries, and chat markers such as Qwen3's
-            // `<think>` and `<tool_call>` are registered `special: false`.
+            // `<think>` are `special: false`.
             let mut ordinary = trusted.clone();
             ordinary.with_added_vocabulary(AddedVocabulary::new());
             (trusted, ordinary)
