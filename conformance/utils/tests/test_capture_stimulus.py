@@ -176,7 +176,7 @@ def test_current_capture_guard_uses_the_bound_recapture_without_rewriting_histor
         reason = "did not succeed"
     else:
         result["capture_input"][corruption] = None
-        reason = "request differs"
+        reason = f"request.{corruption} must be"
     _write(tmp_path, selected.name, record)
     with pytest.raises(ValueError, match=reason):
         capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"])

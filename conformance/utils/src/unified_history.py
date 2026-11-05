@@ -72,7 +72,7 @@ CHANGE_KEY_ORDER = ("case_key", "stimulus", "observation")
 CHANGE_KEYS = set(CHANGE_KEY_ORDER)
 OBSERVATION_STATES = {"value", "error", "unavailable"}
 STIMULUS_STATES = {"ref", "inline", "partial", "error", "unavailable"}
-REQUEST_KEYS = {"input", "init", "finish_reason", "tools", "chunks"}
+REQUEST_KEYS = capture_stimulus.REQUEST_KEYS
 CAPTURE_DIRECTORY_RE = re.compile(
     rf"(?P<implementation>[a-z0-9_]+)-(?P<runtime_version>{UNIFIED_VERSION_PATTERN})"
 )
@@ -210,23 +210,6 @@ def _request_digest(request: dict) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _validate_request(request: Any, where: str) -> None:
-    request = _mapping(request, where)
-    _require_keys(request, REQUEST_KEYS, REQUEST_KEYS, where)
-    if not isinstance(request["input"], str):
-        raise ValueError(f"{where}.input must be a string")
-    if not isinstance(request["init"], dict):
-        raise ValueError(f"{where}.init must be a mapping")
-    if not isinstance(request["finish_reason"], str):
-        raise ValueError(f"{where}.finish_reason must be a string")
-    if not isinstance(request["tools"], list):
-        raise ValueError(f"{where}.tools must be a list")
-    if not isinstance(request["chunks"], list) or any(
-        not isinstance(chunk, dict) for chunk in request["chunks"]
-    ):
-        raise ValueError(f"{where}.chunks must be a list of mappings")
-
-
 def _validate_case_metadata(
     description: Any,
     policy: Any,
@@ -257,7 +240,7 @@ def _validate_stimulus(stimulus: Any, case: dict, where: str) -> None:
         if digest is not None and digest != expected:
             raise ValueError(f"{where} stimulus digest differs from the canonical request")
     elif state == "inline":
-        _validate_request(stimulus["inline"], f"{where}.inline")
+        capture_stimulus.validate_capture_input(stimulus["inline"], f"{where}.inline")
         digest = stimulus.get("semantic_sha256")
         if digest is not None and digest != _request_digest(stimulus["inline"]):
             raise ValueError(f"{where} stimulus digest differs from its inline request")
@@ -296,6 +279,7 @@ def _validate_resolved_record_contract(
 ) -> None:
     if "capture_origin" in document:
         _validate_source_origin(document["capture_origin"], f"{where}.capture_origin", source_version)
+    capture_stimulus.validate_recapture_archive(document.get("record_metadata", {}), implementation=implementation)
     if capture_stimulus.unified_record_contract(implementation, document) != "batch" or "value" not in observation:
         return
     value = observation["value"]
@@ -624,10 +608,10 @@ def _validate_family(path: Path, document: dict) -> Family:
                 owner = unified_taxonomy.scenario_for_label(alias, family=family, scenario=scenario)
                 if owner != scenario:
                     raise ValueError(f"case ID does not own scenario {scenario}: {alias}")
-            _validate_request(case["request"], f"{path}:{case_id}.request")
+            capture_stimulus.validate_capture_input(case["request"], f"{path}:{case_id}.request")
             _validate_golden(case["golden"], f"{path}:{case_id}.golden")
         elif case["request"] is not None:
-            _validate_request(case["request"], f"{path}:{case_id}.request")
+            capture_stimulus.validate_capture_input(case["request"], f"{path}:{case_id}.request")
     return Family(family, document, path)
 
 

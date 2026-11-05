@@ -302,7 +302,7 @@ def test_vllm_request_preserves_family_reasoning_initialization(family, state):
     actual = namespace["_request"]({"family": family, "init": {"starting_state": state}, "tools": []})
     expected = {"thinking": state != "Response", "enable_thinking": state != "Response"}
     if family == "minimax_m3":
-        expected["thinking_mode"] = "enabled" if state == "Reasoning" else "disabled"
+        expected["thinking_mode"] = "enabled" if state == "Reasoning" else "adaptive"
     assert actual.chat_template_kwargs == expected
 
 
