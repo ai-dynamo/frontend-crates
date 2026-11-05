@@ -5,6 +5,7 @@ pub(crate) mod beam;
 mod deepseek_dsml;
 mod glm47;
 mod harmony;
+mod hy_v4;
 mod kimi;
 mod minimax_m3;
 mod muse_spark;
@@ -19,12 +20,14 @@ pub(crate) fn unified_only_builder(family: &str) -> Option<&'static StructuralTa
     match family {
         "beam" => Some(&BEAM),
         "deepseek_v41" => Some(&DEEPSEEK_DSML_V41),
+        "hy_v4" => Some(&HY_V4),
         _ => None,
     }
 }
 pub(crate) use deepseek_dsml::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41};
 pub(crate) use glm47::GLM47;
 pub(crate) use harmony::HARMONY;
+pub(crate) use hy_v4::HY_V4;
 pub(crate) use kimi::{KIMI_K2, KIMI_K3};
 pub(crate) use minimax_m3::MINIMAX_M3;
 pub(crate) use muse_spark::MUSE_SPARK;
