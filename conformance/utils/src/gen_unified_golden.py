@@ -74,6 +74,7 @@ DOTTED_NAME_FAMILIES = frozenset({
     "gemma4",
     "glm47",
     "gpt_oss",
+    "hy_v4",
     "kimi_k2",
     "kimi_k3",
     "muse_glimmer",
@@ -108,6 +109,7 @@ GRAMMAR_NOTE = {
     "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
     "glm47": "reasoning `<think>...</think>`, tool `<tool_call>NAME<arg_key>KEY</arg_key><arg_value>VALUE</arg_value></tool_call>`.",
+    "hy_v4": "the default prompt ends with an open `<think:opensource>`, so output starts in reasoning until `</think:opensource>`; tool calls are GLM-style invokes back to back inside ONE plural block `<tool_calls:opensource><tool_call:opensource>NAME<arg_key:opensource>KEY</arg_key:opensource><arg_value:opensource>VALUE</arg_value:opensource></tool_call:opensource></tool_calls:opensource>` (non-string values are JSON, strings raw). Spec: the Hy4 chat template.",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
@@ -136,6 +138,8 @@ def r_reason(fam, text):
         return f"[THINK]{text}[/THINK]"
     if grammar == "minimax_m3":
         return f"<mm:think>{text}</mm:think>"
+    if grammar == "hy_v4":
+        return f"<think:opensource>{text}</think:opensource>"
     if grammar == "harmony" or fam == "gpt_oss":
         return _harmony_channel(fam, "analysis", text, "<|end|>")
     if fam == "beam":
@@ -325,6 +329,8 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
             for key, value in raw.items()
         )
         return f"<tool_call>{name}{params}</tool_call>"
+    if fam == "hy_v4":
+        return hy_v4_block(hy_v4_invoke(name, raw))
     if fam in MUSE_FAMILIES:
         params = "".join(
             f'<atem:parameter name="{key}">{_atem_value(raw[key]) if isinstance(value, str) and not isinstance(value, NumericLiteral) else raw[key]}</atem:parameter>\n'
@@ -346,6 +352,25 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
             else json.dumps(arguments, ensure_ascii=False))
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
+
+HY_V4_BLOCK_OPEN, HY_V4_BLOCK_CLOSE = "<tool_calls:opensource>", "</tool_calls:opensource>"
+HY_V4_INVOKE_OPEN, HY_V4_INVOKE_CLOSE = "<tool_call:opensource>", "</tool_call:opensource>"
+
+
+def hy_v4_invoke(name, raw, *, close=True):
+    """One Hy4 invoke: the name, then GLM-style key/value pairs with `:opensource` markers."""
+    params = "".join(
+        f"<arg_key:opensource>{key}</arg_key:opensource>"
+        f"<arg_value:opensource>{value}</arg_value:opensource>"
+        for key, value in raw.items()
+    )
+    return f"{HY_V4_INVOKE_OPEN}{name}{params}" + (HY_V4_INVOKE_CLOSE if close else "")
+
+
+def hy_v4_block(body, *, close=True):
+    """The plural wrapper; the Hy4 template renders every call of a turn inside one."""
+    return HY_V4_BLOCK_OPEN + body + (HY_V4_BLOCK_CLOSE if close else "")
+
 
 def qwen3_input_as_glm47(input_text):
     """Translate a Qwen-shaped edge fixture into GLM XML."""
@@ -445,6 +470,16 @@ def render_input(fam, segs):
                     tool_idx += 1
                     index += 1
                 out.append(k3_tools("".join(calls)))
+                continue
+            if fam == "hy_v4":
+                calls = []
+                while index < len(segs) and segs[index][0] == "tool":
+                    name, arguments = tool_segment(segs[index])
+                    calls.append(r_tool_arguments(fam, name, arguments, tool_idx)
+                                 .removeprefix(HY_V4_BLOCK_OPEN).removesuffix(HY_V4_BLOCK_CLOSE))
+                    tool_idx += 1
+                    index += 1
+                out.append(hy_v4_block("".join(calls)))
                 continue
             name, arguments = tool_segment(s)
             out.append(r_tool_arguments(fam, name, arguments, tool_idx))
@@ -636,6 +671,7 @@ def guided_named_invoke_prefix(fam):
         "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
         "gemma4": "call:get_weather",
         "glm47": "<tool_call>get_weather",
+        "hy_v4": "<tool_call:opensource>get_weather",
         "kimi_k2": "<|tool_call_begin|>functions.get_weather:0",
         "kimi_k3": '<|open|>call tool="get_weather"',
         "muse_glimmer": '<atem:invoke name="get_weather"',
@@ -866,6 +902,7 @@ _MIXED_CONTROL_STRINGS = {
             "gemma4": "<|tool_call> <tool_call|>",
         "gpt_oss": "<|start|> <|channel|> <|constrain|> <|message|> <|end|> <|return|> <|call|>",
             "glm47": "<tool_call> </tool_call>",
+            "hy_v4": "<tool_calls:opensource> </tool_calls:opensource> </tool_call:opensource>",
             "qwen3": "<tool_call> </tool_call> </function>",
             "kimi_k2": "<|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|>",
             "kimi_k3": k3_open("tools") + " " + k3_close("tools") + " " + k3_close("call"),
@@ -1101,10 +1138,10 @@ EDGE = [
      })),
 
     ("glm47_parameterless_call_shape_inside_argument",
-     "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
+     "GLM-style invokes (GLM 5 and Hy4): an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
      ["I7"],
      [{"kind": "tool_call", "name": "run", "arguments": {
-         "cmd": "before </tool_call><tool_call>get_weather</tool_call> after",
+         "cmd": None,
      }}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      OnlyFamilies({
@@ -1112,6 +1149,13 @@ EDGE = [
              "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>",
              D("UNSUPPORTED", "no released vLLM UnifiedParser capture for GLM 5"),
              M,
+             "before </tool_call><tool_call>get_weather</tool_call> after",
+         ),
+         # Hy4 reuses the GLM invoke grammar inside its plural block.
+         "hy_v4": (
+             r_tool("hy_v4", "run", "cmd", "before </tool_call:opensource><tool_call:opensource>get_weather</tool_call:opensource> after", 0),
+             M, M,
+             "before </tool_call:opensource><tool_call:opensource>get_weather</tool_call:opensource> after",
          ),
      })),
 
@@ -2232,7 +2276,7 @@ for _shape, _body in (
         _prefix, _visible = _guided_response_markup(_family, "self")
         _native_json_inputs[_family] = (
             _prefix.removesuffix(GUIDED_ONE_CALL)
-            + r_tool_arguments(_family, "f", {"x": json.loads(_body)}, 0, {"x": _body} if _family == "minimax_m3" else None)
+            + r_tool_arguments(_family, "f", {"x": json.loads(_body)}, 0, {"x": _body} if _family in ("minimax_m3", "hy_v4") else None)
             + GUIDED_ONE_CALL,
             GUIDED_UNSUPPORTED, M, _visible,
         )
@@ -2746,6 +2790,8 @@ def _entry(spec, fam):
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
         if fam == "muse_spark" and fam not in spec and "muse_glimmer" in spec:
             return spec["muse_glimmer"]
+        if fam == "hy_v4" and fam not in spec:
+            return _entry(spec, "glm47")
         if fam in {"deepseek_v4", "deepseek_v41", "glm47"} and fam not in spec:
             return spec["qwen3"]
         return spec[fam]
@@ -2818,6 +2864,8 @@ def malformed_json_recovery(fam):
     if fam != "kimi_k3":
         inp += "".join(r_tool(fam, "echo", "value", value, index)
                        for index, value in ((1, "é"), (2, "Café")))
+    if fam == "hy_v4":
+        inp = inp.replace(HY_V4_BLOCK_CLOSE + HY_V4_BLOCK_OPEN, "")
     return inp, golden
 
 
@@ -2846,6 +2894,7 @@ MISSING_INNER_CLOSERS_PREFIX = {
     "deepseek_v41": '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls>',
     "gemma4": '<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>',
     "glm47": "<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>",
+    "hy_v4": "<tool_calls:opensource><tool_call:opensource>get_weather<arg_key:opensource>location</arg_key:opensource><arg_value:opensource>unfinished</tool_calls:opensource>",
     "kimi_k3": '<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|>',
     "muse_glimmer": '<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name="get_weather">\n<atem:parameter name="location">unfinished</atem:function_calls><|eom|>',
     "qwen3": "<tool_call><function=get_weather><parameter=location>unfinished</tool_call>",
@@ -3477,7 +3526,7 @@ _GLM_REFERENCE_TOOLS = [{"name": "capture_payload", "parameters": {
 }}]
 EDGE.append((
     "glm47_reference_type_intersection",
-    "PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.",
+    "PR #271: GLM's argument typer, which Hy4 shares, resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.",
     ["I7"],
     [{"kind": "tool_call", "name": "capture_payload", "arguments": {
         "payload": '{"x":1}', "count": 42,
@@ -3489,8 +3538,10 @@ EDGE.append((
         '<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value>'
         '<arg_key>count</arg_key><arg_value>42</arg_value></tool_call>', M,
         M,
+    ), "hy_v4": (
+        r_tool_arguments("hy_v4", "capture_payload", {"payload": '{"x":1}', "count": "42"}, 0), M, M,
     )}),
-    {"glm47": _GLM_REFERENCE_TOOLS},
+    {"glm47": _GLM_REFERENCE_TOOLS, "hy_v4": _GLM_REFERENCE_TOOLS},
 ))
 
 
@@ -3578,6 +3629,7 @@ _NATIVE_QUOTED_CONTROL = {
     "deepseek_v41": "<｜DSML｜ calls>",
     "gemma4": "<|tool_call>",
     "glm47": "<tool_call>",
+    "hy_v4": "<tool_calls:opensource>",
     "kimi_k2": "<|tool_calls_section_begin|>",
     "kimi_k3": "<|open|>call",
     "muse_glimmer": "<|start|>assistant to=get_weather<|message|>",
@@ -4041,15 +4093,53 @@ for _scenario in EDGE:
         _per_family["minimax_m3"] = (_input, M, M, *_rest)
 
 
+# Native Hy4 spellings for the same shared edge scenarios, authored alongside the
+# shared event oracle like the M3 rows above. Inputs without an initialized state
+# receive Hy4's default-reasoning prefix in `_build_cases`.
+_HY4_WEATHER = r_tool("hy_v4", "get_weather", "city", "Paris", 0)
+_HY4_TRUNCATED = hy_v4_block(
+    hy_v4_invoke("get_weather", {"city": "Par"}, close=False).removesuffix("</arg_value:opensource>"),
+    close=False,
+)
+_HY4_LITERAL_REASON = r_reason("hy_v4", "reconsider")
+_HY4_REASON_ARGUMENT = r_tool("hy_v4", "log", "note", _HY4_LITERAL_REASON, 0)
+_HY4_NESTED_REASON = "<think:opensource>I should check. " + _HY4_WEATHER + " now answer</think:opensource>"
+_HY4_LITERAL_MARKER = "git log </tool_call:opensource> --oneline"
+_HY4_EDGE_INPUTS = {
+    "truncated_tool_eof": (r_reason("hy_v4", "ok") + _HY4_TRUNCATED,),
+    "reason_unterminated": ("<think:opensource>thinking but stream ends",),
+    "arg_marker_in_string": (r_tool("hy_v4", "run", "cmd", _HY4_LITERAL_MARKER, 0), _HY4_LITERAL_MARKER),
+    "orphan_close_after_prose": ("I will check that. </tool_calls:opensource>",),
+    "empty_args": (r_tool_arguments("hy_v4", "get_weather", {}, 0),),
+    "tool_no_close": (_HY4_WEATHER.removesuffix("</tool_calls:opensource>"),),
+    "reason_markup_in_arg": (_HY4_REASON_ARGUMENT, _HY4_LITERAL_REASON),
+    "tool_in_reason": (_HY4_NESTED_REASON,),
+    "reason_markup_in_arg_with_text": ("Logging now: " + _HY4_REASON_ARGUMENT + " done.", _HY4_LITERAL_REASON),
+    "tool_in_reason_with_text": ("Sure. " + _HY4_NESTED_REASON + " Here you go.",),
+    "two_adjacent_reason_spans": (r_reason("hy_v4", "first") + r_reason("hy_v4", "\nsecond") + "done",),
+    "prefilled_reasoning_with_tool": ("checking weather</think:opensource>" + _HY4_WEATHER,),
+    "prefilled_reasoning_then_text_then_tool": ("weighing options</think:opensource>Here's what I found: " + _HY4_WEATHER,),
+    "prefilled_reasoning_then_text": ("no tool needed</think:opensource>The answer is 42.",),
+    "prefilled_reasoning_redundant_opener": (r_reason("hy_v4", "checking weather") + r_tool("hy_v4", "get_weather", "city", "London", 0),),
+    "prefilled_reasoning_truncated": ("analyzing data</think:opensource>" + _HY4_TRUNCATED,),
+    "prefilled_response_reasoning_markers_literal": (r_reason("hy_v4", "literal") + " then a call" + _HY4_WEATHER, r_reason("hy_v4", "literal") + " then a call"),
+}
+for _scenario in EDGE:
+    _per_family = _scenario[-2] if len(_scenario) == 8 else _scenario[-1]
+    if _scenario[0] in _HY4_EDGE_INPUTS:
+        _input, *_rest = _HY4_EDGE_INPUTS[_scenario[0]]
+        _per_family["hy_v4"] = (_input, M, M, *_rest)
+
+
 DEFAULT_REASONING_CASES = [
     ("default_reasoning_without_opener", "The family starts in reasoning without an opener; the closer switches to visible Unicode content.",
      ["P5", "I5"], [{"kind": "reasoning", "text": "Check Montréal."}, {"kind": "text", "text": "雪"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({f: ("Check Montréal.</think>雪", M, M) for f in FAMILIES if _MANIFEST[f].get("default_reasoning")})),
+     OnlyFamilies({f: ("Check Montréal." + control_tokens(f)[1] + "雪", M, M) for f in FAMILIES if _MANIFEST[f].get("default_reasoning")})),
     ("default_reasoning_tool_without_closer", "Default reasoning omits both think markers; native calls interrupt and resume reasoning, preserving literal markers in arguments.",
-     ["P5", "I2", "I7"], [{"kind": "reasoning", "text": "Check."}, {"kind": "tool_call", "name": "log", "arguments": {"note": "<think>雪</think>"}}, {"kind": "reasoning", "text": "Then."}],
+     ["P5", "I2", "I7"], [{"kind": "reasoning", "text": "Check."}, {"kind": "tool_call", "name": "log", "arguments": {"note": None}}, {"kind": "reasoning", "text": "Then."}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({f: ("Check." + r_tool(f, "log", "note", "<think>雪</think>", 0) + "Then.", M, M) for f in FAMILIES if _MANIFEST[f].get("default_reasoning")})),
+     OnlyFamilies({f: ("Check." + r_tool(f, "log", "note", r_reason(f, "雪"), 0) + "Then.", M, M, r_reason(f, "雪")) for f in FAMILIES if _MANIFEST[f].get("default_reasoning")})),
 ]
 
 
@@ -4178,7 +4268,7 @@ def _structured_response_case():
     reason = "Check London météo🙂 before answering; this is prose, not JSON."
     inputs, initializations = {}, {}
     unsupported = D("UNSUPPORTED", "Parser-only peer capture does not execute structural-tag generation constraints.")
-    for family in ("gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark"):
+    for family in ("gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark", "hy_v4"):
         if family == "muse_spark":
             prefix = reason + "<|eom|><|start|>assistant to=user<|message|>"
             suffix, state, visible_prefix = "", "Reasoning", ""
@@ -4187,7 +4277,7 @@ def _structured_response_case():
             suffix, state, visible_prefix = "<|return|>", "None", ""
         else:
             visible_prefix = "\n\n" if family == "qwen3" else ""
-            prefix = reason + "</think>" + visible_prefix
+            prefix = reason + control_tokens(family)[1] + visible_prefix
             suffix, state = "", "Reasoning"
         rejected = [prefix + invalid + suffix for invalid in (
             "[]", '{"location":',
@@ -4250,11 +4340,14 @@ def _native_review_variants(scenario):
         for family in TEMPLATE_FAMILIES:
             if family == "gpt_oss":
                 continue
-            value = "2" if family in {"beam", "qwen3", "glm47", "minimax_m3"} else 2
+            value = "2" if family in {"beam", "qwen3", "glm47", "hy_v4", "minimax_m3"} else 2
             golden = [{"kind": "tool_call", "name": "run", "arguments": {}},
                       {"kind": "tool_call", "name": "not_offered", "arguments": {"x": value}}]
-            variants[family] = (r_tool_arguments(family, "run", {}, 0)
-                                + r_tool_arguments(family, "not_offered", {"x": 2}, 1), golden, M)
+            wire = (r_tool_arguments(family, "run", {}, 0)
+                    + r_tool_arguments(family, "not_offered", {"x": 2}, 1))
+            if family == "hy_v4":
+                wire = wire.replace(HY_V4_BLOCK_CLOSE + HY_V4_BLOCK_OPEN, "")
+            variants[family] = (wire, golden, M)
         return variants
     if scenario == "gpt_oss_control_marker_inside_argument_string":
         variants = {}
@@ -4526,6 +4619,107 @@ for _index, _edge in enumerate(EDGE):
     EDGE[_index] = tuple(_parts)
 
 
+_DEFAULT_REASONING_SCENARIOS = frozenset(spec[0] for spec in DEFAULT_REASONING_CASES)
+
+# Stock vLLM's `hy_v4` reasoning parser and strict batch tool extractor differ from
+# GOLDEN on these default requests. Established by running the plain-data extractors
+# of stock vLLM `ab9f51f101` (`vllm/reasoning/hy_v4_reasoning_parser.py`,
+# `vllm/tool_parsers/hy_v4_tool_parser.py`) on each authored input; no vLLM capture
+# is recorded yet. Every other default request matches GOLDEN.
+_HY4_VLLM_REASONS = {
+    "after_block": ("LOSS", "parses only the first `<tool_calls:opensource>` block and keeps only the text before it, so later text, reasoning and calls are dropped."),
+    "before_thought": ("LOSS", "`extract_reasoning` keeps only the text after the first `<think:opensource>`, so visible content before the thought is discarded."),
+    "before_thought_and_after_block": ("LOSS", "`extract_reasoning` discards everything before the first `<think:opensource>`, and only the first tool block is parsed afterwards."),
+    "call_in_thought": ("LOSS", "splits reasoning on think markers before tool extraction, so a tool block inside the open thought stays reasoning text and no call is made."),
+    "think_in_argument": ("LEAK", "splits reasoning on the think markers inside the argument value before tool extraction, so the call is lost and its closing markup leaks into content."),
+    "later_thought": ("LEAK", "ends reasoning at the first `</think:opensource>`, so a later think span stays in content as literal markup."),
+    "strict_block": ("LEAK", "rejects a tool block that is unclosed or has unbalanced tags and returns the whole output, markup included, as content."),
+    "orphan_close": ("LEAK", "keeps an orphan `</tool_calls:opensource>` in content; without a block opener the output is returned unchanged."),
+    "null": ("ARG_MISMATCH", "`_parse_value` has no null branch, so `null` under a nullable or union schema stays the string \"null\"."),
+    "schema_keywords": ("ARG_MISMATCH", "`_get_arg_schema` reads only a property's own `type`, `anyOf` or `oneOf`; `$ref`, `allOf`, `not`, `if`/`then`/`else`, `enum` and `const` are ignored, so the value stays a string."),
+    "union_order": ("ARG_MISMATCH", "`_parse_value` tries integer, number and JSON before the string branch, so a matching string constant in a union comes back typed."),
+    "float": ("ARG_MISMATCH", "`_parse_value` converts numbers with Python `float`, rounding exact decimals and turning out-of-range values into infinities."),
+}
+_HY4_VLLM_DIVERGENCES = {
+    **dict.fromkeys((
+        "trailing_text_after_tool", "text_sandwich", "text_between_calls", "narrated_calls",
+        "reason_after_tool", "reason_interleaved", "reason_tool_reason_tool_reason",
+        "reason_tool_text_reason_tool", "blank_framing_after_reasoning",
+        "blank_framing_between_calls_single_chunk", "blank_framing_prose_after_call",
+        "blank_framing_tool_only", "blank_framing_with_prose",
+    ), "after_block"),
+    **dict.fromkeys(("content_then_reason", "content_then_reason_then_tool"), "before_thought"),
+    **dict.fromkeys(("reason_between_calls", "text_reason_tool_text_reason_tool"), "before_thought_and_after_block"),
+    **dict.fromkeys(("tool_in_reason", "tool_in_reason_with_text"), "call_in_thought"),
+    **dict.fromkeys((
+        "reason_markup_in_arg", "reason_markup_in_arg_with_text",
+        "deepseek_v41_mixed_control_text_in_string", "default_reasoning_tool_without_closer",
+    ), "think_in_argument"),
+    **dict.fromkeys(("two_reason_spans", "two_adjacent_reason_spans"), "later_thought"),
+    **dict.fromkeys((
+        "tool_no_close", "truncated_tool_eof", "tool_block_never_closed_then_text",
+        "missing_inner_closers_then_valid_call", "arg_marker_in_string",
+        "glm47_parameterless_call_shape_inside_argument",
+    ), "strict_block"),
+    **dict.fromkeys(("orphan_close_after_prose", "tool_markup_only_emits_nothing"), "orphan_close"),
+    **dict.fromkeys((
+        "arg_json_null", "arg_json_null_anyof", "arg_json_null_const", "arg_json_null_nullable",
+        "arg_json_null_oneof", "arg_json_null_ref", "arg_null_mixed_labels",
+        "schema_null_union_ambiguous", "schema_nullable_string",
+        "schema_union_anyOf_null_reverse_typed", "schema_union_anyOf_null_typed",
+        "schema_union_oneOf_null_reverse_typed", "schema_union_oneOf_null_typed",
+    ), "null"),
+    **dict.fromkeys((
+        "conditional_schema_number_types", "not_keyword_type_complement",
+        "glm47_reference_type_intersection", "glm_ref_encoded_targets", "glm_ref_object",
+        "glm_ref_scalar_types", "reference_object_recursive_and_composed_types",
+        "schema_const_numeric_bare", "schema_enum_const_narrowing", "schema_enum_inferred_integer",
+        "schema_intersection_anyOf", "schema_intersection_oneOf",
+        "schema_ref_union_anyOf_integer", "schema_ref_union_oneOf_integer",
+    ), "schema_keywords"),
+    **dict.fromkeys((
+        "schema_integer_const_ambiguous", "schema_object_const_union",
+        "schema_type_array_string_integer",
+    ), "union_order"),
+    **dict.fromkeys((
+        "arg_numeric_14_large_decimal", "arg_numeric_14_large_exponent",
+        "arg_numeric_15_exponent", "arg_numeric_15_negative", "arg_numeric_15_quarter",
+        "arg_numeric_15_round_down", "arg_numeric_15_round_up", "arg_numeric_15_small",
+        "arg_numeric_nested_exact", "arg_numeric_overflow_siblings_negative",
+        "arg_numeric_overflow_siblings_positive",
+    ), "float"),
+}
+
+
+def _apply_hy_v4_vllm_expectations(cases):
+    for case_id, case in cases.items():
+        if _init_is_request_scoped(case["init"]):
+            continue
+        reason = _HY4_VLLM_DIVERGENCES.get(case_id[len("UNIFIED."):].rsplit(".", 1)[0])
+        if reason is None:
+            case["expect"]["vllm"] = M
+            continue
+        verdict, note = _HY4_VLLM_REASONS[reason]
+        case["expect"]["vllm"] = D(verdict, "stock vLLM hy_v4 " + note)
+
+
+def _apply_default_response_prefix(cases, fam):
+    """Close a default-reasoning family's implicit thought before shared Native inputs.
+
+    The default-reasoning scenarios themselves exercise the implicit thought and
+    keep their authored bytes.
+    """
+    for case_id, case in cases.items():
+        scenario = case_id[len("UNIFIED."):].rsplit(".", 1)[0]
+        if scenario in _DEFAULT_REASONING_SCENARIOS:
+            continue
+        if (case.get("init") or {}).get("starting_state", "None") != "None":
+            continue
+        case["input"] = default_response_prefix(fam) + case["input"]
+        if "input_chunks" in case:
+            case["input_chunks"][0] = default_response_prefix(fam) + case["input_chunks"][0]
+
+
 def build_cases(fam):
     grammar = _MANIFEST[fam].get("grammar")
     if grammar is None:
@@ -4589,6 +4783,10 @@ def _build_cases(fam):
             "finish_reason": "stop",
         }
     cases.update(_build_edge_cases(fam, EDGE))
+    if _MANIFEST[fam].get("default_reasoning"):
+        _apply_default_response_prefix(cases, fam)
+    if fam == "hy_v4":
+        _apply_hy_v4_vllm_expectations(cases)
     if fam == "minimax_m3":
         cases[f"UNIFIED.guided_json_native_markup_only.{fam}"]["description"] = (
             "M3 emits a complete native tool call despite JSON guidance. The parser "
@@ -4633,6 +4831,9 @@ def _preserve_historical_requests(cases, family):
     # repository context keeps history tied to the checkout, not that copy.
     source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
     historical_path = source_root / f"conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
+    if not historical_path.is_file():
+        # A newly registered family has no published request bytes yet.
+        return
     historical = _historical_cases(historical_path.read_text())
     cases_by_scenario = {
         case_id.removeprefix("UNIFIED.").rsplit(".", 1)[0]: case

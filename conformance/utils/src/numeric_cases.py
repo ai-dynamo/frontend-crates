@@ -74,7 +74,7 @@ _STRING_FALLBACK_LABELS = {label for _, label, _, _, expected in NUMERIC_VARIANT
                          if expected.startswith('"')}
 _NUMERIC_GROUPS = {label: "7-14.string" if label in _STRING_FALLBACK_LABELS
                   else label.split(".", 1)[0] for _, label, *_ in NUMERIC_VARIANTS}
-SCHEMA_DIRECTED_FAMILIES = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"}
+SCHEMA_DIRECTED_FAMILIES = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "hy_v4", "minimax_m3"}
 NUMERIC_SCHEMA_DIRECTED_FAMILIES = SCHEMA_DIRECTED_FAMILIES | {"beam", "nemotron_v3"}
 
 
@@ -88,10 +88,10 @@ def applicable(family, label):
 
 
 def numeric_schema(family, label, schema):
-    # The original Qwen/M2 union probes are immutable. GLM, M3, Beam, and
+    # The original Qwen/M2 union probes are immutable. GLM, Hy4, M3, Beam, and
     # Nemotron prefer strings in that union, so numeric-fidelity probes require
     # an integer alone for those families.
-    if numeric_group(label) == "7-14" and family in {"glm47", "minimax_m3", "beam", "nemotron_v3"} and schema.get("type") == ["integer", "string"]:
+    if numeric_group(label) == "7-14" and family in {"glm47", "hy_v4", "minimax_m3", "beam", "nemotron_v3"} and schema.get("type") == ["integer", "string"]:
         return {"type": "integer"}
     return schema
 
@@ -103,7 +103,7 @@ def numeric_description(label):
 def numeric_expected(family, label, raw, expected):
     # These schema-directed parsers normalize integral tokens; the independent
     # decimal oracle still checks their exact value.
-    if numeric_group(label) == "7-14" and family in {"qwen3", "qwen3_coder", "minimax_m2", "glm47"}:
+    if numeric_group(label) == "7-14" and family in {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "hy_v4"}:
         return expected
     if numeric_group(label) == "7-14":
         return raw

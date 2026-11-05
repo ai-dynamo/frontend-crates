@@ -198,7 +198,7 @@ fn structural_response_case_checks_the_schema_before_parsing() {
     families.sort();
     assert_eq!(
         families,
-        ["deepseek_v4", "glm47", "gpt_oss", "muse_spark", "qwen3"]
+        ["deepseek_v4", "glm47", "gpt_oss", "hy_v4", "muse_spark", "qwen3"]
     );
 }
 
@@ -599,6 +599,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "gemma4",
         "glm47",
         "gpt_oss",
+        "hy_v4",
         "kimi_k2",
         "kimi_k3",
         "muse_glimmer",
