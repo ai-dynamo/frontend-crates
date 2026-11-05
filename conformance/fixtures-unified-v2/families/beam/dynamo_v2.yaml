@@ -1,4 +1,4 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","version":"0.9.12"}],"mode":"unified","payload_sha256":"c2fd6dad47a8e9c35a0213dcd33b81f2a6361325400c6cd39e63b56072ae50cc","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","surface":"unified","version":"0.9.12"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","version":"0.9.12"}],"mode":"unified","payload_sha256":"4120fc52bacabaf06565b34101cc30fa0367cd5c750a82812433b3cae8a064fb","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","surface":"unified","version":"0.9.12"}
 document:
   mode: unified
 schema_version: 3
@@ -2467,7 +2467,11 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "before <rfl:parameter name=\"x\">\né\U0001F642<par{value}\n</rfl:parameter> after"
+        text: 'before <rfl:parameter name="x">
+
+          é🙂<par{value}
+
+          </rfl:parameter> after'
       - kind: tool_call
         name: get_weather
         arguments: '{"city": "Paris"}'
@@ -2485,7 +2489,9 @@ records:
           text: <rfl:parameter name="x">
       - expected:
         - kind: reasoning
-          text: "\né\U0001F642"
+          text: '
+
+            é🙂'
       - expected:
         - kind: reasoning
           text: '<par{value}
@@ -3486,7 +3492,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -3522,7 +3528,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4230,7 +4236,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4266,7 +4272,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4319,7 +4325,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4355,7 +4361,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4665,7 +4671,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4701,7 +4707,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4765,7 +4771,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4810,7 +4816,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -5506,7 +5512,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -5543,7 +5549,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -5580,7 +5586,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -5617,7 +5623,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -6679,7 +6685,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -6956,7 +6962,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -8670,7 +8676,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -8706,7 +8712,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -8790,7 +8796,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -8835,7 +8841,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -9293,7 +9299,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -9320,7 +9326,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
