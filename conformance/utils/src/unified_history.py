@@ -699,7 +699,7 @@ def _validate_capture_file(
     path: Path,
     document: dict,
     families: dict[str, Family],
-    *, resource_index=None, proof_requests=None, read_yaml=load_yaml,
+    *, resource_index=None, proof_requests=None, read_yaml=load_yaml, defer_proof_membership=False,
 ) -> tuple[str, str, str, dict]:
     parent = document.get("parent")
     if "parent" in document and parent is None:
@@ -766,9 +766,10 @@ def _validate_capture_file(
         requests = _mapping(proof["requests"], f"{path}.execution_proof.requests")
         if not requests or any(not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None for digest in requests.values()):
             raise ValueError(f"execution proof requires sealed request digests: {path}")
-        expected = proof_requests if proof_requests is not None else {key: _request_digest(case["request"]) for key, case in families[family_name].cases.items() if case.get("lifecycle", "active") != "retired"}
-        if not typed_equal(requests, expected):
-            raise ValueError(f"execution proof request membership mismatch: {path}")
+        if not defer_proof_membership:
+            expected = proof_requests if proof_requests is not None else {key: _request_digest(case["request"]) for key, case in families[family_name].cases.items() if case.get("lifecycle", "active") != "retired"}
+            if not typed_equal(requests, expected):
+                raise ValueError(f"execution proof request membership mismatch: {path}")
     shared_document = _mapping(capture["document"], f"{path}.document")
     repeated = set(DOCUMENT_DERIVED_KEYS) & shared_document.keys()
     if repeated:
@@ -948,7 +949,9 @@ def _validate_complete_snapshot(path: Path, snapshot: dict, family: Family,
             if "ref" not in stimulus and "inline" not in stimulus:
                 raise ValueError(f"execution proof requires a complete request: {path}:{key}")
             executed[key] = stimulus.get("semantic_sha256")
-        _validate_capture_file(path, proof_capture, {family.name: family}, proof_requests=executed)
+        # Latest snapshots have versionless filenames; proof identity is the selected release.
+        proof_path = path.with_name(f"{implementation}-{version}.yaml") if path.stem == implementation else path
+        _validate_capture_file(proof_path, proof_capture, {family.name: family}, proof_requests=executed)
 
 
 def _validate_history(
@@ -994,6 +997,18 @@ def _validate_history(
             raise ValueError(
                 f"document override has no observation in {capture_paths[capture_id]}: {missing}"
             )
+        if "execution_proof" in capture:
+            # New authored cases cannot expand an older execution's frozen request set.
+            executed = {}
+            for key, record in state.items():
+                if family.cases[key].get("lifecycle", "active") == "retired":
+                    continue
+                stimulus = record["stimulus"]
+                if "inline" not in stimulus and "ref" not in stimulus:
+                    raise ValueError(f"execution proof requires a complete request: {capture_paths[capture_id]}:{key}")
+                executed[key] = _request_digest(stimulus["inline"] if "inline" in stimulus else family.cases[key]["request"])
+            document = {key: value for key, value in capture.items() if key != "runtime_version"}
+            _validate_capture_file(capture_paths[capture_id], document, {family.name: family}, proof_requests=executed)
         if snapshot_callback is not None:
             snapshot_callback(history, capture_id, state)
     return history
@@ -1066,7 +1081,7 @@ def _load_family(item, snapshot_callback=None, *, external_captures=None, docume
             path,
             document,
             {family.name: family},
-            resource_index=resources, read_yaml=read_yaml,
+            resource_index=resources, read_yaml=read_yaml, defer_proof_membership=True,
         )
         if capture_family != family_name:
             raise ValueError(f"capture family differs from directory: {path}")
