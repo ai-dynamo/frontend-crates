@@ -703,7 +703,9 @@ impl HfTokenizerConfigJsonFormatter {
                         now.format(format).to_string(),
                     ))
                 });
-                context! { ..ctx, strftime_now => strftime_now }
+                // `context!` allows the `..spread` form only as the final
+                // element, so the pinned binding goes first.
+                context! { strftime_now => strftime_now, ..ctx }
             }
             None => ctx,
         };
