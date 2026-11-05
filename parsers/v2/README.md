@@ -66,6 +66,14 @@ Tool updates carry a stable `tool_index`, optional name, raw `arguments` fragmen
 
 Provisional updates do not authorize execution. The serving layer must validate tool availability, authorization, schema, and call policy.
 
+## Quote handling compatibility
+
+Shared prose scanners normally keep control markers inside balanced single quotes, double quotes, or backticks as literal text. Set `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING=1` before starting the process to disable this protection. The values `1`, `true`, `on`, and `yes` enable the option, case-insensitively; an unset variable, `0`, or any other value retains the default behavior.
+
+The setting is read on first use of the shared prose quote tracker and cached for the process. It applies to every parser using that tracker, including Unified and tool-only entry points; it cannot be selected per request or family. Parsers with their own control-token rules, such as Beam and Harmony, retain those rules.
+
+With the option enabled, a quoted reasoning closer such as `"</think>"` can end reasoning, and a quoted complete tool call can emit a tool-call event. Quotes and markers inside an actual tool argument remain argument data under that family's grammar. This option matches the first-delimiter quote policy used by stock SGLang's Qwen3 and DeepSeek-R1 reasoning parsers; it does not establish full parser parity or guarantee training/serving token round trips.
+
 ## Numeric values and Serde consumers
 
 The default build keeps `serde_json` numbers compatible with independent Serde serializers such as Pythonizer, MessagePack, and YAML. Parser argument deltas and `tool_arguments_raw()` preserve exact numeric JSON tokens, including large integers, fractions, and exponents, through the shared raw-argument representation. `UnifiedEvent.arguments` is a lossy `serde_json::Value` projection; use the raw accessor for serving exact argument text.
