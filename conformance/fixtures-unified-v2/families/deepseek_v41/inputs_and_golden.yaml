@@ -16300,7 +16300,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
-    historical_ids: [UNIFIED.7-conditional_schema_number_types]
+    historical_ids:
+    - UNIFIED.7-conditional_schema_number_types
     request:
       input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="amount" string="false">21.5</｜DSML｜ parameter><｜DSML｜ parameter name="retries" string="false">37</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       init:
@@ -16354,7 +16355,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
-    historical_ids: [UNIFIED.7-not_keyword_type_complement]
+    historical_ids:
+    - UNIFIED.7-not_keyword_type_complement
     request:
       input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">-2500</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       init:
@@ -16399,7 +16401,8 @@ cases:
     policy:
     - I7
     display_id: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
-    historical_ids: [UNIFIED.7-reference_object_recursive_and_composed_types]
+    historical_ids:
+    - UNIFIED.7-reference_object_recursive_and_composed_types
     request:
       input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="category" string="false">{"label":"Garden Tools","children":[]}</｜DSML｜ parameter><｜DSML｜ parameter name="tree" string="false">{"label":"root","children":[{"label":"leaf","children":[]}]}</｜DSML｜ parameter><｜DSML｜ parameter name="retries" string="false">37</｜DSML｜ parameter><｜DSML｜ parameter name="dry_run" string="false">false</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       init:
@@ -16474,3 +16477,321 @@ cases:
               children: []
           retries: 37
           dry_run: false
+  schema_enum_inferred_integer:
+    lifecycle: active
+    scenario: schema_enum_inferred_integer
+    description: 'Schema probe enum_inferred_integer: independently authored value 2 under {"enum": [1, 2, 4]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              enum:
+              - 1
+              - 2
+              - 4
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 2
+  schema_const_numeric_bare:
+    lifecycle: active
+    scenario: schema_const_numeric_bare
+    description: 'Schema probe const_numeric_bare: independently authored value 3 under {"const": 3}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-constants-const_numeric_bare
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              const: 3
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 3
+  schema_enum_const_narrowing:
+    lifecycle: active
+    scenario: schema_enum_const_narrowing
+    description: 'Schema probe enum_const_narrowing: independently authored value 1 under {"enum": [1, "auto"], "const": 1}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_const_narrowing
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              enum:
+              - 1
+              - auto
+              const: 1
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 1
+  missing_inner_closers_then_valid_call:
+    lifecycle: active
+    scenario: missing_inner_closers_then_valid_call
+    description: 'The first call''s argument value is missing its inner closers (Qwen3: </parameter> and </function>) but keeps the outer call close; a complete get_weather(location=Paris) follows. Deliver the entire native input in one push, then finish. Reject the incomplete call and return only the complete one.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-missing_inner_closers_then_valid_call
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: Paris
+  enum_contradicting_declared_type:
+    lifecycle: active
+    scenario: enum_contradicting_declared_type
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="metrics" string="false">["temperature","humidity"]</｜DSML｜ parameter><｜DSML｜ parameter name="count" string="false">5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: capture_payload
+        parameters:
+          type: object
+          properties:
+            metrics:
+              type: array
+              items:
+                type: string
+              enum:
+              - temperature
+              - humidity
+              - co2
+            count:
+              type: integer
+              enum:
+              - auto
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="metrics" string="false">["temperature","humidity"]</｜DSML｜ parameter><｜DSML｜ parameter name="count" string="false">5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments:
+          metrics:
+          - temperature
+          - humidity
+          count: 5
+  dsml_unterminated_parameter_then_empty_call:
+    lifecycle: active
+    scenario: dsml_unterminated_parameter_then_empty_call
+    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete parameterless invoke. Drop the malformed invoke and emit the later call.'
+    policy:
+    - P2
+    display_id: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="f"></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="f"></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: {}
+  dsml_unterminated_parameter_then_call:
+    lifecycle: active
+    scenario: dsml_unterminated_parameter_then_call
+    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete invoke with its own parameter. Drop the malformed invoke and preserve the later call''s name and arguments.'
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.5-dsml_unterminated_parameter_then_call
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">bad</｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris

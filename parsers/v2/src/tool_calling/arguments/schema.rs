@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use percent_encoding::percent_decode_str;
 use serde_json::Value;
 
 // Bound graph traversal as well as recursion: shared references can expand
@@ -55,30 +54,21 @@ impl<'a> SchemaFacts<'a> {
                 object.keys().any(|key| {
                     !matches!(
                         key.as_str(),
-                        "$ref" | "title" | "description" | "default" | "examples" | "$comment"
+                        "$ref"
+                            | "$defs"
+                            | "definitions"
+                            | "title"
+                            | "description"
+                            | "default"
+                            | "examples"
+                            | "$comment"
                     )
                 })
             }) || visited.contains(&reference)
             {
                 return Some(schema);
             }
-            let Some(fragment) = reference.strip_prefix('#') else {
-                return Some(schema);
-            };
-            // percent_decode_str preserves invalid escapes, so reject them before lookup.
-            if fragment.as_bytes().iter().enumerate().any(|(index, byte)| {
-                *byte == b'%'
-                    && !fragment
-                        .as_bytes()
-                        .get(index + 1..index + 3)
-                        .is_some_and(|digits| digits.iter().all(u8::is_ascii_hexdigit))
-            }) {
-                return Some(schema);
-            }
-            let Ok(pointer) = percent_decode_str(fragment).decode_utf8() else {
-                return Some(schema);
-            };
-            let Some(target) = self.root.pointer(&pointer) else {
+            let Some(target) = resolve_local_schema_ref(reference, self.root) else {
                 return Some(schema);
             };
             visited.push(reference);
@@ -142,13 +132,14 @@ impl<'a> SchemaFacts<'a> {
                 "array" => value.is_array(),
                 _ => false,
             };
-            if schema
+            if (schema
                 .get("const")
                 .is_some_and(|value| !matches_value(value))
                 || schema
                     .get("enum")
                     .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(matches_value))
+                    .is_some_and(|values| !values.iter().any(matches_value)))
+                && !literals_contradict_type(schema)
             {
                 return false;
             }
@@ -175,6 +166,56 @@ impl<'a> SchemaFacts<'a> {
                 }
             }
             true
+        })
+    }
+
+    // Tool parameters may be declared at the root, under allOf, or under anyOf/oneOf
+    // variants. Root and allOf declarations always apply, so they win over variant
+    // declarations; a parameter declared only by several variants is typed by their union.
+    pub(crate) fn parameter_schemas(&mut self, tag: &str) -> (Vec<&'a Value>, Vec<&'a Value>) {
+        let mut required = Vec::new();
+        let mut alternatives = Vec::new();
+        self.collect_parameter_schemas(self.root, tag, false, &mut required, &mut alternatives);
+        if self.exhausted {
+            (Vec::new(), Vec::new())
+        } else {
+            (required, alternatives)
+        }
+    }
+
+    fn collect_parameter_schemas(
+        &mut self,
+        schema: &'a Value,
+        tag: &str,
+        in_variant: bool,
+        required: &mut Vec<&'a Value>,
+        alternatives: &mut Vec<&'a Value>,
+    ) {
+        self.with_schema(schema, (), |walker, schema| {
+            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
+                let declared = if in_variant {
+                    &mut *alternatives
+                } else {
+                    &mut *required
+                };
+                if !declared.contains(&child) {
+                    declared.push(child);
+                }
+            }
+            for keyword in ["allOf", "anyOf", "oneOf"] {
+                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+                    let in_variant = in_variant || keyword != "allOf";
+                    for branch in branches {
+                        walker.collect_parameter_schemas(
+                            branch,
+                            tag,
+                            in_variant,
+                            required,
+                            alternatives,
+                        );
+                    }
+                }
+            }
         })
     }
 
@@ -234,7 +275,7 @@ impl<'a> SchemaFacts<'a> {
             MAX_SCHEMA_DEPTH,
             self.remaining_work.min(MAX_NULL_SCHEMA_NODES),
         );
-        let result = walker.matches(schema, 0, 0);
+        let result = walker.matches(schema, 0, 0, false);
         self.remaining_work = walker.remaining;
         if walker.exhausted {
             self.exhausted = true;
@@ -244,12 +285,147 @@ impl<'a> SchemaFacts<'a> {
         }
     }
 
-    #[cfg(test)]
+    // Infers types from `const`/`enum` and intersects `allOf`, `not`, and `$ref` siblings.
     pub(crate) fn has_type(&mut self, schema: Option<&'a Value>, expected: &str) -> bool {
-        schema.is_some_and(|schema| self.has_type_constraints(&[schema], expected))
+        schema.is_some_and(|schema| self.type_constraint(schema, expected, true) == Some(true))
     }
 
-    pub(crate) fn has_type_constraints(&mut self, schemas: &[&'a Value], expected: &str) -> bool {
+    // A string literal branch such as `const: "auto"` must not hide a numeric
+    // alternative when the input is "42". Only reject known type/literal
+    // contradictions here; this coercion helper is not a schema validator.
+    pub(crate) fn rejects_string_literal(&mut self, schema: &'a Value, raw: &str) -> bool {
+        self.with_schema(schema, false, |walker, schema| {
+            if schema == &Value::Bool(false) {
+                return true;
+            }
+            let literal_rejects = schema
+                .get("const")
+                .is_some_and(|value| value.as_str() != Some(raw))
+                || schema
+                    .get("enum")
+                    .and_then(Value::as_array)
+                    .is_some_and(|values| !values.iter().any(|value| value.as_str() == Some(raw)));
+            if schema.get("type").is_some_and(|ty| {
+                ty.as_str() != Some("string")
+                    && !ty
+                        .as_array()
+                        .is_some_and(|types| types.iter().any(|ty| ty == "string"))
+            }) || (literal_rejects && !literals_contradict_type(schema))
+            {
+                return true;
+            }
+            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && walker.rejects_string_literal(target, raw)
+            {
+                return true;
+            }
+            for keyword in ["allOf", "anyOf", "oneOf"] {
+                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+                    let rejected = if keyword == "allOf" {
+                        branches
+                            .iter()
+                            .any(|branch| walker.rejects_string_literal(branch, raw))
+                    } else {
+                        branches
+                            .iter()
+                            .all(|branch| walker.rejects_string_literal(branch, raw))
+                    };
+                    if rejected {
+                        return true;
+                    }
+                }
+            }
+            false
+        })
+    }
+
+    // None means no known type constraint; false means this type is excluded.
+    // Sibling keywords and allOf intersect, while anyOf/oneOf combine alternatives.
+    pub(crate) fn type_constraint(
+        &mut self,
+        schema: &'a Value,
+        expected: &str,
+        infer_literals: bool,
+    ) -> Option<bool> {
+        self.with_schema(schema, None, |walker, schema| {
+            if schema == &Value::Bool(false) {
+                return Some(false);
+            }
+            let matches =
+                |name: &str| name == expected || (name == "number" && expected == "integer");
+            let mut constraint = schema.get("type").and_then(|ty| {
+                ty.as_str().map(matches).or_else(|| {
+                    ty.as_array()
+                        .map(|types| types.iter().filter_map(Value::as_str).any(matches))
+                })
+            });
+            // A reference and its sibling constraints apply together. Keep the
+            // sibling node intact and intersect the target's facts with it.
+            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && let Some(permits) = walker.type_constraint(target, expected, infer_literals)
+            {
+                constraint = Some(constraint.unwrap_or(true) && permits);
+            }
+            // A plain negated type can exclude strings without declaring a
+            // positive type. More complex negations do not supply a safe hint.
+            if expected != "enum"
+                && let Some(negated) = schema.get("not").and_then(Value::as_object)
+                && negated.keys().all(|key| {
+                    matches!(
+                        key.as_str(),
+                        "type" | "title" | "description" | "default" | "examples" | "$comment"
+                    )
+                })
+                && let Some(ty) = negated.get("type")
+                && let Some(excluded) = ty.as_str().map(matches).or_else(|| {
+                    ty.as_array()
+                        .map(|types| types.iter().filter_map(Value::as_str).any(matches))
+                })
+            {
+                constraint = Some(constraint.unwrap_or(true) && !excluded);
+            }
+            // Literal constraints can establish a type even without `type`.
+            // Intersect them with explicit types so an enum cannot widen a
+            // sibling constraint, unless no literal fits the declared type at
+            // all. Ambiguous unions still preserve strings.
+            let literal_matches = |value: &Value| literal_satisfies(expected, value);
+            let own_literals = infer_literals && !literals_contradict_type(schema);
+            if own_literals && let Some(value) = schema.get("const") {
+                constraint = Some(constraint.unwrap_or(true) && literal_matches(value));
+            }
+            if own_literals && let Some(values) = schema.get("enum").and_then(Value::as_array) {
+                constraint = Some(constraint.unwrap_or(true) && values.iter().any(literal_matches));
+            }
+            for key in ["anyOf", "oneOf"] {
+                if let Some(options) = schema.get(key).and_then(Value::as_array) {
+                    // Branches without known type constraints supply no hint.
+                    if let Some(permits) = options
+                        .iter()
+                        .filter_map(|option| {
+                            walker.type_constraint(option, expected, infer_literals)
+                        })
+                        .reduce(|left, right| left || right)
+                    {
+                        constraint = Some(constraint.unwrap_or(true) && permits);
+                    }
+                }
+            }
+            if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
+                for branch in branches {
+                    if let Some(permits) = walker.type_constraint(branch, expected, infer_literals)
+                    {
+                        constraint = Some(constraint.unwrap_or(true) && permits);
+                    }
+                }
+            }
+            constraint
+        })
+    }
+
+    // Reads only explicit `type` names, so an alias such as `type: "enum"` is visible.
+    pub(crate) fn has_explicit_type(&mut self, schemas: &[&'a Value], expected: &str) -> bool {
         let mut matched = false;
         for schema in schemas {
             match self.explicit_type_hint(schema, expected) {
@@ -346,29 +522,29 @@ impl<'a> SchemaFacts<'a> {
     pub(crate) fn array_item_permits_null(&mut self, schemas: &[&'a Value]) -> bool {
         let mut hint = None;
         for schema in schemas {
-            hint = intersect_type_hints(hint, self.array_item_null_hint(schema));
-            if hint == Some(false) {
+            hint = intersect_item_null(hint, self.array_item_null_hint(schema));
+            if hint == Some(Some(false)) {
                 return false;
             }
         }
-        hint == Some(true)
+        hint == Some(Some(true))
     }
 
-    fn array_item_null_hint(&mut self, schema: &'a Value) -> Option<bool> {
+    // None when no item constraint applies; Some(None) when one applies but its
+    // null answer is unknown, which an applicable sibling's proof cannot override.
+    fn array_item_null_hint(&mut self, schema: &'a Value) -> Option<Option<bool>> {
         self.with_schema(schema, None, |walker, schema| {
-            let mut hint = schema
-                .get("items")
-                .and_then(|items| walker.permits_null(items));
+            let mut hint = schema.get("items").map(|items| walker.permits_null(items));
 
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
                 && let Some(target) = resolve_local_schema_ref(reference, walker.root)
             {
-                hint = intersect_type_hints(hint, walker.array_item_null_hint(target));
+                hint = intersect_item_null(hint, walker.array_item_null_hint(target));
             }
 
             if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
                 for branch in branches {
-                    hint = intersect_type_hints(hint, walker.array_item_null_hint(branch));
+                    hint = intersect_item_null(hint, walker.array_item_null_hint(branch));
                 }
             }
 
@@ -376,28 +552,35 @@ impl<'a> SchemaFacts<'a> {
                 let Some(branches) = schema.get(keyword).and_then(Value::as_array) else {
                     continue;
                 };
-                let mut branch_hint = None;
+                let mut proven = false;
+                let mut unconstrained = false;
                 let mut unknown = false;
                 for branch in branches {
                     if !walker.may_describe_array(branch) {
                         continue;
                     }
                     match walker.array_item_null_hint(branch) {
-                        Some(true) => {
-                            branch_hint = Some(true);
+                        Some(Some(true)) => {
+                            proven = true;
                             break;
                         }
-                        Some(false) => {}
-                        None => unknown = true,
+                        Some(Some(false)) => {}
+                        Some(None) => unknown = true,
+                        None => unconstrained = true,
                     }
                 }
-                let alternatives = match (branch_hint, unknown) {
-                    (Some(true), _) => Some(true),
-                    (None, true) => None,
-                    (None, false) => Some(false),
-                    (Some(false), _) => Some(false),
+                // An alternative without an item constraint leaves items free, so
+                // the union adds no constraint; an unknown alternative stays unknown.
+                let alternatives = if proven {
+                    Some(Some(true))
+                } else if unconstrained {
+                    None
+                } else if unknown {
+                    Some(None)
+                } else {
+                    Some(Some(false))
                 };
-                hint = intersect_type_hints(hint, alternatives);
+                hint = intersect_item_null(hint, alternatives);
             }
             hint
         })
@@ -451,6 +634,60 @@ impl<'a> SchemaFacts<'a> {
     }
 }
 
+const JSON_TYPES: [&str; 7] = [
+    "string", "number", "integer", "boolean", "object", "array", "null",
+];
+
+fn literal_satisfies(name: &str, value: &Value) -> bool {
+    match name {
+        "string" => value.is_string(),
+        "boolean" => value.is_boolean(),
+        "null" => value.is_null(),
+        "object" => value.is_object(),
+        "array" => value.is_array(),
+        "number" => value.is_number(),
+        "integer" => {
+            value.is_i64()
+                || value.is_u64()
+                || value.as_f64().is_some_and(|number| number.fract() == 0.0)
+        }
+        _ => false,
+    }
+}
+
+// True when a node declares only JSON types and no `enum`/`const` value is an
+// instance of any of them, as when an array's `enum` is written beside `type`
+// instead of under `items`. Typing then follows the declared `type`, as stock
+// SGLang does; literals that fit the declared type still narrow it.
+pub(crate) fn literals_contradict_type(schema: &Value) -> bool {
+    let enumerated = schema.get("enum").and_then(Value::as_array);
+    let constant = schema.get("const");
+    if enumerated.is_none() && constant.is_none() {
+        return false;
+    }
+    let declared = match schema.get("type") {
+        Some(name @ Value::String(_)) => std::slice::from_ref(name),
+        Some(Value::Array(names)) if !names.is_empty() => names.as_slice(),
+        _ => return false,
+    };
+    // A custom type name may admit any literal, so it never contradicts one.
+    if !declared
+        .iter()
+        .all(|name| name.as_str().is_some_and(|name| JSON_TYPES.contains(&name)))
+    {
+        return false;
+    }
+    !constant
+        .into_iter()
+        .chain(enumerated.into_iter().flatten())
+        .any(|value| {
+            declared
+                .iter()
+                .filter_map(Value::as_str)
+                .any(|name| literal_satisfies(name, value))
+        })
+}
+
 fn intersect_type_hints(left: Option<bool>, right: Option<bool>) -> Option<bool> {
     match (left, right) {
         (Some(false), _) | (_, Some(false)) => Some(false),
@@ -467,7 +704,17 @@ const MAX_NULL_SCHEMA_NODES: usize = 4096;
 pub(crate) fn schema_permits_null(schema: &Value, root: &Value) -> bool {
     let mut walker =
         NullSchemaWalker::new(root, schema, MAX_NULL_SCHEMA_NODES, MAX_NULL_SCHEMA_NODES);
-    walker.matches(schema, 0, 0) == Some(true)
+    walker.matches(schema, 0, 0, false) == Some(true)
+}
+
+fn intersect_item_null(
+    left: Option<Option<bool>>,
+    right: Option<Option<bool>>,
+) -> Option<Option<bool>> {
+    match (left, right) {
+        (None, other) | (other, None) => other,
+        (Some(left), Some(right)) => Some(intersect_null_matches(left, right)),
+    }
 }
 
 fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<bool> {
@@ -543,7 +790,14 @@ impl<'a> NullSchemaWalker<'a> {
         }
     }
 
-    fn matches(&mut self, schema: &'a Value, ref_depth: usize, depth: usize) -> Option<bool> {
+    // `scoped` marks a node inside a nested `$id` resource in this walk.
+    fn matches(
+        &mut self,
+        schema: &'a Value,
+        ref_depth: usize,
+        depth: usize,
+        scoped: bool,
+    ) -> Option<bool> {
         let Some(work) = self.remaining.checked_sub(1) else {
             self.exhausted = true;
             return None;
@@ -559,14 +813,17 @@ impl<'a> NullSchemaWalker<'a> {
         if !schema.is_object()
             || schema.get("$dynamicRef").is_some()
             || schema.get("$recursiveRef").is_some()
-            || (schema.get("$id").is_some() && !std::ptr::eq(schema, self.root))
         {
             return None;
         }
+        // A nested `$id` rebases the references inside it, not its other keywords:
+        // only a reference within the resource stays unknown.
+        let scoped = scoped || (schema.get("$id").is_some() && !std::ptr::eq(schema, self.root));
         let mut permits = Some(true);
         if let Some(reference) = schema.get("$ref") {
             let target = reference
                 .as_str()
+                .filter(|_| !scoped)
                 .and_then(|reference| resolve_local_schema_ref(reference, self.root));
             permits = if let Some(target) = target
                 && ref_depth < MAX_NULL_SCHEMA_REF_DEPTH
@@ -576,7 +833,7 @@ impl<'a> NullSchemaWalker<'a> {
                     .any(|active| std::ptr::eq(*active, target))
             {
                 self.active_refs.push(target);
-                let result = self.matches(target, ref_depth + 1, depth + 1);
+                let result = self.matches(target, ref_depth + 1, depth + 1, false);
                 self.active_refs.pop();
                 result
             } else {
@@ -594,6 +851,8 @@ impl<'a> NullSchemaWalker<'a> {
                 return Some(false);
             }
         }
+        // Unlike typing, null still intersects literals that contradict `type`:
+        // only a proven match may produce JSON null, and GLM-4.7 shares this walker.
         if schema.get("const").is_some_and(|value| !value.is_null())
             || schema
                 .get("enum")
@@ -607,7 +866,7 @@ impl<'a> NullSchemaWalker<'a> {
                 let mut matches = 0;
                 let mut unknown = 0;
                 for branch in branches {
-                    match self.matches(branch, ref_depth, depth + 1) {
+                    match self.matches(branch, ref_depth, depth + 1, scoped) {
                         Some(true) => matches += 1,
                         Some(false) => {}
                         None => unknown += 1,
@@ -629,7 +888,7 @@ impl<'a> NullSchemaWalker<'a> {
             }
         }
         if let Some(not) = schema.get("not") {
-            let not_match = self.matches(not, ref_depth, depth + 1);
+            let not_match = self.matches(not, ref_depth, depth + 1, scoped);
             permits = intersect_null_matches(permits, not_match.map(|matches| !matches));
         }
         permits
@@ -687,6 +946,45 @@ pub(crate) fn schema_type_match(
         (Some(left), Some(right)) => Some(left && right),
         (left, right) => left.or(right),
     };
+    // enum/const-derived type hint: a parameter declared only by its allowed values
+    // (`{"enum": [1, 2, 4]}`, `{"const": true}`, pydantic Literal / zod literal unions)
+    // admits the JSON types of those values. Integral numbers count as integer and number.
+    let value_matches = |value: &Value| -> bool {
+        match value {
+            Value::Null => expected == "null",
+            Value::Bool(_) => expected == "boolean",
+            Value::Number(n) => {
+                expected == "number"
+                    || (expected == "integer" && n.as_f64().is_some_and(|f| f.fract() == 0.0))
+            }
+            Value::String(_) => expected == "string",
+            Value::Array(_) => expected == "array",
+            Value::Object(_) => expected == "object",
+        }
+    };
+    let enum_hint = match schema.get("enum").and_then(Value::as_array) {
+        Some(values) if !values.is_empty() => {
+            // Mixed enums keep their string fallback. A string hint must match
+            // raw text so it cannot shadow another union branch.
+            if expected == "string" {
+                values
+                    .iter()
+                    .any(|value| value.as_str() == Some(raw))
+                    .then_some(true)
+            } else {
+                values.iter().try_fold(false, |matched, value| {
+                    (!value.is_string()).then(|| matched || value_matches(value))
+                })
+            }
+        }
+        _ => None,
+    };
+    for literal_hint in [enum_hint, schema.get("const").map(value_matches)] {
+        hint = match (hint, literal_hint) {
+            (Some(left), Some(right)) => Some(left && right),
+            (left, right) => left.or(right),
+        };
+    }
     for keyword in ["anyOf", "oneOf", "allOf"] {
         let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
             continue;
@@ -715,8 +1013,23 @@ pub(crate) fn schema_type_match(
 
 #[cfg(test)]
 mod structural_type_tests {
-    use super::SchemaFacts;
+    use super::{SchemaFacts, literals_contradict_type};
     use serde_json::json;
+
+    #[test]
+    fn literals_contradict_only_declared_json_types() {
+        for (schema, contradicts) in [
+            (json!({"type": "array", "enum": ["a", "b"]}), true),
+            (json!({"type": "integer", "const": "auto"}), true),
+            (json!({"type": "integer", "enum": []}), true),
+            (json!({"type": "string", "enum": ["a", 1]}), false),
+            (json!({"type": "custom", "enum": []}), false),
+            (json!({"type": ["integer", 5], "enum": ["a"]}), false),
+            (json!({"enum": ["a"]}), false),
+        ] {
+            assert_eq!(literals_contradict_type(&schema), contradicts, "{schema}");
+        }
+    }
 
     #[test]
     fn referenced_type_intersects_structural_siblings() {
@@ -743,5 +1056,77 @@ mod structural_type_tests {
             "items": {"type": "number"}
         });
         assert!(SchemaFacts::new(&unresolved).may_describe_array(&unresolved));
+    }
+
+    #[test]
+    fn nested_ids_scope_only_their_references() {
+        let id = "https://example.com/v";
+        let root = json!({"$defs": {
+            "Nullable": {"type": ["integer", "null"]},
+            "Scoped": {"$id": "https://example.com/t", "type": ["integer", "null"]},
+        }});
+        for (schema, permits) in [
+            (json!({"$id": id, "type": ["integer", "null"]}), Some(true)),
+            (json!({"$id": id, "type": "integer"}), Some(false)),
+            (json!({"$id": id, "$ref": "#/$defs/Nullable"}), None),
+            (
+                json!({"$id": id, "anyOf": [{"$ref": "#/$defs/Nullable"}]}),
+                None,
+            ),
+            (
+                json!({"$id": id, "not": {"$ref": "#/$defs/Nullable"}}),
+                None,
+            ),
+            (json!({"$ref": "#/$defs/Scoped"}), Some(true)),
+            (json!({"$ref": "#/$defs/Nullable"}), Some(true)),
+            (json!({"$dynamicRef": "#/$defs/Nullable"}), None),
+            (json!(true), Some(true)),
+            (json!(false), Some(false)),
+        ] {
+            assert_eq!(
+                SchemaFacts::new(&root).permits_null(&schema),
+                permits,
+                "{schema}"
+            );
+        }
+    }
+
+    #[test]
+    fn array_item_null_needs_every_applicable_constraint() {
+        let nullable =
+            json!({"items": {"$id": "https://example.com/i", "type": ["string", "null"]}});
+        let unknown = json!({"items": {"$dynamicRef": "#meta"}});
+        let proven = json!({"type": "array", "allOf": [nullable.clone()]});
+        let unproven = json!({"type": "array", "allOf": [nullable, unknown]});
+        assert!(SchemaFacts::new(&proven).array_item_permits_null(&[&proven]));
+        assert!(!SchemaFacts::new(&unproven).array_item_permits_null(&[&unproven]));
+
+        // A union alternative without an item constraint adds none; an unknown
+        // alternative keeps the union unknown.
+        let items = json!({"type": ["integer", "null"]});
+        for (schema, permits) in [
+            (
+                json!({"type": "array", "items": items, "anyOf": [{"type": "array"}]}),
+                true,
+            ),
+            (
+                json!({"type": "array", "items": items, "oneOf": [{"type": "array"}]}),
+                true,
+            ),
+            (
+                json!({"type": "array", "anyOf": [{"type": "array"}]}),
+                false,
+            ),
+            (
+                json!({"type": "array", "items": items, "anyOf": [{"items": {"$dynamicRef": "#m"}}]}),
+                false,
+            ),
+        ] {
+            assert_eq!(
+                SchemaFacts::new(&schema).array_item_permits_null(&[&schema]),
+                permits,
+                "{schema}"
+            );
+        }
     }
 }

@@ -458,7 +458,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
     _navigate(driver, f"{viewer_url}?vertical=0")
     header = driver.find_element(By.CSS_SELECTOR, '.matrix-case-heading[data-ttip-id]')
     full_label = _script(driver, "return window.__conformanceTooltipModel(arguments[0]).popupCase.label", header)
-    short_label, case_id = header.text, header.get_attribute('aria-label')
+    short_label, case_id = header.text.removesuffix('{}'), header.get_attribute('aria-label')
     assert re.fullmatch(r'\d+-\d+', short_label)
     assert full_label not in header.text
     labels = _script(driver, """
@@ -471,7 +471,8 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
     for item in labels:
         column = item['column']
         if column.get('display_number') is not None:
-            assert item['label'] == f"{column['compact_prefix']}-{column['display_number']}"
+            marker = '{}' if column.get('schemas') else ''
+            assert item['label'] == f"{column['compact_prefix']}-{column['display_number']}{marker}"
     header.send_keys(Keys.ENTER)
     popup = driver.find_element(By.CSS_SELECTOR, '.ttip-pinned .ttip-head')
     _assert_case_popup_heading(driver, header, popup, full_label, short_label)
@@ -479,7 +480,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
     header = driver.find_element(By.CSS_SELECTOR, f'.matrix-case-heading[aria-label="{case_id}"]')
     assert full_label in header.text and short_label in header.text
     _set_transpose(driver, False)
-    assert driver.find_element(By.CSS_SELECTOR, f'.matrix-case-heading[aria-label="{case_id}"]').text == short_label
+    assert driver.find_element(By.CSS_SELECTOR, f'.matrix-case-heading[aria-label="{case_id}"]').text.removesuffix('{}') == short_label
 
 
 def test_orientation_preserves_matrix_outcomes_and_counts(driver, viewer_url):
@@ -834,11 +835,13 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, viewer_url, transposed
             const header=t.tHead.rows[0].cells[0], h=header.getBoundingClientRect();
             const labels=[...t.tBodies[0].querySelectorAll('tr > th:first-child')]
               .filter(cell=>{const r=cell.getBoundingClientRect();return r.top>=h.bottom&&r.bottom<innerHeight});
+            const shouldStick=!arguments[0];
             return getComputedStyle(header).position==='sticky' && labels.length>0
-              && labels.every(cell=>getComputedStyle(cell).position==='sticky'&&Math.abs(cell.getBoundingClientRect().left)<=1)
+              && labels.every(cell=>getComputedStyle(cell).position===(shouldStick?'sticky':'static')
+                && (!shouldStick||Math.abs(cell.getBoundingClientRect().left)<=1))
               && s.scrollTop===0 && s.scrollLeft===0 && scrollY>0 && scrollX>0
               && Math.abs(h.top)<=1 && h.width>0 && h.bottom<=innerHeight;
-        """))
+        """, transposed))
     finally:
         driver.set_window_size(size["width"], size["height"])
 

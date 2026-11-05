@@ -7,9 +7,10 @@
 use std::{collections::HashSet, sync::LazyLock};
 
 use anyhow::Context;
+use dynamo_structural_tag::schema::canonicalize_local_refs;
 use serde_json::{Value, json};
 
-use super::builder::{ToolCallFormatBuildContext, resolve_tool_schema, resolve_tools_to_include};
+use super::builder::{ToolCallFormatBuildContext, declared_tool_schema, resolve_tools_to_include};
 use crate::tool_calling::ToolChoice;
 use crate::tool_calling::xml::resolve_local_schema_ref;
 
@@ -182,7 +183,10 @@ pub(crate) fn build_glm47(ctx: &ToolCallFormatBuildContext<'_>) -> anyhow::Resul
     let mut tags: Vec<Value> = tools
         .into_iter()
         .map(|tool| {
-            let schema = glm_schema(resolve_tool_schema(tool, ctx.strict_schema()))
+            // `glm_schema` decodes `$ref`s itself, so it must see the declared
+            // spelling; the schema it forwards gets the backend's literal one.
+            let schema = glm_schema(declared_tool_schema(tool, ctx.strict_schema()))
+                .map(canonicalize_local_refs)
                 .with_context(|| format!("GLM tool `{}`", tool.name))?;
             Ok(json!({
                 "type": "tag",
@@ -247,6 +251,58 @@ mod tests {
             glm_schema(schema).unwrap()["properties"]["level"],
             json!({"type": "string", "enum": ["low", "high"], "description": "d"})
         );
+    }
+
+    /// PR #516 review (rmccorm4): canonicalizing before `glm_schema` turned
+    /// `#/properties/a%2520b` into `#/properties/a%20b`, which GLM's own
+    /// percent-decoding resolver then read as the STRING property `a b`. Base
+    /// inlines the integer property; so must this head.
+    #[test]
+    fn escaped_pointers_reach_glm_intact_and_the_forwarded_schema_is_canonical() {
+        let tools = vec![crate::tool_calling::ToolDefinition {
+            name: "pick".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "a%20b": {"type": "integer"},
+                    "a b": {"type": "string"},
+                    "copy": {"$ref": "#/properties/a%2520b"},
+                    "payload": {"$ref": "#/$defs/registry~1Model", "description": "d"}
+                },
+                "$defs": {"registry/Model": {"type": "object", "properties": {"id": {"type": "integer"}}}},
+                "required": ["a%20b", "a b", "copy", "payload"]
+            })),
+            strict: Some(true),
+        }];
+        for choice in [
+            crate::tool_calling::ToolChoice::Required,
+            crate::tool_calling::ToolChoice::Auto,
+        ] {
+            let ctx = ToolCallFormatBuildContext {
+                tool_choice: &choice,
+                tools: &tools,
+                parallel_tool_calls: None,
+                schema_mode: super::super::builder::StructuralTagSchemaMode::Auto,
+                starts_in_reasoning: false,
+            };
+            let tag = build_glm47(&ctx).unwrap().unwrap();
+            let schema = &tag["format"]["tags"][0]["content"]["json_schema"];
+            assert_eq!(
+                schema["properties"]["copy"],
+                json!({"type": "integer"}),
+                "{tag}"
+            );
+            assert_eq!(
+                schema["properties"]["payload"],
+                json!({"type": "object", "properties": {"id": {"type": "integer"}}, "description": "d"}),
+                "{tag}"
+            );
+            assert_eq!(
+                schema["$defs"],
+                json!({"registry_Model": {"type": "object", "properties": {"id": {"type": "integer"}}}}),
+                "{tag}"
+            );
+        }
     }
 
     #[test]

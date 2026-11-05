@@ -27,14 +27,23 @@ def test_related_case_names_preserve_previous_aliases(scenario, previous, expect
         assert taxonomy.scenario_for_label(label, scenario=scenario) == scenario
 
 
-def test_every_active_display_identity_matches_its_taxonomy_and_history():
+def test_every_active_display_identity_matches_its_taxonomy_and_history() -> None:
     store = history.load_authored_store(ROOT / "conformance/fixtures-unified-v2")
+    direct_descriptive_scenarios = {
+        "schema_enum_inferred_integer",
+        "schema_const_numeric_bare",
+        "schema_enum_const_narrowing",
+    }
     for family, document in store.families.items():
         for key, case in document.cases.items():
             if case["lifecycle"] != "active":
                 continue
             assert case["display_id"] == taxonomy.numbered_id(case["scenario"])
             scenario = case["scenario"]
+            if scenario in direct_descriptive_scenarios:
+                assert case["historical_ids"] == []
+                assert taxonomy.scenario_for_label(case["display_id"], scenario=scenario) == scenario
+                continue
             previous = f"UNIFIED.{taxonomy.tax(scenario)[0]}-{taxonomy.original_case_description(scenario)}"
             if previous != case["display_id"]:
                 assert previous in case["historical_ids"]

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.10](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.9...dynamo-parsers-v2-v0.9.10) - 2026-11-04
+
+### Bug fixes
+
+- *(parsers-v2)* Let a declared type win over contradicting MiniMax-M3 literals ([#526](https://github.com/ai-dynamo/frontend-crates/pull/526))
+
+## [0.9.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.8...dynamo-parsers-v2-v0.9.9) - 2026-11-04
+
+### Bug fixes
+
+- *(structural-tag)* Canonicalize escaped local $ref targets before grammar compilation ([#516](https://github.com/ai-dynamo/frontend-crates/pull/516))
+
+## [0.9.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.6...dynamo-parsers-v2-v0.9.7) - 2026-11-03
+
+### Bug fixes
+
+- *(parsers)* [P1] coordinate Harmony vocabulary cache loading ([#513](https://github.com/ai-dynamo/frontend-crates/pull/513))
+
 ## [0.9.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.3...dynamo-parsers-v2-v0.9.4) - 2026-10-31
 
 ### Bug fixes

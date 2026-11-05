@@ -48,13 +48,15 @@ fn native_eligibility_checks_constraints_and_referenced_schemas() {
             json!({"$ref":"#/$defs/text","$defs":{"text":{"type":"string"}}}),
             false,
         ),
+        // Escaped targets are canonicalized before the builder sees them
+        // (`dynamo_structural_tag::schema`), so they resolve like plain ones.
         (
             json!({"$ref":"#/$defs/a~1b","$defs":{"a/b":{"type":"integer"}}}),
-            false,
+            true,
         ),
         (
             json!({"$ref":"#/$defs/%63ount","$defs":{"count":{"type":"integer"}}}),
-            false,
+            true,
         ),
         (json!({"$ref":"#"}), false),
         (
@@ -583,7 +585,13 @@ fn ambiguous_string_union_types_select_json_without_changing_the_schema() {
     // M3 XML uses the same bytes for, e.g., the string "42" and the integer 42.
     // Guided JSON preserves the requested type when both are schema-valid.
     let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
-    let mut schemas = vec![json!({"enum":["42",42]})];
+    // The parser types a literal that contradicts its declared type by the
+    // type, while the grammar would force the literal's bytes.
+    let mut schemas = vec![
+        json!({"enum":["42",42]}),
+        json!({"type":"integer","enum":["42"]}),
+        json!({"type":"boolean","enum":["true","false"]}),
+    ];
     for other in ["integer", "number", "boolean", "object", "array", "null"] {
         schemas.push(json!({"type":["string",other]}));
         for keyword in ["anyOf", "oneOf"] {
