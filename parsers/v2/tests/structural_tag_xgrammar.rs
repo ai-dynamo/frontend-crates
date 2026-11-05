@@ -1177,6 +1177,38 @@ fn v41_exclusion_token_boundaries_xgrammar() {
                 (false, false),
                 (true, true),
             ),
+            // A token may end inside the valid terminator after `</`; XGrammar 0.2.8
+            // accepts the completed closing marker with the exclusion active.
+            (
+                "terminator-split-after-slash",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([
+                        "hello</".to_string(),
+                        format!("{bar}DSML{bar} parameter>\n"),
+                        suffix.clone(),
+                    ])
+                    .collect::<Vec<_>>(),
+                (true, true),
+                (true, true),
+            ),
+            // A token may end after the reserved prefix; XGrammar 0.2.8 accepts the
+            // completed closing marker with the exclusion active.
+            (
+                "terminator-split-after-prefix",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([
+                        format!("hello</{bar}"),
+                        format!("DSML{bar} parameter>\n"),
+                        suffix.clone(),
+                    ])
+                    .collect::<Vec<_>>(),
+                (true, true),
+                (true, true),
+            ),
             // The reserved prefix may begin a valid structural ending.
             (
                 "unfinished-terminator",
