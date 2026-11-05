@@ -148,6 +148,8 @@ struct JinjaEnvironment {
 /// separate instead of being reshaped for a rule it does not have.
 #[derive(Debug, Default, Clone, Copy)]
 struct SystemNormalization {
+    /// Template accepts `system` but rejects the equivalent `developer` turn.
+    fallback_developer: bool,
     /// Template raises on a `system` turn that is not first.
     demote_nonleading_system: bool,
     /// Template raises on two adjacent `user` turns.
@@ -156,7 +158,7 @@ struct SystemNormalization {
 
 impl SystemNormalization {
     fn is_required(&self) -> bool {
-        self.demote_nonleading_system || self.coalesce_consecutive_users
+        self.fallback_developer || self.demote_nonleading_system || self.coalesce_consecutive_users
     }
 }
 
