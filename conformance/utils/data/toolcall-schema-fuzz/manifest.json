@@ -1,0 +1,14 @@
+{
+  "source_repository": "https://github.com/OpenRouterTeam/benchmark-harness",
+  "source_revision": "fba7364d1996ceb4a1383e358fc36d32a1a428b6",
+  "source_path": "src/benchmarks/toolcall-schema-fuzz/realistic/wordings.json",
+  "dataset_file": "wordings.json",
+  "sha256": "9eff9f0c05196dfda9eb46229640e9bbbe8f5c1c6cf1c2c6cb92bb164507189f",
+  "dataset_version": 6,
+  "expected_entry_count": 1358,
+  "expected_argument_count": 2716,
+  "attribution": "OpenRouter",
+  "license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "modifications": "None. wordings.json is copied byte-for-byte from the pinned source revision."
+}
