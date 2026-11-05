@@ -2924,10 +2924,11 @@ NORMAL_MODE
         let chat_template: super::tokcfg::ChatTemplate =
             serde_json::from_value(serde_json::json!({ "chat_template": template })).unwrap();
 
-        HfTokenizerConfigJsonFormatter::with_options(
+        HfTokenizerConfigJsonFormatter::with_render_mode(
             chat_template,
             ContextMixins::new(&[]),
             exclude_tools_when_tool_choice_none,
+            crate::RenderMode::default(),
         )
         .unwrap()
     }
