@@ -613,7 +613,10 @@ impl HfTokenizerConfigJsonFormatter {
         // after rendering as ordinary text.
         let tmpl = self.env.get_template(template_name)?;
         let mut literals = ControlLiterals::default();
-        let mut tools = tools;
+        let mut tool_json = tools
+            .as_ref()
+            .map(crate::python::template_json)
+            .transpose()?;
         let mut response_format = req
             .response_format()
             .as_ref()
@@ -621,16 +624,19 @@ impl HfTokenizerConfigJsonFormatter {
             .transpose()?;
         let mut placeholder = "__DYNAMO_CONTROL_LITERAL_".to_string();
         if protect_literals {
-            let mut tool_json = tools
-                .as_ref()
-                .map(crate::python::template_json)
-                .transpose()?;
-            let collision_source = format!(
-                "{messages_for_template}{tool_json:?}{response_format:?}{:?}{}",
-                req.chat_template_args(),
-                tmpl.source()
-            );
-            while collision_source.contains(&placeholder) {
+            let kwargs = req.chat_template_args();
+            while tmpl.source().contains(&placeholder)
+                || json_mentions(&messages_for_template, &placeholder)
+                || [&tool_json, &response_format]
+                    .into_iter()
+                    .flatten()
+                    .any(|value| json_mentions(value, &placeholder))
+                || kwargs.is_some_and(|args| {
+                    args.iter().any(|(key, value)| {
+                        key.contains(&placeholder) || json_mentions(value, &placeholder)
+                    })
+                })
+            {
                 placeholder.push('_');
             }
             shield_message_literals(
@@ -647,7 +653,6 @@ impl HfTokenizerConfigJsonFormatter {
                     &placeholder,
                     &mut literals,
                 );
-                tools = Some(crate::python::template_value(value));
             }
             if let Some(value) = &mut response_format {
                 shield_control_literals(
@@ -682,7 +687,7 @@ impl HfTokenizerConfigJsonFormatter {
 
         let ctx = context! {
             messages => crate::python::template_value(&messages_for_template),
-            tools => tools.as_ref().map(crate::python::template_json).transpose()?.as_ref().map(crate::python::template_value),
+            tools => tool_json.as_ref().map(crate::python::template_value),
             response_format => response_format.as_ref()
                 .map(crate::python::template_value)
                 .unwrap_or(Value::UNDEFINED),
@@ -919,6 +924,18 @@ fn template_reads(source: &str, spelling: &str) -> bool {
             tested || called
         })
     })
+}
+
+/// Whether any string or object key in `value` contains `needle`.
+fn json_mentions(value: &serde_json::Value, needle: &str) -> bool {
+    match value {
+        serde_json::Value::String(text) => text.contains(needle),
+        serde_json::Value::Array(values) => values.iter().any(|value| json_mentions(value, needle)),
+        serde_json::Value::Object(values) => values
+            .iter()
+            .any(|(key, value)| key.contains(needle) || json_mentions(value, needle)),
+        _ => false,
+    }
 }
 
 /// Shield every message with the policy for its role: assistant history keeps
