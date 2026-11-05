@@ -43,6 +43,34 @@ No backfill is needed. Historical versioned captures and legacy archives retain 
 
 Each latest capture contains complete observation records and resolves sealed request references through its current family file. These files require no historical parent. All selectable conformance versions and capture filenames use plain version numbers, including local candidates and published latest/history reports. Source hashes and Git revisions belong only in provenance metadata; they must never appear as version suffixes or selectable versions. The writer, source readers, native publisher, browser model, and publication qualification reject such selections. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
 
+### Capture peer releases and update YAML
+
+Peer captures are produced manually by replaying the authored family inputs through the published vLLM and SGLang parser packages in Docker, in both stream and batch modes. This runs the parsers directly; it does not serve a model or generate model responses. From the repository root, with the conformance Python dependencies, Docker, and dependency images installed, run:
+
+```bash
+python3 conformance/utils/src/capture_peer_unified_versions.py \
+  --work /path/to/new-output-directory \
+  --versions 0.31.0 0.32.0 0.5.22 0.5.23 \
+  --mode all
+```
+
+The work directory must not already exist. The runner freezes the authored requests for every registered family, executes hash-verified published parser packages, and retains the image IDs, source hashes, producer receipts, and logs. `--vllm-image` and `--sglang-image` can select installed dependency images; the measured parser version comes from the frozen published package. Unsupported combinations remain explicit unavailable results.
+
+Results are saved as `captures/<implementation>-<version>/<family>.json` beneath the work directory. Stream implementations are `vllm_python` and `sglang_python`; batch implementations add `_batch`. Each JSON file contains `results` keyed by case ID and a `provenance` receipt. For example:
+
+```bash
+jq '.results["UNIFIED.prefilled_reasoning_then_text.minimax_m3"].assembled' \
+  /path/to/new-output-directory/captures/vllm_python-0.32.0/minimax_m3.json
+jq '.results["UNIFIED.tool_only.minimax_m3"].batch_final' \
+  /path/to/new-output-directory/captures/vllm_python_batch-0.32.0/minimax_m3.json
+```
+
+The first command shows the ordered reasoning/text/tool events; the second shows the batch parser's final reasoning, text, and tool-call fields. The full stream record also retains per-chunk output.
+
+Capture and YAML import are separate steps. These releases were imported using the `import_capture` and `import_capture_groups` APIs in `utils/src/import_peer_unified.py`, against a staging copy of the versioned store. The importer checks the frozen request and producer receipts and retains existing observations when adding verified recaptures. The selected newest snapshots were then written to versionless `<implementation>.yaml`, normalized to schema 3, validated, and published with the changed versioned YAML through the transactional store writer. The capture command alone does not update YAML. The importer is a versioned-history API; do not point it directly at the mixed current/history store, and its standalone `--bundle` CLI expects a different manifest format from this runner.
+
+CI replays current native Dynamo v2 cases and validates the stored peer captures, history, and report; peer recapture is manual. Follow [Generate the latest or history report](#generate-the-latest-or-history-report) to inspect imported results in the browser. The [public Unified viewer](https://ai-dynamo.org/frontend-crates/?tab=tab-unified) shows published captures; use a local report or the PR's validated publication artifact for unmerged captures.
+
 ### Generate the latest or history report
 
 Build the Rust publisher and install the viewer's locked npm build dependency. Generate each report into its own output directory:
