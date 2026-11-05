@@ -1,20 +1,20 @@
-capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.9.11.yaml","version":"0.9.11"}],"mode":"unified","payload_sha256":"e4b8d37ebb40fff3f302beb71d8893f5d47abfe3ba065edbbb52416b03ec7894","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.9.11.yaml","surface":"unified","version":"0.9.11"}
+capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.9.12.yaml","version":"0.9.12"}],"mode":"unified","payload_sha256":"9b6e3db8c05050ffb85af307dad12987bec15685b667cece5fb0d99dab24f864","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.9.12.yaml","surface":"unified","version":"0.9.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_3192f982d32f7af9
+  origin: origin_8d49f6f1ab8b2b8b
 origins:
-  origin_3192f982d32f7af9:
-    crate_version: 0.9.11
-    source_sha256: 7e96a513e7db7fcee2dec3edd4807fc6dff4cdd49a01f87678144dc6f9550551
-    git_commit: e9f11436891f55984a91e8b6ccc631517d51b932
+  origin_8d49f6f1ab8b2b8b:
+    crate_version: 0.9.12
+    source_sha256: 1075176cfa7db0de6e0730ff9f09db7dc10b850d461e179a1ece7d013bf1f51b
+    git_commit: aa59e9bfc90a119d2ff0f08b0c917d5a0f40b76f
 producers:
-  producer_75ba61079c4d66d1:
+  producer_ee44b7b594ba2c8f:
     captured_with:
-      dynamo_v2: 0.9.11
-    capture_origin: origin_3192f982d32f7af9
+      dynamo_v2: 0.9.12
+    capture_origin: origin_8d49f6f1ab8b2b8b
 contexts:
   context_4e12bd8c9654e6c5:
     family: muse_spark
@@ -22,8 +22,8 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.9.11.yaml
-  producer: producer_75ba61079c4d66d1
+  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.9.12.yaml
+  producer: producer_ee44b7b594ba2c8f
   context: context_4e12bd8c9654e6c5
 records:
   adjacent_calls_partial_header:

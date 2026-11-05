@@ -1,20 +1,20 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.11.yaml","version":"0.9.11"}],"mode":"unified","payload_sha256":"4ebb3f62b6611a11e51951c6d70ec0fa45da5f82355041cdf729fdd4889cfd70","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.11.yaml","surface":"unified","version":"0.9.11"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","version":"0.9.12"}],"mode":"unified","payload_sha256":"c2fd6dad47a8e9c35a0213dcd33b81f2a6361325400c6cd39e63b56072ae50cc","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","surface":"unified","version":"0.9.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_3192f982d32f7af9
+  origin: origin_8d49f6f1ab8b2b8b
 origins:
-  origin_3192f982d32f7af9:
-    crate_version: 0.9.11
-    source_sha256: 7e96a513e7db7fcee2dec3edd4807fc6dff4cdd49a01f87678144dc6f9550551
-    git_commit: e9f11436891f55984a91e8b6ccc631517d51b932
+  origin_8d49f6f1ab8b2b8b:
+    crate_version: 0.9.12
+    source_sha256: 1075176cfa7db0de6e0730ff9f09db7dc10b850d461e179a1ece7d013bf1f51b
+    git_commit: aa59e9bfc90a119d2ff0f08b0c917d5a0f40b76f
 producers:
-  producer_75ba61079c4d66d1:
+  producer_ee44b7b594ba2c8f:
     captured_with:
-      dynamo_v2: 0.9.11
-    capture_origin: origin_3192f982d32f7af9
+      dynamo_v2: 0.9.12
+    capture_origin: origin_8d49f6f1ab8b2b8b
 contexts:
   context_01419a81194b5a21:
     family: beam
@@ -22,8 +22,8 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.11.yaml
-  producer: producer_75ba61079c4d66d1
+  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml
+  producer: producer_ee44b7b594ba2c8f
   context: context_01419a81194b5a21
 records:
   arg_array_quoted_parameter_close:

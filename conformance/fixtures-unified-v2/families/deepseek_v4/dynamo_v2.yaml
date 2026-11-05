@@ -1,29 +1,30 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml","version":"0.9.11"}],"mode":"unified","payload_sha256":"12b36214d383687924c08fcc8a28d61cc8d8c6dbf502661f8feceffcb8e795b4","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml","surface":"unified","version":"0.9.11"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.12.yaml","version":"0.9.12"}],"mode":"unified","payload_sha256":"9a1e8fce2e2fee3900781304be1e8d2dda88db666df8eb34e73f5a1645ff0126","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.12.yaml","surface":"unified","version":"0.9.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_14e55b042aac1813
+  origin: origin_8d49f6f1ab8b2b8b
 origins:
-  origin_14e55b042aac1813:
-    crate_version: 0.9.11
-    source_sha256: 7e96a513e7db7fcee2dec3edd4807fc6dff4cdd49a01f87678144dc6f9550551
-    git_commit: 6ec6928849fcf9a6e731512ab4557d1ff582a9b6
+  origin_8d49f6f1ab8b2b8b:
+    crate_version: 0.9.12
+    source_sha256: 1075176cfa7db0de6e0730ff9f09db7dc10b850d461e179a1ece7d013bf1f51b
+    git_commit: aa59e9bfc90a119d2ff0f08b0c917d5a0f40b76f
 producers:
-  producer_f2e20a624b0dd0bb:
+  producer_ee44b7b594ba2c8f:
     captured_with:
-      dynamo_v2: 0.9.11
-    capture_origin: origin_14e55b042aac1813
+      dynamo_v2: 0.9.12
+    capture_origin: origin_8d49f6f1ab8b2b8b
 contexts:
-  context_cdf0b3c0134ec96f:
+  context_29ab037219e24df6:
+    family: deepseek_v4
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.11.yaml
-  producer: producer_f2e20a624b0dd0bb
-  context: context_cdf0b3c0134ec96f
+  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.12.yaml
+  producer: producer_ee44b7b594ba2c8f
+  context: context_29ab037219e24df6
 records:
   adjacent_calls_partial_header:
     case_key: UNIFIED.2-adjacent_calls_partial_header
