@@ -4,7 +4,7 @@
 
 import re
 from decimal import Decimal
-from urllib.parse import unquote
+from urllib.parse import unquote, urldefrag
 
 
 def _json_equal(left: object, right: object) -> bool:
@@ -39,6 +39,8 @@ def _local_reference(root_schema: dict, reference: str) -> dict:
     assert not fragment or fragment.startswith("/"), reference
     target = root_schema
     for part in fragment.split("/")[1:]:
+        # A pointer must not pass through an embedded resource, whose refs rebase.
+        assert target is root_schema or not (isinstance(target, dict) and "$id" in target), reference
         assert not re.search(r"~(?![01])", part), reference
         key = part.replace("~1", "/").replace("~0", "~")
         if isinstance(target, dict):
@@ -55,14 +57,16 @@ def _local_reference(root_schema: dict, reference: str) -> dict:
 
 def matches_schema(
     value: object, schema: dict, root_schema: dict | None = None,
-    _references: tuple[str, ...] = (),
+    _references: tuple[tuple[int, str], ...] = (),
     _inherited_nullable: bool = False,
 ) -> bool:
     root_schema = schema if root_schema is None else root_schema
     nullable = _inherited_nullable or schema.get("nullable") is True
     if "$id" in schema:
-        # Corpus $id controls are scalar declarations; reference scopes remain unsupported.
-        assert schema.keys() <= {"$id", "type", "const", "enum"}, schema
+        # An embedded resource: `#` references inside it resolve against it.
+        assert schema.keys() <= {"$id", "type", "const", "enum", "$defs", "$ref"}, schema
+        assert not urldefrag(schema["$id"]).fragment, schema
+        root_schema = schema
     assert schema.keys() <= {
         "$id", "type", "properties", "items", "anyOf", "oneOf", "const", "enum",
         "nullable", "minLength", "required", "$ref", "$defs", "definitions",
@@ -71,10 +75,12 @@ def matches_schema(
     }, schema
     if "$ref" in schema:
         reference = schema["$ref"]
-        assert reference not in _references, ("cyclic schema reference", reference)
+        # Keying by resource keeps equal fragments in two resources distinct.
+        resolved = (id(root_schema), reference)
+        assert resolved not in _references, ("cyclic schema reference", resolved)
         target = _local_reference(root_schema, reference)
         if not matches_schema(
-            value, target, root_schema, _references + (reference,), nullable
+            value, target, root_schema, _references + (resolved,), nullable
         ):
             return False
         siblings = {key: item for key, item in schema.items() if key != "$ref"}
@@ -101,7 +107,8 @@ def matches_schema(
         return False
     if not contradicted and "enum" in schema and not any(_json_equal(value, item) for item in schema["enum"]):
         return False
-    if "minimum" in schema and (type(value) not in (int, float) or value < schema["minimum"]):
+    # `minimum` constrains numbers only; other values pass it.
+    if "minimum" in schema and type(value) in (int, float, Decimal) and value < schema["minimum"]:
         return False
     if "anyOf" in schema and not any(
         matches_schema(value, branch, root_schema, _references, nullable)

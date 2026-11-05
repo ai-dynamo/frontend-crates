@@ -1778,11 +1778,11 @@
         }
       ]
     },
-    "value": "42",
+    "value": 42,
+    "v1_value": "42",
     "raw": "42",
     "grammar": false,
-    "conformance": false,
-    "note": "Existing unrestricted string hint wins; parser-only compatibility control, string 42 is schema-invalid."
+    "note": "The enum restricts the string branch to \"auto\", so only the integer admits 42. v1 keeps its legacy string hint, the schema-invalid \"42\" (v1_value)."
   },
   {
     "name": "type_array_string_integer",
@@ -1793,6 +1793,7 @@
       ]
     },
     "value": "42",
+    "text_value": 42,
     "raw": "42"
   },
   {
@@ -1864,6 +1865,7 @@
       ]
     },
     "value": "42",
+    "text_value": 42,
     "raw": "42"
   },
   {
@@ -1879,6 +1881,9 @@
       ]
     },
     "value": "{\"x\":1}",
+    "text_value": {
+      "x": 1
+    },
     "raw": "{\"x\":1}",
     "xgrammar_min": "0.2.7"
   },
@@ -1939,5 +1944,73 @@
     "value": 1,
     "raw": "1",
     "invalid_raw": ["auto", "2"]
+  },
+  {
+    "name": "type_array_string_number_decimal",
+    "schema": {"type": ["string", "number"]},
+    "value": "1.5",
+    "text_value": 1.5,
+    "raw": "1.5"
+  },
+  {
+    "name": "type_array_string_integer_leading_zero",
+    "schema": {"type": ["string", "integer"]},
+    "value": "007",
+    "raw": "007",
+    "note": "007 is not a JSON integer, so the string branch keeps the exact text."
+  },
+  {
+    "name": "enum_string_literal_boolean_union",
+    "schema": {"anyOf": [{"enum": ["True", "False"]}, {"type": "boolean"}]},
+    "value": "True",
+    "raw": "True",
+    "note": "True is not JSON, and the string enum admits it."
+  },
+  {
+    "name": "enum_integer_union_string_nonmember",
+    "schema": {"anyOf": [{"enum": [1, 2]}, {"type": "string"}]},
+    "value": "3",
+    "raw": "3",
+    "note": "The integer 3 is not an enum member, so only the string branch admits it."
+  },
+  {
+    "name": "ref_nested_id_scope",
+    "schema": {"$ref": "#/$defs/Scoped"},
+    "defs": {
+      "Scoped": {"$id": "https://example.test/scoped", "$defs": {"T": {"type": "string"}}, "$ref": "#/$defs/T"},
+      "T": {"type": "integer"}
+    },
+    "value": "42",
+    "raw": "42",
+    "grammar": false,
+    "note": "The nested $id rebases its reference to its own string T, not the root's integer T."
+    },
+  {
+    "name": "overlapping_oneOf_union",
+    "schema": {"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]},
+    "value": "42",
+    "raw": "42",
+    "note": "The integer 42 matches both branches, which oneOf forbids; the string matches only the first."
+  },
+  {
+    "name": "type_array_string_integer_not_const",
+    "schema": {"type": ["string", "integer"], "not": {"const": 42}},
+    "value": "42",
+    "raw": "42",
+    "note": "not excludes the integer 42, so only the string reading is valid."
+  },
+  {
+    "name": "float_const_integer_precision",
+    "schema": {"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]},
+    "value": "9007199254740993",
+    "raw": "9007199254740993",
+    "note": "The integer 9007199254740993 does not equal the float constant, although f64 rounds it to that value, so only the string branch admits it."
+  },
+  {
+    "name": "type_array_string_integer_minimum",
+    "schema": {"type": ["string", "integer"], "minimum": 100},
+    "value": "42",
+    "raw": "42",
+    "note": "42 is below the minimum, which constrains only numbers, so the string reading is the valid one."
   }
 ]

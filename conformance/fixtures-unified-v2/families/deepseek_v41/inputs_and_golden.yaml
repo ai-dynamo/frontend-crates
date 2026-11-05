@@ -16795,3 +16795,381 @@ cases:
         name: get_weather
         arguments:
           city: Paris
+  schema_enum_integer_union_string_nonmember:
+    lifecycle: active
+    scenario: schema_enum_integer_union_string_nonmember
+    description: 'Schema probe enum_integer_union_string_nonmember: independently authored value "3" under {"anyOf": [{"enum": [1, 2]}, {"type": "string"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_integer_union_string_nonmember
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              anyOf:
+              - enum:
+                - 1
+                - 2
+              - type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '3'
+  schema_enum_string_literal_boolean_union:
+    lifecycle: active
+    scenario: schema_enum_string_literal_boolean_union
+    description: 'Schema probe enum_string_literal_boolean_union: independently authored value "True" under {"anyOf": [{"enum": ["True", "False"]}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_string_literal_boolean_union
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">True</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              anyOf:
+              - enum:
+                - 'True'
+                - 'False'
+              - type: boolean
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">True</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 'True'
+  schema_float_const_integer_precision:
+    lifecycle: active
+    scenario: schema_float_const_integer_precision
+    description: 'Schema probe float_const_integer_precision: independently authored value "9007199254740993" under {"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-float_const_integer_precision
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">9007199254740993</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              anyOf:
+              - const: 9007199254740992.0
+              - type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">9007199254740993</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '9007199254740993'
+  schema_overlapping_oneOf_union:
+    lifecycle: active
+    scenario: schema_overlapping_oneOf_union
+    description: 'Schema probe overlapping_oneOf_union: independently authored value "42" under {"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-overlapping_oneOf_union
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              oneOf:
+              - type:
+                - string
+                - integer
+              - type: integer
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '42'
+  schema_ref_nested_id_scope:
+    lifecycle: active
+    scenario: schema_ref_nested_id_scope
+    description: 'Schema probe ref_nested_id_scope: independently authored value "42" under {"$ref": "#/$defs/Scoped"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_nested_id_scope
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              $ref: '#/$defs/Scoped'
+          required:
+          - value
+          additionalProperties: false
+          $defs:
+            Scoped:
+              $id: https://example.test/scoped
+              $defs:
+                T:
+                  type: string
+              $ref: '#/$defs/T'
+            T:
+              type: integer
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '42'
+  schema_type_array_string_integer_leading_zero:
+    lifecycle: active
+    scenario: schema_type_array_string_integer_leading_zero
+    description: 'Schema probe type_array_string_integer_leading_zero: independently authored value "007" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_leading_zero
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">007</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - string
+              - integer
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">007</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '007'
+  schema_type_array_string_integer_minimum:
+    lifecycle: active
+    scenario: schema_type_array_string_integer_minimum
+    description: 'Schema probe type_array_string_integer_minimum: independently authored value "42" under {"type": ["string", "integer"], "minimum": 100}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_minimum
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - string
+              - integer
+              minimum: 100
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '42'
+  schema_type_array_string_integer_not_const:
+    lifecycle: active
+    scenario: schema_type_array_string_integer_not_const
+    description: 'Schema probe type_array_string_integer_not_const: independently authored value "42" under {"type": ["string", "integer"], "not": {"const": 42}}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_not_const
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - string
+              - integer
+              not:
+                const: 42
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '42'
+  schema_type_array_string_number_decimal:
+    lifecycle: active
+    scenario: schema_type_array_string_number_decimal
+    description: 'Schema probe type_array_string_number_decimal: independently authored value "1.5" under {"type": ["string", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_number_decimal
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - string
+              - number
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '1.5'
+  schema_typed_enum_union:
+    lifecycle: active
+    scenario: schema_typed_enum_union
+    description: 'Schema probe typed_enum_union: independently authored value 42 under {"anyOf": [{"type": "string", "enum": ["auto"]}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-typed_enum_union
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              anyOf:
+              - type: string
+                enum:
+                - auto
+              - type: integer
+          required:
+          - value
+          additionalProperties: false
+        strict: true
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: 42

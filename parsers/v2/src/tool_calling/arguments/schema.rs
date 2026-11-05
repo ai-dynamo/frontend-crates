@@ -21,6 +21,10 @@ pub(crate) struct SchemaFacts<'a> {
     #[cfg(not(test))]
     remaining_work: usize,
     pub(crate) exhausted: bool,
+    // The schema the current top-level query started at, and whether it lies
+    // inside a nested `$id` resource of the root, found on first use.
+    entry: Option<&'a Value>,
+    entry_scope: Option<(&'a Value, bool)>,
 }
 
 impl<'a> SchemaFacts<'a> {
@@ -30,6 +34,8 @@ impl<'a> SchemaFacts<'a> {
             path: Vec::new(),
             remaining_work: MAX_SCHEMA_WORK,
             exhausted: false,
+            entry: None,
+            entry_scope: None,
         }
     }
 
@@ -68,13 +74,44 @@ impl<'a> SchemaFacts<'a> {
             {
                 return Some(schema);
             }
-            let Some(target) = resolve_local_schema_ref(reference, self.root) else {
+            let Some(target) = self.resolve_scoped_ref(reference) else {
                 return Some(schema);
             };
             visited.push(reference);
             current = target;
         }
         Some(current)
+    }
+
+    // A nested `$id` rebases the references inside it, not its other keywords.
+    // When this walk started inside or passed through such a resource, leave its
+    // references unknown rather than resolving them against the root.
+    fn resolve_scoped_ref(&mut self, reference: &str) -> Option<&'a Value> {
+        let scoped = self
+            .path
+            .iter()
+            .any(|node| !std::ptr::eq(*node, self.root) && node.get("$id").is_some())
+            || self.entry_in_nested_resource();
+        if scoped {
+            return None;
+        }
+        resolve_local_schema_ref(reference, self.root)
+    }
+
+    // A walk that starts below the root, such as one for a nested XML child,
+    // cannot see the resources enclosing its entry schema on its path.
+    fn entry_in_nested_resource(&mut self) -> bool {
+        let Some(entry) = self.entry else {
+            return false;
+        };
+        match self.entry_scope {
+            Some((cached, nested)) if std::ptr::eq(cached, entry) => nested,
+            _ => {
+                let nested = within_nested_resource(self.root, entry);
+                self.entry_scope = Some((entry, nested));
+                nested
+            }
+        }
     }
 
     fn with_schema<T>(
@@ -86,6 +123,9 @@ impl<'a> SchemaFacts<'a> {
         if !self.spend_work() || self.path.len() >= MAX_SCHEMA_DEPTH {
             self.exhausted = true;
             return fallback;
+        }
+        if self.path.is_empty() {
+            self.entry = Some(schema);
         }
         let Some(schema) = self.resolve_ref(schema) else {
             return fallback;
@@ -144,7 +184,7 @@ impl<'a> SchemaFacts<'a> {
                 return false;
             }
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && let Some(target) = walker.resolve_scoped_ref(reference)
                 && !walker.may_describe_structural_type(target, expected)
             {
                 return false;
@@ -233,7 +273,7 @@ impl<'a> SchemaFacts<'a> {
             }
 
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && let Some(target) = walker.resolve_scoped_ref(reference)
             {
                 children.extend(walker.object_children(target, tag));
             }
@@ -275,7 +315,8 @@ impl<'a> SchemaFacts<'a> {
             MAX_SCHEMA_DEPTH,
             self.remaining_work.min(MAX_NULL_SCHEMA_NODES),
         );
-        let result = walker.matches(schema, 0, 0, false);
+        let nested = within_nested_resource(self.root, schema);
+        let result = walker.matches(schema, 0, 0, nested);
         self.remaining_work = walker.remaining;
         if walker.exhausted {
             self.exhausted = true;
@@ -290,53 +331,162 @@ impl<'a> SchemaFacts<'a> {
         schema.is_some_and(|schema| self.type_constraint(schema, expected, true) == Some(true))
     }
 
-    // A string literal branch such as `const: "auto"` must not hide a numeric
-    // alternative when the input is "42". Only reject known type/literal
-    // contradictions here; this coercion helper is not a schema validator.
-    pub(crate) fn rejects_string_literal(&mut self, schema: &'a Value, raw: &str) -> bool {
-        self.with_schema(schema, false, |walker, schema| {
-            if schema == &Value::Bool(false) {
-                return true;
+    // The shared policy for native text whose wire format cannot mark strings.
+    // A JSON value proven to fit the schema wins; otherwise text the schema
+    // admits as a string stays verbatim; otherwise a typed JSON value whose fit
+    // is unproven wins over no answer. `007` and `1e3` are not JSON integers, so
+    // they stay text under `["string", "integer"]`. None leaves the choice to
+    // the caller's conversions.
+    pub(crate) fn native_text_type(&self, schema: &'a Value, raw: &str) -> Option<NativeText> {
+        let trimmed = raw.trim();
+        // Strings and null cannot become `Json`; only these bytes start other
+        // values. A container is decoded only when the schema can type it, so a
+        // string-only parameter never builds a JSON tree from its text.
+        let value = match trimmed.as_bytes().first() {
+            Some(b'{') if !self.typed(schema, "object")? => None,
+            Some(b'[') if !self.typed(schema, "array")? => None,
+            Some(b'{' | b'[' | b't' | b'f' | b'-' | b'0'..=b'9') => {
+                serde_json::from_str::<Value>(trimmed).ok()
             }
-            let literal_rejects = schema
-                .get("const")
-                .is_some_and(|value| value.as_str() != Some(raw))
-                || schema
-                    .get("enum")
-                    .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(|value| value.as_str() == Some(raw)));
-            if schema.get("type").is_some_and(|ty| {
-                ty.as_str() != Some("string")
-                    && !ty
-                        .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "string"))
-            }) || (literal_rejects && !literals_contradict_type(schema))
+            _ => None,
+        };
+        let mut unproven = None;
+        if let Some(value) = &value
+            && let Some(kind) = json_kind(value)
+            && self.typed(schema, kind)?
+        {
+            match self.fit(schema, Candidate::Json(value)) {
+                Fit::Fits => return Some(NativeText::Json(kind)),
+                Fit::Unproven => unproven = Some(NativeText::Json(kind)),
+                Fit::Rejects => {}
+            }
+        }
+        if self.typed(schema, "string")? && self.fit(schema, Candidate::Text(raw)) != Fit::Rejects {
+            return Some(NativeText::String);
+        }
+        unproven
+    }
+
+    // Each walk gets its own work budget, so typing one value costs no more
+    // capacity than a single query. Exhaustion leaves the answer unknown.
+    fn typed(&self, schema: &'a Value, kind: &str) -> Option<bool> {
+        let mut facts = SchemaFacts::new(self.root);
+        let typed = facts.has_type(Some(schema), kind);
+        (!facts.exhausted).then_some(typed)
+    }
+
+    // An unfinished walk proves nothing, so the candidate stays Unproven: an
+    // admitted string then wins over a JSON value it could not decide.
+    fn fit(&self, schema: &'a Value, candidate: Candidate<'_>) -> Fit {
+        let mut facts = SchemaFacts::new(self.root);
+        let fit = facts.value_fit(schema, candidate);
+        if facts.exhausted { Fit::Unproven } else { fit }
+    }
+
+    // A literal branch such as `const: "auto"` must not hide an alternative that
+    // admits the value, such as 42. `Fits` is a proof, so `oneOf` and `not` are
+    // decided exactly; this is not a validator, so any keyword it does not
+    // evaluate leaves the candidate `Unproven`.
+    pub(crate) fn value_fit(&mut self, schema: &'a Value, candidate: Candidate<'_>) -> Fit {
+        self.with_schema(schema, Fit::Unproven, |walker, schema| {
+            let Some(node) = schema.as_object() else {
+                return match schema.as_bool() {
+                    Some(true) => Fit::Fits,
+                    Some(false) => Fit::Rejects,
+                    None => Fit::Unproven,
+                };
+            };
+            if node.get("type").is_some_and(|ty| {
+                !ty.as_str().map_or_else(
+                    || {
+                        ty.as_array().is_some_and(|types| {
+                            types
+                                .iter()
+                                .filter_map(Value::as_str)
+                                .any(|ty| candidate.is(ty))
+                        })
+                    },
+                    |ty| candidate.is(ty),
+                )
+            }) {
+                return Fit::Rejects;
+            }
+            let mut fit = Fit::Fits;
+            let constant = node.get("const").map(|literal| candidate.equals(literal));
+            let enumerated = node
+                .get("enum")
+                .and_then(Value::as_array)
+                .map(|literals| candidate.equals_any(literals));
+            for matched in [constant, enumerated].into_iter().flatten() {
+                match matched {
+                    Some(true) => {}
+                    // Literals that contradict the declared type do not decide it.
+                    Some(false) if !literals_contradict_type(schema) => return Fit::Rejects,
+                    Some(false) | None => fit = Fit::Unproven,
+                }
+            }
+            if UNEVALUATED_FOR_ANY_KIND
+                .iter()
+                .chain(candidate.unevaluated_keywords())
+                .any(|keyword| node.contains_key(*keyword))
             {
-                return true;
+                fit = Fit::Unproven;
             }
-            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
-                && walker.rejects_string_literal(target, raw)
-            {
-                return true;
+            if let Some(reference) = node.get("$ref") {
+                fit = fit.and(
+                    match reference
+                        .as_str()
+                        .and_then(|reference| walker.resolve_scoped_ref(reference))
+                    {
+                        Some(target) => walker.value_fit(target, candidate),
+                        None => Fit::Unproven,
+                    },
+                );
             }
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
-                    let rejected = if keyword == "allOf" {
-                        branches
-                            .iter()
-                            .any(|branch| walker.rejects_string_literal(branch, raw))
-                    } else {
-                        branches
-                            .iter()
-                            .all(|branch| walker.rejects_string_literal(branch, raw))
-                    };
-                    if rejected {
-                        return true;
+            if let Some(branches) = node.get("allOf").and_then(Value::as_array) {
+                for branch in branches {
+                    fit = fit.and(walker.value_fit(branch, candidate));
+                    if fit == Fit::Rejects {
+                        return fit;
                     }
                 }
             }
-            false
+            if let Some(branches) = node.get("anyOf").and_then(Value::as_array) {
+                let mut any = Fit::Rejects;
+                for branch in branches {
+                    any = any.max(walker.value_fit(branch, candidate));
+                    if any == Fit::Fits {
+                        break;
+                    }
+                }
+                fit = fit.and(any);
+            }
+            if let Some(branches) = node.get("oneOf").and_then(Value::as_array) {
+                let (mut fits, mut unproven) = (0, 0);
+                for branch in branches {
+                    match walker.value_fit(branch, candidate) {
+                        Fit::Fits => fits += 1,
+                        Fit::Unproven => unproven += 1,
+                        Fit::Rejects => {}
+                    }
+                    if fits > 1 {
+                        break;
+                    }
+                }
+                fit = fit.and(match (fits, unproven) {
+                    (1, 0) => Fit::Fits,
+                    (0, 0) | (2.., _) => Fit::Rejects,
+                    _ => Fit::Unproven,
+                });
+            }
+            if let Some(negated) = node.get("not") {
+                fit = fit.and(match walker.value_fit(negated, candidate) {
+                    Fit::Fits => Fit::Rejects,
+                    Fit::Rejects => Fit::Fits,
+                    Fit::Unproven => Fit::Unproven,
+                });
+            }
+            fit
         })
     }
 
@@ -363,7 +513,7 @@ impl<'a> SchemaFacts<'a> {
             // A reference and its sibling constraints apply together. Keep the
             // sibling node intact and intersect the target's facts with it.
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && let Some(target) = walker.resolve_scoped_ref(reference)
                 && let Some(permits) = walker.type_constraint(target, expected, infer_literals)
             {
                 constraint = Some(constraint.unwrap_or(true) && permits);
@@ -465,7 +615,8 @@ impl<'a> SchemaFacts<'a> {
                 }
             }
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
-                let reference_hint = resolve_local_schema_ref(reference, walker.root)
+                let reference_hint = walker
+                    .resolve_scoped_ref(reference)
                     .and_then(|target| walker.explicit_type_hint(target, expected));
                 hint = intersect_type_hints(hint, reference_hint);
             }
@@ -480,7 +631,7 @@ impl<'a> SchemaFacts<'a> {
                 items.push(item_schema);
             }
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && let Some(target) = walker.resolve_scoped_ref(reference)
             {
                 items.extend(walker.array_items(target));
             }
@@ -537,7 +688,7 @@ impl<'a> SchemaFacts<'a> {
             let mut hint = schema.get("items").map(|items| walker.permits_null(items));
 
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && let Some(target) = walker.resolve_scoped_ref(reference)
             {
                 hint = intersect_item_null(hint, walker.array_item_null_hint(target));
             }
@@ -593,7 +744,7 @@ impl<'a> SchemaFacts<'a> {
                 .and_then(|items| walker.explicit_type_hint(items, expected));
 
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
-                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && let Some(target) = walker.resolve_scoped_ref(reference)
             {
                 hint = intersect_type_hints(hint, walker.array_item_type_hint(target, expected));
             }
@@ -695,6 +846,273 @@ fn intersect_type_hints(left: Option<bool>, right: Option<bool>) -> Option<bool>
         _ => None,
     }
 }
+
+// How the shared policy types native text; see `SchemaFacts::native_text_type`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum NativeText {
+    // Valid JSON for an admitted non-string value of this JSON Schema type.
+    Json(&'static str),
+    // Text the schema admits as a string, kept verbatim.
+    String,
+}
+
+// What the evaluated keywords prove about one candidate; ordered so that
+// constraints that all apply take the minimum and alternatives the maximum.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum Fit {
+    Rejects,
+    Unproven,
+    Fits,
+}
+
+impl Fit {
+    fn and(self, other: Self) -> Self {
+        self.min(other)
+    }
+}
+
+// A typing candidate: the verbatim text, or the JSON value it decodes to.
+#[derive(Clone, Copy)]
+pub(crate) enum Candidate<'v> {
+    Text(&'v str),
+    Json(&'v Value),
+}
+
+impl Candidate<'_> {
+    fn is(self, name: &str) -> bool {
+        match self {
+            Self::Text(_) => name == "string",
+            Self::Json(value) => literal_satisfies(name, value),
+        }
+    }
+
+    // None when an equality cannot be decided exactly.
+    fn equals(self, literal: &Value) -> Option<bool> {
+        match self {
+            Self::Text(text) => Some(literal.as_str() == Some(text)),
+            Self::Json(value) => json_equal(literal, value),
+        }
+    }
+
+    // Proven equal to one literal, proven unequal to all, or unknown.
+    fn equals_any(self, literals: &[Value]) -> Option<bool> {
+        let mut decided = true;
+        for literal in literals {
+            match self.equals(literal) {
+                Some(true) => return Some(true),
+                Some(false) => {}
+                None => decided = false,
+            }
+        }
+        decided.then_some(false)
+    }
+
+    // Keywords that can reject this candidate's kind and that `value_fit` does
+    // not evaluate. Keywords for other kinds and annotations never apply.
+    fn unevaluated_keywords(self) -> &'static [&'static str] {
+        match self {
+            Self::Text(_) | Self::Json(Value::String(_)) => &[
+                "minLength",
+                "maxLength",
+                "pattern",
+                "format",
+                "contentEncoding",
+                "contentMediaType",
+                "contentSchema",
+            ],
+            Self::Json(Value::Number(_)) => &[
+                "minimum",
+                "maximum",
+                "exclusiveMinimum",
+                "exclusiveMaximum",
+                "multipleOf",
+            ],
+            Self::Json(Value::Object(_)) => &[
+                "properties",
+                "required",
+                "additionalProperties",
+                "patternProperties",
+                "propertyNames",
+                "minProperties",
+                "maxProperties",
+                "dependentRequired",
+                "dependentSchemas",
+                "dependencies",
+                "unevaluatedProperties",
+            ],
+            Self::Json(Value::Array(_)) => &[
+                "items",
+                "prefixItems",
+                "additionalItems",
+                "contains",
+                "minContains",
+                "maxContains",
+                "minItems",
+                "maxItems",
+                "uniqueItems",
+                "unevaluatedItems",
+            ],
+            Self::Json(Value::Bool(_) | Value::Null) => &[],
+        }
+    }
+}
+
+// Keywords `value_fit` does not evaluate that can reject a value of any kind.
+const UNEVALUATED_FOR_ANY_KIND: [&str; 3] = ["if", "$dynamicRef", "$recursiveRef"];
+
+// Integer kind requires an integer spelling; `1.0` and integers beyond 64 bits
+// are numbers here, so their existing typed paths stay unchanged.
+fn json_kind(value: &Value) -> Option<&'static str> {
+    match value {
+        Value::Bool(_) => Some("boolean"),
+        Value::Number(number) if number.is_i64() || number.is_u64() => Some("integer"),
+        Value::Number(_) => Some("number"),
+        Value::Array(_) => Some("array"),
+        Value::Object(_) => Some("object"),
+        Value::Null | Value::String(_) => None,
+    }
+}
+
+// JSON Schema compares literals by value and type: 1 equals 1.0, "1" does not
+// equal 1. Integers compare exactly and floats as f64, the way JSON readers
+// decode them; an integer is never rounded to compare with a float. None when
+// the comparison cannot be decided exactly.
+fn json_equal(left: &Value, right: &Value) -> Option<bool> {
+    match (left, right) {
+        (Value::Number(left), Value::Number(right)) => numbers_equal(left, right),
+        (Value::Array(left), Value::Array(right)) => {
+            if left.len() != right.len() {
+                return Some(false);
+            }
+            all_equal(left.iter().zip(right))
+        }
+        (Value::Object(left), Value::Object(right)) => {
+            if left.len() != right.len() || !left.keys().all(|key| right.contains_key(key)) {
+                return Some(false);
+            }
+            all_equal(left.iter().map(|(key, left)| (left, &right[key])))
+        }
+        _ => Some(left == right),
+    }
+}
+
+// A proven difference decides; otherwise any undecided pair leaves it unknown.
+fn all_equal<'v>(pairs: impl Iterator<Item = (&'v Value, &'v Value)>) -> Option<bool> {
+    let mut decided = true;
+    for (left, right) in pairs {
+        match json_equal(left, right) {
+            Some(false) => return Some(false),
+            Some(true) => {}
+            None => decided = false,
+        }
+    }
+    decided.then_some(true)
+}
+
+fn numbers_equal(left: &serde_json::Number, right: &serde_json::Number) -> Option<bool> {
+    match (left.is_f64(), right.is_f64()) {
+        (true, true) => Some(left.as_f64() == right.as_f64()),
+        (false, false) => match (exact_integer(left), exact_integer(right)) {
+            (Some(left), Some(right)) => Some(left == right),
+            // Beyond i128, an integer has a single JSON spelling. With arbitrary
+            // precision, other numbers beyond f64, such as `1e400`, stay undecided.
+            _ if integer_spelling(left) && integer_spelling(right) => Some(left == right),
+            _ => None,
+        },
+        _ => {
+            let (integer, float) = if left.is_f64() {
+                (right, left)
+            } else {
+                (left, right)
+            };
+            let float = float.as_f64()?;
+            if float.fract() != 0.0 {
+                return Some(false);
+            }
+            // An integral float outside [-2^127, 2^127) equals no i128.
+            exact_integer(integer).map(|integer| {
+                (i128::MIN as f64..i128::MAX as f64).contains(&float) && integer == float as i128
+            })
+        }
+    }
+}
+
+// The exact value of a JSON integer. With arbitrary precision, an integer
+// beyond 64 bits is parsed from its spelling; None beyond i128.
+fn exact_integer(number: &serde_json::Number) -> Option<i128> {
+    number
+        .as_i64()
+        .map(i128::from)
+        .or_else(|| number.as_u64().map(i128::from))
+        .or_else(|| number.to_string().parse().ok())
+}
+
+fn integer_spelling(number: &serde_json::Number) -> bool {
+    let spelling = number.to_string();
+    let digits = spelling.strip_prefix('-').unwrap_or(&spelling);
+    !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+}
+
+// Whether `target` lies inside a nested `$id` resource of `root`, searching
+// schema positions only. An unfinished search counts as nested, which leaves
+// references unknown rather than resolving them against the wrong resource.
+// A schema a caller composed from copies, such as the union of several
+// variant declarations, is not found by identity: it counts as nested when the
+// root has any nested resource.
+fn within_nested_resource(root: &Value, target: &Value) -> bool {
+    fn search(
+        root: &Value,
+        schema: &Value,
+        target: &Value,
+        nested: bool,
+        budget: &mut usize,
+        any_nested: &mut bool,
+    ) -> Option<bool> {
+        if std::ptr::eq(schema, target) {
+            return Some(nested);
+        }
+        let node = schema.as_object()?;
+        if *budget == 0 {
+            return Some(true);
+        }
+        *budget -= 1;
+        let resource =
+            !std::ptr::eq(schema, root) && node.get("$id").and_then(Value::as_str).is_some();
+        *any_nested |= resource;
+        let nested = nested || resource;
+        let mut visit = |child: &Value| search(root, child, target, nested, budget, any_nested);
+        node.iter()
+            .find_map(|(keyword, value)| match (keyword.as_str(), value) {
+                (
+                    "properties" | "patternProperties" | "$defs" | "definitions"
+                    | "dependentSchemas",
+                    Value::Object(children),
+                ) => children.values().find_map(&mut visit),
+                ("allOf" | "anyOf" | "oneOf" | "prefixItems" | "items", Value::Array(children)) => {
+                    children.iter().find_map(&mut visit)
+                }
+                (
+                    "items"
+                    | "additionalItems"
+                    | "additionalProperties"
+                    | "not"
+                    | "if"
+                    | "then"
+                    | "else"
+                    | "contains"
+                    | "propertyNames"
+                    | "unevaluatedItems"
+                    | "unevaluatedProperties",
+                    child,
+                ) => visit(child),
+                _ => None,
+            })
+    }
+    let (mut budget, mut any_nested) = (MAX_SCOPE_SEARCH_NODES, false);
+    search(root, root, target, false, &mut budget, &mut any_nested).unwrap_or(any_nested)
+}
+
+const MAX_SCOPE_SEARCH_NODES: usize = 4096;
 
 const MAX_NULL_SCHEMA_REF_DEPTH: usize = 16;
 const MAX_NULL_SCHEMA_NODES: usize = 4096;
@@ -895,122 +1313,6 @@ impl<'a> NullSchemaWalker<'a> {
     }
 }
 
-pub(crate) fn schema_has_type(root: &Value, schema: &Value, expected: &str, raw: &str) -> bool {
-    let mut remaining = 1024;
-    let matched = schema_type_match(root, schema, expected, raw, 0, &mut remaining);
-    remaining > 0 && matched == Some(true)
-}
-
-// None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
-pub(crate) fn schema_type_match(
-    root: &Value,
-    schema: &Value,
-    expected: &str,
-    raw: &str,
-    depth: usize,
-    remaining: &mut usize,
-) -> Option<bool> {
-    // A branching reference cycle can expand exponentially even at bounded depth.
-    *remaining = remaining.checked_sub(1)?;
-    // Local references are common in strict tool schemas. Limit traversal so a
-    // cyclic definition cannot recurse indefinitely while deciding a type hint.
-    if depth > 16
-        || schema.get("$dynamicRef").is_some()
-        || schema.get("$recursiveRef").is_some()
-        || (schema.get("$id").is_some() && !std::ptr::eq(schema, root))
-    {
-        return None;
-    }
-    let reference_hint = schema
-        .get("$ref")
-        .and_then(Value::as_str)
-        .and_then(|reference| resolve_local_schema_ref(reference, root))
-        .and_then(|target| schema_type_match(root, target, expected, raw, depth + 1, remaining));
-    let matches = |ty: &Value| {
-        ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
-    };
-    let mut hint = schema.get("type").map(|ty| {
-        ty.as_array()
-            .map_or_else(|| matches(ty), |types| types.iter().any(matches))
-    });
-    // A string constant preserves literal XML text only when this value
-    // matches it. Otherwise a union's numeric/structured alternative must
-    // remain available. Intersect with types, refs, and composition siblings.
-    if expected == "string"
-        && let Some(value) = schema.get("const")
-    {
-        hint = Some(hint.unwrap_or(true) && value.as_str() == Some(raw));
-    }
-    // Modern JSON Schema applies $ref siblings as additional constraints.
-    hint = match (hint, reference_hint) {
-        (Some(left), Some(right)) => Some(left && right),
-        (left, right) => left.or(right),
-    };
-    // enum/const-derived type hint: a parameter declared only by its allowed values
-    // (`{"enum": [1, 2, 4]}`, `{"const": true}`, pydantic Literal / zod literal unions)
-    // admits the JSON types of those values. Integral numbers count as integer and number.
-    let value_matches = |value: &Value| -> bool {
-        match value {
-            Value::Null => expected == "null",
-            Value::Bool(_) => expected == "boolean",
-            Value::Number(n) => {
-                expected == "number"
-                    || (expected == "integer" && n.as_f64().is_some_and(|f| f.fract() == 0.0))
-            }
-            Value::String(_) => expected == "string",
-            Value::Array(_) => expected == "array",
-            Value::Object(_) => expected == "object",
-        }
-    };
-    let enum_hint = match schema.get("enum").and_then(Value::as_array) {
-        Some(values) if !values.is_empty() => {
-            // Mixed enums keep their string fallback. A string hint must match
-            // raw text so it cannot shadow another union branch.
-            if expected == "string" {
-                values
-                    .iter()
-                    .any(|value| value.as_str() == Some(raw))
-                    .then_some(true)
-            } else {
-                values.iter().try_fold(false, |matched, value| {
-                    (!value.is_string()).then(|| matched || value_matches(value))
-                })
-            }
-        }
-        _ => None,
-    };
-    for literal_hint in [enum_hint, schema.get("const").map(value_matches)] {
-        hint = match (hint, literal_hint) {
-            (Some(left), Some(right)) => Some(left && right),
-            (left, right) => left.or(right),
-        };
-    }
-    for keyword in ["anyOf", "oneOf", "allOf"] {
-        let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
-            continue;
-        };
-        let branches = options
-            .iter()
-            .map(|option| schema_type_match(root, option, expected, raw, depth, remaining));
-        let branch_hint = if keyword == "allOf" {
-            branches.flatten().reduce(|left, right| left && right)
-        } else {
-            branches
-                .reduce(|left, right| match (left, right) {
-                    (Some(true), _) | (_, Some(true)) => Some(true),
-                    (Some(false), Some(false)) => Some(false),
-                    _ => None,
-                })
-                .flatten()
-        };
-        hint = match (hint, branch_hint) {
-            (Some(left), Some(right)) => Some(left && right),
-            (left, right) => left.or(right),
-        };
-    }
-    hint
-}
-
 #[cfg(test)]
 mod structural_type_tests {
     use super::{SchemaFacts, literals_contradict_type};
@@ -1061,10 +1363,6 @@ mod structural_type_tests {
     #[test]
     fn nested_ids_scope_only_their_references() {
         let id = "https://example.com/v";
-        let root = json!({"$defs": {
-            "Nullable": {"type": ["integer", "null"]},
-            "Scoped": {"$id": "https://example.com/t", "type": ["integer", "null"]},
-        }});
         for (schema, permits) in [
             (json!({"$id": id, "type": ["integer", "null"]}), Some(true)),
             (json!({"$id": id, "type": "integer"}), Some(false)),
@@ -1083,8 +1381,16 @@ mod structural_type_tests {
             (json!(true), Some(true)),
             (json!(false), Some(false)),
         ] {
+            // Each case is a parameter of the root, as parsers pass them.
+            let root = json!({
+                "$defs": {
+                    "Nullable": {"type": ["integer", "null"]},
+                    "Scoped": {"$id": "https://example.com/t", "type": ["integer", "null"]},
+                },
+                "properties": {"case": schema},
+            });
             assert_eq!(
-                SchemaFacts::new(&root).permits_null(&schema),
+                SchemaFacts::new(&root).permits_null(&root["properties"]["case"]),
                 permits,
                 "{schema}"
             );
@@ -1128,5 +1434,216 @@ mod structural_type_tests {
                 "{schema}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod native_text_tests {
+    use super::{NativeText, SchemaFacts, json_equal};
+    use serde_json::{Value, json};
+
+    fn typed(parameter: Value, raw: &str) -> Option<NativeText> {
+        let schema = json!({"type": "object", "properties": {"value": parameter}});
+        SchemaFacts::new(&schema).native_text_type(&schema["properties"]["value"], raw)
+    }
+
+    #[test]
+    fn json_wins_only_when_its_fit_is_proven() {
+        let integer = Some(NativeText::Json("integer"));
+        let string = Some(NativeText::String);
+        for (parameter, raw, expected) in [
+            // `oneOf` admits a value matching exactly one branch.
+            (
+                json!({"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}),
+                "42",
+                string,
+            ),
+            (
+                json!({"oneOf": [{"type": ["string", "integer"]}, {"const": 42}]}),
+                "42",
+                string,
+            ),
+            (
+                json!({"oneOf": [{"const": "auto"}, {"type": "integer"}]}),
+                "42",
+                integer,
+            ),
+            // `not` excludes literals as well as types.
+            (
+                json!({"type": ["string", "integer"], "not": {"const": 42}}),
+                "42",
+                string,
+            ),
+            (
+                json!({"type": ["string", "integer"], "not": {"enum": [42]}}),
+                "42",
+                string,
+            ),
+            (
+                json!({"type": ["string", "integer"], "not": {"const": 7}}),
+                "42",
+                integer,
+            ),
+            (json!({"not": {"type": "string"}}), "-2500", integer),
+            // An integer is not rounded to a neighboring float constant.
+            (
+                json!({"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740993",
+                string,
+            ),
+            (
+                json!({"anyOf": [{"type": "integer", "const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740993",
+                string,
+            ),
+            (
+                json!({"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740992",
+                integer,
+            ),
+            (
+                json!({"anyOf": [{"const": {"n": 9007199254740992.0}}, {"type": "string"}]}),
+                r#"{"n":9007199254740993}"#,
+                string,
+            ),
+            // A keyword the walk does not evaluate leaves JSON unproven, so an
+            // admitted string wins; without one, the typed JSON value still does.
+            (
+                json!({"type": ["string", "integer"], "minimum": 100}),
+                "42",
+                string,
+            ),
+            (json!({"type": "integer", "minimum": 100}), "42", integer),
+            (
+                json!({"anyOf": [{"type": "string"}, {"type": "object", "properties": {"x": {"type": "integer"}}}]}),
+                r#"{"x":1}"#,
+                string,
+            ),
+            (json!({"type": "integer", "enum": ["auto"]}), "5", integer),
+            (
+                json!({"type": ["string", "integer"], "$ref": "#/$defs/Missing"}),
+                "42",
+                string,
+            ),
+            // 2^64 equals the negated float constant, including when arbitrary
+            // precision keeps the integer beyond 64 bits.
+            (
+                json!({"type": ["string", "number"], "not": {"const": 18446744073709551616.0}}),
+                "18446744073709551616",
+                string,
+            ),
+        ] {
+            assert_eq!(typed(parameter.clone(), raw), expected, "{parameter} {raw}");
+        }
+    }
+
+    // A walk cut short by the depth limit proves nothing, so the admitted
+    // string wins instead of leaving the choice to type hints.
+    #[test]
+    fn an_unfinished_walk_leaves_json_unproven() {
+        let mut negated = json!({"const": 42});
+        for _ in 0..66 {
+            negated = json!({"not": negated});
+        }
+        let parameter = json!({"type": ["string", "integer"], "not": negated});
+        assert_eq!(typed(parameter, "42"), Some(NativeText::String));
+    }
+
+    // A walk for a nested child starts below the root, so it must still treat
+    // the child's enclosing `$id` resource as rebasing its references.
+    #[test]
+    fn walks_entered_inside_a_nested_resource_leave_its_references_unknown() {
+        let schema = json!({
+            "type": "object",
+            "$defs": {"T": {"type": "integer"}, "N": {"type": ["integer", "null"]}},
+            "properties": {
+                "payload": {
+                    "$id": "https://example.test/payload",
+                    "$defs": {"T": {"type": "boolean"}},
+                    "type": "object",
+                    "properties": {
+                        "value": {"anyOf": [{"$ref": "#/$defs/T"}, {"type": "string"}]},
+                        "nullable": {"$ref": "#/$defs/N"}
+                    }
+                },
+                "plain": {"anyOf": [{"$ref": "#/$defs/T"}, {"type": "string"}]}
+            }
+        });
+        let payload = &schema["properties"]["payload"]["properties"];
+        let facts = SchemaFacts::new(&schema);
+        assert_eq!(
+            facts.native_text_type(&payload["value"], "42"),
+            Some(NativeText::String)
+        );
+        assert_eq!(
+            facts.native_text_type(&schema["properties"]["plain"], "42"),
+            Some(NativeText::Json("integer"))
+        );
+        assert_eq!(
+            SchemaFacts::new(&schema).permits_null(&payload["nullable"]),
+            None
+        );
+        // A schema composed from copies cannot be located in the root, so any
+        // nested resource there leaves its references unknown.
+        let composed = json!({"allOf": [payload["value"].clone()]});
+        assert_eq!(
+            facts.native_text_type(&composed, "42"),
+            Some(NativeText::String)
+        );
+        let plain_root = json!({"$defs": {"T": {"type": "integer"}}});
+        assert_eq!(
+            SchemaFacts::new(&plain_root).native_text_type(&composed, "42"),
+            Some(NativeText::Json("integer"))
+        );
+    }
+
+    #[test]
+    fn numbers_compare_exactly() {
+        let parsed = |text: &str| serde_json::from_str::<Value>(text).unwrap();
+        for (left, right, equal) in [
+            (json!(1), json!(1.0), true),
+            (json!(-0.0), json!(0), true),
+            (
+                json!(9007199254740993_u64),
+                json!(9007199254740992.0),
+                false,
+            ),
+            (json!(u64::MAX), json!(18446744073709551615.0), false),
+            (
+                parsed("18446744073709551616"),
+                json!(18446744073709551616.0),
+                true,
+            ),
+            (
+                parsed("-170141183460469231731687303715884105728"),
+                json!(-(2f64.powi(127))),
+                true,
+            ),
+            (json!(1), json!(1.5), false),
+            (json!(1.5), json!(1.5), true),
+            (json!({"n": [1]}), json!({"n": [1.0]}), true),
+            (json!({"n": [1]}), json!({"n": [1], "m": 2}), false),
+        ] {
+            assert_eq!(json_equal(&left, &right), Some(equal), "{left} {right}");
+            assert_eq!(json_equal(&right, &left), Some(equal), "{right} {left}");
+        }
+    }
+
+    // Arbitrary precision keeps numbers beyond f64 that only their spelling
+    // identifies; only integer spellings can be compared that way.
+    #[cfg(feature = "arbitrary-precision")]
+    #[test]
+    fn numbers_beyond_f64_compare_only_as_integers() {
+        let parsed = |text: &str| serde_json::from_str::<Value>(text).unwrap();
+        assert_eq!(json_equal(&parsed("1e400"), &parsed("10e399")), None);
+        let beyond_i128 = parsed("340282366920938463463374607431768211457");
+        assert_eq!(json_equal(&beyond_i128, &beyond_i128.clone()), Some(true));
+        assert_eq!(
+            json_equal(
+                &beyond_i128,
+                &parsed("340282366920938463463374607431768211458")
+            ),
+            Some(false)
+        );
     }
 }

@@ -33,6 +33,16 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history() -> Non
         "schema_enum_inferred_integer",
         "schema_const_numeric_bare",
         "schema_enum_const_narrowing",
+        "schema_typed_enum_union",
+        "schema_type_array_string_number_decimal",
+        "schema_type_array_string_integer_leading_zero",
+        "schema_enum_string_literal_boolean_union",
+        "schema_enum_integer_union_string_nonmember",
+        "schema_ref_nested_id_scope",
+        "schema_overlapping_oneOf_union",
+        "schema_type_array_string_integer_not_const",
+        "schema_float_const_integer_precision",
+        "schema_type_array_string_integer_minimum",
     }
     for family, document in store.families.items():
         for key, case in document.cases.items():

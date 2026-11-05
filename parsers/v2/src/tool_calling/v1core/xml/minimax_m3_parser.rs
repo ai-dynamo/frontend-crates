@@ -8,7 +8,7 @@ use serde_json::Value;
 use super::super::ToolDefinition;
 use super::super::config::MiniMaxM3ParserConfig;
 use crate::tool_calling::arguments::{
-    MAX_SCHEMA_DEPTH, ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number,
+    MAX_SCHEMA_DEPTH, NativeText, ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number,
     literals_contradict_type, normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
 };
 
@@ -696,12 +696,8 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) 
         };
     }
 
-    if (schemas.has_type(Some(schema), "string")
-        && !schemas.rejects_string_literal(schema, raw)
-        && (schemas.type_constraint(schema, "string", false) == Some(true)
-            || !["integer", "number", "boolean", "object", "array"]
-                .iter()
-                .any(|kind| schemas.type_constraint(schema, kind, false) == Some(true))))
+    // An admitted JSON value falls through to the typed conversions below.
+    if schemas.native_text_type(schema, raw) == Some(NativeText::String)
         || SchemaFacts::new(root_schema).has_explicit_type(&[schema], "enum")
     {
         return ParsedValue::from(Value::String(value));
@@ -858,6 +854,58 @@ mod tests {
                     .unwrap(),
                 expected,
                 "schema={schema}"
+            );
+        }
+    }
+
+    #[test]
+    fn ambiguous_text_prefers_admitted_json_values() {
+        for (schema, raw, expected) in [
+            (json!({"type": ["string", "integer"]}), "42", "42"),
+            (json!({"type": ["string", "boolean"]}), "true", "true"),
+            // Not JSON values, so the string branch keeps the exact text.
+            (json!({"type": ["string", "integer"]}), "007", "\"007\""),
+            (json!({"type": ["string", "boolean"]}), "True", "\"True\""),
+            // The value must satisfy the literals, not only their types.
+            (
+                json!({"anyOf": [{"enum": [1, 2]}, {"type": "string"}]}),
+                "3",
+                "\"3\"",
+            ),
+            (
+                json!({"anyOf": [{"type": "string", "enum": ["auto"]}, {"type": "integer"}]}),
+                "42",
+                "42",
+            ),
+            (json!({"const": "42"}), "42", "\"42\""),
+            // JSON wins only when it provably fits.
+            (
+                json!({"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}),
+                "42",
+                "\"42\"",
+            ),
+            (
+                json!({"type": ["string", "integer"], "not": {"const": 42}}),
+                "42",
+                "\"42\"",
+            ),
+            (
+                json!({"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}),
+                "9007199254740993",
+                "\"9007199254740993\"",
+            ),
+            (
+                json!({"type": ["string", "integer"], "minimum": 100}),
+                "42",
+                "\"42\"",
+            ),
+        ] {
+            assert_eq!(
+                convert_scalar_value(raw, Some(&schema), &schema)
+                    .json_text()
+                    .unwrap(),
+                expected,
+                "schema={schema}, raw={raw:?}"
             );
         }
     }
@@ -2060,7 +2108,7 @@ mod tests {
                     serde_json::json!({"type": "string"}),
                 ],
                 "2",
-                serde_json::json!("2"),
+                serde_json::json!(2),
             ),
             (
                 [

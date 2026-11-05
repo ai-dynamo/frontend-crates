@@ -9,6 +9,13 @@ pub struct Case {
     pub name: String,
     pub schema: Value,
     pub value: Value,
+    // What native text yields under v2's shared JSON-first policy, where that
+    // differs from the authored `value`.
+    #[serde(default)]
+    pub text_value: Option<Value>,
+    // What v1's legacy string preference yields, where that differs from `value`.
+    #[serde(default)]
+    pub v1_value: Option<Value>,
     pub raw: String,
     #[serde(default)]
     pub defs: Option<Value>,
@@ -47,8 +54,13 @@ impl Case {
         wire(&self.raw)
     }
 
-    pub fn expected(&self) -> Value {
-        json!({"value": self.value})
+    pub fn expected(&self, json_first: bool) -> Value {
+        let specific = if json_first {
+            &self.text_value
+        } else {
+            &self.v1_value
+        };
+        json!({"value": specific.as_ref().unwrap_or(&self.value)})
     }
 
     pub fn probe(&self, tag: Value, arguments: Value) -> Value {
