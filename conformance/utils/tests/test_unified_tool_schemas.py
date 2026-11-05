@@ -291,6 +291,21 @@ def test_vllm_native_request_without_tools_disables_tool_choice(tools):
     assert actual.tool_choice == ("auto" if projected else "none")
 
 
+@pytest.mark.parametrize("family", sorted(VLLM_TOKENIZER_MARKERS))
+@pytest.mark.parametrize("state", [None, "Reasoning", "Response"])
+def test_vllm_request_preserves_family_reasoning_initialization(family, state):
+    # Existing corpus states need adapter kwargs that initialize the published parser.
+    tree = ast.parse((SRC / "capture_vllm_unified.py").read_text())
+    request = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_request")
+    namespace = {"openai_tools": openai_tools, "ChatCompletionRequest": SimpleNamespace}
+    exec(compile(ast.Module(body=[request], type_ignores=[]), "capture_vllm_unified.py", "exec"), namespace)
+    actual = namespace["_request"]({"family": family, "init": {"starting_state": state}, "tools": []})
+    expected = {"thinking": state != "Response", "enable_thinking": state != "Response"}
+    if family == "minimax_m3":
+        expected["thinking_mode"] = "enabled" if state == "Reasoning" else "disabled"
+    assert actual.chat_template_kwargs == expected
+
+
 @pytest.mark.parametrize("family, marker", [
     ("minimax_m3", "<mm:think>"), ("qwen3", "<think>"),
     ("kimi_k3", "<|open|>think<|sep|>"), ("gemma4", "<|channel>"),

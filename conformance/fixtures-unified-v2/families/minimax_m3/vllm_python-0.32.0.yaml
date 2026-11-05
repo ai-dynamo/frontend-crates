@@ -10200,6 +10200,145 @@ metadata_changes:
     verified_recapture:
       result:
         assembled:
+        - kind: reasoning
+          text: Check.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Check.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: Check.</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+            named_tool: get_weather
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: Check.
+          - delta_text: </mm:think>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
         - kind: text
           text: Check.</mm:think>
         - kind: tool_call
@@ -10358,6 +10497,145 @@ metadata_changes:
       results_sha256: e5dce0b1fc68985c236e399b99879ac63736286bcc1a827b0348fbe4eb29220e
     verified_recapture:
       result:
+        assembled:
+        - kind: reasoning
+          text: Check.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Check.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: Check.</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: Check.
+          - delta_text: </mm:think>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: text
           text: Check.</mm:think>
@@ -10518,6 +10796,101 @@ metadata_changes:
     verified_recapture:
       result:
         assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.</mm:think>{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: </mm:think>
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+        - expected: []
+        capture_input:
+          input: 'The literal ''doesn''t </mm:think> marker'' stays quoted.</mm:think>{"city": "Paris"}'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+            named_tool: get_weather
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: </mm:think>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: </mm:think>
+          - delta_text: '{"city": "Paris"}'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
         - kind: text
           text: 'The literal ''doesn''t </mm:think> marker'' stays quoted.</mm:think>{"city": "Paris"}'
         chunks:
@@ -10630,6 +11003,101 @@ metadata_changes:
       results_sha256: e5dce0b1fc68985c236e399b99879ac63736286bcc1a827b0348fbe4eb29220e
     verified_recapture:
       result:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.</mm:think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: </mm:think>
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+        capture_input:
+          input: 'The literal ''doesn''t </mm:think> marker'' stays quoted.</mm:think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: </mm:think>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: </mm:think>
+          - delta_text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: text
           text: 'The literal ''doesn''t </mm:think> marker'' stays quoted.</mm:think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
@@ -10872,6 +11340,101 @@ metadata_changes:
     verified_recapture:
       result:
         assembled:
+        - kind: reasoning
+          text: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "]
+        - expected:
+          - kind: reasoning
+            text: <]minimax[>
+        - expected:
+          - kind: reasoning
+            text: '['
+        - expected:
+          - kind: reasoning
+            text: <tool_call>
+        - expected:
+          - kind: reasoning
+            text: '" marker is part of the explanation.'
+        - expected: []
+        capture_input:
+          input: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
         - kind: text
           text: The literal "
         chunks:
@@ -11024,6 +11587,101 @@ metadata_changes:
       results_sha256: e5dce0b1fc68985c236e399b99879ac63736286bcc1a827b0348fbe4eb29220e
     verified_recapture:
       result:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't ]<]minimax[>[<tool_call> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't ]
+        - expected:
+          - kind: reasoning
+            text: <]minimax[>
+        - expected:
+          - kind: reasoning
+            text: '['
+        - expected:
+          - kind: reasoning
+            text: <tool_call>
+        - expected:
+          - kind: reasoning
+            text: ' marker'' stays quoted.'
+        - expected: []
+        capture_input:
+          input: The literal 'doesn't ]<]minimax[>[<tool_call> marker' stays quoted.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal 'doesn't ]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: text
           text: 'The literal ''doesn''t '
@@ -11360,6 +12018,147 @@ metadata_changes:
           reasoning: reasoning
           combined: parser.parser_manager
         source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "London"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: <mm:think>checking weather</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>London]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <mm:think>
+          - delta_text: checking weather
+          - delta_text: </mm:think>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: London]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
         adapter_sha256: 8b64ba24d3a84ec81d6bad3d95685e476157406b2274dbb5400b6bc827451aa9
         job_sha256: 6ed995ecce2f370f843abb3c64e44dd41580b55e54b7d44608ae1e87335e2766
         results_sha256: 493c6a5a3fa2cfd189f1e6c7d15e2a9d9f0122161e591e6ca838db5f52822a12
@@ -11384,6 +12183,93 @@ metadata_changes:
       results_sha256: e5dce0b1fc68985c236e399b99879ac63736286bcc1a827b0348fbe4eb29220e
     verified_recapture:
       result:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: no tool needed
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+        capture_input:
+          input: no tool needed</mm:think>The answer is 42.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: no tool needed
+          - delta_text: </mm:think>
+          - delta_text: The answer is 42.
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: text
           text: no tool needed</mm:think>The answer is 42.
@@ -11489,6 +12375,149 @@ metadata_changes:
       results_sha256: e5dce0b1fc68985c236e399b99879ac63736286bcc1a827b0348fbe4eb29220e
     verified_recapture:
       result:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here''s what I found: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: 'weighing options</mm:think>Here''s what I found: ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: weighing options
+          - delta_text: </mm:think>
+          - delta_text: 'Here''s what I found: ]'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: text
           text: 'weighing options</mm:think>Here''s what I found: '
@@ -11651,6 +12680,122 @@ metadata_changes:
     verified_recapture:
       result:
         assembled:
+        - kind: reasoning
+          text: analyzing data
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: analyzing data
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{}'
+        capture_input:
+          input: analyzing data</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: length
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: analyzing data
+          - delta_text: </mm:think>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Par
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
         - kind: text
           text: analyzing data</mm:think>
         - kind: tool_call
@@ -11787,6 +12932,95 @@ metadata_changes:
     verified_recapture:
       result:
         assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected:
+          - kind: text
+            text: ']'
+        capture_input:
+          input: 'checking weather</mm:think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: checking weather
+          - delta_text: </mm:think>
+          - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
+        assembled:
         - kind: text
           text: 'checking weather</mm:think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         chunks:
@@ -11893,6 +13127,145 @@ metadata_changes:
       results_sha256: e5dce0b1fc68985c236e399b99879ac63736286bcc1a827b0348fbe4eb29220e
     verified_recapture:
       result:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        capture_input:
+          input: checking weather</mm:think>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: checking weather
+          - delta_text: </mm:think>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <tool_call>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <invoke name="get_weather">
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: <city>
+          - delta_text: Paris]
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </city>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </invoke>
+          - delta_text: ']'
+          - delta_text: <]minimax[>
+          - delta_text: '['
+          - delta_text: </tool_call>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_python
+        version: 0.32.0
+        artifact_sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+        extracted_package_sha256: d7ad0917ddd45eee770448716cd9a751160625ec0bbded723d1dff3815dd7dfc
+        status: executed
+        parser_apis:
+          protocol: entrypoints.openai.chat_completion.protocol
+          tools: tool_parsers
+          reasoning: reasoning
+          combined: parser.parser_manager
+        source_sha256: aac1a9d902d2baaa6a87dcb8ff58f341cf26ea372c0ddd436fad78fe9a4daef1
+        adapter_sha256: 5c796fc6e7c82941c40df3c39d09ea5cfa5ccef2d8d007826fc5330beb5f2a5f
+        job_sha256: 9d50a707dcdddcd0c27a9f83fcfdda587def243f90363f41035ac4b4f698bf35
+        results_sha256: f2296115bd05de3af5f6e88878ddf567fb42a13021bddc75716af3e98a3a3deb
+      resolution: fresh_execution
+    verified_recaptures:
+    - result:
         assembled:
         - kind: text
           text: checking weather</mm:think>

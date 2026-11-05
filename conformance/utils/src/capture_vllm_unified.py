@@ -211,6 +211,9 @@ def _request(case):
         "thinking": thinking_enabled,
         "enable_thinking": thinking_enabled,
     }
+    if case.get("family") == "minimax_m3":
+        # MiniMax initializes prefilled reasoning from this template switch, not prompt IDs.
+        chat_template_kwargs["thinking_mode"] = "enabled" if init.get("starting_state") == "Reasoning" else "disabled"
     tools = openai_tools(case.get("tools"))
     if not tools and mode != "GuidedJson":
         tool_choice = "none"
