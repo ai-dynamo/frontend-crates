@@ -975,3 +975,82 @@ fn invalid_required_and_named_requests_fail() {
     };
     assert!(QWEN3_CODER.build(&named).is_err());
 }
+
+fn json_schema_formats(value: &Value) -> Vec<&Value> {
+    fn visit<'a>(value: &'a Value, result: &mut Vec<&'a Value>) {
+        match value {
+            Value::Object(fields) => {
+                if fields.get("type") == Some(&json!("json_schema")) {
+                    result.push(value);
+                }
+                for child in fields.values() {
+                    visit(child, result);
+                }
+            }
+            Value::Array(children) => {
+                for child in children {
+                    visit(child, result);
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut result = Vec::new();
+    visit(value, &mut result);
+    result
+}
+
+#[test]
+fn v41_argument_exclusion_is_scoped_and_honors_the_opt_out() {
+    let tools = tools();
+    let response_schema = json!({"type": "string", "const": "literal </｜ marker"});
+    for (family, builder) in [
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
+        ("deepseek_v4", &DEEPSEEK_DSML),
+        ("qwen3_coder", &QWEN3_CODER),
+        ("glm47", &GLM47),
+    ] {
+        for choice in [
+            StructuralTagToolChoice::Auto,
+            StructuralTagToolChoice::Required,
+            StructuralTagToolChoice::Named("get_weather"),
+        ] {
+            for exclude_special_tokens in [None, Some(true), Some(false)] {
+                for starts_in_reasoning in [false, true] {
+                    let tag = builder
+                        .build_with_options(
+                            &StructuralTagContext {
+                                tools: &tools,
+                                tool_choice: choice,
+                                parallel_tool_calls: Some(false),
+                                schema_mode: StructuralTagSchemaMode::Strict,
+                                structured_output_schema: Some(&response_schema),
+                                starts_in_reasoning,
+                            },
+                            &StructuralTagOptions {
+                                exclude_special_tokens,
+                                ..Default::default()
+                            },
+                        )
+                        .unwrap()
+                        .unwrap();
+                    let schemas = json_schema_formats(&tag);
+                    assert!(!schemas.is_empty(), "{family}: {tag}");
+                    for schema in schemas {
+                        let guarded = family == "deepseek_v41"
+                            && exclude_special_tokens != Some(false)
+                            && schema["style"] == "deepseek_v4_1_xml";
+                        if guarded {
+                            assert_eq!(schema["excludes"], json!(["</｜"]));
+                        } else {
+                            assert!(schema.get("excludes").is_none(), "{family}: {schema}");
+                        }
+                        if schema["style"] == "json" {
+                            assert_eq!(schema["json_schema"], response_schema);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

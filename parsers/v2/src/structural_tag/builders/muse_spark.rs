@@ -207,6 +207,7 @@ fn value_format(schema: &Value, root: &Value, any_order: bool) -> anyhow::Result
         style: JsonSchemaStyle::Json,
         any_order,
         max_whitespace_cnt: None,
+        excludes: Vec::new(),
     }))
 }
 
@@ -409,6 +410,7 @@ impl MuseSparkGrammar {
             style: JsonSchemaStyle::Json,
             any_order: false,
             max_whitespace_cnt: None,
+            excludes: Vec::new(),
         }))
     }
 
