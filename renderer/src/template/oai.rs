@@ -856,7 +856,9 @@ impl ControlMarkers {
     /// Byte range of the longest tail of `text[from..]`, before any trailing
     /// whitespace, that begins a declared spelling, under the same `is_assistant`
     /// policy as [`Self::find`]: the next request string joined to this one
-    /// could complete it, even when the template trims each string first.
+    /// could complete it, even when the template trims each string first. A
+    /// space right before the tail is included, because BPE and SentencePiece
+    /// tokenizers join it to the `<`: `is 3 <` keeps the tokens it has unshielded.
     fn partial_tail(
         &self,
         text: &str,
@@ -879,7 +881,14 @@ impl ControlMarkers {
                             && spelling.starts_with(&text[start..end])
                     })
             })
-            .map(|start| start..end)
+            .map(|start| {
+                let start = if text[from..start].ends_with(' ') {
+                    start - 1
+                } else {
+                    start
+                };
+                start..end
+            })
     }
 }
 
@@ -1391,6 +1400,19 @@ mod tests {
             );
             assert_eq!(ordinary_segments(&prompt), ["<|im_", "<|im_"]);
         }
+
+        // The space before a tail goes with it: tokenizers join ` <` into one
+        // token, so `is 3 <` keeps the tokens it has without the shield.
+        let formatter = chatml_formatter_for(
+            "{%- for m in messages -%}<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>{%- endfor -%}",
+        );
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test", "messages": [{"role": "user", "content": "is 3 <"}]
+        }))
+        .unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), "<|im_start|>user\nis 3 <<|im_end|>");
+        assert_eq!(ordinary_segments(&prompt), [" <"]);
     }
 
     #[test]
