@@ -692,7 +692,7 @@ impl ToolCallConfig {
                     "<|start|>assistant<|channel|>commentary".to_string(),
                     "<|channel|>commentary".to_string(),
                 ],
-                tool_call_end_tokens: vec!["<|call|>".to_string()],
+                tool_call_end_tokens: vec!["<|call|>".to_string(), "<|return|>".to_string()],
                 ..Default::default()
             }),
             structural_tag_builder: None,
