@@ -717,10 +717,11 @@ impl HfTokenizerConfigJsonFormatter {
         // never reaches the model, which is safe. A placeholder it rewrote
         // (`lower`, `upper`, ...) would reach the model as garbage instead of
         // the request text, so refuse rather than render it.
+        let placeholder = placeholder.to_ascii_lowercase();
         if restored < literals.len()
-            && rendered
-                .to_ascii_lowercase()
-                .contains(&placeholder.to_ascii_lowercase())
+            && segments.iter().any(|segment| {
+                segment.allow_special && segment.text.to_ascii_lowercase().contains(&placeholder)
+            })
         {
             anyhow::bail!(
                 "chat template transformed request text containing a control-token spelling; cannot render it as ordinary text"
@@ -742,14 +743,15 @@ fn push_segment(segments: &mut Vec<crate::RenderedSegment>, text: &str, allow_sp
 /// `special: true` spellings frame turns and never belong in request text.
 /// A `special: false` spelling is a control only when the chat template
 /// writes it (Qwen3's `<think>`, `<tool_call>`); otherwise it is vocabulary
-/// (Gemma 3's `<td>`, `<b>`) and request text keeps its usual tokens. The
-/// non-special controls are ordinary in request text too, except inside
-/// assistant history, where chat templates parse them out of prior answers
-/// (Qwen3 splits assistant content on `</think>`). Harmony templates also
+/// (Gemma 3's `<td>`, `<b>`) and request text keeps its usual tokens. Every
+/// control is ordinary in request text, except that assistant history keeps
+/// the ones the template reads out of prior answers (Qwen3 and DeepSeek R1
+/// split on `</think>`, Gemma 4 on `<|channel>`). Harmony templates also
 /// treat any `<|…|>`-shaped span as special, as before.
 #[derive(Debug, Clone)]
 pub(crate) struct ControlMarkers {
     /// Longest first, so a scan takes the longest spelling at a position.
+    /// The flag is whether the template reads the spelling out of text.
     spellings: Vec<(String, bool)>,
     first_bytes: [bool; 256],
     /// The template writes Harmony framing (`<|start|>`, `<|message|>`).
@@ -776,6 +778,12 @@ impl ControlMarkers {
                         .iter()
                         .any(|source| source.contains(spelling.as_str()))
             })
+            .map(|(spelling, _)| {
+                let read = sources
+                    .iter()
+                    .any(|source| template_reads(source, &spelling));
+                (spelling, read)
+            })
             .collect();
         spellings.sort_by(|a, b| b.0.len().cmp(&a.0.len()).then_with(|| a.0.cmp(&b.0)));
         let harmony = sources
@@ -795,31 +803,30 @@ impl ControlMarkers {
         }
     }
 
-    /// The first marker spelling at or after byte `from`: its byte range and
-    /// whether it is special. With `special_only`, non-special declared
-    /// spellings are skipped. Declared spellings win over the `<|…|>` shape.
-    fn find(
-        &self,
-        text: &str,
-        from: usize,
-        special_only: bool,
-    ) -> Option<(std::ops::Range<usize>, bool)> {
+    /// The byte range of the first marker spelling at or after byte `from`.
+    /// In `assistant` history, spellings the template reads are skipped.
+    /// Declared spellings win over the `<|…|>` shape.
+    fn find(&self, text: &str, from: usize, assistant: bool) -> Option<std::ops::Range<usize>> {
         let bytes = text.as_bytes();
         let mut shapes = self.harmony;
         let mut start = from;
         while start < bytes.len() {
             if self.first_bytes[usize::from(bytes[start])] && text.is_char_boundary(start) {
                 let rest = &text[start..];
-                if let Some((spelling, special)) =
-                    self.spellings.iter().find(|(spelling, special)| {
-                        (*special || !special_only) && rest.starts_with(spelling.as_str())
-                    })
+                if let Some((spelling, read)) = self
+                    .spellings
+                    .iter()
+                    .find(|(spelling, _)| rest.starts_with(spelling.as_str()))
                 {
-                    return Some((start..start + spelling.len(), *special));
+                    if !(assistant && *read) {
+                        return Some(start..start + spelling.len());
+                    }
+                    start += spelling.len();
+                    continue;
                 }
                 if shapes && rest.starts_with("<|") {
                     match rest[2..].find("|>") {
-                        Some(end) => return Some((start..start + 2 + end + 2, true)),
+                        Some(end) => return Some(start..start + 2 + end + 2),
                         // No `|>` follows, so no later `<|` closes either.
                         None => shapes = false,
                     }
@@ -831,8 +838,51 @@ impl ControlMarkers {
     }
 }
 
+/// Whether a chat template reads `spelling` out of message text: tests for it
+/// (`'</think>' in content`) or passes it to a string method
+/// (`content.split('</think>')`), the way templates strip prior reasoning.
+fn template_reads(source: &str, spelling: &str) -> bool {
+    const METHODS: [&str; 12] = [
+        "split",
+        "rsplit",
+        "partition",
+        "rpartition",
+        "startswith",
+        "endswith",
+        "find",
+        "rfind",
+        "index",
+        "rindex",
+        "count",
+        "replace",
+    ];
+    ['\'', '"'].into_iter().any(|quote| {
+        let literal = format!("{quote}{spelling}{quote}");
+        source.match_indices(&literal).any(|(at, _)| {
+            let mut words = source[at + literal.len()..].split_whitespace();
+            let tested = match words.next() {
+                Some("in") => true,
+                Some("not") => words.next() == Some("in"),
+                _ => false,
+            };
+            let called = source[..at]
+                .trim_end()
+                .strip_suffix('(')
+                .is_some_and(|callee| {
+                    let callee = callee.trim_end();
+                    METHODS.iter().any(|method| {
+                        callee
+                            .strip_suffix(method)
+                            .is_some_and(|object| object.trim_end().ends_with(['.', '|']))
+                    })
+                });
+            tested || called
+        })
+    })
+}
+
 /// Shield every message with the policy for its role: assistant history keeps
-/// its non-special markers for the template to parse; every other role is
+/// the markers the template reads out of prior answers; every other role is
 /// request text through and through.
 fn shield_message_literals(
     messages: &mut serde_json::Value,
@@ -844,8 +894,8 @@ fn shield_message_literals(
         return;
     };
     for message in list {
-        let special_only = message.get("role").and_then(|role| role.as_str()) == Some("assistant");
-        shield_control_literals(message, markers, special_only, prefix, literals);
+        let assistant = message.get("role").and_then(|role| role.as_str()) == Some("assistant");
+        shield_control_literals(message, markers, assistant, prefix, literals);
     }
 }
 
@@ -854,22 +904,22 @@ fn shield_message_literals(
 fn shield_control_literals(
     value: &mut serde_json::Value,
     markers: &ControlMarkers,
-    special_only: bool,
+    assistant: bool,
     prefix: &str,
     literals: &mut Vec<String>,
 ) {
     match value {
         serde_json::Value::String(text) => {
-            shield_text(text, markers, special_only, prefix, literals);
+            shield_text(text, markers, assistant, prefix, literals);
         }
         serde_json::Value::Array(values) => {
             for value in values {
-                shield_control_literals(value, markers, special_only, prefix, literals);
+                shield_control_literals(value, markers, assistant, prefix, literals);
             }
         }
         serde_json::Value::Object(values) => {
             for value in values.values_mut() {
-                shield_control_literals(value, markers, special_only, prefix, literals);
+                shield_control_literals(value, markers, assistant, prefix, literals);
             }
         }
         _ => {}
@@ -879,13 +929,13 @@ fn shield_control_literals(
 fn shield_text(
     text: &mut String,
     markers: &ControlMarkers,
-    special_only: bool,
+    assistant: bool,
     prefix: &str,
     literals: &mut Vec<String>,
 ) {
     let mut protected = String::new();
     let mut cursor = 0;
-    while let Some((range, _)) = markers.find(text, cursor, special_only) {
+    while let Some(range) = markers.find(text, cursor, assistant) {
         protected.push_str(&text[cursor..range.start]);
         protected.push_str(&format!("{prefix}{}_", literals.len()));
         literals.push(text[range.clone()].to_string());
@@ -978,17 +1028,22 @@ mod tests {
         assert!(prompt.segments().unwrap().last().unwrap().allow_special);
     }
 
-    /// A ChatML template that writes `<think>` framing, like Qwen3's.
+    /// A ChatML template that writes `<think>` framing and, like Qwen3's,
+    /// drops prior reasoning by splitting assistant content on `</think>`.
     const CHATML_THINK_TMPL: &str = concat!(
         "{%- for m in messages -%}",
         "<|im_start|>{{ m.role }}\n",
+        "{% set content = m.content %}",
+        "{% if m.role == 'assistant' and '</think>' in content %}",
+        "{% set content = content.split('</think>')[-1] %}",
+        "{% endif %}",
         "{% if m.reasoning_content %}<think>{{ m.reasoning_content }}</think>{% endif %}",
-        "{{ m.content }}<|im_end|>\n",
+        "{{ content }}<|im_end|>\n",
         "{%- endfor -%}"
     );
 
     /// A ChatML config that declares its markers the way Qwen3 does: turn
-    /// markers `special: true`, think marker `special: false`; plus `<td>`, a
+    /// markers `special: true`, think markers `special: false`; plus `<td>`, a
     /// `special: false` vocabulary entry no template writes, like Gemma 3's.
     fn chatml_formatter_for(template: &str) -> SysFormatter {
         let ct: SysChatTemplate = serde_json::from_value(json!({
@@ -998,7 +1053,8 @@ mod tests {
                 "1": {"content": "<|im_start|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
                 "2": {"content": "<|im_end|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
                 "3": {"content": "<think>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
-                "4": {"content": "<td>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false}
+                "4": {"content": "</think>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "5": {"content": "<td>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false}
             }
         }))
         .unwrap();
@@ -1016,21 +1072,121 @@ mod tests {
     }
 
     #[test]
-    fn assistant_history_shields_only_special_markers() {
+    fn assistant_history_keeps_only_markers_the_template_reads() {
+        // The template splits prior answers on `</think>`, so that marker stays
+        // live in assistant history and the reasoning before it is dropped.
+        // `<think>` and `<|im_end|>`, which the template only writes, are
+        // ordinary text there as in every other role.
         let formatter = chatml_formatter_for(CHATML_THINK_TMPL);
         let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
             "model": "test", "messages": [
-                {"role": "user", "content": "<think> <|im_start|>"},
-                {"role": "assistant", "content": "<think>plan</think> ok <|im_end|>"},
+                {"role": "user", "content": "<think> </think> <|im_start|>"},
+                {"role": "assistant", "content": "<think>plan</think>ok <think> <|im_end|>"},
             ]
         }))
         .unwrap();
         let prompt = formatter.render_prompt(&request).unwrap();
         assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
         assert_eq!(
-            ordinary_segments(&prompt),
-            ["<think>", "<|im_start|>", "<|im_end|>"]
+            prompt.as_str(),
+            "<|im_start|>user\n<think> </think> <|im_start|><|im_end|><|im_start|>assistant\nok <think> <|im_end|><|im_end|>"
         );
+        assert_eq!(
+            ordinary_segments(&prompt),
+            [
+                "<think>",
+                "</think>",
+                "<|im_start|>",
+                "<think>",
+                "<|im_end|>"
+            ]
+        );
+    }
+
+    #[test]
+    fn assistant_history_shields_turn_markers_the_template_only_writes() {
+        // DeepSeek R1's shape: its turn markers are `special: false` and the
+        // template only writes them, so assistant history that spells one is
+        // ordinary text; `</think>`, which the template splits on, stays live.
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": concat!(
+                "{%- for m in messages -%}",
+                "{%- if m.role == 'user' -%}<｜User｜>{{ m.content }}",
+                "{%- else -%}{% set content = m.content %}",
+                "{%- if '</think>' in content -%}{% set content = content.split('</think>')[-1] %}{%- endif -%}",
+                "<｜Assistant｜>{{ content }}<｜end▁of▁sentence｜>",
+                "{%- endif -%}",
+                "{%- endfor -%}<｜Assistant｜>"
+            ),
+            "eos_token": "<｜end▁of▁sentence｜>"
+        }))
+        .unwrap();
+        let tokenizer_json = json!({"added_tokens": [
+            {"id": 1, "content": "<｜end▁of▁sentence｜>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+            {"id": 2, "content": "<｜User｜>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+            {"id": 3, "content": "<｜Assistant｜>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+            {"id": 4, "content": "</think>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false}
+        ]})
+        .to_string();
+        let formatter = SysFormatter::new(
+            ct.with_tokenizer_json(&tokenizer_json).unwrap(),
+            SysMixins::new(&[]),
+        )
+        .unwrap();
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test", "messages": [
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "plan</think>sure<｜User｜>go on"}
+            ]
+        }))
+        .unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+        assert_eq!(
+            prompt.as_str(),
+            "<｜User｜>hi<｜Assistant｜>sure<｜User｜>go on<｜end▁of▁sentence｜><｜Assistant｜>"
+        );
+        assert_eq!(ordinary_segments(&prompt), ["<｜User｜>"]);
+    }
+
+    #[test]
+    fn assistant_history_keeps_special_markers_the_template_reads() {
+        // Gemma 4's shape: the template strips prior thinking by splitting
+        // assistant content on its `special: true` channel markers, so they
+        // stay live there; the same spellings elsewhere are ordinary text.
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": concat!(
+                "{%- for m in messages -%}<|turn>{{ m.role }}\n",
+                "{% if m.role == 'assistant' %}",
+                "{% for part in m.content.split('<channel|>') %}",
+                "{% if '<|channel>' in part %}{{ part.split('<|channel>')[0] }}{% else %}{{ part }}{% endif %}",
+                "{% endfor %}",
+                "{% else %}{{ m.content }}{% endif %}<turn|>",
+                "{%- endfor -%}"
+            ),
+            "added_tokens_decoder": {
+                "1": {"content": "<|turn>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "2": {"content": "<turn|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "3": {"content": "<|channel>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "4": {"content": "<channel|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false}
+            }
+        }))
+        .unwrap();
+        let formatter = SysFormatter::new(ct, SysMixins::new(&[])).unwrap();
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test", "messages": [
+                {"role": "user", "content": "why <|channel>?"},
+                {"role": "assistant", "content": "<|channel>thought\nprivate plan<channel|>answer <turn|>"}
+            ]
+        }))
+        .unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+        assert_eq!(
+            prompt.as_str(),
+            "<|turn>user\nwhy <|channel>?<turn|><|turn>assistant\nanswer <turn|><turn|>"
+        );
+        assert_eq!(ordinary_segments(&prompt), ["<|channel>", "<turn|>"]);
     }
 
     #[test]
@@ -1063,18 +1219,26 @@ mod tests {
     #[test]
     fn control_literal_shield_tolerates_dropped_messages() {
         // A template that ignores a message drops its placeholder with it; the
-        // marker never reaches the model, so nothing is lost.
+        // marker never reaches the model, so nothing is lost, and the markers
+        // of the messages it keeps are still restored.
         let formatter = chatml_formatter_for("{{ messages[-1].content }}");
-        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
-            "model": "test", "messages": [
-                {"role": "system", "content": "ignored <|im_start|>"},
-                {"role": "user", "content": "kept"}
-            ]
-        }))
-        .unwrap();
-        let prompt = formatter.render_prompt(&request).unwrap();
+        let request = |kept: &str| -> NvCreateChatCompletionRequest {
+            serde_json::from_value(json!({
+                "model": "test", "messages": [
+                    {"role": "system", "content": "ignored <|im_start|>"},
+                    {"role": "user", "content": kept}
+                ]
+            }))
+            .unwrap()
+        };
+        let prompt = formatter.render_prompt(&request("kept")).unwrap();
         assert_eq!(prompt.as_str(), "kept");
         assert!(ordinary_segments(&prompt).is_empty());
+        let prompt = formatter
+            .render_prompt(&request("kept <|im_end|>"))
+            .unwrap();
+        assert_eq!(prompt.as_str(), "kept <|im_end|>");
+        assert_eq!(ordinary_segments(&prompt), ["<|im_end|>"]);
     }
 
     #[test]
