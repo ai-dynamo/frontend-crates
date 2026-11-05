@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.10...dynamo-parsers-v2-v0.9.11) - 2026-11-05
+
+### Features
+
+- *(parsers-v2)* Add an env var that turns off quote-aware parsing ([#548](https://github.com/ai-dynamo/frontend-crates/pull/548))
+
 ## [0.9.10](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.9...dynamo-parsers-v2-v0.9.10) - 2026-11-04
 
 ### Bug fixes
