@@ -232,6 +232,83 @@ fn events_and_raw(
     Ok((assemble(&deltas), raw_arguments))
 }
 
+// Corpus-dependent checks belong here so parser crate tests need no conformance tree.
+#[test]
+fn unified_5_4_uses_unchanged_corpus_schemas_through_available_public_adapters() {
+    use dynamo_parsers_v2::{ToolParseResult, create_tool_parser_for_family};
+
+    let expected = ["é", "Café"].map(|value| UnifiedEvent::ToolCall {
+        name: "echo".into(),
+        arguments: serde_json::json!({"value": value}),
+    });
+    for family in ["gemma4", "deepseek_v41"] {
+        let document =
+            common::authored::load(std::path::Path::new(env!("CARGO_MANIFEST_DIR")), family);
+        let case = &document["cases"]["malformed_json_then_two_valid_calls"];
+        assert!(
+            case["historical_ids"]
+                .as_array()
+                .unwrap()
+                .contains(&serde_json::json!("UNIFIED.5-4"))
+        );
+        assert_eq!(
+            case["golden"]["assembled"],
+            serde_json::to_value(&expected).unwrap()
+        );
+        let request = &case["request"];
+        let tools =
+            serde_json::from_value::<Vec<dynamo_parsers_v2::Tool>>(request["tools"].clone())
+                .unwrap();
+        let init = serde_json::from_value::<Init>(request["init"].clone()).unwrap();
+        let input = request["input"].as_str().unwrap();
+        let mut schedules = splittings(input);
+        schedules.extend(
+            (0..=input.len())
+                .filter(|&at| input.is_char_boundary(at))
+                .map(|at| {
+                    (
+                        format!("split@{at}"),
+                        vec![input[..at].into(), input[at..].into()],
+                    )
+                }),
+        );
+        for (label, chunks) in schedules {
+            assert_eq!(
+                events(family, &chunks, &init, &tools).unwrap(),
+                expected,
+                "{family}/{label}"
+            );
+            let parser = create_tool_parser_for_family(family, &tools);
+            if family == "deepseek_v41" {
+                assert!(parser.is_err());
+                continue;
+            }
+            let mut parser = parser.unwrap();
+            let mut result = ToolParseResult::default();
+            for chunk in &chunks {
+                result.append(parser.push(chunk).unwrap());
+            }
+            result.append(parser.finish().unwrap());
+            let result = result.coalesce_calls();
+            assert!(result.normal_text.is_empty(), "{family}/{label}");
+            let calls: Vec<_> = result
+                .calls
+                .iter()
+                .enumerate()
+                .map(|(index, call)| {
+                    assert_eq!(call.tool_index, index);
+                    assert!(call.complete);
+                    UnifiedEvent::ToolCall {
+                        name: call.name.clone().unwrap(),
+                        arguments: serde_json::from_str(&call.arguments).unwrap(),
+                    }
+                })
+                .collect();
+            assert_eq!(calls, expected, "{family}/{label}");
+        }
+    }
+}
+
 fn render(result: &Result<Vec<UnifiedEvent>, String>) -> String {
     let events = match result {
         Ok(events) => events,

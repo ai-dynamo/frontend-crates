@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug fixes
 
-- Infer conditional and negated argument types while preserving Beam coercion order and GLM enum literals.
+- Infer conditional and negated argument types while preserving Beam declaration order among compatible types and GLM enum literals.
+- Beam scalar arguments with non-overlapping sibling `anyOf`/`oneOf` types now remain strings. For example, `{"type":"integer","anyOf":[{"type":"string"}]}` with input `123` produces `"123"` instead of the previous integer `123`.
 
 ## [0.9.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.10...dynamo-parsers-v2-v0.9.11) - 2026-11-05
 
