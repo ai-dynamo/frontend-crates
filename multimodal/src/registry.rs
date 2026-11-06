@@ -7,7 +7,10 @@
 //! spec (`{"family": ..., resolved processor params}`).
 
 use crate::models::deepseek_v41::{DeepseekV41GeometrySpec, DeepseekV41Processor, DeepseekV41Spec};
-use crate::models::glm5_next::{Glm5NextGeometrySpec, Glm5NextProcessor, Glm5NextSpec};
+use crate::models::glm5_next::{
+    Glm5NextGeometrySpec, Glm5NextImageProcessor, Glm5NextImageSpec, Glm5NextProcessor,
+    Glm5NextSpec,
+};
 use crate::models::qwen_vl::{QwenVlSpec, Resampler};
 use crate::{MmError, Result};
 use serde_json::Value;
@@ -16,7 +19,7 @@ use serde_json::Value;
 /// Built directly or deserialized via [`processor_from_spec`], where the
 /// `family` key selects the variant.
 #[derive(Clone, Debug, serde::Deserialize)]
-#[serde(tag = "family", rename_all = "snake_case")]
+#[serde(try_from = "Value")]
 #[non_exhaustive]
 pub enum ProcessorSpec {
     QwenVl(QwenVlSpec),
@@ -25,6 +28,33 @@ pub enum ProcessorSpec {
     /// Metadata-only GLM-5.3-Flash image accounting and layout; pixel
     /// processing and video are unsupported.
     Glm5Next(Glm5NextSpec),
+    /// Full GLM image pipeline, selected by `glm5_next` specs with pixel knobs.
+    Glm5NextImage(Glm5NextImageSpec),
+}
+
+// serde's internally tagged enum buffer treats arbitrary-precision decimals
+// as maps before typed f32 fields can see them. Dispatch from Value instead,
+// preserving numbers until each family's own deserializer consumes them.
+impl TryFrom<Value> for ProcessorSpec {
+    type Error = serde_json::Error;
+
+    fn try_from(value: Value) -> std::result::Result<Self, Self::Error> {
+        match value.get("family").and_then(Value::as_str) {
+            Some("qwen_vl") => serde_json::from_value(value).map(Self::QwenVl),
+            Some("deepseek_v41") => serde_json::from_value(value).map(Self::DeepseekV41),
+            Some("glm5_next")
+                if ["image_mean", "image_std", "resample"]
+                    .iter()
+                    .any(|key| value.get(key).is_some()) =>
+            {
+                serde_json::from_value(value).map(Self::Glm5NextImage)
+            }
+            Some("glm5_next") => serde_json::from_value(value).map(Self::Glm5Next),
+            _ => Err(serde::de::Error::custom(
+                "unknown or missing processor family",
+            )),
+        }
+    }
 }
 
 /// Build a family processor from a typed spec. `Err` when the family
@@ -38,6 +68,7 @@ pub fn build_processor(
         )?)),
         ProcessorSpec::DeepseekV41(spec) => Ok(Box::new(DeepseekV41Processor::new(spec)?)),
         ProcessorSpec::Glm5Next(spec) => Ok(Box::new(Glm5NextProcessor::new(spec)?)),
+        ProcessorSpec::Glm5NextImage(spec) => Ok(Box::new(Glm5NextImageProcessor::new(spec)?)),
     }
 }
 

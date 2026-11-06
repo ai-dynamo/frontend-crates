@@ -5,6 +5,41 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_string_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_control_marker_inside_argument_string:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_empty_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_valid_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   gpt_oss_quoted_message_header_literal:
     observation:
       value:
@@ -114,6 +149,11 @@ changes:
             arguments: '{"q":"x"}'
             complete: true
         - expected: []
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_array_before_payload:
     observation:
       value:
@@ -555,11 +595,13 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_json_null_ref: {}
   arg_marker_in_string:
     init:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_null_mixed_labels: {}
   arg_string_null:
     init:
       starting_state: None
@@ -575,6 +617,7 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_string_null_ref: {}
   arg_string_null_sibling_anyof:
     init:
       starting_state: None
@@ -640,6 +683,10 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  gpt_oss_control_marker_inside_argument_string: {}
+  gpt_oss_invalid_tool_body_then_empty_call: {}
+  gpt_oss_invalid_tool_body_then_valid_call: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   gpt_oss_quoted_message_header_literal:
     init:
       starting_state: None
@@ -655,6 +702,7 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message: {}
   guided_json_after_reasoning:
     init:
       starting_state: None

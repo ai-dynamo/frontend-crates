@@ -7,6 +7,239 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_minimal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_mixed_punctuation:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_multiple_segments:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_shared_prefix:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai"}'
+            complete: true
+        - expected: []
+        - expected: []
+  gpt_oss_control_marker_inside_argument_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            markers: <think></think><｜DSML｜ calls><｜DSML｜ invoke name="lookup"><｜DSML｜ parameter name="q" string="true"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜</｜DSML｜
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"markers":"<think></think><｜DSML｜ calls><｜DSML｜ invoke name=\"lookup\"><｜DSML｜ parameter name=\"q\" string=\"true\"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜</｜DSML｜"}'
+            complete: true
+        - expected: []
+        - expected: []
+  gpt_oss_invalid_tool_body_then_empty_call:
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'native push: invalid DeepSeek V4.1 parameter header'
+  gpt_oss_invalid_tool_body_then_valid_call:
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'native finish: invalid DeepSeek V4.1 JSON arguments: EOF while parsing a value at line 1 column 8'
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":2}'
+            complete: true
+        - expected: []
+        - expected: []
   guided_json_native_parameter_array_before_payload:
     observation:
       value:
@@ -219,100 +452,62 @@ changes:
     absent: true
   native_unmatched_quote_then_call:
     absent: true
-  dotted_name_minimal:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: a.b
-          arguments: {}
-        chunks:
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: a.b
-            arguments: '{}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_mixed_punctuation:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: my-tool.v2
-          arguments:
-            location: Beijing
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: my-tool.v2
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_multiple_segments:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.tools.weather
-          arguments:
-            location: Beijing
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.tools.weather
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_shared_prefix:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.weather
-          arguments:
-            location: Beijing
-        - kind: tool_call
-          name: server.time
-          arguments:
-            timezone: Asia/Shanghai
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.weather
-            arguments: '{"location":"Beijing"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.time
-            arguments: '{"timezone":"Asia/Shanghai"}'
-            complete: true
-        - expected: []
-        - expected: []
 metadata_changes:
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_control_marker_inside_argument_string:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   guided_json_native_parameter_array_before_payload:
     init:
       starting_state: Response
@@ -337,26 +532,6 @@ metadata_changes:
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
-      named_tool: null
-  dotted_name_minimal:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_mixed_punctuation:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_multiple_segments:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_shared_prefix:
-    init:
-      starting_state: None
-      tool_output_mode: Native
       named_tool: null
 document_overrides:
   adjacent_calls_partial_header:

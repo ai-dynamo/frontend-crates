@@ -26,16 +26,26 @@ use dynamo_parsers_v2::{
 };
 use serde_json::Value;
 
+mod common;
+
 const GOLDENS: &str = include_str!("../fixtures-beam/reference-goldens.jsonl");
 const KNOWN: &str = include_str!("../fixtures-beam/reference-known-divergences.yaml");
 const PLAIN_PREFIX: &str = "<|start|>assistant";
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 struct Served {
     reasoning: String,
     content: String,
     /// `(name, arguments)` in emission order; arguments compared as JSON values.
     calls: Vec<(String, Value)>,
+}
+
+impl PartialEq for Served {
+    fn eq(&self, other: &Self) -> bool {
+        self.reasoning == other.reasoning
+            && self.content == other.content
+            && common::json_values_equal(&self.calls, &other.calls)
+    }
 }
 
 struct Case {
@@ -191,7 +201,7 @@ fn describe(expected: &Served, got: &Served) -> String {
             clip(&got.content)
         ));
     }
-    if expected.calls != got.calls {
+    if !common::json_values_equal(&expected.calls, &got.calls) {
         parts.push(format!(
             "calls: expected {} got {}",
             clip(&format!("{:?}", expected.calls)),

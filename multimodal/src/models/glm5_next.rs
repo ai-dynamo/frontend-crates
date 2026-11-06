@@ -14,10 +14,15 @@
 //! SGLang, and TensorRT-LLM all take `image_grid_thw` from that HF image
 //! processor, so this planner is the single geometry contract for all three.
 //!
-//! It does not decode, resize pixels, or produce vision embeddings, and it
+//! [`Glm5NextImageProcessor`] adds pixel preprocessing using the same planner.
+//! The metadata-only processor does not produce vision embeddings, and it
 //! does not cover video: GLM expands video frames with the *image* token, so
 //! [`MmFamilyProcessor::layout_from_metadata`] refuses prompts that carry the
 //! video placeholder rather than mis-attributing those positions.
+
+mod image;
+
+pub use image::{Glm5NextImageProcessor, Glm5NextImageSpec};
 
 use crate::processor::{
     DecodedMedia, MediaMetadata, MmFamilyProcessor, ProcessedItem, TokenLayout,

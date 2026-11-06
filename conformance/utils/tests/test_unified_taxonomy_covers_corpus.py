@@ -18,7 +18,10 @@ from __future__ import annotations
 import ast
 from collections import defaultdict
 from dataclasses import replace
+from decimal import Decimal
+from copy import deepcopy
 import json
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -29,7 +32,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS
-from conformance.utils.tests.schema_oracle import matches_schema
+from conformance.utils.tests.schema_oracle import _local_reference, matches_schema
+from conformance.utils.tests.fixture_test_support import assert_unique_behaviour, semantic_key
 
 import pytest  # noqa: E402
 import yaml  # noqa: E402
@@ -37,6 +41,10 @@ import yaml  # noqa: E402
 import gen_unified_golden as G  # noqa: E402
 from schema_cases import CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, schema_arguments  # noqa: E402
 import unified_history  # noqa: E402
+import unified_archives
+from fixture_test_support import retained_source_bytes
+import ci_coverage
+import capture_stimulus  # noqa: E402
 import unified_taxonomy as taxonomy  # noqa: E402
 from capture_stimulus import _without_synthetic_finish_step  # noqa: E402
 from dynamo_version import dynamo_v2_label  # noqa: E402
@@ -52,6 +60,7 @@ from gen_unified_golden import (  # noqa: E402
     control_tokens,
     invoke_header_prefix,
 )
+from numeric_cases import NUMERIC_VARIANTS, OVERFLOW_SIBLING_VARIANTS, applicable as numeric_applicable, canonical_events, numeric_expected, unified_numeric_expected
 from unified_taxonomy import (  # noqa: E402
     historical_case_label,
     UNIFIED_GROUP_LABEL,
@@ -63,7 +72,9 @@ from unified_taxonomy import (  # noqa: E402
 )
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
-NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES)
+NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES and G._MANIFEST[family].get("scenario_profile") != "native")
+V1_SPLIT_SCENARIOS = frozenset(G.V1_SPLIT_SCENARIOS)
+NATIVE_UNIFIED_TAX = {scenario: entry for scenario, entry in UNIFIED_TAX.items() if scenario not in V1_SPLIT_SCENARIOS and scenario not in taxonomy.RETIRED_SCENARIOS}
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -71,7 +82,7 @@ def test_descriptive_ids_and_all_published_aliases():
     assert len(set(labels)) == len(labels)
     for scenario in UNIFIED_TAX:
         label = case_label(scenario)
-        assert re.fullmatch(r"[\w]+-[\w]+", label), label
+        assert re.fullmatch(r"[\w]+(?:-[\w]+)+", label), label
         legacy = taxonomy.legacy_case_label(scenario)
         if len(taxonomy._LABEL_OWNERS[legacy]) > 1:
             with pytest.raises(ValueError, match="conflicting Unified alias ownership"):
@@ -86,10 +97,35 @@ def test_descriptive_ids_and_all_published_aliases():
     for alias, scenario in taxonomy.LEGACY_CASE_LABELS.items():
         assert historical_case_label(alias) == case_label(scenario)
     for probe in CONFORMANCE_CASES:
-        assert case_label("schema_" + probe["name"]) == "7-" + probe["name"]
+        assert case_label("schema_" + probe["name"]) == taxonomy.ARGUMENT_SECTIONS[taxonomy.argument_section("schema_" + probe["name"])] + "-" + probe["name"]
     assert historical_case_label("31-29", family="gemma4") == case_label(
         "gemma4_guided_json_visible_call_prose_before_reasoning")
     assert historical_case_label("31.a") == case_label("guided_json_invalid_call")
+
+
+def test_numeric_taxonomy_ordinals_have_one_owner():
+    owners = defaultdict(list)
+    for scenario, (group, ordinal) in UNIFIED_TAX.items():
+        if isinstance(group, int):
+            owners[(group, ordinal)].append(scenario)
+    conflicts = {key: scenarios for key, scenarios in owners.items() if len(scenarios) > 1}
+    assert not conflicts, conflicts
+
+
+def test_reasoning_payload_variants_preserve_historical_aliases():
+    scenarios = (
+        ("12-5", "default_reasoning_tool_without_closer"),
+        ("12-6", "reason_markup_in_arg_consistent"),
+        ("12-7", "reason_markup_in_arg_with_text_consistent"),
+    )
+    for alias, scenario in scenarios:
+        assert historical_case_label(alias) == case_label(scenario)
+    assert historical_unified_case_key("nemotron_v3", "UNIFIED.12-5") == (
+        "UNIFIED.12-default_reasoning_tool_without_closer"
+    )
+    keys = [taxonomy_sort_key(scenario) for _, scenario in scenarios]
+    assert keys == sorted(keys)
+    assert len(set(keys)) == len(keys)
 
 
 def test_alias_conflicts_and_wrong_scenario_ownership_are_rejected(monkeypatch):
@@ -108,12 +144,9 @@ def test_alias_conflicts_and_wrong_scenario_ownership_are_rejected(monkeypatch):
 
 
 def corpus_scenarios() -> list[str]:
-    """Scenario slugs the generator actually emits — the first element of each case."""
-    return [spec[0] for spec in (*CLEAN, *EDGE)] + [
-        scenario + "_pr424"
-        for scenario, active in taxonomy.GPT_OSS_PR424_REQUEST_VARIANTS.items()
-        if active
-    ]
+    """Include dynamically authored request variants and retained v1 scenarios."""
+    variants = {scenario + "_pr424" for scenario, active in taxonomy.GPT_OSS_PR424_REQUEST_VARIANTS.items() if active}
+    return sorted(({spec[0] for spec in (*CLEAN, *EDGE)} | variants | V1_SPLIT_SCENARIOS) - taxonomy.RETIRED_SCENARIOS)
 
 
 def test_every_corpus_scenario_has_a_taxonomy_entry() -> None:
@@ -123,6 +156,16 @@ def test_every_corpus_scenario_has_a_taxonomy_entry() -> None:
         f"as UNIFIED.9.<slug> instead of their real group: {unmapped}. "
         f"Add them to UNIFIED_TAX in {TAXONOMY_FILE}."
     )
+
+
+def test_every_active_taxonomy_scenario_has_a_generator_owner():
+    for scenario in UNIFIED_TAX:
+        owners = G.scenario_families(scenario)
+        assert bool(owners) == (scenario not in taxonomy.RETIRED_SCENARIOS), scenario
+    with pytest.raises(KeyError, match="unknown unified scenario"):
+        G.scenario_families("not_an_authored_scenario")
+    for scenario in V1_SPLIT_SCENARIOS:
+        assert not (G.scenario_families(scenario) & G.MUSE_FAMILIES)
 
 
 def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
@@ -151,6 +194,32 @@ def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
             assert not prefix.startswith(control_tokens(family)[2])
         assert prefix.rsplit(">", 1)[-1]
     assert invoke_header_prefix("gpt_oss") == ""
+
+
+def _assert_dsml_recovery_input(family, scenario, case):
+    assert family in {"deepseek_v4", "deepseek_v41"}
+    gap = " " if family == "deepseek_v41" else ""
+    invoke_end = f"</｜DSML｜{gap}invoke>"
+    first, trailing = case["input"].split(invoke_end, 1)
+    assert f'<｜DSML｜{gap}parameter' in first
+    assert f'</｜DSML｜{gap}parameter>' not in first
+    expected = [{"kind": "tool_call", "name": "f", "arguments": {}}] if scenario.endswith("empty_call") else [
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+    ]
+    assert _native_input_calls(family, trailing) == expected
+    assert case["golden"] == expected
+    assert tax(scenario)[0] == 5
+
+
+@pytest.mark.parametrize("scenario", [
+    "dsml_unterminated_parameter_then_empty_call",
+    "dsml_unterminated_parameter_then_call",
+])
+def test_dsml_recovery_cases_keep_a_complete_trailing_invoke(scenario):
+    assert set(G.scenario_families(scenario)) == {"deepseek_v4", "deepseek_v41"}
+    for family in G.scenario_families(scenario):
+        case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+        _assert_dsml_recovery_input(family, scenario, case)
 
 
 def test_request_scoped_cases_never_claim_vllm_match() -> None:
@@ -244,7 +313,8 @@ def _e2e_ids_from_descriptions() -> dict[str, set[str]]:
     out: dict[str, set[str]] = {}
     for spec in (*CLEAN, *EDGE):
         scenario, desc = spec[0], spec[1]
-        ids = set(_E2E_TAG.findall(desc))
+        descriptions = desc.values() if isinstance(desc, dict) else (desc,)
+        ids = {artifact for description in descriptions for artifact in _E2E_TAG.findall(description)}
         if ids:
             out.setdefault(numbered_id(scenario), set()).update(ids)
     return out
@@ -426,23 +496,40 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
     and fails in CI — which is exactly what the first version of this did.
     """
     for fam in FAMILIES:
-        seen = defaultdict(list)
-        for name, case in build_cases(fam).items():
-            seen[
-                json.dumps(
-                    {
-                        "input": case["input"],
-                        "init": case["init"],
-                        "golden": case["golden"],
-                        "tools": case.get("tools"),
-                        "input_chunks": case.get("input_chunks"),
-                        "finish_reason": case.get("finish_reason"),
-                    },
-                    sort_keys=True,
-                )
-            ].append(name)
-        dupes = {k: v for k, v in seen.items() if len(v) > 1}
-        assert not dupes, f"{fam}: scenarios with identical behaviour: {list(dupes.values())}"
+        assert_unique_behaviour(fam, build_cases(fam))
+
+
+def test_semantic_inventory_rejects_duplicates_and_reused_ids():
+    case = {"input": "<call>x</call>", "init": {"starting_state": "None", "tool_output_mode": "Native"},
+            "tools": [{"name": "run", "parameters": {"type": "object", "properties": {"x": {"type": "integer"}}}}],
+            "golden": [{"kind": "tool_call", "name": "run", "arguments": {"x": 1}}]}
+    with pytest.raises(AssertionError, match="identical behaviour"):
+        assert_unique_behaviour("sample", {"first": case, "duplicate": deepcopy(case)})
+    changed = deepcopy(case)
+    changed["golden"][0]["arguments"]["x"] = "1"
+    with pytest.raises(AssertionError, match="reused authored case ID"):
+        assert_unique_behaviour("sample", [("same", case), ("same", changed)])
+    assert semantic_key(case) != semantic_key(changed)
+    changed = deepcopy(case)
+    changed["tools"][0]["parameters"]["properties"]["x"]["type"] = "string"
+    assert semantic_key(case) != semantic_key(changed)
+    changed = deepcopy(case)
+    changed["input"] = "<other>x</other>"
+    assert semantic_key(case) != semantic_key(changed)
+    changed = deepcopy(case)
+    changed["input_chunks"] = ["<call>", "x", "</call>"]
+    assert semantic_key(case) != semantic_key(changed)
+    binding = {"purpose": "Retain a source-bound regression", "input_source": "inputs.tar.gz:family/case", "capture_source": "capture.tar.gz:family/case", "version": "1.0.0"}
+    inventory = assert_unique_behaviour("sample", {"first": case, "retained": deepcopy(case)}, retained_archives={"retained": binding})
+    assert inventory["exact_duplicates"] == [["first", "retained"]]
+    with pytest.raises(AssertionError, match="identical behaviour"):
+        assert_unique_behaviour("sample", {"first": case, "duplicate": deepcopy(case), "retained": deepcopy(case)}, retained_archives={"retained": binding})
+    retired = {"lifecycle": "retired", "request": None, "golden": None}
+    assert assert_unique_behaviour("sample", {"old": retired})["retired_cases"] == ["old"]
+    with pytest.raises(AssertionError, match="no active authored case"):
+        assert_unique_behaviour("sample", {"old": retired}, retained_archives={"old": binding})
+    with pytest.raises(AssertionError, match="requires source and version binding"):
+        assert_unique_behaviour("sample", {"retained": case}, retained_archives={"retained": {"purpose": "overlap"}})
 
 
 def test_deepseek_v41_follows_declared_scope_including_prefilled_cases() -> None:
@@ -551,6 +638,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
             })
+        if family == "kimi_k3":
+            extra.update({"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"})
         if family == "deepseek_v4":
             extra.add("guided_response_rejected_header_quote_ownership")
         if family == "deepseek_v41":
@@ -592,6 +681,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 marker = "<think>"
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
+            elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
+                marker = '<|open|>call tool="lookup"'
             elif scenario == "guided_response_rejected_header_quote_ownership":
                 marker = '<｜DSML｜invoke'
             elif scenario == "gemma4_guided_response_extra_body_opener":
@@ -669,8 +760,9 @@ def test_scenario_families_matches_declared_scope():
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer", "muse_spark"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
-        "arg_json_null_ref": {"glm47"},
-        "arg_string_null_ref": {"glm47", "qwen3", "nemotron_v3"},
+        "arg_json_null_ref": set(G._TEMPLATE_FAMILIES),
+        "arg_string_null_ref": set(G._TEMPLATE_FAMILIES),
+        "arg_null_mixed_labels": set(G._TEMPLATE_FAMILIES),
         "glm_ref_object": set(FAMILIES),
         "glm_ref_encoded_targets": set(FAMILIES),
         "glm_ref_json_looking_strings": set(FAMILIES),
@@ -703,9 +795,9 @@ def test_schema_null_cases_keep_their_native_inputs_and_history():
     assert "<arg_value>null</arg_value>" in glm["input"]
     assert glm["tools"] == string["tools"]
     assert glm["golden"] == string["golden"]
-    assert numbered_id("arg_string_null") == "UNIFIED.7-arg_string_null"
-    assert numbered_id("arg_json_null") == "UNIFIED.7-arg_json_null"
-    assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-arg_json_null"
+    assert numbered_id("arg_string_null") == "UNIFIED.7-tool-argument-nullability-arg_string_null"
+    assert numbered_id("arg_json_null") == "UNIFIED.7-tool-argument-nullability-arg_json_null"
+    assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-tool-argument-nullability-arg_json_null"
 
 
 @pytest.mark.parametrize("family", NATIVE_FAMILIES)
@@ -720,16 +812,28 @@ def test_null_variants_preserve_the_declared_json_type(family, scenario, value):
 
 
 @pytest.mark.parametrize("scenario,value", [("arg_json_null_ref", None), ("arg_string_null_ref", "null")])
-def test_glm_reference_goldens_use_the_tool_parameters_root(scenario: str, value: object) -> None:
-    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
+def test_reference_goldens_use_the_tool_parameters_root(family, scenario: str, value: object) -> None:
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     case["tools"] = json.loads(json.dumps(case["tools"]))
     parameters = case["tools"][0]["parameters"]
     assert parameters["properties"]["city"] == {"$ref": "#/$defs/City"}
     assert case["golden"][0]["arguments"] == {"city": value}
     assert matches_schema({"city": value}, parameters)
-    _assert_input_carries_events("glm47", scenario, case)
+    _assert_input_carries_events(family, scenario, case)
     parameters["$defs"]["City"] = {"type": "integer"}
     assert not matches_schema({"city": value}, parameters)
+
+
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
+def test_mixed_null_fields_keep_independent_schema_types(family):
+    case = build_cases(family)[f"UNIFIED.arg_null_mixed_labels.{family}"]
+    arguments = case["golden"][0]["arguments"]
+    assert arguments == {"label": None, "note": None, "literal": "null"}
+    parameters = case["tools"][0]["parameters"]
+    assert matches_schema(arguments, parameters)
+    assert not matches_schema({**arguments, "literal": None}, parameters)
+    _assert_input_carries_events(family, "arg_null_mixed_labels", case)
 
 
 def test_qwen_reference_string_null_uses_root_schema_and_native_input() -> None:
@@ -827,7 +931,7 @@ def test_deepseek_mixed_control_string_preserves_the_historical_id():
     assert value == G._DS41_MIXED_STRING
     assert "<think>quoted</think>" in value
     assert '&amp; "x"' + "\\" + "\n" in value
-    assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-deepseek_v41_mixed_control_text_in_string"
+    assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string"
 
 
 @pytest.mark.parametrize("family", NATIVE_FAMILIES)
@@ -898,7 +1002,7 @@ def test_every_authored_case_survives_emission_and_reload():
 @pytest.mark.parametrize("family", [family for family in FAMILIES if G._MANIFEST[family].get("grammar")])
 def test_inherited_family_preserves_published_chunk_schedules(family):
     path = UTILS.parent / "fixtures-unified-v2" / "families" / family / "inputs_and_golden.yaml"
-    historical = yaml.safe_load(path.read_text())["cases"]
+    historical = unified_history.load_yaml(path)["cases"]
     cases = build_cases(family)
     for record in historical.values():
         if record["lifecycle"] != "active":
@@ -910,50 +1014,21 @@ def test_inherited_family_preserves_published_chunk_schedules(family):
 
 # --- counts live where they can be checked, not in registry prose ---------------
 
-def test_unified_case_counts_match_the_generator():
-    """Name exactly what is counted, and count it from the generator.
-
-    Counted: cases the generator EMITS per family — the shared scenarios every family
-    gets, plus any the scenario itself scoped with `OnlyFamilies`. Not counted: names
-    reserved in the taxonomy map that the generator does not emit, which is how a stale
-    denominator survived in the prose before.
-    """
-    family_specific = {
-        "beam": 124,
-        "deepseek_v4": 134,
-        "deepseek_v41": 130,
-        "gemma4": 127,
-        "glm47": 125,
-        "gpt_oss": 166,
-        "kimi_k2": 125,
-        "kimi_k3": 134,
-        "muse_glimmer": 138,
-        "muse_spark": 146,
-        "nemotron_v3": 131,
-        "qwen3": 130
-    }
-    assert set(family_specific) == set(FAMILIES)
-    per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
-    for fam in FAMILIES:
-        dotted_cases = sum(
-            fam in G.scenario_families(scenario)
-            for scenario in G.DOTTED_NAME_SCENARIOS
-        )
-        assert per_family[fam] == family_specific[fam] + 2 + len(CONFORMANCE_CASES) + dotted_cases + (len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == (
-        sum(family_specific.values())
-        + 2 * len(FAMILIES)
-        + len(FAMILIES) * len(CONFORMANCE_CASES)
-        + sum(len(G.scenario_families(scenario)) for scenario in G.DOTTED_NAME_SCENARIOS)
-        + len(UNIFIED_PARALLEL_BOUNDARY_FAMILIES) * len(PARALLEL_BOUNDARY_CASES)
-    )
+def test_unified_case_counts_match_the_generator(authored_unified_store):
+    """Every active authored request has one generator owner; v1 has its own generator."""
+    assert set(authored_unified_store.families) == set(NATIVE_FAMILIES)
+    for family in NATIVE_FAMILIES:
+        expected = {case["scenario"] for case in authored_unified_store.families[family].cases.values()
+                    if case["lifecycle"] == "active" and case["scenario"] not in V1_SPLIT_SCENARIOS}
+        actual = {_scenario_of(case_id, family) for case_id in build_cases(family)}
+        assert actual == expected, family
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 239 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1061,14 +1136,52 @@ def _packed_layer(root: Path, directory: str, fam: str, field_map, scenarios):
     return out
 
 
+@pytest.fixture(scope="module")
+def authored_unified_store():
+    return unified_history.load_authored_store(UTILS.parent / "fixtures-unified-v2")
+
+
+def _store_resource(row):
+    prefix = "conformance/fixtures-unified-v2/"
+    return {**row, "path": row["path"].removeprefix(prefix),
+            **({"archive": {**row["archive"], "path": row["archive"]["path"].removeprefix(prefix)}}
+               if "archive" in row else {})}
+
+
+def retained_unified_snapshots(store, *, families=None, source_root=None, resources=None):
+    """Yield complete views of selected sparse or complete retained captures."""
+    root = source_root or store.root
+    if resources is None:
+        catalog = json.loads((UTILS.parent / "viewer-catalog.json").read_bytes())
+        resources = catalog["sources"]["unified"]
+    resources = ci_coverage.select_resources(
+        [row for row in resources
+         if row["kind"] == "history" and row["implementation"] == "dynamo_v2"
+         and (families is None or row["family"] in families)], profile="exhaustive")
+    selections = {}
+    for row in resources:
+        selections.setdefault((row["family"], row["implementation"]), set()).add(row["version"])
+    owners = unified_history.original_stores(root.parent.parent, selections)
+    grouped = {}
+    for resource in resources:
+        prefix, _, history, capture_id = unified_history.original_capture(
+            owners, resource["family"], resource["implementation"], resource["version"])
+        key = prefix, resource["family"], resource["implementation"]
+        _, selected = grouped.setdefault(key, (history, {}))
+        selected.setdefault(capture_id, []).append(resource)
+    for history, selected in grouped.values():
+        for capture_id, records in history.iter_resolved_snapshots(set(selected), include_members=True):
+            snapshot = history.complete_snapshot(capture_id, records=records)
+            for resource in selected[capture_id]:
+                yield resource, snapshot
+
+
 def _materialized_unified_root(tmp_path: Path, store) -> Path:
     root = tmp_path / "unified"
-    # This oracle compares authored inputs/goldens; capture history has its own gate.
-    unified_history.materialize_store(
-        UTILS.parent / "fixtures-unified-v2", root, store=replace(store, histories={}),
-    )
+    # This comparison consumes only authored inputs and GOLDEN, never capture views.
+    inputs = unified_history.Store(store.root, store.families, {})
+    unified_history.materialize_store(UTILS.parent / "fixtures-unified-v2", root, store=inputs)
     return root
-
 
 
 def _taxonomy_scenarios(fam: str, store):
@@ -1084,7 +1197,7 @@ def _taxonomy_scenarios(fam: str, store):
     return out
 
 
-def test_every_case_triple_is_identical_at_every_layer(tmp_path, committed_unified_store):
+def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unified_store):
     """One corpus, every tracked representation, zero drift, across all three fields.
 
     Compares `(input, init, golden)` for every case of every family across the generator's
@@ -1104,9 +1217,9 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, committed_unifi
     wrong.
     """
     checked = 0
-    store = committed_unified_store
+    store = authored_unified_store
     materialized = _materialized_unified_root(tmp_path, store)
-    for fam in FAMILIES:
+    for fam in NATIVE_FAMILIES:
         spec = _emitted_spec(fam)
         scenarios = _taxonomy_scenarios(fam, store)
         packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"}, scenarios)
@@ -1131,8 +1244,8 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, committed_unifi
                         f"  {layer}: {got[field]!r}"
                     )
             checked += 1
-    assert checked == sum(len(build_cases(f)) for f in FAMILIES), (
-        "the gate must cover every generated case"
+    assert checked == sum(len(build_cases(f)) for f in NATIVE_FAMILIES), (
+        "the gate must cover every generated case with a retained authored family"
     )
 
 
@@ -1141,51 +1254,88 @@ def _assert_retained_capture_coverage(captured, expected):
     assert expected <= captured, f"missing retained captures {sorted(expected - captured)}"
 
 
-def _assert_reference_measurements_start_at_introduction(store):
-    shared_ids = {f"UNIFIED.{number}" for number in ("7-glm_ref_object", "7-glm_ref_encoded_targets", "7-glm_ref_json_looking_strings", "7-glm_ref_scalar_types")}
-    for (family, implementation), history in store.histories.items():
-        if implementation != "dynamo_v2":
+def _assert_reference_backfill_record(record, document, request, version):
+    bound = {**record, **document.get("record_metadata", {})}
+    selected = capture_stimulus.select_peer_observation(
+        bound, request, implementation="dynamo_v2", version=version,
+    )
+    receipt = selected.get("producer_origin") or bound.get("dynamo_v2_capture_provenance")
+    assert isinstance(receipt, dict), "reference backfill has no execution receipt"
+    assert receipt.get("implementation") == "dynamo_v2", "reference backfill producer differs"
+    assert receipt.get("version") == version, "reference backfill version differs"
+    for key in ("source_sha256", "adapter_sha256", "job_sha256", "results_sha256", "cargo_lock_sha256"):
+        assert re.fullmatch(r"[0-9a-f]{64}", receipt.get(key, "")), f"reference backfill has invalid {key}"
+    assert selected.get("capture_input") == request, "reference backfill request differs"
+
+
+def test_reference_backfills_require_request_bound_version_receipts(authored_unified_store, historical_unified_sources):
+    root, resources = historical_unified_sources
+    snapshots = 0
+    backfills = 0
+    retained_absences = []
+    for resource, document in retained_unified_snapshots(authored_unified_store, source_root=root, resources=resources):
+        snapshots += 1
+        family = authored_unified_store.families[resource["family"]]
+        version = resource["version"]
+        introduced = {numbered_id(name) for name in ("unused_reference_graph_parameter_types", "nullable_reference_alias_literals", "local_schema_id_preserves_type")}
+        if family.name != "glm47":
+            introduced |= {numbered_id(f"glm_ref_{suffix}") for suffix in ("object", "encoded_targets", "json_looking_strings", "scalar_types")}
+        if family.name == "qwen3":
+            introduced.add(numbered_id("arg_string_null_ref"))
+        introduced_at = (0, 7, 29) if family.name == "beam" else (0, 7, 18)
+        if unified_history._capture_release_sort_key(version)[0] >= introduced_at:
+            measured = {family.cases[key]["display_id"] for key in document["records"]}
+            missing = introduced - measured
+            if missing:
+                source = retained_source_bytes(root, resource)
+                assert hashlib.sha256(source).hexdigest() == resource["sha256"]
+                retained_absences.append({"family": family.name, "version": version, "missing": sorted(missing), "source_sha256": resource["sha256"]})
             continue
-        capture_ids = history.ordered_capture_ids()
-        latest_capture_id = capture_ids[-1]
-        for capture_id in capture_ids:
-            measured = {
-                history.family.cases[case_id]["display_id"]
-                for case_id in history.resolve(capture_id)
-            }
-            introduced_ids = {"UNIFIED.7-unused_reference_graph_parameter_types", "UNIFIED.7-nullable_reference_alias_literals", "UNIFIED.7-local_schema_id_preserves_type"}
-            if family != "glm47":
-                introduced_ids |= shared_ids
-            if G.unified_grammar_family(family) == "qwen3":
-                introduced_ids.add("UNIFIED.7-arg_string_null_ref")
-            version = tuple(int(part) for part in history.captures[capture_id]["runtime_version"].split("."))
-            # Beam joined the corpus at 0.7.29.
-            introduced_at = (0, 7, 29) if family == "beam" else (0, 7, 18)
-            if version < introduced_at:
-                assert not measured & introduced_ids, f"retrospective measurements in {family}/{capture_id}"
-            elif capture_id == latest_capture_id:
-                # Historical shards can add selected rows; only the latest resolved
-                # history must contain the complete set of currently applicable cases.
-                assert introduced_ids <= measured, f"missing current measurements in {family}/{capture_id}"
+        for case_id, record in document["records"].items():
+            case = family.cases[case_id]
+            if case["display_id"] in introduced:
+                value, metadata = unified_history.materialized_record(case, record["value"])
+                _assert_reference_backfill_record(value, metadata, case["request"], version)
+                backfills += 1
+    assert snapshots > 0
+    print(f"reference history qualification passed: {snapshots} Dynamo snapshots, {backfills} request-bound backfill records")
+    print("retained reference absences (backfill deferred): " + json.dumps(retained_absences, sort_keys=True))
+
+@pytest.mark.parametrize("corruption", [None, "receipt", "producer", "version", "request", "results"])
+def test_reference_backfill_binding_rejects_unproven_older_results(corruption):
+    request = capture_stimulus.capture_input(next(iter(build_cases("qwen3").values())))
+    record = {"capture_input": deepcopy(request), "unavailable": "unsupported request mode"}
+    receipt = {"implementation": "dynamo_v2", "version": "0.1.0",
+               **{key: "a" * 64 for key in ("source_sha256", "adapter_sha256", "job_sha256", "results_sha256", "cargo_lock_sha256")}}
+    document = {"record_metadata": {"dynamo_v2_capture_provenance": receipt}}
+    if corruption == "receipt":
+        document.clear()
+    elif corruption == "producer":
+        receipt["implementation"] = "dynamo_v1"
+    elif corruption == "version":
+        receipt["version"] = "0.1.1"
+    elif corruption == "request":
+        record["capture_input"]["input"] += "altered request"
+    elif corruption == "results":
+        receipt.pop("results_sha256")
+    if corruption is None:
+        _assert_reference_backfill_record(record, document, request, "0.1.0")
+    else:
+        with pytest.raises(AssertionError, match="reference backfill"):
+            _assert_reference_backfill_record(record, document, request, "0.1.0")
 
 
-def test_shared_reference_cases_start_at_their_introduction(committed_unified_store):
-    _assert_reference_measurements_start_at_introduction(committed_unified_store)
-
-def test_retained_unified_captures_cover_the_current_corpus(committed_unified_store):
-    store = committed_unified_store
+def test_latest_unified_captures_cover_the_current_corpus(authored_unified_store):
+    store = authored_unified_store
     captured = set()
-    current_version = unified_history._capture_release_sort_key(dynamo_v2_label(UTILS.parents[1]))
-    for (family, implementation), history in store.histories.items():
+    root = UTILS.parent / "fixtures-unified-v2"
+    latest, _ = unified_history.selected_materialization_store(root, ["latest:dynamo_v2"])
+    for (family, implementation), history in latest.histories.items():
         if implementation != "dynamo_v2":
             continue
-        capture_ids = [
-            capture_id for capture_id in history.ordered_capture_ids()
-            if unified_history._capture_release_sort_key(history.captures[capture_id]["runtime_version"]) <= current_version
-        ]
-        assert capture_ids, f"no retained captures at or before the active version for {family}"
-        for case_id in history.resolve(capture_ids[-1]):
-            case = history.family.cases[case_id]
+        selected = history.ordered_capture_ids()[-1]
+        for case_id in history.resolve(selected):
+            case = store.families[family].cases[case_id]
             case_key = case["display_id"] or case["historical_ids"][0]
             captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
@@ -1241,6 +1391,15 @@ def _family_value(scenario, family):
     }:
         return f"The literal 'doesn't {reason_close} marker' stays quoted."
     if scenario in {
+        "quoted_name_backtick_nonpossessive_some",
+        "quoted_name_backtick_nonpossessive_s_name",
+        "quoted_name_double_quote_nonpossessive_some",
+        "quoted_name_double_quote_nonpossessive_s_name",
+    }:
+        quote = "`" if scenario.startswith("quoted_name_backtick_") else '"'
+        word = "some" if scenario.endswith("_some") else "s_name"
+        return f"{quote}load_config{quote}'{word} {reason_close} marker' stays quoted."
+    if scenario in {
         "guided_response_quoted_control_braces_named",
         "guided_response_quoted_control_braces_required",
     }:
@@ -1266,6 +1425,7 @@ def _family_value(scenario, family):
             "muse_spark": "</atem:function_calls>",
             "gpt_oss": "<|call|>",
             "qwen3": "</tool_call>",
+            "minimax_m3": "]<]minimax[>[</tool_call>",
         }[family]
         return f"git log {close} --oneline"
     if scenario in {"reason_markup_in_arg", "reason_markup_in_arg_with_text"}:
@@ -1275,6 +1435,14 @@ def _family_value(scenario, family):
                 else f"{reason_open}reconsider{reason_close}")
     if scenario == "guided_json_marker_inside_argument":
         return reason_close
+    if scenario == "gpt_oss_control_marker_inside_argument_string":
+        return {
+            "deepseek_v4": '<think></think><｜DSML｜tool_calls><｜DSML｜invoke name="lookup"><｜DSML｜parameter name="q" string="true"></｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜</｜DSML｜',
+            "deepseek_v41": '<think></think><｜DSML｜ calls><｜DSML｜ invoke name="lookup"><｜DSML｜ parameter name="q" string="true"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜</｜DSML｜',
+            "gpt_oss": "<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>",
+            "kimi_k2": "<think></think><|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>",
+            "kimi_k3": "<|open|><|sep|><|close|><|end_of_msg|>",
+        }[family]
     if scenario == "gpt_oss_quoted_message_header_literal":
         return {
             "gpt_oss": "<|call|><|start|>assistant<|channel|>final<|message|>literal<|return|>",
@@ -1337,8 +1505,8 @@ def _logical_events(scenario, family, events):
     return out
 
 
-def _json_values(raw):
-    decoder = json.JSONDecoder()
+def _json_values(raw, *, exact_numbers=False):
+    decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
     values = []
     for at, char in enumerate(raw):
         if char not in "[{":
@@ -1351,7 +1519,7 @@ def _json_values(raw):
     return values
 
 
-def _parse_gemma_value(raw, index=0):
+def _parse_gemma_value(raw, index=0, *, exact_numbers=False):
     while index < len(raw) and raw[index].isspace():
         index += 1
     if raw.startswith('<|"|>', index):
@@ -1374,14 +1542,107 @@ def _parse_gemma_value(raw, index=0):
                 assert key is not None, ("invalid Gemma object key", raw[index:])
                 index += key.end()
                 assert index < len(raw) and raw[index] == ":", ("missing Gemma key separator", raw)
-                value, index = _parse_gemma_value(raw, index + 1)
+                value, index = _parse_gemma_value(raw, index + 1, exact_numbers=exact_numbers)
                 values[key[0]] = value
             else:
-                value, index = _parse_gemma_value(raw, index)
+                value, index = _parse_gemma_value(raw, index, exact_numbers=exact_numbers)
                 values.append(value)
     token = re.match(r"(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)", raw[index:])
     assert token is not None, ("unsupported Gemma value", raw[index:])
-    return json.loads(token[0]), index + token.end()
+    return json.loads(token[0], parse_float=Decimal if exact_numbers else float), index + token.end()
+
+
+def _fixture_property_schema(parameters, key, root=None, references=()):
+    root = parameters if root is None else root
+    if key in parameters.get("properties", {}):
+        return parameters["properties"][key]
+    if "$ref" in parameters:
+        reference = parameters["$ref"]
+        assert reference not in references, ("cyclic fixture root reference", reference)
+        return _fixture_property_schema(
+            _local_reference(root, reference), key, root, references + (reference,)
+        )
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        found = [_fixture_property_schema(branch, key, root, references) for branch in parameters.get(keyword, [])]
+        found = [schema for schema in found if schema]
+        if found:
+            return found[0] if len(found) == 1 else {keyword: found}
+    return {}
+
+
+def _m3_input_calls(raw, tools, *, exact_numbers=False):
+    """Read complete authored tags independently of the Rust recovery scanner.
+
+    This intentionally handles fixture grammar only. A malformed or unfinished
+    node is not treated as evidence for a complete expected call.
+    """
+    ns = "]<]minimax[>["
+    header = re.compile(re.escape(ns) + r'<invoke name="([^"]+)">')
+    opener = re.compile(re.escape(ns) + r'<([^<>/\s]+)>')
+
+    def node(at, schema, root):
+        match = opener.match(raw, at)
+        if match is None:
+            return None
+        key = match[1]
+        at = match.end()
+        close = ns + f"</{key}>"
+        declared = schema.get("type")
+        string = declared == "string" or isinstance(declared, list) and "string" in declared
+        if not string and opener.match(raw, at):
+            values = {}
+            items = []
+            while not raw.startswith(close, at):
+                child_match = opener.match(raw, at)
+                if child_match is None:
+                    return None
+                child_schema = schema.get("items", {}) if declared == "array" else _fixture_property_schema(schema, child_match[1])
+                child = node(at, child_schema, root)
+                if child is None:
+                    return None
+                child_key, value, at = child
+                values[child_key] = value
+                items.append(value)
+            value = items if declared == "array" else values
+        else:
+            end = raw.find(close, at)
+            if end < 0:
+                return None
+            value = raw[at:end]
+            at = end
+            if declared == "array" and not value.startswith("["):
+                schema = schema.get("items", {})
+            if value == "null" and matches_schema(None, schema, root):
+                value = None
+            elif not matches_schema(value, schema, root):
+                try:
+                    decoded = json.loads(value, parse_float=Decimal if exact_numbers else float)
+                except json.JSONDecodeError:
+                    pass
+                else:
+                    if matches_schema(decoded, schema, root):
+                        value = decoded
+        return key, value, at + len(close)
+
+    calls = []
+    cursor = 0
+    while match := header.search(raw, cursor):
+        name = match[1]
+        root = next((tool.get("parameters", {}) for tool in tools if tool["name"] == name), {})
+        arguments = {}
+        cursor = match.end()
+        while parameter := opener.match(raw, cursor):
+            parsed = node(cursor, _fixture_property_schema(root, parameter[1]), root)
+            if parsed is None:
+                break
+            key, value, cursor = parsed
+            if key in arguments:
+                previous = arguments[key]
+                arguments[key] = (previous if isinstance(previous, list) else [previous]) + [value]
+            else:
+                arguments[key] = value
+        calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
+    return calls
 
 
 def _atem_parameter_end(raw, value_start):
@@ -1397,13 +1658,15 @@ def _atem_parameter_end(raw, value_start):
     return raw.find("</atem:parameter>", minimum)
 
 
-def _native_input_calls(family, raw):
+def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
     """Read authored complete argument fields, not runtime recovery decisions.
 
     This fixture-only projection ignores invoke EOF policy: a syntactically present
     body is not evidence that the parser must dispatch it. The caller keeps DSML's
     empty-output EOF contract separate.
     """
+    if family == "minimax_m3":
+        return _m3_input_calls(raw, tools, exact_numbers=exact_numbers)
     if family == "glm47":
         calls = []
         cursor = 0
@@ -1466,7 +1729,7 @@ def _native_input_calls(family, raw):
     family = G.unified_grammar_family(family)
     if family == "gpt_oss":
         calls = []
-        decoder = json.JSONDecoder()
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
         endings = ("<|call|>", "<|end|>", "<|return|>")
         owned_until = 0
         headers = re.finditer(
@@ -1513,7 +1776,7 @@ def _native_input_calls(family, raw):
             rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>',
             re.S,
         )
-        decoder = json.JSONDecoder()
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
         calls = []
         cursor = 0
         while match := re.search(headers[family], raw[cursor:]):
@@ -1539,7 +1802,9 @@ def _native_input_calls(family, raw):
                 parameter = parameter_pattern.search(raw, body_cursor)
                 if parameter and (body_end < 0 or parameter.start() < body_end):
                     key, is_string, value = parameter.groups()
-                    arguments[key] = value if is_string == "true" else json.loads(value)
+                    arguments[key] = value if is_string == "true" else json.loads(
+                        value, parse_float=Decimal if exact_numbers else float
+                    )
                     body_cursor = parameter.end()
                     continue
                 cursor = len(raw) if body_end < 0 else body_end + len(invocation_end)
@@ -1584,20 +1849,36 @@ def _native_input_calls(family, raw):
                 value = body[value_start:end]
                 cursor = end + len("</atem:parameter>")
                 try:
-                    arguments[key] = json.loads(value)
+                    arguments[key] = json.loads(
+                        value, parse_float=Decimal if exact_numbers else float
+                    )
                 except json.JSONDecodeError:
                     arguments[key] = value
         elif family == "gemma4":
-            arguments, _ = _parse_gemma_value("{" + body)
+            arguments, _ = _parse_gemma_value("{" + body, exact_numbers=exact_numbers)
         elif family == "kimi_k2":
             start = len(body) - len(body.lstrip(" \t\r\n"))
-            arguments, _ = json.JSONDecoder().raw_decode(body, start)
+            decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
+            try:
+                arguments, _ = decoder.raw_decode(body, start)
+            except json.JSONDecodeError:
+                # Kimi K2 preserves a named malformed JSON call as empty arguments.
+                arguments = {}
         else:
-            pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
+            pattern = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+                       r'<\|close\|>\s*argument\s*<\|sep\|>'
+                       r'(?=\s*(?:<\|open\|>\s*argument key="[^"]+" type="[^"]+"\s*<\|sep\|>|<\|close\|>\s*(?:call|tools)\s*<\|sep\|>|$))')
             for key, kind, value in re.findall(pattern, body, re.S):
-                arguments[key] = value if kind == "string" else json.loads(value)
+                arguments[key] = value if kind == "string" else json.loads(
+                    value, parse_float=Decimal if exact_numbers else float
+                )
+            if not arguments and not re.search(r'<\|close\|>\s*call\s*<\|sep\|>', body):
+                response_terminated = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+                                       r'<\|close\|>\s*argument\s*<\|sep\|>(?=\s*<\|open\|>\s*response\s*<\|sep\|>)')
+                for key, kind, value in re.findall(response_terminated, body, re.S):
+                    arguments[key] = value if kind == "string" else json.loads(value)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
-                values = _json_values(body)
+                values = _json_values(body, exact_numbers=exact_numbers)
                 if values:
                     arguments = values[0]
         calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
@@ -1690,6 +1971,7 @@ def _assert_malformed_recovery(family, case):
         "muse_spark": "<|start|>assistant to=echo<|message|>",
         "gpt_oss": "<|start|>assistant<|channel|>commentary to=functions.echo",
         "beam": "<|start|>assistant to=echo<|channel|>",
+        "minimax_m3": ']<]minimax[>[<invoke name="echo">',
     }
     at = raw.index(openers[family])
     prefix, suffix = raw[:at], raw[at:]
@@ -1716,6 +1998,7 @@ def _assert_malformed_recovery(family, case):
         "gemma4": "}}<tool_call|>", "muse_glimmer": "</atem:invoke>", "muse_spark": "</atem:invoke>",
         "gpt_oss": "<|call|>",
         "beam": "</rfl:parameter><|call|>",
+        "minimax_m3": "]<]minimax[>[</value>]<]minimax[>[</invoke>",
     }
     assert closers[family] in prefix
     echoes = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
@@ -1723,7 +2006,7 @@ def _assert_malformed_recovery(family, case):
     bad = []
     if family == "kimi_k2":
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
-    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam"}:
+    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
     assert case["golden"] == bad + echoes
     if family != "gpt_oss":
@@ -1734,17 +2017,158 @@ def _assert_malformed_recovery(family, case):
     return echoes
 
 
+def _assert_missing_inner_closers(family: str, case: dict) -> list[dict]:
+    family = G.unified_grammar_family(family)
+    if family == "muse_spark":
+        family = "muse_glimmer"
+    raw = case["input"]
+    assert case["input_chunks"] == [raw]
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    prefix = G.MISSING_INNER_CLOSERS[family][0]
+    native_raw = raw.removeprefix(G.control_tokens(family)[1])
+    assert native_raw.startswith(prefix)
+    inner_closers = {
+        "beam": "</rfl:parameter>", "minimax_m3": "]<]minimax[>[</location>",
+        "qwen3": "</parameter>", "glm47": "</arg_value>",
+        "deepseek_v4": "</｜DSML｜parameter>", "deepseek_v41": "</｜DSML｜ parameter>",
+        "gemma4": '<|"|>}', "kimi_k3": "<|close|>argument", "muse_glimmer": "</atem:parameter>",
+    }
+    assert "unfinished" in prefix and inner_closers[family] not in prefix
+    paris = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}]
+    assert _native_input_calls(family, native_raw[len(prefix):]) == paris
+    if family == "glm47":
+        assert native_raw == (
+            "<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>"
+            "<tool_call>get_weather<arg_key>location</arg_key><arg_value>Paris</arg_value></tool_call>"
+        )
+        expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "unfinished"}}] + paris
+    elif family == "gemma4":
+        # The second quote closes the original string, leaving bare Paris where
+        # an object separator/closer is required; this really is malformed.
+        assert native_raw == (
+            '<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>'
+            '<|tool_call>call:get_weather{location:<|"|>Paris<|"|>}<tool_call|>'
+        )
+        expected = paris
+    else:
+        openers = {
+            "beam": '<rfl:parameter name="location">', "qwen3": "<parameter=location>",
+            "minimax_m3": "]<]minimax[>[<location>",
+            "deepseek_v4": '<｜DSML｜parameter name="location" string="true">',
+            "deepseek_v41": '<｜DSML｜ parameter name="location" string="true">',
+            "kimi_k3": '<|open|>argument key="location" type="string"<|sep|>',
+            "muse_glimmer": '<atem:parameter name="location">',
+        }
+        start = native_raw.index(openers[family]) + len(openers[family])
+        end = native_raw.index(inner_closers[family], start)
+        if family in {"beam", "qwen3"}:
+            start += int(native_raw[start:start + 1] == "\n")
+            end -= int(native_raw[end - 1:end] == "\n")
+        value = native_raw[start:end]
+        assert value.startswith("unfinished") and value.endswith("Paris")
+        assert inner_closers[family] not in value
+        # Re-encode a known literal independently of GOLDEN. Header-shaped
+        # bytes cannot become calls while this parameter still owns them.
+        sentinel = "ORACLE_LITERAL_SENTINEL"
+        head, tail = G.r_tool(family, "get_weather", "location", sentinel, 0).split(sentinel)
+        assert head.replace("\n", "") == native_raw[:start].replace("\n", "")
+        assert tail.replace("\n", "") == native_raw[end:].replace("\n", "")
+        expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": value}}]
+    assert case["golden"] == expected
+    assert case["tools"] == [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"],
+    }}]
+    # Cross-family normalization represents the shared stimulus's Paris suffix,
+    # not equivalent emitted calls; full native outputs are checked above.
+    return paris
+
+
+_INNER_CLOSER_FAMILIES = (
+    "beam", "qwen3", "nemotron_v3", "deepseek_v4", "deepseek_v41", "minimax_m3",
+    "kimi_k3", "muse_glimmer", "muse_spark", "glm47", "gemma4",
+)
+
+
+@pytest.mark.parametrize("family", _INNER_CLOSER_FAMILIES)
+def test_inner_closer_oracle_checks_the_complete_native_input(family):
+    case = build_cases(family)[f"UNIFIED.missing_inner_closers_then_valid_call.{family}"]
+    _assert_missing_inner_closers(family, case)
+    shared = G.SCENARIO_SUMMARIES["missing_inner_closers_then_valid_call"]
+    assert case["description"].startswith(shared)
+    assert "Native mode, default initialization" in shared
+    grammar = G.unified_grammar_family(family)
+    if grammar == "muse_spark":
+        grammar = "muse_glimmer"
+    assert G.MISSING_INNER_CLOSERS[grammar][1] in case["description"]
+    assert ("two calls" if grammar == "glm47" else "only" if grammar == "gemma4" else "one get_weather") in case["description"]
+
+
+@pytest.mark.parametrize("family", _INNER_CLOSER_FAMILIES)
+def test_inner_closer_oracle_rejects_incorrect_call_boundaries(family):
+    case = json.loads(json.dumps(build_cases(family)[f"UNIFIED.missing_inner_closers_then_valid_call.{family}"]))
+    paris = {"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}
+    case["golden"] = ([paris] if family != "gemma4" else [
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"location": "unfinished"}}, paris,
+    ])
+    with pytest.raises(AssertionError):
+        _assert_missing_inner_closers(family, case)
+
+
+
+_GUIDED_NATIVE_RECOVERY_SCENARIOS = (
+    "guided_json_native_markup_only",
+    "guided_native_after_prefilled_reasoning_required",
+    "guided_native_after_prefilled_reasoning_named",
+)
+
+
+def _assert_guided_native_recovery(family, scenario, case):
+    """Pin the native stimulus and the deliberate M3-only recovery contract."""
+    assert family == "minimax_m3"
+    assert scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS
+    prefilled = scenario != "guided_json_native_markup_only"
+    named = scenario == "guided_native_after_prefilled_reasoning_named"
+    call = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
+    reasoning = [{"kind": "reasoning", "text": "Check."}] if prefilled else []
+    assert case["init"] == {
+        "starting_state": "Reasoning" if prefilled else "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": "get_weather" if named else None,
+    }, (family, scenario, "native-recovery request contract")
+    prefix = "Check." + control_tokens(family)[1] if prefilled else G.default_response_prefix(family)
+    assert case["input"] == prefix + G.r_tool(family, "get_weather", "city", "Paris", 0), (
+        family, scenario, "native-recovery input framing",
+    )
+    # Check the semantic call independently of the generator's golden output.
+    assert _native_input_calls(family, case["input"]) == [call], (
+        family, scenario, "native-recovery input contract",
+    )
+    expected = reasoning + [call]
+    assert case["golden"] == expected, (family, scenario, "native-recovery output contract")
+    assert case["finish_reason"] == "stop", (family, scenario, "native-recovery backend finish")
+    return reasoning
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
+    if scenario == "missing_inner_closers_then_valid_call":
+        _assert_missing_inner_closers(family, case)
+        return
+    if scenario.startswith("kimi_native_"):
+        _assert_kimi_native_golden(scenario, case)
+    if scenario in {"dsml_unterminated_parameter_then_call", "dsml_unterminated_parameter_then_empty_call"}:
+        _assert_dsml_recovery_input(family, scenario, case)
+        return
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
-        if case["init"]["tool_output_mode"] == "Native":
-            candidates = _native_input_calls(family, raw)
+        if (case["init"]["tool_output_mode"] == "Native"
+                or (family == "minimax_m3" and scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS)):
+            candidates = _native_input_calls(family, raw, case.get("tools", []), exact_numbers=True)
             for candidate in candidates:
                 tool_schema = next(
                     (tool for tool in case.get("tools", []) if tool["name"] == candidate["name"]),
@@ -1755,11 +2179,11 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 parameters = tool_schema.get("parameters", {})
                 properties = parameters.get("properties", {})
                 for key, value in candidate["arguments"].items():
-                    schema = properties.get(key, {})
+                    schema = _fixture_property_schema(parameters, key)
                     # Families whose wire carries untyped text values: the authoring
                     # contract types them against the declared schema (a literal
                     # `null` for a nullable property, JSON for a non-string one).
-                    if G.unified_grammar_family(family) not in {"qwen3", "glm47", "beam"} or not isinstance(value, str):
+                    if G.unified_grammar_family(family) not in {"qwen3", "glm47", "beam", "minimax_m3"} or not isinstance(value, str):
                         continue
                     if scenario in {probe["name"] for probe in XML_COMPATIBILITY_CASES} and schema == {"type": "custom"}:
                         assert family == "qwen3"
@@ -1771,16 +2195,20 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                           or (G.unified_grammar_family(family) in ("qwen3", "beam") and scenario in {
                               "schema_integer_const_ambiguous", "schema_object_const_union",
                               "schema_type_array_string_integer",
-                          })):
+                          }) or (family == "minimax_m3" and scenario in {
+                              "schema_integer_const_ambiguous", "schema_object_const_union",
+                          }) or family == "qwen3"):
                         try:
-                            decoded = json.loads(value)
+                            decoded = json.loads(value, parse_float=Decimal)
                         except json.JSONDecodeError:
                             continue
-                        if matches_schema(decoded, schema, parameters):
+                        if matches_schema(decoded, schema, parameters) and (
+                            family != "qwen3" or not isinstance(decoded, str)
+                        ):
                             candidate["arguments"][key] = decoded
         else:
             candidates = []
-            for value in _json_values(raw):
+            for value in _json_values(raw, exact_numbers=True):
                 if case["init"]["named_tool"] is not None:
                     candidates.append({"kind": "tool_call", "name": case["init"]["named_tool"], "arguments": value})
                 else:
@@ -1789,8 +2217,16 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                             candidates.append({"kind": "tool_call", **call})
         cursor = 0
         for event in tools:
-            assert event in candidates[cursor:], (family, scenario, "input call differs from golden", event, candidates)
-            cursor = candidates.index(event, cursor) + 1
+            expected = event
+            if isinstance(event.get("arguments"), str):
+                expected = {
+                    **event,
+                    "arguments": json.loads(event["arguments"], parse_float=Decimal),
+                }
+            assert expected in candidates[cursor:], (
+                family, scenario, "input call differs from golden", event, candidates,
+            )
+            cursor = candidates.index(expected, cursor) + 1
     for event in case["golden"]:
         if event["kind"] in {"message_start", "message_end"}:
             assert family == "muse_spark" and case["init"].get("preserve_message_phases")
@@ -1820,6 +2256,8 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             continue
         assert event["kind"] == "tool_call"
         name, arguments = event["name"], event["arguments"]
+        if isinstance(arguments, str):
+            arguments = json.loads(arguments, parse_float=Decimal)
         assert name in raw or case["init"]["named_tool"] == name, (family, scenario, "input tool name", name)
         assert isinstance(arguments, dict), (family, scenario, "argument object")
         for key, value in arguments.items():
@@ -1845,6 +2283,7 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             "deepseek_v4_guided_reasoning_opener_inside_native_body",
             "kimi_k3_elided_think_close_to_response",
             "gpt_oss_interrupted_reasoning_then_response",
+            "interrupted_reasoning_then_response",
         }
         if scenario.removesuffix("_pr424") not in unclosed:
             assert control_tokens(family)[1] in raw, (family, scenario, "missing reasoning closer")
@@ -1854,6 +2293,27 @@ BEAM_GRAMMAR_EXCEPTIONS = {
     "guided_json_native_parameter_body_inside_reasoning",
     "guided_json_reasoning_markers_inside_native_parameter",
 }
+BEAM_NUMERIC_STRING_SCENARIOS = {
+    scenario for scenario, label, _schema, raw, expected in NUMERIC_VARIANTS
+    if unified_numeric_expected("beam", label, raw, expected)
+    != numeric_expected("beam", label, raw, expected)
+}
+
+
+def _assert_generic_cases_span_families(scenarios):
+    coverage = defaultdict(set)
+    for scenario, families in scenarios.items():
+        parent = taxonomy.coverage_case(scenario)
+        coverage[parent].update(families)
+    singletons = {
+        scenario: sorted(families)
+        for scenario, families in coverage.items()
+        if isinstance(taxonomy.display_tax(scenario)[0], int) and len(families) < 2
+    }
+    assert not singletons, (
+        "single-family generic cases: expand family-native coverage or move to a "
+        "named family-specific section", singletons,
+    )
 
 
 def _assert_cross_family_contract(corpus):
@@ -1863,6 +2323,8 @@ def _assert_cross_family_contract(corpus):
     for family in NATIVE_FAMILIES:
         for cid, case in corpus[family].items():
             scenario = _scenario_of(cid, family)
+            if family == "minimax_m3" and scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS:
+                _assert_guided_native_recovery(family, scenario, case)
             _assert_input_carries_events(family, scenario, case)
             if scenario == "guided_json_quoted_bare_tool_header_in_answer":
                 # A tool name inside a thought is prose, not a recipient header.
@@ -1875,7 +2337,28 @@ def _assert_cross_family_contract(corpus):
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
+                      else _assert_missing_inner_closers(family, case)
+                      if scenario == "missing_inner_closers_then_valid_call"
                       else _logical_events(scenario, family, case["golden"]))
+            if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
+                raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "minimax_m3"} else 2
+                assert case["tools"] == []
+                assert events == [{"kind": "tool_call", "name": "run", "arguments": {}},
+                                  {"kind": "tool_call", "name": "not_offered", "arguments": {"x": raw_value}}]
+                events[1]["arguments"]["x"] = 2
+            if scenario in {"gpt_oss_invalid_tool_body_then_empty_call", "gpt_oss_invalid_tool_body_then_valid_call"}:
+                empty = scenario.endswith("empty_call")
+                malformed = "not-json" if empty else '{"city":'
+                assert malformed in case["input"]
+                assert case["input"].index(malformed) < case["input"].rindex("get_weather")
+                following = [{"kind": "tool_call", "name": "get_weather", "arguments": {} if empty else {"city": "Paris"}}]
+                assert events == ([{"kind": "tool_call", "name": "bad", "arguments": {}}] if family in {"kimi_k2", "deepseek_v4"} else []) + following
+                events = following
+            if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
+                following = [{"kind": "text", "text": "recovered"}]
+                assert events == ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
+                                  if family in {"muse_glimmer", "muse_spark", "kimi_k3"} else []) + following
+                events = following
             if scenario == "gpt_oss_quoted_truncated_tool_then_final":
                 assert events == [{"kind": "text", "text": "Answer"}], (family, scenario, "missing recovered answer")
             if scenario == "structured_response_after_reasoning":
@@ -1914,6 +2397,10 @@ def _assert_cross_family_contract(corpus):
                 assert events == [{"kind": "text", "text": "still thinking about it"}]
                 # Other grammars opened a tool block; this retained Harmony request did not.
                 events = []
+            if family == "minimax_m3" and scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS:
+                # Exact input/output assertions above precede normalization of
+                # this documented exception; unrelated guided cases stay strict.
+                events = [event for event in events if event["kind"] != "tool_call"]
             if scenario in {"schema_integer_const_ambiguous", "schema_object_const_union", "schema_type_array_string_integer"}:
                 probe = next(probe for probe in CONFORMANCE_CASES if scenario == f"schema_{probe['name']}")
                 expected_events = [{"kind": "tool_call", "name": "schema_probe", "arguments": schema_arguments(family, probe)}]
@@ -1922,6 +2409,9 @@ def _assert_cross_family_contract(corpus):
                 # These native spellings are ambiguous. Validate each family's
                 # established interpretation, then compare the shared scenario.
                 events = [{"kind": "tool_call", "name": "schema_probe", "arguments": {"value": probe["value"]}}]
+
+            if scenario.startswith("arg_numeric_"):
+                events = canonical_events(events)
             if scenario in {"arg_json_null", "arg_string_null"}:
                 value = None if scenario == "arg_json_null" else "null"
                 expected_type = "string" if value is not None else ["string", "null"]
@@ -1994,16 +2484,29 @@ def _assert_cross_family_contract(corpus):
                     for call in suppressed:
                         if isinstance(call["arguments"]["x"], str):
                             call["arguments"]["x"] = json.loads(call["arguments"]["x"])
-            by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
-    assert set(by_scenario) == set(UNIFIED_TAX) - taxonomy.RETIRED_SCENARIOS
+            policy = case["policy"]
+            if scenario == "interrupted_reasoning_then_response":
+                assert policy == (["P2"] if family == "kimi_k3" else ["I1", "I3"])
+                policy = []
+            by_scenario[scenario][family] = (events, init, case["finish_reason"], policy, suppressed)
+    assert set(by_scenario) == set(NATIVE_UNIFIED_TAX)
+    _assert_generic_cases_span_families(by_scenario)
+    assert all(family in by_scenario.get(scenario, {}) for scenario, family in G.INHERITED_GOLDEN), "INHERITED_GOLDEN names a case that does not exist"
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         # Beam authors its own golden where its grammar changes the outcome (its parameter
         # tags are plain text outside a routed header; its reasoning markers are special
         # tokens), so it stands outside the shared contract for those scenarios only.
+        # A family-scoped parser rule declares its own golden in `INHERITED_GOLDEN`
+        # (Nemotron V3's tool-only-turn whitespace, issue #406); that cell is checked
+        # against the declaration instead of the shared contract.
+        for family in families:
+            if (scenario, family) in G.INHERITED_GOLDEN:
+                assert families[family][0] == G.INHERITED_GOLDEN[(scenario, family)], (scenario, family, "inherited golden")
         contracts = [
             (family, contract) for family, contract in families.items()
-            if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS)
+            if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS | BEAM_NUMERIC_STRING_SCENARIOS)
+            and (scenario, family) not in G.INHERITED_GOLDEN
         ]
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:
@@ -2012,6 +2515,76 @@ def _assert_cross_family_contract(corpus):
 
 def test_all_scenarios_preserve_cross_family_input_and_output_contracts():
     _assert_cross_family_contract({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+def test_gpt_oss_numeric_input_oracle_preserves_exact_decimal_values():
+    scenario = "arg_numeric_14_large_decimal"
+    case = build_cases("gpt_oss")[f"UNIFIED.{scenario}.gpt_oss"]
+    calls = _native_input_calls("gpt_oss", case["input"], exact_numbers=True)
+    assert calls[0]["arguments"]["value"] == Decimal("9007199254740993.0")
+
+@pytest.mark.parametrize("scenario", ["reason_only", "reason_markup_in_arg"])
+def test_cross_family_contract_rejects_nemotron_only_generic_reasoning(scenario, monkeypatch):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    variants = {name for name in NATIVE_UNIFIED_TAX if taxonomy.coverage_case(name) == scenario}
+    for family, cases in corpus.items():
+        if family != "nemotron_v3":
+            for name in variants:
+                cases.pop(f"UNIFIED.{name}.{family}", None)
+    monkeypatch.setitem(globals(), "NATIVE_UNIFIED_TAX", {name: entry for name, entry in NATIVE_UNIFIED_TAX.items()
+                                                              if name not in variants or name == scenario})
+    scenario_families = G.scenario_families
+    monkeypatch.setattr(
+        G, "scenario_families",
+        lambda name: (frozenset({"nemotron_v3"}) if name == scenario else frozenset())
+        if name in variants else scenario_families(name),
+    )
+    with pytest.raises(AssertionError, match="single-family generic cases"):
+        _assert_cross_family_contract(corpus)
+
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
+@pytest.mark.parametrize("scenario", ["reason_only", "arg_unicode", "guided_json_named_tool", "future_generic_case"])
+def test_generic_case_scope_rejects_any_single_family(family, scenario):
+    with pytest.raises(AssertionError, match="single-family generic cases"):
+        _assert_generic_cases_span_families({scenario: {family}})
+
+
+def test_generic_case_scope_uses_display_placement_and_variant_coverage(monkeypatch):
+    parent = "arg_marker_in_string"
+    variant = "arg_marker_in_string_pr424"
+    with pytest.raises(AssertionError, match="single-family generic cases"):
+        _assert_generic_cases_span_families({parent: {"gpt_oss"}, variant: {"gpt_oss"}})
+    _assert_generic_cases_span_families({parent: {"qwen3"}, variant: {"gpt_oss"}})
+    monkeypatch.setitem(taxonomy._DISPLAY_GROUP, parent, "gpt_oss")
+    _assert_generic_cases_span_families({parent: {"gpt_oss"}, variant: {"gpt_oss"}})
+
+
+def test_generic_case_scope_rejects_single_family_semantic_variants(monkeypatch):
+    monkeypatch.setitem(taxonomy.SHARED_CASE_VARIANTS, "future_semantic_variant", taxonomy.CaseVariant("two_calls", "Additional behavior"))
+    for scenario in ("gpt_oss_multiple_unknown_and_empty_tools", "future_semantic_variant"):
+        with pytest.raises(AssertionError, match="single-family generic cases"):
+            _assert_generic_cases_span_families({"two_calls": set(NATIVE_FAMILIES), scenario: {"gpt_oss"}})
+
+
+def test_default_reasoning_cases_use_a_named_family_section():
+    for scenario in ("default_reasoning_without_opener", "default_reasoning_tool_without_closer"):
+        assert G.scenario_families(scenario) == {"nemotron_v3"}
+        assert taxonomy.display_tax(scenario)[0] == "nemotron_v3"
+        assert taxonomy.tax(scenario)[0] in {10, 12}
+
+
+@pytest.mark.parametrize("scenario", _GUIDED_NATIVE_RECOVERY_SCENARIOS)
+@pytest.mark.parametrize("mutation", ["dispatch", "native_argument"])
+def test_guided_native_recovery_contract_rejects_changed_calls(scenario, mutation):
+    family = "minimax_m3"
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_guided_native_recovery(family, scenario, case)
+    if mutation == "dispatch":
+        case["golden"] = [event for event in case["golden"] if event["kind"] != "tool_call"]
+    else:
+        case["input"] = case["input"].replace("Paris", "Rome")
+    with pytest.raises(AssertionError, match="native-recovery"):
+        _assert_guided_native_recovery(family, scenario, case)
 
 
 @pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family not in {"muse_glimmer", "muse_spark"}])
@@ -2165,6 +2738,37 @@ def test_second_pass_reference_goldens_satisfy_the_authored_schema(family, scena
     assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
 
 
+def test_k3_response_recovery_oracle_requires_complete_json_and_preserved_text():
+    cases = build_cases("kimi_k3")
+    recovered = cases["UNIFIED.gpt_oss_truncated_tool_resynchronizes_at_next_message.kimi_k3"]
+    raw = recovered["input"].split('<|open|>json type="object"<|sep|>', 1)[1].split('<|close|>json<|sep|>', 1)[0]
+    assert json.loads(raw) == {"q": "unfinished"}
+    assert recovered["golden"] == [
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}},
+        {"kind": "text", "text": "recovered"},
+    ]
+    malformed = cases["UNIFIED.gpt_oss_quoted_truncated_tool_then_final.kimi_k3"]
+    raw = malformed["input"].split('<|open|>json type="object"<|sep|>', 1)[1].split('<|close|>json<|sep|>', 1)[0]
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(raw)
+    assert malformed["golden"] == [{"kind": "text", "text": "Answer"}]
+
+
+def test_kimi_display_sections_match_their_applicable_family():
+    labels = taxonomy.display_case_labels(UNIFIED_TAX)
+    for scenario in UNIFIED_TAX:
+        group = taxonomy.display_tax(scenario)[0]
+        if group not in {"kimi", "kimi_k2"}:
+            continue
+        family = "kimi_k3" if group == "kimi" else "kimi_k2"
+        assert G.scenario_families(scenario) == frozenset({family}), scenario
+        assert labels[scenario]["label"].startswith(f"{family}-"), scenario
+        assert labels[scenario]["compact_prefix"] == family, scenario
+    for scenario in UNIFIED_TAX:
+        if scenario.startswith("kimi_native_"):
+            assert taxonomy.display_tax(scenario)[0] in {"kimi", "kimi_k2"}, scenario
+
+
 def test_display_ranks_follow_descriptions_without_changing_capture_ids():
     scenarios = list(UNIFIED_TAX)
     identities = {scenario: numbered_id(scenario) for scenario in scenarios}
@@ -2211,7 +2815,7 @@ def test_gpt_oss_variants_use_shared_parents_or_explicit_header_grammar(scenario
 
 
 @pytest.mark.parametrize(("scenario", "parent", "families"), [
-    ("gpt_oss_tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3"}),
+    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3"}),
     ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
     ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
 ])
@@ -2232,14 +2836,14 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
             else:
                 assert '{"q":"abc<|close|>json<|sep|>' in case["input"]
                 assert '<|open|>response<|sep|>Answer<|close|>response<|sep|>' in case["input"]
-                assert case["expect"]["dynamo"]["class"] == "LOSS"
+                assert case["expect"]["dynamo"]["verdict"] == "match"
         else:
             event = case["golden"][0]
-            assert event["name"] == "lookup"
+            assert event["name"] == ("get_weather" if parent == "tool_only" else "lookup")
             assert matches_schema(event["arguments"], case["tools"][0]["parameters"])
             if parent == "tool_only":
-                assert ' \n\t{"q":' in case["input"]
-                assert event["arguments"] == {"q": "x"}
+                assert ' \n\t{"city":' in case["input"]
+                assert event["arguments"] == {"city": "Paris"}
             else:
                 payload = event["arguments"]["q"]
                 assert payload in case["input"]
@@ -2267,9 +2871,45 @@ def test_preserved_requests_and_goldens_are_independent_across_builds():
     assert build_cases("gpt_oss")[case_id] == expected
 
 
+def test_single_call_variants_keep_the_shared_weather_example():
+    assert historical_case_label("1-3") == "1-dotted_name_minimal"
+    expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+    source = next(case for case in G._GPT_OSS_REVIEW_CASES if case[0] == "tool_body_whitespace")
+    assert source[3] == expected
+    assert ' \n\t{"city":"Paris"}' in source[2]
+    for family, (raw, golden, _) in G._native_review_variants("tool_body_whitespace").items():
+        assert golden == expected, family
+        assert ' \n\t{"city":' in raw, family
+    for family in G.UNIFIED_FAMILIES:
+        cases = build_cases(family)
+        assert cases[f"UNIFIED.tool_only.{family}"]["golden"] == expected, family
+        variant = cases.get(f"UNIFIED.tool_body_whitespace.{family}")
+        if variant is None:
+            continue
+        assert variant["golden"] == expected, family
+        assert ' \n\t{"city":' in variant["input"], family
+        assert taxonomy.case_fold("tool_body_whitespace")[0] == "tool_only"
+
+
+@pytest.mark.parametrize("family", ["gpt_oss", "kimi_k2", "kimi_k3"])
+def test_retired_whitespace_request_preserves_lookup_history(family):
+    path = SRC.parents[2] / f"conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
+    cases = unified_history.load_yaml(path)["cases"]
+    retained = cases["gpt_oss_tool_body_whitespace"]
+    assert retained["lifecycle"] == "retired"
+    assert retained["display_id"] is None
+    assert "UNIFIED.gpt_oss-tool_body_whitespace" in retained["historical_ids"]
+    assert retained["golden"]["assembled"] == [
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "x"}},
+    ]
+    assert "lookup" in retained["request"]["input"]
+    assert not G.scenario_families("gpt_oss_tool_body_whitespace")
+    assert "tool_body_whitespace" in cases
+
+
 def test_retired_harmony_eof_case_keeps_its_history_and_shared_contract():
     path = SRC.parents[2] / "conformance/fixtures-unified-v2/families/gpt_oss/inputs_and_golden.yaml"
-    cases = yaml.safe_load(path.read_text())["cases"]
+    cases = unified_history.load_yaml(path)["cases"]
     retired = cases["gpt_oss_truncated_tool_at_eof_is_dropped"]
     parent = cases["tool_no_close"]
     assert retired["lifecycle"] == "retired"
@@ -2285,3 +2925,41 @@ def test_retired_harmony_eof_case_keeps_its_history_and_shared_contract():
         assert not raw.endswith(control_tokens("gpt_oss")[3])
     assert not G.scenario_families("gpt_oss_truncated_tool_at_eof_is_dropped")
     assert "UNIFIED.gpt_oss_truncated_tool_at_eof_is_dropped.gpt_oss" not in G.build_cases("gpt_oss")
+
+
+def _assert_kimi_native_golden(scenario: str, case: dict) -> None:
+    if scenario == "kimi_native_incompatible_string_recovery":
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    else:
+        if "count_content_chunk" in scenario:
+            arguments = {"count": 7, "content": "q" * 4096}
+        elif scenario == "kimi_native_trailing_syntax_whitespace":
+            arguments = {}
+        elif scenario in {"kimi_native_valid_object_trailing_garbage", "kimi_native_incremental_interfield_whitespace"}:
+            arguments = {"count": 7, "content": "q"}
+        else:
+            assert scenario == "kimi_native_rejected_next_header_progress"
+            arguments = {"count": 7, "content": 'head<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>' + "q" * 3072}
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": arguments}]
+    assert case["golden"] == expected, (scenario, "native Kimi golden differs from authored contract")
+
+
+@pytest.mark.parametrize("family,scenario", [
+    (family, name) for name in UNIFIED_TAX if name.startswith("kimi_native_")
+    for family in G.scenario_families(name)
+])
+@pytest.mark.parametrize("mutation", ["empty", "name", "arguments"])
+def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_input_carries_events(family, scenario, case)
+    if case["golden"]:
+        if mutation == "empty":
+            case["golden"] = []
+        elif mutation == "name":
+            case["golden"][0]["name"] = "invented"
+        else:
+            case["golden"][0]["arguments"] = {"count": 8, "content": "wrong"}
+    else:
+        case["golden"] = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    with pytest.raises(AssertionError):
+        _assert_input_carries_events(family, scenario, case)

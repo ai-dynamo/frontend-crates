@@ -32,6 +32,35 @@ changes:
             complete: true
         - expected: []
         - expected: []
+  arg_json_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
   arg_marker_in_string:
     observation:
       value:
@@ -59,6 +88,74 @@ changes:
             name: run
             arguments: '{"cmd":"git log </atem:function_calls> --oneline"}'
             complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_string_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -293,6 +390,90 @@ changes:
             arguments: '{}'
             complete: true
         - expected: []
+        - expected: []
+        - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":2}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            q: unfinished
+        - kind: text
+          text: recovered
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q":"unfinished"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: recovered
         - expected: []
         - expected: []
   guided_json_after_reasoning:
@@ -2634,6 +2815,15 @@ changes:
         - expected: []
 metadata_changes: {}
 document_overrides:
+  gpt_oss_interrupted_reasoning_then_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.5.3
+      capture_origin:
+        crate_version: 0.5.3
+        source_sha256: 09db832ab96f8b2e91060f24916df62f2e55653449e51e9a145841e75c6fcb1e
+        git_commit: f04f28c984c4200f51671cadf63e3b53c16c28ea
+      inherited_from: null
   gpt_oss_quoted_message_header_literal:
     capture_provenance:
       captured_with:

@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+mod smart;
+
+pub use smart::decode_rgb_smart;
+
 use crate::{MmError, Result};
 use image::metadata::Orientation;
 use image::{ImageDecoder, ImageFormat};

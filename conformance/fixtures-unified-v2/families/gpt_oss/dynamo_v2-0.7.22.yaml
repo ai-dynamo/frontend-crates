@@ -7,6 +7,60 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 00a1097e5baecc5f47d3afffaec0b6cdef844a17ffa1898e0a239cc95348b815
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: 7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: ab2b3f7100b13704b5814b71e121aae23785c4f2488127c27ad1206e30f924d3
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
   dotted_name_minimal:
     case_key: UNIFIED.1-dotted_name_minimal
     stimulus:
@@ -111,6 +165,21 @@ changes:
             complete: true
         - expected: []
 metadata_changes:
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   dotted_name_minimal:
     init:
       starting_state: None

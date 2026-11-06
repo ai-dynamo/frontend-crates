@@ -1,55 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use dynamo_parsers::tool_calling::jail::{Annotated, JailedStream};
 use dynamo_parsers_v2::{
     InvalidGuidedPayloadPolicy, Tool, UnifiedParserEvent, UnifiedParserExt, UnifiedParserInit,
     UnifiedParserStartingState, UnifiedToolOutputMode, create_unified_parser_for_family,
 };
-use dynamo_protocols::types::{
-    ChatChoiceStream, ChatCompletionMessageContent, ChatCompletionStreamResponseDelta,
-    CreateChatCompletionStreamResponse, Role,
-};
-use futures::StreamExt;
-use futures::stream;
-
 struct Case {
     named: bool,
     payload: &'static str,
     arguments: &'static str,
-}
-
-fn v1_chunk(content: &str) -> Annotated<CreateChatCompletionStreamResponse> {
-    #[allow(deprecated)]
-    let choice = ChatChoiceStream {
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta {
-            role: Some(Role::Assistant),
-            content: Some(ChatCompletionMessageContent::Text(content.to_string())),
-            tool_calls: None,
-            function_call: None,
-            refusal: None,
-            reasoning_content: None,
-        },
-        finish_reason: None,
-        logprobs: None,
-    };
-    Annotated {
-        data: Some(CreateChatCompletionStreamResponse {
-            id: "guided-conformance".to_string(),
-            choices: vec![choice],
-            created: 0,
-            model: "test".to_string(),
-            system_fingerprint: None,
-            object: "chat.completion.chunk".to_string(),
-            usage: None,
-            service_tier: None,
-        }),
-        id: None,
-        event: None,
-        comment: None,
-        error: None,
-    }
 }
 
 fn chunks(payload: &str) -> Vec<&str> {
@@ -57,49 +16,6 @@ fn chunks(payload: &str) -> Vec<&str> {
         .char_indices()
         .map(|(at, ch)| &payload[at..at + ch.len_utf8()])
         .collect()
-}
-
-async fn v1(case: &Case) -> (usize, Vec<String>, String, String) {
-    let builder = JailedStream::builder().guided_streaming(true);
-    let jail = if case.named {
-        builder.tool_choice_named("search".to_string()).build()
-    } else {
-        builder.tool_choice_required().build()
-    };
-    let input = chunks(case.payload).into_iter().map(v1_chunk);
-    let output: Vec<_> = jail
-        .apply_with_finish_reason(stream::iter(input))
-        .collect()
-        .await;
-
-    let mut carrying = 0;
-    let mut names = Vec::new();
-    let mut arguments = String::new();
-    let mut content = String::new();
-    for response in output {
-        let Some(data) = response.data else {
-            continue;
-        };
-        for choice in data.choices {
-            if let Some(ChatCompletionMessageContent::Text(text)) = choice.delta.content {
-                content.push_str(&text);
-            }
-            if let Some(calls) = choice.delta.tool_calls {
-                carrying += 1;
-                for call in calls {
-                    if let Some(function) = call.function {
-                        if let Some(name) = function.name {
-                            names.push(name);
-                        }
-                        if let Some(fragment) = function.arguments {
-                            arguments.push_str(&fragment);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    (carrying, names, arguments, content)
 }
 
 fn v2(case: &Case) -> (usize, Vec<String>, String, String) {
@@ -150,8 +66,8 @@ fn v2(case: &Case) -> (usize, Vec<String>, String, String) {
     (carrying, names, arguments, content)
 }
 
-#[tokio::test]
-async fn v1_and_v2_share_the_guided_streaming_contract() {
+#[test]
+fn unified_guided_streaming_contract() {
     let cases = [
         Case {
             named: false,
@@ -166,20 +82,18 @@ async fn v1_and_v2_share_the_guided_streaming_contract() {
     ];
 
     for case in cases {
-        let v1 = v1(&case).await;
-        let v2 = v2(&case);
-        for (name, output) in [("v1", &v1), ("v2", &v2)] {
-            assert_eq!(output.1, vec!["search".to_string()], "{name}");
-            assert_eq!(output.2, case.arguments, "{name}");
-            assert!(
-                output.3.is_empty(),
-                "{name} leaked JSON as text: {output:?}"
-            );
-            assert!(
-                output.0 > 2,
-                "{name} buffered instead of streaming: {output:?}"
-            );
-        }
+        let output = v2(&case);
+
+        assert_eq!(output.1, vec!["search".to_string()], "Unified v2");
+        assert_eq!(output.2, case.arguments, "Unified v2");
+        assert!(
+            output.3.is_empty(),
+            "Unified v2 leaked JSON as text: {output:?}"
+        );
+        assert!(
+            output.0 > 2,
+            "Unified v2 buffered instead of streaming: {output:?}"
+        );
     }
 }
 
@@ -187,11 +101,9 @@ async fn v1_and_v2_share_the_guided_streaming_contract() {
 /// message: the array shape delivered `},{"name":` as text and the single-call shape
 /// delivered a bare `}`. The cursor releases argument bytes only up to the argument
 /// object's own closing brace, so everything after it is envelope. Once streaming has
-/// committed, that tail is never assistant text. v2 had the identical bug at a
-/// different, pre-existing site (frontend-crates#195) - both generations are driven
-/// here, the way the sibling contract test above does.
-#[tokio::test]
-async fn a_truncated_guided_payload_never_leaks_its_envelope_as_text() {
+/// committed, that tail must never become assistant text.
+#[test]
+fn a_truncated_guided_payload_never_leaks_its_envelope_as_text() {
     let cases = [
         // Cut mid-envelope, just after a complete first call.
         Case {
@@ -208,26 +120,24 @@ async fn a_truncated_guided_payload_never_leaks_its_envelope_as_text() {
     ];
 
     for case in cases {
-        let v1 = v1(&case).await;
-        let v2 = v2(&case);
-        for (name, output) in [("v1", &v1), ("v2", &v2)] {
-            assert_eq!(
-                output.1,
-                vec!["search".to_string()],
-                "{name} {:?}",
-                case.payload
-            );
-            assert_eq!(output.2, case.arguments, "{name} {:?}", case.payload);
-            assert!(
-                output.3.is_empty(),
-                "{name} truncated payload {:?} leaked envelope bytes as text: {output:?}",
-                case.payload
-            );
-            assert!(
-                output.0 > 2,
-                "{name} truncated payload {:?} buffered instead of streaming",
-                case.payload
-            );
-        }
+        let output = v2(&case);
+
+        assert_eq!(
+            output.1,
+            vec!["search".to_string()],
+            "Unified v2 {:?}",
+            case.payload
+        );
+        assert_eq!(output.2, case.arguments, "Unified v2 {:?}", case.payload);
+        assert!(
+            output.3.is_empty(),
+            "Unified v2 truncated payload {:?} leaked envelope bytes as text: {output:?}",
+            case.payload
+        );
+        assert!(
+            output.0 > 2,
+            "Unified v2 truncated payload {:?} buffered instead of streaming",
+            case.payload
+        );
     }
 }

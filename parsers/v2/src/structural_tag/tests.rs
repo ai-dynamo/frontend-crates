@@ -5,7 +5,9 @@ use serde_json::{Value, json};
 
 use crate::{Tool, UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family};
 
-use super::builders::{DEEPSEEK_DSML, GLM47, HARMONY, QWEN3_CODER};
+use super::builders::{
+    DEEPSEEK_DSML, DEEPSEEK_DSML_V41, GLM47, HARMONY, KIMI_K2, KIMI_K3, QWEN3_CODER,
+};
 use super::test_support::{build, build_context, tools};
 use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
@@ -317,7 +319,7 @@ fn harmony_structured_output_preserves_tool_policy_and_external_boundary() {
 #[test]
 fn schema_only_requests_keep_other_family_response_formats() {
     let schema = json!({"type":"object"});
-    for builder in [&QWEN3_CODER, &DEEPSEEK_DSML, &GLM47] {
+    for builder in [&QWEN3_CODER, &DEEPSEEK_DSML, &DEEPSEEK_DSML_V41, &GLM47] {
         for choice in [StructuralTagToolChoice::Auto, StructuralTagToolChoice::None] {
             let actual = build_with_structured_output(builder, choice, &[], None, false, &schema);
             assert_eq!(
@@ -462,6 +464,13 @@ fn common_builder_closes_prompt_opened_reasoning_before_tool_output() {
             Some("\n\n"),
             None,
         ),
+        (
+            "deepseek_v41",
+            &DEEPSEEK_DSML_V41,
+            "<｜DSML｜ calls>",
+            Some("\n\n"),
+            None,
+        ),
         ("glm47", &GLM47, "<tool_call>", None, None),
     ] {
         for tool_choice in [
@@ -520,6 +529,7 @@ fn auto_closes_prompt_opened_reasoning_before_triggered_dispatch() {
     for (family, builder, tool_call_exclude, reasoning_suffix) in [
         ("qwen3_coder", &QWEN3_CODER, "<tool_call>", Some("\n\n")),
         ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜tool_calls>", None),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41, "<｜DSML｜ calls>", None),
         ("glm47", &GLM47, "<tool_call>", None),
     ] {
         let actual = build(
@@ -561,6 +571,7 @@ fn auto_with_structured_output_offers_tool_calls_only_or_schema_constrained_resp
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = build_with_structured_output(
@@ -597,6 +608,7 @@ fn auto_with_structured_output_honors_single_call_limit() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = build_with_structured_output(
@@ -621,6 +633,7 @@ fn auto_with_structured_output_closes_prompt_opened_reasoning_before_choice() {
     for (family, builder, reasoning_suffix) in [
         ("qwen3_coder", &QWEN3_CODER, Some("\n\n")),
         ("deepseek_v4", &DEEPSEEK_DSML, None),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41, None),
         ("glm47", &GLM47, None),
     ] {
         let actual = build_with_structured_output(
@@ -647,6 +660,7 @@ fn external_reasoning_boundary_builds_only_the_post_reasoning_suffix() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = builder
@@ -719,6 +733,7 @@ fn required_and_named_choices_do_not_offer_final_response_branch() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         for tool_choice in [
@@ -738,6 +753,7 @@ fn auto_with_empty_tools_needs_no_structural_tag() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let result = builder
@@ -771,6 +787,149 @@ fn strict_schema_mode_enforces_non_strict_tool_schema() {
         actual["format"]["content"]["json_schema"],
         tools[0].parameters
     );
+}
+
+/// ai-dynamo/dynamo#17661: a JSON-pointer-escaped `$ref` target reaches the
+/// grammar backend in the literal spelling it resolves, on every builder.
+fn escaped_ref_tool() -> Tool {
+    Tool {
+        name: "select_model".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object",
+            "properties": {"model_name": {"$ref": "#/$defs/registry~1Model~0v1%20name"}},
+            "$defs": {"registry/Model~v1 name": {"type": "string"}},
+            "required": ["model_name"],
+        }),
+        strict: Some(true),
+    }
+}
+
+#[test]
+fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
+    let tools = [escaped_ref_tool()];
+    let actual = build(
+        &QWEN3_CODER,
+        StructuralTagToolChoice::Named("select_model"),
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    );
+    assert_eq!(
+        actual["format"]["content"]["json_schema"],
+        json!({
+            "type": "object",
+            "properties": {"model_name": {"$ref": "#/$defs/registry_Model_v1_name"}},
+            "$defs": {"registry_Model_v1_name": {"type": "string"}},
+            "required": ["model_name"],
+        })
+    );
+
+    // Builders that embed a JSON schema must carry the renamed definition and
+    // its reference; Kimi K3 resolves the reference into a typed XTML argument.
+    let canonical_ref = json!("#/$defs/registry_Model_v1_name");
+    for builder in [&GLM47, &DEEPSEEK_DSML, &HARMONY, &KIMI_K2] {
+        let tag = build(
+            builder,
+            StructuralTagToolChoice::Required,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+            false,
+        );
+        let schemas = embedded_json_schemas(&tag);
+        assert!(!schemas.is_empty(), "no json_schema in {tag}");
+        for schema in schemas {
+            assert_eq!(
+                schema["$defs"]["registry_Model_v1_name"],
+                json!({"type": "string"}),
+                "{tag}"
+            );
+            assert_eq!(
+                schema["properties"]["model_name"]["$ref"], canonical_ref,
+                "{tag}"
+            );
+        }
+        assert!(!tag.to_string().contains("registry~1Model"), "{tag}");
+    }
+    let k3 = build(
+        &KIMI_K3,
+        StructuralTagToolChoice::Required,
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    )
+    .to_string();
+    assert!(k3.contains(r#"key=\"model_name\" type=\"string\""#), "{k3}");
+    assert!(!k3.contains("registry~1Model"), "{k3}");
+}
+
+#[test]
+fn kimi_k3_receives_escaped_pointers_intact_and_canonicalizes_what_it_forwards() {
+    // PR #516 review: K3 percent-decodes `#/properties/a%25b` itself; handing it
+    // the pre-decoded `#/properties/a%b` broke its string resolution. The object
+    // argument it forwards as JSON still carries the backend spelling.
+    let tools = [Tool {
+        name: "pick".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object",
+            "properties": {
+                "a%b": {"type": "string"},
+                "copy": {"$ref": "#/properties/a%25b"},
+                "payload": {"$ref": "#/$defs/registry~1Model"}
+            },
+            "$defs": {"registry/Model": {"type": "object", "properties": {"id": {"type": "integer"}}}},
+            "required": ["a%b", "copy", "payload"]
+        }),
+        strict: Some(true),
+    }];
+    for choice in [
+        StructuralTagToolChoice::Required,
+        StructuralTagToolChoice::Auto,
+    ] {
+        let tag = build(
+            &KIMI_K3,
+            choice,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+            false,
+        );
+        let text = tag.to_string();
+        assert_eq!(
+            text.matches(r#"key=\"copy\" type=\"string\""#).count(),
+            1,
+            "{text}"
+        );
+        let schemas = embedded_json_schemas(&tag);
+        assert!(!schemas.is_empty(), "{text}");
+        for schema in schemas {
+            assert!(schema["$defs"]["registry_Model"].is_object(), "{schema}");
+            assert!(!schema.to_string().contains("registry~1Model"), "{schema}");
+        }
+    }
+}
+
+/// Every `json_schema` value embedded anywhere in a structural tag.
+fn embedded_json_schemas(tag: &Value) -> Vec<&Value> {
+    let mut found = Vec::new();
+    let mut stack = vec![tag];
+    while let Some(node) = stack.pop() {
+        match node {
+            Value::Object(map) => {
+                if let Some(schema) = map.get("json_schema") {
+                    found.push(schema);
+                }
+                stack.extend(map.values());
+            }
+            Value::Array(items) => stack.extend(items),
+            _ => {}
+        }
+    }
+    found
 }
 
 #[test]

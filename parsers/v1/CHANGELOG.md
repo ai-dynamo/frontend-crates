@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [11.0.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.6...dynamo-parsers-v11.0.7) - 2026-11-04
+
+### Bug fixes
+
+- *(parsers-v2)* Let a declared type win over contradicting MiniMax-M3 literals ([#526](https://github.com/ai-dynamo/frontend-crates/pull/526))
+
+## [11.0.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.5...dynamo-parsers-v11.0.6) - 2026-11-04
+
+### Bug fixes
+
+- *(structural-tag)* Canonicalize escaped local $ref targets before grammar compilation ([#516](https://github.com/ai-dynamo/frontend-crates/pull/516))
+
+## [11.0.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.4...dynamo-parsers-v11.0.5) - 2026-11-03
+
+### Bug fixes
+
+- *(gpt-oss)* Recover the final message a malformed harmony header strands ([#236](https://github.com/ai-dynamo/frontend-crates/pull/236))
+
+## [11.0.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.1...dynamo-parsers-v11.0.2) - 2026-11-03
+
+### Bug fixes
+
+- *(parsers)* [P1] coordinate Harmony vocabulary cache loading ([#513](https://github.com/ai-dynamo/frontend-crates/pull/513))
+
+## [11.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.0...dynamo-parsers-v11.0.1) - 2026-11-02
+
+### Bug fixes
+
+- *(parsers)* Resolve XML tool argument types through $ref, allOf, type arrays, not and if/then/else ([#517](https://github.com/ai-dynamo/frontend-crates/pull/517))
+
+## [10.2.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.3...dynamo-parsers-v10.2.4) - 2026-10-31
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only content from tool-only jail turns ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only content from Nemotron V3 tool-only turns in the tool-calling jail, for callers that name the reasoning parser (`JailedStreamBuilder::reasoning_parser`, `apply_tool_calling_jail_with_reasoning_parser`). Every other parser pair and the existing entry points are unchanged ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+## [10.2.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.2...dynamo-parsers-v10.2.3) - 2026-10-29
+
+### Bug fixes
+
+- *(parsers)* Hold back a partial force-reasoning start tag after a prefix ([#481](https://github.com/ai-dynamo/frontend-crates/pull/481))
+
+### Documentation
+
+- *(parsers)* Refresh library usage and contributor guides ([#492](https://github.com/ai-dynamo/frontend-crates/pull/492))
+
 ## [10.2.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.1...dynamo-parsers-v10.2.2) - 2026-10-26
 
 ### Bug fixes

@@ -14,6 +14,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import explode_unified_fixtures as explode  # noqa: E402
+from capture_versions import capture_release_sort_key, provenance_release_version
+from unified_history import CAPTURE_DIRECTORY_RE
 
 
 def test_peer_error_wins_over_partial_output() -> None:
@@ -175,7 +177,8 @@ def test_split_only_family_retains_explicit_schedule_and_finish() -> None:
     ]
 
 
-def test_split_only_family_preserves_an_empty_offered_tool_set() -> None:
+@pytest.mark.parametrize("offered_tools", [[], None])
+def test_split_only_family_preserves_explicit_offered_tools(offered_tools) -> None:
     rows = explode._split_only_cases(
         "gpt_oss",
         {
@@ -185,14 +188,14 @@ def test_split_only_family_preserves_an_empty_offered_tool_set() -> None:
                     "input": "authored text",
                     "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
                     "finish_reason": "stop",
-                    "tools": None,
+                    "tools": offered_tools,
                     "golden": [{"kind": "text", "text": "authored text"}],
                 }
             },
         },
     )
 
-    assert rows["UNIFIED.3-text_only"]["request"]["tools"] == []
+    assert rows["UNIFIED.3-text_only"]["request"]["tools"] == offered_tools
 
 
 def test_regeneration_removes_all_materialized_capture_directories(tmp_path, monkeypatch) -> None:
@@ -260,3 +263,13 @@ def test_historical_finish_chunk_ignores_retired_cases_without_request(tmp_path,
         assert explode._historical_finish_chunk("gpt_oss", "new_case") is True
     finally:
         explode._historical_finish_chunks.cache_clear()
+
+
+def test_current_capture_uses_only_crate_version():
+    label = "0.9.7+source." + "a" * 64
+    assert explode._canonical_dynamo_capture_version({"label": label, "crate_version": "0.9.7"}) == "0.9.7"
+    assert provenance_release_version(label) == "0.9.7"
+    assert not CAPTURE_DIRECTORY_RE.fullmatch("dynamo_v2-" + label)
+    for invalid in [label, "0.9.7+source.a", "0.9.7+other." + "a" * 64]:
+        with pytest.raises(ValueError):
+            capture_release_sort_key(invalid)

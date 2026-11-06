@@ -302,7 +302,7 @@ fn incomplete_calls_drop_framing_but_keep_content_at_eof() {
 }
 
 #[test]
-fn emitter_errors_leave_separator_and_call_recoverable() {
+fn unrecovered_emitter_errors_leave_separator_and_call_recoverable() {
     for wrapped in [true, false] {
         let call = native_call("deepseek_v41", wrapped, "invalid")
             .replace("string=\"true\"", "string=\"false\"");
@@ -318,7 +318,8 @@ fn emitter_errors_leave_separator_and_call_recoverable() {
             let mut output = UnifiedParserOutput::default();
             let result = parser
                 .parse_into(&input[..split], &mut output)
-                .and_then(|()| parser.parse_into(&input[split..], &mut output));
+                .and_then(|()| parser.parse_into(&input[split..], &mut output))
+                .and_then(|()| parser.finish().map(|_| ()));
             assert!(result.is_err());
             assert_eq!(
                 assemble(&output.events),

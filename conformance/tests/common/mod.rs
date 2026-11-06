@@ -11,13 +11,241 @@
 // The copied historical harness supplies this cfg without editing old manifests.
 #![allow(unexpected_cfgs)]
 
+pub mod authored;
 pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
 pub mod unified_capture;
 
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+pub fn canonical_argument_json(raw: &str) -> String {
+    match raw.as_bytes().first() {
+        Some(b'{') => {
+            let fields: BTreeMap<String, Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated object arguments");
+            let fields = fields
+                .into_iter()
+                .map(|(key, value)| {
+                    format!(
+                        "{}={}",
+                        serde_json::to_string(&key).expect("serialize object key"),
+                        canonical_argument_json(value.get()),
+                    )
+                })
+                .collect::<Vec<_>>();
+            format!("object:[{}]", fields.join(","))
+        }
+        Some(b'[') => {
+            let items: Vec<Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated array arguments");
+            let items = items
+                .iter()
+                .map(|item| canonical_argument_json(item.get()))
+                .collect::<Vec<_>>();
+            format!("array:[{}]", items.join(","))
+        }
+        Some(b'"') => {
+            let value: String = serde_json::from_str(raw).expect("validated string argument");
+            format!(
+                "string:{}",
+                serde_json::to_string(&value).expect("serialize string")
+            )
+        }
+        Some(b't') => "boolean:true".to_string(),
+        Some(b'f') => "boolean:false".to_string(),
+        Some(b'n') => "null".to_string(),
+        Some(b'-' | b'0'..=b'9') => canonical_argument_number(raw),
+        _ => unreachable!("RawValue only accepts JSON"),
+    }
+}
+
+fn canonical_argument_number(raw: &str) -> String {
+    let (negative, unsigned) = match raw.strip_prefix('-') {
+        Some(unsigned) => (true, unsigned),
+        None => (false, raw),
+    };
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => match exponent.parse::<i64>() {
+            Ok(exponent) => (mantissa, exponent),
+            Err(_) => return format!("number-token:{raw}"),
+        },
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let digits = format!("{whole}{fraction}");
+    let digits = digits.trim_start_matches('0');
+    if digits.is_empty() {
+        return "number:0".to_string();
+    }
+    let trailing_zeroes = digits.len() - digits.trim_end_matches('0').len();
+    let significant = digits.trim_end_matches('0');
+    let adjustment = match i64::try_from(trailing_zeroes)
+        .ok()
+        .zip(i64::try_from(fraction.len()).ok())
+        .and_then(|(trailing, fractional)| trailing.checked_sub(fractional))
+    {
+        Some(adjustment) => adjustment,
+        None => return format!("number-token:{raw}"),
+    };
+    let Some(exponent) = exponent.checked_add(adjustment) else {
+        return format!("number-token:{raw}");
+    };
+    format!(
+        "number:{}:{}:{exponent}",
+        if negative { "-" } else { "+" },
+        significant
+    )
+}
+
+pub fn json_values_equal<T: serde::Serialize>(left: &T, right: &T) -> bool {
+    let left = serde_json::to_string(left).expect("JSON comparison input");
+    let right = serde_json::to_string(right).expect("JSON comparison input");
+    canonical_argument_json(&left) == canonical_argument_json(&right)
+}
+
+#[derive(Debug)]
+pub struct EngineResult {
+    pub calls: Vec<(String, serde_json::Value)>,
+    pub normal_text: String,
+}
+
+impl PartialEq for EngineResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.normal_text == other.normal_text && json_values_equal(&self.calls, &other.calls)
+    }
+}
+
+impl Eq for EngineResult {}
+
+#[cfg(test)]
+mod json_comparison_tests {
+    #[test]
+    fn number_spelling_does_not_hide_value_type_or_order_changes() {
+        for (left, right, equal) in [
+            (r#"{"value":2.50}"#, r#"{"value":25e-1}"#, true),
+            (r#"{"value":42.0}"#, r#"{"value":42}"#, true),
+            (r#"{"value":2.5}"#, r#"{"value":"2.5"}"#, false),
+            (
+                r#"{"value":9007199254740992.5}"#,
+                r#"{"value":9007199254740992.0}"#,
+                false,
+            ),
+            (r#"{"value":1e-400}"#, r#"{"value":0}"#, false),
+            ("[1,2]", "[2,1]", false),
+        ] {
+            let left: Box<serde_json::value::RawValue> = serde_json::from_str(left).unwrap();
+            let right: Box<serde_json::value::RawValue> = serde_json::from_str(right).unwrap();
+            assert_eq!(super::json_values_equal(&left, &right), equal);
+        }
+    }
+}
+
+pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Value {
+    match arguments {
+        serde_json::Value::String(raw) => serde_json::from_str(raw).unwrap_or_else(|_| {
+            serde_json::from_str::<Box<serde_json::value::RawValue>>(raw)
+                .expect("authored JSON arguments");
+            arguments.clone()
+        }),
+        value => value.clone(),
+    }
+}
+
+#[test]
+fn golden_numeric_overflow_stays_raw_and_malformed_json_is_rejected() {
+    let overflow = serde_json::Value::String(r#"{"city":"Paris","value":1e400}"#.into());
+    let decoded = decoded_golden_arguments(&overflow);
+    let raw = decoded
+        .as_str()
+        .map(str::to_owned)
+        .unwrap_or_else(|| decoded.to_string());
+    assert_eq!(
+        canonical_argument_json(&raw),
+        canonical_argument_json(overflow.as_str().unwrap())
+    );
+    assert_eq!(
+        decoded_golden_arguments(&serde_json::Value::String(r#"{"value":1.5}"#.into())),
+        serde_json::json!({"value":1.5})
+    );
+    assert!(
+        std::panic::catch_unwind(|| {
+            decoded_golden_arguments(&serde_json::Value::String("{broken}".into()))
+        })
+        .is_err()
+    );
+}
+
+pub fn json_to_yaml_value<T: serde::Serialize>(value: &T) -> serde_yaml::Value {
+    fn convert(value: &serde_json::value::RawValue) -> serde_yaml::Value {
+        let raw = value.get();
+        match raw.as_bytes().first() {
+            Some(b'n') => serde_yaml::Value::Null,
+            Some(b't') => serde_yaml::Value::Bool(true),
+            Some(b'f') => serde_yaml::Value::Bool(false),
+            Some(b'"') => serde_yaml::Value::String(serde_json::from_str(raw).unwrap()),
+            Some(b'[') => {
+                let values: Vec<Box<serde_json::value::RawValue>> =
+                    serde_json::from_str(raw).unwrap();
+                serde_yaml::Value::Sequence(values.iter().map(|value| convert(value)).collect())
+            }
+            Some(b'{') => {
+                let values: BTreeMap<String, Box<serde_json::value::RawValue>> =
+                    serde_json::from_str(raw).unwrap();
+                serde_yaml::Value::Mapping(
+                    values
+                        .into_iter()
+                        .map(|(key, value)| (serde_yaml::Value::String(key), convert(&value)))
+                        .collect(),
+                )
+            }
+            Some(b'-' | b'0'..=b'9') => {
+                // YAML scalars use bounded numbers; preserve tokens whose value
+                // changes when that representation is serialized back to JSON.
+                let yaml = serde_yaml::from_str::<serde_yaml::Value>(raw)
+                    .ok()
+                    .filter(serde_yaml::Value::is_number)
+                    .or_else(|| {
+                        raw.parse::<f64>()
+                            .ok()
+                            .and_then(|value| serde_yaml::to_value(value).ok())
+                    });
+                if let Some(yaml) = yaml
+                    && let Ok(round_trip) = serde_json::to_string(&yaml)
+                    && canonical_argument_json(&round_trip) == canonical_argument_json(raw)
+                {
+                    return yaml;
+                }
+                serde_yaml::Value::String(raw.to_string())
+            }
+            _ => unreachable!("RawValue only accepts JSON"),
+        }
+    }
+
+    let raw = serde_json::value::to_raw_value(value).expect("value serializes as JSON");
+    convert(&raw)
+}
+
+pub fn unified_event_to_yaml_value<T: serde::Serialize>(event: &T) -> serde_yaml::Value {
+    let event = serde_json::value::to_raw_value(event).expect("event serializes as JSON");
+    if !event.get().starts_with('{') {
+        return json_to_yaml_value(&event);
+    }
+    let mut event: BTreeMap<String, Box<serde_json::value::RawValue>> =
+        serde_json::from_str(event.get()).expect("event object");
+    let tool_call = event.get("kind").is_some_and(|kind| {
+        serde_json::from_str::<String>(kind.get()).is_ok_and(|kind| kind == "tool_call")
+    });
+    if tool_call && let Some(arguments) = event.get_mut("arguments") {
+        // Preserve the whole JSON payload: YAML float scalars round decimals,
+        // and quoting individual numbers would change their argument types.
+        *arguments = serde_json::value::to_raw_value(&arguments.get())
+            .expect("tool arguments serialize as JSON text");
+    }
+    json_to_yaml_value(&event)
+}
 
 /// Copy the schema file with historical harnesses: tool registration and argument
 /// typing are request inputs, not parser-version differences.
@@ -88,6 +316,8 @@ pub fn ensure_fixtures() -> PathBuf {
             "/tmp/dynamo-conformance-extract.lock",
             "python3",
             script.to_str().expect("non-UTF-8 script path"),
+            "--legacy-only",
+            "--include-history",
         ])
         .output()
         .expect("flock/python3 not found — ensure python3 is in PATH");
@@ -122,8 +352,7 @@ pub fn ensure_fixtures() -> PathBuf {
     // snapshot later reads in the SAME test see, even though extraction
     // itself is now race-free (`fixtures_identity`-keyed, atomically
     // published). Resolving to the immutable identity dir once, up front,
-    // matches the same fix `_common.sh` already applies for the identical
-    // reason (see its `FIXTURES_SNAP` comment) — one shared pattern, not two.
+    // keeps every later read bound to the same extraction generation.
     let stdout = String::from_utf8(output.stdout).expect("extract_fixtures.py stdout is not UTF-8");
     match resolve_snap_dir(&stdout) {
         Ok(snap_dir) => snap_dir,
@@ -139,6 +368,45 @@ pub fn ensure_fixtures() -> PathBuf {
             String::from_utf8_lossy(&output.stderr)
         ),
     }
+}
+
+/// Native parser checks consume authored inputs and only their two selected captures.
+pub fn ensure_unified_fixtures() -> PathBuf {
+    if let Ok(root) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
+        return PathBuf::from(root);
+    }
+    static SELECTED: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    SELECTED
+        .get_or_init(|| {
+            let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let root = std::env::temp_dir()
+                .join(format!("unified-selected-{}-{nonce}", std::process::id()));
+            let status = std::process::Command::new("python3")
+                .arg(manifest.join("utils/src/unified_history.py"))
+                .arg("--materialize")
+                .arg("--store")
+                .arg(manifest.join("fixtures-unified-v2"))
+                .arg("--output")
+                .arg(root.join("unified"))
+                .args([
+                    "--capture",
+                    "latest:dynamo_v2",
+                    "--capture",
+                    "latest:vllm_rust",
+                ])
+                .status()
+                .expect("python3 selected fixture materialization failed to start");
+            assert!(
+                status.success(),
+                "selected Unified fixture materialization failed"
+            );
+            root
+        })
+        .clone()
 }
 
 /// Pure parsing/validation of `ensure_fixtures`'s subprocess contract,
@@ -234,11 +502,19 @@ mod resolve_snap_dir_tests {
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
 /// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
 /// The committed canonical family YAML is DERIVED from this via render -> explode
-/// -> package. Each test process copies the generated tree to its own immutable
+/// -> package. CI prepares one job-owned `CONFORMANCE_GOLDEN_ROOT` for all readers.
+/// Alternate-source subprocesses regenerate against their changed authored inputs.
+/// Otherwise each test process copies the generated tree to its own immutable
 /// directory while holding the lock, because the generator truncates files before
 /// rewriting them and another test binary may start as soon as the lock is released.
 /// Panics with the fix command if generation fails.
 pub fn ensure_unified_golden() -> PathBuf {
+    if let Some(root) = prepared_unified_golden(
+        std::env::var_os("CONFORMANCE_GOLDEN_ROOT").map(PathBuf::from),
+        std::env::var_os("FRONTEND_CRATES_ROOT").is_some(),
+    ) {
+        return root;
+    }
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let script = manifest.join("utils/src/gen_unified_golden.py");
     let generated = manifest.join("unified/golden_spec");
@@ -270,6 +546,26 @@ pub fn ensure_unified_golden() -> PathBuf {
     isolated
 }
 
+pub(crate) fn prepared_unified_golden(
+    root: Option<PathBuf>,
+    alternate_source: bool,
+) -> Option<PathBuf> {
+    if alternate_source {
+        return None;
+    }
+    root.inspect(|root| {
+        assert!(root.is_dir(), "CONFORMANCE_GOLDEN_ROOT must be a directory");
+        for family in unified_families().values() {
+            let file = root.join(&family.golden_spec);
+            assert!(
+                file.is_file(),
+                "CONFORMANCE_GOLDEN_ROOT is missing {}",
+                file.display()
+            );
+        }
+    })
+}
+
 /// Crate-relative display path for a fixture (for failure messages).
 pub fn fixture_name(path: &Path) -> String {
     path.strip_prefix(env!("CARGO_MANIFEST_DIR"))
@@ -278,10 +574,10 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Fold prior family captures through the current parser release checkpoint.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.8.0";
+/// Current stream fixtures carry their own release identities, independent of the build.
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-latest-recorded";
 
-// Batch-on-stream retains its own snapshot when the streaming capture advances.
+/// The retained batch-on-stream oracle predates the current stream captures.
 pub const BATCH_ON_STREAM_DYNAMO_V2_CAPTURE: &str = "dynamo_v2-0.7.24";
 
 // Consumers may reuse verified archives in tagless clones; producers still require tags.
@@ -337,6 +633,13 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
     dirs.into_iter().map(|(_, p)| p).collect()
 }
 
+/// Consumer comparisons use recorded evidence, even when the parser build is newer.
+pub fn latest_recorded_capture_dir(root: &Path, prefix: &str) -> Option<PathBuf> {
+    version_dirs_ascending(root, prefix)
+        .into_iter()
+        .rfind(|path| !path.to_string_lossy().contains('+'))
+}
+
 /// The normal capture history plus one caller-selected current capture. `+tag`
 /// directories remain historical unless a test names the exact directory it needs.
 pub fn version_dirs_ascending_with_current(
@@ -353,7 +656,9 @@ fn version_dirs_with_identity_command(
     current_dir: &str,
     mut command: std::process::Command,
 ) -> Vec<PathBuf> {
-    let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
+    let current_dir = if current_dir == STREAM_DYNAMO_V2_CURRENT_CAPTURE {
+        latest_recorded_capture_dir(root, prefix).expect("no recorded stream release capture")
+    } else if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
         let output = command
             .args(["--format", "label"])
             .stdout(std::process::Stdio::piped())
@@ -534,7 +839,7 @@ mod capture_selector_tests {
         write_capture(&release, &recorded);
         assert_eq!(select(&captures, &clone, None).last(), Some(&release));
 
-        let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        let stream = captures.join("dynamo_v2-0.7.33");
         std::fs::create_dir_all(&stream).unwrap();
         let stream_dirs = version_dirs_with_identity_command(
             &captures,
@@ -579,6 +884,8 @@ pub struct UnifiedFamily {
     /// Has a native UnifiedParser, versus being driven through the v1/v2 split path.
     #[serde(default)]
     pub native: bool,
+    #[serde(default)]
+    pub scenario_profile: Option<String>,
     pub reasoning_parser: String,
     pub tool_parser: String,
     pub golden_spec: String,
@@ -835,6 +1142,7 @@ impl Init {
         parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
     ) -> anyhow::Result<()> {
         use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
+        #[cfg(not(conformance_legacy_message_phases))]
         parser.preserve_message_phases(self.preserve_message_phases);
         parser.initialize_request(UnifiedParserInit {
             starting_state: self.starting_state(),
