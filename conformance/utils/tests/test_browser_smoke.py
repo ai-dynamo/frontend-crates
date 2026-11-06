@@ -290,7 +290,9 @@ def test_portalled_tooltip_tracks_the_document_scroll(driver, viewer_url):
     try:
         # The overview can fit without scrolling; own the detailed matrix state.
         _navigate(driver, f"{viewer_url}?tab=tab-unified&view=details&transpose=0")
-        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified tbody tr:last-child .matrix-cell")
+        # The last family's first column may be outside its authored profile.
+        cell = driver.find_element(By.CSS_SELECTOR,
+                                   '#tab-unified tbody tr:last-child .matrix-cell[data-ttip-click="pin"]')
         _script(driver, "arguments[0].scrollIntoView({block: 'center'});", cell)
         assert _script(driver, "return window.scrollY > 0")
         _click(cell)

@@ -34,6 +34,23 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history() -> Non
         "schema_const_numeric_bare",
         "schema_enum_const_narrowing",
         "schema_declared_integer_boolean_number_order",
+        # New scenarios have descriptive identities without prior aliases.
+        "arg_required_nullable_omitted",
+        "arg_required_nullable_type_array_omitted",
+        "arg_required_nullable_empty_invoke",
+        "arg_optional_nullable_omitted",
+        "arg_required_nonnullable_omitted",
+        "arg_required_nullable_supplied",
+        "arg_required_nullable_ambiguous_oneof_omitted",
+        "arg_required_nullable_lookup_budget_omitted",
+    }
+    # These profiles are first authored with descriptive IDs; their current
+    # cases have no prior authored identities to preserve as aliases.
+    direct_descriptive_families = {
+        "deepseek_v3", "deepseek_v3_1", "deepseek_v3_2", "harmony",
+        "harmony_text", "hermes", "inkling", "jamba", "llama3_json",
+        "minimax_m2", "mistral", "nemotron_deci", "nemotron_nano",
+        "phi4", "pythonic", "qwen25", "qwen3_coder",
     }
     for family, document in store.families.items():
         for key, case in document.cases.items():
@@ -41,7 +58,7 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history() -> Non
                 continue
             assert case["display_id"] == taxonomy.numbered_id(case["scenario"])
             scenario = case["scenario"]
-            if scenario in direct_descriptive_scenarios:
+            if scenario in direct_descriptive_scenarios or family in direct_descriptive_families:
                 assert case["historical_ids"] == []
                 assert taxonomy.scenario_for_label(case["display_id"], scenario=scenario) == scenario
                 continue

@@ -75,6 +75,20 @@ TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
 NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES and G._MANIFEST[family].get("scenario_profile") != "native")
 V1_SPLIT_SCENARIOS = frozenset(G.V1_SPLIT_SCENARIOS)
 NATIVE_UNIFIED_TAX = {scenario: entry for scenario, entry in UNIFIED_TAX.items() if scenario not in V1_SPLIT_SCENARIOS and scenario not in taxonomy.RETIRED_SCENARIOS}
+OMITTED_ARGUMENT_INPUTS = {
+    "arg_required_nullable_omitted": {"city": "Paris"},
+    "arg_required_nullable_type_array_omitted": {"city": "Paris"},
+    "arg_required_nullable_empty_invoke": {},
+    "arg_optional_nullable_omitted": {"city": "Paris"},
+    "arg_required_nonnullable_omitted": {"city": "Paris"},
+    "arg_required_nullable_supplied": {"city": "Paris", "note": "kept"},
+    "arg_required_nullable_ambiguous_oneof_omitted": {},
+    "arg_required_nullable_lookup_budget_omitted": {},
+}
+M3_OMITTED_NULL_SCENARIOS = frozenset({
+    "arg_required_nullable_omitted", "arg_required_nullable_type_array_omitted",
+    "arg_required_nullable_empty_invoke",
+})
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -1016,8 +1030,8 @@ def test_inherited_family_preserves_published_chunk_schedules(family):
 
 def test_unified_case_counts_match_the_generator(authored_unified_store):
     """Every active authored request has one generator owner; v1 has its own generator."""
-    assert set(authored_unified_store.families) == set(NATIVE_FAMILIES)
-    for family in NATIVE_FAMILIES:
+    assert set(authored_unified_store.families) == set(FAMILIES)
+    for family in FAMILIES:
         expected = {case["scenario"] for case in authored_unified_store.families[family].cases.values()
                     if case["lifecycle"] == "active" and case["scenario"] not in V1_SPLIT_SCENARIOS}
         actual = {_scenario_of(case_id, family) for case_id in build_cases(family)}
@@ -1028,7 +1042,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
+    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6 + len(OMITTED_ARGUMENT_INPUTS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1219,7 +1233,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unifie
     checked = 0
     store = authored_unified_store
     materialized = _materialized_unified_root(tmp_path, store)
-    for fam in NATIVE_FAMILIES:
+    for fam in FAMILIES:
         spec = _emitted_spec(fam)
         scenarios = _taxonomy_scenarios(fam, store)
         packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"}, scenarios)
@@ -1244,7 +1258,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unifie
                         f"  {layer}: {got[field]!r}"
                     )
             checked += 1
-    assert checked == sum(len(build_cases(f)) for f in NATIVE_FAMILIES), (
+    assert checked == sum(len(build_cases(f)) for f in FAMILIES), (
         "the gate must cover every generated case with a retained authored family"
     )
 
@@ -1340,7 +1354,7 @@ def test_latest_unified_captures_cover_the_current_corpus(authored_unified_store
             captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
-        for family in NATIVE_FAMILIES for case_id in build_cases(family)
+        for family in G.UNIFIED_FAMILIES for case_id in build_cases(family)
     }
     _assert_retained_capture_coverage(captured, expected)
 
@@ -2149,7 +2163,300 @@ def _assert_guided_native_recovery(family, scenario, case):
     return reasoning
 
 
+OMITTED_ARGUMENT_FRAMING = {
+    "beam": ('<|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|>', '<|call|>'),
+    "deepseek_v3": ('<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>record\n```json\n',
+                    '\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'),
+    "deepseek_v3_1": ('<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>record<｜tool▁sep｜>',
+                      '<｜tool▁call▁end｜><｜tool▁calls▁end｜>'),
+    "deepseek_v3_2": ('<｜DSML｜function_calls><｜DSML｜invoke name="record">',
+                      '</｜DSML｜invoke></｜DSML｜function_calls>'),
+    "deepseek_v4": ('<｜DSML｜tool_calls><｜DSML｜invoke name="record">',
+                    '</｜DSML｜invoke></｜DSML｜tool_calls>'),
+    "deepseek_v41": ('<｜DSML｜ calls><｜DSML｜ invoke name="record">',
+                     '</｜DSML｜ invoke></｜DSML｜ calls>'),
+    "gemma4": ('<|tool_call>call:record{', '}<tool_call|>'),
+    "glm47": ('<tool_call>record', '</tool_call>'),
+    "gpt_oss": ('<|start|>assistant<|channel|>commentary to=functions.record <|constrain|>json<|message|>',
+                '<|call|>'),
+    "harmony": ('<|channel|>commentary to=functions.record <|constrain|>json<|message|>', '<|call|>'),
+    "harmony_text": ('<|channel|>commentary to=functions.record <|constrain|>json<|message|>', '<|call|>'),
+    "hermes": ('<tool_call>', '</tool_call>'),
+    "inkling": ('<|message_model|>record<|content_invoke_tool_json|>', '<|end_message|>'),
+    "jamba": ('<tool_calls>', '</tool_calls>'),
+    "kimi_k2": ('<|tool_calls_section_begin|><|tool_call_begin|>functions.record:0<|tool_call_argument_begin|>',
+                '<|tool_call_end|><|tool_calls_section_end|>'),
+    "kimi_k3": ('<|open|>tools<|sep|><|open|>call tool="record" index="1"<|sep|>',
+                '<|close|>call<|sep|><|close|>tools<|sep|>'),
+    # This EOF-delimited JSON grammar closes its argument and call objects,
+    # rather than emitting a separate end token. The decoder still reads both.
+    "llama3_json": ('<|python_tag|>', '}}'),
+    "minimax_m2": ('<minimax:tool_call><invoke name="record">', '</invoke></minimax:tool_call>'),
+    "minimax_m3": (']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="record">',
+                   ']<]minimax[>[</invoke>]<]minimax[>[</tool_call>'),
+    "mistral": ('[TOOL_CALLS]', '[/TOOL_CALLS]'),
+    "muse_glimmer": ('<|start|>assistant to=record<|message|><atem:function_calls>\n<atem:invoke name="record">\n',
+                     '</atem:invoke>\n</atem:function_calls><|eom|>'),
+    "muse_spark": ('<|start|>assistant to=record<|message|><atem:function_calls>\n<atem:invoke name="record">\n',
+                   '</atem:invoke>\n</atem:function_calls><|eom|>'),
+    "nemotron_deci": ('<TOOLCALL>', '</TOOLCALL>'),
+    "nemotron_nano": ('<tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+    "nemotron_v3": ('</think><tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+    "phi4": ('functools', ']'),
+    "pythonic": ('[record(', ')]'),
+    "qwen25": ('<tool_call>', '</tool_call>'),
+    "qwen3": ('<tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+    "qwen3_coder": ('<tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+}
+
+
+def _omitted_argument_wire_calls(family: str, case: dict) -> list[dict]:
+    """Decode these simple complete stimuli independently of the generator."""
+    raw = case["input"]
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    assert raw.startswith(opener), (family, "missing or wrong native invocation opener")
+    assert raw.endswith(closer), (family, "missing or wrong native invocation closer")
+    body = raw[len(opener):-len(closer)]
+    if family in NATIVE_FAMILIES:
+        return _native_input_calls(family, raw, case["tools"])
+    if family == "pythonic":
+        expression = ast.parse(raw, mode="eval").body
+        assert isinstance(expression, ast.List) and len(expression.elts) == 1
+        call = expression.elts[0]
+        assert isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+        assert not call.args and all(keyword.arg is not None for keyword in call.keywords)
+        return [{"kind": "tool_call", "name": call.func.id, "arguments": {
+            keyword.arg: ast.literal_eval(keyword.value) for keyword in call.keywords
+        }}]
+    if family in {"deepseek_v3_2", "minimax_m2", "nemotron_nano", "qwen3_coder"}:
+        if family == "deepseek_v3_2":
+            pattern = r'<｜DSML｜parameter name="([^"]+)" string="true">(.*?)</｜DSML｜parameter>'
+        elif family == "minimax_m2":
+            pattern = r'<parameter name="([^"]+)">(.*?)</parameter>'
+        else:
+            pattern = r'<parameter=([^>]+)>\n(.*?)\n</parameter>'
+        parameter = re.compile(pattern, re.S)
+        arguments: dict[str, str] = {}
+        qwen_separators = family in {"nemotron_nano", "qwen3_coder"}
+        cursor = 1 if qwen_separators and body == "\n" else 0
+        while cursor < len(body):
+            match = parameter.match(body, cursor)
+            assert match is not None, (family, "unmatched native parameter body", body[cursor:])
+            key, value = match.groups()
+            assert key not in arguments, (family, "duplicate native parameter", key)
+            arguments[key] = value
+            cursor = match.end()
+            if qwen_separators and cursor < len(body):
+                assert body[cursor] == "\n" and cursor + 1 < len(body), (
+                    family, "unmatched native parameter body separator", body[cursor:],
+                )
+                cursor += 1
+        return [{"kind": "tool_call", "name": "record", "arguments": arguments}]
+    # JSON-only EOF grammars include closing punctuation in their body. Every
+    # JSON decoder consumes its complete framed payload, never a nested value
+    # found by searching unrelated prefix or suffix text.
+    if family in {"llama3_json", "phi4"}:
+        body = raw[len(opener):]
+    body = json.loads(body)
+    if family in {"deepseek_v3", "deepseek_v3_1", "harmony", "harmony_text"}:
+        arguments = body
+    else:
+        if isinstance(body, list):
+            assert len(body) == 1
+            body = body[0]
+        assert body["name"] == "record"
+        arguments = body["args" if family == "inkling" else "arguments"]
+    return [{"kind": "tool_call", "name": "record", "arguments": arguments}]
+
+
+def _assert_omitted_argument_case(family: str, scenario: str, case: dict) -> list[dict]:
+    supplied = OMITTED_ARGUMENT_INPUTS[scenario]
+    wire_events = [{"kind": "tool_call", "name": "record", "arguments": supplied}]
+    assert _omitted_argument_wire_calls(family, case) == wire_events
+    expected = deepcopy(supplied)
+    if family == "minimax_m3" and scenario in M3_OMITTED_NULL_SCENARIOS:
+        expected["note"] = None
+    assert case["golden"] == [{"kind": "tool_call", "name": "record", "arguments": expected}]
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    assert case["finish_reason"] == "stop"
+    assert case["input_chunks"] == [case["input"]]
+    assert len(case["tools"]) == 1
+    assert case["tools"][0]["name"] == "record"
+    assert case["tools"][0]["strict"] is False
+    # Compare the supplied fields across grammars only after asserting the exact
+    # family-specific restoration above. No unrelated oracle is normalized.
+    return wire_events
+
+
+@pytest.fixture(scope="module")
+def omitted_argument_corpus() -> dict[str, dict]:
+    return {family: build_cases(family) for family in FAMILIES}
+
+
+def test_omitted_argument_inventory_covers_every_registered_family(omitted_argument_corpus: dict) -> None:
+    assert len(OMITTED_ARGUMENT_INPUTS) == 8
+    assert set(OMITTED_ARGUMENT_FRAMING) == set(FAMILIES)
+    assert {spec[0] for spec in G.OMITTED_ARGUMENT_CASES} == set(OMITTED_ARGUMENT_INPUTS)
+    for scenario in OMITTED_ARGUMENT_INPUTS:
+        assert G.scenario_families(scenario) == set(FAMILIES)
+        assert taxonomy.display_section(scenario, set(FAMILIES)) == (
+            "unified_g7_nullable", "7-tool-argument-nullability",
+        )
+        for family, cases in omitted_argument_corpus.items():
+            assert f"UNIFIED.{scenario}.{family}" in cases
+    assert tax("arg_marker_in_string_pr424") == (7, "33")
+    assert tax("deepseek_v41_mixed_control_text_in_string_pr424") == (7, "34")
+    assert [tax(scenario) for scenario in OMITTED_ARGUMENT_INPUTS] == [
+        (7, str(ordinal)) for ordinal in range(35, 43)
+    ]
+
+
+@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("scenario", OMITTED_ARGUMENT_INPUTS)
+def test_omitted_argument_native_request_and_oracle(
+    family: str, scenario: str, omitted_argument_corpus: dict,
+) -> None:
+    case = omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"]
+    _assert_omitted_argument_case(family, scenario, case)
+    parameters = case["tools"][0]["parameters"]
+    nullable = {"anyOf": [{"type": "string"}, {"type": "null"}]}
+    if scenario == "arg_required_nullable_type_array_omitted":
+        assert parameters["properties"]["note"] == {"type": ["string", "null"]}
+    elif scenario == "arg_required_nonnullable_omitted":
+        assert parameters["properties"]["note"] == {"type": "string"}
+    elif scenario not in {
+        "arg_required_nullable_ambiguous_oneof_omitted", "arg_required_nullable_lookup_budget_omitted",
+    }:
+        assert parameters["properties"]["note"] == nullable
+    assert ("note" in parameters["required"]) == (scenario != "arg_optional_nullable_omitted")
+    valid = scenario in {"arg_optional_nullable_omitted", "arg_required_nullable_supplied"} or (
+        family == "minimax_m3" and scenario in M3_OMITTED_NULL_SCENARIOS
+    )
+    assert matches_schema(case["golden"][0]["arguments"], parameters) == valid
+    if family == "nemotron_v3":
+        assert case["input"].startswith("</think><tool_call>")
+        assert not case["input"].startswith("</think></think>")
+    if family in {"beam", "gpt_oss", "harmony", "harmony_text"}:
+        assert case["input"].endswith("<|call|>")
+    elif family == "minimax_m3":
+        assert case["input"].endswith("]<]minimax[>[</invoke>]<]minimax[>[</tool_call>")
+    elif family in {"muse_glimmer", "muse_spark"}:
+        assert case["input"].endswith("</atem:invoke>\n</atem:function_calls><|eom|>")
+    elif family == "kimi_k3":
+        assert case["input"].endswith("<|close|>call<|sep|><|close|>tools<|sep|>")
+
+
+def test_omitted_argument_defensive_schemas_exclude_inferred_null(omitted_argument_corpus: dict) -> None:
+    cases = omitted_argument_corpus["minimax_m3"]
+    ambiguous = cases["UNIFIED.arg_required_nullable_ambiguous_oneof_omitted.minimax_m3"]["tools"][0]["parameters"]
+    assert ambiguous == {"type": "object", "required": ["note"], "oneOf": [
+        {"properties": {"note": {"type": ["string", "null"]}}},
+        {"properties": {"note": {"type": ["integer", "null"]}}},
+    ]}
+    assert matches_schema({"note": "kept"}, ambiguous)
+    assert matches_schema({"note": 42}, ambiguous)
+    assert not matches_schema({"note": None}, ambiguous)
+    budget = cases["UNIFIED.arg_required_nullable_lookup_budget_omitted.minimax_m3"]["tools"][0]["parameters"]
+    assert budget["properties"] == {"note": {"type": ["string", "null"]}}
+    assert len(budget["$defs"]) == 65
+    current = budget
+    visited = set()
+    while "allOf" in current:
+        assert len(current["allOf"]) == 1
+        reference = current["allOf"][0]["$ref"]
+        assert reference not in visited
+        visited.add(reference)
+        current = _local_reference(budget, reference)
+    assert len(visited) == 65
+    assert current == {"properties": {"note": {"type": "string"}}}
+    assert matches_schema({"note": "kept"}, budget)
+    assert not matches_schema({"note": None}, budget)
+
+
+@pytest.mark.parametrize("family", ["minimax_m3", "qwen3", "gpt_oss"])
+def test_omitted_argument_oracle_rejects_a_changed_missing_key(family: str) -> None:
+    scenario = "arg_required_nullable_omitted"
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_omitted_argument_case(family, scenario, case)
+    if family == "minimax_m3":
+        case["golden"][0]["arguments"].pop("note")
+    else:
+        case["golden"][0]["arguments"]["note"] = None
+    with pytest.raises(AssertionError):
+        _assert_omitted_argument_case(family, scenario, case)
+
+
+@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("scenario", [
+    "arg_required_nullable_empty_invoke",
+    "arg_required_nullable_ambiguous_oneof_omitted",
+    "arg_required_nullable_lookup_budget_omitted",
+])
+@pytest.mark.parametrize("mutation", ["missing_opener", "wrong_opener", "missing_closer", "wrong_closer"])
+def test_omitted_argument_empty_invocation_rejects_broken_envelope(
+    family: str, scenario: str, mutation: str, omitted_argument_corpus: dict,
+) -> None:
+    case = deepcopy(omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"])
+    _assert_omitted_argument_case(family, scenario, case)
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    boundary = mutation.rsplit("_", 1)[1]
+    if boundary == "opener":
+        case["input"] = ("" if mutation.startswith("missing") else "<wrong_tool_call>") + case["input"][len(opener):]
+    else:
+        case["input"] = case["input"][:-len(closer)] + ("" if mutation.startswith("missing") else "</wrong_tool_call>")
+    case["input_chunks"] = [case["input"]]
+    with pytest.raises(AssertionError, match=f"native invocation {boundary}"):
+        _assert_omitted_argument_case(family, scenario, case)
+
+
+@pytest.mark.parametrize("family", ["deepseek_v3_2", "minimax_m2", "nemotron_nano", "qwen3_coder"])
+@pytest.mark.parametrize("mutation", ["hidden_note", "junk", "duplicate_city", "duplicate_note"])
+def test_omitted_argument_xml_rejects_unconsumed_or_duplicate_parameters(
+    family: str, mutation: str, omitted_argument_corpus: dict,
+) -> None:
+    scenario = "arg_required_nullable_supplied" if mutation == "duplicate_note" else "arg_required_nullable_omitted"
+    case = deepcopy(omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"])
+    _assert_omitted_argument_case(family, scenario, case)
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    body = case["input"][len(opener):-len(closer)]
+    key, value = ("note", "kept") if mutation == "duplicate_note" else ("city", "Paris")
+    if family == "deepseek_v3_2":
+        duplicate = f'<｜DSML｜parameter name="{key}" string="true">{value}</｜DSML｜parameter>'
+        hidden = '<｜DSML｜parameter name="note" string="false">null</｜DSML｜parameter>'
+    elif family == "minimax_m2":
+        duplicate = f'<parameter name="{key}">{value}</parameter>'
+        hidden = '<parameter name="note" type="null">null</parameter>'
+    else:
+        duplicate = f'<parameter={key}>\n{value}\n</parameter>'
+        hidden = '<parameter=note>null</parameter>'
+    injected = "junk" if mutation == "junk" else hidden if mutation == "hidden_note" else duplicate
+    separator = "\n" if family in {"nemotron_nano", "qwen3_coder"} else ""
+    case["input"] = opener + body + separator + injected + closer
+    case["input_chunks"] = [case["input"]]
+    with pytest.raises(AssertionError, match="unmatched native parameter body|duplicate native parameter"):
+        _assert_omitted_argument_case(family, scenario, case)
+
+
+@pytest.mark.parametrize("family", ["nemotron_nano", "qwen3_coder"])
+def test_omitted_argument_empty_qwen_body_allows_one_framing_newline(
+    family: str, omitted_argument_corpus: dict,
+) -> None:
+    scenario = "arg_required_nullable_empty_invoke"
+    case = deepcopy(omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"])
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    case["input"] = opener + "\n" + closer
+    case["input_chunks"] = [case["input"]]
+    _assert_omitted_argument_case(family, scenario, case)
+    case["input"] = opener + "\n\n" + closer
+    case["input_chunks"] = [case["input"]]
+    with pytest.raises(AssertionError, match="unmatched native parameter body"):
+        _assert_omitted_argument_case(family, scenario, case)
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
+    if scenario in OMITTED_ARGUMENT_INPUTS:
+        _assert_omitted_argument_case(family, scenario, case)
+        return
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
     if scenario == "malformed_json_then_two_valid_calls":
@@ -2339,6 +2646,8 @@ def _assert_cross_family_contract(corpus):
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
                       else _assert_missing_inner_closers(family, case)
                       if scenario == "missing_inner_closers_then_valid_call"
+                      else _assert_omitted_argument_case(family, scenario, case)
+                      if scenario in OMITTED_ARGUMENT_INPUTS
                       else _logical_events(scenario, family, case["golden"]))
             if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
                 raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "minimax_m3"} else 2

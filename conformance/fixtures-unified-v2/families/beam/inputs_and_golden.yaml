@@ -494,6 +494,21 @@ tools:
       properties: {}
       additionalProperties: false
     strict: true
+  tools_a006a44ef447853d:
+  - name: record
+    strict: false
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - city
+      - note
   tools_dc442e5767620506:
   - name: schema_probe
     parameters:
@@ -791,6 +806,217 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_3c01aaafe9c2e493:
+  - name: record
+    strict: false
+    parameters:
+      type: object
+      properties:
+        note:
+          type:
+          - string
+          - 'null'
+      required:
+      - note
+      allOf:
+      - $ref: '#/$defs/N0'
+      $defs:
+        N0:
+          allOf:
+          - $ref: '#/$defs/N1'
+        N1:
+          allOf:
+          - $ref: '#/$defs/N2'
+        N2:
+          allOf:
+          - $ref: '#/$defs/N3'
+        N3:
+          allOf:
+          - $ref: '#/$defs/N4'
+        N4:
+          allOf:
+          - $ref: '#/$defs/N5'
+        N5:
+          allOf:
+          - $ref: '#/$defs/N6'
+        N6:
+          allOf:
+          - $ref: '#/$defs/N7'
+        N7:
+          allOf:
+          - $ref: '#/$defs/N8'
+        N8:
+          allOf:
+          - $ref: '#/$defs/N9'
+        N9:
+          allOf:
+          - $ref: '#/$defs/N10'
+        N10:
+          allOf:
+          - $ref: '#/$defs/N11'
+        N11:
+          allOf:
+          - $ref: '#/$defs/N12'
+        N12:
+          allOf:
+          - $ref: '#/$defs/N13'
+        N13:
+          allOf:
+          - $ref: '#/$defs/N14'
+        N14:
+          allOf:
+          - $ref: '#/$defs/N15'
+        N15:
+          allOf:
+          - $ref: '#/$defs/N16'
+        N16:
+          allOf:
+          - $ref: '#/$defs/N17'
+        N17:
+          allOf:
+          - $ref: '#/$defs/N18'
+        N18:
+          allOf:
+          - $ref: '#/$defs/N19'
+        N19:
+          allOf:
+          - $ref: '#/$defs/N20'
+        N20:
+          allOf:
+          - $ref: '#/$defs/N21'
+        N21:
+          allOf:
+          - $ref: '#/$defs/N22'
+        N22:
+          allOf:
+          - $ref: '#/$defs/N23'
+        N23:
+          allOf:
+          - $ref: '#/$defs/N24'
+        N24:
+          allOf:
+          - $ref: '#/$defs/N25'
+        N25:
+          allOf:
+          - $ref: '#/$defs/N26'
+        N26:
+          allOf:
+          - $ref: '#/$defs/N27'
+        N27:
+          allOf:
+          - $ref: '#/$defs/N28'
+        N28:
+          allOf:
+          - $ref: '#/$defs/N29'
+        N29:
+          allOf:
+          - $ref: '#/$defs/N30'
+        N30:
+          allOf:
+          - $ref: '#/$defs/N31'
+        N31:
+          allOf:
+          - $ref: '#/$defs/N32'
+        N32:
+          allOf:
+          - $ref: '#/$defs/N33'
+        N33:
+          allOf:
+          - $ref: '#/$defs/N34'
+        N34:
+          allOf:
+          - $ref: '#/$defs/N35'
+        N35:
+          allOf:
+          - $ref: '#/$defs/N36'
+        N36:
+          allOf:
+          - $ref: '#/$defs/N37'
+        N37:
+          allOf:
+          - $ref: '#/$defs/N38'
+        N38:
+          allOf:
+          - $ref: '#/$defs/N39'
+        N39:
+          allOf:
+          - $ref: '#/$defs/N40'
+        N40:
+          allOf:
+          - $ref: '#/$defs/N41'
+        N41:
+          allOf:
+          - $ref: '#/$defs/N42'
+        N42:
+          allOf:
+          - $ref: '#/$defs/N43'
+        N43:
+          allOf:
+          - $ref: '#/$defs/N44'
+        N44:
+          allOf:
+          - $ref: '#/$defs/N45'
+        N45:
+          allOf:
+          - $ref: '#/$defs/N46'
+        N46:
+          allOf:
+          - $ref: '#/$defs/N47'
+        N47:
+          allOf:
+          - $ref: '#/$defs/N48'
+        N48:
+          allOf:
+          - $ref: '#/$defs/N49'
+        N49:
+          allOf:
+          - $ref: '#/$defs/N50'
+        N50:
+          allOf:
+          - $ref: '#/$defs/N51'
+        N51:
+          allOf:
+          - $ref: '#/$defs/N52'
+        N52:
+          allOf:
+          - $ref: '#/$defs/N53'
+        N53:
+          allOf:
+          - $ref: '#/$defs/N54'
+        N54:
+          allOf:
+          - $ref: '#/$defs/N55'
+        N55:
+          allOf:
+          - $ref: '#/$defs/N56'
+        N56:
+          allOf:
+          - $ref: '#/$defs/N57'
+        N57:
+          allOf:
+          - $ref: '#/$defs/N58'
+        N58:
+          allOf:
+          - $ref: '#/$defs/N59'
+        N59:
+          allOf:
+          - $ref: '#/$defs/N60'
+        N60:
+          allOf:
+          - $ref: '#/$defs/N61'
+        N61:
+          allOf:
+          - $ref: '#/$defs/N62'
+        N62:
+          allOf:
+          - $ref: '#/$defs/N63'
+        N63:
+          allOf:
+          - $ref: '#/$defs/N64'
+        N64:
+          properties:
+            note:
+              type: string
   tools_3142468a2190e640:
   - name: schema_probe
     parameters:
@@ -1092,6 +1318,20 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_7d1ae6ab475bc1f3:
+  - name: record
+    strict: false
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - city
   tools_59e18ecefd82da75:
   - name: schema_probe
     parameters:
@@ -1131,6 +1371,21 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_d878a238abc7b3c6:
+  - name: record
+    strict: false
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        note:
+          type:
+          - string
+          - 'null'
+      required:
+      - city
+      - note
   tools_c7317ba7db1bcfa8:
   - name: schema_probe
     parameters:
@@ -1276,6 +1531,19 @@ tools:
           enum:
           - 'null'
           - null
+  tools_0d95cbb8e0c0f193:
+  - name: record
+    strict: false
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        note:
+          type: string
+      required:
+      - city
+      - note
   tools_7c3821d79a8dd3d3:
   - name: schema_probe
     parameters:
@@ -1403,6 +1671,24 @@ tools:
           anyOf:
           - type: string
           - type: 'null'
+  tools_e8d2411e0fcf0653:
+  - name: record
+    strict: false
+    parameters:
+      type: object
+      required:
+      - note
+      oneOf:
+      - properties:
+          note:
+            type:
+            - string
+            - 'null'
+      - properties:
+          note:
+            type:
+            - integer
+            - 'null'
   tools_c74338ba0ea3bd75:
   - name: schema_probe
     parameters:
@@ -1479,6 +1765,18 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_3edd773121aa310a:
+  - name: record
+    strict: false
+    parameters:
+      type: object
+      properties:
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - note
   tools_5c985640d00d3a91:
   - name: schema_probe
     parameters:
@@ -2876,6 +3174,13 @@ requests:
     - 3
     - 11
     finish_step: true
+  302bc830acc461dd8e7b7b2ef3b858db0a6c15233999ed5b1c8093803012f34a:
+    input: '<|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+      Paris
+
+      </rfl:parameter><|call|>'
+    tools: tools_a006a44ef447853d
   315f003941580adf1c6528d0a786071ab99b3da09379d27faf61d7f488e9e22b:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -3014,6 +3319,17 @@ requests:
 
       </rfl:parameter><|call|>'
     tools: tools_19a5070486dcbf53
+  381522b737d64ec9908ef5c60cf73ffa6af12dfdd684dfe021a39516aecd2cda:
+    input: '<|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+      Paris
+
+      </rfl:parameter><rfl:parameter name="note">
+
+      kept
+
+      </rfl:parameter><|call|>'
+    tools: tools_a006a44ef447853d
   391b5249255b3220170d5d66b1de0ae36c5a4cb102d8f40510e1279079c524f5:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -3938,6 +4254,9 @@ requests:
     - 16
     - 8
     finish_step: true
+  5e02b3b573d0c7c6789cdac984a49241c109fccefe742de04792da78b78fc2d2:
+    input: <|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><|call|>
+    tools: tools_3c01aaafe9c2e493
   603027979deb183ab2c4bc3e313846f95b41407e14b2f204fca98fbb330b761e:
     input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
 
@@ -4884,6 +5203,13 @@ requests:
     - 12
     - 7
     finish_step: true
+  88e6b05fa330c0488d5c713a0e6bd670802c6bae8ac2b3ba0c6e71e25154e7a1:
+    input: '<|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+      Paris
+
+      </rfl:parameter><|call|>'
+    tools: tools_7d1ae6ab475bc1f3
   8989e5a542c46e65a930808dd4adbd37d9e81fef5421a34c5c7346e0c6716c5e:
     init:
       starting_state: None
@@ -5026,6 +5352,13 @@ requests:
     - 16
     - 8
     finish_step: true
+  8bfb8cc758fd0ea2db16b10664840958307e508a9fe31e17741972c76d29eac7:
+    input: '<|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+      Paris
+
+      </rfl:parameter><|call|>'
+    tools: tools_d878a238abc7b3c6
   8d793cd3f5e66b7ce581710bfaef3b47d0b7ff155f2b4199a1a0b6f7ea845d71:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -5581,6 +5914,13 @@ requests:
 
       </rfl:parameter><|call|>'
     tools: tools_3b9cefdb4fbe7e81
+  a0f9e8f52a57f723aa868a9e6b12dab0b6e7c7cca9aae831ac38265133502f00:
+    input: '<|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+      Paris
+
+      </rfl:parameter><|call|>'
+    tools: tools_0d95cbb8e0c0f193
   a162953e7e398d12470d9c24c78643520ea12029f05d9dc3e3576113ad1511a6:
     input: '<|start|>assistant<|channel|>analysis<|message|>A<|end|><|start|>assistant to=f<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
 
@@ -6200,6 +6540,9 @@ requests:
     - 16
     - 8
     finish_step: true
+  c1e6c820c017f2805b7fe2988a3fb9a0e514f6fa14b7094da431875e14c9ef74:
+    input: <|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><|call|>
+    tools: tools_e8d2411e0fcf0653
   c213d6f63f0d4ea6aa3642ed2d3df67cf1e26b6faf8f2c05bddd58f195e4fdfd:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -6458,6 +6801,9 @@ requests:
     - 16
     - 8
     finish_step: true
+  cc2db3df1f233243f7c6256e43bae9b4da1a24c3769621c28f7a91694362907f:
+    input: <|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|><|call|>
+    tools: tools_3edd773121aa310a
   cc4a83ceaa01b626f946de6d7cffc77c8034a5bbdf74ebe5c2dc8fff19146688:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -11713,3 +12059,89 @@ cases:
       arguments:
         value: 1
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+  arg_optional_nullable_omitted:
+    description: 'Optional nullable note is omitted beside required city:Paris. Every grammar preserves omission: nullability alone cannot fabricate an optional argument.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_optional_nullable_omitted
+    request: 88e6b05fa330c0488d5c713a0e6bd670802c6bae8ac2b3ba0c6e71e25154e7a1
+    golden:
+    - kind: tool_call
+      name: record
+      arguments:
+        city: Paris
+  arg_required_nonnullable_omitted:
+    description: Required non-nullable note is omitted beside city:Paris. Every grammar preserves omission; argument parsing does not validate the complete tool schema.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nonnullable_omitted
+    request: a0f9e8f52a57f723aa868a9e6b12dab0b6e7c7cca9aae831ac38265133502f00
+    golden:
+    - kind: tool_call
+      name: record
+      arguments:
+        city: Paris
+  arg_required_nullable_ambiguous_oneof_omitted:
+    description: An empty invocation has required note in two root oneOf branches admitting null. Null would satisfy both branches and violate oneOf, so every grammar preserves the empty object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_ambiguous_oneof_omitted
+    request: c1e6c820c017f2805b7fe2988a3fb9a0e514f6fa14b7094da431875e14c9ef74
+    golden:
+    - kind: tool_call
+      name: record
+      arguments: {}
+  arg_required_nullable_empty_invoke:
+    description: An empty completed native invocation omits its only required nullable note. MiniMax-M3 restores note:null even with no supplied fields; other grammars preserve the empty object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_empty_invoke
+    request: cc2db3df1f233243f7c6256e43bae9b4da1a24c3769621c28f7a91694362907f
+    golden:
+    - kind: tool_call
+      name: record
+      arguments: {}
+  arg_required_nullable_lookup_budget_omitted:
+    description: An empty invocation has direct nullable note and a 65-definition allOf reference chain ending in note:string. An exhausted property lookup cannot prove null is valid; every grammar preserves the empty object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_lookup_budget_omitted
+    request: 5e02b3b573d0c7c6789cdac984a49241c109fccefe742de04792da78b78fc2d2
+    golden:
+    - kind: tool_call
+      name: record
+      arguments: {}
+  arg_required_nullable_omitted:
+    description: Required anyOf string-or-null note is omitted beside city:Paris. MiniMax-M3 encodes null by omission and restores note:null; other grammars preserve omission.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_omitted
+    request: 302bc830acc461dd8e7b7b2ef3b858db0a6c15233999ed5b1c8093803012f34a
+    golden:
+    - kind: tool_call
+      name: record
+      arguments:
+        city: Paris
+  arg_required_nullable_supplied:
+    description: Required nullable note is supplied as kept beside city:Paris. Every grammar preserves the supplied string rather than overwriting it with null.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_supplied
+    request: 381522b737d64ec9908ef5c60cf73ffa6af12dfdd684dfe021a39516aecd2cda
+    golden:
+    - kind: tool_call
+      name: record
+      arguments:
+        city: Paris
+        note: kept
+  arg_required_nullable_type_array_omitted:
+    description: Required type-array string-or-null note is omitted beside city:Paris. MiniMax-M3 restores note:null; other grammars preserve omission.
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_type_array_omitted
+    request: 8bfb8cc758fd0ea2db16b10664840958307e508a9fe31e17741972c76d29eac7
+    golden:
+    - kind: tool_call
+      name: record
+      arguments:
+        city: Paris

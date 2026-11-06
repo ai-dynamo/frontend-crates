@@ -438,6 +438,16 @@ for _scenario, _active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
 
 # Assign new numeric IDs after historical variants so their published ranks do not move.
 UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12")
+UNIFIED_TAX.update({
+    "arg_required_nullable_omitted": (7, "35"),
+    "arg_required_nullable_type_array_omitted": (7, "36"),
+    "arg_required_nullable_empty_invoke": (7, "37"),
+    "arg_optional_nullable_omitted": (7, "38"),
+    "arg_required_nonnullable_omitted": (7, "39"),
+    "arg_required_nullable_supplied": (7, "40"),
+    "arg_required_nullable_ambiguous_oneof_omitted": (7, "41"),
+    "arg_required_nullable_lookup_budget_omitted": (7, "42"),
+})
 
 UNIFIED_TAX["interrupted_reasoning_then_response"] = (10, "7")
 UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "6")
