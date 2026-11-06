@@ -2,19 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 """Regenerate the Qwen3-VL video golden fixtures from HF's processor.
 
-For each case in `CASES`, this script writes each media item as u8 RGB
-(`m<k>.u8`, deterministic noise; THWC for a video) and records what HF
-produces:
-
-* `resized_<k>.u8`            - a resized video's frames after
-                                `Qwen3VLVideoProcessor.resize`, the stage the
-                                Rust kernel must hit;
-* `pixel_values_videos.f32le` - HF's video features, every video in order;
-* `mrope.i64le`               - `Qwen3VLModel.get_rope_index` positions,
-                                `[3, len]` row-major;
-* `case.json`                 - the spec, the media, the prompt ids, and
-                                `Qwen3VLProcessor.__call__`'s `input_ids`,
-                                with the token ids of each timestamp text.
+Each case's media are u8 RGB noise from `noise` below (THWC for a video), which
+the Rust test rebuilds. `<case>/case.json` holds what HF produces: the spec,
+the media, the prompt ids, `Qwen3VLProcessor.__call__`'s `input_ids` and the
+token ids of each timestamp text, the video grids, the M-RoPE delta, and the
+blake3 of each stage: a resized video's frames after
+`Qwen3VLVideoProcessor.resize`, `pixel_values_videos` (little-endian f32, every
+video in order), and `get_rope_index`'s positions (little-endian i64, `[3, len]`).
 
 `input_ids` come from the processor with Qwen3-VL-2B-Instruct's tokenizer, so
 the expansion is HF's own; the Rust test encodes timestamps through the
@@ -26,6 +20,7 @@ recorded map, as a host encodes them through its tokenizer.
 import json
 import os
 
+import blake3
 import numpy as np
 import torch
 import torchvision
@@ -76,6 +71,16 @@ CASES = {
     # 0.25 and 0.75 are exact ties.
     "tps3": dict(prompt=f"{V}What?", media=[("video", (4, 32, 32), [0, 1, 2, 3], 4.0)], tps=3),
 }
+
+
+def noise(shape, seed):
+    """Byte `i` is `(((i + seed) * 2654435761) >> 20) & 255`, as in the fixtures README."""
+    i = np.arange(int(np.prod(shape)), dtype=np.uint64)
+    return (((i + np.uint64(seed)) * np.uint64(2654435761)) >> np.uint64(20)).astype(np.uint8).reshape(shape)
+
+
+def digest(array):
+    return blake3.blake3(np.ascontiguousarray(array).tobytes()).hexdigest()
 
 
 def image_spec(case):
@@ -135,24 +140,18 @@ def rope_model():
         return Qwen3VLModel(cfg)
 
 
-def write(case_dir, name, array):
-    with open(os.path.join(case_dir, name), "wb") as f:
-        f.write(np.ascontiguousarray(array).tobytes())
-
-
 def generate(name, case, tokenizer):
     case_dir = os.path.join(ROOT, name)
     os.makedirs(case_dir, exist_ok=True)
-    rng = np.random.default_rng(sum(name.encode()))
     vp, video = video_processor(case)
     processor = Qwen3VLProcessor(image_processor=Qwen2VLImageProcessor(**image_spec(case)),
                                  tokenizer=tokenizer, video_processor=vp)
 
     images, videos, metadata, media, features, timestamp_ids = [], [], [], [], [], {}
     for k, (kind, shape, *timing) in enumerate(case["media"]):
-        rgb = rng.integers(0, 256, size=(*shape, 3), dtype=np.uint8)
-        write(case_dir, f"m{k}.u8", rgb)
-        entry = dict(kind=kind, file=f"m{k}.u8", height=shape[-2], width=shape[-1])
+        seed = 1000 * k + sum(name.encode())
+        rgb = noise((*shape, 3), seed)
+        entry = dict(kind=kind, shape=list(shape), seed=seed)
         if kind == "image":
             images.append(torch.from_numpy(rgb).permute(2, 0, 1).contiguous())
             media.append(entry)
@@ -164,8 +163,7 @@ def generate(name, case, tokenizer):
                                       frames_indices=indices))
         resized = resized_frames(vp, tchw)
         if resized is not None:
-            entry["resized"] = f"resized_{k}.u8"
-            write(case_dir, entry["resized"], resized.permute(0, 2, 3, 1))
+            entry["resized_blake3"] = digest(resized.permute(0, 2, 3, 1).contiguous().numpy())
             tchw = resized
         features.append(normalize_patchify(video, tchw.permute(0, 2, 3, 1).numpy()))
         for seconds in Qwen3VLProcessor._calculate_timestamps(None, list(indices), fps,
@@ -181,13 +179,12 @@ def generate(name, case, tokenizer):
     pixel_values_videos = out["pixel_values_videos"].numpy().astype(np.float32)
     assert np.array_equal(np.concatenate(features), pixel_values_videos), (
         f"{name}: the resized frames do not reproduce pixel_values_videos")
-    write(case_dir, "pixel_values_videos.f32le", pixel_values_videos)
 
     ids = out["input_ids"]
     positions, delta = rope_model().get_rope_index(
         ids, out["mm_token_type_ids"], image_grid_thw=out.get("image_grid_thw"),
         video_grid_thw=out["video_grid_thw"], attention_mask=torch.ones_like(ids))
-    write(case_dir, "mrope.i64le", positions[:, 0, :].reshape(-1).numpy().astype("<i8"))
+    mrope = positions[:, 0, :].reshape(-1).numpy().astype("<i8")
 
     spec = dict(family="qwen_vl", image_token_id=IMAGE_PAD, **image_spec(case),
                 resample="aten_u8",
@@ -202,6 +199,8 @@ def generate(name, case, tokenizer):
         prompt_ids=tokenizer.encode(case["prompt"], add_special_tokens=False),
         timestamp_ids=timestamp_ids, input_ids=ids[0].tolist(),
         video_grids=out["video_grid_thw"].tolist(), mrope_delta=int(delta.reshape(-1)[0]),
+        pixel_values_videos_blake3=digest(pixel_values_videos.astype("<f4")),
+        mrope_blake3=digest(mrope),
         provenance={"generator": "multimodal/tests/fixtures/qwen3_vl_video/generate.py",
                     "tokenizer": f"{MODEL}@{REVISION}",
                     "transformers": transformers.__version__, "torch": torch.__version__,

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Qwen3-VL video golden replay: each stage must be byte-identical to the
-//! fixtures `tests/fixtures/qwen3_vl_video/generate.py` records from HF's
+//! Qwen3-VL video golden replay: each stage must hash as the fixtures
+//! `tests/fixtures/qwen3_vl_video/generate.py` records from HF's
 //! `Qwen3VLProcessor` (with Qwen3-VL-2B-Instruct's tokenizer) and
 //! `Qwen3VLModel.get_rope_index`. A resized video's frames are pinned on
 //! their own, so a mismatch names the stage.
@@ -24,17 +24,15 @@ const CASES: [&str; 4] = ["downscale_6f", "odd_3f", "tps3", "video_image_video"]
 #[serde(tag = "kind", rename_all = "lowercase")]
 enum Media {
     Image {
-        file: String,
-        height: usize,
-        width: usize,
+        shape: [usize; 2],
+        seed: u64,
     },
     Video {
-        file: String,
-        height: usize,
-        width: usize,
+        shape: [usize; 3],
+        seed: u64,
         frame_indices: Vec<u64>,
         fps: f64,
-        resized: Option<String>,
+        resized_blake3: Option<String>,
     },
 }
 
@@ -47,6 +45,8 @@ struct Case {
     input_ids: Vec<i32>,
     video_grids: Vec<Vec<i64>>,
     mrope_delta: i64,
+    pixel_values_videos_blake3: String,
+    mrope_blake3: String,
 }
 
 /// The tokenizer's ids for each timestamp text, as the generator recorded them.
@@ -59,8 +59,15 @@ impl TextEncoder for Recorded {
     }
 }
 
-fn read(dir: &std::path::Path, name: &str) -> Vec<u8> {
-    std::fs::read(dir.join(name)).unwrap_or_else(|e| panic!("{name}: {e}"))
+/// The generator's `noise`: byte `i` is `(((i + seed) * 2654435761) >> 20) & 255`.
+fn noise(len: usize, seed: u64) -> Vec<u8> {
+    (0..len as u64)
+        .map(|i| ((i + seed).wrapping_mul(2_654_435_761) >> 20) as u8)
+        .collect()
+}
+
+fn digest(bytes: &[u8]) -> String {
+    blake3::hash(bytes).to_hex().to_string()
 }
 
 fn f32_bytes(item: &ProcessedItem) -> Vec<u8> {
@@ -82,8 +89,8 @@ fn video_pipeline_matches_golden_fixtures() {
     let root =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/qwen3_vl_video");
     for name in CASES {
-        let dir = root.join(name);
-        let case: Case = serde_json::from_slice(&read(&dir, "case.json")).unwrap();
+        let json = std::fs::read(root.join(name).join("case.json")).unwrap();
+        let case: Case = serde_json::from_slice(&json).unwrap();
         let family = processor_from_spec(&case.spec.to_string()).unwrap();
         let spec: QwenVlSpec = serde_json::from_value(case.spec.clone()).unwrap();
         let sizing = &spec.video.as_ref().unwrap().processor;
@@ -92,25 +99,23 @@ fn video_pipeline_matches_golden_fixtures() {
         for media in &case.media {
             let item = match media {
                 Media::Image {
-                    file,
-                    height,
-                    width,
+                    shape: [h, w],
+                    seed,
                 } => family.process_item(&DecodedMedia::Image {
-                    rgb: read(&dir, file),
-                    height: *height,
-                    width: *width,
+                    rgb: noise(h * w * 3, *seed),
+                    height: *h,
+                    width: *w,
                 }),
                 Media::Video {
-                    file,
-                    height,
-                    width,
+                    shape: [t, h, w],
+                    seed,
                     frame_indices,
                     fps,
-                    resized,
+                    resized_blake3,
                 } => {
-                    let (h, w) = (*height, *width);
-                    let rgb = read(&dir, file);
-                    if let Some(resized) = resized {
+                    let (h, w) = (*h, *w);
+                    let rgb = noise(t * h * w * 3, *seed);
+                    if let Some(want) = resized_blake3 {
                         let (th, tw) = sizing
                             .resize(frame_indices.len(), h, w, &Default::default())
                             .unwrap();
@@ -120,7 +125,7 @@ fn video_pipeline_matches_golden_fixtures() {
                                 resize::resize_rgb(frame, h, w, th, tw, resize::Resample::AtenU8)
                             })
                             .collect();
-                        assert_eq!(frames, read(&dir, resized), "{name}: {resized}");
+                        assert_eq!(&digest(&frames), want, "{name}: resized frames");
                     }
                     family.process_item(&DecodedMedia::Video {
                         rgb,
@@ -140,8 +145,8 @@ fn video_pipeline_matches_golden_fixtures() {
         assert_eq!(grids, case.video_grids, "{name}: video_grid_thw");
         let features: Vec<u8> = videos.iter().flat_map(|item| f32_bytes(item)).collect();
         assert_eq!(
-            features,
-            read(&dir, "pixel_values_videos.f32le"),
+            digest(&features),
+            case.pixel_values_videos_blake3,
             "{name}: pixel_values_videos"
         );
 
@@ -165,7 +170,7 @@ fn video_pipeline_matches_golden_fixtures() {
             panic!("{name}: expected M-RoPE");
         };
         let mrope: Vec<u8> = positions.iter().flat_map(|v| v.to_le_bytes()).collect();
-        assert_eq!(mrope, read(&dir, "mrope.i64le"), "{name}: mrope");
+        assert_eq!(digest(&mrope), case.mrope_blake3, "{name}: mrope");
         assert_eq!(delta, case.mrope_delta, "{name}: mrope delta");
     }
 }
