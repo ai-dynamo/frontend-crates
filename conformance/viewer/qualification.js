@@ -464,15 +464,15 @@ const { default: assert } = await import('node:assert/strict');
 const { readFile } = await import('node:fs/promises');
 const { createNodeResourceStore } = await import('./data.js');
 const { initializeDevelopmentParser } = await import('./yaml_data.js');
-const { FixtureResources } = await import('./resources.js');
-const { buildPage, buildTab, pageMetadata } = await import('./presentation.js');
+const { FixtureResources, materializeUnifiedRecord } = await import('./resources.js');
+const { buildPage, buildTab, pageMetadata, unifiedComparisonFailure } = await import('./presentation.js');
 
-const { tabCandidates, selectedUnifiedFamilies } = await import('./model.js');
+const { tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate } = await import('./model.js');
 const { classifyUnified, compareLegacyVersions, compareVersions, resolveUnified } = await import('./model.js');
 const { leafCells } = await import('./model.js');
 const { columnKeysFor, tabPresentation } = await import('./presentation.js');
 const { sameValue } = await import('./values.js');
-const { getField } = await import('./values.js');
+const { getField, hasField } = await import('./values.js');
 const { selectedCaptureOutcome } = await import('./model.js');
 const { canonicalUnifiedEvents } = await import('./model.js');
 
@@ -738,17 +738,20 @@ function warnGoldenDifference(cell, key, label) {
   if (selectedCaptureOutcome(cell, key) !== 'pass') console.warn(`WARNING: ${label}: recorded result differs from GOLDEN`);
   return current;
 }
-function checkDottedNameContracts(tab, loadedKeys) {
+async function checkDottedNameContracts(tab, loadedKeys, reader) {
   const cases = {
     dotted_name_minimal: [{ kind: 'tool_call', name: 'a.b', arguments: {} }],
     dotted_name_mixed_punctuation: [{ kind: 'tool_call', name: 'my-tool.v2', arguments: { location: 'Beijing' } }],
     dotted_name_multiple_segments: [{ kind: 'tool_call', name: 'server.tools.weather', arguments: { location: 'Beijing' } }],
     dotted_name_shared_prefix: [{ kind: 'tool_call', name: 'server.weather', arguments: { location: 'Beijing' } }, { kind: 'tool_call', name: 'server.time', arguments: { timezone: 'Asia/Shanghai' } }],
   };
-  const families = ['beam', 'deepseek_v4', 'deepseek_v41', 'gemma4', 'glm47', 'gpt_oss', 'kimi_k2', 'kimi_k3', 'muse_glimmer', 'muse_spark', 'nemotron_v3', 'qwen3'];
+  const families = ['beam', 'deepseek_v4', 'deepseek_v41', 'gemma4', 'glm47', 'gpt_oss', 'hermes', 'kimi_k2', 'kimi_k3', 'muse_glimmer', 'muse_spark', 'nemotron_v3', 'qwen3'];
+  const capturesFamily = unifiedDisplayFamilyPredicate(catalog, allUnifiedDescriptors);
   for (const family of families) {
     const row = tab.rows.find(item => item.family === family);
     assert.ok(row, `${family}: dotted-name family is rendered`);
+    const { value: document } = await reader.unifiedInputs(family);
+    const authored = new Map(Object.entries(document.cases).filter(([, input]) => input.lifecycle === 'active').map(([id, input]) => [input.scenario, { id, input }]));
     for (const [scenario, expected] of Object.entries(cases)) {
       const cell = leafCells(row).get(scenario);
       const golden = cell.tooltip.candidates.find(item => item.key === 'golden');
@@ -757,13 +760,31 @@ function checkDottedNameContracts(tab, loadedKeys) {
       assert.equal(cell.cmp[defaultKey].na, 0);
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
-        const measured = descriptor.source.implementation.startsWith('dynamo_v1')
-          && catalog.capture_generation?.current.some(item => item.family === family
-          && item.implementation === descriptor.source.implementation && item.version === descriptor.source.version);
-        if (measured) {
-          assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}: refreshed capture is retained`);
-          assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family',
-            `${family}/${scenario}/${other.key}: ${JSON.stringify(other.block)}`);
+        const { source } = descriptor;
+        const { id, input } = authored.get(scenario);
+        const { records } = source.implementation.startsWith('dynamo_v1') && capturesFamily(source, family)
+          ? await reader.unified(family, source.implementation, source.version, document) : { records: new Map() };
+        const record = records.get(id);
+        if (record) {
+          const projected = materializeUnifiedRecord(input, record, family, { implementation: source.implementation, version: source.version,
+            captureMode: catalog.metadata.unified_capture_policy[source.implementation].mode });
+          const value = getField(getField(projected, 'cases'), input.display_id);
+          const reason = unifiedComparisonFailure(input.request, value);
+          assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}/${other.key}: selected source record is retained`);
+          if (reason || hasField(value, 'unavailable') || hasField(value, 'error')) {
+            assert.equal(other.block.unavailable, reason || getField(value, 'unavailable'));
+            assert.equal(other.block.error, reason ? undefined : getField(value, 'error'));
+            const observation = getField(value, 'capture_observation') || getField(value, 'capture_stimulus');
+            const code = reason ? undefined : getField(getField(value, 'unavailable'), 'code') || getField(value, 'unavailable_code')
+              || getField(getField(observation, 'unavailable'), 'code');
+            assert.equal(other.block.unavailable_code, catalog.metadata.unavailable_categories?.[code] || code);
+            assert.equal(Object.hasOwn(other.block, 'events'), false);
+          } else {
+            assert.ok(Array.isArray(other.block.events), `${family}/${scenario}/${other.key}: compatible source record is measured`);
+          }
+        } else if (!capturesFamily(source, family)) {
+          assert.equal(other.block.unavailable, `No parser for ${family}`);
+          assert.equal(Object.hasOwn(other.block, 'events'), false);
         } else {
           assert.equal(other.block.unavailable_code, 'missing_capture');
           assert.equal(Object.hasOwn(other.block, 'events'), false);
@@ -794,7 +815,7 @@ async function checkUnifiedBatch(batch) {
     validateTab(tab, loadedKeys);
     validateUnifiedColumns(tab);
     await checkRebaseContracts(tab, reader);
-    checkDottedNameContracts(tab, loadedKeys);
+    await checkDottedNameContracts(tab, loadedKeys, reader);
     const beam = tab.rows.find(row => row.family === 'beam');
     if (beam) {
       for (const scenario of ['glm_ref_object', 'glm_ref_encoded_targets', 'glm_ref_json_looking_strings', 'glm_ref_scalar_types']) {
