@@ -871,10 +871,13 @@ pub enum AnthropicDelta {
 }
 
 /// The delta body in a message_delta event.
+///
+/// Both fields are always serialized. The Anthropic API sends
+/// `"stop_sequence": null` when no stop sequence matched; omitting the key
+/// breaks strict clients and schema validators.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnthropicMessageDeltaBody {
     pub stop_reason: Option<AnthropicStopReason>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_sequence: Option<String>,
 }
 /// Anthropic API error response wrapper.
@@ -1117,5 +1120,33 @@ mod tests {
             let legacy: ToolResultContentBlock = serde_json::from_value(input).unwrap();
             assert!(matches!(legacy, ToolResultContentBlock::Text { .. }));
         }
+    }
+
+    #[test]
+    fn message_delta_always_serializes_stop_sequence() {
+        // Anthropic sends the key with a null value when nothing matched.
+        for (stop_sequence, expected) in [
+            (None, serde_json::Value::Null),
+            (
+                Some("</answer>".to_string()),
+                serde_json::json!("</answer>"),
+            ),
+        ] {
+            let event = AnthropicStreamEvent::MessageDelta {
+                delta: AnthropicMessageDeltaBody {
+                    stop_reason: Some(AnthropicStopReason::EndTurn),
+                    stop_sequence,
+                },
+                usage: AnthropicUsage::default(),
+            };
+            let value = serde_json::to_value(&event).unwrap();
+            // `.get()` tells a missing key from an explicit null.
+            assert_eq!(value["delta"].get("stop_sequence"), Some(&expected));
+        }
+
+        // Payloads without the key still deserialize (older emitters).
+        let body: AnthropicMessageDeltaBody =
+            serde_json::from_value(serde_json::json!({"stop_reason": "max_tokens"})).unwrap();
+        assert_eq!(body.stop_sequence, None);
     }
 }
