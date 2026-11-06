@@ -1015,9 +1015,9 @@ def test_inherited_family_preserves_published_chunk_schedules(family):
 # --- counts live where they can be checked, not in registry prose ---------------
 
 def test_unified_case_counts_match_the_generator(authored_unified_store):
-    """Every active authored request has one generator owner; v1 has its own generator."""
-    assert set(authored_unified_store.families) == set(NATIVE_FAMILIES)
-    for family in NATIVE_FAMILIES:
+    """Native and legacy historical families retain their authored generator owner."""
+    assert set(authored_unified_store.families) == set(FAMILIES)
+    for family in FAMILIES:
         expected = {case["scenario"] for case in authored_unified_store.families[family].cases.values()
                     if case["lifecycle"] == "active" and case["scenario"] not in V1_SPLIT_SCENARIOS}
         actual = {_scenario_of(case_id, family) for case_id in build_cases(family)}

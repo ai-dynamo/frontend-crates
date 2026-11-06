@@ -15,6 +15,10 @@ Contributors edit parsers and independently authored inputs/GOLDEN, recapture af
 
 ## Latest captures and retained history
 
+### Legacy family history
+
+History generation includes the registered v1 families that have no latest native v2 capture, including Hermes, Llama 3 JSON, Qwen 2.5, Mistral, Phi-4, Jamba, and Pythonic. Their existing spec-derived Unified scenarios are captured through the published `dynamo-parsers` 11.0.6 and 11.0.7 APIs in separate direct-batch and jail-buffer histories. Select a v1 capture to display these families; latest native v2 selections retain their existing family scope. Unsupported initialization and missing parser registrations remain explicit unavailable observations. These captures do not convert a family to UnifiedParser or change the deprecated TOOLCALLING corpus.
+
 ### Normalized current YAML
 
 Current authored cases and latest captures use `schema_version: 3`. This number identifies the storage format. Parser release versions belong to captured observations. Authored files have one `family` header and no GOLDEN producer/version label.
@@ -112,7 +116,7 @@ Before adding a conformance case, inspect every registered family. Always evalua
 
 ## Ownership
 
-New conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. The default report displays only Unified; legacy conformance suites and renderers are retired. Existing v1 captures remain available as historical comparisons in Unified.
+New conformance cases use the Unified request and GOLDEN schema. V1 historical comparisons replay those authored requests through the shared direct-batch and jail-buffer capture adapters. Do not add cases or restore executors in the deprecated TOOLCALLING corpus. The default report displays only Unified; selecting a retained v1 capture can include registered legacy families that have no native v2 implementation.
 
 Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, browser resources, and test commands.
 
