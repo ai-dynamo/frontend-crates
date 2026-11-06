@@ -278,6 +278,13 @@ impl Tokenizer for HuggingFaceTokenizer {
                 "HuggingFace tokenizers configured with add_special_tokens=true must remain uncached",
             ));
         }
+        // The cache joins separately encoded pieces, so per-call truncation or padding
+        // would apply to each piece instead of the whole input.
+        if self.tokenizer.get_truncation().is_some() || self.tokenizer.get_padding().is_some() {
+            return Err(Error::msg(
+                "HuggingFace tokenizers with truncation or padding must remain uncached",
+            ));
+        }
         Ok(())
     }
 
@@ -561,6 +568,29 @@ mod tests {
         )
         .unwrap();
         assert_eq!(ids(&wrapper_bos.encode("hello").unwrap()), vec![3, 1]);
+    }
+
+    #[test]
+    fn truncation_or_padding_blocks_prefix_cache() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
+        );
+        let mut truncated = HfTokenizer::from_file(path).unwrap();
+        truncated
+            .with_truncation(Some(tokenizers::TruncationParams::default()))
+            .unwrap();
+        let mut padded = HfTokenizer::from_file(path).unwrap();
+        padded.with_padding(Some(tokenizers::PaddingParams::default()));
+        for hf in [truncated, padded] {
+            assert!(
+                HuggingFaceTokenizer::from_tokenizer(hf)
+                    .validate_prefix_cache()
+                    .is_err()
+            );
+        }
+        let plain = HuggingFaceTokenizer::from_file(path).unwrap();
+        assert!(plain.validate_prefix_cache().is_ok());
     }
 
     #[test]

@@ -323,7 +323,8 @@ impl Encoder for CachedTokenizer {
         // Exactness assumes the inner tokenizer applies no truncation or padding to
         // the joined ids (HF `post_process` and fastokens `encode_segments` do,
         // whatever `add_special_tokens` says). Prefix caching relies on the same
-        // assumption; Dynamo strips both from HF tokenizers at load.
+        // assumption: HF rejects caching when either is set, and `FastTokenizer`
+        // drops both at load.
         let mut ids: Vec<TokenIdType> = Vec::new();
         let mut cached_tokens = 0;
         let mut looked_up = false;
