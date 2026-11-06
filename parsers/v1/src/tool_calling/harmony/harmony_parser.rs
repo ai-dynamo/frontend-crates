@@ -13,7 +13,7 @@ use serde_json::Value;
 use std::sync::OnceLock;
 use uuid::Uuid;
 
-static COMMENTARY_BLOCK_REGEX: OnceLock<Regex> = OnceLock::new();
+static COMMENTARY_HEADER_REGEX: OnceLock<Regex> = OnceLock::new();
 static MESSAGE_BOUNDARY_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_HEADER_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
@@ -31,16 +31,15 @@ static SPECIAL_TOKEN_REGEX: OnceLock<Regex> = OnceLock::new();
 /// constraint marker instead of `<|constrain|>json`. The `.*?` non-greedy span
 /// between the recipient and `<|message|>` already tolerates any constraint
 /// marker form (`code`, `<|constrain|>json`, or nothing).
-fn commentary_block_regex() -> &'static Regex {
-    COMMENTARY_BLOCK_REGEX.get_or_init(|| {
+fn commentary_header_regex() -> &'static Regex {
+    COMMENTARY_HEADER_REGEX.get_or_init(|| {
         // Name is `[\w.\-]+` (alphanumeric / dot / hyphen / underscore).
         // Between name and `<|message|>` we tolerate optional
         // `<|constrain|>json`, bare `code`, or nothing (non-greedy `.*?`).
-        // Both an assistant handoff and an assistant turn end can close a directed call.
         Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+).*?<\|message\|>(?P<args>.*?)<\|(?:call|return)\|>",
+            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+).*?<\|message\|>",
         )
-        .expect("commentary block regex")
+        .expect("commentary header regex")
     })
 }
 
@@ -301,26 +300,41 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
     let mut residual = String::new();
     let mut cursor = 0;
     let mut search_start = 0;
-    while let Some(cap) = commentary_block_regex().captures_at(text, search_start) {
+    // Keep the pending stop when rejecting a header instead of rescanning its suffix.
+    let mut action_stops = special_token_regex()
+        .find_iter(text)
+        .filter(|marker| matches!(marker.as_str(), "<|call|>" | "<|return|>"))
+        .peekable();
+    while let Some(cap) = commentary_header_regex().captures_at(text, search_start) {
         let m = cap.get(0).expect("regex match has full span");
         search_start = m.end();
         let name = cap.name("name").map(|x| x.as_str()).unwrap_or("");
-        let args = cap.name("args").expect("regex match has argument span");
-        let raw_args = args.as_str();
         if name.is_empty() {
             continue;
         }
+        while action_stops
+            .peek()
+            .is_some_and(|stop| stop.start() < m.end())
+        {
+            action_stops.next();
+        }
+        let Some(stop) = action_stops.peek().copied() else {
+            break;
+        };
+        let raw_args = &text[m.end()..stop.start()];
         // A later message's stop must not complete an earlier unfinished call.
         if let Some(boundary) = harmony_message_boundary(raw_args) {
             residual.push_str(&text[cursor..m.start()]);
             // Discard this unfinished span before joining residual text, so its
             // header cannot swallow text after a subsequently recovered call.
-            cursor = args.start() + boundary.start();
+            cursor = m.end() + boundary.start();
             search_start = cursor;
             continue;
         }
         residual.push_str(&text[cursor..m.start()]);
-        cursor = m.end();
+        cursor = stop.end();
+        search_start = cursor;
+        action_stops.next();
         let args_json = serialize_harmony_arguments(raw_args);
         out.push(ToolCallResponse {
             id: format!("call-{}", Uuid::new_v4()),
@@ -673,6 +687,20 @@ mod tests {
                     assert_eq!(normal.as_deref(), Some("PREFIX Done."), "{text}");
                 }
             }
+        }
+    }
+
+    #[test]
+    fn test_harmony_regex_skips_stops_before_arguments() {
+        for ending in ["<|call|>", "<|return|>"] {
+            let text = format!(
+                "PREFIX {ending}<|channel|>commentary to=functions.lookup {ending}<|message|>{{}}{ending} SUFFIX"
+            );
+            let (calls, residual) = extract_calls_via_regex(&text);
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].function.name, "lookup");
+            assert_eq!(calls[0].function.arguments, "{}");
+            assert_eq!(residual, format!("PREFIX {ending} SUFFIX"));
         }
     }
 
