@@ -2179,13 +2179,21 @@ def _omitted_argument_wire_calls(family: str, case: dict) -> list[dict]:
         }}]
     if family in {"deepseek_v3_2", "minimax_m2", "nemotron_nano", "qwen3_coder"}:
         if family == "deepseek_v3_2":
+            opener = '<｜DSML｜function_calls><｜DSML｜invoke name="record">'
+            closer = '</｜DSML｜invoke></｜DSML｜function_calls>'
             pattern = r'<｜DSML｜parameter name="([^"]+)" string="true">(.*?)</｜DSML｜parameter>'
         elif family == "minimax_m2":
+            opener = '<minimax:tool_call><invoke name="record">'
+            closer = '</invoke></minimax:tool_call>'
             pattern = r'<parameter name="([^"]+)">(.*?)</parameter>'
         else:
+            opener = '<tool_call>\n<function=record>\n'
+            closer = '\n</function>\n</tool_call>'
             pattern = r'<parameter=([^>]+)>\n(.*?)\n</parameter>'
-        assert "record" in raw
-        return [{"kind": "tool_call", "name": "record", "arguments": dict(re.findall(pattern, raw, re.S))}]
+        assert raw.startswith(opener), (family, "missing or wrong native invocation opener")
+        assert raw.endswith(closer), (family, "missing or wrong native invocation closer")
+        body = raw[len(opener):-len(closer)]
+        return [{"kind": "tool_call", "name": "record", "arguments": dict(re.findall(pattern, body, re.S))}]
     values = _json_values(raw)
     assert values, (family, "missing native JSON body")
     body = values[0]
@@ -2314,6 +2322,30 @@ def test_omitted_argument_oracle_rejects_a_changed_missing_key(family: str) -> N
     else:
         case["golden"][0]["arguments"]["note"] = None
     with pytest.raises(AssertionError):
+        _assert_omitted_argument_case(family, scenario, case)
+
+
+@pytest.mark.parametrize("family,closer", [
+    ("deepseek_v3_2", "</｜DSML｜function_calls>"),
+    ("minimax_m2", "</minimax:tool_call>"),
+    ("nemotron_nano", "</tool_call>"),
+    ("qwen3_coder", "</tool_call>"),
+])
+@pytest.mark.parametrize("scenario", [
+    "arg_required_nullable_empty_invoke",
+    "arg_required_nullable_ambiguous_oneof_omitted",
+    "arg_required_nullable_lookup_budget_omitted",
+])
+@pytest.mark.parametrize("mutation", ["missing", "wrong"])
+def test_omitted_argument_empty_invocation_rejects_broken_envelope(
+    family: str, closer: str, scenario: str, mutation: str, omitted_argument_corpus: dict,
+) -> None:
+    case = deepcopy(omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"])
+    _assert_omitted_argument_case(family, scenario, case)
+    assert case["input"].endswith(closer)
+    case["input"] = case["input"][:-len(closer)] + ("" if mutation == "missing" else "</wrong_tool_call>")
+    case["input_chunks"] = [case["input"]]
+    with pytest.raises(AssertionError, match="native invocation closer"):
         _assert_omitted_argument_case(family, scenario, case)
 
 
