@@ -262,19 +262,27 @@ fn full_pipeline_rejects_bad_buffers_video_and_mismatched_offsets() {
 #[test]
 fn smart_decode_checks_transposed_limits_before_decoding() {
     let family = processor_from_spec(&fixture_spec().to_string()).unwrap();
-    let bytes = std::fs::read(fixtures().join("images/exif_orientation6_64x48.jpg")).unwrap();
-    let limits = DecodeLimits {
-        max_width: Some(48),
-        max_height: Some(64),
-        max_pixels: Some(48 * 64),
-    };
-    assert!(family.decode_image(&bytes, &limits).is_ok());
-    let limits = DecodeLimits {
-        max_height: Some(63),
-        ..limits
-    };
-    assert!(matches!(
-        family.decode_image(&bytes, &limits),
-        Err(dynamo_multimodal::MmError::LimitExceeded { .. })
-    ));
+    for (name, oriented_height) in [
+        ("exif_orientation6_64x48.jpg", 64),
+        ("rgba_raw_exif6_56x48.png", 56),
+    ] {
+        let bytes = std::fs::read(fixtures().join("images").join(name)).unwrap();
+        let limits = DecodeLimits {
+            max_width: Some(48),
+            max_height: Some(oriented_height),
+            max_pixels: Some(48 * oriented_height),
+        };
+        assert!(family.decode_image(&bytes, &limits).is_ok(), "{name}");
+        let limits = DecodeLimits {
+            max_height: Some(oriented_height - 1),
+            ..limits
+        };
+        assert!(
+            matches!(
+                family.decode_image(&bytes, &limits),
+                Err(dynamo_multimodal::MmError::LimitExceeded { .. })
+            ),
+            "{name}"
+        );
+    }
 }

@@ -4,9 +4,9 @@
 
 //! EXIF-aware alpha compositing used by SGLang's `smart_to_rgb`.
 
-use super::{DecodeLimits, decode_rgb_exif_transposed};
+use super::{DecodeLimits, GifImage, decode_rgb_exif_transposed};
 use crate::MmError;
-use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
+use image::{ImageFormat, ImageReader};
 use std::io::Cursor;
 
 /// `utils/common.py::smart_to_rgb`: EXIF transpose, then any alpha composited
@@ -15,70 +15,38 @@ pub fn decode_rgb_smart(
     data: &[u8],
     limits: &DecodeLimits,
 ) -> Result<(Vec<u8>, usize, usize), MmError> {
-    let (rgb, h, w) = decode_rgb_exif_transposed(data, limits)?;
-    match alpha(data)? {
-        Some(alpha) if alpha.len() == h * w => {
-            let rgba: Vec<u8> = (rgb.chunks_exact(3).zip(alpha))
-                .flat_map(|(pixel, a)| [pixel[0], pixel[1], pixel[2], a])
-                .collect();
-            Ok((composite(&rgba, h, w), h, w))
+    let format = super::format(data)?;
+    match format {
+        // Keep Pillow's JPEG backend, including its CMYK conversion.
+        ImageFormat::Jpeg => return decode_rgb_exif_transposed(data, limits),
+        ImageFormat::Gif => {
+            let gif = GifImage::new(data)?;
+            let (h, w) = gif.dimensions();
+            limits.check(h, w)?;
+            let rgb = if gif.frame.transparent.is_some() {
+                composite(&gif.decode_rgba()?, h, w)
+            } else {
+                gif.decode_rgb()?
+            };
+            return Ok((rgb, h, w));
         }
-        Some(_) => Err(MmError::invalid_input(
-            "glm5_next: alpha and RGB decodes disagree",
-        )),
-        None => Ok((rgb, h, w)),
+        _ => {}
     }
-}
 
-/// The alpha of PIL's `convert("RGBA")` for an image `smart_to_rgb` composites
-/// (RGBA, LA, or `transparency`), oriented as Dynamo orients the RGB. A BMP
-/// has alpha, in PIL and in `image` alike, only with an alpha bitmask.
-fn alpha(data: &[u8]) -> Result<Option<Vec<u8>>, MmError> {
-    let invalid = |error: image::ImageError| MmError::invalid_input(error.to_string());
-    let format = match image::guess_format(data) {
-        Ok(ImageFormat::Gif) => return gif_alpha(data),
-        Ok(format @ (ImageFormat::Png | ImageFormat::WebP | ImageFormat::Bmp)) => format,
-        _ => return Ok(None),
+    let (h, w) = super::dimensions(data)?;
+    let orientation = super::exif_orientation(data)?;
+    let (h, w) = super::oriented_dimensions(h, w, orientation);
+    limits.check(h, w)?;
+    // Retain alpha from this one pixel decode; do not decode again to recover
+    // it after RGB conversion. A BMP has alpha only with an alpha bitmask.
+    let mut image = super::decode_8bit(ImageReader::with_format(Cursor::new(data), format))?;
+    image.apply_orientation(orientation);
+    let rgb = if image.color().has_alpha() {
+        composite(image.into_rgba8().as_raw(), h, w)
+    } else {
+        image.into_rgb8().into_raw()
     };
-    let decoder = ImageReader::with_format(Cursor::new(data), format)
-        .into_decoder()
-        .map_err(invalid)?;
-    if !decoder.color_type().has_alpha() {
-        return Ok(None);
-    }
-    let mut image = DynamicImage::from_decoder(decoder).map_err(invalid)?;
-    image.apply_orientation(super::exif_orientation(data)?);
-    Ok(Some(
-        image.into_rgba8().pixels().map(|pixel| pixel[3]).collect(),
-    ))
-}
-
-/// PIL opens a GIF's first frame as `P` with the frame's transparent index as
-/// `transparency`, and fills the canvas outside the frame with it (Dynamo's `GifImage`).
-fn gif_alpha(data: &[u8]) -> Result<Option<Vec<u8>>, MmError> {
-    let invalid = |error: gif::DecodingError| MmError::invalid_input(error.to_string());
-    let mut options = gif::DecodeOptions::new();
-    options.set_color_output(gif::ColorOutput::Indexed);
-    let mut decoder = options.read_info(data).map_err(invalid)?;
-    let (screen_w, screen_h) = (usize::from(decoder.width()), usize::from(decoder.height()));
-    let Some(frame) = decoder.read_next_frame().map_err(invalid)? else {
-        return Ok(None);
-    };
-    let Some(transparent) = frame.transparent else {
-        return Ok(None);
-    };
-    let (top, left) = (usize::from(frame.top), usize::from(frame.left));
-    let frame_w = usize::from(frame.width);
-    let w = screen_w.max(left + frame_w);
-    let h = screen_h.max(top + usize::from(frame.height));
-    let mut alpha = vec![0u8; h * w];
-    for (y, row) in frame.buffer.chunks_exact(frame_w).enumerate() {
-        let start = (top + y) * w + left;
-        for (a, &index) in alpha[start..start + frame_w].iter_mut().zip(row) {
-            *a = if index == transparent { 0 } else { 255 };
-        }
-    }
-    Ok(Some(alpha))
+    Ok((rgb, h, w))
 }
 
 /// `background.paste(image, mask=alpha)`, with PIL's `BLEND` / `DIV255` rounding.
@@ -113,4 +81,72 @@ fn composite(rgba: &[u8], h: usize, w: usize) -> Vec<u8> {
             })
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::DynamicImage;
+
+    #[test]
+    fn grayscale_and_rgba_alpha_use_the_same_pillow_compositing() {
+        for (pixels, expected) in [
+            ([200, 255, 20, 128], [200, 26]), // Bright edges select dark background.
+            ([20, 255, 200, 128], [20, 220]), // Dark edges select light background.
+            ([200, 0, 20, 128], [255, 137]),  // No opaque edges selects white.
+        ] {
+            let gray = image::GrayAlphaImage::from_raw(2, 1, pixels.to_vec()).unwrap();
+            let gray = DynamicImage::ImageLumaA8(gray);
+            let rgba = DynamicImage::ImageRgba8(gray.to_rgba8());
+            for image in [gray, rgba] {
+                let mut encoded = Cursor::new(Vec::new());
+                image.write_to(&mut encoded, ImageFormat::Png).unwrap();
+                let (rgb, h, w) =
+                    decode_rgb_smart(encoded.get_ref(), &DecodeLimits::default()).unwrap();
+                assert_eq!((h, w), (1, 2));
+                assert_eq!(
+                    rgb,
+                    expected
+                        .into_iter()
+                        .flat_map(|v| [v; 3])
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn transparent_gif_preserves_first_frame_offsets_and_expands_the_canvas() {
+        let mut encoded = Vec::new();
+        {
+            let mut encoder =
+                gif::Encoder::new(&mut encoded, 2, 2, &[1, 2, 3, 200, 200, 200]).unwrap();
+            encoder
+                .write_frame(&gif::Frame {
+                    left: 1,
+                    top: 1,
+                    width: 2,
+                    height: 1,
+                    transparent: Some(0),
+                    buffer: vec![1, 0].into(),
+                    ..gif::Frame::default()
+                })
+                .unwrap();
+        }
+        let (rgb, h, w) = decode_rgb_smart(&encoded, &DecodeLimits::default()).unwrap();
+        assert_eq!((h, w), (2, 3));
+        let mut expected = vec![32; 2 * 3 * 3];
+        expected[12..15].fill(200);
+        assert_eq!(rgb, expected);
+        assert!(matches!(
+            decode_rgb_smart(
+                &encoded,
+                &DecodeLimits {
+                    max_width: Some(2),
+                    ..DecodeLimits::default()
+                }
+            ),
+            Err(MmError::LimitExceeded { .. })
+        ));
+    }
 }
