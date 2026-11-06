@@ -1,29 +1,30 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.14.yaml","version":"0.9.14"}],"mode":"unified","payload_sha256":"4240e8cdfe7096e65c1396608337ff4bd0666cf40dbe916c85d03da8b8edbb52","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.14.yaml","surface":"unified","version":"0.9.14"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","version":"0.9.12"}],"mode":"unified","payload_sha256":"4120fc52bacabaf06565b34101cc30fa0367cd5c750a82812433b3cae8a064fb","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","surface":"unified","version":"0.9.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_c5db248ee5e1264e
+  origin: origin_8d49f6f1ab8b2b8b
 origins:
-  origin_c5db248ee5e1264e:
-    crate_version: 0.9.14
-    source_sha256: 4cbffc1d81ba72e19f68a8ae0a5f3c26e4f28b3d8995e7a94694deb51518f0da
-    git_commit: b1ff8d3df6a5fc6e8f77da0f0980a698158f27c9
+  origin_8d49f6f1ab8b2b8b:
+    crate_version: 0.9.12
+    source_sha256: 1075176cfa7db0de6e0730ff9f09db7dc10b850d461e179a1ece7d013bf1f51b
+    git_commit: aa59e9bfc90a119d2ff0f08b0c917d5a0f40b76f
 producers:
-  producer_ac51030c7df9c171:
+  producer_ee44b7b594ba2c8f:
     captured_with:
-      dynamo_v2: 0.9.14
-    capture_origin: origin_c5db248ee5e1264e
+      dynamo_v2: 0.9.12
+    capture_origin: origin_8d49f6f1ab8b2b8b
 contexts:
-  context_cdf0b3c0134ec96f:
+  context_01419a81194b5a21:
+    family: beam
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.14.yaml
-  producer: producer_ac51030c7df9c171
-  context: context_cdf0b3c0134ec96f
+  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml
+  producer: producer_ee44b7b594ba2c8f
+  context: context_01419a81194b5a21
 records:
   arg_array_quoted_parameter_close:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
@@ -723,126 +724,6 @@ records:
         - kind: tool_call
           name: null
           arguments: '}'
-          complete: true
-      - expected: []
-  arg_optional_nullable_omitted:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_optional_nullable_omitted
-    request: 88e6b05fa330c0488d5c713a0e6bd670802c6bae8ac2b3ba0c6e71e25154e7a1
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  arg_required_nonnullable_omitted:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nonnullable_omitted
-    request: a0f9e8f52a57f723aa868a9e6b12dab0b6e7c7cca9aae831ac38265133502f00
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  arg_required_nullable_ambiguous_oneof_omitted:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_ambiguous_oneof_omitted
-    request: c1e6c820c017f2805b7fe2988a3fb9a0e514f6fa14b7094da431875e14c9ef74
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{}'
-          complete: true
-      - expected: []
-  arg_required_nullable_empty_invoke:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_empty_invoke
-    request: cc2db3df1f233243f7c6256e43bae9b4da1a24c3769621c28f7a91694362907f
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{}'
-          complete: true
-      - expected: []
-  arg_required_nullable_lookup_budget_omitted:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_lookup_budget_omitted
-    request: 5e02b3b573d0c7c6789cdac984a49241c109fccefe742de04792da78b78fc2d2
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{}'
-          complete: true
-      - expected: []
-  arg_required_nullable_omitted:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_omitted
-    request: 302bc830acc461dd8e7b7b2ef3b858db0a6c15233999ed5b1c8093803012f34a
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  arg_required_nullable_supplied:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_supplied
-    request: 381522b737d64ec9908ef5c60cf73ffa6af12dfdd684dfe021a39516aecd2cda
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{"city": "Paris", "note": "kept"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{"city": "Paris", "note": "kept"}'
-          complete: true
-      - expected: []
-  arg_required_nullable_type_array_omitted:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_type_array_omitted
-    request: 8bfb8cc758fd0ea2db16b10664840958307e508a9fe31e17741972c76d29eac7
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{"city": "Paris"}'
           complete: true
       - expected: []
   arg_string_null:
@@ -1975,21 +1856,6 @@ records:
           name: noop
           arguments: '{}'
           complete: true
-  enum_contradicting_declared_type:
-    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
-          complete: true
-      - expected: []
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
     request: bd56a6ac01f9373ebece7ffa4efc72388028dbe295966da5e22c02eefbe05dec
@@ -2601,7 +2467,11 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "before <rfl:parameter name=\"x\">\né\U0001F642<par{value}\n</rfl:parameter> after"
+        text: 'before <rfl:parameter name="x">
+
+          é🙂<par{value}
+
+          </rfl:parameter> after'
       - kind: tool_call
         name: get_weather
         arguments: '{"city": "Paris"}'
@@ -2619,7 +2489,9 @@ records:
           text: <rfl:parameter name="x">
       - expected:
         - kind: reasoning
-          text: "\né\U0001F642"
+          text: '
+
+            é🙂'
       - expected:
         - kind: reasoning
           text: '<par{value}
@@ -3620,7 +3492,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -3656,7 +3528,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4364,7 +4236,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4400,7 +4272,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4453,7 +4325,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4489,7 +4361,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4799,7 +4671,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4835,7 +4707,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -4899,7 +4771,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -4944,7 +4816,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -5640,7 +5512,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -5677,7 +5549,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -5714,7 +5586,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -5751,7 +5623,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -6606,21 +6478,6 @@ records:
           arguments: '}'
           complete: true
       - expected: []
-  schema_declared_integer_boolean_number_order:
-    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
-    request: c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": 1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": 1}'
-          complete: true
-      - expected: []
   schema_declared_null:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_null
     request: d93cb48758d06bcb451529c2f6428ca64a7c69cafebbe1fc4867a76a541cb112
@@ -6828,7 +6685,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -7105,7 +6962,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -8819,7 +8676,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -8855,7 +8712,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -8939,7 +8796,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -8984,7 +8841,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -9442,7 +9299,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -9469,7 +9326,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -9723,5 +9580,35 @@ records:
         - kind: tool_call
           name: null
           arguments: '}'
+          complete: true
+      - expected: []
+  schema_declared_integer_boolean_number_order:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    request: c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e
+    output:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments: '{"value": 1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 1}'
+          complete: true
+      - expected: []
+  enum_contradicting_declared_type:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
           complete: true
       - expected: []

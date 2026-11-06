@@ -400,21 +400,6 @@ tools:
       properties:
         city:
           $ref: '#/$defs/City'
-  tools_a006a44ef447853d:
-  - name: record
-    strict: false
-    parameters:
-      type: object
-      properties:
-        city:
-          type: string
-        note:
-          anyOf:
-          - type: string
-          - type: 'null'
-      required:
-      - city
-      - note
   tools_5d30b2f70e9f541a:
   - name: capture_payload
     parameters:
@@ -512,18 +497,6 @@ tools:
         narrowed:
           $ref: '#/$defs/Scalar'
           type: integer
-  tools_3edd773121aa310a:
-  - name: record
-    strict: false
-    parameters:
-      type: object
-      properties:
-        note:
-          anyOf:
-          - type: string
-          - type: 'null'
-      required:
-      - note
   tools_ca0b5b673641dda3:
   - name: schema_probe
     parameters:
@@ -991,19 +964,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_0d95cbb8e0c0f193:
-  - name: record
-    strict: false
-    parameters:
-      type: object
-      properties:
-        city:
-          type: string
-        note:
-          type: string
-      required:
-      - city
-      - note
   tools_686a0bb91b79903e:
   - name: schema_probe
     parameters:
@@ -1480,21 +1440,6 @@ tools:
         Literal:
           const: auto
     strict: true
-  tools_d878a238abc7b3c6:
-  - name: record
-    strict: false
-    parameters:
-      type: object
-      properties:
-        city:
-          type: string
-        note:
-          type:
-          - string
-          - 'null'
-      required:
-      - city
-      - note
   tools_8f1359f32bcc5c31:
   - name: schema_probe
     parameters:
@@ -1507,24 +1452,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_e8d2411e0fcf0653:
-  - name: record
-    strict: false
-    parameters:
-      type: object
-      required:
-      - note
-      oneOf:
-      - properties:
-          note:
-            type:
-            - string
-            - 'null'
-      - properties:
-          note:
-            type:
-            - integer
-            - 'null'
   tools_19a5070486dcbf53:
   - name: schema_probe
     parameters:
@@ -1572,217 +1499,6 @@ tools:
       required:
       - location
       additionalProperties: false
-  tools_3c01aaafe9c2e493:
-  - name: record
-    strict: false
-    parameters:
-      type: object
-      properties:
-        note:
-          type:
-          - string
-          - 'null'
-      required:
-      - note
-      allOf:
-      - $ref: '#/$defs/N0'
-      $defs:
-        N0:
-          allOf:
-          - $ref: '#/$defs/N1'
-        N1:
-          allOf:
-          - $ref: '#/$defs/N2'
-        N2:
-          allOf:
-          - $ref: '#/$defs/N3'
-        N3:
-          allOf:
-          - $ref: '#/$defs/N4'
-        N4:
-          allOf:
-          - $ref: '#/$defs/N5'
-        N5:
-          allOf:
-          - $ref: '#/$defs/N6'
-        N6:
-          allOf:
-          - $ref: '#/$defs/N7'
-        N7:
-          allOf:
-          - $ref: '#/$defs/N8'
-        N8:
-          allOf:
-          - $ref: '#/$defs/N9'
-        N9:
-          allOf:
-          - $ref: '#/$defs/N10'
-        N10:
-          allOf:
-          - $ref: '#/$defs/N11'
-        N11:
-          allOf:
-          - $ref: '#/$defs/N12'
-        N12:
-          allOf:
-          - $ref: '#/$defs/N13'
-        N13:
-          allOf:
-          - $ref: '#/$defs/N14'
-        N14:
-          allOf:
-          - $ref: '#/$defs/N15'
-        N15:
-          allOf:
-          - $ref: '#/$defs/N16'
-        N16:
-          allOf:
-          - $ref: '#/$defs/N17'
-        N17:
-          allOf:
-          - $ref: '#/$defs/N18'
-        N18:
-          allOf:
-          - $ref: '#/$defs/N19'
-        N19:
-          allOf:
-          - $ref: '#/$defs/N20'
-        N20:
-          allOf:
-          - $ref: '#/$defs/N21'
-        N21:
-          allOf:
-          - $ref: '#/$defs/N22'
-        N22:
-          allOf:
-          - $ref: '#/$defs/N23'
-        N23:
-          allOf:
-          - $ref: '#/$defs/N24'
-        N24:
-          allOf:
-          - $ref: '#/$defs/N25'
-        N25:
-          allOf:
-          - $ref: '#/$defs/N26'
-        N26:
-          allOf:
-          - $ref: '#/$defs/N27'
-        N27:
-          allOf:
-          - $ref: '#/$defs/N28'
-        N28:
-          allOf:
-          - $ref: '#/$defs/N29'
-        N29:
-          allOf:
-          - $ref: '#/$defs/N30'
-        N30:
-          allOf:
-          - $ref: '#/$defs/N31'
-        N31:
-          allOf:
-          - $ref: '#/$defs/N32'
-        N32:
-          allOf:
-          - $ref: '#/$defs/N33'
-        N33:
-          allOf:
-          - $ref: '#/$defs/N34'
-        N34:
-          allOf:
-          - $ref: '#/$defs/N35'
-        N35:
-          allOf:
-          - $ref: '#/$defs/N36'
-        N36:
-          allOf:
-          - $ref: '#/$defs/N37'
-        N37:
-          allOf:
-          - $ref: '#/$defs/N38'
-        N38:
-          allOf:
-          - $ref: '#/$defs/N39'
-        N39:
-          allOf:
-          - $ref: '#/$defs/N40'
-        N40:
-          allOf:
-          - $ref: '#/$defs/N41'
-        N41:
-          allOf:
-          - $ref: '#/$defs/N42'
-        N42:
-          allOf:
-          - $ref: '#/$defs/N43'
-        N43:
-          allOf:
-          - $ref: '#/$defs/N44'
-        N44:
-          allOf:
-          - $ref: '#/$defs/N45'
-        N45:
-          allOf:
-          - $ref: '#/$defs/N46'
-        N46:
-          allOf:
-          - $ref: '#/$defs/N47'
-        N47:
-          allOf:
-          - $ref: '#/$defs/N48'
-        N48:
-          allOf:
-          - $ref: '#/$defs/N49'
-        N49:
-          allOf:
-          - $ref: '#/$defs/N50'
-        N50:
-          allOf:
-          - $ref: '#/$defs/N51'
-        N51:
-          allOf:
-          - $ref: '#/$defs/N52'
-        N52:
-          allOf:
-          - $ref: '#/$defs/N53'
-        N53:
-          allOf:
-          - $ref: '#/$defs/N54'
-        N54:
-          allOf:
-          - $ref: '#/$defs/N55'
-        N55:
-          allOf:
-          - $ref: '#/$defs/N56'
-        N56:
-          allOf:
-          - $ref: '#/$defs/N57'
-        N57:
-          allOf:
-          - $ref: '#/$defs/N58'
-        N58:
-          allOf:
-          - $ref: '#/$defs/N59'
-        N59:
-          allOf:
-          - $ref: '#/$defs/N60'
-        N60:
-          allOf:
-          - $ref: '#/$defs/N61'
-        N61:
-          allOf:
-          - $ref: '#/$defs/N62'
-        N62:
-          allOf:
-          - $ref: '#/$defs/N63'
-        N63:
-          allOf:
-          - $ref: '#/$defs/N64'
-        N64:
-          properties:
-            note:
-              type: string
   tools_d7ee0d5304d6d110:
   - name: schema_probe
     parameters:
@@ -2097,20 +1813,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_7d1ae6ab475bc1f3:
-  - name: record
-    strict: false
-    parameters:
-      type: object
-      properties:
-        city:
-          type: string
-        note:
-          anyOf:
-          - type: string
-          - type: 'null'
-      required:
-      - city
   tools_edce2cf72af57686:
   - name: schema_probe
     parameters:
@@ -2970,9 +2672,6 @@ requests:
     - 45
     - 8
     - 57
-  3b5bec623031783297dee9f77a0f26788f9834fb04c82d8ae8b63436e13f4690:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_a006a44ef447853d
   3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e:
     input: '
 
@@ -3115,9 +2814,6 @@ requests:
     - 16
     - 15
     finish_step: true
-  444098175f5b0e5f9f96020d9c38fd4c6179a99ca1ef88933f0392942a3bcd23:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_3edd773121aa310a
   453762fb5870011d8abdee512edcb9fecdfe5fa8fc2fd8141fb7b7744453b06d:
     init:
       starting_state: None
@@ -3885,9 +3581,6 @@ requests:
     - 16
     - 15
     finish_step: true
-  6a135994c2f4c263532f4ce07eed32747acf00b02b28a9ee5044f826574e38b1:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="note" string="true">kept</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_a006a44ef447853d
   6b307f2bf9e534ff00c5dae125d057eac566ead97e8c7aa57540551c25e0ab7b:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_49d1d4dc29b4d728
@@ -4048,9 +3741,6 @@ requests:
     - 16
     - 15
     finish_step: true
-  71bfc15b1b5ec955d7094f20195a626ad766d748b51118ff7b55a45e6dca100f:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_0d95cbb8e0c0f193
   73073133dc6fea38df15fb9c67c63defa8cbc30985a0187105c03e55a9d8590a:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_686a0bb91b79903e
@@ -5052,9 +4742,6 @@ requests:
     - 16
     - 15
     finish_step: true
-  b8ed0313e876f7442ed51ae6753702c07b18196a3d8891952bd6826454993963:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_d878a238abc7b3c6
   b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709:
     init:
       starting_state: Reasoning
@@ -5098,9 +4785,6 @@ requests:
     - 16
     - 15
     finish_step: true
-  bcd89081c51d5ef7123c72bf9aae5146b18e9c37643efd98ae7416c5adf7a102:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_e8d2411e0fcf0653
   bcfe5d90781546697fcafe19889b32df5e1d66d123468551571cbe1de743d17d:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_19a5070486dcbf53
@@ -5181,9 +4865,6 @@ requests:
     - 8
     - 57
     finish_step: true
-  c7d60d43fd44379e7ea9e0cfe72b4c8d37343b438d5218290741467b37df35d5:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_3c01aaafe9c2e493
   c8a874e7fbbc8d5f89655e4d495d5f70041c9dd898811bdf12268488f4c5c56c:
     init:
       starting_state: None
@@ -6085,9 +5766,6 @@ requests:
     - 57
     - 15
     finish_step: true
-  f7b9ee45fd84549618084d0806c68f39b0bf49c17c5ca5c5350591be4062ab9e:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="record"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-    tools: tools_7d1ae6ab475bc1f3
   f7fb476ee8d0f41048d83f0bd1d797e6a998dcbb0310ba3758aea59bf2dffc0f:
     init:
       starting_state: Reasoning
@@ -10615,89 +10293,3 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
-  arg_optional_nullable_omitted:
-    description: 'Optional nullable note is omitted beside required city:Paris. Every grammar preserves omission: nullability alone cannot fabricate an optional argument.'
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_optional_nullable_omitted
-    request: f7b9ee45fd84549618084d0806c68f39b0bf49c17c5ca5c5350591be4062ab9e
-    golden:
-    - kind: tool_call
-      name: record
-      arguments:
-        city: Paris
-  arg_required_nonnullable_omitted:
-    description: Required non-nullable note is omitted beside city:Paris. Every grammar preserves omission; argument parsing does not validate the complete tool schema.
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nonnullable_omitted
-    request: 71bfc15b1b5ec955d7094f20195a626ad766d748b51118ff7b55a45e6dca100f
-    golden:
-    - kind: tool_call
-      name: record
-      arguments:
-        city: Paris
-  arg_required_nullable_ambiguous_oneof_omitted:
-    description: An empty invocation has required note in two root oneOf branches admitting null. Null would satisfy both branches and violate oneOf, so every grammar preserves the empty object.
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_ambiguous_oneof_omitted
-    request: bcd89081c51d5ef7123c72bf9aae5146b18e9c37643efd98ae7416c5adf7a102
-    golden:
-    - kind: tool_call
-      name: record
-      arguments: {}
-  arg_required_nullable_empty_invoke:
-    description: An empty completed native invocation omits its only required nullable note. MiniMax-M3 restores note:null even with no supplied fields; other grammars preserve the empty object.
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_empty_invoke
-    request: 444098175f5b0e5f9f96020d9c38fd4c6179a99ca1ef88933f0392942a3bcd23
-    golden:
-    - kind: tool_call
-      name: record
-      arguments: {}
-  arg_required_nullable_lookup_budget_omitted:
-    description: An empty invocation has direct nullable note and a 65-definition allOf reference chain ending in note:string. An exhausted property lookup cannot prove null is valid; every grammar preserves the empty object.
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_lookup_budget_omitted
-    request: c7d60d43fd44379e7ea9e0cfe72b4c8d37343b438d5218290741467b37df35d5
-    golden:
-    - kind: tool_call
-      name: record
-      arguments: {}
-  arg_required_nullable_omitted:
-    description: Required anyOf string-or-null note is omitted beside city:Paris. MiniMax-M3 encodes null by omission and restores note:null; other grammars preserve omission.
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_omitted
-    request: 3b5bec623031783297dee9f77a0f26788f9834fb04c82d8ae8b63436e13f4690
-    golden:
-    - kind: tool_call
-      name: record
-      arguments:
-        city: Paris
-  arg_required_nullable_supplied:
-    description: Required nullable note is supplied as kept beside city:Paris. Every grammar preserves the supplied string rather than overwriting it with null.
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_supplied
-    request: 6a135994c2f4c263532f4ce07eed32747acf00b02b28a9ee5044f826574e38b1
-    golden:
-    - kind: tool_call
-      name: record
-      arguments:
-        city: Paris
-        note: kept
-  arg_required_nullable_type_array_omitted:
-    description: Required type-array string-or-null note is omitted beside city:Paris. MiniMax-M3 restores note:null; other grammars preserve omission.
-    policy:
-    - I7
-    display_id: UNIFIED.7-tool-argument-nullability-arg_required_nullable_type_array_omitted
-    request: b8ed0313e876f7442ed51ae6753702c07b18196a3d8891952bd6826454993963
-    golden:
-    - kind: tool_call
-      name: record
-      arguments:
-        city: Paris
