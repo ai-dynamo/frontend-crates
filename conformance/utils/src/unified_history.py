@@ -804,7 +804,8 @@ def _validate_capture_file(
                 metadata["capture_provenance"],
                 f"{path}:{case_id}.document_overrides.capture_provenance",
             )
-            if set(provenance) != {"captured_with", "capture_origin", "inherited_from"}:
+            required = {"captured_with", "capture_origin"}
+            if not required <= provenance.keys() or provenance.keys() - (required | {"inherited_from"}):
                 raise ValueError(
                     f"{path}:{case_id}.document_overrides.capture_provenance has invalid keys"
                 )
@@ -823,7 +824,7 @@ def _validate_capture_file(
             origin = provenance["capture_origin"]
             if origin is not None:
                 _validate_source_origin(origin, f"{path}:{case_id}.document_overrides.capture_provenance.capture_origin")
-            if provenance["inherited_from"] is not None and not isinstance(
+            if "inherited_from" in provenance and provenance["inherited_from"] is not None and not isinstance(
                 provenance["inherited_from"], str
             ):
                 raise ValueError(

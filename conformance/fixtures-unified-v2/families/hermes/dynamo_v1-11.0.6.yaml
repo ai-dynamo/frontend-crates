@@ -26171,7 +26171,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_array_quoted_parameter_close:
     capture_provenance:
       captured_with:
@@ -26181,7 +26180,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_json_null_ref:
     capture_provenance:
       captured_with:
@@ -26191,7 +26189,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_marker_in_string:
     capture_provenance:
       captured_with:
@@ -26201,7 +26198,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_null_mixed_labels:
     capture_provenance:
       captured_with:
@@ -26211,7 +26207,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_const_decimal:
     capture_provenance:
       captured_with:
@@ -26221,7 +26216,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_const_exponent:
     capture_provenance:
       captured_with:
@@ -26231,7 +26225,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_enum_decimal:
     capture_provenance:
       captured_with:
@@ -26241,7 +26234,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_enum_exponent:
     capture_provenance:
       captured_with:
@@ -26251,7 +26243,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_large_decimal:
     capture_provenance:
       captured_with:
@@ -26261,7 +26252,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_large_exponent:
     capture_provenance:
       captured_with:
@@ -26271,7 +26261,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_negative:
     capture_provenance:
       captured_with:
@@ -26281,7 +26270,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_negative_exponent:
     capture_provenance:
       captured_with:
@@ -26291,7 +26279,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_14_zero_underflow:
     capture_provenance:
       captured_with:
@@ -26301,7 +26288,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_15_exponent:
     capture_provenance:
       captured_with:
@@ -26311,7 +26297,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_15_negative:
     capture_provenance:
       captured_with:
@@ -26321,7 +26306,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_15_ordinary:
     capture_provenance:
       captured_with:
@@ -26331,7 +26315,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_15_quarter:
     capture_provenance:
       captured_with:
@@ -26341,7 +26324,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_15_round_down:
     capture_provenance:
       captured_with:
@@ -26351,7 +26333,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_15_round_up:
     capture_provenance:
       captured_with:
@@ -26361,7 +26342,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_15_small:
     capture_provenance:
       captured_with:
@@ -26371,7 +26351,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_nested_exact:
     capture_provenance:
       captured_with:
@@ -26381,7 +26360,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_overflow_siblings_finite:
     capture_provenance:
       captured_with:
@@ -26391,7 +26369,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_overflow_siblings_negative:
     capture_provenance:
       captured_with:
@@ -26401,7 +26378,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_numeric_overflow_siblings_positive:
     capture_provenance:
       captured_with:
@@ -26411,7 +26387,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_object_quoted_parameter_close:
     capture_provenance:
       captured_with:
@@ -26421,7 +26396,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   arg_string_null_ref:
     capture_provenance:
       captured_with:
@@ -26431,7 +26405,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   blank_framing_after_reasoning:
     capture_provenance:
       captured_with:
@@ -26441,7 +26414,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   blank_framing_between_calls_single_chunk:
     capture_provenance:
       captured_with:
@@ -26451,7 +26423,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   blank_framing_prose_after_call:
     capture_provenance:
       captured_with:
@@ -26461,7 +26432,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   blank_framing_tool_only:
     capture_provenance:
       captured_with:
@@ -26471,7 +26441,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   blank_framing_with_prose:
     capture_provenance:
       captured_with:
@@ -26481,7 +26450,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   blank_output_without_call:
     capture_provenance:
       captured_with:
@@ -26491,7 +26459,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   deepseek_v41_mixed_control_text_in_string:
     capture_provenance:
       captured_with:
@@ -26501,7 +26468,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   dotted_name_minimal:
     capture_provenance:
       captured_with:
@@ -26511,7 +26477,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   dotted_name_mixed_punctuation:
     capture_provenance:
       captured_with:
@@ -26521,7 +26486,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   dotted_name_multiple_segments:
     capture_provenance:
       captured_with:
@@ -26531,7 +26495,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   dotted_name_shared_prefix:
     capture_provenance:
       captured_with:
@@ -26541,7 +26504,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   gpt_oss_multiple_unknown_and_empty_tools:
     capture_provenance:
       captured_with:
@@ -26551,7 +26513,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
@@ -26561,7 +26522,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_bare_tool_header_recovers_inside_a_thought:
     capture_provenance:
       captured_with:
@@ -26571,7 +26531,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_gt_in_argument_bare_opener:
     capture_provenance:
       captured_with:
@@ -26581,7 +26540,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_gt_in_argument_trailing_close:
     capture_provenance:
       captured_with:
@@ -26591,7 +26549,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_gt_in_argument_wrapped:
     capture_provenance:
       captured_with:
@@ -26601,7 +26558,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_marker_inside_argument:
     capture_provenance:
       captured_with:
@@ -26611,7 +26567,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_narrated_invoke_in_reasoning:
     capture_provenance:
       captured_with:
@@ -26621,7 +26576,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_narrated_prefix_inside_reasoning:
     capture_provenance:
       captured_with:
@@ -26631,7 +26585,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_orphan_reason_close_before_payload:
     capture_provenance:
       captured_with:
@@ -26641,7 +26594,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_orphan_tool_close_before_payload:
     capture_provenance:
       captured_with:
@@ -26651,7 +26603,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_prose_before_reasoning:
     capture_provenance:
       captured_with:
@@ -26661,7 +26612,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_quoted_bare_header_after_payload:
     capture_provenance:
       captured_with:
@@ -26671,7 +26621,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_quoted_bare_header_in_answer:
     capture_provenance:
       captured_with:
@@ -26681,7 +26630,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_schema_error_nameless_element_bare_opener:
     capture_provenance:
       captured_with:
@@ -26691,7 +26639,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_schema_error_nameless_element_trailing_close:
     capture_provenance:
       captured_with:
@@ -26701,7 +26648,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_schema_error_nameless_element_wrapped:
     capture_provenance:
       captured_with:
@@ -26711,7 +26657,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_schema_error_not_a_call_bare_opener:
     capture_provenance:
       captured_with:
@@ -26721,7 +26666,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_schema_error_not_a_call_trailing_close:
     capture_provenance:
       captured_with:
@@ -26731,7 +26675,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_schema_error_not_a_call_wrapped:
     capture_provenance:
       captured_with:
@@ -26741,7 +26684,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_stray_prefix_before_reasoning:
     capture_provenance:
       captured_with:
@@ -26751,7 +26693,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_syntax_error_bare_opener:
     capture_provenance:
       captured_with:
@@ -26761,7 +26702,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_syntax_error_trailing_close:
     capture_provenance:
       captured_with:
@@ -26771,7 +26711,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_syntax_error_wrapped:
     capture_provenance:
       captured_with:
@@ -26781,7 +26720,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_tool_close_after_payload:
     capture_provenance:
       captured_with:
@@ -26791,7 +26729,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_tool_open_before_payload:
     capture_provenance:
       captured_with:
@@ -26801,7 +26738,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_unterminated_reasoning_then_wrapped_payload:
     capture_provenance:
       captured_with:
@@ -26811,7 +26747,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_json_wrapped_in_tool_markup:
     capture_provenance:
       captured_with:
@@ -26821,7 +26756,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_quoted_reasoning_closer_named:
     capture_provenance:
       captured_with:
@@ -26831,7 +26765,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_quoted_reasoning_closer_required:
     capture_provenance:
       captured_with:
@@ -26841,7 +26774,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_response_quoted_control_braces_named:
     capture_provenance:
       captured_with:
@@ -26851,7 +26783,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   guided_response_quoted_control_braces_required:
     capture_provenance:
       captured_with:
@@ -26861,7 +26792,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_quoted_control_in_reasoning:
     capture_provenance:
       captured_with:
@@ -26871,7 +26801,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_quoted_control_in_response:
     capture_provenance:
       captured_with:
@@ -26881,7 +26810,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_quoted_control_then_call:
     capture_provenance:
       captured_with:
@@ -26891,7 +26819,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_quoted_incomplete_header:
     capture_provenance:
       captured_with:
@@ -26901,7 +26828,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_single_quote_contraction_reasoning:
     capture_provenance:
       captured_with:
@@ -26911,7 +26837,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_single_quote_contraction_response:
     capture_provenance:
       captured_with:
@@ -26921,7 +26846,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_single_quoted_word_control:
     capture_provenance:
       captured_with:
@@ -26931,7 +26855,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   native_unmatched_quote_then_call:
     capture_provenance:
       captured_with:
@@ -26941,7 +26864,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   orphan_close_after_prose:
     capture_provenance:
       captured_with:
@@ -26951,7 +26873,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_backtick_nonpossessive_s_name:
     capture_provenance:
       captured_with:
@@ -26961,7 +26882,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_backtick_nonpossessive_some:
     capture_provenance:
       captured_with:
@@ -26971,7 +26891,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_backtick_possessive_guided:
     capture_provenance:
       captured_with:
@@ -26981,7 +26900,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_backtick_possessive_reasoning:
     capture_provenance:
       captured_with:
@@ -26991,7 +26909,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_backtick_possessive_then_call:
     capture_provenance:
       captured_with:
@@ -27001,7 +26918,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_double_quote_nonpossessive_s_name:
     capture_provenance:
       captured_with:
@@ -27011,7 +26927,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_double_quote_nonpossessive_some:
     capture_provenance:
       captured_with:
@@ -27021,7 +26936,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_double_quote_possessive_guided:
     capture_provenance:
       captured_with:
@@ -27031,7 +26945,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_double_quote_possessive_reasoning:
     capture_provenance:
       captured_with:
@@ -27041,7 +26954,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   quoted_name_double_quote_possessive_then_call:
     capture_provenance:
       captured_with:
@@ -27051,7 +26963,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   three_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -27061,7 +26972,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   tool_block_never_closed_then_text:
     capture_provenance:
       captured_with:
@@ -27071,7 +26981,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   tool_markup_only_emits_nothing:
     capture_provenance:
       captured_with:
@@ -27081,7 +26990,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   tool_no_close:
     capture_provenance:
       captured_with:
@@ -27091,7 +26999,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   xml_string_type_double_quoted_object:
     capture_provenance:
       captured_with:
@@ -27101,7 +27008,6 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null
   xml_string_type_single_quoted_object:
     capture_provenance:
       captured_with:
@@ -27111,4 +27017,3 @@ document_overrides:
         source_sha256: 4f369f859cc2f967720470d952fe19501aa48bb8837ee14bbdc721c98bfb114a
         adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
         job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-      inherited_from: null

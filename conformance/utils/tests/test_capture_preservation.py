@@ -127,7 +127,7 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             snapshot.pop(capture_sources.SELECTION)
             family = store.families[row["family"]]
             assert set(snapshot["records"]) <= set(family.cases)
-            if row["implementation"].startswith("dynamo"):
+            if row["implementation"] == "dynamo_v2":
                 # Refreshed local measurements intentionally replace old parser observations.
                 for case, wrapped in snapshot["records"].items():
                     stimulus = wrapped["value"]["stimulus"]
