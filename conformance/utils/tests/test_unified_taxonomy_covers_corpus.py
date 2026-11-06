@@ -2163,9 +2163,60 @@ def _assert_guided_native_recovery(family, scenario, case):
     return reasoning
 
 
+OMITTED_ARGUMENT_FRAMING = {
+    "beam": ('<|start|>assistant to=record<|channel|>analysis <|constrain|>xml<|message|>', '<|call|>'),
+    "deepseek_v3": ('<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>record\n```json\n',
+                    '\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'),
+    "deepseek_v3_1": ('<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>record<｜tool▁sep｜>',
+                      '<｜tool▁call▁end｜><｜tool▁calls▁end｜>'),
+    "deepseek_v3_2": ('<｜DSML｜function_calls><｜DSML｜invoke name="record">',
+                      '</｜DSML｜invoke></｜DSML｜function_calls>'),
+    "deepseek_v4": ('<｜DSML｜tool_calls><｜DSML｜invoke name="record">',
+                    '</｜DSML｜invoke></｜DSML｜tool_calls>'),
+    "deepseek_v41": ('<｜DSML｜ calls><｜DSML｜ invoke name="record">',
+                     '</｜DSML｜ invoke></｜DSML｜ calls>'),
+    "gemma4": ('<|tool_call>call:record{', '}<tool_call|>'),
+    "glm47": ('<tool_call>record', '</tool_call>'),
+    "gpt_oss": ('<|start|>assistant<|channel|>commentary to=functions.record <|constrain|>json<|message|>',
+                '<|call|>'),
+    "harmony": ('<|channel|>commentary to=functions.record <|constrain|>json<|message|>', '<|call|>'),
+    "harmony_text": ('<|channel|>commentary to=functions.record <|constrain|>json<|message|>', '<|call|>'),
+    "hermes": ('<tool_call>', '</tool_call>'),
+    "inkling": ('<|message_model|>record<|content_invoke_tool_json|>', '<|end_message|>'),
+    "jamba": ('<tool_calls>', '</tool_calls>'),
+    "kimi_k2": ('<|tool_calls_section_begin|><|tool_call_begin|>functions.record:0<|tool_call_argument_begin|>',
+                '<|tool_call_end|><|tool_calls_section_end|>'),
+    "kimi_k3": ('<|open|>tools<|sep|><|open|>call tool="record" index="1"<|sep|>',
+                '<|close|>call<|sep|><|close|>tools<|sep|>'),
+    # This EOF-delimited JSON grammar closes its argument and call objects,
+    # rather than emitting a separate end token. The decoder still reads both.
+    "llama3_json": ('<|python_tag|>', '}}'),
+    "minimax_m2": ('<minimax:tool_call><invoke name="record">', '</invoke></minimax:tool_call>'),
+    "minimax_m3": (']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="record">',
+                   ']<]minimax[>[</invoke>]<]minimax[>[</tool_call>'),
+    "mistral": ('[TOOL_CALLS]', '[/TOOL_CALLS]'),
+    "muse_glimmer": ('<|start|>assistant to=record<|message|><atem:function_calls>\n<atem:invoke name="record">\n',
+                     '</atem:invoke>\n</atem:function_calls><|eom|>'),
+    "muse_spark": ('<|start|>assistant to=record<|message|><atem:function_calls>\n<atem:invoke name="record">\n',
+                   '</atem:invoke>\n</atem:function_calls><|eom|>'),
+    "nemotron_deci": ('<TOOLCALL>', '</TOOLCALL>'),
+    "nemotron_nano": ('<tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+    "nemotron_v3": ('</think><tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+    "phi4": ('functools', ']'),
+    "pythonic": ('[record(', ')]'),
+    "qwen25": ('<tool_call>', '</tool_call>'),
+    "qwen3": ('<tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+    "qwen3_coder": ('<tool_call>\n<function=record>\n', '\n</function>\n</tool_call>'),
+}
+
+
 def _omitted_argument_wire_calls(family: str, case: dict) -> list[dict]:
     """Decode these simple complete stimuli independently of the generator."""
     raw = case["input"]
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    assert raw.startswith(opener), (family, "missing or wrong native invocation opener")
+    assert raw.endswith(closer), (family, "missing or wrong native invocation closer")
+    body = raw[len(opener):-len(closer)]
     if family in NATIVE_FAMILIES:
         return _native_input_calls(family, raw, case["tools"])
     if family == "pythonic":
@@ -2179,26 +2230,19 @@ def _omitted_argument_wire_calls(family: str, case: dict) -> list[dict]:
         }}]
     if family in {"deepseek_v3_2", "minimax_m2", "nemotron_nano", "qwen3_coder"}:
         if family == "deepseek_v3_2":
-            opener = '<｜DSML｜function_calls><｜DSML｜invoke name="record">'
-            closer = '</｜DSML｜invoke></｜DSML｜function_calls>'
             pattern = r'<｜DSML｜parameter name="([^"]+)" string="true">(.*?)</｜DSML｜parameter>'
         elif family == "minimax_m2":
-            opener = '<minimax:tool_call><invoke name="record">'
-            closer = '</invoke></minimax:tool_call>'
             pattern = r'<parameter name="([^"]+)">(.*?)</parameter>'
         else:
-            opener = '<tool_call>\n<function=record>\n'
-            closer = '\n</function>\n</tool_call>'
             pattern = r'<parameter=([^>]+)>\n(.*?)\n</parameter>'
-        assert raw.startswith(opener), (family, "missing or wrong native invocation opener")
-        assert raw.endswith(closer), (family, "missing or wrong native invocation closer")
-        body = raw[len(opener):-len(closer)]
         return [{"kind": "tool_call", "name": "record", "arguments": dict(re.findall(pattern, body, re.S))}]
-    values = _json_values(raw)
-    assert values, (family, "missing native JSON body")
-    body = values[0]
+    # JSON-only EOF grammars include closing punctuation in their body. Every
+    # JSON decoder consumes its complete framed payload, never a nested value
+    # found by searching unrelated prefix or suffix text.
+    if family in {"llama3_json", "phi4"}:
+        body = raw[len(opener):]
+    body = json.loads(body)
     if family in {"deepseek_v3", "deepseek_v3_1", "harmony", "harmony_text"}:
-        assert "record" in raw
         arguments = body
     else:
         if isinstance(body, list):
@@ -2235,6 +2279,7 @@ def omitted_argument_corpus() -> dict[str, dict]:
 
 def test_omitted_argument_inventory_covers_every_registered_family(omitted_argument_corpus: dict) -> None:
     assert len(OMITTED_ARGUMENT_INPUTS) == 8
+    assert set(OMITTED_ARGUMENT_FRAMING) == set(FAMILIES)
     assert {spec[0] for spec in G.OMITTED_ARGUMENT_CASES} == set(OMITTED_ARGUMENT_INPUTS)
     for scenario in OMITTED_ARGUMENT_INPUTS:
         assert G.scenario_families(scenario) == set(FAMILIES)
@@ -2325,27 +2370,26 @@ def test_omitted_argument_oracle_rejects_a_changed_missing_key(family: str) -> N
         _assert_omitted_argument_case(family, scenario, case)
 
 
-@pytest.mark.parametrize("family,closer", [
-    ("deepseek_v3_2", "</｜DSML｜function_calls>"),
-    ("minimax_m2", "</minimax:tool_call>"),
-    ("nemotron_nano", "</tool_call>"),
-    ("qwen3_coder", "</tool_call>"),
-])
+@pytest.mark.parametrize("family", FAMILIES)
 @pytest.mark.parametrize("scenario", [
     "arg_required_nullable_empty_invoke",
     "arg_required_nullable_ambiguous_oneof_omitted",
     "arg_required_nullable_lookup_budget_omitted",
 ])
-@pytest.mark.parametrize("mutation", ["missing", "wrong"])
+@pytest.mark.parametrize("mutation", ["missing_opener", "wrong_opener", "missing_closer", "wrong_closer"])
 def test_omitted_argument_empty_invocation_rejects_broken_envelope(
-    family: str, closer: str, scenario: str, mutation: str, omitted_argument_corpus: dict,
+    family: str, scenario: str, mutation: str, omitted_argument_corpus: dict,
 ) -> None:
     case = deepcopy(omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"])
     _assert_omitted_argument_case(family, scenario, case)
-    assert case["input"].endswith(closer)
-    case["input"] = case["input"][:-len(closer)] + ("" if mutation == "missing" else "</wrong_tool_call>")
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    boundary = mutation.rsplit("_", 1)[1]
+    if boundary == "opener":
+        case["input"] = ("" if mutation.startswith("missing") else "<wrong_tool_call>") + case["input"][len(opener):]
+    else:
+        case["input"] = case["input"][:-len(closer)] + ("" if mutation.startswith("missing") else "</wrong_tool_call>")
     case["input_chunks"] = [case["input"]]
-    with pytest.raises(AssertionError, match="native invocation closer"):
+    with pytest.raises(AssertionError, match=f"native invocation {boundary}"):
         _assert_omitted_argument_case(family, scenario, case)
 
 
