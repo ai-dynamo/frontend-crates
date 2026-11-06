@@ -86,6 +86,8 @@ The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and share
 
 These eight shared group 7 cases apply to all 30 registered corpus families, including historical/split families, GPT-OSS, and grammar aliases. Each uses one completed family-native `record` invocation, Native output mode, and explicit `strict: false`. Nemotron v3 first closes its implicit empty thought. The IDs below all have prefix `UNIFIED.7-tool-argument-nullability-`; every scenario owns its own request, GOLDEN, and report column.
 
+Previously absent family documents also materialize their complete, already-defined native scenario profiles so every applicable report cell has an authored input. This fixture completion preserves the existing scenario identities; the eight cases below are the newly authored scenarios. Latest native captures cover all 14 registered native families, including the Qwen3-Coder alias; historical/split families retain authored inputs with unmeasured results where captures are absent.
+
 | Scenario suffix | Authored invocation arguments | MiniMax M3 GOLDEN arguments | Other families' GOLDEN arguments |
 |---|---|---|---|
 | `arg_required_nullable_omitted` | `{"city":"Paris"}`; required `note`, nullable through `anyOf` | `{"city":"Paris","note":null}` | `{"city":"Paris"}` |

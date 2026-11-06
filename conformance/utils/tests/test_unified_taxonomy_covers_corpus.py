@@ -1031,15 +1031,11 @@ def test_inherited_family_preserves_published_chunk_schedules(family):
 def test_unified_case_counts_match_the_generator(authored_unified_store):
     """Every active authored request has one generator owner; v1 has its own generator."""
     assert set(authored_unified_store.families) == set(FAMILIES)
-    for family in NATIVE_FAMILIES:
+    for family in FAMILIES:
         expected = {case["scenario"] for case in authored_unified_store.families[family].cases.values()
                     if case["lifecycle"] == "active" and case["scenario"] not in V1_SPLIT_SCENARIOS}
         actual = {_scenario_of(case_id, family) for case_id in build_cases(family)}
         assert actual == expected, family
-    for family in set(FAMILIES) - set(NATIVE_FAMILIES):
-        cases = authored_unified_store.families[family].cases.values()
-        active = {case["scenario"] for case in cases if case["lifecycle"] == "active"}
-        assert active == set(OMITTED_ARGUMENT_INPUTS), family
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
@@ -1237,7 +1233,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unifie
     checked = 0
     store = authored_unified_store
     materialized = _materialized_unified_root(tmp_path, store)
-    for fam in NATIVE_FAMILIES:
+    for fam in FAMILIES:
         spec = _emitted_spec(fam)
         scenarios = _taxonomy_scenarios(fam, store)
         packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"}, scenarios)
@@ -1262,7 +1258,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unifie
                         f"  {layer}: {got[field]!r}"
                     )
             checked += 1
-    assert checked == sum(len(build_cases(f)) for f in NATIVE_FAMILIES), (
+    assert checked == sum(len(build_cases(f)) for f in FAMILIES), (
         "the gate must cover every generated case with a retained authored family"
     )
 
@@ -1358,7 +1354,7 @@ def test_latest_unified_captures_cover_the_current_corpus(authored_unified_store
             captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
-        for family in NATIVE_FAMILIES for case_id in build_cases(family)
+        for family in G.UNIFIED_FAMILIES for case_id in build_cases(family)
     }
     _assert_retained_capture_coverage(captured, expected)
 
