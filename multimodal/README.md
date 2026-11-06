@@ -37,8 +37,8 @@ per request:                        │
 image sources, caps ───────────────►│  fetch::fetch_bytes (stub)  ─► raw bytes
       ├─ supplied mm_hashes ───────►│  use unchanged
       ├─ bytes, no supplied hash ──►│  content_hash_bytes
-      └─ bytes ────────────────────►│  image::decode::decode_rgb
-        └─ rgb ────────────────────►│  family.process_item      (per item; the engine drives
+      └─ bytes ────────────────────►│  family.decode_image
+        └─ decoded media ──────────►│  family.process_item      (per item; the engine drives
                                     │                            the loop, optionally fanning
                                     │                            out on `execution`)
                                     │     │ ProcessedItem
@@ -158,7 +158,7 @@ decoded media or a passthrough URL.
 | --- | --- | --- |
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
 | per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
-| per image | `image::decode::decode_rgb` | bytes + `DecodeLimits` → `(rgb, h, w)` (8-bit only, PIL-matching, header-checked caps); the engine wraps it as `DecodedMedia::Image` |
+| per image | `MmFamilyProcessor::decode_image` | bytes + `DecodeLimits` → `DecodedMedia::Image` (8-bit only, header-checked caps, family-specific EXIF and alpha policy) |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once and in prompt order, feature ranges match the produced embeddings) |
@@ -187,8 +187,8 @@ for (bytes, supplied_hash) in images {                  // fetched + capped by t
         None => content_hash_bytes(&bytes),
     };
     hashes.push(hash);
-    let (rgb, height, width) = image::decode::decode_rgb(&bytes, &limits)?;
-    items.push(family.process_item(&DecodedMedia::Image { rgb, height, width })?);
+    let media = family.decode_image(&bytes, &limits)?;
+    items.push(family.process_item(&media)?);
 }
 let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };
 let layout: TokenLayout = family.layout(&input_ids, &items)?;
@@ -327,7 +327,7 @@ Three layers, all pinned to bitwise-equality:
    unarmed (the default).
 2. **Crate-local golden replay** — this repo's CI has no Python/HF, so
    committed fixtures drive the §2.2 composition (`build_processor` →
-   `decode_rgb` → `process_item` → `layout` → `apply_layout` → `positions`)
+   `decode_image` → `process_item` → `layout` → `apply_layout` → `positions`)
    and compare **every output field bitwise**, plus the resampler stage on
    its own (`resized_<i>.u8`) so a failure names the stage: both resamplers,
    both smart_resize branches, multi-image, and a tall image that crosses
