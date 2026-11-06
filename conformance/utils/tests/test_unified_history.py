@@ -1661,6 +1661,64 @@ def test_source_qualified_record_origin_binds_release_and_source(tmp_path, corru
         assert document["capture_origin"] == origin
 
 
+@pytest.mark.parametrize("inheritance, own, derived, suppressed", [
+    ({}, None, "0.5.0", False),
+    ({"inherited_from": None}, None, None, True),
+    ({"inherited_from": "0.4.0"}, "0.4.0", "0.4.0", False),
+], ids=["absent", "null", "explicit-version"])
+def test_provenance_override_preserves_inheritance_state_in_real_and_derived_views(
+    tmp_path, inheritance, own, derived, suppressed,
+):
+    _write_family(tmp_path)
+    origin = {"crate_version": "0.5.0", "source_sha256": "a" * 64}
+    _write_capture(tmp_path, "0.5.0", {"text_only": _change()}, document_overrides={
+        "text_only": {"capture_provenance": {
+            "captured_with": {"dynamo_v2": "0.5.0"}, "capture_origin": origin,
+            **inheritance,
+        }},
+    })
+    _write_capture(tmp_path, "0.5.1", {})
+    history = unified_history.load_store(tmp_path).histories["gemma4", "dynamo_v2"]
+    for checkpoint, view, expected in [
+        ("dynamo_v2-0.5.0", "dynamo_v2-0.5.0", own),
+        ("dynamo_v2-0.5.0", "dynamo_v2-0.5.1", derived),
+        ("dynamo_v2-0.5.1", "dynamo_v2-0.5.1", derived),
+    ]:
+        record = history.resolve(checkpoint, view_capture_id=view)["text_only"]
+        assert record["observation"] == _change()["observation"]
+        assert record["document"]["capture_origin"] == origin
+        if expected is None:
+            assert "inherited_from" not in record["document"]
+        else:
+            assert record["document"]["inherited_from"] == expected
+    wrapper = history.complete_snapshot("dynamo_v2-0.5.0")["records"]["text_only"]
+    assert wrapper.get("suppress_inherited_from", False) is suppressed
+
+
+@pytest.mark.parametrize("mutation", [
+    "missing_captured_with", "missing_capture_origin", "unknown_key",
+    "boolean", "number", "array", "object",
+])
+def test_provenance_override_rejects_missing_owners_unknown_keys_and_invalid_inheritance(
+    tmp_path, mutation,
+):
+    _write_family(tmp_path)
+    override = {"captured_with": {"dynamo_v2": "0.5.0"}, "capture_origin": None}
+    if mutation.startswith("missing_"):
+        override.pop(mutation.removeprefix("missing_"))
+    elif mutation == "unknown_key":
+        override["unexpected"] = None
+    else:
+        override["inherited_from"] = {
+            "boolean": False, "number": 0, "array": [], "object": {},
+        }[mutation]
+    _write_capture(tmp_path, "0.5.0", {"text_only": _change()}, document_overrides={
+        "text_only": {"capture_provenance": override},
+    })
+    with pytest.raises(ValueError, match="invalid (keys|inherited_from)"):
+        unified_history.load_store(tmp_path)
+
+
 def test_history_rewrite_is_byte_deterministic(tmp_path):
     root = _store(tmp_path)
     before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*.yaml")}
