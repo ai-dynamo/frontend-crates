@@ -123,6 +123,14 @@ pub struct VideoInfo {
     pub duration: f64,
     /// Frames per second, from the frame count and duration.
     pub fps: f64,
+    /// torchcodec's `average_fps`: packets over the span from the earliest
+    /// packet time to the latest packet end, in the container's time units.
+    /// MP4 reports [`Self::fps`], which differs from torchcodec for variable
+    /// frame rates, edit-list delays, and B-frames under 1000 ticks per second.
+    /// For Matroska, FFmpeg's duration for a block with none (when the track
+    /// has no DefaultDuration), lacing, `FrameRate` and `TrackTimestampScale`
+    /// are not reproduced.
+    pub average_fps: f64,
     /// Frames in the first video track the container marks for display.
     pub frame_count: u64,
 }
@@ -255,6 +263,8 @@ struct Track<'a> {
     packets: Vec<Packet>,
     /// What a VP9 track's keyframes declare, found while demuxing.
     vp9_colour: Vp9Colour,
+    /// [`VideoInfo::average_fps`], when the container's packet times give it.
+    average_fps: Option<f64>,
     source: &'a dyn ByteSource,
 }
 
@@ -275,13 +285,15 @@ impl Track<'_> {
 
     fn info(&self) -> VideoInfo {
         let frame_count = self.packets.iter().filter(|p| p.shown).count() as u64;
+        let fps = frame_count as f64 / self.duration;
         VideoInfo {
             codec: self.codec,
             width: self.width,
             height: self.height,
             start_time: self.start_time,
             duration: self.duration,
-            fps: frame_count as f64 / self.duration,
+            fps,
+            average_fps: self.average_fps.unwrap_or(fps),
             frame_count,
         }
     }
@@ -335,8 +347,19 @@ impl<'a> Video<'a> {
         fit: Option<&dyn Fit>,
         limits: &VideoDecodeLimits,
     ) -> Result<VideoFrames> {
+        self.decode_with(indices, fit, limits, RgbConversion::Float)
+    }
+
+    /// [`Self::decode`] with the YUV to RGB conversion `rgb`.
+    pub fn decode_with(
+        &self,
+        indices: &[u64],
+        fit: Option<&dyn Fit>,
+        limits: &VideoDecodeLimits,
+        rgb: RgbConversion,
+    ) -> Result<VideoFrames> {
         check_indices(indices)?;
-        decode_indices(&self.track, indices, fit, limits, decode_track)
+        decode_indices(&self.track, indices, fit, limits, rgb, decode_track)
     }
 
     /// [`decode_sampled`] of this video.
@@ -348,6 +371,19 @@ impl<'a> Video<'a> {
         check_count(num_frames)?;
         decode_count(&self.track, num_frames, limits, decode_track)
     }
+}
+
+/// How decoded YUV becomes RGB.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum RgbConversion {
+    /// The BT.601 / BT.709 equations in f32, chroma by nearest neighbour.
+    Float,
+    /// FFmpeg 6.1 swscale's x86 SIMD converter (`yuv420_rgb24_ssse3`), as
+    /// torchcodec's CPU decoder returns frames: 16-bit fixed point, chroma by
+    /// nearest neighbour. Swscale converts frames of odd height with its
+    /// generic scaler instead, which is not reproduced: those are refused.
+    Swscale,
 }
 
 /// Decode `bytes` and keep the shown frames at `indices` (counted from 0 in
@@ -485,7 +521,7 @@ fn decode_count(
     backend: Backend,
 ) -> Result<VideoFrames> {
     let targets = sample_indices(track.info().frame_count, num_frames)?;
-    decode_demuxed(track, &targets, None, limits, backend)
+    decode_demuxed(track, &targets, None, limits, RgbConversion::Float, backend)
 }
 
 fn decode_frames_with(
@@ -498,7 +534,7 @@ fn decode_frames_with(
     // Checked before the container is read: a bad list is a cheap error.
     check_indices(indices)?;
     let track = demux_with(source, limits.max_input_bytes)?;
-    decode_indices(&track, indices, fit, limits, backend)
+    decode_indices(&track, indices, fit, limits, RgbConversion::Float, backend)
 }
 
 /// What a list of frame indices must satisfy before any video is known.
@@ -528,6 +564,7 @@ fn decode_indices(
     indices: &[u64],
     fit: Option<&dyn Fit>,
     limits: &VideoDecodeLimits,
+    rgb: RgbConversion,
     backend: Backend,
 ) -> Result<VideoFrames> {
     let frame_count = track.info().frame_count;
@@ -538,7 +575,7 @@ fn decode_indices(
             "frame index {last} is past the last frame of a video with {frame_count}"
         )));
     }
-    decode_demuxed(track, indices, fit, limits, backend)
+    decode_demuxed(track, indices, fit, limits, rgb, backend)
 }
 
 /// Decode `track` and keep the shown frames at `targets`, resized if asked.
@@ -547,12 +584,19 @@ fn decode_demuxed(
     targets: &[u64],
     fit: Option<&dyn Fit>,
     limits: &VideoDecodeLimits,
+    rgb: RgbConversion,
     backend: Backend,
 ) -> Result<VideoFrames> {
     // Refused once here rather than by each decoder in turn.
     track.vp9_colour.get()?;
     let info = track.info();
     check_size(info.width, info.height, limits)?;
+    if rgb == RgbConversion::Swscale && info.height % 2 == 1 {
+        return Err(MmError::unsupported(format!(
+            "swscale converts {}x{} frames (odd height) with its generic scaler, which is not reproduced",
+            info.width, info.height
+        )));
+    }
     // The size of every returned frame, asked of `fit` once the source size
     // is known and checked like the source.
     let resize = match fit {
@@ -595,6 +639,7 @@ fn decode_demuxed(
         height: info.height,
         limits: *limits,
         resize,
+        conversion: rgb,
         // Grow frame by frame: nothing large is reserved before decoding.
         rgb: Vec::new(),
         full: Vec::new(),
@@ -669,6 +714,7 @@ struct Sampler<'t> {
     limits: VideoDecodeLimits,
     /// The size every kept frame is resized to, if any.
     resize: Option<FrameResize>,
+    conversion: RgbConversion,
     rgb: Vec<u8>,
     /// One frame at the source size, when frames are resized.
     full: Vec<u8>,
@@ -706,10 +752,10 @@ impl Sampler<'_> {
         }
         let start = self.rgb.len();
         match self.resize {
-            None => picture.to_rgb(&mut self.rgb),
+            None => picture.to_rgb(&mut self.rgb, self.conversion),
             Some(r) => {
                 self.full.clear();
-                picture.to_rgb(&mut self.full);
+                picture.to_rgb(&mut self.full, self.conversion);
                 let resized = resize_rgb(
                     &self.full,
                     self.height as usize,
@@ -840,6 +886,7 @@ fn demux_mp4(source: &dyn ByteSource) -> Result<Track<'_>> {
         inband_parameter_sets: video.inband_parameter_sets,
         packets,
         vp9_colour,
+        average_fps: None,
         source,
     })
 }
@@ -900,7 +947,8 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
     let config = entry.codec_private().map(<[u8]>::to_vec);
     // Timestamps and block durations are in units of `timestamp_scale`
     // nanoseconds; DefaultDuration is in nanoseconds.
-    let scale = file.info().timestamp_scale().get() as f64 / 1e9;
+    let timestamp_scale = file.info().timestamp_scale().get();
+    let scale = timestamp_scale as f64 / 1e9;
     let default_duration = entry.default_duration().map(|ns| ns.get() as f64 / 1e9);
     let declared = file.info().duration().map(|d| d * scale);
 
@@ -915,11 +963,23 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
     // either (kept explicit here, with the packet count under the MP4 sample
     // cap); the file itself is under `max_input_bytes`, checked above.
     let mut held: u64 = 0;
+    // FFmpeg's matroskadec: a block without a nonzero duration lasts
+    // DefaultDuration, truncated to whole timestamp units.
+    let default_units = entry
+        .default_duration()
+        .map_or(0, |ns| ns.get() / timestamp_scale);
+    let mut span: Option<(u64, u64)> = None;
     let mut frame = Frame::default();
     while file.next_frame(&mut frame).map_err(invalid)? {
         if frame.track != number {
             continue;
         }
+        let end = frame
+            .timestamp
+            .saturating_add(frame.duration.filter(|&d| d != 0).unwrap_or(default_units));
+        span = Some(span.map_or((frame.timestamp, end), |(first, last)| {
+            (first.min(frame.timestamp), last.max(end))
+        }));
         held += frame.data.len() as u64;
         if packets.len() >= MAX_PACKETS || held > source.len() {
             return Err(MmError::invalid_input(
@@ -970,6 +1030,8 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
         last,
         shown.len(),
     );
+    let average_fps =
+        span.and_then(|(first, end)| packet_rate(packets.len(), first, end, timestamp_scale));
     Ok(Track {
         codec,
         width,
@@ -980,8 +1042,18 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
         inband_parameter_sets: matches!(codec, VideoCodec::H264 | VideoCodec::Hevc),
         packets,
         vp9_colour,
+        average_fps,
         source,
     })
+}
+
+/// torchcodec's `average_fps` after its scan: `count` packets over
+/// `[first, end)` in units of `timestamp_scale` ns, each in f64 seconds.
+/// `None` for an empty span.
+fn packet_rate(count: usize, first: u64, end: u64, timestamp_scale: u64) -> Option<f64> {
+    let seconds = |units: u64| units as f64 * timestamp_scale as f64 / 1e9;
+    let span = seconds(end) - seconds(first);
+    (span != 0.0).then(|| count as f64 / span)
 }
 
 /// A Matroska clip's duration from the segment duration or the latest frame
@@ -1026,34 +1098,74 @@ struct Nv12<'a> {
 impl Nv12<'_> {
     /// Append `height * width * 3` RGB bytes. Chroma is sampled by nearest
     /// neighbour (each 2x2 block shares one chroma sample).
-    fn to_rgb(&self, out: &mut Vec<u8>) {
-        // (Kr, Kb) per ITU-R BT.601 / BT.709.
-        let (kr, kb) = match self.matrix {
-            Matrix::Bt601 => (0.299_f32, 0.114_f32),
-            Matrix::Bt709 => (0.2126_f32, 0.0722_f32),
-        };
-        let kg = 1.0 - kr - kb;
-        let (y_scale, y_off, c_scale) = if self.full_range {
-            (1.0_f32, 0.0_f32, 1.0_f32)
-        } else {
-            (255.0 / 219.0, 16.0, 255.0 / 224.0)
-        };
-        let clamp = |v: f32| v.round().clamp(0.0, 255.0) as u8;
+    fn to_rgb(&self, out: &mut Vec<u8>, conversion: RgbConversion) {
+        match conversion {
+            RgbConversion::Float => self.convert(out, float_pixel(self.matrix, self.full_range)),
+            RgbConversion::Swscale => {
+                self.convert(out, swscale_pixel(self.matrix, self.full_range))
+            }
+        }
+    }
+
+    fn convert(&self, out: &mut Vec<u8>, pixel: impl Fn(u8, u8, u8) -> [u8; 3]) {
         out.reserve(self.width as usize * self.height as usize * 3);
         for row in 0..self.height as usize {
             let y_row = &self.y[row * self.y_stride..];
             let uv_row = &self.uv[(row / 2) * self.uv_stride..];
             for (col, &luma) in y_row[..self.width as usize].iter().enumerate() {
                 let c = (col / 2) * 2;
-                let y = (f32::from(luma) - y_off) * y_scale;
-                let u = (f32::from(uv_row[c]) - 128.0) * c_scale;
-                let v = (f32::from(uv_row[c + 1]) - 128.0) * c_scale;
-                let r = y + 2.0 * (1.0 - kr) * v;
-                let b = y + 2.0 * (1.0 - kb) * u;
-                let g = y - (2.0 * kb * (1.0 - kb) * u + 2.0 * kr * (1.0 - kr) * v) / kg;
-                out.extend_from_slice(&[clamp(r), clamp(g), clamp(b)]);
+                out.extend_from_slice(&pixel(luma, uv_row[c], uv_row[c + 1]));
             }
         }
+    }
+}
+
+/// The BT.601 / BT.709 equations in f32, per `(y, cb, cr)` sample.
+fn float_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] {
+    // (Kr, Kb) per ITU-R BT.601 / BT.709.
+    let (kr, kb) = match matrix {
+        Matrix::Bt601 => (0.299_f32, 0.114_f32),
+        Matrix::Bt709 => (0.2126_f32, 0.0722_f32),
+    };
+    let kg = 1.0 - kr - kb;
+    let (y_scale, y_off, c_scale) = if full_range {
+        (1.0_f32, 0.0_f32, 1.0_f32)
+    } else {
+        (255.0 / 219.0, 16.0, 255.0 / 224.0)
+    };
+    let clamp = |v: f32| v.round().clamp(0.0, 255.0) as u8;
+    move |luma, cb, cr| {
+        let y = (f32::from(luma) - y_off) * y_scale;
+        let u = (f32::from(cb) - 128.0) * c_scale;
+        let v = (f32::from(cr) - 128.0) * c_scale;
+        let r = y + 2.0 * (1.0 - kr) * v;
+        let b = y + 2.0 * (1.0 - kb) * u;
+        let g = y - (2.0 * kb * (1.0 - kb) * u + 2.0 * kr * (1.0 - kr) * v) / kg;
+        [clamp(r), clamp(g), clamp(b)]
+    }
+}
+
+/// `yuv420_rgb24_ssse3` (FFmpeg 6.1 `libswscale/x86/yuv_2_rgb.asm`): each
+/// product keeps its high 16 bits (`pmulhw`) before the sums.
+fn swscale_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] {
+    // FFmpeg 6.1 `ff_yuv2rgb_c_init_tables` at default brightness, contrast
+    // and saturation, read from its tables.
+    let [yc, yo, vr, ub, vg, ug] = match (matrix, full_range) {
+        (Matrix::Bt601, false) => [9539, 128, 13075, 16525, -6660, -3209],
+        (Matrix::Bt709, false) => [9539, 128, 14686, 17305, -4366, -1747],
+        (Matrix::Bt601, true) => [8192, 0, 11485, 14516, -5850, -2819],
+        (Matrix::Bt709, true) => [8192, 0, 12901, 15201, -3835, -1534],
+    };
+    let clamp = |v: i32| v.clamp(0, 255) as u8;
+    move |luma, cb, cr| {
+        let y = ((8 * i32::from(luma) - yo) * yc) >> 16;
+        let u = 8 * i32::from(cb) - 1024;
+        let v = 8 * i32::from(cr) - 1024;
+        [
+            clamp(y + ((v * vr) >> 16)),
+            clamp(y + ((u * ug) >> 16) + ((v * vg) >> 16)),
+            clamp(y + ((u * ub) >> 16)),
+        ]
     }
 }
 
@@ -1751,7 +1863,7 @@ mod tests {
             matrix,
             full_range,
         }
-        .to_rgb(&mut out);
+        .to_rgb(&mut out, RgbConversion::Float);
         out
     }
 
@@ -1777,6 +1889,15 @@ mod tests {
         );
     }
 
+    /// torchcodec's `average_fps` of a WebM clip in 1 ms units: 30 frames at
+    /// 24 fps end at 1208 + 41 ms.
+    #[test]
+    fn packet_rate_matches_torchcodec() {
+        let ms = |count, end| packet_rate(count, 0, end, 1_000_000);
+        assert_eq!(ms(30, 1249), Some(24.019_215_372_297_836));
+        assert_eq!(ms(20, 0), None);
+    }
+
     #[test]
     fn nv12_reads_interleaved_chroma_per_2x2_block() {
         // 4x2 picture: the left 2x2 block is red, the right one blue; a row
@@ -1794,7 +1915,7 @@ mod tests {
             matrix: Matrix::Bt601,
             full_range: false,
         }
-        .to_rgb(&mut out);
+        .to_rgb(&mut out, RgbConversion::Float);
         for row in 0..2 {
             for col in 0..4 {
                 let px = &out[(row * 4 + col) * 3..][..3];
@@ -2552,6 +2673,41 @@ mod tests {
             assert_player_times(cpu);
         }
 
+        /// Every frame as torchcodec 0.17.0 decodes it on the CPU (FFmpeg
+        /// 6.1.1 of Ubuntu 24.04, x86-64), as `content_hash_bytes`.
+        #[test]
+        fn swscale_conversion_matches_torchcodec() {
+            let cases = [
+                ("vp9.webm", 7_761_341_221_841_292_035),
+                ("vp9_709.webm", 14_041_672_472_163_398_729),
+            ];
+            let limits = VideoDecodeLimits::default();
+            for (name, hash) in cases {
+                let bytes = fixture(name);
+                let source = bytes.as_slice();
+                let track = demux(&source).unwrap();
+                let all: Vec<u64> = (0..track.info().frame_count).collect();
+                let frames = decode_demuxed(
+                    &track,
+                    &all,
+                    None,
+                    &limits,
+                    RgbConversion::Swscale,
+                    vpx::decode,
+                )
+                .unwrap();
+                assert_eq!(crate::content_hash_bytes(frames.rgb()), hash, "{name}");
+            }
+            let bytes = fixture("vp9_odd.webm");
+            let odd = Video::open(&bytes.as_slice(), &limits)
+                .unwrap()
+                .decode_with(&[0], None, &limits, RgbConversion::Swscale);
+            assert!(
+                matches!(odd, Err(MmError::Unsupported { .. })),
+                "odd height"
+            );
+        }
+
         #[test]
         fn the_cpu_keeps_hidden_frames_out_of_the_output() {
             assert_invisible_frames_hidden(cpu);
@@ -2901,6 +3057,7 @@ mod tests {
                         height: info.height,
                         limits: VideoDecodeLimits::default(),
                         resize: None,
+                        conversion: RgbConversion::Float,
                         rgb: Vec::new(),
                         full: Vec::new(),
                         timestamps: Vec::new(),
@@ -3075,7 +3232,15 @@ mod tests {
                 .nth(3)
                 .unwrap();
             let all: Vec<u64> = (0..full.info().frame_count).collect();
-            let whole = decode_demuxed(&full, &all, None, &limits, nvdec::decode).unwrap();
+            let whole = decode_demuxed(
+                &full,
+                &all,
+                None,
+                &limits,
+                RgbConversion::Float,
+                nvdec::decode,
+            )
+            .unwrap();
             let originals = seek::Order::new(&full).shown[cra..].to_vec();
             for hidden in [false, true] {
                 let mut track = demux(&slice).unwrap();
@@ -3091,7 +3256,14 @@ mod tests {
                         let packet = (0..track.packets.len())
                             .find(|&i| order.shown[i] == Some(k))
                             .unwrap();
-                        let r = decode_demuxed(&track, &[k], None, &limits, nvdec::decode);
+                        let r = decode_demuxed(
+                            &track,
+                            &[k],
+                            None,
+                            &limits,
+                            RgbConversion::Float,
+                            nvdec::decode,
+                        );
                         if packet == 1 || packet == 2 {
                             assert!(r.is_err(), "RASL picture {k} decoded");
                             continue;
