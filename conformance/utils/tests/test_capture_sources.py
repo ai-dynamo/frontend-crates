@@ -17,6 +17,7 @@ from contextlib import contextmanager
 import pytest
 
 import capture_sources as sources
+import capture_stimulus
 from publish_current_capture import choose_current
 import publish_current_capture
 import extract_fixtures
@@ -1191,6 +1192,29 @@ def test_latest_parser_store_reads_versionless_files_without_staging(split_evide
     assert targets == {"dynamo_v2": "0.5.2"}
     assert set(store.histories) == {("gemma4", "dynamo_v2")}
     assert {path: path.read_bytes() for path in before} == before
+
+
+def test_selected_parser_inputs_exclude_history_only_families(split_evidence, tmp_path):
+    root, _history, _capture, _path = split_evidence
+    authored = root / sources.STORE / "families/gemma4/inputs_and_golden.yaml"
+    historical = authored.parent.parent / "qwen3_coder/inputs_and_golden.yaml"
+    historical.parent.mkdir()
+    document = unified_history.load_yaml(authored)
+    document["input_document"]["family"] = "qwen3_coder"
+    document["golden_document"]["family"] = "qwen3_coder"
+    historical.write_text(unified_history.dump_yaml(document))
+
+    store, _targets = unified_history.selected_materialization_store(root / sources.STORE, ["latest:dynamo_v2"])
+    assert set(store.families) == {"gemma4"}
+    output = tmp_path / "selected"
+    unified_history.materialize_store(root / sources.STORE, output, store=store)
+    assert {path.name for path in (output / "inputs").iterdir()} == {"gemma4"}
+    captures = output / "dynamo_v2-0.5.2"
+    assert capture_stimulus.validate_current_capture(captures, [output / "inputs"]) > 0
+    # Scoping families must not hide a missing record inside a selected family.
+    next((captures / "gemma4").glob("*.yaml")).unlink()
+    with pytest.raises(ValueError, match="current capture/input sets differ: missing="):
+        capture_stimulus.validate_current_capture(captures, [output / "inputs"])
 
 
 def test_explicit_alternate_dataset_has_its_own_pin(tmp_path):

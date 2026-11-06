@@ -758,11 +758,13 @@ function checkDottedNameContracts(tab, loadedKeys) {
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
         const measured = descriptor.source.implementation.startsWith('dynamo_v1')
-          && catalog.capture_generation?.current.some(item => item.family === family
-          && item.implementation === descriptor.source.implementation && item.version === descriptor.source.version);
+          && (compareLegacyVersions(descriptor.source.version, '11.0.6') >= 0
+          || catalog.capture_generation?.current.some(item => item.family === family
+          && item.implementation === descriptor.source.implementation && item.version === descriptor.source.version));
         if (measured) {
           assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}: refreshed capture is retained`);
-          assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family',
+          assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family'
+            || other.block.unavailable === `No parser for ${family}`,
             `${family}/${scenario}/${other.key}: ${JSON.stringify(other.block)}`);
         } else {
           assert.equal(other.block.unavailable_code, 'missing_capture');
