@@ -1,31 +1,342 @@
-capture_selection: {"family":"kimi_k2","implementation":"sglang_python_batch","lineage":[{"family":"kimi_k2","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.14.yaml","version":"0.5.14"}],"mode":"unified","payload_sha256":"aa2030cf8d55349ea06c80cc1c63c19b553a773cd75ced81cb3fcedaad4cce16","source":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.14.yaml","surface":"unified","version":"0.5.14"}
+capture_selection: {"family":"kimi_k2","implementation":"sglang_python_batch","lineage":[{"family":"kimi_k2","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"de92f64a5c5a7cd9670d1f1c284c5d3f500b0e810e73cc263fc22b5f1269bf03","source":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.23.yaml","surface":"unified","version":"0.5.23"}
 document:
   mode: unified
+execution_proof:
+  receipt:
+    adapter_sha256: d603d3272b669d9188ee0129be75afea7f03ecefa5d87060a02a4d10f3528e62
+    artifact_sha256: 8d257a319395b322bb1be327d05e5528859358153c8563b04c0a4a3c8af164b6
+    extracted_package_sha256: 1b762e5b4d357f8af4e3607658c0597a6723840b7727225872126361c0c3ac26
+    implementation: sglang_python_batch
+    job_sha256: a9993820ab252b9f6e52da863ccc1bbcbdba321e558ffc685185c63eca564cc4
+    parser_apis:
+      protocol: srt.entrypoints.openai.protocol
+      reasoning: srt.parser.reasoning_parser
+      tools: srt.function_call.function_call_parser
+    results_sha256: b7c0df062b988438a2ed7759c1ab7fa1825143d761a6c870caf933733f8b871b
+    source_sha256: ee45daba19486bbf14fa06465f1fdba106b198b178c8420440bb1bb3c8e327f6
+    status: executed
+    version: 0.5.23
+  requests:
+    adjacent_calls_partial_header: 739b334e6a08767a96601a5a30a8c19f7a9aa36db2a0ebf97d13e1edd58d6ec1
+    arg_array_quoted_parameter_close: 418a15781a3d033c220e58ef9dffca7b4c61bdd1f63e6fe426db01e44d404e78
+    arg_json_null_anyof: e867356fd12138d19a377476cc90e87672d874d9830103ba75993b8cfb33b866
+    arg_json_null_const: 41c426654256ed5b9817cdfa05c3711987eb5df84dcebc0a3a224c3ee4f53eb8
+    arg_json_null_nullable: 2873c69865ff78ad578143dc5df23f72135614afb06ccac71feabd60b40e7479
+    arg_json_null_oneof: 16f0af420f5cf20f4599be8f75fb76dfb9c7b27220466aea3583dc164573be83
+    arg_json_null_ref: 6f7a39355abc9d48134c70b5f5c008f8f7e00c44f3c42ce078ed093bdf97e129
+    arg_marker_in_string: 9995000ae114cbc20557862214c42688797c373e078f6aad8551a4bd80ec8bcb
+    arg_null_mixed_labels: 7d00bac8332cb9ae5b13e47e97257e66bfc9ef584dab4652117c607fdc23ea00
+    arg_numeric_14_const_decimal: 19ff2a118d56f497170fb3bda74c7332236bc6969ba1caac0c5985ed7adb57b0
+    arg_numeric_14_const_exponent: c325099c6baef68675a42bda8ffa4664f173d941828f39ee8a6af2f56523419d
+    arg_numeric_14_enum_decimal: c2608ea20cdf81b3b276f8fb2b6a0a263b55ce2537752017d93262fdbc343258
+    arg_numeric_14_enum_exponent: 8955656edd8f4e9023a88fecadcff004a32ab4d6f1f04cc00c0ba27cb406d522
+    arg_numeric_14_large_decimal: 7e85dfd7a07e4ce931bf437803569000dee39ac4456064615de88a2d1a09c02d
+    arg_numeric_14_large_exponent: 6808b00614257df258dbc43d4c677354854f84835df8b17a74d15bfe1fdb8542
+    arg_numeric_14_negative: 4f3d6d17785bbe53526d46451a3cf3f002c585324f5832c8645a02c6a68273dc
+    arg_numeric_14_negative_exponent: f2fc26791cca5d78d36987c08d0f35732317ad08cfb83d8e7c1a5ecd8d46340a
+    arg_numeric_14_zero_underflow: 2d0e884d097eef1246fd49a5fdf628110661e00a65b34ea51d045d745b4551cb
+    arg_numeric_15_exponent: 9ab66318536453d965d53863a9750004630628991192fb3b6642aabd8af4fe27
+    arg_numeric_15_negative: 47dcd2e1d28de28f7c34f3dc64a3f2db1971175b9b70d405db39e44ce9a43a62
+    arg_numeric_15_ordinary: 23336dea286e0b0eb02346b044140ae02c141175faa89adedb0b010d515ee909
+    arg_numeric_15_quarter: b074adb9bb89863a104e0c19dabc811c04d5e53c5e05c47f718e434df986fd32
+    arg_numeric_15_round_down: 6e9f1a1a5c254ac4d5be09e23264fc21a1a4232d1c093c9e70a0cb27ee2bbf1f
+    arg_numeric_15_round_up: e2f66fd597f37584775a5d33767684e4f7c30c85ce7b524a2c3eb7eee2203b67
+    arg_numeric_15_small: eb2e2d839392b61887d0bc5f2b0b5dffd2d9860c663ae9ec18588bd7e5e8ea44
+    arg_numeric_nested_exact: 252dc18c0c2d50c4803c9292f583d32e4de956ecedb24d5d106a2ef74a5d18a7
+    arg_numeric_overflow_siblings_finite: 0781b08661772b5764e44ab3657787a63f6e9ed6a569eba533963cbff4769654
+    arg_numeric_overflow_siblings_negative: bb5459951c6e27b33a4a2d68dfc5c391082ee655302911535249f007c831d130
+    arg_numeric_overflow_siblings_positive: e180ae126d55cc7de9753813dde238b490ce0f91e8d9e95571dbe49c885403b3
+    arg_object_quoted_parameter_close: e7436136700ca885d82f3be398b0c607fd639d8a5e55b31196c1768957190afd
+    arg_string_null: 8776039283ee9c71168284b4990799cc1c09a57ee375092c0a3d431443f1f4d7
+    arg_string_null_const: 7a41bb704ded1018566540afc65435d6c67774dff5a957e3075f480724852a68
+    arg_string_null_enum: af7e4fecc2fd083beaeb7b2f7949239d133ce8db38acc1f0a256931959cda8fe
+    arg_string_null_ref: 02b18a7ae14fed68ecf1b6a7fbd9af5c418d5d280994493af3e57b7b06c5d1ae
+    arg_string_null_sibling_anyof: 1ee5ef51b5ecffedb458508eaf901f7d08cc89a705adbb441efaba33121a9c37
+    arg_string_null_sibling_oneof: 4108782299c7e01df3b8f7814432e269251a11400472c63fbcf007d944baa004
+    arg_string_null_union: 5e0898ce696caa5ba78e30c44b32d0157c031cd51acfdbdb6e9e45710a991720
+    arg_string_null_untyped_branch: 4eab2521a0881f99a4083eaa8c1baf957ae70d2cd55dfe8fe23b8cc592150bbc
+    arg_unicode: ee45b41d8ccbc3e610debc8a4c1f1cd395dfeba63858642a4f158c712442ad79
+    blank_framing_after_reasoning: 8f0991b1b42524feb541b16a07fbdd172cfdf390a5a56e96445a44c99c7d1a34
+    blank_framing_between_calls_single_chunk: 43c838b5169b200b4eee7fadd8e1fc19ece327204c6f346a12d6a0a8cf99e663
+    blank_framing_prose_after_call: 11cde50da21d459babee00017da87532c472a87cf6916c75ec74e5b8abfb40b8
+    blank_framing_tool_only: 05bbd45200112bcfb2f622f40a844b91ddaa3fba3f5455433ffa5f77be2c0987
+    blank_framing_with_prose: 95ef435d0897d5c06d939a118d373749d3d176196520664498c85f967b0d2748
+    blank_output_without_call: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+    conditional_schema_number_types: 2c77cf49a1c888b14d9754715166754f9036cdff4103c78769d60711eea6d945
+    content_then_reason: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
+    content_then_reason_then_tool: 0e77d189eb5ad4a70d82ae8336390044042ffafed2adcf70e6e318cf0e6c59da
+    deepseek_v41_mixed_control_text_in_string: a27329512418077440ae487d97b5e72525a84485b7318966542f6d70d2383466
+    dotted_name_minimal: db4c05a50628bec3a687e6941cea198a253dea3ca1b7f4583fc200f7bd0395d5
+    dotted_name_mixed_punctuation: 1e07f7a1d96342cdb9127431e80f3751021daf202f645ac2635655387d792d1c
+    dotted_name_multiple_segments: 424a3047fc7a78a125702bf2c0d828262ba9c87c0d9e7cf5de162a1ea7e61492
+    dotted_name_shared_prefix: df784e2eb4e767185a616184a14b0be16da0e39c21f593bd9c8746c0cae93ae3
+    empty_args: d2761c739bde9eaab650fd411ae41a6a3c4262f25cc330ca378b463777b2003c
+    glm_ref_encoded_targets: f582b3f376272f65aa5f599f505bce1c579d28b167314daba15399c4076f74c9
+    glm_ref_json_looking_strings: 7d966e5484a437b6f987c515709d55f2233fb7bdc2c2f467dc95903ff866f104
+    glm_ref_object: e16f0450c76a910f8a69480e67c5966fb573d1e7ee59195d7120f6cad0e0f331
+    glm_ref_scalar_types: 78b6dcc7423ac720120817b4072861093666cbdab98c0283cdfd30b74c366fbe
+    gpt_oss_control_marker_inside_argument_string: 1cfabc075ab2d4b0467dd533a7f8ec5e66ed8da31faf09f4f0831afb32fcb801
+    gpt_oss_invalid_tool_body_then_empty_call: c291cf88c0365b583fa246bcce6dcd35a46a3ad825be47e5e7fb5563acbac532
+    gpt_oss_invalid_tool_body_then_valid_call: 2ad8dcdae83c02289d0c2946b83dba6a7d4cb36405aafb86b5be94b004b3ab97
+    gpt_oss_multiple_unknown_and_empty_tools: b20838bb6c7609f23326eebed27c8c74f987af841d4d524e49a5d130fcf44be7
+    guided_json_after_reasoning: 9348dd38350a4606e62d922ab84c2d0e4771c2274c64cd683bc8dd3b7465d48b
+    guided_json_array_argument: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
+    guided_json_bare_tool_header_recovers_inside_a_thought: 8465686ffe7e0b8e49370c5207cb31707115fc3011514b59ad1e884483d5f45e
+    guided_json_escaped_string_args: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
+    guided_json_gt_in_argument_bare_opener: 38eeb95dc5f0dfda4ad1904666efe26b007d9967c374cccee8235b038e3f4dd3
+    guided_json_gt_in_argument_trailing_close: 04e215118491aed329ad2bf86a1c3c1d5a853f828f2a6f76e7a11dcd00cf14d1
+    guided_json_gt_in_argument_wrapped: d823199a7572d44b1d36e421866a9235c33e02f3cf4e1c90c8cdaa3769584cb2
+    guided_json_invalid_call: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
+    guided_json_list_with_broken_element: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
+    guided_json_malformed_json: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
+    guided_json_marker_inside_argument: ca789bd52e78fed52bfd5121d5635d208d5c53561d5803dd3cb0d3d5d2cf36fe
+    guided_json_named_tool: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
+    guided_json_narrated_invoke_in_reasoning: 08a2995339b309e79a0fef36a1400bc78e5dcb0fd3e7290e8562b02ba0fc8fda
+    guided_json_narrated_prefix_inside_reasoning: d008dbba1dbdb139ceffc7917915c3523cf4dff4d47e05b7be3c7ab8bbc43e8d
+    guided_json_native_markup_only: f940413c79d5058b40dcaff1b63550df50d18b72be77cc9ac0c88170065cd8e3
+    guided_json_native_parameter_array_before_payload: 074e5e820103ab211d93b27d69415bdc85ad22d242f2315a65dab4c5dbfe0285
+    guided_json_native_parameter_object_before_payload: e84d4dd3e4883ae4d1b4beaf3537298bf7cd45709ea2bc8c378abd5179be1aea
+    guided_json_native_parameter_string_before_payload: 6e371415d063fe9eddec1a0ec85e15b365873eb1ad2718b5759549c58a08adc5
+    guided_json_noncall_before_native_array_before_payload: 63d936f25fd3ab43d1652cb24287a208cbdbb538aeb491fea9f351154ee52535
+    guided_json_orphan_reason_close_before_payload: a5500df8d15d33e91db98982739fcd3dcee56713895c983c78a2a684b68cc26c
+    guided_json_orphan_tool_close_before_payload: 7aa1b51108e27e29abfd212e088a036e8bfaf27b9f7a769614d91f08c10b5e13
+    guided_json_partial_calls: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
+    guided_json_prose_before_reasoning: 32d11eb6d0c1e0769679828c850e84003f92e86b092da753cf95291235054e73
+    guided_json_quoted_bare_header_after_payload: 5cefeefa7f53b674cbe8044c3d95e9f5b997ce4a474aef72bd107a19fba07192
+    guided_json_quoted_bare_header_in_answer: 0b98d9ea003826c68b37d3ed9503a5992495030bc5bd1a15bc963b89892623d6
+    guided_json_required_tool: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
+    guided_json_schema_error_nameless_element_bare_opener: 8110a010e469cf72d8e62a168a7c1c30cf16f60bfd2b04a06c535590d6535929
+    guided_json_schema_error_nameless_element_trailing_close: 222efbb34fbc62d10da22f68d08995b3a078f106cc5c758ee4837e8e289b83f2
+    guided_json_schema_error_nameless_element_wrapped: dd816dc928c97132713482f19b5bd37d5ae42ef0ad57c067eccd0f1d2c9160f3
+    guided_json_schema_error_not_a_call_bare_opener: 98bd0c8de421a2b3ad4f4903d5a22445bd800d015e220e9abaa309383cfb7693
+    guided_json_schema_error_not_a_call_trailing_close: 7ed1bbcd3fcb5b6e1deed43261e878a768bfdce2f390234914bff1b63bc9f164
+    guided_json_schema_error_not_a_call_wrapped: 0d0781f8db1e27dc45e6101c279547c5dc73bf8f619b5668a24c07da9ae46b4f
+    guided_json_stray_prefix_before_reasoning: 199123dbf11f20aaefa7f319ef7780b17ac0914bd949a5075d0714a3466a1d57
+    guided_json_syntax_error_bare_opener: 536c3e858b00d771291c4a3791bda79d34e640f43dd46d83934af3a42648737f
+    guided_json_syntax_error_trailing_close: 9570637832542076623fe320be3ab8209ff191ce898f42b6e4fea5743a7053cd
+    guided_json_syntax_error_wrapped: 3f815315ac0836505faae024f381415b8b8371cc68492e0139efffd2b523238b
+    guided_json_tool_close_after_payload: acb99b79ec03ba642aea527f59fa527e2273e0dbcb1da8816676ed844a2b7b4f
+    guided_json_tool_open_before_payload: 8027b78447877aefea8aadd138a849b8de12eea9507dec7c166ca55bf5c3daca
+    guided_json_two_calls: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
+    guided_json_unterminated_reasoning_then_wrapped_payload: 65a9ebb9d180764d60a1b48b1b9594dfad152552ece903f2f264a726aaee6c75
+    guided_json_wrapped_in_tool_markup: f13972650fcd5e3b790fa11742fcfc056e0b61b089fc748b23173165ce65e972
+    guided_quoted_reasoning_closer_named: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
+    guided_quoted_reasoning_closer_required: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
+    guided_response_native_wrapper_whitespace_before_prose: a04f03615d2f3d206af118cec2087f02c53d1ba0e8523d741421328b7b08d980
+    guided_response_quoted_control_braces_named: a4cfd18e0649149197bf161dcb68b0e5298e5f140bd7f530b69826695a31c3ba
+    guided_response_quoted_control_braces_required: 20075f699d058614361a8ff03dbdf7a832c2477246c30aeb253bcd45c5e8513d
+    interstitial_text: 579c6803df0644e679cad4713051378c60a1a0945d5f82f4623cd71f77297b20
+    kimi_native_incompatible_string_recovery: 4195999db1277bc0e221129042eba265571ae6227e173bc1e9924fe02e81d136
+    kimi_native_k2_count_content_chunk1024: 084da01b744d8c1ec67fdef61d3b0b4f14addbbcff61dc23dd6819d5adcc030d
+    kimi_native_k2_count_content_chunk7: 0eda73427ee50e18ad0d6d9630cd334950b0138acfb608a56e4ef1f39bc8b7fb
+    kimi_native_trailing_syntax_whitespace: 8722587c9965c4b035d36b42fed7484a614ac210d76d3750e7497ba02a4e2fa6
+    kimi_native_valid_object_trailing_garbage: 597dd5eb0f0e397ab651e332a0ffb3c5ed6e8f8931d06e9de5a7738c2c9f80f6
+    local_schema_id_preserves_type: d9eec2ffa49dc25151126f547a265e79b3f60086f3e026d00cb8fe2ab3824b2f
+    malformed_json_then_two_valid_calls: 666722533692b40bd0c3c91ad00937a8189aac7dbe6d1989c32e4490d9c7823c
+    narrated_calls: 692be312b95c20a4b3ddb76d0e04c1eed2b19589c0168902ab090586747e6c31
+    native_quoted_control_in_reasoning: bdcfb9aa6d504b8611d005c9456d73361693641ee231ec07e95873113f144ae7
+    native_quoted_control_in_response: 46890049010c48119006a129b49c3564f75c923c0a3ddd0a8af0da758ff9b34e
+    native_quoted_control_then_call: e599a32f8b0fca2cbe3941cb98914a5780d507145d788b270da06cc98a4f72aa
+    native_quoted_incomplete_header: 46c1878af949fb39fff658f1c145d0e28970326e45245327697d8799ea839c3d
+    native_single_quote_contraction_reasoning: d6398b3be9c1e272756091ee79aee20b9667bce6f68a8bf24d608d8544b1519c
+    native_single_quote_contraction_response: 43fee15d4076a0577f3e1db9c8afb2c6236dc699f01d501fdfedc40803b55154
+    native_single_quoted_word_control: 07e1d00188ded60ec749b3553d7b4f83d25bdda76231e9038f016856b3183033
+    native_unmatched_quote_then_call: 8fc30455ba7470f8d5f16e398994f752be6a8aac7c2d0933596960b87e899b67
+    not_keyword_type_complement: cacdc091eb1cfe9140cb62d2965d1334f7f91b1c56d268a817eb2c4fff8a86aa
+    nullable_reference_alias_literals: d6a8f0c6b74114b236cb02a3c723328368d2ce0f851b12e03f5a1a0295e0040a
+    orphan_close_after_prose: ae48231edad7d7b785c97b98eed4fc1c15c20121968458ec49bb8d9be357421c
+    prefilled_reasoning_redundant_opener: 09eb0a0100143237a576ee889812c74ed941ffaaa153992af6cef9b144ab4999
+    prefilled_reasoning_then_text: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
+    prefilled_reasoning_then_text_then_tool: 71b8667e122e35f2d3fcb031d9c3b859626c6872da6bbdf94edaa9d2ed06b371
+    prefilled_reasoning_truncated: ccdfbec1624bd05340e970a8aead2aa224eb1841681c0f2c6a42b044e85917ff
+    prefilled_reasoning_with_guided_json: f8be7bfb62ba76e8388e3debc3e1558ccf2d7bf01a54c46375a8e3b86f60032e
+    prefilled_reasoning_with_tool: 4784fefcfc12f363575697385596623bc77da869fb10432acd8f0f6bd48a998e
+    prefilled_response_reasoning_markers_literal: f1b3f572339b9000250288109619d32e0b43332b519f50b2c49ff83cda568b71
+    qwen_string_null: 75f5a4ae417384d04da1c04240c8fdbba6b428b6faf807a49bca5bc251020a60
+    reason_after_tool: 89c8ebf04631e4af7ce9e569cb79b2c57c080dcb6c6f7b5a1a76b632ecf65b86
+    reason_between_calls: dc5d9c2bc8408a7a24c00a67e18c23cdd7b5187372a88422323282b54452be29
+    reason_interleaved: 131c41167248835ef876a5ffde416bfa00d81ddbaa8e736f62f5eedc13916133
+    reason_markup_in_arg: 86092167bc0afc2ed79dee9a19ed62e613b032fd1b16c4cc10e0bbc104b6df26
+    reason_markup_in_arg_with_text: 546a5e26a91ce2a4678638dfb29053d6894c0fe7645948ca40be6656e84212a6
+    reason_only: b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5
+    reason_then_content: 1d265326d010d8b480499269e4a6c9d37589d7b90f257fecbe845e9f9ae9a947
+    reason_then_tool: 1b1f7686f66b3ab75367c952fef9b11037e82d337ceef3228fab1b87758217bf
+    reason_tool_reason_tool_reason: 0665a15855c21c14b320df29af2c14e5728c8c1d81a3fb8a5419448123091901
+    reason_tool_text_reason_tool: 8d6e921ece5ccd14242dfd58d05d8954a26e503239c2051d3128b97d8c38374b
+    reason_unterminated: 6681944af0bc996378ee85b771af8f34380668a46a7e49aa2f35612175318c08
+    reference_object_recursive_and_composed_types: c5599f9b3787dc579c9df9cec923adb0f616ace5413c28bbd0e4065413bfa58e
+    retired__1_2: 5e4d9afd9d6c3f1d36affc9a1fcd89672ad7278af0c4283cf1db10b7ce93b30d
+    retired__30_14: 51b77647ea52b5b52d205c98305c0bf77c64fdecf45f36dd0b329d8972e82576
+    retired__31_33: 8319d847f26b4c16b14b085db32bfd8235a97197851bab69bbf886f70875d388
+    retired__31_40: b3f218d7201d4521882a22506aad94ad5118810b4ba406230f7b7b8345f4be14
+    schema_const_array_allof: 5dac15f17e576d6ff86fd5ac174b503c3a4cc08e91d84721581d225fc6c3036d
+    schema_const_array_bare: e665d8fc012c189a3fb6bb560afb27cbe526641796cb224fed2728a40856f5e8
+    schema_const_array_ref: 601463eb7fa1ca8ea1238c1b009c59824abf4d99450bf3e46d5d6e4d599728ae
+    schema_const_array_typed: 820e0c018508f465060231c96379944c02333d7ea2599547a2515439933bc035
+    schema_const_boolean_allof: 826acfcfc9051f71ccfe8bea9d3c8966fdac2b657acafee15555a6ac22f5ede5
+    schema_const_boolean_bare: ec5fd29db908e027b3a139cd9c66d9f4f5583dbe236d8669446113a015bda126
+    schema_const_boolean_ref: 406f44e62934b0e852617d36ebba3a02b305dc6042f39fbdef76c22d118eec1a
+    schema_const_boolean_typed: 28106a12d6deccd672fcbad2cdd873f2e21008aa59cda3f9fcdd4cb7a40972c8
+    schema_const_entity_allof: a101bb9256137d8f86d055a1d4c7f1caa0d2822589ea0b05e751d57dc2948aae
+    schema_const_entity_bare: 748b0236bb95d60b6eca9031bfe215138d9b2d565e8bf8224564cb18e50d1afa
+    schema_const_entity_ref: 19b69d9e18e88bf8fb3efe67bc594a8ba9e8c068a2b5538c7a161aa566063e11
+    schema_const_entity_typed: 268a217e8b772b4089b5b24a365184ac8671234780bef7a8edfa346011eaa505
+    schema_const_null_allof: c1d31b2d5eee991ade0bad1b16129af1150289e65da1e72e2caca1da90bd46f6
+    schema_const_null_bare: 3e8fbb0ee61ca1a261d3155abe28126ddf8397f329488b5f9fb231dde7fc73af
+    schema_const_null_ref: 291761cb1a26261879c547748710f0854ed1484f5789c3d0f13c60bc22c82f49
+    schema_const_null_typed: 73145cf938e5d2c9a8183fc2ea801923ba043f894136161ba7c3c18017c06372
+    schema_const_number_allof: 5dceb5ea757c1694c3270cfae2bbde42b7167f5e0b2d239c09fd407bbf8f4eb3
+    schema_const_number_bare: a8c1c8c1e6d80781b8425dd5c912e060e5c758a5c67e2388fa3b289322fe26ea
+    schema_const_number_ref: b436f2a78ffd13bb7d65d98a33596621790b72e31998f392e4ad6cff359b8c04
+    schema_const_number_typed: 69890e4debe7ebaca21bf86c03fe9a580a19649807ce57d2458b554a31ef0445
+    schema_const_numeric_bare: 2dbcf34d3ee6aabd1fcbe729e846e6f1830fbb95d447758ffb5d490e8fc0ff39
+    schema_const_object_allof: e316035876ea838404839352561ac34ad52674d2a350a4b29638271b6e791640
+    schema_const_object_bare: 1b80b09a324ba7af6ccb0bbfa16c820d71125afb24530f8ffbd84daa9f72e868
+    schema_const_object_ref: 57db881f234c9d5c1e425764afe01ae5530413be87357cc131fffc080337155d
+    schema_const_object_typed: f8edb882a002273ed71c25d5095b626ba4cf90917ff2aa69940247f4c4ed9ae3
+    schema_const_plain_allof: b67893bb050e25109a34f818c2197cad15df7006ed3881ec5060226b6eeb0bb6
+    schema_const_plain_bare: 1ee95f89e7f66fd418e6fb00e106e50d07dd35bd286f78eb51bf3205c51178da
+    schema_const_plain_ref: 316a4d160083c01f266cb30f664133f2afa2c2ef7ee2ec50c9f19915d2bec5db
+    schema_const_plain_typed: 3b6f5567493880f7cde33c3ad0fcf7ccc516e3ca2eb4b4676f0630567c008a9a
+    schema_const_quoted_allof: 2c6c749749c05651235e60ae89958e05a647857ec62bc7ca74aef80545997af0
+    schema_const_quoted_bare: 9fcca304cad7df6a6766dcf66f50b0d1b77ddc007db84aefe062c9239fb01011
+    schema_const_quoted_ref: e1bd58a817e738f40049797b5ef36ee58da2b9dbc71f86765c542d042825c53b
+    schema_const_quoted_typed: 280c41c40aabf3e623924eb948d5a9822832ccfe9451bf3e7c98824f9cda61a1
+    schema_const_space_allof: 7a7b0786daf007eff85818a295e3ca3d3fbd3ffc47c3a8beeb9364520d519492
+    schema_const_space_bare: 45a0bc08a1450f8b9644383ecc4f6462e95bd39b5c045ef10e92f72a48d0ccd3
+    schema_const_space_ref: 6eda5f3e721d90f1712652c7f01e3f23fa72d17b27eba2979004686281eec14b
+    schema_const_space_typed: e3f689501ba2f334eee97164305815dfe633a8bff8dcddd3b1ca4b685e7eaa3b
+    schema_const_unicode_allof: 70685055a84b301a2f1524e91d4d77345894a13bc9dbe8e016e83cde4e761a40
+    schema_const_unicode_bare: 73fd9ff40e80d2c2f655fc4d3bc1bbccdb1c42ed2e2f32425691fd2c8f58202a
+    schema_const_unicode_ref: 6e7709725c642e5c25c1ffbb3b890c8440bc8ff5b0fb80057e0601c7a2bfedf1
+    schema_const_unicode_typed: d763d50383a4cac567bb127f85c484e44928e9a7f41d8a8402045bb52b4a5f28
+    schema_declared_array: 41b7b6801efb0605c4dc9d54128bdbe405bc728e8914937eb3a1a8dcf911fd5a
+    schema_declared_boolean: 83961cbf47f2e613477bb95027232c86d922967c48bf599e977b3251893f1f63
+    schema_declared_integer: ff48c5d67cfb918ae92267670184393458635111d2011a65f65834de5b6a97e0
+    schema_declared_null: 8a87ce29d23be2547968e500559b00bad5b6daa40fef8bcc43fb8d9a647b239f
+    schema_declared_number: f2d221fb5d9b81a33d85e8b69944d9e347f7f833172e52dcc0b414a5c1384b84
+    schema_declared_object: 856bcc67313ec129b64b9e860383f620d4f2796c01df353c5edd83cfaf3c19c6
+    schema_declared_string: 5a8384b1544db40255ee339e5dacf51035841c424989769e0ac8a74171327791
+    schema_enum_const_narrowing: 3d4f766d94c2b6ee7636ad1ad686cc7e1e2f54886fbb4bc3bf34c47a7cc78f3c
+    schema_enum_inferred_integer: 67f6f8d905a100146c761e33750f6d59ef4a4849adc337858b829da2543cb420
+    schema_enum_integer: 896b60ebf33b880a95eb89b2665b10f5f157d0d660ab55b63950f788c5ba981f
+    schema_enum_string: 1c971536def4f167b1f2e88e0a971ea3b37fbf0ee915c113196eadb9cdf4bd38
+    schema_escaped_ref_const: fe4a253753251b0817b9e302e11e42147f352ee368791870b0f55d4d7515b524
+    schema_id_direct_integer: 6049699ffaab314419e7ae3a6cf169c693d844d9a9e28360b2139480129eb1af
+    schema_integer_const_ambiguous: 5faf075577e5918c016623f3390eeb0e2162a8de4fc6b60c5d67d39092b35267
+    schema_intersection_anyof: b48e70e170f76a99a993d49ac9c39723c68364d26f68a04b0680045ae0bfe9b5
+    schema_intersection_oneof: 239f1f9fea7fad55e0c721fe8fabb28ced1e78acdb35b0cd51e29c6ffacec37f
+    schema_null_union_ambiguous: 6293d60393d1086c5dead9fc79c6ddabfb371d3871aeecb48bf7b5d79d7f7165
+    schema_nullable_string: a7decc9c9a7afcf9ff3307f5eb321ad9764483a2213acf4389dc053a48c00b52
+    schema_object_const_union: dca6b794d4a84b44ac9b11bb2744b97aa4678b035b1cd4e2b0253f6fff41f0bb
+    schema_percent_ref_const: 7b820ad2a2ad51f1fdbfc8d11c24086c1180b5281f73d4eb65cee6dd28a1b257
+    schema_ref_sibling_integer: 86d3068c0e431384464070b1cc7f01934a03dcbc860001c11e961ac21ed03579
+    schema_ref_union_anyof_integer: 019bee249353d0a6240893617c7dc8dacb82f461ef122d8305c8beaefafe96b8
+    schema_ref_union_anyof_string: 3586e8c03eb6000db257b0034000127f89f1fd100387ba819201593ceb7243a7
+    schema_ref_union_oneof_integer: 88344a0585a2e3bdc038e5ea0b39d4ca2f0f889d291a3153e879a703428a6caf
+    schema_ref_union_oneof_string: 09a541e2247086c62c43a10d3f49db2756a6db499f97525145830a001a563979
+    schema_type_array_integer_null: 74fd0d43040e6c05ccf27d83073feedc854580ec48e07f739e9355b2b7fa6151
+    schema_type_array_integer_null_null: b0b763667f6d1ffff0b7155d98235ebf0d686192b8f5bf6f592fd4c396c6b17f
+    schema_type_array_string_integer: 78a0ff8b4fc55c6acdb1b238fc1aae8d69cf6488c2bd8e99546a106fb18e1b6d
+    schema_union_anyof_array_reverse_string: 82f48803f722ae6f71aba489f8de2b9e2d063316aaeb2e9a712eabbf27985221
+    schema_union_anyof_array_reverse_typed: d37ab6bd0e0577ca5a0d84531ce979c96dda8ef4cc24b65b8f64ac3ccd6ad7d0
+    schema_union_anyof_array_string: eadcc48978529294ab86f9723222cac6b2598c107356676bd07d66b1d382ed77
+    schema_union_anyof_array_typed: bd08f782747ccc9959f19dfc11b93f56e5e7a27b2b5f666cc699caab7b4ff163
+    schema_union_anyof_boolean_reverse_string: eeb097ffc7e91b9546787c2d44b1103ab0ff922dd4db27f6c4600391ff1c8d85
+    schema_union_anyof_boolean_reverse_typed: 2fe6d6c5fc5c39e5da694074829f3ac320c5b9549d51797f2276ea8930932122
+    schema_union_anyof_boolean_string: 26594ea60fe81352ac080feca4d6586df5f8eb967e8dc7c66b51be1a72a218c6
+    schema_union_anyof_boolean_typed: 95dc8aefd3ab8fd97b03fdf6adeeafe89706c54c83921933b338b04eac8baa40
+    schema_union_anyof_integer_reverse_string: 1d8d27fad5d2f849c211abd8521042917380f599a5b5023af734918b52a7c4bc
+    schema_union_anyof_integer_reverse_typed: 47174b1a3477ff02c631d9ba7bc82b338ab8e5d46b9087d66c893c416b5e3695
+    schema_union_anyof_integer_string: a8eee03063b5855dbba5021bc574c95c2d9b807f695e8cea1d8a2bfc5ed4e3b2
+    schema_union_anyof_integer_typed: 9f1c0b9ed072869953eebffa950cf891972909407fa949c4b8a92936c4a7d6dc
+    schema_union_anyof_null_reverse_string: 648db7bf77fc2649c3cf362caf81ef4bc1605dabf6580c62befb7b29d8b07e22
+    schema_union_anyof_null_reverse_typed: 785afad7eb2ec6389832e8fda59b90994feb22580f0688fdb07c42e031221130
+    schema_union_anyof_null_string: e46bf831575df71f061612aa8d2f0a946f17228cc44f16772a1bb197a4bca43c
+    schema_union_anyof_null_typed: 233b336b4a96bf39e237a7bf5ea6d80ffef8788c98c2f975eb6810b3ff08a4a9
+    schema_union_anyof_number_reverse_string: 142f4aa849000e4d6da8569017cc3f455692bca01f4c01e374883f6f63f1c723
+    schema_union_anyof_number_reverse_typed: dd2d16982bcae8b9d1d2b0aacd51bf7be0449572ef8cb91bc0c3d5644383ce28
+    schema_union_anyof_number_string: 86d8a5806106f9c4dc063f859009e9cd584354dee72c5143d4f5f6220d6af1e0
+    schema_union_anyof_number_typed: 3b6aa6c906485ca1e0b0118a4445630c45eccec2b2a8c08e5f0e9c3b6d0da1f9
+    schema_union_anyof_object_reverse_string: 2e42d72d4675d4719484cbdc634fbd0e7070ff9134209c586afd33d32b57d93b
+    schema_union_anyof_object_reverse_typed: 2a0c25787860582ae01daa333ada86a090d3cf65f6d4557fa4a462aeb9cb2b10
+    schema_union_anyof_object_string: e27e0df4a6e5acfc70c285b024814920d1ac4695d40f89269770782e7addf0e1
+    schema_union_anyof_object_typed: 77cdaac0982379d7d8851dc5aea77fb5d7e64ae8d10bd4a014ad7d7197ebcf8b
+    schema_union_oneof_array_reverse_string: 117d3533d7442edf00e03ac34f2a4fe3c97f082917faf6cf83fba5556c1f0f82
+    schema_union_oneof_array_reverse_typed: d230fd4b830e33092a4d113d45833c858b8dbf474a7adc3b751e0a479531a980
+    schema_union_oneof_array_string: 1d2b2227f87f4f1d06e5a37fd0d3699cfdaf6f1a48843a3e880c731abee2e92f
+    schema_union_oneof_array_typed: 346179d0ffaa672fa07c48bde5b1a9e9c51a9974f316d627a8c0eab258f8a5dd
+    schema_union_oneof_boolean_reverse_string: 210163589492a3a44a9f59ebe2d7f27b38a652cd695dd36357bc6e2da3ab7009
+    schema_union_oneof_boolean_reverse_typed: 5e68175b3c6be76c1dbfc6e088cf4169627e22369f48e85b3535914ab76f7c28
+    schema_union_oneof_boolean_string: 582a9977ac0524e091c09fdf982813c2cc28ad1792051a4aaed74558524673ee
+    schema_union_oneof_boolean_typed: bc8fafa68630bf524eb0e5847ee39fd706187fba2c8be3d610d3d7df7b4bb771
+    schema_union_oneof_integer_reverse_string: 8a6e404b7d2efd6bc8149e3196cf4b41126a7b82ce9debd66b739430dc660a1d
+    schema_union_oneof_integer_reverse_typed: e8e772f251b0f97ecff03535c4759b32041742290b08ae68342710ee6d91c64e
+    schema_union_oneof_integer_string: d4a53570a3d31f6089d787a25d336166b46eee95652f7f79bf5b9c6a0588277a
+    schema_union_oneof_integer_typed: 5ae4647cb5ef3236c600874e91ccd5f9780d220f337e9d0fe91df752d5573693
+    schema_union_oneof_null_reverse_string: e6084034c643209b647a9ab0ceffa50d0d2a9c67a95c344225266bb719208ae6
+    schema_union_oneof_null_reverse_typed: 15def3cb455ee1f09e4b187c8d465b4231621b9ab0569550f4ae7840ffb52696
+    schema_union_oneof_null_string: 6929f523e9f5d3d8b12662b24fc383648d9be15319b6986ef7090c4049e795d6
+    schema_union_oneof_null_typed: 83b869a1512e4fca2ec177add00cff805dcd7dc236f4904d9192418f64a0f082
+    schema_union_oneof_number_reverse_string: b0a65f6d8d90ada7432b2a276888f03d58230be0608f44369c8a49396eb06e7b
+    schema_union_oneof_number_reverse_typed: 8bd78fd1461366f398bb35ad6fc5869aab2de47884a80b227f54fdd73c179230
+    schema_union_oneof_number_string: 55a1a060fe70ff479f53fce2bb478fe36f3ab50f1c23117fa8bfb6141871e553
+    schema_union_oneof_number_typed: 3cc62bda49ef2c8f4b4d4f52452397eb876cb688f2fdd6e2d59d20da377d0462
+    schema_union_oneof_object_reverse_string: 31999c68e41ab8f08fe3f69659b56709c50ff2bba5a29f8020dd39d54087e7c2
+    schema_union_oneof_object_reverse_typed: 0d312dd742a3e3b82c4119e2ec337d9fd9f9760f9259c2bffe7afd4e72594ac3
+    schema_union_oneof_object_string: 37914b4eaaff4baf331c27f31504f4bba7a1d63b82959cc3cd93f5f7e6a0a88d
+    schema_union_oneof_object_typed: 4953af575babca402fa8063e939246d8d0f655b4817ce19842283c6e49311c2f
+    text_before_tool: c4512cac1954019e598de1821fd0069d25bbbd5f8c6424f673462e40d4d405e8
+    text_between_calls: 700e8ec57bd49dfc3722514e58cb33afbe59f9fbca51d03d45053a135cf84859
+    text_only: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
+    text_reason_tool_text_reason_tool: 7de8d8cba1570c9e50dd062fa7bdc658d8653d7ed335e2a46320b1df2f487dc7
+    text_sandwich: 44fff81211c2b2951a37082a6bfdc0d9204a4cbf66427c99111c6d0ebfbe30ee
+    three_calls_partial_header: f569310581f06138195def131cb640eec462b9a111d73ca2a98b9e4f17e1305a
+    tool_block_never_closed_then_text: dc25342f14680ef2331b9285e1543b4364644009f89781115c25e0099f86bcff
+    tool_body_whitespace: f7437618d3c75155981fc5928365bf43792d99cd211a97123d415adf53408ed6
+    tool_in_reason: f784b9faba0feefc5060d750e490cab999c80f02b0db8e38f8813a8c0f12e839
+    tool_in_reason_with_text: ce739746bf940b3ed7a2d20e11c8ee3736facea7029f09d1a31227fa9d5f784c
+    tool_markup_only_emits_nothing: c208f212d4e9af751d43b668461c16f7a01c53b6de6671e3ae013a7af4f54afd
+    tool_no_close: 640462e15b52c18446fc42a149a1d809a12b7cf55400afac83bf365783efbf65
+    tool_only: d3eb0373fcab5690b0e58dc3a1ea632504ae409bd77c2facb162cfcf74dd41a5
+    trailing_text_after_tool: 1c948928376e477a85a2cc447fa8fc8a2666feed4b7e4a676984a17f98c96553
+    truncated_tool_eof: 2b3b01aaf775f7f68879e1563d597ebb195f207599e873bf452a031ecb26bf9f
+    two_adjacent_reason_spans: e3ee307214ba9614e2905612a2d4d90cf08d1589d7dfa821915934f730bd48cf
+    two_calls: cedae3e2633fefcad0017d9e79a7934da90df4b83c60248f8426c30678631565
+    two_calls_same_name: b9eef05d6760bbde3814d00bd130d448373b60d0b16c45958f8270b15a7fc8de
+    two_reason_spans: 146922888215906a77df4f335b4b49c0d2e34e8f9e062482be0182882ddbcc35
+    unused_reference_graph_parameter_types: 136f2e165f14bf32cbe824b6a785a7bb3a940c49b369a9011a534d9a345b70de
+    xml_string_type_double_quoted_object: 47f350ecae6ae78795be7d150ef03f429ed5a60153236c51f120899557464dde
+    xml_string_type_single_quoted_object: a273490812d33b1a0609e0e71bb487ac352d9188264e86aa533537b0d6436236
 schema_version: 3
 provenance:
-  origin: origin_f52025cd7a047a5b
+  origin: origin_1137fd2162d4b992
   status: captured
 origins:
-  origin_f52025cd7a047a5b:
-    adapter_sha256: e8f7f91b23f2a43b92236efe914858fbea2fdc8463e8d5fc3c1349b8364e256c
-    crate_version: 0.5.14
-    job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-    source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-  origin_3fbcab3cc615b3f6:
-    adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-    crate_version: 0.5.14
-    job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-    source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
+  origin_1137fd2162d4b992:
+    adapter_sha256: d603d3272b669d9188ee0129be75afea7f03ecefa5d87060a02a4d10f3528e62
+    crate_version: 0.5.23
+    job_sha256: a9993820ab252b9f6e52da863ccc1bbcbdba321e558ffc685185c63eca564cc4
+    source_sha256: ee45daba19486bbf14fa06465f1fdba106b198b178c8420440bb1bb3c8e327f6
 producers:
-  producer_a76c23fee21798fc:
-    capture_origin: origin_f52025cd7a047a5b
+  producer_c29845f24e4eb449:
+    capture_origin: origin_1137fd2162d4b992
     captured_with:
-      sglang_python_batch: 0.5.14
-  producer_65a380b925f90881:
-    capture_origin: origin_3fbcab3cc615b3f6
-    captured_with:
-      sglang_python_batch: 0.5.14
+      sglang_python_batch: 0.5.23
 contexts:
+  context_707dc69eabc3a207:
+    mode: unified
+  context_b8de193defc8930b:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value:
+            - é \" </atem:parameter>
+          name: record
+        normal_text: ''
+        reasoning_text: ''
   context_1c291d5964c325d5:
     mode: unified
     record_metadata:
@@ -44,6 +355,157 @@ contexts:
         - arguments:
             cmd: git log <|tool_call_end|> --oneline
           name: run
+        normal_text: ''
+        reasoning_text: ''
+  context_e6d3efe0e857ea76:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            label: null
+            literal: 'null'
+            note: null
+          name: set_labels
+        normal_text: ''
+        reasoning_text: ''
+  context_9ae642893e0b428e:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 42.0
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_211bb225ba1ae219:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 9007199254740992.0
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_8ce66758575b523d:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: -42.0
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_7fa61584d2204c6a:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 0.0
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_b9cdf6922dd7cfda:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: -9007199254740992.0
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_b729c303d5ed701d:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 42.5
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_c8aa238c68298e30:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 9007199254740994.0
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_98344b0040c476dc:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 0.1
+          name: get_weather
+        normal_text: ''
+        reasoning_text: ''
+  context_53ad74ee7f60969b:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            nested:
+              fraction: 9007199254740992.0
+              tiny: 0.0
+            values:
+            - 9007199254740993
+            - -9007199254740993
+          name: inspect
+        normal_text: ''
+        reasoning_text: ''
+  context_f277d86f37671087:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+            value: 1.5
+          name: echo
+        normal_text: ''
+        reasoning_text: ''
+  context_863387433324d6f0:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+            value: -.inf
+          name: echo
+        normal_text: ''
+        reasoning_text: ''
+  context_a9dfe3d88451e25f:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+            value: .inf
+          name: echo
+        normal_text: ''
+        reasoning_text: ''
+  context_1089752d28a11201:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value:
+              s: </atem:parameter>
+          name: record
         normal_text: ''
         reasoning_text: ''
   context_1cb7924ed73cd992:
@@ -66,6 +528,80 @@ contexts:
           name: get_weather
         normal_text: ''
         reasoning_text: ''
+  context_a60932b538fe6886:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+          name: get_weather
+        normal_text: '
+
+
+          '
+        reasoning_text: Check weather.
+  context_f1db1908e02ef9f3:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+          name: get_weather
+        - arguments:
+            city: Tokyo
+          name: get_weather
+        normal_text: '
+
+          '
+        reasoning_text: ''
+  context_eee3afc4964d8a42:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+          name: get_weather
+        normal_text: '
+
+          '
+        reasoning_text: ''
+  context_b7eb8af722abed48:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+          name: get_weather
+        normal_text: 'Pressing it now.
+
+
+          '
+        reasoning_text: ''
+  context_5afabce14588720e:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls: []
+        normal_text: '
+
+
+          '
+        reasoning_text: ''
+  context_52c294c79ae6dad8:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            amount: 21.5
+            retries: 37
+          name: capture_payload
+        normal_text: ''
+        reasoning_text: ''
   context_9269bd8b7b20b89c:
     mode: unified
     record_metadata:
@@ -83,13 +619,55 @@ contexts:
           name: get_weather
         normal_text: ''
         reasoning_text: Sure, one sec. <think>checking the forecast
-  context_2e9520c7b8a70480:
+  context_1d665d7f8eb73ee9:
     mode: unified
     record_metadata:
       batch_final:
         calls: []
-        normal_text: ' <|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|> &amp; \"x\"\\\n "}<|tool_call_end|><|tool_calls_section_end|>'
+        normal_text: ' '
         reasoning_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": " <think>quoted'
+  context_7b8c2c13e8e47741:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments: {}
+          name: a.b
+        normal_text: ''
+        reasoning_text: ''
+  context_d886f7797b783122:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            location: Beijing
+          name: my-tool.v2
+        normal_text: ''
+        reasoning_text: ''
+  context_6c787eb9bb40b558:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            location: Beijing
+          name: server.tools.weather
+        normal_text: ''
+        reasoning_text: ''
+  context_3b01748331bc5a55:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            location: Beijing
+          name: server.weather
+        - arguments:
+            timezone: Asia/Shanghai
+          name: server.time
+        normal_text: ''
+        reasoning_text: ''
   context_a354263226226ef7:
     mode: unified
     record_metadata:
@@ -148,8 +726,34 @@ contexts:
           name: capture_payload
         normal_text: ''
         reasoning_text: ''
-  context_707dc69eabc3a207:
+  context_e6f5fba3f6cf84bf:
     mode: unified
+    record_metadata:
+      batch_final:
+        calls: []
+        normal_text: <|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>"}<|tool_call_end|><|tool_calls_section_end|>
+        reasoning_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|>{"markers": "<think>'
+  context_1f108106ef87bd0b:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls: []
+        normal_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>not-json<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+        reasoning_text: ''
+  context_35f77e768c49f4ce:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls: []
+        normal_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"city":<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+        reasoning_text: ''
+  context_cc7f993bb2cabc3a:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls: []
+        normal_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.not_offered:1<|tool_call_argument_begin|>{"x": 2}<|tool_call_end|><|tool_calls_section_end|>'
+        reasoning_text: ''
   context_362c031f011816e9:
     mode: unified
     record_metadata:
@@ -160,6 +764,24 @@ contexts:
           name: get_weather
         normal_text: 'Here you go: '
         reasoning_text: a
+  context_195eb1b7be445952:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls: []
+        normal_text: ''
+        reasoning_text: ''
+  context_ff2c42b970ba7df9:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+            count: 7
+          name: write_file
+        normal_text: ''
+        reasoning_text: ''
   context_768ec2a93681d876:
     mode: unified
     record_metadata:
@@ -198,158 +820,31 @@ contexts:
           name: g
         normal_text: ''
         reasoning_text: ''
-  context_399729681b5e95c0:
+  context_adb2420e05af37fb:
     mode: unified
     record_metadata:
-      verified_recapture:
-        provenance:
-          adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-          implementation: sglang_python_batch
-          job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-          source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-          version: 0.5.14
-        resolution: historical_adapter_unsupported
-        result:
-          assembled:
-          - kind: reasoning
-            text: The literal "
-          - kind: text
-            text: <|tool_calls_section_begin|>" marker is part of the explanation.
-          batch_final:
-            calls: []
-            normal_text: <|tool_calls_section_begin|>" marker is part of the explanation.
-            reasoning_text: The literal "
-          capture_input:
-            chunks:
-            - delta_text: The literal "
-            - delta_text: <|tool_calls_section_begin|>
-            - delta_text: '" marker is part of the explanation.'
-            - delta_text: ‹finish›
-            finish_reason: stop
-            init:
-              named_tool: null
-              starting_state: Reasoning
-              tool_output_mode: Native
-            input: The literal "<|tool_calls_section_begin|>" marker is part of the explanation.
-            tools:
-            - name: get_weather
-              parameters:
-                properties:
-                  city:
-                    type: string
-                type: object
-            - name: f
-              parameters:
-                properties:
-                  x:
-                    type: string
-                type: object
-            - name: g
-              parameters:
-                properties:
-                  y:
-                    type: string
-                type: object
-            - name: run
-              parameters:
-                properties:
-                  cmd:
-                    type: string
-                type: object
-            - name: log
-              parameters:
-                properties:
-                  note:
-                    type: string
-                type: object
-            - name: sum_values
-              parameters:
-                properties:
-                  values:
-                    items:
-                      type: number
-                    type: array
-                type: object
-            - name: functions.
-              parameters:
-                properties: {}
-                type: object
-  context_44d0b9cf719aad0c:
+      batch_final:
+        calls: []
+        normal_text: ''
+        reasoning_text: The literal "
+  context_025872498cd8d1e1:
     mode: unified
     record_metadata:
-      verified_recapture:
-        provenance:
-          adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-          implementation: sglang_python_batch
-          job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-          source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-          version: 0.5.14
-        resolution: historical_adapter_unsupported
-        result:
-          assembled:
-          - kind: reasoning
-            text: 'The literal ''doesn''t '
-          - kind: text
-            text: <|tool_calls_section_begin|> marker' stays quoted.
-          batch_final:
-            calls: []
-            normal_text: <|tool_calls_section_begin|> marker' stays quoted.
-            reasoning_text: 'The literal ''doesn''t '
-          capture_input:
-            chunks:
-            - delta_text: 'The literal ''doesn''t '
-            - delta_text: <|tool_calls_section_begin|>
-            - delta_text: ' marker'' stays quoted.'
-            - delta_text: ‹finish›
-            finish_reason: stop
-            init:
-              named_tool: null
-              starting_state: Reasoning
-              tool_output_mode: Native
-            input: The literal 'doesn't <|tool_calls_section_begin|> marker' stays quoted.
-            tools:
-            - name: get_weather
-              parameters:
-                properties:
-                  city:
-                    type: string
-                type: object
-            - name: f
-              parameters:
-                properties:
-                  x:
-                    type: string
-                type: object
-            - name: g
-              parameters:
-                properties:
-                  y:
-                    type: string
-                type: object
-            - name: run
-              parameters:
-                properties:
-                  cmd:
-                    type: string
-                type: object
-            - name: log
-              parameters:
-                properties:
-                  note:
-                    type: string
-                type: object
-            - name: sum_values
-              parameters:
-                properties:
-                  values:
-                    items:
-                      type: number
-                    type: array
-                type: object
-            - name: functions.
-              parameters:
-                properties: {}
-                type: object
+      batch_final:
+        calls: []
+        normal_text: ''
+        reasoning_text: 'The literal ''doesn''t '
+  context_5dbaac880219d88e:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            count: -2500
+            text: '42'
+          name: capture_payload
+        normal_text: ''
+        reasoning_text: ''
   context_add227352c6ae40a:
     mode: unified
     record_metadata:
@@ -368,427 +863,50 @@ contexts:
         calls: []
         normal_text: I will check that. <|tool_call_end|>
         reasoning_text: ''
-  context_631f5440063a3e73:
+  context_c1d700c36ec46294:
     mode: unified
     record_metadata:
-      verified_recapture:
-        provenance:
-          adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-          implementation: sglang_python_batch
-          job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-          source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-          version: 0.5.14
-        resolution: historical_adapter_unsupported
-        result:
-          assembled:
-          - kind: reasoning
-            text: checking weather
-          - arguments:
-              city: London
-            kind: tool_call
-            name: get_weather
-          batch_final:
-            calls:
-            - arguments:
-                city: London
-              name: get_weather
-            normal_text: ''
-            reasoning_text: checking weather
-          capture_input:
-            chunks:
-            - delta_text: <think>
-            - delta_text: checking weather
-            - delta_text: </think>
-            - delta_text: <|tool_calls_section_begin|>
-            - delta_text: <|tool_call_begin|>
-            - delta_text: functions.get_weather:0
-            - delta_text: <|tool_call_argument_begin|>
-            - delta_text: '{"city": "London"}'
-            - delta_text: <|tool_call_end|>
-            - delta_text: <|tool_calls_section_end|>
-            - delta_text: ‹finish›
-            finish_reason: stop
-            init:
-              named_tool: null
-              starting_state: Reasoning
-              tool_output_mode: Native
-            input: '<think>checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "London"}<|tool_call_end|><|tool_calls_section_end|>'
-            tools:
-            - name: get_weather
-              parameters:
-                properties:
-                  city:
-                    type: string
-                type: object
-            - name: f
-              parameters:
-                properties:
-                  x:
-                    type: string
-                type: object
-            - name: g
-              parameters:
-                properties:
-                  y:
-                    type: string
-                type: object
-            - name: run
-              parameters:
-                properties:
-                  cmd:
-                    type: string
-                type: object
-            - name: log
-              parameters:
-                properties:
-                  note:
-                    type: string
-                type: object
-            - name: sum_values
-              parameters:
-                properties:
-                  values:
-                    items:
-                      type: number
-                    type: array
-                type: object
-            - name: functions.
-              parameters:
-                properties: {}
-                type: object
-  context_52e25ff2ec9db6a1:
+      batch_final:
+        calls:
+        - arguments:
+            city: London
+          name: get_weather
+        normal_text: ''
+        reasoning_text: checking weather
+  context_ea7f67bef3209bc2:
     mode: unified
     record_metadata:
-      verified_recapture:
-        provenance:
-          adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-          implementation: sglang_python_batch
-          job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-          source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-          version: 0.5.14
-        resolution: historical_adapter_unsupported
-        result:
-          assembled:
-          - kind: reasoning
-            text: no tool needed
-          - kind: text
-            text: The answer is 42.
-          batch_final:
-            calls: []
-            normal_text: The answer is 42.
-            reasoning_text: no tool needed
-          capture_input:
-            chunks:
-            - delta_text: no tool needed
-            - delta_text: </think>
-            - delta_text: The answer is 42.
-            - delta_text: ‹finish›
-            finish_reason: stop
-            init:
-              named_tool: null
-              starting_state: Reasoning
-              tool_output_mode: Native
-            input: no tool needed</think>The answer is 42.
-            tools:
-            - name: get_weather
-              parameters:
-                properties:
-                  city:
-                    type: string
-                type: object
-            - name: f
-              parameters:
-                properties:
-                  x:
-                    type: string
-                type: object
-            - name: g
-              parameters:
-                properties:
-                  y:
-                    type: string
-                type: object
-            - name: run
-              parameters:
-                properties:
-                  cmd:
-                    type: string
-                type: object
-            - name: log
-              parameters:
-                properties:
-                  note:
-                    type: string
-                type: object
-            - name: sum_values
-              parameters:
-                properties:
-                  values:
-                    items:
-                      type: number
-                    type: array
-                type: object
-            - name: functions.
-              parameters:
-                properties: {}
-                type: object
-  context_a9005012b49f86d6:
+      batch_final:
+        calls: []
+        normal_text: The answer is 42.
+        reasoning_text: no tool needed
+  context_6227824539e16b10:
     mode: unified
     record_metadata:
-      verified_recapture:
-        provenance:
-          adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-          implementation: sglang_python_batch
-          job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-          source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-          version: 0.5.14
-        resolution: historical_adapter_unsupported
-        result:
-          assembled:
-          - kind: reasoning
-            text: weighing options
-          - kind: text
-            text: 'Here''s what I found: '
-          - arguments:
-              city: Paris
-            kind: tool_call
-            name: get_weather
-          batch_final:
-            calls:
-            - arguments:
-                city: Paris
-              name: get_weather
-            normal_text: 'Here''s what I found: '
-            reasoning_text: weighing options
-          capture_input:
-            chunks:
-            - delta_text: weighing options
-            - delta_text: </think>
-            - delta_text: 'Here''s what I found: '
-            - delta_text: <|tool_calls_section_begin|>
-            - delta_text: <|tool_call_begin|>
-            - delta_text: functions.get_weather:0
-            - delta_text: <|tool_call_argument_begin|>
-            - delta_text: '{"city": "Paris"}'
-            - delta_text: <|tool_call_end|>
-            - delta_text: <|tool_calls_section_end|>
-            - delta_text: ‹finish›
-            finish_reason: stop
-            init:
-              named_tool: null
-              starting_state: Reasoning
-              tool_output_mode: Native
-            input: 'weighing options</think>Here''s what I found: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
-            tools:
-            - name: get_weather
-              parameters:
-                properties:
-                  city:
-                    type: string
-                type: object
-            - name: f
-              parameters:
-                properties:
-                  x:
-                    type: string
-                type: object
-            - name: g
-              parameters:
-                properties:
-                  y:
-                    type: string
-                type: object
-            - name: run
-              parameters:
-                properties:
-                  cmd:
-                    type: string
-                type: object
-            - name: log
-              parameters:
-                properties:
-                  note:
-                    type: string
-                type: object
-            - name: sum_values
-              parameters:
-                properties:
-                  values:
-                    items:
-                      type: number
-                    type: array
-                type: object
-            - name: functions.
-              parameters:
-                properties: {}
-                type: object
-  context_6b371aa8238b7c32:
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+          name: get_weather
+        normal_text: 'Here''s what I found: '
+        reasoning_text: weighing options
+  context_d77aa9584b0cc392:
     mode: unified
     record_metadata:
-      verified_recapture:
-        provenance:
-          adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-          implementation: sglang_python_batch
-          job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-          source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-          version: 0.5.14
-        resolution: historical_adapter_unsupported
-        result:
-          assembled:
-          - kind: reasoning
-            text: analyzing data
-          - kind: text
-            text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Par'
-          batch_final:
-            calls: []
-            normal_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Par'
-            reasoning_text: analyzing data
-          capture_input:
-            chunks:
-            - delta_text: analyzing data
-            - delta_text: </think>
-            - delta_text: <|tool_calls_section_begin|>
-            - delta_text: <|tool_call_begin|>
-            - delta_text: functions.get_weather:0
-            - delta_text: <|tool_call_argument_begin|>
-            - delta_text: '{"city": "Par'
-            - delta_text: ‹finish›
-            finish_reason: length
-            init:
-              named_tool: null
-              starting_state: Reasoning
-              tool_output_mode: Native
-            input: 'analyzing data</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Par'
-            tools:
-            - name: get_weather
-              parameters:
-                properties:
-                  city:
-                    type: string
-                type: object
-            - name: f
-              parameters:
-                properties:
-                  x:
-                    type: string
-                type: object
-            - name: g
-              parameters:
-                properties:
-                  y:
-                    type: string
-                type: object
-            - name: run
-              parameters:
-                properties:
-                  cmd:
-                    type: string
-                type: object
-            - name: log
-              parameters:
-                properties:
-                  note:
-                    type: string
-                type: object
-            - name: sum_values
-              parameters:
-                properties:
-                  values:
-                    items:
-                      type: number
-                    type: array
-                type: object
-            - name: functions.
-              parameters:
-                properties: {}
-                type: object
-  context_36880a55b024a131:
+      batch_final:
+        calls: []
+        normal_text: ''
+        reasoning_text: analyzing data
+  context_d0900727897e2b7c:
     mode: unified
     record_metadata:
-      verified_recapture:
-        provenance:
-          adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
-          implementation: sglang_python_batch
-          job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
-          source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
-          version: 0.5.14
-        resolution: historical_adapter_unsupported
-        result:
-          assembled:
-          - kind: reasoning
-            text: checking weather
-          - arguments:
-              city: Paris
-            kind: tool_call
-            name: get_weather
-          batch_final:
-            calls:
-            - arguments:
-                city: Paris
-              name: get_weather
-            normal_text: ''
-            reasoning_text: checking weather
-          capture_input:
-            chunks:
-            - delta_text: checking weather
-            - delta_text: </think>
-            - delta_text: <|tool_calls_section_begin|>
-            - delta_text: <|tool_call_begin|>
-            - delta_text: functions.get_weather:0
-            - delta_text: <|tool_call_argument_begin|>
-            - delta_text: '{"city": "Paris"}'
-            - delta_text: <|tool_call_end|>
-            - delta_text: <|tool_calls_section_end|>
-            - delta_text: ‹finish›
-            finish_reason: stop
-            init:
-              named_tool: null
-              starting_state: Reasoning
-              tool_output_mode: Native
-            input: 'checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
-            tools:
-            - name: get_weather
-              parameters:
-                properties:
-                  city:
-                    type: string
-                type: object
-            - name: f
-              parameters:
-                properties:
-                  x:
-                    type: string
-                type: object
-            - name: g
-              parameters:
-                properties:
-                  y:
-                    type: string
-                type: object
-            - name: run
-              parameters:
-                properties:
-                  cmd:
-                    type: string
-                type: object
-            - name: log
-              parameters:
-                properties:
-                  note:
-                    type: string
-                type: object
-            - name: sum_values
-              parameters:
-                properties:
-                  values:
-                    items:
-                      type: number
-                    type: array
-                type: object
-            - name: functions.
-              parameters:
-                properties: {}
-                type: object
+      batch_final:
+        calls:
+        - arguments:
+            city: Paris
+          name: get_weather
+        normal_text: ''
+        reasoning_text: checking weather
   context_3fe073bfd06cc570:
     mode: unified
     record_metadata:
@@ -867,6 +985,25 @@ contexts:
         calls: []
         normal_text: ''
         reasoning_text: thinking but stream ends
+  context_040e3fde5f3e35c8:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            category:
+              children: []
+              label: Garden Tools
+            dry_run: false
+            retries: 37
+            tree:
+              children:
+              - children: []
+                label: leaf
+              label: root
+          name: capture_payload
+        normal_text: ''
+        reasoning_text: ''
   context_4e6cadaa806be184:
     mode: unified
     record_metadata:
@@ -923,6 +1060,16 @@ contexts:
         calls:
         - arguments:
             value: '42'
+          name: schema_probe
+        normal_text: ''
+        reasoning_text: ''
+  context_5757722252b70461:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 3
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -1049,6 +1196,26 @@ contexts:
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
+  context_2f65605cca6d2924:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 1
+          name: schema_probe
+        normal_text: ''
+        reasoning_text: ''
+  context_0e7cc775eb26b255:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: 2
+          name: schema_probe
+        normal_text: ''
+        reasoning_text: ''
   context_7fc20aded856afde:
     mode: unified
     record_metadata:
@@ -1112,12 +1279,15 @@ contexts:
           name: get_weather
         normal_text: 'Before. '
         reasoning_text: ''
-  context_4e071f876232ef27:
+  context_49cbcb7afcb4ea29:
     mode: unified
     record_metadata:
       batch_final:
-        calls: []
-        normal_text: <|tool_calls_section_begin|>still thinking about it
+        calls:
+        - arguments:
+            city: Paris
+          name: get_weather
+        normal_text: ''
         reasoning_text: ''
   context_16ae27a16c09fa79:
     mode: unified
@@ -1140,29 +1310,12 @@ contexts:
         calls: []
         normal_text: <|tool_calls_section_end|>
         reasoning_text: ''
-  context_c3910fda67b29bf5:
+  context_a61617756fdcde7d:
     mode: unified
     record_metadata:
       batch_final:
         calls: []
-        normal_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}'
-        reasoning_text: ''
-  context_49cbcb7afcb4ea29:
-    mode: unified
-    record_metadata:
-      batch_final:
-        calls:
-        - arguments:
-            city: Paris
-          name: get_weather
         normal_text: ''
-        reasoning_text: ''
-  context_2d535cc20c4ba215:
-    mode: unified
-    record_metadata:
-      batch_final:
-        calls: []
-        normal_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Par'
         reasoning_text: ok
   context_fa9a3a7e46b3fd9d:
     mode: unified
@@ -1205,11 +1358,50 @@ contexts:
           name: capture_payload
         normal_text: ''
         reasoning_text: ''
+  context_021371fc3f5fa789:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: '{"a":1}'
+          name: schema_probe
+        normal_text: ''
+        reasoning_text: ''
+  context_1322f09b3022c597:
+    mode: unified
+    record_metadata:
+      batch_final:
+        calls:
+        - arguments:
+            value: '{''a'':1}'
+          name: schema_probe
+        normal_text: ''
+        reasoning_text: ''
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.14.yaml
-  producer: producer_a76c23fee21798fc
+  member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.23.yaml
+  producer: producer_c29845f24e4eb449
   context: context_707dc69eabc3a207
 records:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    request: 739b334e6a08767a96601a5a30a8c19f7a9aa36db2a0ebf97d13e1edd58d6ec1
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
+  arg_array_quoted_parameter_close:
+    case_key: arg_array_quoted_parameter_close
+    context: context_b8de193defc8930b
+    request: 418a15781a3d033c220e58ef9dffca7b4c61bdd1f63e6fe426db01e44d404e78
+    output:
+      assembled:
+      - arguments:
+          value:
+          - é \" </atem:parameter>
+        kind: tool_call
+        name: record
+    suppress_inherited_from: true
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     context: context_1c291d5964c325d5
@@ -1220,6 +1412,7 @@ records:
           city: null
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_json_null_const:
     case_key: arg_json_null_const
     context: context_1c291d5964c325d5
@@ -1230,6 +1423,7 @@ records:
           city: null
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_json_null_nullable:
     case_key: arg_json_null_nullable
     context: context_1c291d5964c325d5
@@ -1240,6 +1434,7 @@ records:
           city: null
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_json_null_oneof:
     case_key: arg_json_null_oneof
     context: context_1c291d5964c325d5
@@ -1250,6 +1445,18 @@ records:
           city: null
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
+  arg_json_null_ref:
+    case_key: arg_json_null_ref
+    context: context_1c291d5964c325d5
+    request: 6f7a39355abc9d48134c70b5f5c008f8f7e00c44f3c42ce078ed093bdf97e129
+    output:
+      assembled:
+      - arguments:
+          city: null
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
   arg_marker_in_string:
     case_key: arg_marker_in_string
     context: context_ab7ff7b8029f59ca
@@ -1260,6 +1467,260 @@ records:
           cmd: git log <|tool_call_end|> --oneline
         kind: tool_call
         name: run
+    suppress_inherited_from: true
+  arg_null_mixed_labels:
+    case_key: arg_null_mixed_labels
+    context: context_e6d3efe0e857ea76
+    request: 7d00bac8332cb9ae5b13e47e97257e66bfc9ef584dab4652117c607fdc23ea00
+    output:
+      assembled:
+      - arguments:
+          label: null
+          literal: 'null'
+          note: null
+        kind: tool_call
+        name: set_labels
+    suppress_inherited_from: true
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    context: context_9ae642893e0b428e
+    request: 19ff2a118d56f497170fb3bda74c7332236bc6969ba1caac0c5985ed7adb57b0
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    context: context_9ae642893e0b428e
+    request: c325099c6baef68675a42bda8ffa4664f173d941828f39ee8a6af2f56523419d
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    context: context_9ae642893e0b428e
+    request: c2608ea20cdf81b3b276f8fb2b6a0a263b55ce2537752017d93262fdbc343258
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    context: context_9ae642893e0b428e
+    request: 8955656edd8f4e9023a88fecadcff004a32ab4d6f1f04cc00c0ba27cb406d522
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    context: context_211bb225ba1ae219
+    request: 7e85dfd7a07e4ce931bf437803569000dee39ac4456064615de88a2d1a09c02d
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    context: context_211bb225ba1ae219
+    request: 6808b00614257df258dbc43d4c677354854f84835df8b17a74d15bfe1fdb8542
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    context: context_8ce66758575b523d
+    request: 4f3d6d17785bbe53526d46451a3cf3f002c585324f5832c8645a02c6a68273dc
+    output:
+      assembled:
+      - arguments:
+          value: -42.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    context: context_9ae642893e0b428e
+    request: f2fc26791cca5d78d36987c08d0f35732317ad08cfb83d8e7c1a5ecd8d46340a
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    context: context_7fa61584d2204c6a
+    request: 2d0e884d097eef1246fd49a5fdf628110661e00a65b34ea51d045d745b4551cb
+    output:
+      assembled:
+      - arguments:
+          value: 0.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    context: context_211bb225ba1ae219
+    request: 9ab66318536453d965d53863a9750004630628991192fb3b6642aabd8af4fe27
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    context: context_b9cdf6922dd7cfda
+    request: 47dcd2e1d28de28f7c34f3dc64a3f2db1971175b9b70d405db39e44ce9a43a62
+    output:
+      assembled:
+      - arguments:
+          value: -9007199254740992.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    context: context_b729c303d5ed701d
+    request: 23336dea286e0b0eb02346b044140ae02c141175faa89adedb0b010d515ee909
+    output:
+      assembled:
+      - arguments:
+          value: 42.5
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    context: context_c8aa238c68298e30
+    request: b074adb9bb89863a104e0c19dabc811c04d5e53c5e05c47f718e434df986fd32
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    context: context_211bb225ba1ae219
+    request: 6e9f1a1a5c254ac4d5be09e23264fc21a1a4232d1c093c9e70a0cb27ee2bbf1f
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    context: context_c8aa238c68298e30
+    request: e2f66fd597f37584775a5d33767684e4f7c30c85ce7b524a2c3eb7eee2203b67
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    context: context_98344b0040c476dc
+    request: eb2e2d839392b61887d0bc5f2b0b5dffd2d9860c663ae9ec18588bd7e5e8ea44
+    output:
+      assembled:
+      - arguments:
+          value: 0.1
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    context: context_53ad74ee7f60969b
+    request: 252dc18c0c2d50c4803c9292f583d32e4de956ecedb24d5d106a2ef74a5d18a7
+    output:
+      assembled:
+      - arguments:
+          nested:
+            fraction: 9007199254740992.0
+            tiny: 0.0
+          values:
+          - 9007199254740993
+          - -9007199254740993
+        kind: tool_call
+        name: inspect
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_finite:
+    case_key: arg_numeric_overflow_siblings_finite
+    context: context_f277d86f37671087
+    request: 0781b08661772b5764e44ab3657787a63f6e9ed6a569eba533963cbff4769654
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: 1.5
+        kind: tool_call
+        name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    case_key: arg_numeric_overflow_siblings_negative
+    context: context_863387433324d6f0
+    request: bb5459951c6e27b33a4a2d68dfc5c391082ee655302911535249f007c831d130
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: -.inf
+        kind: tool_call
+        name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    case_key: arg_numeric_overflow_siblings_positive
+    context: context_a9dfe3d88451e25f
+    request: e180ae126d55cc7de9753813dde238b490ce0f91e8d9e95571dbe49c885403b3
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: .inf
+        kind: tool_call
+        name: echo
+    suppress_inherited_from: true
+  arg_object_quoted_parameter_close:
+    case_key: arg_object_quoted_parameter_close
+    context: context_1089752d28a11201
+    request: e7436136700ca885d82f3be398b0c607fd639d8a5e55b31196c1768957190afd
+    output:
+      assembled:
+      - arguments:
+          value:
+            s: </atem:parameter>
+        kind: tool_call
+        name: record
+    suppress_inherited_from: true
   arg_string_null:
     case_key: arg_string_null
     context: context_1cb7924ed73cd992
@@ -1270,6 +1731,7 @@ records:
           city: 'null'
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_string_null_const:
     case_key: arg_string_null_const
     context: context_1cb7924ed73cd992
@@ -1280,6 +1742,7 @@ records:
           city: 'null'
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_string_null_enum:
     case_key: arg_string_null_enum
     context: context_1cb7924ed73cd992
@@ -1290,6 +1753,18 @@ records:
           city: 'null'
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
+  arg_string_null_ref:
+    case_key: arg_string_null_ref
+    context: context_1cb7924ed73cd992
+    request: 02b18a7ae14fed68ecf1b6a7fbd9af5c418d5d280994493af3e57b7b06c5d1ae
+    output:
+      assembled:
+      - arguments:
+          city: 'null'
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
   arg_string_null_sibling_anyof:
     case_key: arg_string_null_sibling_anyof
     context: context_1cb7924ed73cd992
@@ -1300,6 +1775,7 @@ records:
           city: 'null'
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_string_null_sibling_oneof:
     case_key: arg_string_null_sibling_oneof
     context: context_1cb7924ed73cd992
@@ -1310,6 +1786,7 @@ records:
           city: 'null'
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_string_null_union:
     case_key: arg_string_null_union
     context: context_1cb7924ed73cd992
@@ -1320,6 +1797,7 @@ records:
           city: 'null'
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_string_null_untyped_branch:
     case_key: arg_string_null_untyped_branch
     context: context_1cb7924ed73cd992
@@ -1330,6 +1808,7 @@ records:
           city: 'null'
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   arg_unicode:
     case_key: arg_unicode
     context: context_958e641349cc13d0
@@ -1340,6 +1819,114 @@ records:
           city: São Paulo 東京
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
+  blank_framing_after_reasoning:
+    case_key: blank_framing_after_reasoning
+    context: context_a60932b538fe6886
+    request: 8f0991b1b42524feb541b16a07fbdd172cfdf390a5a56e96445a44c99c7d1a34
+    output:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: text
+        text: '
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  blank_framing_between_calls_single_chunk:
+    case_key: blank_framing_between_calls_single_chunk
+    context: context_f1db1908e02ef9f3
+    request: 43c838b5169b200b4eee7fadd8e1fc19ece327204c6f346a12d6a0a8cf99e663
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - arguments:
+          city: Tokyo
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  blank_framing_prose_after_call:
+    case_key: blank_framing_prose_after_call
+    context: context_eee3afc4964d8a42
+    request: 11cde50da21d459babee00017da87532c472a87cf6916c75ec74e5b8abfb40b8
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  blank_framing_tool_only:
+    case_key: blank_framing_tool_only
+    context: context_eee3afc4964d8a42
+    request: 05bbd45200112bcfb2f622f40a844b91ddaa3fba3f5455433ffa5f77be2c0987
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  blank_framing_with_prose:
+    case_key: blank_framing_with_prose
+    context: context_b7eb8af722abed48
+    request: 95ef435d0897d5c06d939a118d373749d3d176196520664498c85f967b0d2748
+    output:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
+  blank_output_without_call:
+    case_key: blank_output_without_call
+    context: context_5afabce14588720e
+    request: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+    suppress_inherited_from: true
+  conditional_schema_number_types:
+    case_key: conditional_schema_number_types
+    context: context_52c294c79ae6dad8
+    request: 2c77cf49a1c888b14d9754715166754f9036cdff4103c78769d60711eea6d945
+    output:
+      assembled:
+      - arguments:
+          amount: 21.5
+          retries: 37
+        kind: tool_call
+        name: capture_payload
+    suppress_inherited_from: true
   content_then_reason:
     case_key: content_then_reason
     context: context_9269bd8b7b20b89c
@@ -1350,6 +1937,7 @@ records:
         text: Hello there. <think>let me recall
       - kind: text
         text: The capital is Paris.
+    suppress_inherited_from: true
   content_then_reason_then_tool:
     case_key: content_then_reason_then_tool
     context: context_916f441b1a1d43d2
@@ -1362,16 +1950,65 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   deepseek_v41_mixed_control_text_in_string:
     case_key: deepseek_v41_mixed_control_text_in_string
-    context: context_2e9520c7b8a70480
+    context: context_1d665d7f8eb73ee9
     request: a27329512418077440ae487d97b5e72525a84485b7318966542f6d70d2383466
     output:
       assembled:
       - kind: reasoning
         text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": " <think>quoted'
       - kind: text
-        text: ' <|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|> &amp; \"x\"\\\n "}<|tool_call_end|><|tool_calls_section_end|>'
+        text: ' '
+    suppress_inherited_from: true
+  dotted_name_minimal:
+    case_key: dotted_name_minimal
+    context: context_7b8c2c13e8e47741
+    request: db4c05a50628bec3a687e6941cea198a253dea3ca1b7f4583fc200f7bd0395d5
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: a.b
+    suppress_inherited_from: true
+  dotted_name_mixed_punctuation:
+    case_key: dotted_name_mixed_punctuation
+    context: context_d886f7797b783122
+    request: 1e07f7a1d96342cdb9127431e80f3751021daf202f645ac2635655387d792d1c
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: my-tool.v2
+    suppress_inherited_from: true
+  dotted_name_multiple_segments:
+    case_key: dotted_name_multiple_segments
+    context: context_6c787eb9bb40b558
+    request: 424a3047fc7a78a125702bf2c0d828262ba9c87c0d9e7cf5de162a1ea7e61492
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.tools.weather
+    suppress_inherited_from: true
+  dotted_name_shared_prefix:
+    case_key: dotted_name_shared_prefix
+    context: context_3b01748331bc5a55
+    request: df784e2eb4e767185a616184a14b0be16da0e39c21f593bd9c8746c0cae93ae3
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.weather
+      - arguments:
+          timezone: Asia/Shanghai
+        kind: tool_call
+        name: server.time
+    suppress_inherited_from: true
   empty_args:
     case_key: empty_args
     context: context_a354263226226ef7
@@ -1381,6 +2018,7 @@ records:
       - arguments: {}
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   glm_ref_encoded_targets:
     case_key: glm_ref_encoded_targets
     context: context_f88ba27419798fd7
@@ -1393,6 +2031,7 @@ records:
           utf8_plus: 42
         kind: tool_call
         name: capture_payload
+    suppress_inherited_from: true
   glm_ref_json_looking_strings:
     case_key: glm_ref_json_looking_strings
     context: context_99f3386ce7370c4d
@@ -1406,6 +2045,7 @@ records:
           quoted_text: '"hello"'
         kind: tool_call
         name: capture_payload
+    suppress_inherited_from: true
   glm_ref_object:
     case_key: glm_ref_object
     context: context_075950dae2518885
@@ -1417,6 +2057,7 @@ records:
             x: 1
         kind: tool_call
         name: capture_payload
+    suppress_inherited_from: true
   glm_ref_scalar_types:
     case_key: glm_ref_scalar_types
     context: context_1273a9c6749787ac
@@ -1430,9 +2071,47 @@ records:
           ratio: 3.5
         kind: tool_call
         name: capture_payload
+    suppress_inherited_from: true
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: gpt_oss_control_marker_inside_argument_string
+    context: context_e6f5fba3f6cf84bf
+    request: 1cfabc075ab2d4b0467dd533a7f8ec5e66ed8da31faf09f4f0831afb32fcb801
+    output:
+      assembled:
+      - kind: reasoning
+        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|>{"markers": "<think>'
+      - kind: text
+        text: <|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>"}<|tool_call_end|><|tool_calls_section_end|>
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_empty_call:
+    case_key: gpt_oss_invalid_tool_body_then_empty_call
+    context: context_1f108106ef87bd0b
+    request: c291cf88c0365b583fa246bcce6dcd35a46a3ad825be47e5e7fb5563acbac532
+    output:
+      assembled:
+      - kind: text
+        text: <|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>not-json<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_valid_call:
+    case_key: gpt_oss_invalid_tool_body_then_valid_call
+    context: context_35f77e768c49f4ce
+    request: 2ad8dcdae83c02289d0c2946b83dba6a7d4cb36405aafb86b5be94b004b3ab97
+    output:
+      assembled:
+      - kind: text
+        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"city":<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+    suppress_inherited_from: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: gpt_oss_multiple_unknown_and_empty_tools
+    context: context_cc7f993bb2cabc3a
+    request: b20838bb6c7609f23326eebed27c8c74f987af841d4d524e49a5d130fcf44be7
+    output:
+      assembled:
+      - kind: text
+        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.not_offered:1<|tool_call_argument_begin|>{"x": 2}<|tool_call_end|><|tool_calls_section_end|>'
+    suppress_inherited_from: true
   guided_json_after_reasoning:
     case_key: guided_json_after_reasoning
-    producer: producer_65a380b925f90881
     request: 9348dd38350a4606e62d922ab84c2d0e4771c2274c64cd683bc8dd3b7465d48b
     unavailable:
       code: unsupported_request_mode
@@ -1440,7 +2119,6 @@ records:
     suppress_inherited_from: true
   guided_json_array_argument:
     case_key: guided_json_array_argument
-    producer: producer_65a380b925f90881
     request: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
     unavailable:
       code: unsupported_request_mode
@@ -1448,7 +2126,6 @@ records:
     suppress_inherited_from: true
   guided_json_bare_tool_header_recovers_inside_a_thought:
     case_key: guided_json_bare_tool_header_recovers_inside_a_thought
-    producer: producer_65a380b925f90881
     request: 8465686ffe7e0b8e49370c5207cb31707115fc3011514b59ad1e884483d5f45e
     unavailable:
       code: unsupported_request_mode
@@ -1456,7 +2133,6 @@ records:
     suppress_inherited_from: true
   guided_json_escaped_string_args:
     case_key: guided_json_escaped_string_args
-    producer: producer_65a380b925f90881
     request: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
     unavailable:
       code: unsupported_request_mode
@@ -1464,7 +2140,6 @@ records:
     suppress_inherited_from: true
   guided_json_gt_in_argument_bare_opener:
     case_key: guided_json_gt_in_argument_bare_opener
-    producer: producer_65a380b925f90881
     request: 38eeb95dc5f0dfda4ad1904666efe26b007d9967c374cccee8235b038e3f4dd3
     unavailable:
       code: unsupported_request_mode
@@ -1472,7 +2147,6 @@ records:
     suppress_inherited_from: true
   guided_json_gt_in_argument_trailing_close:
     case_key: guided_json_gt_in_argument_trailing_close
-    producer: producer_65a380b925f90881
     request: 04e215118491aed329ad2bf86a1c3c1d5a853f828f2a6f76e7a11dcd00cf14d1
     unavailable:
       code: unsupported_request_mode
@@ -1480,7 +2154,6 @@ records:
     suppress_inherited_from: true
   guided_json_gt_in_argument_wrapped:
     case_key: guided_json_gt_in_argument_wrapped
-    producer: producer_65a380b925f90881
     request: d823199a7572d44b1d36e421866a9235c33e02f3cf4e1c90c8cdaa3769584cb2
     unavailable:
       code: unsupported_request_mode
@@ -1488,7 +2161,6 @@ records:
     suppress_inherited_from: true
   guided_json_invalid_call:
     case_key: guided_json_invalid_call
-    producer: producer_65a380b925f90881
     request: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
     unavailable:
       code: unsupported_request_mode
@@ -1496,7 +2168,6 @@ records:
     suppress_inherited_from: true
   guided_json_list_with_broken_element:
     case_key: guided_json_list_with_broken_element
-    producer: producer_65a380b925f90881
     request: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
     unavailable:
       code: unsupported_request_mode
@@ -1504,7 +2175,6 @@ records:
     suppress_inherited_from: true
   guided_json_malformed_json:
     case_key: guided_json_malformed_json
-    producer: producer_65a380b925f90881
     request: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
     unavailable:
       code: unsupported_request_mode
@@ -1512,7 +2182,6 @@ records:
     suppress_inherited_from: true
   guided_json_marker_inside_argument:
     case_key: guided_json_marker_inside_argument
-    producer: producer_65a380b925f90881
     request: ca789bd52e78fed52bfd5121d5635d208d5c53561d5803dd3cb0d3d5d2cf36fe
     unavailable:
       code: unsupported_request_mode
@@ -1520,7 +2189,6 @@ records:
     suppress_inherited_from: true
   guided_json_named_tool:
     case_key: guided_json_named_tool
-    producer: producer_65a380b925f90881
     request: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
     unavailable:
       code: unsupported_request_mode
@@ -1528,7 +2196,6 @@ records:
     suppress_inherited_from: true
   guided_json_narrated_invoke_in_reasoning:
     case_key: guided_json_narrated_invoke_in_reasoning
-    producer: producer_65a380b925f90881
     request: 08a2995339b309e79a0fef36a1400bc78e5dcb0fd3e7290e8562b02ba0fc8fda
     unavailable:
       code: unsupported_request_mode
@@ -1536,7 +2203,6 @@ records:
     suppress_inherited_from: true
   guided_json_narrated_prefix_inside_reasoning:
     case_key: guided_json_narrated_prefix_inside_reasoning
-    producer: producer_65a380b925f90881
     request: d008dbba1dbdb139ceffc7917915c3523cf4dff4d47e05b7be3c7ab8bbc43e8d
     unavailable:
       code: unsupported_request_mode
@@ -1544,15 +2210,41 @@ records:
     suppress_inherited_from: true
   guided_json_native_markup_only:
     case_key: guided_json_native_markup_only
-    producer: producer_65a380b925f90881
     request: f940413c79d5058b40dcaff1b63550df50d18b72be77cc9ac0c88170065cd8e3
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
+  guided_json_native_parameter_array_before_payload:
+    case_key: guided_json_native_parameter_array_before_payload
+    request: 074e5e820103ab211d93b27d69415bdc85ad22d242f2315a65dab4c5dbfe0285
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
+  guided_json_native_parameter_object_before_payload:
+    case_key: guided_json_native_parameter_object_before_payload
+    request: e84d4dd3e4883ae4d1b4beaf3537298bf7cd45709ea2bc8c378abd5179be1aea
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
+  guided_json_native_parameter_string_before_payload:
+    case_key: guided_json_native_parameter_string_before_payload
+    request: 6e371415d063fe9eddec1a0ec85e15b365873eb1ad2718b5759549c58a08adc5
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: guided_json_noncall_before_native_array_before_payload
+    request: 63d936f25fd3ab43d1652cb24287a208cbdbb538aeb491fea9f351154ee52535
     unavailable:
       code: unsupported_request_mode
       detail: Legacy batch API cannot apply this authored initialization or finish reason
     suppress_inherited_from: true
   guided_json_orphan_reason_close_before_payload:
     case_key: guided_json_orphan_reason_close_before_payload
-    producer: producer_65a380b925f90881
     request: a5500df8d15d33e91db98982739fcd3dcee56713895c983c78a2a684b68cc26c
     unavailable:
       code: unsupported_request_mode
@@ -1560,7 +2252,6 @@ records:
     suppress_inherited_from: true
   guided_json_orphan_tool_close_before_payload:
     case_key: guided_json_orphan_tool_close_before_payload
-    producer: producer_65a380b925f90881
     request: 7aa1b51108e27e29abfd212e088a036e8bfaf27b9f7a769614d91f08c10b5e13
     unavailable:
       code: unsupported_request_mode
@@ -1568,7 +2259,6 @@ records:
     suppress_inherited_from: true
   guided_json_partial_calls:
     case_key: guided_json_partial_calls
-    producer: producer_65a380b925f90881
     request: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
     unavailable:
       code: unsupported_request_mode
@@ -1576,7 +2266,6 @@ records:
     suppress_inherited_from: true
   guided_json_prose_before_reasoning:
     case_key: guided_json_prose_before_reasoning
-    producer: producer_65a380b925f90881
     request: 32d11eb6d0c1e0769679828c850e84003f92e86b092da753cf95291235054e73
     unavailable:
       code: unsupported_request_mode
@@ -1584,7 +2273,6 @@ records:
     suppress_inherited_from: true
   guided_json_quoted_bare_header_after_payload:
     case_key: guided_json_quoted_bare_header_after_payload
-    producer: producer_65a380b925f90881
     request: 5cefeefa7f53b674cbe8044c3d95e9f5b997ce4a474aef72bd107a19fba07192
     unavailable:
       code: unsupported_request_mode
@@ -1592,7 +2280,6 @@ records:
     suppress_inherited_from: true
   guided_json_quoted_bare_header_in_answer:
     case_key: guided_json_quoted_bare_header_in_answer
-    producer: producer_65a380b925f90881
     request: 0b98d9ea003826c68b37d3ed9503a5992495030bc5bd1a15bc963b89892623d6
     unavailable:
       code: unsupported_request_mode
@@ -1600,7 +2287,6 @@ records:
     suppress_inherited_from: true
   guided_json_required_tool:
     case_key: guided_json_required_tool
-    producer: producer_65a380b925f90881
     request: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
     unavailable:
       code: unsupported_request_mode
@@ -1608,7 +2294,6 @@ records:
     suppress_inherited_from: true
   guided_json_schema_error_nameless_element_bare_opener:
     case_key: guided_json_schema_error_nameless_element_bare_opener
-    producer: producer_65a380b925f90881
     request: 8110a010e469cf72d8e62a168a7c1c30cf16f60bfd2b04a06c535590d6535929
     unavailable:
       code: unsupported_request_mode
@@ -1616,7 +2301,6 @@ records:
     suppress_inherited_from: true
   guided_json_schema_error_nameless_element_trailing_close:
     case_key: guided_json_schema_error_nameless_element_trailing_close
-    producer: producer_65a380b925f90881
     request: 222efbb34fbc62d10da22f68d08995b3a078f106cc5c758ee4837e8e289b83f2
     unavailable:
       code: unsupported_request_mode
@@ -1624,7 +2308,6 @@ records:
     suppress_inherited_from: true
   guided_json_schema_error_nameless_element_wrapped:
     case_key: guided_json_schema_error_nameless_element_wrapped
-    producer: producer_65a380b925f90881
     request: dd816dc928c97132713482f19b5bd37d5ae42ef0ad57c067eccd0f1d2c9160f3
     unavailable:
       code: unsupported_request_mode
@@ -1632,7 +2315,6 @@ records:
     suppress_inherited_from: true
   guided_json_schema_error_not_a_call_bare_opener:
     case_key: guided_json_schema_error_not_a_call_bare_opener
-    producer: producer_65a380b925f90881
     request: 98bd0c8de421a2b3ad4f4903d5a22445bd800d015e220e9abaa309383cfb7693
     unavailable:
       code: unsupported_request_mode
@@ -1640,7 +2322,6 @@ records:
     suppress_inherited_from: true
   guided_json_schema_error_not_a_call_trailing_close:
     case_key: guided_json_schema_error_not_a_call_trailing_close
-    producer: producer_65a380b925f90881
     request: 7ed1bbcd3fcb5b6e1deed43261e878a768bfdce2f390234914bff1b63bc9f164
     unavailable:
       code: unsupported_request_mode
@@ -1648,7 +2329,6 @@ records:
     suppress_inherited_from: true
   guided_json_schema_error_not_a_call_wrapped:
     case_key: guided_json_schema_error_not_a_call_wrapped
-    producer: producer_65a380b925f90881
     request: 0d0781f8db1e27dc45e6101c279547c5dc73bf8f619b5668a24c07da9ae46b4f
     unavailable:
       code: unsupported_request_mode
@@ -1656,7 +2336,6 @@ records:
     suppress_inherited_from: true
   guided_json_stray_prefix_before_reasoning:
     case_key: guided_json_stray_prefix_before_reasoning
-    producer: producer_65a380b925f90881
     request: 199123dbf11f20aaefa7f319ef7780b17ac0914bd949a5075d0714a3466a1d57
     unavailable:
       code: unsupported_request_mode
@@ -1664,7 +2343,6 @@ records:
     suppress_inherited_from: true
   guided_json_syntax_error_bare_opener:
     case_key: guided_json_syntax_error_bare_opener
-    producer: producer_65a380b925f90881
     request: 536c3e858b00d771291c4a3791bda79d34e640f43dd46d83934af3a42648737f
     unavailable:
       code: unsupported_request_mode
@@ -1672,7 +2350,6 @@ records:
     suppress_inherited_from: true
   guided_json_syntax_error_trailing_close:
     case_key: guided_json_syntax_error_trailing_close
-    producer: producer_65a380b925f90881
     request: 9570637832542076623fe320be3ab8209ff191ce898f42b6e4fea5743a7053cd
     unavailable:
       code: unsupported_request_mode
@@ -1680,7 +2357,6 @@ records:
     suppress_inherited_from: true
   guided_json_syntax_error_wrapped:
     case_key: guided_json_syntax_error_wrapped
-    producer: producer_65a380b925f90881
     request: 3f815315ac0836505faae024f381415b8b8371cc68492e0139efffd2b523238b
     unavailable:
       code: unsupported_request_mode
@@ -1688,7 +2364,6 @@ records:
     suppress_inherited_from: true
   guided_json_tool_close_after_payload:
     case_key: guided_json_tool_close_after_payload
-    producer: producer_65a380b925f90881
     request: acb99b79ec03ba642aea527f59fa527e2273e0dbcb1da8816676ed844a2b7b4f
     unavailable:
       code: unsupported_request_mode
@@ -1696,7 +2371,6 @@ records:
     suppress_inherited_from: true
   guided_json_tool_open_before_payload:
     case_key: guided_json_tool_open_before_payload
-    producer: producer_65a380b925f90881
     request: 8027b78447877aefea8aadd138a849b8de12eea9507dec7c166ca55bf5c3daca
     unavailable:
       code: unsupported_request_mode
@@ -1704,7 +2378,6 @@ records:
     suppress_inherited_from: true
   guided_json_two_calls:
     case_key: guided_json_two_calls
-    producer: producer_65a380b925f90881
     request: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
     unavailable:
       code: unsupported_request_mode
@@ -1712,7 +2385,6 @@ records:
     suppress_inherited_from: true
   guided_json_unterminated_reasoning_then_wrapped_payload:
     case_key: guided_json_unterminated_reasoning_then_wrapped_payload
-    producer: producer_65a380b925f90881
     request: 65a9ebb9d180764d60a1b48b1b9594dfad152552ece903f2f264a726aaee6c75
     unavailable:
       code: unsupported_request_mode
@@ -1720,7 +2392,6 @@ records:
     suppress_inherited_from: true
   guided_json_wrapped_in_tool_markup:
     case_key: guided_json_wrapped_in_tool_markup
-    producer: producer_65a380b925f90881
     request: f13972650fcd5e3b790fa11742fcfc056e0b61b089fc748b23173165ce65e972
     unavailable:
       code: unsupported_request_mode
@@ -1728,7 +2399,6 @@ records:
     suppress_inherited_from: true
   guided_quoted_reasoning_closer_named:
     case_key: guided_quoted_reasoning_closer_named
-    producer: producer_65a380b925f90881
     request: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
     unavailable:
       code: unsupported_request_mode
@@ -1736,15 +2406,20 @@ records:
     suppress_inherited_from: true
   guided_quoted_reasoning_closer_required:
     case_key: guided_quoted_reasoning_closer_required
-    producer: producer_65a380b925f90881
     request: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: guided_response_native_wrapper_whitespace_before_prose
+    request: a04f03615d2f3d206af118cec2087f02c53d1ba0e8523d741421328b7b08d980
     unavailable:
       code: unsupported_request_mode
       detail: Legacy batch API cannot apply this authored initialization or finish reason
     suppress_inherited_from: true
   guided_response_quoted_control_braces_named:
     case_key: guided_response_quoted_control_braces_named
-    producer: producer_65a380b925f90881
     request: a4cfd18e0649149197bf161dcb68b0e5298e5f140bd7f530b69826695a31c3ba
     unavailable:
       code: unsupported_request_mode
@@ -1752,7 +2427,6 @@ records:
     suppress_inherited_from: true
   guided_response_quoted_control_braces_required:
     case_key: guided_response_quoted_control_braces_required
-    producer: producer_65a380b925f90881
     request: 20075f699d058614361a8ff03dbdf7a832c2477246c30aeb253bcd45c5e8513d
     unavailable:
       code: unsupported_request_mode
@@ -1772,6 +2446,52 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
+  kimi_native_incompatible_string_recovery:
+    case_key: kimi_native_incompatible_string_recovery
+    context: context_195eb1b7be445952
+    request: 4195999db1277bc0e221129042eba265571ae6227e173bc1e9924fe02e81d136
+    output:
+      assembled: []
+    suppress_inherited_from: true
+  kimi_native_k2_count_content_chunk1024:
+    case_key: kimi_native_k2_count_content_chunk1024
+    context: context_ff2c42b970ba7df9
+    request: 084da01b744d8c1ec67fdef61d3b0b4f14addbbcff61dc23dd6819d5adcc030d
+    output:
+      assembled:
+      - arguments:
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          count: 7
+        kind: tool_call
+        name: write_file
+    suppress_inherited_from: true
+  kimi_native_k2_count_content_chunk7:
+    case_key: kimi_native_k2_count_content_chunk7
+    context: context_ff2c42b970ba7df9
+    request: 0eda73427ee50e18ad0d6d9630cd334950b0138acfb608a56e4ef1f39bc8b7fb
+    output:
+      assembled:
+      - arguments:
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          count: 7
+        kind: tool_call
+        name: write_file
+    suppress_inherited_from: true
+  kimi_native_trailing_syntax_whitespace:
+    case_key: kimi_native_trailing_syntax_whitespace
+    context: context_195eb1b7be445952
+    request: 8722587c9965c4b035d36b42fed7484a614ac210d76d3750e7497ba02a4e2fa6
+    output:
+      assembled: []
+    suppress_inherited_from: true
+  kimi_native_valid_object_trailing_garbage:
+    case_key: kimi_native_valid_object_trailing_garbage
+    context: context_195eb1b7be445952
+    request: 597dd5eb0f0e397ab651e332a0ffb3c5ed6e8f8931d06e9de5a7738c2c9f80f6
+    output:
+      assembled: []
+    suppress_inherited_from: true
   local_schema_id_preserves_type:
     case_key: local_schema_id_preserves_type
     context: context_768ec2a93681d876
@@ -1782,6 +2502,7 @@ records:
           count: 42
         kind: tool_call
         name: capture_payload
+    suppress_inherited_from: true
   malformed_json_then_two_valid_calls:
     case_key: malformed_json_then_two_valid_calls
     context: context_2d7601beb13ba23b
@@ -1795,6 +2516,7 @@ records:
           value: Café
         kind: tool_call
         name: echo
+    suppress_inherited_from: true
   narrated_calls:
     case_key: narrated_calls
     context: context_a691b25fb909d6b9
@@ -1813,16 +2535,18 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   native_quoted_control_in_reasoning:
     case_key: native_quoted_control_in_reasoning
-    context: context_399729681b5e95c0
+    context: context_adb2420e05af37fb
     request: bdcfb9aa6d504b8611d005c9456d73361693641ee231ec07e95873113f144ae7
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    output:
+      assembled:
+      - kind: reasoning
+        text: The literal "
+    suppress_inherited_from: true
   native_quoted_control_in_response:
     case_key: native_quoted_control_in_response
-    producer: producer_65a380b925f90881
     request: 46890049010c48119006a129b49c3564f75c923c0a3ddd0a8af0da758ff9b34e
     unavailable:
       code: unsupported_request_mode
@@ -1830,7 +2554,6 @@ records:
     suppress_inherited_from: true
   native_quoted_control_then_call:
     case_key: native_quoted_control_then_call
-    producer: producer_65a380b925f90881
     request: e599a32f8b0fca2cbe3941cb98914a5780d507145d788b270da06cc98a4f72aa
     unavailable:
       code: unsupported_request_mode
@@ -1838,7 +2561,6 @@ records:
     suppress_inherited_from: true
   native_quoted_incomplete_header:
     case_key: native_quoted_incomplete_header
-    producer: producer_65a380b925f90881
     request: 46c1878af949fb39fff658f1c145d0e28970326e45245327697d8799ea839c3d
     unavailable:
       code: unsupported_request_mode
@@ -1846,14 +2568,15 @@ records:
     suppress_inherited_from: true
   native_single_quote_contraction_reasoning:
     case_key: native_single_quote_contraction_reasoning
-    context: context_44d0b9cf719aad0c
+    context: context_025872498cd8d1e1
     request: d6398b3be9c1e272756091ee79aee20b9667bce6f68a8bf24d608d8544b1519c
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'The literal ''doesn''t '
+    suppress_inherited_from: true
   native_single_quote_contraction_response:
     case_key: native_single_quote_contraction_response
-    producer: producer_65a380b925f90881
     request: 43fee15d4076a0577f3e1db9c8afb2c6236dc699f01d501fdfedc40803b55154
     unavailable:
       code: unsupported_request_mode
@@ -1861,7 +2584,6 @@ records:
     suppress_inherited_from: true
   native_single_quoted_word_control:
     case_key: native_single_quoted_word_control
-    producer: producer_65a380b925f90881
     request: 07e1d00188ded60ec749b3553d7b4f83d25bdda76231e9038f016856b3183033
     unavailable:
       code: unsupported_request_mode
@@ -1869,11 +2591,22 @@ records:
     suppress_inherited_from: true
   native_unmatched_quote_then_call:
     case_key: native_unmatched_quote_then_call
-    producer: producer_65a380b925f90881
     request: 8fc30455ba7470f8d5f16e398994f752be6a8aac7c2d0933596960b87e899b67
     unavailable:
       code: unsupported_request_mode
       detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
+  not_keyword_type_complement:
+    case_key: not_keyword_type_complement
+    context: context_5dbaac880219d88e
+    request: cacdc091eb1cfe9140cb62d2965d1334f7f91b1c56d268a817eb2c4fff8a86aa
+    output:
+      assembled:
+      - arguments:
+          count: -2500
+          text: '42'
+        kind: tool_call
+        name: capture_payload
     suppress_inherited_from: true
   nullable_reference_alias_literals:
     case_key: nullable_reference_alias_literals
@@ -1886,6 +2619,7 @@ records:
           enum_text: 'null'
         kind: tool_call
         name: capture_payload
+    suppress_inherited_from: true
   orphan_close_after_prose:
     case_key: orphan_close_after_prose
     context: context_bda3f937dac5575e
@@ -1894,37 +2628,57 @@ records:
       assembled:
       - kind: text
         text: I will check that. <|tool_call_end|>
+    suppress_inherited_from: true
   prefilled_reasoning_redundant_opener:
     case_key: prefilled_reasoning_redundant_opener
-    context: context_631f5440063a3e73
+    context: context_c1d700c36ec46294
     request: 09eb0a0100143237a576ee889812c74ed941ffaaa153992af6cef9b144ab4999
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    output:
+      assembled:
+      - kind: reasoning
+        text: checking weather
+      - arguments:
+          city: London
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
   prefilled_reasoning_then_text:
     case_key: prefilled_reasoning_then_text
-    context: context_52e25ff2ec9db6a1
+    context: context_ea7f67bef3209bc2
     request: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    output:
+      assembled:
+      - kind: reasoning
+        text: no tool needed
+      - kind: text
+        text: The answer is 42.
+    suppress_inherited_from: true
   prefilled_reasoning_then_text_then_tool:
     case_key: prefilled_reasoning_then_text_then_tool
-    context: context_a9005012b49f86d6
+    context: context_6227824539e16b10
     request: 71b8667e122e35f2d3fcb031d9c3b859626c6872da6bbdf94edaa9d2ed06b371
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    output:
+      assembled:
+      - kind: reasoning
+        text: weighing options
+      - kind: text
+        text: 'Here''s what I found: '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
   prefilled_reasoning_truncated:
     case_key: prefilled_reasoning_truncated
-    context: context_6b371aa8238b7c32
+    context: context_d77aa9584b0cc392
     request: ccdfbec1624bd05340e970a8aead2aa224eb1841681c0f2c6a42b044e85917ff
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    output:
+      assembled:
+      - kind: reasoning
+        text: analyzing data
+    suppress_inherited_from: true
   prefilled_reasoning_with_guided_json:
     case_key: prefilled_reasoning_with_guided_json
-    producer: producer_65a380b925f90881
     request: f8be7bfb62ba76e8388e3debc3e1558ccf2d7bf01a54c46375a8e3b86f60032e
     unavailable:
       code: unsupported_request_mode
@@ -1932,14 +2686,19 @@ records:
     suppress_inherited_from: true
   prefilled_reasoning_with_tool:
     case_key: prefilled_reasoning_with_tool
-    context: context_36880a55b024a131
+    context: context_d0900727897e2b7c
     request: 4784fefcfc12f363575697385596623bc77da869fb10432acd8f0f6bd48a998e
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    output:
+      assembled:
+      - kind: reasoning
+        text: checking weather
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
   prefilled_response_reasoning_markers_literal:
     case_key: prefilled_response_reasoning_markers_literal
-    producer: producer_65a380b925f90881
     request: f1b3f572339b9000250288109619d32e0b43332b519f50b2c49ff83cda568b71
     unavailable:
       code: unsupported_request_mode
@@ -1955,6 +2714,7 @@ records:
           city: null
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   reason_after_tool:
     case_key: reason_after_tool
     context: context_3fe073bfd06cc570
@@ -1967,6 +2727,7 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   reason_between_calls:
     case_key: reason_between_calls
     context: context_33a27d7c495a4823
@@ -1979,6 +2740,7 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   reason_interleaved:
     case_key: reason_interleaved
     context: context_390110a1ec5584be
@@ -1995,6 +2757,7 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   reason_markup_in_arg:
     case_key: reason_markup_in_arg
     context: context_c9e8997eca9cba1c
@@ -2005,6 +2768,7 @@ records:
         text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.log:0<|tool_call_argument_begin|>{"note": "<think>reconsider'
       - kind: text
         text: '"}<|tool_call_end|><|tool_calls_section_end|>'
+    suppress_inherited_from: true
   reason_markup_in_arg_with_text:
     case_key: reason_markup_in_arg_with_text
     context: context_7f1a6d303d2a8f46
@@ -2015,6 +2779,7 @@ records:
         text: 'Logging now: <|tool_calls_section_begin|><|tool_call_begin|>functions.log:0<|tool_call_argument_begin|>{"note": "<think>reconsider'
       - kind: text
         text: '"}<|tool_call_end|><|tool_calls_section_end|> done.'
+    suppress_inherited_from: true
   reason_only:
     case_key: reason_only
     context: context_a071386851798c68
@@ -2023,6 +2788,7 @@ records:
       assembled:
       - kind: reasoning
         text: just thinking, no answer
+    suppress_inherited_from: true
   reason_then_content:
     case_key: reason_then_content
     context: context_aa8952d161b1417d
@@ -2033,6 +2799,7 @@ records:
         text: let me think
       - kind: text
         text: The answer is 42.
+    suppress_inherited_from: true
   reason_then_tool:
     case_key: reason_then_tool
     context: context_91526ea2f51f2479
@@ -2045,6 +2812,7 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   reason_tool_reason_tool_reason:
     case_key: reason_tool_reason_tool_reason
     context: context_390110a1ec5584be
@@ -2061,6 +2829,7 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   reason_tool_text_reason_tool:
     case_key: reason_tool_text_reason_tool
     context: context_390110a1ec5584be
@@ -2077,6 +2846,7 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   reason_unterminated:
     case_key: reason_unterminated
     context: context_966e6d84228699be
@@ -2085,6 +2855,27 @@ records:
       assembled:
       - kind: reasoning
         text: thinking but stream ends
+    suppress_inherited_from: true
+  reference_object_recursive_and_composed_types:
+    case_key: reference_object_recursive_and_composed_types
+    context: context_040e3fde5f3e35c8
+    request: c5599f9b3787dc579c9df9cec923adb0f616ace5413c28bbd0e4065413bfa58e
+    output:
+      assembled:
+      - arguments:
+          category:
+            children: []
+            label: Garden Tools
+          dry_run: false
+          retries: 37
+          tree:
+            children:
+            - children: []
+              label: leaf
+            label: root
+        kind: tool_call
+        name: capture_payload
+    suppress_inherited_from: true
   retired__1_2:
     case_key: retired__1_2
     context: context_4e6cadaa806be184
@@ -2094,9 +2885,9 @@ records:
       - arguments: {}
         kind: tool_call
         name: functions.
+    suppress_inherited_from: true
   retired__30_14:
     case_key: retired__30_14
-    producer: producer_65a380b925f90881
     request: 51b77647ea52b5b52d205c98305c0bf77c64fdecf45f36dd0b329d8972e82576
     unavailable:
       code: unsupported_request_mode
@@ -2104,7 +2895,6 @@ records:
     suppress_inherited_from: true
   retired__31_33:
     case_key: retired__31_33
-    producer: producer_65a380b925f90881
     request: 8319d847f26b4c16b14b085db32bfd8235a97197851bab69bbf886f70875d388
     unavailable:
       code: unsupported_request_mode
@@ -2112,7 +2902,6 @@ records:
     suppress_inherited_from: true
   retired__31_40:
     case_key: retired__31_40
-    producer: producer_65a380b925f90881
     request: b3f218d7201d4521882a22506aad94ad5118810b4ba406230f7b7b8345f4be14
     unavailable:
       code: unsupported_request_mode
@@ -2128,6 +2917,7 @@ records:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_array_bare:
     case_key: schema_const_array_bare
     context: context_445bde31c82d9ab2
@@ -2138,6 +2928,7 @@ records:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_array_ref:
     case_key: schema_const_array_ref
     context: context_445bde31c82d9ab2
@@ -2148,6 +2939,7 @@ records:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_array_typed:
     case_key: schema_const_array_typed
     context: context_445bde31c82d9ab2
@@ -2158,6 +2950,7 @@ records:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_boolean_allof:
     case_key: schema_const_boolean_allof
     context: context_9d0bbfd8c9ea71cc
@@ -2168,6 +2961,7 @@ records:
           value: 'true'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_boolean_bare:
     case_key: schema_const_boolean_bare
     context: context_9d0bbfd8c9ea71cc
@@ -2178,6 +2972,7 @@ records:
           value: 'true'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_boolean_ref:
     case_key: schema_const_boolean_ref
     context: context_9d0bbfd8c9ea71cc
@@ -2188,6 +2983,7 @@ records:
           value: 'true'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_boolean_typed:
     case_key: schema_const_boolean_typed
     context: context_9d0bbfd8c9ea71cc
@@ -2198,6 +2994,7 @@ records:
           value: 'true'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_entity_allof:
     case_key: schema_const_entity_allof
     context: context_a282a7d974f159b7
@@ -2208,6 +3005,7 @@ records:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_entity_bare:
     case_key: schema_const_entity_bare
     context: context_a282a7d974f159b7
@@ -2218,6 +3016,7 @@ records:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_entity_ref:
     case_key: schema_const_entity_ref
     context: context_a282a7d974f159b7
@@ -2228,6 +3027,7 @@ records:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_entity_typed:
     case_key: schema_const_entity_typed
     context: context_a282a7d974f159b7
@@ -2238,6 +3038,7 @@ records:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_null_allof:
     case_key: schema_const_null_allof
     context: context_984b8c6274a78b6c
@@ -2248,6 +3049,7 @@ records:
           value: 'null'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_null_bare:
     case_key: schema_const_null_bare
     context: context_984b8c6274a78b6c
@@ -2258,6 +3060,7 @@ records:
           value: 'null'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_null_ref:
     case_key: schema_const_null_ref
     context: context_984b8c6274a78b6c
@@ -2268,6 +3071,7 @@ records:
           value: 'null'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_null_typed:
     case_key: schema_const_null_typed
     context: context_984b8c6274a78b6c
@@ -2278,6 +3082,7 @@ records:
           value: 'null'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_number_allof:
     case_key: schema_const_number_allof
     context: context_82b49ca2116db130
@@ -2288,6 +3093,7 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_number_bare:
     case_key: schema_const_number_bare
     context: context_82b49ca2116db130
@@ -2298,6 +3104,7 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_number_ref:
     case_key: schema_const_number_ref
     context: context_82b49ca2116db130
@@ -2308,6 +3115,7 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_number_typed:
     case_key: schema_const_number_typed
     context: context_82b49ca2116db130
@@ -2318,6 +3126,18 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
+  schema_const_numeric_bare:
+    case_key: schema_const_numeric_bare
+    context: context_5757722252b70461
+    request: 2dbcf34d3ee6aabd1fcbe729e846e6f1830fbb95d447758ffb5d490e8fc0ff39
+    output:
+      assembled:
+      - arguments:
+          value: 3
+        kind: tool_call
+        name: schema_probe
+    suppress_inherited_from: true
   schema_const_object_allof:
     case_key: schema_const_object_allof
     context: context_bcc2d58a5632e48d
@@ -2328,6 +3148,7 @@ records:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_object_bare:
     case_key: schema_const_object_bare
     context: context_bcc2d58a5632e48d
@@ -2338,6 +3159,7 @@ records:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_object_ref:
     case_key: schema_const_object_ref
     context: context_bcc2d58a5632e48d
@@ -2348,6 +3170,7 @@ records:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_object_typed:
     case_key: schema_const_object_typed
     context: context_bcc2d58a5632e48d
@@ -2358,6 +3181,7 @@ records:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_plain_allof:
     case_key: schema_const_plain_allof
     context: context_905bcbf299fef52c
@@ -2368,6 +3192,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_plain_bare:
     case_key: schema_const_plain_bare
     context: context_905bcbf299fef52c
@@ -2378,6 +3203,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_plain_ref:
     case_key: schema_const_plain_ref
     context: context_905bcbf299fef52c
@@ -2388,6 +3214,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_plain_typed:
     case_key: schema_const_plain_typed
     context: context_905bcbf299fef52c
@@ -2398,6 +3225,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_quoted_allof:
     case_key: schema_const_quoted_allof
     context: context_1f55575f494fb51d
@@ -2408,6 +3236,7 @@ records:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_quoted_bare:
     case_key: schema_const_quoted_bare
     context: context_1f55575f494fb51d
@@ -2418,6 +3247,7 @@ records:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_quoted_ref:
     case_key: schema_const_quoted_ref
     context: context_1f55575f494fb51d
@@ -2428,6 +3258,7 @@ records:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_quoted_typed:
     case_key: schema_const_quoted_typed
     context: context_1f55575f494fb51d
@@ -2438,6 +3269,7 @@ records:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_space_allof:
     case_key: schema_const_space_allof
     context: context_f8fa5321809ecbcc
@@ -2448,6 +3280,7 @@ records:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_space_bare:
     case_key: schema_const_space_bare
     context: context_f8fa5321809ecbcc
@@ -2458,6 +3291,7 @@ records:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_space_ref:
     case_key: schema_const_space_ref
     context: context_f8fa5321809ecbcc
@@ -2468,6 +3302,7 @@ records:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_space_typed:
     case_key: schema_const_space_typed
     context: context_f8fa5321809ecbcc
@@ -2478,6 +3313,7 @@ records:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_unicode_allof:
     case_key: schema_const_unicode_allof
     context: context_bce67a95ebacfcc9
@@ -2488,6 +3324,7 @@ records:
           value: café
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_unicode_bare:
     case_key: schema_const_unicode_bare
     context: context_bce67a95ebacfcc9
@@ -2498,6 +3335,7 @@ records:
           value: café
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_unicode_ref:
     case_key: schema_const_unicode_ref
     context: context_bce67a95ebacfcc9
@@ -2508,6 +3346,7 @@ records:
           value: café
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_const_unicode_typed:
     case_key: schema_const_unicode_typed
     context: context_bce67a95ebacfcc9
@@ -2518,6 +3357,7 @@ records:
           value: café
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_declared_array:
     case_key: schema_declared_array
     context: context_eb5a91fec5fe0bcc
@@ -2530,6 +3370,7 @@ records:
           - 2
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_declared_boolean:
     case_key: schema_declared_boolean
     context: context_f071f294592a284e
@@ -2540,6 +3381,7 @@ records:
           value: true
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_declared_integer:
     case_key: schema_declared_integer
     context: context_7fd01025b8c5981f
@@ -2550,6 +3392,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_declared_null:
     case_key: schema_declared_null
     context: context_69a0b06a5ae5a3e9
@@ -2560,6 +3403,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_declared_number:
     case_key: schema_declared_number
     context: context_b97365481d20f375
@@ -2570,6 +3414,7 @@ records:
           value: 3.5
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_declared_object:
     case_key: schema_declared_object
     context: context_6e97a51e6c5acd36
@@ -2581,6 +3426,7 @@ records:
             x: 1
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_declared_string:
     case_key: schema_declared_string
     context: context_4e3875b3e51139d8
@@ -2591,6 +3437,29 @@ records:
           value: plain
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
+  schema_enum_const_narrowing:
+    case_key: schema_enum_const_narrowing
+    context: context_2f65605cca6d2924
+    request: 3d4f766d94c2b6ee7636ad1ad686cc7e1e2f54886fbb4bc3bf34c47a7cc78f3c
+    output:
+      assembled:
+      - arguments:
+          value: 1
+        kind: tool_call
+        name: schema_probe
+    suppress_inherited_from: true
+  schema_enum_inferred_integer:
+    case_key: schema_enum_inferred_integer
+    context: context_0e7cc775eb26b255
+    request: 67f6f8d905a100146c761e33750f6d59ef4a4849adc337858b829da2543cb420
+    output:
+      assembled:
+      - arguments:
+          value: 2
+        kind: tool_call
+        name: schema_probe
+    suppress_inherited_from: true
   schema_enum_integer:
     case_key: schema_enum_integer
     context: context_7fd01025b8c5981f
@@ -2601,6 +3470,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_enum_string:
     case_key: schema_enum_string
     context: context_82b49ca2116db130
@@ -2611,6 +3481,7 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_escaped_ref_const:
     case_key: schema_escaped_ref_const
     context: context_1f55575f494fb51d
@@ -2621,6 +3492,7 @@ records:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_id_direct_integer:
     case_key: schema_id_direct_integer
     context: context_7fd01025b8c5981f
@@ -2631,6 +3503,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_integer_const_ambiguous:
     case_key: schema_integer_const_ambiguous
     context: context_82b49ca2116db130
@@ -2641,6 +3514,7 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_intersection_anyof:
     case_key: schema_intersection_anyof
     context: context_7fd01025b8c5981f
@@ -2651,6 +3525,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_intersection_oneof:
     case_key: schema_intersection_oneof
     context: context_7fd01025b8c5981f
@@ -2661,6 +3536,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_null_union_ambiguous:
     case_key: schema_null_union_ambiguous
     context: context_69a0b06a5ae5a3e9
@@ -2671,6 +3547,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_nullable_string:
     case_key: schema_nullable_string
     context: context_69a0b06a5ae5a3e9
@@ -2681,6 +3558,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_object_const_union:
     case_key: schema_object_const_union
     context: context_bcc2d58a5632e48d
@@ -2691,6 +3569,7 @@ records:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_percent_ref_const:
     case_key: schema_percent_ref_const
     context: context_82b49ca2116db130
@@ -2701,6 +3580,7 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_ref_sibling_integer:
     case_key: schema_ref_sibling_integer
     context: context_7fd01025b8c5981f
@@ -2711,6 +3591,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_ref_union_anyof_integer:
     case_key: schema_ref_union_anyof_integer
     context: context_7fc20aded856afde
@@ -2721,6 +3602,7 @@ records:
           value: -7
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_ref_union_anyof_string:
     case_key: schema_ref_union_anyof_string
     context: context_905bcbf299fef52c
@@ -2731,6 +3613,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_ref_union_oneof_integer:
     case_key: schema_ref_union_oneof_integer
     context: context_7fc20aded856afde
@@ -2741,6 +3624,7 @@ records:
           value: -7
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_ref_union_oneof_string:
     case_key: schema_ref_union_oneof_string
     context: context_905bcbf299fef52c
@@ -2751,6 +3635,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_type_array_integer_null:
     case_key: schema_type_array_integer_null
     context: context_7fd01025b8c5981f
@@ -2761,6 +3646,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_type_array_integer_null_null:
     case_key: schema_type_array_integer_null_null
     context: context_69a0b06a5ae5a3e9
@@ -2771,6 +3657,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_type_array_string_integer:
     case_key: schema_type_array_string_integer
     context: context_82b49ca2116db130
@@ -2781,6 +3668,7 @@ records:
           value: '42'
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_array_reverse_string:
     case_key: schema_union_anyof_array_reverse_string
     context: context_905bcbf299fef52c
@@ -2791,6 +3679,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_array_reverse_typed:
     case_key: schema_union_anyof_array_reverse_typed
     context: context_eb5a91fec5fe0bcc
@@ -2803,6 +3692,7 @@ records:
           - 2
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_array_string:
     case_key: schema_union_anyof_array_string
     context: context_905bcbf299fef52c
@@ -2813,6 +3703,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_array_typed:
     case_key: schema_union_anyof_array_typed
     context: context_eb5a91fec5fe0bcc
@@ -2825,6 +3716,7 @@ records:
           - 2
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_boolean_reverse_string:
     case_key: schema_union_anyof_boolean_reverse_string
     context: context_905bcbf299fef52c
@@ -2835,6 +3727,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_boolean_reverse_typed:
     case_key: schema_union_anyof_boolean_reverse_typed
     context: context_f071f294592a284e
@@ -2845,6 +3738,7 @@ records:
           value: true
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_boolean_string:
     case_key: schema_union_anyof_boolean_string
     context: context_905bcbf299fef52c
@@ -2855,6 +3749,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_boolean_typed:
     case_key: schema_union_anyof_boolean_typed
     context: context_f071f294592a284e
@@ -2865,6 +3760,7 @@ records:
           value: true
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_integer_reverse_string:
     case_key: schema_union_anyof_integer_reverse_string
     context: context_905bcbf299fef52c
@@ -2875,6 +3771,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_integer_reverse_typed:
     case_key: schema_union_anyof_integer_reverse_typed
     context: context_7fd01025b8c5981f
@@ -2885,6 +3782,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_integer_string:
     case_key: schema_union_anyof_integer_string
     context: context_905bcbf299fef52c
@@ -2895,6 +3793,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_integer_typed:
     case_key: schema_union_anyof_integer_typed
     context: context_7fd01025b8c5981f
@@ -2905,6 +3804,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_null_reverse_string:
     case_key: schema_union_anyof_null_reverse_string
     context: context_905bcbf299fef52c
@@ -2915,6 +3815,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_null_reverse_typed:
     case_key: schema_union_anyof_null_reverse_typed
     context: context_69a0b06a5ae5a3e9
@@ -2925,6 +3826,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_null_string:
     case_key: schema_union_anyof_null_string
     context: context_905bcbf299fef52c
@@ -2935,6 +3837,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_null_typed:
     case_key: schema_union_anyof_null_typed
     context: context_69a0b06a5ae5a3e9
@@ -2945,6 +3848,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_number_reverse_string:
     case_key: schema_union_anyof_number_reverse_string
     context: context_905bcbf299fef52c
@@ -2955,6 +3859,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_number_reverse_typed:
     case_key: schema_union_anyof_number_reverse_typed
     context: context_b97365481d20f375
@@ -2965,6 +3870,7 @@ records:
           value: 3.5
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_number_string:
     case_key: schema_union_anyof_number_string
     context: context_905bcbf299fef52c
@@ -2975,6 +3881,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_number_typed:
     case_key: schema_union_anyof_number_typed
     context: context_b97365481d20f375
@@ -2985,6 +3892,7 @@ records:
           value: 3.5
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_object_reverse_string:
     case_key: schema_union_anyof_object_reverse_string
     context: context_905bcbf299fef52c
@@ -2995,6 +3903,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_object_reverse_typed:
     case_key: schema_union_anyof_object_reverse_typed
     context: context_6e97a51e6c5acd36
@@ -3006,6 +3915,7 @@ records:
             x: 1
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_object_string:
     case_key: schema_union_anyof_object_string
     context: context_905bcbf299fef52c
@@ -3016,6 +3926,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_anyof_object_typed:
     case_key: schema_union_anyof_object_typed
     context: context_6e97a51e6c5acd36
@@ -3027,6 +3938,7 @@ records:
             x: 1
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_array_reverse_string:
     case_key: schema_union_oneof_array_reverse_string
     context: context_905bcbf299fef52c
@@ -3037,6 +3949,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_array_reverse_typed:
     case_key: schema_union_oneof_array_reverse_typed
     context: context_eb5a91fec5fe0bcc
@@ -3049,6 +3962,7 @@ records:
           - 2
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_array_string:
     case_key: schema_union_oneof_array_string
     context: context_905bcbf299fef52c
@@ -3059,6 +3973,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_array_typed:
     case_key: schema_union_oneof_array_typed
     context: context_eb5a91fec5fe0bcc
@@ -3071,6 +3986,7 @@ records:
           - 2
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_boolean_reverse_string:
     case_key: schema_union_oneof_boolean_reverse_string
     context: context_905bcbf299fef52c
@@ -3081,6 +3997,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_boolean_reverse_typed:
     case_key: schema_union_oneof_boolean_reverse_typed
     context: context_f071f294592a284e
@@ -3091,6 +4008,7 @@ records:
           value: true
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_boolean_string:
     case_key: schema_union_oneof_boolean_string
     context: context_905bcbf299fef52c
@@ -3101,6 +4019,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_boolean_typed:
     case_key: schema_union_oneof_boolean_typed
     context: context_f071f294592a284e
@@ -3111,6 +4030,7 @@ records:
           value: true
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_integer_reverse_string:
     case_key: schema_union_oneof_integer_reverse_string
     context: context_905bcbf299fef52c
@@ -3121,6 +4041,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_integer_reverse_typed:
     case_key: schema_union_oneof_integer_reverse_typed
     context: context_7fd01025b8c5981f
@@ -3131,6 +4052,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_integer_string:
     case_key: schema_union_oneof_integer_string
     context: context_905bcbf299fef52c
@@ -3141,6 +4063,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_integer_typed:
     case_key: schema_union_oneof_integer_typed
     context: context_7fd01025b8c5981f
@@ -3151,6 +4074,7 @@ records:
           value: 42
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_null_reverse_string:
     case_key: schema_union_oneof_null_reverse_string
     context: context_905bcbf299fef52c
@@ -3161,6 +4085,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_null_reverse_typed:
     case_key: schema_union_oneof_null_reverse_typed
     context: context_69a0b06a5ae5a3e9
@@ -3171,6 +4096,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_null_string:
     case_key: schema_union_oneof_null_string
     context: context_905bcbf299fef52c
@@ -3181,6 +4107,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_null_typed:
     case_key: schema_union_oneof_null_typed
     context: context_69a0b06a5ae5a3e9
@@ -3191,6 +4118,7 @@ records:
           value: null
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_number_reverse_string:
     case_key: schema_union_oneof_number_reverse_string
     context: context_905bcbf299fef52c
@@ -3201,6 +4129,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_number_reverse_typed:
     case_key: schema_union_oneof_number_reverse_typed
     context: context_b97365481d20f375
@@ -3211,6 +4140,7 @@ records:
           value: 3.5
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_number_string:
     case_key: schema_union_oneof_number_string
     context: context_905bcbf299fef52c
@@ -3221,6 +4151,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_number_typed:
     case_key: schema_union_oneof_number_typed
     context: context_b97365481d20f375
@@ -3231,6 +4162,7 @@ records:
           value: 3.5
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_object_reverse_string:
     case_key: schema_union_oneof_object_reverse_string
     context: context_905bcbf299fef52c
@@ -3241,6 +4173,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_object_reverse_typed:
     case_key: schema_union_oneof_object_reverse_typed
     context: context_6e97a51e6c5acd36
@@ -3252,6 +4185,7 @@ records:
             x: 1
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_object_string:
     case_key: schema_union_oneof_object_string
     context: context_905bcbf299fef52c
@@ -3262,6 +4196,7 @@ records:
           value: auto
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   schema_union_oneof_object_typed:
     case_key: schema_union_oneof_object_typed
     context: context_6e97a51e6c5acd36
@@ -3273,6 +4208,7 @@ records:
             x: 1
         kind: tool_call
         name: schema_probe
+    suppress_inherited_from: true
   text_before_tool:
     case_key: text_before_tool
     context: context_10d70a67efcbd53d
@@ -3285,6 +4221,7 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   text_between_calls:
     case_key: text_between_calls
     context: context_fc881036a920b41b
@@ -3299,6 +4236,7 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   text_only:
     case_key: text_only
     context: context_b54184673279be3c
@@ -3307,6 +4245,7 @@ records:
       assembled:
       - kind: text
         text: The answer is 42, no tools needed.
+    suppress_inherited_from: true
   text_reason_tool_text_reason_tool:
     case_key: text_reason_tool_text_reason_tool
     context: context_5828f384a1a7519b
@@ -3323,6 +4262,7 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   text_sandwich:
     case_key: text_sandwich
     context: context_4d97a346ffda93c1
@@ -3335,14 +4275,32 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    request: f569310581f06138195def131cb640eec462b9a111d73ca2a98b9e4f17e1305a
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy batch API cannot apply this authored initialization or finish reason
+    suppress_inherited_from: true
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
-    context: context_4e071f876232ef27
+    context: context_195eb1b7be445952
     request: dc25342f14680ef2331b9285e1543b4364644009f89781115c25e0099f86bcff
     output:
+      assembled: []
+    suppress_inherited_from: true
+  tool_body_whitespace:
+    case_key: tool_body_whitespace
+    context: context_49cbcb7afcb4ea29
+    request: f7437618d3c75155981fc5928365bf43792d99cd211a97123d415adf53408ed6
+    output:
       assembled:
-      - kind: text
-        text: <|tool_calls_section_begin|>still thinking about it
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+    suppress_inherited_from: true
   tool_in_reason:
     case_key: tool_in_reason
     context: context_16ae27a16c09fa79
@@ -3351,6 +4309,7 @@ records:
       assembled:
       - kind: reasoning
         text: 'I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|> now answer'
+    suppress_inherited_from: true
   tool_in_reason_with_text:
     case_key: tool_in_reason_with_text
     context: context_629a8ac7ed9bb8d9
@@ -3361,6 +4320,7 @@ records:
         text: 'Sure. <think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|> now answer'
       - kind: text
         text: ' Here you go.'
+    suppress_inherited_from: true
   tool_markup_only_emits_nothing:
     case_key: tool_markup_only_emits_nothing
     context: context_9a53d035f0b4fc06
@@ -3369,14 +4329,14 @@ records:
       assembled:
       - kind: text
         text: <|tool_calls_section_end|>
+    suppress_inherited_from: true
   tool_no_close:
     case_key: tool_no_close
-    context: context_c3910fda67b29bf5
+    context: context_195eb1b7be445952
     request: 640462e15b52c18446fc42a149a1d809a12b7cf55400afac83bf365783efbf65
     output:
-      assembled:
-      - kind: text
-        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}'
+      assembled: []
+    suppress_inherited_from: true
   tool_only:
     case_key: tool_only
     context: context_49cbcb7afcb4ea29
@@ -3387,6 +4347,7 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   trailing_text_after_tool:
     case_key: trailing_text_after_tool
     context: context_49cbcb7afcb4ea29
@@ -3397,16 +4358,16 @@ records:
           city: Paris
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   truncated_tool_eof:
     case_key: truncated_tool_eof
-    context: context_2d535cc20c4ba215
+    context: context_a61617756fdcde7d
     request: 2b3b01aaf775f7f68879e1563d597ebb195f207599e873bf452a031ecb26bf9f
     output:
       assembled:
       - kind: reasoning
         text: ok
-      - kind: text
-        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Par'
+    suppress_inherited_from: true
   two_adjacent_reason_spans:
     case_key: two_adjacent_reason_spans
     context: context_fa9a3a7e46b3fd9d
@@ -3419,6 +4380,7 @@ records:
         text: '<think>
 
           second</think>done'
+    suppress_inherited_from: true
   two_calls:
     case_key: two_calls
     context: context_fc881036a920b41b
@@ -3433,6 +4395,7 @@ records:
           y: '2'
         kind: tool_call
         name: g
+    suppress_inherited_from: true
   two_calls_same_name:
     case_key: two_calls_same_name
     context: context_ebf2d8a30cfdc2d4
@@ -3447,6 +4410,7 @@ records:
           city: Tokyo
         kind: tool_call
         name: get_weather
+    suppress_inherited_from: true
   two_reason_spans:
     case_key: two_reason_spans
     context: context_bd35b5258f7b93aa
@@ -3457,6 +4421,7 @@ records:
         text: first thought
       - kind: text
         text: interlude <think>second thought</think>done
+    suppress_inherited_from: true
   unused_reference_graph_parameter_types:
     case_key: unused_reference_graph_parameter_types
     context: context_7acce21466623b8d
@@ -3469,3 +4434,26 @@ records:
           text: 'null'
         kind: tool_call
         name: capture_payload
+    suppress_inherited_from: true
+  xml_string_type_double_quoted_object:
+    case_key: xml_string_type_double_quoted_object
+    context: context_021371fc3f5fa789
+    request: 47f350ecae6ae78795be7d150ef03f429ed5a60153236c51f120899557464dde
+    output:
+      assembled:
+      - arguments:
+          value: '{"a":1}'
+        kind: tool_call
+        name: schema_probe
+    suppress_inherited_from: true
+  xml_string_type_single_quoted_object:
+    case_key: xml_string_type_single_quoted_object
+    context: context_1322f09b3022c597
+    request: a273490812d33b1a0609e0e71bb487ac352d9188264e86aa533537b0d6436236
+    output:
+      assembled:
+      - arguments:
+          value: '{''a'':1}'
+        kind: tool_call
+        name: schema_probe
+    suppress_inherited_from: true

@@ -23,7 +23,7 @@ Each family's `inputs_and_golden.yaml` owns frozen `requests` keyed by their com
 
 A request stores its input once. `chunk_sizes` records Unicode scalar counts in delivery order, including zero-length chunks; `finish_step: true` adds the recorder's terminal row. Readers require the sizes to cover the complete input. Literal finish-marker text inside the input remains part of its counted chunks. Exceptional schedules retain explicit `chunks`, and non-string YAML chunk values retain their complete mappings. Initialization overrides replace the complete default initialization object.
 
-Latest capture files share immutable request definitions with their family file. They store origins, producers and record contexts once, select common references through `record_defaults`, and retain explicit exceptions. Record contexts are complete replacements. Observations retain final output, every chunk delta, completion metadata, errors and unavailable results. Selection versions remain separate from the actual producer identity.
+Latest capture files share immutable request definitions with their family file. They store origins, producers and record contexts once, select common references through `record_defaults`, and retain explicit exceptions. Record contexts are complete replacements. Observations retain final output, every chunk delta, completion metadata, errors and unavailable results. Repeated recaptures keep previous evidence in `verified_recaptures`; each archive entry retains its own result, request, producer receipt and resolution. Python selection, history validation and execution-manifest conversion validate this archive even when no active recapture is present. Archived requests and producer versions may differ from the current selection. Selection versions remain separate from the actual producer identity.
 
 Python, native Rust and browser readers expand the format into the existing validated case/observation model. Historical capture files and archives retain their original bytes and compatibility readers. To normalize current files or check that their representation is canonical, run:
 
@@ -42,6 +42,34 @@ The earlier implementation scope and acceptance checks are in [`../docs/CONFORMA
 No backfill is needed. Historical versioned captures and legacy archives retain their original bytes and paths. Current authored requests and GOLDEN retain their values through storage normalization. Versioned capture removal, historical moves, and archive expansion remain separate work.
 
 Each latest capture contains complete observation records and resolves sealed request references through its current family file. These files require no historical parent. All selectable conformance versions and capture filenames use plain version numbers, including local candidates and published latest/history reports. Source hashes and Git revisions belong only in provenance metadata; they must never appear as version suffixes or selectable versions. The writer, source readers, native publisher, browser model, and publication qualification reject such selections. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
+
+### Capture peer releases and update YAML
+
+Peer captures are produced manually by replaying the authored family inputs through the published vLLM and SGLang parser packages in Docker, in both stream and batch modes. This runs the parsers directly; it does not serve a model or generate model responses. From the repository root, with the conformance Python dependencies, Docker, and dependency images installed, run:
+
+```bash
+python3 conformance/utils/src/capture_peer_unified_versions.py \
+  --work /path/to/new-output-directory \
+  --versions 0.31.0 0.32.0 0.5.22 0.5.23 \
+  --mode all
+```
+
+The work directory must not already exist. The runner freezes the authored requests for every registered family, executes hash-verified published parser packages, and retains the image IDs, source hashes, producer receipts, and logs. `--vllm-image` and `--sglang-image` can select installed dependency images; the measured parser version comes from the frozen published package. Unsupported combinations remain explicit unavailable results.
+
+Results are saved as `captures/<implementation>-<version>/<family>.json` beneath the work directory. Stream implementations are `vllm_python` and `sglang_python`; batch implementations add `_batch`. Each JSON file contains `results` keyed by case ID and a `provenance` receipt. For example:
+
+```bash
+jq '.results["UNIFIED.prefilled_reasoning_then_text.minimax_m3"].assembled' \
+  /path/to/new-output-directory/captures/vllm_python-0.32.0/minimax_m3.json
+jq '.results["UNIFIED.tool_only.minimax_m3"].batch_final' \
+  /path/to/new-output-directory/captures/vllm_python_batch-0.32.0/minimax_m3.json
+```
+
+The first command shows the ordered reasoning/text/tool events; the second shows the batch parser's final reasoning, text, and tool-call fields. The full stream record also retains per-chunk output.
+
+Capture and YAML import are separate steps. These releases were imported using the `import_capture` and `import_capture_groups` APIs in `utils/src/import_peer_unified.py`, against a staging copy of the versioned store. The importer checks the frozen request and producer receipts and retains existing observations when adding verified recaptures. The selected newest snapshots were then written to versionless `<implementation>.yaml`, normalized to schema 3, validated, and published with the changed versioned YAML through the transactional store writer. The capture command alone does not update YAML. MiniMax uses `thinking_mode="enabled"` for prefilled Reasoning and `"adaptive"` for ordinary and Response starts. A full family recapture refreshes every selected record's execution receipt; older observations and receipts remain retained. The importer is a versioned-history API; do not point it directly at the mixed current/history store, and its standalone `--bundle` CLI expects a different manifest format from this runner.
+
+CI replays current native Dynamo v2 cases and validates the stored peer captures, history, and report; peer recapture is manual. Follow [Generate the latest or history report](#generate-the-latest-or-history-report) to inspect imported results in the browser. The [public Unified viewer](https://ai-dynamo.org/frontend-crates/?tab=tab-unified) shows published captures; use a local report or the PR's validated publication artifact for unmerged captures.
 
 ### Generate the latest or history report
 

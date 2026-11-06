@@ -1,55 +1,78 @@
-capture_selection: {"family":"muse_glimmer","implementation":"sglang_python","lineage":[{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"3a59c5c273ff917d49644e524481764b4010ed7eed8fca4c0fa6428fd4ecf7f2","source":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"muse_glimmer","implementation":"sglang_python","lineage":[{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"1c81134a5d0a5a988e7880e75ed527f34a8d56d0ba465cda7f1b0456c4dea37e","source":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.23.yaml","surface":"unified","version":"0.5.23"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   captured_with:
-    sglang_python: 0.5.22
+    sglang_python: 0.5.23
   status: legacy
 origins: {}
 producers:
-  producer_6928c955bcb9deae:
+  producer_22f4b7610b7d255c:
     captured_with:
-      sglang_python: 0.5.21
-  producer_276c6462b4573ccd:
-    captured_with:
-      sglang_python: 0.5.22
+      sglang_python: 0.5.23
 contexts:
-  context_885c08d4b3f3e4fb:
+  context_cbfd8f259e5f0e12:
     mode: unified
     record_metadata:
       sglang_capture_provenance:
-        adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
-        job_sha256: 04d7942cc52a8687b60e751c24e1cab34e0cc45a46a3659acb072bab218c297f
-        reasoning_source_sha256: 55360b73acfaac21db2ff4644bfc38ff6d744eb4371b15581a2b08e84673dc5e
-        serving_source_sha256: a0886cdf125b9c8c98c4618a4a6afee7020095623b7ee6cd874b67b94f9efb36
-        source_identity: PyPI sglang 0.5.21 cp312 x86_64 wheel
-        source_sha256: f624e45cc69e6da0ecc2fa08ee76809c62b5f9e1649428a3f2d18ad24a7c0d91
-        tool_source_sha256: b9d423a5e3845a6e1611477a92be043050995ac13522d1e88514bab856bd476a
-        version: 0.5.21
-        wheel_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
-  context_189b34302abbc1d0:
-    mode: unified
-    record_metadata:
-      sglang_capture_provenance:
-        adapter_sha256: 19750076b26825207d437a7e9f31ed4cb931a52d4c0f2707d64dce70b613489c
-        artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
-        extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+        adapter_sha256: 338ce95f4cc258abdeefca2ae83bd6268d507e907bff694af9c3ec16365093a5
+        artifact_sha256: 8d257a319395b322bb1be327d05e5528859358153c8563b04c0a4a3c8af164b6
+        extracted_package_sha256: 1b762e5b4d357f8af4e3607658c0597a6723840b7727225872126361c0c3ac26
         implementation: sglang_python
-        job_sha256: 6462e0ac9b7f5cdb649cde39b8850896808a94b400a4481f3ac1146a909ecbfa
+        job_sha256: 69ccb0c20c35d16f512da06fdfb77d754bdb7fb82ef95b90a755b6f27127de3c
         parser_apis:
           protocol: srt.entrypoints.openai.protocol
           reasoning: srt.parser.reasoning_parser
           tools: srt.function_call.function_call_parser
-        results_sha256: b737129e04004574832111a71b33038bdc7949758f0632f3afe18bc744502765
-        source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+        results_sha256: 5d8beea73ebc9b5a93e00cc9fa77ae574b8554046b6fec53733032fc2da92bac
+        source_sha256: ee45daba19486bbf14fa06465f1fdba106b198b178c8420440bb1bb3c8e327f6
         status: executed
-        version: 0.5.22
+        version: 0.5.23
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.22.yaml
-  producer: producer_6928c955bcb9deae
-  context: context_885c08d4b3f3e4fb
+  member: conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.23.yaml
+  producer: producer_22f4b7610b7d255c
+  context: context_cbfd8f259e5f0e12
 records:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    request: e59fd647ef7ea049cd990fe737329c649a9d7889550548e9d7da2e9aa4e297be
+    unavailable:
+      code: peer_termination_unsupported
+      detail: SGLang harness supports serving stop/length termination only
+    suppress_inherited_from: true
+  arg_array_quoted_parameter_close:
+    case_key: arg_array_quoted_parameter_close
+    request: 1ebbe77387a073e3d087b5b4ed5feabc4d6a11dc49e60a5c12413e0184e8f994
+    output:
+      assembled:
+      - arguments:
+          value: '["é \\\" '
+        kind: tool_call
+        name: record
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": "[\"é \\\\\\\" "}'
+          kind: tool_call
+          name: record
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     request: 79bc00bc7bcbb5d76b0ce230c7e837d80fcfd08d2249499a8c1ac52dc1be24f7
@@ -170,6 +193,36 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  arg_json_null_ref:
+    case_key: arg_json_null_ref
+    request: 67c1596410ab2fb2b2cf7f94ce811363c57408658b1f635182aef2fda5e2908a
+    output:
+      assembled:
+      - arguments:
+          city: null
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": null}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   arg_marker_in_string:
     case_key: arg_marker_in_string
     request: 416e2616cf21f289c06eaedaf9912a9f72fbc85a7f098ee155c3be6d051fa054
@@ -197,6 +250,645 @@ records:
         - arguments: '{"cmd": "git log </atem:function_calls> --oneline"}'
           kind: tool_call
           name: run
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_null_mixed_labels:
+    case_key: arg_null_mixed_labels
+    request: abd87670c935a8c941d1914683a8671be9edfbb95afb0e2b5808609a4ae8f672
+    output:
+      assembled:
+      - arguments:
+          label: null
+          literal: 'null'
+          note: null
+        kind: tool_call
+        name: set_labels
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"label": null, "note": null, "literal": "null"}'
+          kind: tool_call
+          name: set_labels
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    request: 811cc3d9fd0ad8212e7399139895af404627a4916c22c27aa9e16a6f2f47f970
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    request: cd08d996a53f36b30eeb86c8927e22002c54e8f376f4a6439db1ed94a6512c03
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    request: 39f98eba514a990b0d70831a59ff35346064c62ad0e43abb80a566c1dd1b0642
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    request: 0e0f52e7cfe341d5c44aee1cdf391b8dae5ac97507a9ee9849d9cc8ffef5126b
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    request: 30dbf45e5241709339527e33375f1579bfc3107e1915866f6e756318ecffe525
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    request: ad5c9f826e13f288cefccd2cc8ffbc5f47d0fe7b7d60e899c91a5234e0825850
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    request: 20a0b4606268dd088fb4e85c189aa467bdc414d61e4c9765c9ace080a144becf
+    output:
+      assembled:
+      - arguments:
+          value: -42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": -42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    request: 5ada68442ae2ed878a971afb9b7ac969c0d6e168369a91dd7de0a66b82fa6882
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    request: 826d14757dcf9721e61339f53e9b3b064c4b5b0e32af3a128bf48678b289af03
+    output:
+      assembled:
+      - arguments:
+          value: 0.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 0.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    request: adb5f02a5bbe80b4a176a760ed2c580dcc392b24252d0f86fb4830a4ddca8b08
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    request: f13ac4a93924abdd4698e288b50f72caad2ae353b2638aa88dec52dccb7b9930
+    output:
+      assembled:
+      - arguments:
+          value: -9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": -9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    request: 6c54a999df47f2b381ef552b15e026a1a09b81cfb2e94ad8bcc624c2f0452da9
+    output:
+      assembled:
+      - arguments:
+          value: 42.5
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.5}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    request: bb91946d18bce3396c0064ca58e54366ffefd6ff1306917798b7f0d101a1cf05
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740994.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    request: aaf4947da8f3b9f6eb55b613062e4e0b5cabb406e685c50167b52a4db3506085
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    request: 2ce3646713c53c1be23d416ee314e18398bcf57876b8e20546a76906de43ee14
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740994.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    request: 0ffafd122c4791ef9a6e9d0ae40db8a50eb187cfb80af31cfafc22b588790b84
+    output:
+      assembled:
+      - arguments:
+          value: 0.1
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 0.1}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    request: 17061b9ed7af71022817e0089155ce66308b7531b05fa93be3a4c383a6af27df
+    output:
+      assembled:
+      - arguments:
+          nested:
+            fraction: 9007199254740992.0
+            tiny: 0.0
+          values:
+          - 9007199254740993
+          - -9007199254740993
+        kind: tool_call
+        name: inspect
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"nested": {"fraction": 9007199254740992.0, "tiny": 0.0}, "values": [9007199254740993, -9007199254740993]}'
+          kind: tool_call
+          name: inspect
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_finite:
+    case_key: arg_numeric_overflow_siblings_finite
+    request: c7bcba99b77ce1604723d2d23e00ef55217a9cb09d05c39304d5b26b3f9382e1
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: 1.5
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city": "Paris", "value": 1.5}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    case_key: arg_numeric_overflow_siblings_negative
+    request: 81d5ceb323074860a255cb46ba323f39215658ecad6a8e0a60dae7ab7da2de6f
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: -.inf
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city": "Paris", "value": -Infinity}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    case_key: arg_numeric_overflow_siblings_positive
+    request: d471258024476f545b34c316db4ef457c62245dfefbf6745608010d4b190133c
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: .inf
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city": "Paris", "value": Infinity}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_object_quoted_parameter_close:
+    case_key: arg_object_quoted_parameter_close
+    request: e9764e148124512693e5709b2c567a2b468e0af9cf5579ec7e50ea91b5220ae5
+    output:
+      assembled:
+      - arguments:
+          value: '{"s": "'
+        kind: tool_call
+        name: record
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": "{\"s\": \""}'
+          kind: tool_call
+          name: record
       - expected: []
       - expected: []
       - expected: []
@@ -265,6 +957,36 @@ records:
   arg_string_null_enum:
     case_key: arg_string_null_enum
     request: 4f001079d6dd58d50ec3c7eaa4b8c41027fbe2310f210781d47ed706f5d70042
+    output:
+      assembled:
+      - arguments:
+          city: 'null'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "null"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_string_null_ref:
+    case_key: arg_string_null_ref
+    request: 8dbf7c490f0d93aa7e8b5c5ba88b634ab3f114b4b00f81d3acdfa4a48ebef3ba
     output:
       assembled:
       - arguments:
@@ -442,6 +1164,338 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  blank_framing_after_reasoning:
+    case_key: blank_framing_after_reasoning
+    request: 03a8e2ea82c41e1ef220f4fbcc902be9b4426161694a06b099582bed7bdf9d93
+    output:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: text
+        text: '
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          '
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: Check weather.
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_between_calls_single_chunk:
+    case_key: blank_framing_between_calls_single_chunk
+    request: 628fe38932831aaa14f81114a898a70d586e89a004b1753ad5480d0133c4d6c0
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - arguments:
+          city: Tokyo
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - kind: text
+          text: '
+
+
+
+
+            '
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+        - arguments: '{"city": "Tokyo"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_prose_after_call:
+    case_key: blank_framing_prose_after_call
+    request: 49eada9bd51943687cf41eab72f72dace0b0d0978f7bc763f0ac5a85fb1e0f77
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          Done.'
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            Done.'
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_tool_only:
+    case_key: blank_framing_tool_only
+    request: 0492e2b0b933adf2b295915a0f237509ba13bdef643aabb115e31dd0617abc4c
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          '
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_with_prose:
+    case_key: blank_framing_with_prose
+    request: 877d9c1afb9a26e7d72586c7bb7b3a14de238e95af9e219f6df9f4d330a57c2f
+    output:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          '
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: 'Pressing it now.
+
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_output_without_call:
+    case_key: blank_output_without_call
+    request: 29100324e159669f00e18e159fffd58f862b76f87ef941ad0914f61d84ae44ad
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            '
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  conditional_schema_number_types:
+    case_key: conditional_schema_number_types
+    request: 024ccbd7f1b61f9e545108ea6e7f7643e4c26fa153e674756026d99d4ce174a3
+    output:
+      assembled:
+      - arguments:
+          amount: 21.5
+          retries: 37
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"amount": 21.5, "retries": 37}'
+          kind: tool_call
+          name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   content_then_reason:
     case_key: content_then_reason
     request: e0e8d67f0a3bebb807f360c640b92008494ec53cb5bfd07ff78acbb15c511925
@@ -587,6 +1641,143 @@ records:
       - expected:
         - kind: text
           text: </atem:function_calls>
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_minimal:
+    case_key: dotted_name_minimal
+    request: f9d96f6e097650655e69c3d66d0d18148bed74892edf19af2b93f200497109b9
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: a.b
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: a.b
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_mixed_punctuation:
+    case_key: dotted_name_mixed_punctuation
+    request: 080d9b87468aa5423876d88ce92cce33c4eb7995c201f7e06fc7c6b5ba0df4af
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: my-tool.v2
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: my-tool.v2
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_multiple_segments:
+    case_key: dotted_name_multiple_segments
+    request: e38e9bc77860e64a9ce05e42e9b2c7b96ffe9b3a42e61ea2930ac1cae515b62f
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.tools.weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: server.tools.weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_shared_prefix:
+    case_key: dotted_name_shared_prefix
+    request: c45bd1a9abb4c4d57a7a750e790c88e239b9e362149bb288e0f804ec7c36b90b
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.weather
+      - arguments:
+          timezone: Asia/Shanghai
+        kind: tool_call
+        name: server.time
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: server.weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"timezone": "Asia/Shanghai"}'
+          kind: tool_call
+          name: server.time
+      - expected: []
+      - expected: []
       - expected: []
       - expected: []
     suppress_inherited_from: true
@@ -776,6 +1967,265 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: gpt_oss_multiple_unknown_and_empty_tools
+    request: 1595c19deba4d2603b8160e5b3773d34151ec06114466927cab13c5e13036d4f
+    output:
+      assembled:
+      - kind: text
+        text: '<|start|>assistant to=run<|message|><atem:function_calls>
+
+          <atem:invoke name="run">
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|><|start|>assistant to=not_offered<|message|><atem:function_calls>
+
+          <atem:invoke name="not_offered">
+
+          <atem:parameter name="x">2</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|eom|>'
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|start|>assistant to=run<|message|>
+      - expected:
+        - kind: text
+          text: <atem:function_calls>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: <atem:invoke name="run">
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:invoke>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:function_calls>
+      - expected:
+        - kind: text
+          text: <|eom|>
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|start|>assistant to=not_offered<|message|>
+      - expected:
+        - kind: text
+          text: <atem:function_calls>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: <atem:invoke name="not_offered">
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: <atem:parameter name="x">
+      - expected:
+        - kind: text
+          text: '2'
+      - expected:
+        - kind: text
+          text: </atem:parameter>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:invoke>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:function_calls>
+      - expected:
+        - kind: text
+          text: <|eom|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_quoted_message_header_literal:
+    case_key: gpt_oss_quoted_message_header_literal
+    request: a695672e0f73e26890ed299f73ca143524104bc63d9bec3dd06df30a4245d250
+    output:
+      assembled:
+      - kind: text
+        text: 'literal</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls>'
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: literal
+      - expected: []
+      - expected:
+        - kind: text
+          text: </atem:parameter>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:invoke>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:function_calls>
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_quoted_truncated_tool_then_final:
+    case_key: gpt_oss_quoted_truncated_tool_then_final
+    request: 827b69565f95f705d7073654f23b741d71bac21b3d1f9c429563007a544ff26a
+    output:
+      assembled:
+      - kind: text
+        text: Answer
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: Answer
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    case_key: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    request: 137d4dc711e6b750c18c8152e4db8a15bc0117860ae58c5ea14f69ad094b436c
+    output:
+      assembled:
+      - kind: text
+        text: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+          <atem:invoke name="lookup">
+
+          <atem:parameter name="q">unfinished</atem:parameter>
+
+          </atem:invoke>
+
+          </atem:function_calls><|start|>assistant to=user<|message|>recovered<|eom|>'
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|start|>assistant to=lookup<|message|>
+      - expected:
+        - kind: text
+          text: <atem:function_calls>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: <atem:invoke name="lookup">
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: <atem:parameter name="q">
+      - expected:
+        - kind: text
+          text: unfinished
+      - expected:
+        - kind: text
+          text: </atem:parameter>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:invoke>
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected:
+        - kind: text
+          text: </atem:function_calls>
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|start|>assistant to=user
+      - expected:
+        - kind: text
+          text: <|message|>
+      - expected:
+        - kind: text
+          text: recovered
+      - expected:
+        - kind: text
+          text: <|eom|>
+      - expected: []
+    suppress_inherited_from: true
   guided_json_after_reasoning:
     case_key: guided_json_after_reasoning
     request: b64c724d8c16db5a18d6415fbb2f6a68b09a2da5031667745ce9253311468536
@@ -877,6 +2327,20 @@ records:
   guided_json_native_markup_only:
     case_key: guided_json_native_markup_only
     request: 2428de24fb46db892f60dc97af20425b201ef6af9d2767519a97940658d92b8b
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_native_parameter_string_before_payload:
+    case_key: guided_json_native_parameter_string_before_payload
+    request: 988a38133540e9538a0ce2898e71e219de590d596ebc468a9484ed8beddda086
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: guided_json_noncall_before_native_array_before_payload
+    request: 315fa7e8a2d51710ddd61a2bd8a9294a0e6737acc9ac59b5ee9bf1fd803cce34
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
@@ -1056,6 +2520,13 @@ records:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
     suppress_inherited_from: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: guided_response_native_wrapper_whitespace_before_prose
+    request: d4673d100ae7b8b49b04962224de9681b683822b1df8e03d927ad3e88ee5d947
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
   guided_response_quoted_control_braces_named:
     case_key: guided_response_quoted_control_braces_named
     request: ea4fbbf015c371203e74ff14a516e900f26b79cbdeb7290e4915263cb720214d
@@ -1072,8 +2543,6 @@ records:
     suppress_inherited_from: true
   interrupted_reasoning_then_response:
     case_key: interrupted_reasoning_then_response
-    producer: producer_276c6462b4573ccd
-    context: context_189b34302abbc1d0
     request: 15a4e262035ce31e1d851e1cae1b8d8c846659a8751512ec3c36e4e936f8954e
     output:
       assembled:
@@ -1098,6 +2567,7 @@ records:
           text: The answer is 42.
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   interstitial_text:
     case_key: interstitial_text
     request: 8149b30eb0982921060bed030041aa84d7b8685cae63e49d8291455ae232cd37
@@ -1206,6 +2676,82 @@ records:
           name: echo
       - expected: []
     suppress_inherited_from: true
+  missing_inner_closers_then_valid_call:
+    case_key: missing_inner_closers_then_valid_call
+    request: 79c818d6502dffe51f576d958ff51f95171659e297a53ef72151956a6168ec7a
+    output:
+      assembled:
+      - arguments:
+          location: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - arguments: '{"location": "Paris"}'
+          kind: tool_call
+          name: get_weather
+    suppress_inherited_from: true
+  muse_opaque_declared_invoke:
+    case_key: muse_opaque_declared_invoke
+    request: 42442ae1f6a74fecb6454564055a0b19feb1bb6dbae90e7cbb8c50a1b556c5f2
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: f
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: f
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  muse_opaque_undeclared_invoke:
+    case_key: muse_opaque_undeclared_invoke
+    request: 1b9ff96f3c2aefc2c27d3bef046ec7e5a433499f406b4f51271335a9fe91ccbe
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: f
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: f
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   muse_quoted_reserved_eom_argument:
     case_key: muse_quoted_reserved_eom_argument
     request: 41d4f45d0c87e570b1dada9c90adcaf65831ec04f5bfaedf61f910f7d230e6a6
@@ -1226,6 +2772,147 @@ records:
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  muse_recovery_second_parameter:
+    case_key: muse_recovery_second_parameter
+    request: 560e61672e9a71f50d3162155ad922031df8630a0f7cad4f16b7cd5109a6c0a5
+    output:
+      assembled:
+      - arguments:
+          x: done
+        kind: tool_call
+        name: f
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"x": "done"}'
+          kind: tool_call
+          name: f
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  muse_unterminated_parameter_then_call:
+    case_key: muse_unterminated_parameter_then_call
+    request: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: f
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: f
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  muse_unterminated_parameter_then_empty_call:
+    case_key: muse_unterminated_parameter_then_empty_call
+    request: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: get_weather
+      - arguments: {}
+        kind: tool_call
+        name: f
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: f
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  muse_unterminated_reasoning_guided:
+    case_key: muse_unterminated_reasoning_guided
+    request: c1ba543cddab942b3f5f75b652c8461bfea528bf12207e54c6e6bdc09f2cec3b
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  muse_unterminated_reasoning_native:
+    case_key: muse_unterminated_reasoning_native
+    request: e85383d148f31694c3fe7dcaa01abc30f46ea8c61dc2eb5ec45e2c5a64b1c267
+    output:
+      assembled:
+      - kind: reasoning
+        text: Maybe <atem:invoke name="x and more thought
+      - kind: text
+        text: Done.
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: 'Maybe '
+      - expected:
+        - kind: reasoning
+          text: <atem:invoke name="x and more thought
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: Done.
+      - expected: []
+      - expected: []
     suppress_inherited_from: true
   narrated_calls:
     case_key: narrated_calls
@@ -1374,6 +3061,41 @@ records:
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  not_keyword_type_complement:
+    case_key: not_keyword_type_complement
+    request: b94f39b402dffdbb69e766cbc101fd9118802d08667a59ca4440213d7efa4633
+    output:
+      assembled:
+      - arguments:
+          count: -2500
+          text: '42'
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"count": -2500, "text": "42"}'
+          kind: tool_call
+          name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
     suppress_inherited_from: true
   nullable_reference_alias_literals:
     case_key: nullable_reference_alias_literals
@@ -2063,6 +3785,57 @@ records:
           text: thinking but stream ends
       - expected: []
     suppress_inherited_from: true
+  reference_object_recursive_and_composed_types:
+    case_key: reference_object_recursive_and_composed_types
+    request: 5889491fb52e50d929ebe2c844f85de4026a1b5f5add324cf9f4848f65c0dcb6
+    output:
+      assembled:
+      - arguments:
+          category:
+            children: []
+            label: Garden Tools
+          dry_run: false
+          retries: 37
+          tree:
+            children:
+            - children: []
+              label: leaf
+            label: root
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
+          kind: tool_call
+          name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   retired__30_14:
     case_key: retired__30_14
     request: bcd6168f92fecc5e6e24410cd264997d817dc7afc4923a611dea556a84b51845
@@ -2711,6 +4484,21 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
+  schema_const_numeric_bare:
+    case_key: schema_const_numeric_bare
+    request: 11e832dce82a68c2afb0cc7f84584b54be3555f827576f18f611802e06e12edf
+    output:
+      assembled:
+      - arguments:
+          value: 3
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 3}'
+          kind: tool_call
+          name: schema_probe
     suppress_inherited_from: true
   schema_const_object_allof:
     case_key: schema_const_object_allof
@@ -3524,6 +5312,36 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
+  schema_enum_const_narrowing:
+    case_key: schema_enum_const_narrowing
+    request: 61c0d13626723287cfa70829714f913feb015d5e3e0695d506ca472592adfae7
+    output:
+      assembled:
+      - arguments:
+          value: 1
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 1}'
+          kind: tool_call
+          name: schema_probe
+    suppress_inherited_from: true
+  schema_enum_inferred_integer:
+    case_key: schema_enum_inferred_integer
+    request: 38a0f2d81e4f5bcabc6e81d8e46297aca80872239131cdc30096b6e09b16b980
+    output:
+      assembled:
+      - arguments:
+          value: 2
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 2}'
+          kind: tool_call
+          name: schema_probe
     suppress_inherited_from: true
   schema_enum_integer:
     case_key: schema_enum_integer
@@ -5806,6 +7624,13 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    request: d52de6591b6b747b7d637924ee86e05d4d6d8ad3766c703a1dbc837a4d39fcb1
+    unavailable:
+      code: peer_termination_unsupported
+      detail: SGLang harness supports serving stop/length termination only
+    suppress_inherited_from: true
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
     request: 20efd98acb60d47f210d66b7ada5c11aa0cc7bde75cdef8b7fde533ff727f8dc
@@ -6342,6 +8167,66 @@ records:
         - arguments: '{"count": 42, "flag": false, "text": "null"}'
           kind: tool_call
           name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  xml_string_type_double_quoted_object:
+    case_key: xml_string_type_double_quoted_object
+    request: 14f684c1955adc9d51673da59bb0272e14bf135da74cd4d3e56c9e59122f2761
+    output:
+      assembled:
+      - arguments:
+          value: '{"a":1}'
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": "{\"a\":1}"}'
+          kind: tool_call
+          name: schema_probe
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  xml_string_type_single_quoted_object:
+    case_key: xml_string_type_single_quoted_object
+    request: 57c037d9d1fe4e0b4538fefefd9f31356dbdbd3ad78dbbf9a8451c46a597896e
+    output:
+      assembled:
+      - arguments:
+          value: '{''a'':1}'
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": "{''a'':1}"}'
+          kind: tool_call
+          name: schema_probe
       - expected: []
       - expected: []
       - expected: []

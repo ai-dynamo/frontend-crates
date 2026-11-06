@@ -1,55 +1,83 @@
-capture_selection: {"family":"kimi_k3","implementation":"sglang_python","lineage":[{"family":"kimi_k3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"b0d64870ae6a83b3717652b945aa012f4eb9233a3340ef194a39945164ed1b14","source":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"kimi_k3","implementation":"sglang_python","lineage":[{"family":"kimi_k3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"a49ceaaf97c822298fdf991dbdcd03183cf4bf51748cb2fd0cd02067507175ac","source":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.23.yaml","surface":"unified","version":"0.5.23"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   captured_with:
-    sglang_python: 0.5.22
+    sglang_python: 0.5.23
   status: legacy
 origins: {}
 producers:
-  producer_6928c955bcb9deae:
+  producer_22f4b7610b7d255c:
     captured_with:
-      sglang_python: 0.5.21
-  producer_276c6462b4573ccd:
-    captured_with:
-      sglang_python: 0.5.22
+      sglang_python: 0.5.23
 contexts:
-  context_5fcb7ff1c2fa8e08:
+  context_08c8f68414884db3:
     mode: unified
     record_metadata:
       sglang_capture_provenance:
-        adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
-        job_sha256: ed46f31d7860636be39c2d90dc3a2fd0305ad0b421b5824c860cd06fe11e1c96
-        reasoning_source_sha256: 55360b73acfaac21db2ff4644bfc38ff6d744eb4371b15581a2b08e84673dc5e
-        serving_source_sha256: a0886cdf125b9c8c98c4618a4a6afee7020095623b7ee6cd874b67b94f9efb36
-        source_identity: PyPI sglang 0.5.21 cp312 x86_64 wheel
-        source_sha256: f624e45cc69e6da0ecc2fa08ee76809c62b5f9e1649428a3f2d18ad24a7c0d91
-        tool_source_sha256: b9d423a5e3845a6e1611477a92be043050995ac13522d1e88514bab856bd476a
-        version: 0.5.21
-        wheel_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
-  context_66f050c3abf371ca:
-    mode: unified
-    record_metadata:
-      sglang_capture_provenance:
-        adapter_sha256: 19750076b26825207d437a7e9f31ed4cb931a52d4c0f2707d64dce70b613489c
-        artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
-        extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+        adapter_sha256: 338ce95f4cc258abdeefca2ae83bd6268d507e907bff694af9c3ec16365093a5
+        artifact_sha256: 8d257a319395b322bb1be327d05e5528859358153c8563b04c0a4a3c8af164b6
+        extracted_package_sha256: 1b762e5b4d357f8af4e3607658c0597a6723840b7727225872126361c0c3ac26
         implementation: sglang_python
-        job_sha256: b62e9b758d2b2a890fef393d856bf0fa88cd334f892ba0b2716da003dba04fc0
+        job_sha256: 2a20dfe2c49840f6c7c3af805370f667348abd5da6a93bd1e46c0de8ff7ad192
         parser_apis:
           protocol: srt.entrypoints.openai.protocol
           reasoning: srt.parser.reasoning_parser
           tools: srt.function_call.function_call_parser
-        results_sha256: 4142cf02ae817e68efb3de0249d0249d75620c40381c81e6cfcc50ea391ea629
-        source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+        results_sha256: 49639f589fe3a964c85729d009876e49357c1f0d5c843378c04b7ab76f2a72d4
+        source_sha256: ee45daba19486bbf14fa06465f1fdba106b198b178c8420440bb1bb3c8e327f6
         status: executed
-        version: 0.5.22
+        version: 0.5.23
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.22.yaml
-  producer: producer_6928c955bcb9deae
-  context: context_5fcb7ff1c2fa8e08
+  member: conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.23.yaml
+  producer: producer_22f4b7610b7d255c
+  context: context_08c8f68414884db3
 records:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    request: 3614508e8b66afeb0f7804ce8825cd8362f72bf02d1347320ccdaff95fab8e64
+    unavailable:
+      code: peer_termination_unsupported
+      detail: SGLang harness supports serving stop/length termination only
+    suppress_inherited_from: true
+  arg_array_quoted_parameter_close:
+    case_key: arg_array_quoted_parameter_close
+    request: 76555efb36180e6fe3a280f2a5d83fe0e1652f192ae32e098526e4b92df2ad7e
+    output:
+      assembled:
+      - arguments:
+          value:
+          - é \" </atem:parameter>
+        kind: tool_call
+        name: record
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": ["é \\\" </atem:parameter>"]}'
+          kind: tool_call
+          name: record
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     request: 93228e52821651cf76a8b63f705aee2f51ac0afa42677cdde19a1ab9bb4b251d
@@ -186,6 +214,40 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  arg_json_null_ref:
+    case_key: arg_json_null_ref
+    request: 274a25c14ad63a45c95806874ce4a6517b26dee2795266a1fa39db9bb492d6d5
+    output:
+      assembled:
+      - arguments:
+          city: null
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": null}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   arg_marker_in_string:
     case_key: arg_marker_in_string
     request: ef5b367d0a9bd243332d7580750b55a9014eeec12949716aa93e2ebc01aab02c
@@ -218,6 +280,731 @@ records:
       - expected: []
       - expected: []
       - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_null_mixed_labels:
+    case_key: arg_null_mixed_labels
+    request: abc10d92399449907b75536e57b210c1aed5b44d0486d0c205519b4e9e69393c
+    output:
+      assembled:
+      - arguments:
+          label: null
+          literal: 'null'
+          note: null
+        kind: tool_call
+        name: set_labels
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"label": null, "note": null, "literal": "null"}'
+          kind: tool_call
+          name: set_labels
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    request: e60b53a491ed777f80e713a0f51ca6b495f28e59eb437792cc4dbe8eaa098b96
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    request: 5b39391dc70707a54733238ddd10dd60c7b9b7ecea8a9885c75b51b1a6126a78
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    request: 55758f18452d34a2ad8069c421e365e1be358dda549cba36906fa586c45ff821
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    request: 1f7bf8250db98429529e2bce07cbe08cec5ebe232690491aa1a6b90e6f37eb8a
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    request: 7fb4684c887b9c3703d785720702e96423535467fc665ad075224418b28c6e65
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    request: 770bf45b4b0cc39aa82006a4c69320775dedfd775f2d9ebc28c2c2ddadbce0f2
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    request: 1b57f8afc1cc8374c618d5e90112b2005d478b3b584cabdca91c00ad3670634d
+    output:
+      assembled:
+      - arguments:
+          value: -42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": -42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    request: 3efeb0d12f7ca3aab2b625fbd37f7fabdf43bacf9ce374f43c1583b53ea5f013
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    request: a07610dfd8c6274463953fbca6a67af0b1f0936e76819d28fc92ca111ebc6c56
+    output:
+      assembled:
+      - arguments:
+          value: 0.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 0.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    request: a530f9c0a7358f9521b001a04dab45f8305d72ce68d99385120e758eb1744563
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    request: db7e875ce57f61f6daa80d39882a0bfdf52f6985b5af78f53ebbc739f6237a37
+    output:
+      assembled:
+      - arguments:
+          value: -9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": -9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    request: ffa2b12ec7700ba0ac1c21610fae92ef524c11ba4366d0a28160bf9f0e2187af
+    output:
+      assembled:
+      - arguments:
+          value: 42.5
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 42.5}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    request: 1012ca372abc3cd49fd83ef4e7ea4bb385e971189d925033be0521886ddaa0a5
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740994.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    request: 3d7c05f778025e52b376368681ec60a6cce5d31bba4eef069f0b6252845c2b6f
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740992.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    request: cb4cde9edb82cb74e6ea1ae40932f549ad163d26a93927007048cc3a21144f45
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 9007199254740994.0}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    request: a9e3a5d37af3f1cd826f15b2547a84a7bfbf57612db0c5bb5add7b8653668122
+    output:
+      assembled:
+      - arguments:
+          value: 0.1
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": 0.1}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    request: 6ce503f451549caca8723606b18dad743c0bf93121896cf480f12c798bdb7524
+    output:
+      assembled:
+      - arguments:
+          nested:
+            fraction: 9007199254740992.0
+            tiny: 0.0
+          values:
+          - 9007199254740993
+          - -9007199254740993
+        kind: tool_call
+        name: inspect
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"nested": {"fraction": 9007199254740992.0, "tiny": 0.0}, "values": [9007199254740993, -9007199254740993]}'
+          kind: tool_call
+          name: inspect
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_finite:
+    case_key: arg_numeric_overflow_siblings_finite
+    request: 253ca28b53f1e5c21821a761ccd0d0feae65ea238105b324c601fc97061179a3
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: 1.5
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city": "Paris", "value": 1.5}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    case_key: arg_numeric_overflow_siblings_negative
+    request: 1e4b084c1bc20a747cfd242e8900e2d22e969ddb48bb50dd6ac6ac6abd47bf70
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: -.inf
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city": "Paris", "value": -Infinity}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    case_key: arg_numeric_overflow_siblings_positive
+    request: bd3fbac047c245bd6f97ef059dc80c535d80ba8c91ad374a11937d143c8f9a35
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: .inf
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city": "Paris", "value": Infinity}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_object_quoted_parameter_close:
+    case_key: arg_object_quoted_parameter_close
+    request: 6b5c4415465703529f459d2960ead56ee97c2eb41cca5797ced57967348d9e4c
+    output:
+      assembled:
+      - arguments:
+          value:
+            s: </atem:parameter>
+        kind: tool_call
+        name: record
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": {"s": "</atem:parameter>"}}'
+          kind: tool_call
+          name: record
       - expected: []
       - expected: []
       - expected: []
@@ -294,6 +1081,40 @@ records:
   arg_string_null_enum:
     case_key: arg_string_null_enum
     request: cf70226391b4e25a8f7109ff05f9c3db42f2cd385d1ffd6fc97dd5ec33e543b3
+    output:
+      assembled:
+      - arguments:
+          city: 'null'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "null"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_string_null_ref:
+    case_key: arg_string_null_ref
+    request: 98eaef7157c4c2195bdb5ab0869e4e51e0b9d48384c0dec3c84800558b5df163
     output:
       assembled:
       - arguments:
@@ -495,6 +1316,343 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  blank_framing_after_reasoning:
+    case_key: blank_framing_after_reasoning
+    request: a4a35ed9789677e2f0732c169c21eb2bacb5d5e5d29f6e73f7833f0abeb0555e
+    output:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: text
+        text: '
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: Check weather.
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_between_calls_single_chunk:
+    case_key: blank_framing_between_calls_single_chunk
+    request: d423ef55abf7e52bb5dd73827c1d3dd7b102e350692e004abf432739bb14797a
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - arguments:
+          city: Tokyo
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - kind: text
+          text: '
+
+            '
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+        - arguments: '{"city": "Tokyo"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_prose_after_call:
+    case_key: blank_framing_prose_after_call
+    request: afc7a68b7f297fbd9da14871e5a4e1534923b531f55e87137bf4d88452648c94
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_tool_only:
+    case_key: blank_framing_tool_only
+    request: 9899e867b9a84017442d2298c5ccc4dcc573bd16fd347db4ce7d227859bb4d04
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_with_prose:
+    case_key: blank_framing_with_prose
+    request: eff027024412987c8781e71cfbd725e645f75a85f2641ef7e864b9494e65633d
+    output:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: 'Pressing it now.
+
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  blank_output_without_call:
+    case_key: blank_output_without_call
+    request: c6e08e63118d882f4c39a27e0b2eb786185014c401db36b65f8ed9ba8922d788
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  conditional_schema_number_types:
+    case_key: conditional_schema_number_types
+    request: b213fb14b5312f06f6ebe98ef22e9a30a3dac416c5f31c616664bd04a8004efb
+    output:
+      assembled:
+      - arguments:
+          amount: 21.5
+          retries: 37
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"amount": 21.5, "retries": 37}'
+          kind: tool_call
+          name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   content_then_reason:
     case_key: content_then_reason
     request: 11649ffadba1fccc9d9c0a00e741f32da8243e2c218a66055e0e318a4529a138
@@ -650,6 +1808,154 @@ records:
       - expected: []
       - expected: []
       - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_minimal:
+    case_key: dotted_name_minimal
+    request: e9f45417c8a37f70fe9230c7e20ff4d20ae19e7374d76bf87df2179bb6dc3e03
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: a.b
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: a.b
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_mixed_punctuation:
+    case_key: dotted_name_mixed_punctuation
+    request: ad07a0092ae99ac765f2809cf6d6643f6edd386ce9c212f9cbb3ab25bd2d884f
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: my-tool.v2
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: my-tool.v2
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_multiple_segments:
+    case_key: dotted_name_multiple_segments
+    request: fd388ff0da10e970590fba0d6a2b7b8e7c909d52aed2956112d02b15b9bfc21c
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.tools.weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: server.tools.weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_shared_prefix:
+    case_key: dotted_name_shared_prefix
+    request: b89ef108c321083c2b2e12f5da29bdd63cc308411395efef7a40044a85399068
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.weather
+      - arguments:
+          timezone: Asia/Shanghai
+        kind: tool_call
+        name: server.time
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: server.weather
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"timezone": "Asia/Shanghai"}'
+          kind: tool_call
+          name: server.time
       - expected: []
       - expected: []
       - expected: []
@@ -882,6 +2188,552 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: gpt_oss_control_marker_inside_argument_string
+    request: 115772e3e05a41a70567dd30cb89e9568467c4388f07d79c21017f63c366db38
+    output:
+      assembled:
+      - kind: text
+        text: '<|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"markers": "<|open|><|sep|><|close|><|end_of_msg|>"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|open|>tools<|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="lookup" index="1"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: json type="object"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: '{"markers": "'
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: <|end_of_msg|>
+      - expected:
+        - kind: text
+          text: '"}'
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: json
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: call
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_empty_call:
+    case_key: gpt_oss_invalid_tool_body_then_empty_call
+    request: 0f917b42180a8df5dccb3eafded7592402b042f69c602364bc8228b06d3f85b6
+    output:
+      assembled:
+      - kind: text
+        text: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>not-json<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|open|>tools<|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="bad" index="1"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: json type="object"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: not-json
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: json
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: call
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="get_weather" index="2"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: call
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_valid_call:
+    case_key: gpt_oss_invalid_tool_body_then_valid_call
+    request: 1ae14bce1a2544724bc8f64547cc084a9a8f2532adb7f68a990432896acce655
+    output:
+      assembled:
+      - kind: text
+        text: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>{"city":<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|open|>tools<|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="bad" index="1"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: json type="object"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: '{"city":'
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: json
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: call
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="get_weather" index="2"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: argument key="city" type="string"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: Paris
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: argument
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: call
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: gpt_oss_multiple_unknown_and_empty_tools
+    request: 4f45f767e3092da04d4716758209a2c6d7e0dbc3d55ee9d20c79bb3373434262
+    output:
+      assembled:
+      - kind: text
+        text: <|open|>tools<|sep|><|open|>call tool="run" index="1"<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="not_offered" index="2"<|sep|><|open|>argument key="x" type="integer"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|open|>tools<|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="run" index="1"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: call
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="not_offered" index="2"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: argument key="x" type="integer"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: '2'
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: argument
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: call
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: tools
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_quoted_message_header_literal:
+    case_key: gpt_oss_quoted_message_header_literal
+    request: a3b2ac33fc2960233c009bdb6f58ee860113e13cec930912fe4a34cd774ab23a
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: lookup
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: lookup
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_quoted_truncated_tool_then_final:
+    case_key: gpt_oss_quoted_truncated_tool_then_final
+    request: 7af1d3052ddd010a8e795d132fa7c5cbfcd9fadcf8c63449c2ffb013897ada0d
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: lookup
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: lookup
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    case_key: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    request: 5391666f2977e1bad08779b6407acf02d94293c982fece89a56d4b53cc600f0c
+    output:
+      assembled:
+      - kind: text
+        text: <|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"unfinished"}<|close|>json<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|open|>tools<|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: call tool="lookup" index="1"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: json type="object"
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: '{"q":"unfinished"}'
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: json
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: <|open|>
+      - expected:
+        - kind: text
+          text: response
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected:
+        - kind: text
+          text: recovered
+      - expected:
+        - kind: text
+          text: <|close|>
+      - expected:
+        - kind: text
+          text: response
+      - expected:
+        - kind: text
+          text: <|sep|>
+      - expected: []
+    suppress_inherited_from: true
   guided_json_after_reasoning:
     case_key: guided_json_after_reasoning
     request: 74f667a6652e28e8df6617dff1a0e9fe494c6fd814c610ccfb5833ba6e7097e4
@@ -983,6 +2835,34 @@ records:
   guided_json_native_markup_only:
     case_key: guided_json_native_markup_only
     request: 46c97b72edb06037be9a9f946c0ac1964b420f36e2f8eea933698facac1ec42d
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_native_parameter_array_before_payload:
+    case_key: guided_json_native_parameter_array_before_payload
+    request: 8263013ea57a5c983d9bfd6c517a1add00e4fa23fd7223e10fdf0caeb89b49c5
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_native_parameter_object_before_payload:
+    case_key: guided_json_native_parameter_object_before_payload
+    request: f3bb49635572c920f9af31549c8f4d15df7a6d655a5cf126aa7da7ce6868d8e8
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_native_parameter_string_before_payload:
+    case_key: guided_json_native_parameter_string_before_payload
+    request: e513c26acea175e94fd4bd63b01aac260d806333af45083dbdc0ce8dd30d1701
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: guided_json_noncall_before_native_array_before_payload
+    request: be4587b15ac19751e91139eed3ad246755738c24be5cdee3cbd615868cba0f40
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
@@ -1155,6 +3035,13 @@ records:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
     suppress_inherited_from: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: guided_response_native_wrapper_whitespace_before_prose
+    request: 896a5e8d5b37891ab8aa822181baef50484a1c50425565ecdf41f0afb4cb3ad8
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
   guided_response_quoted_control_braces_named:
     case_key: guided_response_quoted_control_braces_named
     request: df889cf810d8602944a347e0a883a3ca330fa35ec049b06c63294d6750e5b962
@@ -1171,8 +3058,6 @@ records:
     suppress_inherited_from: true
   interrupted_reasoning_then_response:
     case_key: interrupted_reasoning_then_response
-    producer: producer_276c6462b4573ccd
-    context: context_66f050c3abf371ca
     request: 7032f711fffa288e19a5d55b5b7abd5cfe59474f451f163d0188d8f42578ae97
     output:
       assembled:
@@ -1197,6 +3082,7 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   interstitial_text:
     case_key: interstitial_text
     request: 5a78e6f3907836a559f8d8e026194a6fe986e7ea48eb80f601c3a342a088af7d
@@ -1253,32 +3139,19 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
-  kimi_k3_elided_think_close_to_response:
-    case_key: kimi_k3_elided_think_close_to_response
-    request: 2fe20c39436ef8e401494e8bb9bef1a50b31af8207d245f0fe1b7bdf112ca099
-    output:
-      assembled:
-      - kind: reasoning
-        text: checking
-      - kind: text
-        text: The answer is 42.
-      chunks:
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: checking
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected:
-        - kind: text
-          text: The answer is 42.
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+  kimi_k3_direct_json_response_recovery:
+    case_key: kimi_k3_direct_json_response_recovery
+    request: 81178979a52de1908e65235bf9f6e495047d810e01e80157b864afd2edef6094
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  kimi_k3_direct_typed_response_recovery:
+    case_key: kimi_k3_direct_typed_response_recovery
+    request: 46734967eb51bf40339a32f95fe1d1f92bd512840278077d687f426db74eda3b
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
     suppress_inherited_from: true
   kimi_k3_guided_native_wrapper:
     case_key: kimi_k3_guided_native_wrapper
@@ -1286,6 +3159,106 @@ records:
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  kimi_k3_json_marker_then_long_field:
+    case_key: kimi_k3_json_marker_then_long_field
+    request: ba91a518254a46ffffe14ac32965c62913197aa7657b2227e95ea7ac0459bd29
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: lookup
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: lookup
+      - expected: []
+    suppress_inherited_from: true
+  kimi_k3_json_missing_close_literal_response:
+    case_key: kimi_k3_json_missing_close_literal_response
+    request: 214cad4c848d10488069c2b26d0736e6cf6d7f2784edf6ba165dca9c0cfb4565
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: lookup
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: lookup
+      - expected: []
+      - expected: []
     suppress_inherited_from: true
   kimi_k3_malformed_call_then_valid:
     case_key: kimi_k3_malformed_call_then_valid
@@ -1564,6 +3537,2844 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  kimi_k3_typed_json_marker_payload:
+    case_key: kimi_k3_typed_json_marker_payload
+    request: 41840b6ecfa765a9934e956d3482264883741865ad29761c27c610cd919b8ab9
+    output:
+      assembled:
+      - arguments:
+          x: '{"inner":"'
+          y: OK
+        kind: tool_call
+        name: inspect
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"x": "{\"inner\":\"", "y": "OK"}'
+          kind: tool_call
+          name: inspect
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_k3_typed_response_argument_literal:
+    case_key: kimi_k3_typed_response_argument_literal
+    request: ca068f312ed658a154fd022a402ba96291f5d379814d6e1c643d99f96f618be4
+    output:
+      assembled:
+      - arguments:
+          q: a
+          x: z
+        kind: tool_call
+        name: lookup
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"q": "a", "x": "z"}'
+          kind: tool_call
+          name: lookup
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_k3_typed_response_marker_payload:
+    case_key: kimi_k3_typed_response_marker_payload
+    request: 0ab3252c641192603d0698cf7808516335b47f29c89ab30a0e923d3968475e51
+    output:
+      assembled:
+      - arguments:
+          q: ''
+        kind: tool_call
+        name: lookup
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"q": ""}'
+          kind: tool_call
+          name: lookup
+      - expected: []
+    suppress_inherited_from: true
+  kimi_k3_typed_response_then_call:
+    case_key: kimi_k3_typed_response_then_call
+    request: 2592400382212d08ace247f86e3f432f17a32e48339677589c619ac57460e996
+    output:
+      assembled:
+      - arguments:
+          n: 7
+          q: first
+        kind: tool_call
+        name: lookup
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"q": "first", "n": 7}'
+          kind: tool_call
+          name: lookup
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_incremental_interfield_whitespace:
+    case_key: kimi_native_incremental_interfield_whitespace
+    request: aedc72ea34c89440645696fc76de8ce8380b2206be732bd4cd4e4b78ba625382
+    output:
+      assembled:
+      - arguments:
+          content: q
+          count: 7
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"count": 7, "content": "q"}'
+          kind: tool_call
+          name: write_file
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_k3_json_count_content_chunk1024:
+    case_key: kimi_native_k3_json_count_content_chunk1024
+    request: 811e0ee765150e8404af62355693779d5163ee822ead62d1ac968e84c4e9d4d3
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: write_file
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_k3_json_count_content_chunk7:
+    case_key: kimi_native_k3_json_count_content_chunk7
+    request: f8c1d3579584968857a3833ce22fbc47d1ea9abb32d81346af38d4643f0b328e
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: write_file
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_k3_typed_count_content_chunk1024:
+    case_key: kimi_native_k3_typed_count_content_chunk1024
+    request: 0b39f2050dd6fac957472ca0f1617988854025f5d978c997cca0037a658e6756
+    output:
+      assembled:
+      - arguments:
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          count: 7
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"count": 7, "content": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}'
+          kind: tool_call
+          name: write_file
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_k3_typed_count_content_chunk7:
+    case_key: kimi_native_k3_typed_count_content_chunk7
+    request: c58f508b42f7b5885b544adba1defd0261064004145f1ac16f7034a5f1a07359
+    output:
+      assembled:
+      - arguments:
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          count: 7
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"count": 7, "content": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}'
+          kind: tool_call
+          name: write_file
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_rejected_next_header_progress:
+    case_key: kimi_native_rejected_next_header_progress
+    request: cd5f8034620688b53a2241a92466d3dedec27c6cd9eca54e6919ff9cb8980edb
+    output:
+      assembled:
+      - arguments:
+          ? ''
+          : qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          content: head
+          count: 7
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"count": 7, "content": "head", "": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}'
+          kind: tool_call
+          name: write_file
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   local_schema_id_preserves_type:
     case_key: local_schema_id_preserves_type
     request: 2869ce6f2f2008374b87ee12c7b319973059b6e5902d92af72dc02df694c0ab5
@@ -1626,6 +6437,21 @@ records:
           kind: tool_call
           name: echo
       - expected: []
+    suppress_inherited_from: true
+  missing_inner_closers_then_valid_call:
+    case_key: missing_inner_closers_then_valid_call
+    request: 358ad471306f0b54f6db920c4f08ccdf2d085483ceacdf71d4b83f357df6f249
+    output:
+      assembled:
+      - arguments:
+          location: unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - arguments: '{"location": "unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>argument key=\"location\" type=\"string\"<|sep|>Paris"}'
+          kind: tool_call
+          name: get_weather
     suppress_inherited_from: true
   narrated_calls:
     case_key: narrated_calls
@@ -1782,6 +6608,48 @@ records:
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  not_keyword_type_complement:
+    case_key: not_keyword_type_complement
+    request: 94ea7c60118fc8732537a4c693ca25bec494bfb449df602b3471840930714188
+    output:
+      assembled:
+      - arguments:
+          count: -2500
+          text: '42'
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"count": -2500, "text": "42"}'
+          kind: tool_call
+          name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
     suppress_inherited_from: true
   nullable_reference_alias_literals:
     case_key: nullable_reference_alias_literals
@@ -2510,6 +7378,70 @@ records:
           text: thinking but stream ends
       - expected: []
     suppress_inherited_from: true
+  reference_object_recursive_and_composed_types:
+    case_key: reference_object_recursive_and_composed_types
+    request: 220758f78a7738e34f93b91b6a200572bc001dbe15c29df807e469eda5fb215d
+    output:
+      assembled:
+      - arguments:
+          category:
+            children: []
+            label: Garden Tools
+          dry_run: false
+          retries: 37
+          tree:
+            children:
+            - children: []
+              label: leaf
+            label: root
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
+          kind: tool_call
+          name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   retired__30_14:
     case_key: retired__30_14
     request: 075e97406ff854285a6442f065c80271373cee4e185e8e64c102b44f41e07b39
@@ -3210,6 +8142,21 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
+  schema_const_numeric_bare:
+    case_key: schema_const_numeric_bare
+    request: 35f4bfa8e9121eb9a132fa7dab1366633d2e738a966ec633f584bc5197cd9a71
+    output:
+      assembled:
+      - arguments:
+          value: 3
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 3}'
+          kind: tool_call
+          name: schema_probe
     suppress_inherited_from: true
   schema_const_object_allof:
     case_key: schema_const_object_allof
@@ -4131,6 +9078,36 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
+  schema_enum_const_narrowing:
+    case_key: schema_enum_const_narrowing
+    request: b09be3c6adf4ff9eea59990fdaf7ce6e4d37d1022b6b63d53a315e4ece67daeb
+    output:
+      assembled:
+      - arguments:
+          value: 1
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 1}'
+          kind: tool_call
+          name: schema_probe
+    suppress_inherited_from: true
+  schema_enum_inferred_integer:
+    case_key: schema_enum_inferred_integer
+    request: 1a13d3e2acdd519ecbebdabf6292ce413b80197e4a9d06e5b4c85fa61114916b
+    output:
+      assembled:
+      - arguments:
+          value: 2
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 2}'
+          kind: tool_call
+          name: schema_probe
     suppress_inherited_from: true
   schema_enum_integer:
     case_key: schema_enum_integer
@@ -6707,6 +11684,13 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    request: 5754e1844f45fcd463d11d12ca231370e610c119e5faa9b5ef551804da1e0188
+    unavailable:
+      code: peer_termination_unsupported
+      detail: SGLang harness supports serving stop/length termination only
+    suppress_inherited_from: true
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
     request: e5884ca1f4d90fc5cb58ceec36f95c36c63955d4d1ea3578dc8a84ff0f90202c
@@ -6721,8 +11705,6 @@ records:
     suppress_inherited_from: true
   tool_body_whitespace:
     case_key: tool_body_whitespace
-    producer: producer_276c6462b4573ccd
-    context: context_66f050c3abf371ca
     request: ec0db8653be933d32df3f3a5a8530f76df371773dbd655e0ff6c8c0ab84a8443
     output:
       assembled:
@@ -6753,6 +11735,7 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   tool_in_reason:
     case_key: tool_in_reason
     request: f51405a58837702796ff5746159f9ba31309befd955ddc42f32ae1db8b627081
@@ -7267,6 +12250,74 @@ records:
         - arguments: '{"count": 42, "flag": false, "text": "null"}'
           kind: tool_call
           name: capture_payload
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  xml_string_type_double_quoted_object:
+    case_key: xml_string_type_double_quoted_object
+    request: d1c6cfa68e23c7111c1b0a4e5213b64be700e1a3ed90ad1b39915391b9d469da
+    output:
+      assembled:
+      - arguments:
+          value: '{"a":1}'
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": "{\"a\":1}"}'
+          kind: tool_call
+          name: schema_probe
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  xml_string_type_single_quoted_object:
+    case_key: xml_string_type_single_quoted_object
+    request: 23a604b96d2712d787dc90078aefffe98a733b52a7b4521a904500df22701087
+    output:
+      assembled:
+      - arguments:
+          value: '{''a'':1}'
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{"value": "{''a'':1}"}'
+          kind: tool_call
+          name: schema_probe
       - expected: []
       - expected: []
       - expected: []

@@ -8976,9 +8976,9 @@ cases:
         - humidity
         count: 5
   schema_declared_integer_boolean_number_order:
-    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     request: bad731d06cea56af498bd05b32b72c3f1f73fba4d70a54bb28d93c1f4517dfc2
     golden:
     - kind: tool_call

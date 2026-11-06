@@ -1,55 +1,80 @@
-capture_selection: {"family":"kimi_k2","implementation":"sglang_python","lineage":[{"family":"kimi_k2","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml","version":"0.5.22"}],"mode":"unified","payload_sha256":"612ccbba11af27a6a60aedd3f6a347d39ce1840b55a06ade3c2fbc424f371acf","source":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml","surface":"unified","version":"0.5.22"}
+capture_selection: {"family":"kimi_k2","implementation":"sglang_python","lineage":[{"family":"kimi_k2","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.23.yaml","version":"0.5.23"}],"mode":"unified","payload_sha256":"a71818b14ef35fbce051ddae9ffafe9accc07136a96136373871655830dd373c","source":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.23.yaml","surface":"unified","version":"0.5.23"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   captured_with:
-    sglang_python: 0.5.22
+    sglang_python: 0.5.23
   status: legacy
 origins: {}
 producers:
-  producer_6928c955bcb9deae:
+  producer_22f4b7610b7d255c:
     captured_with:
-      sglang_python: 0.5.21
-  producer_276c6462b4573ccd:
-    captured_with:
-      sglang_python: 0.5.22
+      sglang_python: 0.5.23
 contexts:
-  context_320c56c069abd2bc:
+  context_f04aaa8b18605f8d:
     mode: unified
     record_metadata:
       sglang_capture_provenance:
-        adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
-        job_sha256: fffd26dd7f7471b59c56d148d7fae1aeda7cf28cf6b3de67a10a6642ace71066
-        reasoning_source_sha256: 55360b73acfaac21db2ff4644bfc38ff6d744eb4371b15581a2b08e84673dc5e
-        serving_source_sha256: a0886cdf125b9c8c98c4618a4a6afee7020095623b7ee6cd874b67b94f9efb36
-        source_identity: PyPI sglang 0.5.21 cp312 x86_64 wheel
-        source_sha256: f624e45cc69e6da0ecc2fa08ee76809c62b5f9e1649428a3f2d18ad24a7c0d91
-        tool_source_sha256: b9d423a5e3845a6e1611477a92be043050995ac13522d1e88514bab856bd476a
-        version: 0.5.21
-        wheel_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
-  context_d9e01e2dcaf2d388:
-    mode: unified
-    record_metadata:
-      sglang_capture_provenance:
-        adapter_sha256: 19750076b26825207d437a7e9f31ed4cb931a52d4c0f2707d64dce70b613489c
-        artifact_sha256: 3505e3744366201296f94d244b3e7d3b0bb91b69726dc15e994070adb338ea2f
-        extracted_package_sha256: bdafc8c44dd27afa6771e98283a0683ad40217b7d37539398a88eb6882444660
+        adapter_sha256: 338ce95f4cc258abdeefca2ae83bd6268d507e907bff694af9c3ec16365093a5
+        artifact_sha256: 8d257a319395b322bb1be327d05e5528859358153c8563b04c0a4a3c8af164b6
+        extracted_package_sha256: 1b762e5b4d357f8af4e3607658c0597a6723840b7727225872126361c0c3ac26
         implementation: sglang_python
-        job_sha256: c80705c48ed9c04887eb6e731207ea1eaeffc940303c6781bdf7f9233d7fdb79
+        job_sha256: 323082e4b6e530e560c1799c5916b54bdf007566cd91f1b03940e96559f2e3e1
         parser_apis:
           protocol: srt.entrypoints.openai.protocol
           reasoning: srt.parser.reasoning_parser
           tools: srt.function_call.function_call_parser
-        results_sha256: 92e87d5fae3d359df1172f3fc766ddcf153c8731f6b78a34d41f8571c88775e8
-        source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+        results_sha256: 2b1b171db09ed3caee2d2a8d999ce0ea79f2bc2ff8ed8140aeb3e3c318ec681c
+        source_sha256: ee45daba19486bbf14fa06465f1fdba106b198b178c8420440bb1bb3c8e327f6
         status: executed
-        version: 0.5.22
+        version: 0.5.23
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.22.yaml
-  producer: producer_6928c955bcb9deae
-  context: context_320c56c069abd2bc
+  member: conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.23.yaml
+  producer: producer_22f4b7610b7d255c
+  context: context_f04aaa8b18605f8d
 records:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    request: 739b334e6a08767a96601a5a30a8c19f7a9aa36db2a0ebf97d13e1edd58d6ec1
+    unavailable:
+      code: peer_termination_unsupported
+      detail: SGLang harness supports serving stop/length termination only
+    suppress_inherited_from: true
+  arg_array_quoted_parameter_close:
+    case_key: arg_array_quoted_parameter_close
+    request: 418a15781a3d033c220e58ef9dffca7b4c61bdd1f63e6fe426db01e44d404e78
+    output:
+      assembled:
+      - arguments:
+          value:
+          - é \" </atem:parameter>
+        kind: tool_call
+        name: record
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: record
+      - expected:
+        - arguments: '{"value": ["é \\\" '
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: </atem:parameter>
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"]}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     request: e867356fd12138d19a377476cc90e87672d874d9830103ba75993b8cfb33b866
@@ -150,6 +175,31 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  arg_json_null_ref:
+    case_key: arg_json_null_ref
+    request: 6f7a39355abc9d48134c70b5f5c008f8f7e00c44f3c42ce078ed093bdf97e129
+    output:
+      assembled:
+      - arguments:
+          city: null
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"city": null}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   arg_marker_in_string:
     case_key: arg_marker_in_string
     request: 9995000ae114cbc20557862214c42688797c373e078f6aad8551a4bd80ec8bcb
@@ -176,6 +226,545 @@ records:
       - expected:
         - kind: text
           text: ' --oneline"}'
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_null_mixed_labels:
+    case_key: arg_null_mixed_labels
+    request: 7d00bac8332cb9ae5b13e47e97257e66bfc9ef584dab4652117c607fdc23ea00
+    output:
+      assembled:
+      - arguments:
+          label: null
+          literal: 'null'
+          note: null
+        kind: tool_call
+        name: set_labels
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: set_labels
+      - expected:
+        - arguments: '{"label": null, "note": null, "literal": "null"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    request: 19ff2a118d56f497170fb3bda74c7332236bc6969ba1caac0c5985ed7adb57b0
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":42.0}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    request: c325099c6baef68675a42bda8ffa4664f173d941828f39ee8a6af2f56523419d
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":4.2e1}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    request: c2608ea20cdf81b3b276f8fb2b6a0a263b55ce2537752017d93262fdbc343258
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":42.0}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    request: 8955656edd8f4e9023a88fecadcff004a32ab4d6f1f04cc00c0ba27cb406d522
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":4.2e1}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    request: 7e85dfd7a07e4ce931bf437803569000dee39ac4456064615de88a2d1a09c02d
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":9007199254740993.0}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    request: 6808b00614257df258dbc43d4c677354854f84835df8b17a74d15bfe1fdb8542
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":9.007199254740993e15}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    request: 4f3d6d17785bbe53526d46451a3cf3f002c585324f5832c8645a02c6a68273dc
+    output:
+      assembled:
+      - arguments:
+          value: -42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":-4.2E+1}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    request: f2fc26791cca5d78d36987c08d0f35732317ad08cfb83d8e7c1a5ecd8d46340a
+    output:
+      assembled:
+      - arguments:
+          value: 42.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":4200e-2}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    request: 2d0e884d097eef1246fd49a5fdf628110661e00a65b34ea51d045d745b4551cb
+    output:
+      assembled:
+      - arguments:
+          value: 0.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":0.0e-400}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    request: 9ab66318536453d965d53863a9750004630628991192fb3b6642aabd8af4fe27
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":9.0071992547409925e15}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    request: 47dcd2e1d28de28f7c34f3dc64a3f2db1971175b9b70d405db39e44ce9a43a62
+    output:
+      assembled:
+      - arguments:
+          value: -9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":-9007199254740992.5}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    request: 23336dea286e0b0eb02346b044140ae02c141175faa89adedb0b010d515ee909
+    output:
+      assembled:
+      - arguments:
+          value: 42.5
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":42.5}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    request: b074adb9bb89863a104e0c19dabc811c04d5e53c5e05c47f718e434df986fd32
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":9007199254740993.25}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    request: 6e9f1a1a5c254ac4d5be09e23264fc21a1a4232d1c093c9e70a0cb27ee2bbf1f
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740992.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":9007199254740992.5}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    request: e2f66fd597f37584775a5d33767684e4f7c30c85ce7b524a2c3eb7eee2203b67
+    output:
+      assembled:
+      - arguments:
+          value: 9007199254740994.0
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":9007199254740993.1}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    request: eb2e2d839392b61887d0bc5f2b0b5dffd2d9860c663ae9ec18588bd7e5e8ea44
+    output:
+      assembled:
+      - arguments:
+          value: 0.1
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"value":0.10000000000000000001}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    request: 252dc18c0c2d50c4803c9292f583d32e4de956ecedb24d5d106a2ef74a5d18a7
+    output:
+      assembled:
+      - arguments:
+          nested:
+            fraction: 9007199254740992.0
+            tiny: 0.0
+          values:
+          - 9007199254740993
+          - -9007199254740993
+        kind: tool_call
+        name: inspect
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: inspect
+      - expected:
+        - arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_finite:
+    case_key: arg_numeric_overflow_siblings_finite
+    request: 0781b08661772b5764e44ab3657787a63f6e9ed6a569eba533963cbff4769654
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: 1.5
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city":"Paris","value":1.5}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    case_key: arg_numeric_overflow_siblings_negative
+    request: bb5459951c6e27b33a4a2d68dfc5c391082ee655302911535249f007c831d130
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: -.inf
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city":"Paris","value":-1E+400}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    case_key: arg_numeric_overflow_siblings_positive
+    request: e180ae126d55cc7de9753813dde238b490ce0f91e8d9e95571dbe49c885403b3
+    output:
+      assembled:
+      - arguments:
+          city: Paris
+          value: .inf
+        kind: tool_call
+        name: echo
+      chunks:
+      - expected:
+        - arguments: '{"city":"Paris","value":1e400}'
+          kind: tool_call
+          name: echo
+    suppress_inherited_from: true
+  arg_object_quoted_parameter_close:
+    case_key: arg_object_quoted_parameter_close
+    request: e7436136700ca885d82f3be398b0c607fd639d8a5e55b31196c1768957190afd
+    output:
+      assembled:
+      - arguments:
+          value:
+            s: </atem:parameter>
+        kind: tool_call
+        name: record
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: record
+      - expected:
+        - arguments: '{"value": {"s": "'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: </atem:parameter>
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"}}'
+          kind: tool_call
+          name: null
       - expected: []
       - expected: []
       - expected: []
@@ -233,6 +822,31 @@ records:
   arg_string_null_enum:
     case_key: arg_string_null_enum
     request: af7e4fecc2fd083beaeb7b2f7949239d133ce8db38acc1f0a256931959cda8fe
+    output:
+      assembled:
+      - arguments:
+          city: 'null'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"city": "null"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  arg_string_null_ref:
+    case_key: arg_string_null_ref
+    request: 02b18a7ae14fed68ecf1b6a7fbd9af5c418d5d280994493af3e57b7b06c5d1ae
     output:
       assembled:
       - arguments:
@@ -380,6 +994,271 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  blank_framing_after_reasoning:
+    case_key: blank_framing_after_reasoning
+    request: 8f0991b1b42524feb541b16a07fbdd172cfdf390a5a56e96445a44c99c7d1a34
+    output:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: text
+        text: '
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          '
+      chunks:
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: Check weather.
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_between_calls_single_chunk:
+    case_key: blank_framing_between_calls_single_chunk
+    request: 43c838b5169b200b4eee7fadd8e1fc19ece327204c6f346a12d6a0a8cf99e663
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - arguments:
+          city: Tokyo
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - kind: text
+          text: '
+
+
+
+
+            '
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+        - arguments: '{"city": "Tokyo"}'
+          kind: tool_call
+          name: get_weather
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_prose_after_call:
+    case_key: blank_framing_prose_after_call
+    request: 11cde50da21d459babee00017da87532c472a87cf6916c75ec74e5b8abfb40b8
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          Done.'
+      chunks:
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            Done.'
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_tool_only:
+    case_key: blank_framing_tool_only
+    request: 05bbd45200112bcfb2f622f40a844b91ddaa3fba3f5455433ffa5f77be2c0987
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          '
+      chunks:
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+    suppress_inherited_from: true
+  blank_framing_with_prose:
+    case_key: blank_framing_with_prose
+    request: 95ef435d0897d5c06d939a118d373749d3d176196520664498c85f967b0d2748
+    output:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - arguments:
+          city: Paris
+        kind: tool_call
+        name: get_weather
+      - kind: text
+        text: '
+
+          '
+      chunks:
+      - expected:
+        - kind: text
+          text: 'Pressing it now.
+
+
+            '
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+            '
+      - expected: []
+    suppress_inherited_from: true
+  blank_output_without_call:
+    case_key: blank_output_without_call
+    request: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+      chunks:
+      - expected:
+        - kind: text
+          text: '
+
+
+            '
+      - expected: []
+    suppress_inherited_from: true
+  conditional_schema_number_types:
+    case_key: conditional_schema_number_types
+    request: 2c77cf49a1c888b14d9754715166754f9036cdff4103c78769d60711eea6d945
+    output:
+      assembled:
+      - arguments:
+          amount: 21.5
+          retries: 37
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: capture_payload
+      - expected:
+        - arguments: '{"amount": 21.5, "retries": 37}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   content_then_reason:
     case_key: content_then_reason
     request: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
@@ -495,6 +1374,122 @@ records:
       - expected:
         - kind: text
           text: ' &amp; \"x\"\\\n "}'
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_minimal:
+    case_key: dotted_name_minimal
+    request: db4c05a50628bec3a687e6941cea198a253dea3ca1b7f4583fc200f7bd0395d5
+    output:
+      assembled:
+      - arguments: {}
+        kind: tool_call
+        name: a.b
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: a.b
+      - expected:
+        - arguments: '{}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_mixed_punctuation:
+    case_key: dotted_name_mixed_punctuation
+    request: 1e07f7a1d96342cdb9127431e80f3751021daf202f645ac2635655387d792d1c
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: my-tool.v2
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: my-tool.v2
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_multiple_segments:
+    case_key: dotted_name_multiple_segments
+    request: 424a3047fc7a78a125702bf2c0d828262ba9c87c0d9e7cf5de162a1ea7e61492
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.tools.weather
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: server.tools.weather
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  dotted_name_shared_prefix:
+    case_key: dotted_name_shared_prefix
+    request: df784e2eb4e767185a616184a14b0be16da0e39c21f593bd9c8746c0cae93ae3
+    output:
+      assembled:
+      - arguments:
+          location: Beijing
+        kind: tool_call
+        name: server.weather
+      - arguments:
+          timezone: Asia/Shanghai
+        kind: tool_call
+        name: server.time
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: server.weather
+      - expected:
+        - arguments: '{"location": "Beijing"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: server.time
+      - expected:
+        - arguments: '{"timezone": "Asia/Shanghai"}'
+          kind: tool_call
+          name: null
       - expected: []
       - expected: []
       - expected: []
@@ -632,6 +1627,213 @@ records:
       - expected: []
       - expected: []
     suppress_inherited_from: true
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: gpt_oss_control_marker_inside_argument_string
+    request: 1cfabc075ab2d4b0467dd533a7f8ec5e66ed8da31faf09f4f0831afb32fcb801
+    output:
+      assembled:
+      - kind: text
+        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|>{"markers": "<|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>"}<|tool_call_end|><|tool_calls_section_end|>'
+      chunks:
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: functions.lookup:0
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: '{"markers": "'
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected:
+        - kind: text
+          text: '"}'
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_empty_call:
+    case_key: gpt_oss_invalid_tool_body_then_empty_call
+    request: c291cf88c0365b583fa246bcce6dcd35a46a3ad825be47e5e7fb5563acbac532
+    output:
+      assembled:
+      - kind: text
+        text: <|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>not-json<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+      chunks:
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: functions.bad:0
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: not-json
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: functions.get_weather:1
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: '{}'
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_valid_call:
+    case_key: gpt_oss_invalid_tool_body_then_valid_call
+    request: 2ad8dcdae83c02289d0c2946b83dba6a7d4cb36405aafb86b5be94b004b3ab97
+    output:
+      assembled:
+      - kind: text
+        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"city":<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      chunks:
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: functions.bad:0
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: '{"city":'
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: functions.get_weather:1
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: '{"city": "Paris"}'
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected: []
+    suppress_inherited_from: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: gpt_oss_multiple_unknown_and_empty_tools
+    request: b20838bb6c7609f23326eebed27c8c74f987af841d4d524e49a5d130fcf44be7
+    output:
+      assembled:
+      - kind: text
+        text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.not_offered:1<|tool_call_argument_begin|>{"x": 2}<|tool_call_end|><|tool_calls_section_end|>'
+      chunks:
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: functions.run:0
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: '{}'
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_begin|>
+      - expected:
+        - kind: text
+          text: <|tool_call_begin|>
+      - expected:
+        - kind: text
+          text: functions.not_offered:1
+      - expected:
+        - kind: text
+          text: <|tool_call_argument_begin|>
+      - expected:
+        - kind: text
+          text: '{"x": 2}'
+      - expected:
+        - kind: text
+          text: <|tool_call_end|>
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_end|>
+      - expected: []
+    suppress_inherited_from: true
   guided_json_after_reasoning:
     case_key: guided_json_after_reasoning
     request: 9348dd38350a4606e62d922ab84c2d0e4771c2274c64cd683bc8dd3b7465d48b
@@ -733,6 +1935,34 @@ records:
   guided_json_native_markup_only:
     case_key: guided_json_native_markup_only
     request: f940413c79d5058b40dcaff1b63550df50d18b72be77cc9ac0c88170065cd8e3
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_native_parameter_array_before_payload:
+    case_key: guided_json_native_parameter_array_before_payload
+    request: 074e5e820103ab211d93b27d69415bdc85ad22d242f2315a65dab4c5dbfe0285
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_native_parameter_object_before_payload:
+    case_key: guided_json_native_parameter_object_before_payload
+    request: e84d4dd3e4883ae4d1b4beaf3537298bf7cd45709ea2bc8c378abd5179be1aea
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_native_parameter_string_before_payload:
+    case_key: guided_json_native_parameter_string_before_payload
+    request: 6e371415d063fe9eddec1a0ec85e15b365873eb1ad2718b5759549c58a08adc5
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: guided_json_noncall_before_native_array_before_payload
+    request: 63d936f25fd3ab43d1652cb24287a208cbdbb538aeb491fea9f351154ee52535
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
@@ -905,6 +2135,13 @@ records:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
     suppress_inherited_from: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: guided_response_native_wrapper_whitespace_before_prose
+    request: a04f03615d2f3d206af118cec2087f02c53d1ba0e8523d741421328b7b08d980
+    unavailable:
+      code: peer_request_unsupported
+      detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
   guided_response_quoted_control_braces_named:
     case_key: guided_response_quoted_control_braces_named
     request: a4cfd18e0649149197bf161dcb68b0e5298e5f140bd7f530b69826695a31c3ba
@@ -954,6 +2191,3260 @@ records:
           name: null
       - expected: []
       - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_incompatible_string_recovery:
+    case_key: kimi_native_incompatible_string_recovery
+    request: 4195999db1277bc0e221129042eba265571ae6227e173bc1e9924fe02e81d136
+    output:
+      assembled:
+      - arguments: '{"x":"abc <|tool_call_end|'
+        kind: tool_call
+        name: write_file
+      - kind: text
+        text: <|tool_calls_section_end|>
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: write_file
+      - expected:
+        - arguments: '{'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: x
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ':'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: a
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: b
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: c
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ' '
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: <|tool_call_
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: e
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: d
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '|'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_e
+      - expected:
+        - kind: text
+          text: n
+      - expected:
+        - kind: text
+          text: d
+      - expected:
+        - kind: text
+          text: '|'
+      - expected:
+        - kind: text
+          text: '>'
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_k2_count_content_chunk1024:
+    case_key: kimi_native_k2_count_content_chunk1024
+    request: 084da01b744d8c1ec67fdef61d3b0b4f14addbbcff61dc23dd6819d5adcc030d
+    output:
+      assembled:
+      - arguments:
+          content: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          count: 7
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected:
+        - arguments: '{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'
+          kind: tool_call
+          name: write_file
+      - expected:
+        - arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_k2_count_content_chunk7:
+    case_key: kimi_native_k2_count_content_chunk7
+    request: 0eda73427ee50e18ad0d6d9630cd334950b0138acfb608a56e4ef1f39bc8b7fb
+    output:
+      assembled:
+      - arguments: '{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}<|tool_call_en'
+        kind: tool_call
+        name: write_file
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: '{'
+          kind: tool_call
+          name: write_file
+      - expected:
+        - arguments: '"count"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: :7,"con
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: tent":"
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qqqqqqq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: qq
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected:
+        - arguments: <|tool_call_en
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_trailing_syntax_whitespace:
+    case_key: kimi_native_trailing_syntax_whitespace
+    request: 8722587c9965c4b035d36b42fed7484a614ac210d76d3750e7497ba02a4e2fa6
+    output:
+      assembled:
+      - arguments: "{\"count\":7,\"content\": \t\n<|tool_call_end|"
+        kind: tool_call
+        name: write_file
+      - kind: text
+        text: <|tool_calls_section_end|>
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: write_file
+      - expected:
+        - arguments: '{'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: c
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: o
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: u
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: t
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ':'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '7'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ','
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: c
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: o
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: t
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: e
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: t
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ':'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ' '
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: "\t"
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '
+
+            '
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: <|tool_call_
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: e
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: d
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '|'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_e
+      - expected:
+        - kind: text
+          text: n
+      - expected:
+        - kind: text
+          text: d
+      - expected:
+        - kind: text
+          text: '|'
+      - expected:
+        - kind: text
+          text: '>'
+      - expected: []
+    suppress_inherited_from: true
+  kimi_native_valid_object_trailing_garbage:
+    case_key: kimi_native_valid_object_trailing_garbage
+    request: 597dd5eb0f0e397ab651e332a0ffb3c5ed6e8f8931d06e9de5a7738c2c9f80f6
+    output:
+      assembled:
+      - arguments: '{"count":7,"content":"q"} trailing<|tool_call_end|'
+        kind: tool_call
+        name: write_file
+      - kind: text
+        text: <|tool_calls_section_end|>
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: write_file
+      - expected:
+        - arguments: '{'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: c
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: o
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: u
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: t
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ':'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '7'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ','
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: c
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: o
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: t
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: e
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: t
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ':'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: q
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '"'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '}'
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: ' '
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: t
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: r
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: a
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: i
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: l
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: i
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: g
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: <|tool_call_
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: e
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: n
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: d
+          kind: tool_call
+          name: null
+      - expected:
+        - arguments: '|'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: <|tool_calls_section_e
+      - expected:
+        - kind: text
+          text: n
+      - expected:
+        - kind: text
+          text: d
+      - expected:
+        - kind: text
+          text: '|'
+      - expected:
+        - kind: text
+          text: '>'
       - expected: []
     suppress_inherited_from: true
   local_schema_id_preserves_type:
@@ -1134,6 +5625,32 @@ records:
     unavailable:
       code: peer_request_unsupported
       detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+    suppress_inherited_from: true
+  not_keyword_type_complement:
+    case_key: not_keyword_type_complement
+    request: cacdc091eb1cfe9140cb62d2965d1334f7f91b1c56d268a817eb2c4fff8a86aa
+    output:
+      assembled:
+      - arguments:
+          count: -2500
+          text: '42'
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: capture_payload
+      - expected:
+        - arguments: '{"count": -2500, "text": "42"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
     suppress_inherited_from: true
   nullable_reference_alias_literals:
     case_key: nullable_reference_alias_literals
@@ -1699,6 +6216,40 @@ records:
           text: thinking but stream ends
       - expected: []
     suppress_inherited_from: true
+  reference_object_recursive_and_composed_types:
+    case_key: reference_object_recursive_and_composed_types
+    request: c5599f9b3787dc579c9df9cec923adb0f616ace5413c28bbd0e4065413bfa58e
+    output:
+      assembled:
+      - arguments:
+          category:
+            children: []
+            label: Garden Tools
+          dry_run: false
+          retries: 37
+          tree:
+            children:
+            - children: []
+              label: leaf
+            label: root
+        kind: tool_call
+        name: capture_payload
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: capture_payload
+      - expected:
+        - arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
   retired__1_2:
     case_key: retired__1_2
     request: 5e4d9afd9d6c3f1d36affc9a1fcd89672ad7278af0c4283cf1db10b7ce93b30d
@@ -2243,6 +6794,21 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
+  schema_const_numeric_bare:
+    case_key: schema_const_numeric_bare
+    request: 2dbcf34d3ee6aabd1fcbe729e846e6f1830fbb95d447758ffb5d490e8fc0ff39
+    output:
+      assembled:
+      - arguments:
+          value: 3
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 3}'
+          kind: tool_call
+          name: schema_probe
     suppress_inherited_from: true
   schema_const_object_allof:
     case_key: schema_const_object_allof
@@ -2921,6 +7487,36 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
+  schema_enum_const_narrowing:
+    case_key: schema_enum_const_narrowing
+    request: 3d4f766d94c2b6ee7636ad1ad686cc7e1e2f54886fbb4bc3bf34c47a7cc78f3c
+    output:
+      assembled:
+      - arguments:
+          value: 1
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 1}'
+          kind: tool_call
+          name: schema_probe
+    suppress_inherited_from: true
+  schema_enum_inferred_integer:
+    case_key: schema_enum_inferred_integer
+    request: 67f6f8d905a100146c761e33750f6d59ef4a4849adc337858b829da2543cb420
+    output:
+      assembled:
+      - arguments:
+          value: 2
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected:
+        - arguments: '{"value": 2}'
+          kind: tool_call
+          name: schema_probe
     suppress_inherited_from: true
   schema_enum_integer:
     case_key: schema_enum_integer
@@ -4802,6 +9398,13 @@ records:
           text: ' After.'
       - expected: []
     suppress_inherited_from: true
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    request: f569310581f06138195def131cb640eec462b9a111d73ca2a98b9e4f17e1305a
+    unavailable:
+      code: peer_termination_unsupported
+      detail: SGLang harness supports serving stop/length termination only
+    suppress_inherited_from: true
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
     request: dc25342f14680ef2331b9285e1543b4364644009f89781115c25e0099f86bcff
@@ -4818,8 +9421,6 @@ records:
     suppress_inherited_from: true
   tool_body_whitespace:
     case_key: tool_body_whitespace
-    producer: producer_276c6462b4573ccd
-    context: context_d9e01e2dcaf2d388
     request: f7437618d3c75155981fc5928365bf43792d99cd211a97123d415adf53408ed6
     output:
       assembled:
@@ -4842,6 +9443,7 @@ records:
       - expected: []
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   tool_in_reason:
     case_key: tool_in_reason
     request: f784b9faba0feefc5060d750e490cab999c80f02b0db8e38f8813a8c0f12e839
@@ -5214,6 +9816,56 @@ records:
           name: capture_payload
       - expected:
         - arguments: '{"count": 42, "flag": false, "text": "null"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  xml_string_type_double_quoted_object:
+    case_key: xml_string_type_double_quoted_object
+    request: 47f350ecae6ae78795be7d150ef03f429ed5a60153236c51f120899557464dde
+    output:
+      assembled:
+      - arguments:
+          value: '{"a":1}'
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: schema_probe
+      - expected:
+        - arguments: '{"value": "{\"a\":1}"}'
+          kind: tool_call
+          name: null
+      - expected: []
+      - expected: []
+      - expected: []
+    suppress_inherited_from: true
+  xml_string_type_single_quoted_object:
+    case_key: xml_string_type_single_quoted_object
+    request: a273490812d33b1a0609e0e71bb487ac352d9188264e86aa533537b0d6436236
+    output:
+      assembled:
+      - arguments:
+          value: '{''a'':1}'
+        kind: tool_call
+        name: schema_probe
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - arguments: ''
+          kind: tool_call
+          name: schema_probe
+      - expected:
+        - arguments: '{"value": "{''a'':1}"}'
           kind: tool_call
           name: null
       - expected: []

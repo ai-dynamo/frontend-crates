@@ -72,7 +72,7 @@ CHANGE_KEY_ORDER = ("case_key", "stimulus", "observation")
 CHANGE_KEYS = set(CHANGE_KEY_ORDER)
 OBSERVATION_STATES = {"value", "error", "unavailable"}
 STIMULUS_STATES = {"ref", "inline", "partial", "error", "unavailable"}
-REQUEST_KEYS = {"input", "init", "finish_reason", "tools", "chunks"}
+REQUEST_KEYS = capture_stimulus.REQUEST_KEYS
 CAPTURE_DIRECTORY_RE = re.compile(
     rf"(?P<implementation>[a-z0-9_]+)-(?P<runtime_version>{UNIFIED_VERSION_PATTERN})"
 )
@@ -210,23 +210,6 @@ def _request_digest(request: dict) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _validate_request(request: Any, where: str) -> None:
-    request = _mapping(request, where)
-    _require_keys(request, REQUEST_KEYS, REQUEST_KEYS, where)
-    if not isinstance(request["input"], str):
-        raise ValueError(f"{where}.input must be a string")
-    if not isinstance(request["init"], dict):
-        raise ValueError(f"{where}.init must be a mapping")
-    if not isinstance(request["finish_reason"], str):
-        raise ValueError(f"{where}.finish_reason must be a string")
-    if not isinstance(request["tools"], list):
-        raise ValueError(f"{where}.tools must be a list")
-    if not isinstance(request["chunks"], list) or any(
-        not isinstance(chunk, dict) for chunk in request["chunks"]
-    ):
-        raise ValueError(f"{where}.chunks must be a list of mappings")
-
-
 def _validate_case_metadata(
     description: Any,
     policy: Any,
@@ -257,7 +240,7 @@ def _validate_stimulus(stimulus: Any, case: dict, where: str) -> None:
         if digest is not None and digest != expected:
             raise ValueError(f"{where} stimulus digest differs from the canonical request")
     elif state == "inline":
-        _validate_request(stimulus["inline"], f"{where}.inline")
+        capture_stimulus.validate_capture_input(stimulus["inline"], f"{where}.inline")
         digest = stimulus.get("semantic_sha256")
         if digest is not None and digest != _request_digest(stimulus["inline"]):
             raise ValueError(f"{where} stimulus digest differs from its inline request")
@@ -296,6 +279,7 @@ def _validate_resolved_record_contract(
 ) -> None:
     if "capture_origin" in document:
         _validate_source_origin(document["capture_origin"], f"{where}.capture_origin", source_version)
+    capture_stimulus.validate_recapture_archive(document.get("record_metadata", {}), implementation=implementation)
     if capture_stimulus.unified_record_contract(implementation, document) != "batch" or "value" not in observation:
         return
     value = observation["value"]
@@ -624,10 +608,10 @@ def _validate_family(path: Path, document: dict) -> Family:
                 owner = unified_taxonomy.scenario_for_label(alias, family=family, scenario=scenario)
                 if owner != scenario:
                     raise ValueError(f"case ID does not own scenario {scenario}: {alias}")
-            _validate_request(case["request"], f"{path}:{case_id}.request")
+            capture_stimulus.validate_capture_input(case["request"], f"{path}:{case_id}.request")
             _validate_golden(case["golden"], f"{path}:{case_id}.golden")
         elif case["request"] is not None:
-            _validate_request(case["request"], f"{path}:{case_id}.request")
+            capture_stimulus.validate_capture_input(case["request"], f"{path}:{case_id}.request")
     return Family(family, document, path)
 
 
@@ -699,7 +683,7 @@ def _validate_capture_file(
     path: Path,
     document: dict,
     families: dict[str, Family],
-    *, resource_index=None, proof_requests=None, read_yaml=load_yaml,
+    *, resource_index=None, proof_requests=None, read_yaml=load_yaml, defer_proof_membership=False,
 ) -> tuple[str, str, str, dict]:
     parent = document.get("parent")
     if "parent" in document and parent is None:
@@ -766,9 +750,10 @@ def _validate_capture_file(
         requests = _mapping(proof["requests"], f"{path}.execution_proof.requests")
         if not requests or any(not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None for digest in requests.values()):
             raise ValueError(f"execution proof requires sealed request digests: {path}")
-        expected = proof_requests if proof_requests is not None else {key: _request_digest(case["request"]) for key, case in families[family_name].cases.items() if case.get("lifecycle", "active") != "retired"}
-        if not typed_equal(requests, expected):
-            raise ValueError(f"execution proof request membership mismatch: {path}")
+        if not defer_proof_membership:
+            expected = proof_requests if proof_requests is not None else {key: _request_digest(case["request"]) for key, case in families[family_name].cases.items() if case.get("lifecycle", "active") != "retired"}
+            if not typed_equal(requests, expected):
+                raise ValueError(f"execution proof request membership mismatch: {path}")
     shared_document = _mapping(capture["document"], f"{path}.document")
     repeated = set(DOCUMENT_DERIVED_KEYS) & shared_document.keys()
     if repeated:
@@ -948,7 +933,9 @@ def _validate_complete_snapshot(path: Path, snapshot: dict, family: Family,
             if "ref" not in stimulus and "inline" not in stimulus:
                 raise ValueError(f"execution proof requires a complete request: {path}:{key}")
             executed[key] = stimulus.get("semantic_sha256")
-        _validate_capture_file(path, proof_capture, {family.name: family}, proof_requests=executed)
+        # Latest snapshots have versionless filenames; proof identity is the selected release.
+        proof_path = path.with_name(f"{implementation}-{version}.yaml") if path.stem == implementation else path
+        _validate_capture_file(proof_path, proof_capture, {family.name: family}, proof_requests=executed)
 
 
 def _validate_history(
@@ -994,6 +981,18 @@ def _validate_history(
             raise ValueError(
                 f"document override has no observation in {capture_paths[capture_id]}: {missing}"
             )
+        if "execution_proof" in capture:
+            # New authored cases cannot expand an older execution's frozen request set.
+            executed = {}
+            for key, record in state.items():
+                if family.cases[key].get("lifecycle", "active") == "retired":
+                    continue
+                stimulus = record["stimulus"]
+                if "inline" not in stimulus and "ref" not in stimulus:
+                    raise ValueError(f"execution proof requires a complete request: {capture_paths[capture_id]}:{key}")
+                executed[key] = _request_digest(stimulus["inline"] if "inline" in stimulus else family.cases[key]["request"])
+            document = {key: value for key, value in capture.items() if key != "runtime_version"}
+            _validate_capture_file(capture_paths[capture_id], document, {family.name: family}, proof_requests=executed)
         if snapshot_callback is not None:
             snapshot_callback(history, capture_id, state)
     return history
@@ -1066,7 +1065,7 @@ def _load_family(item, snapshot_callback=None, *, external_captures=None, docume
             path,
             document,
             {family.name: family},
-            resource_index=resources, read_yaml=read_yaml,
+            resource_index=resources, read_yaml=read_yaml, defer_proof_membership=True,
         )
         if capture_family != family_name:
             raise ValueError(f"capture family differs from directory: {path}")

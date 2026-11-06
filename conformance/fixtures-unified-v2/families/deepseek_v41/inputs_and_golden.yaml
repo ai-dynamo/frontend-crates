@@ -1900,16 +1900,16 @@ requests:
     - 15
     finish_step: true
   031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -2110,14 +2110,14 @@ requests:
     - 15
     finish_step: true
   117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a:
-    input: '"load_config"''s_name </think> marker'' stays quoted.</think>
-
-
-      I''ve found the bug in `app.py`.'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '"load_config"''s_name </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -2511,16 +2511,16 @@ requests:
     - 15
     finish_step: true
   34397faffd8e9375468e9a21b7ddfb834de166568abf145a884a4f41059c756d:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -2657,13 +2657,13 @@ requests:
     - 15
     finish_step: true
   39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336:
-    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
-
-      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     init:
       starting_state: Reasoning
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -3184,14 +3184,14 @@ requests:
     - 8
     finish_step: true
   58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a:
-    input: '`load_config`''s_name </think> marker'' stays quoted.</think>
-
-
-      I''ve found the bug in `app.py`.'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`load_config`''s_name </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -4179,16 +4179,16 @@ requests:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_87f9a4e69313cc76
   91ddc8d59481124361711b06ca6a8f8ab41b953f2f16aa2c7e52b0b1f6b7fb9e:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -4743,14 +4743,14 @@ requests:
     - 15
     finish_step: true
   b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709:
-    input: '"load_config"''some </think> marker'' stays quoted.</think>
-
-
-      I''ve found the bug in `app.py`.'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '"load_config"''some </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -4961,14 +4961,14 @@ requests:
     - 4
     finish_step: true
   cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf:
-    input: '`load_config`''some </think> marker'' stays quoted.</think>
-
-
-      I''ve found the bug in `app.py`.'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`load_config`''some </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -5025,16 +5025,16 @@ requests:
     - 9
     finish_step: true
   ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -5254,13 +5254,13 @@ requests:
     - 15
     finish_step: true
   dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638:
-    input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
-
-      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     init:
       starting_state: Reasoning
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -10120,11 +10120,11 @@ cases:
       arguments:
         city: Paris
   quoted_name_backtick_possessive_reasoning:
-    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     policy:
     - I2
     - I5
     - I7
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     display_id: UNIFIED.40-quoted_name_backtick_possessive_reasoning
     request: 031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930
     golden:
@@ -10138,11 +10138,11 @@ cases:
 
         I''ve found the bug in `app.py`.'
   quoted_name_backtick_possessive_then_call:
-    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     policy:
     - I2
     - I5
     - I7
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     display_id: UNIFIED.40-quoted_name_backtick_possessive_then_call
     request: 34397faffd8e9375468e9a21b7ddfb834de166568abf145a884a4f41059c756d
     golden:
@@ -10160,11 +10160,11 @@ cases:
 
         I''ve found the bug in `app.py`.'
   quoted_name_backtick_possessive_guided:
-    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     policy:
     - I2
     - I5
     - I7
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     display_id: UNIFIED.34-quoted_name_backtick_possessive_guided
     request: 39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336
     golden:
@@ -10177,10 +10177,10 @@ cases:
       arguments:
         city: '`Paris`'
   quoted_name_backtick_nonpossessive_some:
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     policy:
     - I5
     - I7
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_some
     request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
     golden:
@@ -10192,10 +10192,10 @@ cases:
 
         I''ve found the bug in `app.py`.'
   quoted_name_backtick_nonpossessive_s_name:
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     policy:
     - I5
     - I7
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
     request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
     golden:
@@ -10207,11 +10207,11 @@ cases:
 
         I''ve found the bug in `app.py`.'
   quoted_name_double_quote_possessive_reasoning:
-    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     policy:
     - I2
     - I5
     - I7
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     display_id: UNIFIED.40-quoted_name_double_quote_possessive_reasoning
     request: ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae
     golden:
@@ -10225,11 +10225,11 @@ cases:
 
         I''ve found the bug in `app.py`.'
   quoted_name_double_quote_possessive_then_call:
-    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     policy:
     - I2
     - I5
     - I7
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     display_id: UNIFIED.40-quoted_name_double_quote_possessive_then_call
     request: 91ddc8d59481124361711b06ca6a8f8ab41b953f2f16aa2c7e52b0b1f6b7fb9e
     golden:
@@ -10247,11 +10247,11 @@ cases:
 
         I''ve found the bug in `app.py`.'
   quoted_name_double_quote_possessive_guided:
-    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     policy:
     - I2
     - I5
     - I7
+    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
     display_id: UNIFIED.34-quoted_name_double_quote_possessive_guided
     request: dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638
     golden:
@@ -10264,10 +10264,10 @@ cases:
       arguments:
         city: '`Paris`'
   quoted_name_double_quote_nonpossessive_some:
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     policy:
     - I5
     - I7
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
     request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
     golden:
@@ -10279,10 +10279,10 @@ cases:
 
         I''ve found the bug in `app.py`.'
   quoted_name_double_quote_nonpossessive_s_name:
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     policy:
     - I5
     - I7
+    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
     request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
     golden:

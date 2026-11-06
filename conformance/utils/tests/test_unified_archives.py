@@ -10,7 +10,7 @@ import pytest
 import unified_archives
 import unified_history
 from viewer_catalog import _unified_records
-from test_unified_history import _change, _store, _write_capture
+from test_unified_history import _change, _store, _write_capture, _request
 from pathlib import Path
 import migrate_capture_sources
 from conformance.utils.tests.test_unified_history import _write_family, _write_capture, _change
@@ -178,7 +178,10 @@ def test_archived_mutation_keeps_new_latest_receipt_readable(tmp_path):
     def add_receipt(store):
         capture = store.histories["gemma4", "dynamo_v2"].captures["dynamo_v2-0.5.3"]
         capture["metadata_changes"] = {"text_only": {"verified_recaptures": [{
-            "provenance": {"job_sha256": "a" * 64, "adapter_sha256": "b" * 64, "source_sha256": "c" * 64, "version": "0.5.3"}, "result": {"old": None}}]}}
+            "provenance": {"job_sha256": "a" * 64, "adapter_sha256": "b" * 64, "source_sha256": "c" * 64,
+                           "version": "0.5.3", "implementation": "dynamo_v2"},
+            "resolution": "fresh_execution",
+            "result": {"capture_input": _request(), "chunks": [], "assembled": [], "old": None}}]}}
 
     unified_history._mutate_store(root, add_receipt, compact_executions=True)
     store = unified_history.load_store(root)
