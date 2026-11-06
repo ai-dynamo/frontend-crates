@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.7...dynamo-parsers-v11.0.8) - 2026-11-06
+
+### Bug fixes
+
+- *(parsers)* Preserve ordinary JSON arrays without tool calls ([#559](https://github.com/ai-dynamo/frontend-crates/pull/559))
+
 ## [11.0.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.6...dynamo-parsers-v11.0.7) - 2026-11-04
 
 ### Bug fixes
