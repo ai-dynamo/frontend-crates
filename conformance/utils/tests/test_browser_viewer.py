@@ -479,6 +479,10 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         direct_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1@")}
         jail_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1_jail@")}
         assert direct_v1_versions and jail_v1_versions
+        direct_v1_version = max(direct_v1_versions, key=capture_release_sort_key)
+        jail_v1_version = max(jail_v1_versions, key=capture_release_sort_key)
+        selected_v1_keys = [f"dynamo_v1@{direct_v1_version}", f"dynamo_v1_jail@{jail_v1_version}"]
+        selected_v1_sources = {key.replace("@", "@unified@", 1) for key in selected_v1_keys}
         assert {"dynamo_v1@5.1.3", "dynamo_v1_jail@5.1.3"} <= set(v1_values)
         selected_identity = driver.execute_script("""
           const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === 'tab-unified');
@@ -498,13 +502,13 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         assert not identities_after_picker, "opening a selector fetched capture payloads"
         driver.find_element("css selector", ".comparison-picker[open]").send_keys("\ue00c")
         second = _choose_engine(driver, 1, "dynamo")
-        Select(second).select_by_value("dynamo_v1@10.0.7")
+        Select(second).select_by_value(selected_v1_keys[0])
         _ready(driver, "tab-unified")
         third = _choose_engine(driver, 2, "dynamo")
-        Select(third).select_by_value("dynamo_v1_jail@10.0.7")
+        Select(third).select_by_value(selected_v1_keys[1])
         _ready(driver, "tab-unified")
         visible_families = set(driver.execute_script("return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label)"))
-        selected_sources = {selected_identity, "dynamo_v1@unified@10.0.7", "dynamo_v1_jail@unified@10.0.7"}
+        selected_sources = {selected_identity, *selected_v1_sources}
         expected_families = {family for candidate in catalog["sources"]["candidates"]
                              if f"{candidate['implementation']}@{candidate['mode']}@{candidate['version']}" in selected_sources
                              for family in candidate.get("native_unified_families", candidate["capture_families"])}
@@ -519,20 +523,21 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         """, _historical_dynamo_key(driver))
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == [
-            "dynamo", "dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"]
+            "dynamo", *selected_v1_keys]
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         WebDriverWait(driver, 10).until(lambda page: page.execute_script("return document.body.classList.contains('transpose-mode')"))
         cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified table[data-comparison-table] .matrix-cell[data-ttip-id]')].find(cell => cell.offsetWidth && cell.offsetHeight);")
         assert cell is not None
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
-        assert "10.0.7" in popup.text
+        for version in {direct_v1_version, jail_v1_version}:
+            assert version in popup.text
         assert "golden" in popup.text.lower()
         assert not any(path.endswith(".yaml") or "/fixtures-unified-v2/" in path for path in requests)
         fetched = {resources[urlsplit(path).path.removeprefix("/")]["capture_identity"]
                    for path in requests if urlsplit(path).path.removeprefix("/") in resources}
         allowed = {selected_identity, "dynamo_v2@unified@0.7.24", "dynamo_v2@unified@0.6.1",
-                   "dynamo_v1@unified@5.1.3", "dynamo_v1@unified@10.0.7", "dynamo_v1_jail@unified@10.0.7"}
+                   "dynamo_v1@unified@5.1.3", *selected_v1_sources}
         # Switching engines may admit the picker's most recent historical capture
         # before the following explicit selection replaces it.
         allowed.update(f"dynamo_v2@unified@{item['version']}" for item in recent_v2)

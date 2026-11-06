@@ -78,9 +78,15 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The thirteen native `UnifiedParser` families are `beam`, `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, `muse_spark`, `minimax_m3`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
+The native `UnifiedParser` families are `beam`, `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, `muse_spark`, `minimax_m3`, `gpt_oss`, and `hermes`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
 
-The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to Beam, DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, Muse Spark Open, Nemotron 3 Ultra, and Qwen3. New observations are recorded only for v2. GPT-OSS captures before v2 0.7.28 use v1 reasoning followed by the v2 Harmony tool parser and are labeled split; v2 0.7.28 and later use native UnifiedParser. The split Harmony path remains covered by whole-input and every-boundary comparisons against the same GOLDEN.
+The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to Beam, DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Hermes, Kimi K2/K3, Muse Glimmer, Muse Spark Open, Nemotron 3 Ultra, and Qwen3. New observations are recorded only for v2. GPT-OSS captures before v2 0.7.28 use v1 reasoning followed by the v2 Harmony tool parser and are labeled split; v2 0.7.28 and later use native UnifiedParser. The split Harmony path remains covered by whole-input and every-boundary comparisons against the same GOLDEN.
+
+## Hermes applicability
+
+Hermes follows the [Hermes 3 tool-use template](https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B/blob/main/tokenizer_config.json): one JSON `{name, arguments}` object per `<tool_call>` envelope. Its registry opts into shared scenario renderers with `shared_scenarios: true`; explicit family mappings, schemas, numeric probes, quoted controls, whitespace, dotted names, guided surroundings, and prefilled request states retain their independent GOLDEN. A native JSON envelope inside reasoning interrupts the thought and reasoning resumes after the call. Control-looking bytes inside JSON strings remain data. Native unwrapped arrays and objects remain visible answers.
+
+Hermes has no separate name-bearing native invoke header, so the named bare-header guided crossing duplicates its unnamed wrapper crossing and is excluded. XML parameter typing, DSML separators, Harmony/channel routing, Kimi typed channels, ATEM, and Gemma delimiters do not belong to this grammar. Structural-tag generation is not registered for Hermes; JSON-guided parsing is supported independently of a structural-tag builder. Historical and peer captures are retained as measured evidence; only the current candidate is recaptured for this addition.
 
 ## Nemotron 3 Ultra applicability
 

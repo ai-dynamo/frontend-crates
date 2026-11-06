@@ -59,7 +59,11 @@ from unified_tools import unified_tools
 # row there rather than editing three lists that had to agree.
 _MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"]
 FAMILIES = sorted(f for f, row in _MANIFEST.items() if row.get("scenario_profile") != "native")
-TEMPLATE_FAMILIES = [f for f in FAMILIES if not _MANIFEST[f].get("grammar")]
+TEMPLATE_FAMILIES = sorted(
+    f for f, row in _MANIFEST.items()
+    if not row.get("grammar") and (f in FAMILIES or row.get("shared_scenarios"))
+)
+NATIVE_INPUT_FAMILIES = sorted(set(FAMILIES) | set(TEMPLATE_FAMILIES))
 SHARED_FAMILIES = [f for f in FAMILIES if f != "deepseek_v41"]
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
 UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
@@ -76,6 +80,7 @@ DOTTED_NAME_FAMILIES = frozenset({
     "gemma4",
     "glm47",
     "gpt_oss",
+    "hermes",
     "kimi_k2",
     "kimi_k3",
     "muse_glimmer",
@@ -101,9 +106,10 @@ V1_SPLIT_FAMILIES = frozenset(
 # have a reasoning marker pair", which is how muse_glimmer sat opted out while having a
 # perfectly good reasoning channel routed by recipient. Prefilled channels are a
 # separate axis and are supported everywhere, so they are not gated.
-GUIDED_FAMILIES = {f for f in FAMILIES if _MANIFEST[f].get("guided_tool_output", _MANIFEST[f].get("native", False))}
+GUIDED_FAMILIES = {f for f in NATIVE_INPUT_FAMILIES if _MANIFEST[f].get("guided_tool_output", _MANIFEST[f].get("native", False))}
 
 GRAMMAR_NOTE = {
+    "hermes": "JSON call objects `{name, arguments}` inside `<tool_call>...</tool_call>`; optional `<think>` reasoning. Spec: https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B/blob/main/tokenizer_config.json (tool_use template).",
     "beam": "Beam channel grammar (NOT Harmony): reasoning `<|start|>assistant<|channel|>analysis<|message|>...<|end|>`, visible `<|start|>assistant<|channel|>final<|message|>...<|return|>`, tool `<|start|>assistant to=NAME<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"KEY\">\\nVALUE\\n</rfl:parameter><|call|>` (a call dispatches only once `<|call|>`/`<|end|>` arrives; analysis closes only on `<|end|>`; one LF is stripped at each value edge).",
     "minimax_m3": "reasoning `<mm:think>...</mm:think>`; namespace `]<]minimax[>[` before tool_call, invoke, and recursively named parameter tags.",
     "deepseek_v41": "prompt-prefilled reasoning ends at `</think>`; `<｜DSML｜ calls>` contains V4.1 invoke and parameter tags and ends the turn.",
@@ -289,6 +295,9 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         else value if isinstance(value, str) else _json_with_numeric_literals(value)
         for key, value in arguments.items()
     }
+    if fam == "hermes":
+        call = _json_with_numeric_literals({"name": name, "arguments": arguments})
+        return f"<tool_call>{call}</tool_call>"
     if fam == "gpt_oss":
         args = (_json_with_numeric_literals(arguments)
                 if _contains_numeric_literal(arguments)
@@ -498,7 +507,7 @@ class OnlyFamilies(dict):
         self.inherit_grammar = inherit_grammar
         if not self:
             raise ValueError("OnlyFamilies() with no families declares nothing")
-        unknown = sorted(set(self) - set(FAMILIES))
+        unknown = sorted(set(self) - set(_MANIFEST))
         if unknown:
             raise ValueError(f"OnlyFamilies() names families that do not exist: {unknown}")
 
@@ -601,6 +610,8 @@ def control_tokens(fam):
 
 def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
+    if fam == "hermes":
+        return ""
     if fam == "gpt_oss":
         return ""
     if fam == "kimi_k3":
@@ -621,6 +632,8 @@ def invoke_header_prefix(fam):
 
 
 def guided_invoke_prefix(fam):
+    if fam == "hermes":
+        return "<tool_call>"
     if fam == "deepseek_v41":
         return '<｜DSML｜ invoke name="'
     return invoke_header_prefix(fam)
@@ -638,6 +651,7 @@ def guided_named_invoke_prefix(fam):
         "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
         "gemma4": "call:get_weather",
         "glm47": "<tool_call>get_weather",
+        "hermes": "<tool_call>",
         "kimi_k2": "<|tool_call_begin|>functions.get_weather:0",
         "kimi_k3": '<|open|>call tool="get_weather"',
         "muse_glimmer": '<atem:invoke name="get_weather"',
@@ -868,6 +882,7 @@ _MIXED_CONTROL_STRINGS = {
             "gemma4": "<|tool_call> <tool_call|>",
         "gpt_oss": "<|start|> <|channel|> <|constrain|> <|message|> <|end|> <|return|> <|call|>",
             "glm47": "<tool_call> </tool_call>",
+            "hermes": "<tool_call> </tool_call>",
             "qwen3": "<tool_call> </tool_call> </function>",
             "kimi_k2": "<|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|>",
             "kimi_k3": k3_open("tools") + " " + k3_close("tools") + " " + k3_close("call"),
@@ -1123,6 +1138,7 @@ EDGE = [
      [{"kind": "reasoning", "text": "ok"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ('<think>ok</think><tool_call>{"name":"get_weather","arguments":{"city":"Par', M, M),
         "deepseek_v41": ('<think>ok</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par', M, M),
         "deepseek_v4": ('<think>ok</think><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Par', M, M),
         "gemma4": ("<|channel>thought\nok<channel|><|tool_call>call:get_weather{city:<|\"|>Par",
@@ -1152,6 +1168,7 @@ EDGE = [
      [{"kind": "reasoning", "text": "thinking but stream ends"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("<think>thinking but stream ends", M, M),
         "gemma4": ("<|channel>thought\nthinking but stream ends",
                    M, {"verdict": "match", "note": "verify against v1 gemma4 reasoning finish() at capture time"}),
         "qwen3": ("<think>thinking but stream ends",
@@ -1173,6 +1190,8 @@ EDGE = [
      [{"kind": "tool_call", "name": "run", "arguments": {"cmd": None}}],  # cmd filled per family below
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": (r_tool("hermes", "run", "cmd", "git log </tool_call> --oneline", 0), M, M,
+                   "git log </tool_call> --oneline"),
         "deepseek_v41": (r_tool("deepseek_v41", "run", "cmd", "git log </｜DSML｜ invoke> --oneline", 0),
                          M, M, "git log </｜DSML｜ invoke> --oneline"),
         "gemma4": ("<|tool_call>call:run{cmd:<|\"|>git log }<tool_call|> --oneline<|\"|>}<tool_call|>",
@@ -1209,6 +1228,7 @@ EDGE = [
      [{"kind": "text", "text": "I will check that. "}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("I will check that. </tool_call>", M, M),
         "gemma4": ("I will check that. <tool_call|>",
                    D("LEAK", "vLLM/SGLang leak the orphan close marker into content as the whole tail (TOOLCALLING_CASES.md 5.g)"),
                    D("LEAK", "LIVE finding: v2 gemma4 leaks a lone <tool_call|> end marker into content — with no matching <|tool_call> open the scanner treats it as text. Best-effort-recovery gap (should strip per TOOLCALLING 5.g).")),
@@ -1234,6 +1254,7 @@ EDGE = [
      [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": (r_tool_arguments("hermes", "get_weather", {}, 0), M, M),
         "deepseek_v41": ('<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"></｜DSML｜ invoke></｜DSML｜ calls>', M, M),
         "gemma4": ("<|tool_call>call:get_weather{}<tool_call|>", M, M),
         "qwen3": ("<tool_call>\n<function=get_weather>\n</function>\n</tool_call>", M, M),
@@ -1272,6 +1293,7 @@ EDGE = [
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": (r_tool("hermes", "get_weather", "city", "Paris", 0).removesuffix("</tool_call>"), M, M),
         "deepseek_v41": ('<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter>', M, M, []),
         "deepseek_v4": ('<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter>',
                         {"verdict": "match", "note": "the missing invoke close makes this DSML call malformed, so it is dropped"},
@@ -1303,6 +1325,7 @@ EDGE = [
      [{"kind": "tool_call", "name": "log", "arguments": {"note": None}}],  # note filled per family
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": (r_tool("hermes", "log", "note", "<think>reconsider</think>", 0), M, M, "<think>reconsider</think>"),
         "deepseek_v41": (r_tool("deepseek_v41", "log", "note", "<think>reconsider</think>", 0), M, M, "<think>reconsider</think>"),
         "gemma4": ("<|tool_call>call:log{note:<|\"|><|channel>thought\nreconsider<channel|><|\"|>}<tool_call|>",
                    D("ARG_MISMATCH", "the reasoning extractor lifts the `<|channel>...<channel|>` out of the arg value before tool parsing, so the logged note no longer matches golden"),
@@ -1337,6 +1360,7 @@ EDGE = [
       {"kind": "reasoning", "text": " now answer"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("<think>I should check. " + r_tool("hermes", "get_weather", "city", "Paris", 0) + " now answer</think>", M, M),
         "deepseek_v41": ("<think>I should check. " + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0) + " now answer</think>", M, M),
         "gemma4": ("<|channel>thought\nI should check. <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> now answer<channel|>",
                    D("LEAK", "the reasoning extractor consumes to `<channel|>`, so the nested `<|tool_call>...<tool_call|>` leaks into reasoning_content and the call is dropped; break-out recovery not implemented"),
@@ -1368,6 +1392,7 @@ EDGE = [
       {"kind": "text", "text": " done."}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("Logging now: " + r_tool("hermes", "log", "note", "<think>reconsider</think>", 0) + " done.", M, M, "<think>reconsider</think>"),
         "deepseek_v41": ("Logging now: " + r_tool("deepseek_v41", "log", "note", "<think>reconsider</think>", 0) + " done.", M, M, "<think>reconsider</think>"),
         "gemma4": ("Logging now: <|tool_call>call:log{note:<|\"|><|channel>thought\nreconsider<channel|><|\"|>}<tool_call|> done.",
                    D("ARG_MISMATCH", "the reasoning extractor lifts the `<|channel>...<channel|>` out of the arg before tool parsing; the note no longer matches and the surrounding text can shift"),
@@ -1404,6 +1429,7 @@ EDGE = [
       {"kind": "text", "text": " Here you go."}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("Sure. <think>I should check. " + r_tool("hermes", "get_weather", "city", "Paris", 0) + " now answer</think> Here you go.", M, M),
         "deepseek_v41": ("Sure. <think>I should check. " + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0) + " now answer</think> Here you go.", M, M),
         "gemma4": ("Sure. <|channel>thought\nI should check. <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> now answer<channel|> Here you go.",
                    D("LEAK", "the reasoning extractor consumes to `<channel|>`, leaking the nested tool markup into reasoning_content and dropping the call; the visible text survives on both sides"),
@@ -1430,6 +1456,7 @@ EDGE = [
      [{"kind": "reasoning", "text": "first\nsecond"}, {"kind": "text", "text": "done"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("<think>first</think><think>\nsecond</think>done", M, M),
         "deepseek_v41": ("<think>first</think><think>\nsecond</think>done", M, M),
         "gemma4": ("<|channel>thought\nfirst<channel|><|channel>thought\n\nsecond<channel|>done", M,
                    {"verdict": "match", "note": "the split path merges both spans into one reasoning event, which is what this scenario expects"}),
@@ -1666,6 +1693,7 @@ EDGE = [
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        "hermes": ("checking weather</think>" + r_tool("hermes", "get_weather", "city", "Paris", 0), M, M),
         "deepseek_v41": ("checking weather</think>" + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0), M, M),
         "qwen3": ("checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
@@ -1690,6 +1718,7 @@ EDGE = [
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("weighing options</think>Here's what I found: " + r_tool("hermes", "get_weather", "city", "Paris", 0), M, M),
         "deepseek_v41": ("weighing options</think>Here's what I found: " + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0), M, M),
         "qwen3": ("weighing options</think>Here's what I found: <tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
@@ -1712,6 +1741,7 @@ EDGE = [
       {"kind": "text", "text": "The answer is 42."}],
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {
+        "hermes": ("no tool needed</think>The answer is 42.", M, M),
         "deepseek_v41": ("no tool needed</think>The answer is 42.", M, M),
         "qwen3": ("no tool needed</think>The answer is 42.",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
@@ -1744,6 +1774,7 @@ EDGE = [
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        "hermes": ("<think>checking weather</think>" + r_tool("hermes", "get_weather", "city", "London", 0), M, M),
         "deepseek_v41": ("<think>checking weather</think>" + r_tool("deepseek_v41", "get_weather", "city", "London", 0), M, M),
         "gemma4": ("<|channel>thought\nchecking weather<channel|><|tool_call>call:get_weather{city:<|\"|>London<|\"|>}<tool_call|>", M, M),
         # Muse's opener is the routed header itself. Re-emitting it cuts a ZERO-length
@@ -1766,6 +1797,7 @@ EDGE = [
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "length"},
      {
+        "hermes": ('analyzing data</think><tool_call>{"name":"get_weather","arguments":{"city":"Par', M, M),
         "deepseek_v41": ('analyzing data</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par', M, M),
         "deepseek_v4": ('analyzing data</think><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Par', M, M),
         "gemma4": ("analyzing data<channel|><|tool_call>call:get_weather{city:<|\"|>Par",
@@ -1800,6 +1832,8 @@ EDGE = [
      {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        "hermes": ("<think>literal</think> then a call" + r_tool("hermes", "get_weather", "city", "Paris", 0),
+                   M, M, "<think>literal</think> then a call"),
         "deepseek_v41": ("<think>literal</think> then a call" + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0),
                          M, M, "<think>literal</think> then a call"),
         # Muse answers this scenario DIFFERENTLY from the marker-pair families, and the
@@ -2080,7 +2114,7 @@ def _guided_product():
                 family_inputs = OnlyFamilies({
                     family: spec
                     for family, spec in family_inputs.items()
-                    if family not in ("glm47", "beam")
+                    if family not in ("glm47", "beam", "hermes")
                 })
             out.append((
                 scenario,
@@ -3228,9 +3262,9 @@ EDGE.append((
         "<arg_key>note</arg_key><arg_value>null</arg_value>"
         "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>") if family == "glm47"
         else r_tool_arguments(family, "set_labels", MIXED_LABELS_ARGS, 0), M, M,
-    ) for family in FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+    ) for family in NATIVE_INPUT_FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
     {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
-     for family in FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+     for family in NATIVE_INPUT_FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
 ))
 
 # Keep historical scenario IDs and raw spellings; applicability is shared.
@@ -3541,10 +3575,10 @@ EDGE += [
                              VLLM_UNCAPTURABLE.get(family, M), M,
                              [{"kind": "tool_call", "name": "get_weather",
                                 "arguments": arguments_json(unified_numeric_expected(family, label, raw, expected))}])
-                   for family in FAMILIES if applicable(family, label)}),
+                   for family in NATIVE_INPUT_FAMILIES if applicable(family, label)}),
      {family: [{"name": "get_weather", "parameters": {
          "type": "object", "properties": {"value": numeric_schema(family, label, schema)}}}]
-      for family in FAMILIES if applicable(family, label)})
+      for family in NATIVE_INPUT_FAMILIES if applicable(family, label)})
     for scenario, label, schema, raw, expected in NUMERIC_VARIANTS
 ]
 
@@ -3579,8 +3613,8 @@ EDGE.append((
         r_tool_arguments(family, "inspect", _NESTED_NUMERIC_ARGUMENTS, 0),
         VLLM_UNCAPTURABLE.get(family, M), M,
         [{"kind": "tool_call", "name": "inspect", "arguments": _NESTED_NUMERIC_GOLDEN}],
-    ) for family in FAMILIES}),
-    {family: _NESTED_NUMERIC_SCHEMA for family in FAMILIES},
+    ) for family in NATIVE_INPUT_FAMILIES}),
+    {family: _NESTED_NUMERIC_SCHEMA for family in NATIVE_INPUT_FAMILIES},
 ))
 
 
@@ -3604,8 +3638,8 @@ for variant, token in OVERFLOW_SIBLING_VARIANTS:
             r_tool_arguments(family, "echo", arguments, 0),
             VLLM_UNCAPTURABLE.get(family, M), M,
             [{"kind": "tool_call", "name": "echo", "arguments": golden}],
-        ) for family in FAMILIES}),
-        {family: tools for family in FAMILIES},
+        ) for family in NATIVE_INPUT_FAMILIES}),
+        {family: tools for family in NATIVE_INPUT_FAMILIES},
     ))
 EDGE.extend(OVERFLOW_SIBLING_CASES)
 
@@ -3616,6 +3650,7 @@ _NATIVE_QUOTED_CONTROL = {
     "deepseek_v41": "<｜DSML｜ calls>",
     "gemma4": "<|tool_call>",
     "glm47": "<tool_call>",
+    "hermes": "<tool_call>",
     "kimi_k2": "<|tool_calls_section_begin|>",
     "kimi_k3": "<|open|>call",
     "muse_glimmer": "<|start|>assistant to=get_weather<|message|>",
@@ -3755,7 +3790,7 @@ EDGE.append((
 
 for _named in (False, True):
     _families = {}
-    for _family in FAMILIES:
+    for _family in NATIVE_INPUT_FAMILIES:
         _closer = control_tokens(_family)[1]
         _reasoning = f"The literal 'doesn't {_closer} marker' stays quoted."
         _payload = json.dumps({"city": "Paris"} if _named else {"name": "get_weather", "arguments": {"city": "Paris"}})
@@ -4569,11 +4604,16 @@ def _registered_native_cases(fam):
     for edge in EDGE:
         init = edge[4] or {}
         mapping = _edge_case_family_policy(edge)
+        if _MANIFEST[fam].get("shared_scenarios") and fam in mapping:
+            cases.update(_build_edge_cases(fam, [edge]))
+            continue
         if edge[0] not in _TEMPLATE_EDGE_NAMES and not isinstance(mapping, OnlyFamilies) and fam not in mapping:
             raise KeyError(f"{edge[0]}: no input authored for family {fam!r}")
         if init.get("tool_output_mode", "Native") == "Native" or isinstance(mapping, OnlyFamilies):
             continue
-        if not isinstance(mapping, dict) or set(mapping) != set(_TEMPLATE_FAMILIES):
+        if not isinstance(mapping, dict) or set(mapping) not in (
+            set(_TEMPLATE_FAMILIES), set(NATIVE_INPUT_FAMILIES)
+        ):
             continue
         inputs = {entry[0] for entry in mapping.values()}
         if len(inputs) != 1:
@@ -4648,11 +4688,15 @@ def build_cases(fam):
         _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
         cases = _apply_unified_numeric_goldens(cases, fam)
+    if _MANIFEST[fam].get("shared_scenarios"):
+        for case in cases.values():
+            case.setdefault("input_chunks", re.findall(r"<[^>]*(?:>|$)|[^<]+", case["input"]))
     return {
         key: case
         for key, case in cases.items()
-        if key.rsplit(".", 1)[0].removeprefix("UNIFIED.") not in DOTTED_NAME_SCENARIOS
-        or fam in DOTTED_NAME_FAMILIES
+        if key.rsplit(".", 1)[0].removeprefix("UNIFIED.") not in _MANIFEST[fam].get("scenario_exclusions", {})
+        and (key.rsplit(".", 1)[0].removeprefix("UNIFIED.") not in DOTTED_NAME_SCENARIOS
+             or fam in DOTTED_NAME_FAMILIES)
     }
 
 
@@ -4988,10 +5032,12 @@ def _registered_scenarios(family):
 
 
 def scenario_families(scenario):
-    return _template_scenario_families(scenario) | frozenset(
+    families = _template_scenario_families(scenario) | frozenset(
         family for family in FAMILIES if family not in _TEMPLATE_FAMILIES
         and scenario in _registered_scenarios(family)
     )
+    return frozenset(family for family in families
+                     if scenario not in _MANIFEST[family].get("scenario_exclusions", {}))
 
 
 # --- YAML emitter: `input` as a block literal, everything else as inline JSON
