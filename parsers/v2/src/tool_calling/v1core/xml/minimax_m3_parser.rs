@@ -67,6 +67,17 @@ pub(crate) fn parse_minimax_m3_invoke(
     Ok(Some((name, arguments)))
 }
 
+/// Drops one `\n`/`\r\n` just inside each tag, which M3.1 adds to string values.
+pub(crate) fn trim_tag_newlines(raw: &str) -> &str {
+    let raw = raw
+        .strip_prefix("\r\n")
+        .or_else(|| raw.strip_prefix('\n'))
+        .unwrap_or(raw);
+    raw.strip_suffix("\r\n")
+        .or_else(|| raw.strip_suffix('\n'))
+        .unwrap_or(raw)
+}
+
 // Reads the `name` attribute from `<invoke ...>` using vLLM-compatible quoting variants.
 pub(crate) fn parse_invoke_name(tag_attrs: &str) -> Option<String> {
     let attrs = tag_attrs.trim_start();
@@ -141,6 +152,11 @@ fn parse_parameters(
 
     for (parameter_name, raw_value) in parameter_values(body, config, root_schema) {
         let schema = parameter_schema(root_schema, parameter_name);
+        let raw_value = if is_literal_string(schema.as_deref(), root_schema) {
+            trim_tag_newlines(raw_value)
+        } else {
+            raw_value
+        };
         let value = parse_parameter_value(raw_value, schema.as_deref(), root_schema, config);
         insert_parameter(&mut parameters, parameter_name.to_string(), value);
     }

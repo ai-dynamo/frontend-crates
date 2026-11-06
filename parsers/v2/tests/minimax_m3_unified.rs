@@ -1182,3 +1182,29 @@ fn root_reference_with_definition_containers_resolves_parameters() {
         );
     }
 }
+
+#[test]
+fn string_argument_drops_one_newline_inside_each_tag() {
+    // Exactly one edge `\n`/`\r\n` per tag goes; other whitespace stays.
+    for (raw, want) in [
+        ("caf\u{e9} \u{2713}\n", "caf\u{e9} \u{2713}"),
+        ("\nhello", "hello"),
+        ("\r\nhi\r\n", "hi"),
+        ("\n\nbody\n\n", "\nbody\n"),
+        ("\n", ""),
+        (" padded \n ", " padded \n "),
+        ("line one\nline two", "line one\nline two"),
+    ] {
+        for text in [json!({"type":"string"}), json!({"type":["string","null"]})] {
+            let schema = json!({"type":"object","properties":{"text":text}});
+            let body = format!("]<]minimax[>[<text>{raw}]<]minimax[>[</text>");
+            let init = UnifiedParserInit::default();
+            assert_splits(
+                &call(&body),
+                schema,
+                init,
+                &[expected(json!({"text":want}))],
+            );
+        }
+    }
+}

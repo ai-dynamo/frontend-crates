@@ -309,6 +309,8 @@ struct PartialParameter {
     start: usize,
     boundary: Option<M3InvokeBoundary>,
     streamable: bool,
+    /// Whether a leading newline was checked (see `trim_tag_newlines`).
+    leading_checked: bool,
 }
 
 impl InvokeEmitter for M3Emitter {
@@ -396,21 +398,40 @@ impl InvokeEmitter for M3Emitter {
                     partial.active = None;
                     continue;
                 }
+                // Match `trim_tag_newlines`: hold edge newlines until the close decides.
+                if !active.leading_checked {
+                    let tail = &invoke[active.cursor..];
+                    if tail.is_empty() || tail == "\r" {
+                        break;
+                    }
+                    if tail.starts_with("\r\n") {
+                        active.cursor += 2;
+                    } else if tail.starts_with('\n') {
+                        active.cursor += 1;
+                    }
+                    active.leading_checked = true;
+                }
                 let tail = &invoke[active.cursor..];
                 let close = tail.find(&active.close).map(|at| active.cursor + at);
-                let end = close.unwrap_or_else(|| {
+                let mut end = close.unwrap_or_else(|| {
                     invoke.len() - marker_prefix_suffix_len(tail, [active.close.as_str()])
                 });
+                let segment = &invoke[active.cursor..end];
+                if segment.ends_with("\r\n") {
+                    end -= 2;
+                } else if segment.ends_with('\n') || (close.is_none() && segment.ends_with('\r')) {
+                    end -= 1;
+                }
                 let encoded = serde_json::to_string(&invoke[active.cursor..end])?;
                 arguments.push_str(&encoded[1..encoded.len() - 1]);
                 active.value_json.push_str(&encoded[1..encoded.len() - 1]);
                 active.cursor = end;
-                if close.is_some() {
+                if let Some(close) = close {
                     arguments.push('"');
                     partial
                         .members
                         .push((active.name.clone(), format!("\"{}\"", active.value_json)));
-                    partial.cursor = end + active.close.len();
+                    partial.cursor = close + active.close.len();
                     partial.active = None;
                     continue;
                 }
@@ -475,6 +496,7 @@ impl InvokeEmitter for M3Emitter {
                     ..Default::default()
                 }),
                 streamable,
+                leading_checked: false,
             });
         }
         if arguments.is_empty() {
