@@ -4462,6 +4462,8 @@ cases:
     - kind: text
       text: The answer is 42, no tools needed.
   arg_unicode:
+    historical_ids:
+    - UNIFIED.7-arg_unicode
     description: 'Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.'
     display_id: UNIFIED.7-tool-argument-text-preservation-arg_unicode
     request: 708955592db7bd9f81efce575c040038610bb76bd8e8b9230c36283d14a1146f
@@ -4648,6 +4650,8 @@ cases:
   arg_json_null:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_json_null
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using a type array.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null
     request: ec284be904e629ee8fca31e9583e9807284bee0be190616c2681e128c469b0e2
@@ -4659,6 +4663,8 @@ cases:
   arg_json_null_anyof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_json_null_anyof
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using anyOf.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_anyof
     request: 8c9dc2084ae229269fe66f7debaa572b5e1e6dff91e59f5fb6981a8dfd34ad2b
@@ -4670,6 +4676,8 @@ cases:
   arg_json_null_oneof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_json_null_oneof
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using oneOf.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_oneof
     request: ff9bb3dc7baed1d25c845e6f1a10b543711424c2307de8770c89e9323a42b49f
@@ -4681,6 +4689,8 @@ cases:
   arg_json_null_nullable:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_json_null_nullable
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as string with nullable: true.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_nullable
     request: a1af1c2c429c1cb36325688ea5121022e63fcc5c2ff21def306347793a29b505
@@ -4692,6 +4702,8 @@ cases:
   arg_json_null_const:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_json_null_const
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema permits `city` to be null through an anyOf const-null branch.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_const
     request: 5d852cea3e49d0ca6b93aabdcf36a662115aeaefd5cea4c8d498580657e018aa
@@ -4703,6 +4715,8 @@ cases:
   arg_string_null:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema declares `city` as non-nullable `string`.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null
     request: ae662bc6b398e654ca97f74dd57d68f5b9ce7a383ce4a5bc5dc42ebe82a87dca
@@ -4714,6 +4728,8 @@ cases:
   arg_string_null_union:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null_union
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits string or integer through anyOf, but excludes null.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_union
     request: d1f57ba37d47f0b87849c6c36999f0ad09a3687db7652de16fab0daf5775db14
@@ -4725,6 +4741,8 @@ cases:
   arg_string_null_sibling_anyof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null_sibling_anyof
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has type string alongside a nullable anyOf; both constraints apply, so null is excluded.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
     request: 1605402d512227ecc489aaca9e19f3f5c3938275cbaf1845314111a719caea6a
@@ -4736,6 +4754,8 @@ cases:
   arg_string_null_sibling_oneof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null_sibling_oneof
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has a nullable type array alongside a non-nullable oneOf; their intersection permits string.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
     request: 232f171be4f79a594ef1789bc94c8a0aec6af82900899d73eca9a1b7c5fb6b36
@@ -4747,6 +4767,8 @@ cases:
   arg_string_null_untyped_branch:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null_untyped_branch
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string; an anyOf branch without a type does not remove that requirement.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
     request: 7b579f3506599e1189f57171c7ebe0a1ee3a627f8d0b4ce203f41afb05b3e88e
@@ -4758,6 +4780,8 @@ cases:
   arg_string_null_const:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null_const
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits the literal string "null" through const, or an integer.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_const
     request: e2cf3c1956dca3cb5d057116dfd1fa4dbda5535e76c3f13ac00315b12772fc60
@@ -4769,6 +4793,8 @@ cases:
   arg_string_null_enum:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null_enum
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string alongside an enum containing string "null" and JSON null; the type excludes JSON null.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
     request: c43fb5f7f3a0418c2da46efe84d10bdba1a4aeab7b1bf4cbe48cafe6a4fe463d
@@ -4780,6 +4806,8 @@ cases:
   unused_reference_graph_parameter_types:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-unused_reference_graph_parameter_types
     description: An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
     display_id: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
     request: 258ab9a43da247e98edb1b5293529824c7a61ebb6228e1a16f787879e9b3d5a7
@@ -4793,6 +4821,8 @@ cases:
   nullable_reference_alias_literals:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-nullable_reference_alias_literals
     description: Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null". GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
     display_id: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
     request: 6c08f1067d6d34778bddec2f5b6fdc40dd3712ab8c1ae439de2be89ddb17da08
@@ -4805,6 +4835,8 @@ cases:
   local_schema_id_preserves_type:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-local_schema_id_preserves_type
     description: A directly declared integer remains typed when a local $id disables reference resolution. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.
     display_id: UNIFIED.7-tool-argument-schema-references-local_schema_id_preserves_type
     request: 68820d1432cfb143f58f2471c9c56349caf598d612ee6b60e0e8ceefce2a0d63
@@ -4816,6 +4848,8 @@ cases:
   glm_ref_object:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-glm_ref_object
     description: 'PR #271 compatibility control: a local object reference keeps JSON object text as an object. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_object
     request: e1ff251246f4cff4a77b51555592cbaaaa06ce310f1f0aff0dd6b6d1826fe411
@@ -4828,6 +4862,8 @@ cases:
   glm_ref_encoded_targets:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-glm_ref_encoded_targets
     description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
     request: 801bce76328e13609b3e87f41d968f336998b6e12c54ffbd03797efb939cb7be
@@ -4841,6 +4877,8 @@ cases:
   glm_ref_json_looking_strings:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-glm_ref_json_looking_strings
     description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
     request: f90f7e9cf9e8802696d72cf70e6554cbe0e2183c947bdd2cba7a6b16495c6229
@@ -4855,6 +4893,8 @@ cases:
   glm_ref_scalar_types:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-glm_ref_scalar_types
     description: 'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_scalar_types
     request: bdbfc685ded82a78abab17b819c14b6a0e1e7483b5acd4adb84e8fcee279dfc9
@@ -4869,6 +4909,8 @@ cases:
   not_keyword_type_complement:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-not_keyword_type_complement
     description: 'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
     request: 409834d3b0496e053eaf25e3ee05ce37f9967d8ca3dacf714a73ce6e7b60cbc5
@@ -4881,6 +4923,8 @@ cases:
   conditional_schema_number_types:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-conditional_schema_number_types
     description: 'ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number; an integer `if` with a numeric `else` keeps 37 an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
     request: 99a6595206a4abce8e29286872412640413a288c96a3bda43c4fc25d438b8296
@@ -4893,6 +4937,8 @@ cases:
   reference_object_recursive_and_composed_types:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-reference_object_recursive_and_composed_types
     description: 'ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` all keep their JSON types. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
     request: 2a20e08791af7b430f43d4126ca9626d873417de4fc3a42d9248eaada772b91d
@@ -4913,6 +4959,8 @@ cases:
   enum_contradicting_declared_type:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-enum_contradicting_declared_type
     description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer. GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.'
     display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: f92b19b374d418deeae515a5ce51f6561faf75eb031aa742536c9ce2f2760cae
@@ -5082,6 +5130,8 @@ cases:
   schema_declared_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-declared_string
     description: 'Schema probe declared_string: independently authored value "plain" under {"type": "string"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-declared_string
     request: f856ab1741faae2ddcb9cf42cd745c2f098879f74a49326734d6b6bc95f38db8
@@ -5093,6 +5143,8 @@ cases:
   schema_declared_integer:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-declared_integer
     description: 'Schema probe declared_integer: independently authored value 42 under {"type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer
     request: 8fca7cd580ae3b91e56de50550997824bff5d5d55f299755487ea8e811b4450e
@@ -5115,6 +5167,8 @@ cases:
   schema_declared_number:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-declared_number
     description: 'Schema probe declared_number: independently authored value 3.5 under {"type": "number"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-declared_number
     request: 807c0a0f019901be63238ce31412818f1cedb40192c0163d378f0278a1251fca
@@ -5126,6 +5180,8 @@ cases:
   schema_declared_boolean:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-declared_boolean
     description: 'Schema probe declared_boolean: independently authored value true under {"type": "boolean"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-declared_boolean
     request: d682482ec6cfd645c4d8828925ec6e77d43687825c8b13d61987ab6045202f4e
@@ -5137,6 +5193,8 @@ cases:
   schema_declared_object:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-declared_object
     description: 'Schema probe declared_object: independently authored value {"x": 1} under {"type": "object"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-declared_object
     request: 7ac0662db40b1722ad5a5995bc4dd99a21119eff607a729ff200ac056857f13b
@@ -5149,6 +5207,8 @@ cases:
   schema_declared_array:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-declared_array
     description: 'Schema probe declared_array: independently authored value [1, 2] under {"type": "array"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-declared_array
     request: e77cf49d07f6d6f256af9efee852eadb380ada615ed9d0e84d8426fc059eecbd
@@ -5162,6 +5222,8 @@ cases:
   schema_declared_null:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-declared_null
     description: 'Schema probe declared_null: independently authored value null under {"type": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-declared_null
     request: c1f22c03df08d9d907acaccdc44bbfe8551be396c8f0e05be646a57f05b4c9ab
@@ -5173,6 +5235,8 @@ cases:
   schema_const_plain_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_plain_bare
     description: 'Schema probe const_plain_bare: independently authored value "auto" under {"const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_plain_bare
     request: b313437f95a6728a859574f0b37a5bae51f07d00b03e79e732c9fb3bfb7a82b4
@@ -5184,6 +5248,8 @@ cases:
   schema_const_plain_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_plain_typed
     description: 'Schema probe const_plain_typed: independently authored value "auto" under {"type": "string", "const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_plain_typed
     request: 13ad2830fbd1d439525f0fc3e381f7dbff7d94b76f53bbb5fd01b943ce3c74f8
@@ -5195,6 +5261,8 @@ cases:
   schema_const_plain_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_plain_allof
     description: 'Schema probe const_plain_allof: independently authored value "auto" under {"allOf": [{"const": "auto"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_plain_allof
     request: 7cd06fab23d9b82c33f77545c1bc18d3a39584284582a9f1be0a2e6d6f6f97d0
@@ -5206,6 +5274,8 @@ cases:
   schema_const_plain_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_plain_ref
     description: 'Schema probe const_plain_ref: independently authored value "auto" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_plain_ref
     request: 4e201de340d8ada6ed695e56e099696502617b6a75b10a0fe8d40dfc6556d70c
@@ -5217,6 +5287,8 @@ cases:
   schema_const_quoted_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_quoted_bare
     description: 'Schema probe const_quoted_bare: independently authored value "\"hello\"" under {"const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_quoted_bare
     request: a7edc720cef5f41711f8aafcc3d8a37a4a585cf3de66c23cbcbcf633e82ed194
@@ -5228,6 +5300,8 @@ cases:
   schema_const_quoted_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_quoted_typed
     description: 'Schema probe const_quoted_typed: independently authored value "\"hello\"" under {"type": "string", "const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_quoted_typed
     request: 23e2eac7f34d1a7f04e765226de38c477249acf70d01ac5a449ae5a9d9c9dbd3
@@ -5239,6 +5313,8 @@ cases:
   schema_const_quoted_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_quoted_allof
     description: 'Schema probe const_quoted_allof: independently authored value "\"hello\"" under {"allOf": [{"const": "\"hello\""}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_quoted_allof
     request: 79386abc97f80b793f1c682543eac5592b98eb955442f0ef78944bcaee44e06a
@@ -5250,6 +5326,8 @@ cases:
   schema_const_quoted_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_quoted_ref
     description: 'Schema probe const_quoted_ref: independently authored value "\"hello\"" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_quoted_ref
     request: e5d6aef00eddb904123dfc51ee25579ef3caf386b519a06cf899ae376bbefab4
@@ -5261,6 +5339,8 @@ cases:
   schema_const_object_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_object_bare
     description: 'Schema probe const_object_bare: independently authored value "{\"x\":1}" under {"const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_object_bare
     request: 75a723e842bdf18e5aa18da8fa857cfd175e3cf094277a8d2748bdb1415bc8c4
@@ -5272,6 +5352,8 @@ cases:
   schema_const_object_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_object_typed
     description: 'Schema probe const_object_typed: independently authored value "{\"x\":1}" under {"type": "string", "const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_object_typed
     request: 3257ac23c490a2206ddd46f44e5129e189f694d7f08821e03c1458bd20eb5d84
@@ -5283,6 +5365,8 @@ cases:
   schema_const_object_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_object_allof
     description: 'Schema probe const_object_allof: independently authored value "{\"x\":1}" under {"allOf": [{"const": "{\"x\":1}"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_object_allof
     request: 93c5850d686bc88bb65e0a30f3afd7d4ed328c249ccf1b1ef9d9397ff5cc4980
@@ -5294,6 +5378,8 @@ cases:
   schema_const_object_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_object_ref
     description: 'Schema probe const_object_ref: independently authored value "{\"x\":1}" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_object_ref
     request: 09750dd5d76c0f672976ac3b173a83d844400adef1603fbcc163aa64a1eda2d5
@@ -5305,6 +5391,8 @@ cases:
   schema_const_array_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_array_bare
     description: 'Schema probe const_array_bare: independently authored value "[1,2]" under {"const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_array_bare
     request: 712a774d925d452e02047cf066019355f94ead09aa98e10b502184a2ee4b5779
@@ -5316,6 +5404,8 @@ cases:
   schema_const_array_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_array_typed
     description: 'Schema probe const_array_typed: independently authored value "[1,2]" under {"type": "string", "const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_array_typed
     request: 5c36c428a9e5bed5621bfdf8eb24c6ca1c2ed2d7436a8f8e46c5c116bc5b3472
@@ -5327,6 +5417,8 @@ cases:
   schema_const_array_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_array_allof
     description: 'Schema probe const_array_allof: independently authored value "[1,2]" under {"allOf": [{"const": "[1,2]"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_array_allof
     request: 427c2b9edf8630ac3bd2e65753b6618d7eef0531411b711936b9761751ac7637
@@ -5338,6 +5430,8 @@ cases:
   schema_const_array_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_array_ref
     description: 'Schema probe const_array_ref: independently authored value "[1,2]" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_array_ref
     request: 3810c99e13ef5aea212476e533c3dd86526e31d60329af90b8e0726297a003e6
@@ -5349,6 +5443,8 @@ cases:
   schema_const_number_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_number_bare
     description: 'Schema probe const_number_bare: independently authored value "42" under {"const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_number_bare
     request: 3f1c6edea1d93a99a45b45a3bf05b9ec1c7d22e68513cb805da244d78fd3b845
@@ -5360,6 +5456,8 @@ cases:
   schema_const_number_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_number_typed
     description: 'Schema probe const_number_typed: independently authored value "42" under {"type": "string", "const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_number_typed
     request: b9c1c50fba6a718494be32269355b688f4858ff00f4dddd3e7a5bb2779e57218
@@ -5371,6 +5469,8 @@ cases:
   schema_const_number_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_number_allof
     description: 'Schema probe const_number_allof: independently authored value "42" under {"allOf": [{"const": "42"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_number_allof
     request: 4858b71ea16967452b2d4d3588fcada815d925eead624e5db5c06b1fffdf01b2
@@ -5382,6 +5482,8 @@ cases:
   schema_const_number_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_number_ref
     description: 'Schema probe const_number_ref: independently authored value "42" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_number_ref
     request: 02e9d99741eec4510381deab38c7a8ccedcd58dbf4c55f107573fbbfb837f637
@@ -5393,6 +5495,8 @@ cases:
   schema_const_boolean_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_boolean_bare
     description: 'Schema probe const_boolean_bare: independently authored value "true" under {"const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_boolean_bare
     request: 268f600c6a7e53978052ba4a1a2bff3309410011938c532bb9394e1f5bcf10c3
@@ -5404,6 +5508,8 @@ cases:
   schema_const_boolean_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_boolean_typed
     description: 'Schema probe const_boolean_typed: independently authored value "true" under {"type": "string", "const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_boolean_typed
     request: fd5722bb72d70bc72b7a7a23f1072c7d6eb3894968d39dd4c349087756bec28d
@@ -5415,6 +5521,8 @@ cases:
   schema_const_boolean_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_boolean_allof
     description: 'Schema probe const_boolean_allof: independently authored value "true" under {"allOf": [{"const": "true"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_boolean_allof
     request: e93fecbae48568f055a06f643706cc55bc92ac27b1728d19885c625e806e35f7
@@ -5426,6 +5534,8 @@ cases:
   schema_const_boolean_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_boolean_ref
     description: 'Schema probe const_boolean_ref: independently authored value "true" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_boolean_ref
     request: acd95e478b29c4ad81e371af7b5cb2e7d323a17dbe0e397089efdf7ff51f6c4b
@@ -5437,6 +5547,8 @@ cases:
   schema_const_null_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_null_typed
     description: 'Schema probe const_null_typed: independently authored value "null" under {"type": "string", "const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_null_typed
     request: 9f91e2fcf4a0025559dba909beb9fc351b05d64593f01ef6f87c32cced550f6a
@@ -5448,6 +5560,8 @@ cases:
   schema_const_null_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_null_allof
     description: 'Schema probe const_null_allof: independently authored value "null" under {"allOf": [{"const": "null"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_null_allof
     request: b2cd041344232243aaabd11ff13b783532356068ecf02975cbd75ef1f81d236e
@@ -5459,6 +5573,8 @@ cases:
   schema_const_null_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_null_ref
     description: 'Schema probe const_null_ref: independently authored value "null" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_null_ref
     request: 1bd3535247bbc85100cbb0fed4b6e894c88db1d49db947f5ecfcbb03c6ecb5ec
@@ -5470,6 +5586,8 @@ cases:
   schema_const_space_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_space_bare
     description: 'Schema probe const_space_bare: independently authored value "  spaced  " under {"const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_space_bare
     request: 53b9638732647e0b0d4075d34d4e344ea926a37b6fd81aa4a86572b6bf37ceb6
@@ -5481,6 +5599,8 @@ cases:
   schema_const_space_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_space_typed
     description: 'Schema probe const_space_typed: independently authored value "  spaced  " under {"type": "string", "const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_space_typed
     request: afdd7456402ab07bd867167fd9ed9cfe68badf3aacb350e8ff5956b4bf12c1e2
@@ -5492,6 +5612,8 @@ cases:
   schema_const_space_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_space_allof
     description: 'Schema probe const_space_allof: independently authored value "  spaced  " under {"allOf": [{"const": "  spaced  "}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_space_allof
     request: 401a9ec82d3de04cbd7a1819bf84e812240490866bbe5b4381f7e80c63bcecad
@@ -5503,6 +5625,8 @@ cases:
   schema_const_space_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_space_ref
     description: 'Schema probe const_space_ref: independently authored value "  spaced  " under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_space_ref
     request: b780b73e97e97d88cba73b283d799c825e10faf57bc2e26c895c3e37d046a112
@@ -5514,6 +5638,8 @@ cases:
   schema_const_unicode_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_unicode_bare
     description: 'Schema probe const_unicode_bare: independently authored value "café" under {"const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_unicode_bare
     request: 7fa684565e75a0882cfff48e18bf860fec3f26b3cc42bcf3609842012c57a533
@@ -5525,6 +5651,8 @@ cases:
   schema_const_unicode_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_unicode_typed
     description: 'Schema probe const_unicode_typed: independently authored value "café" under {"type": "string", "const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_unicode_typed
     request: 090c79f2d6240338a644903070196ab62bd8868ab5a9f940c22ca0f2dff3cfa0
@@ -5536,6 +5664,8 @@ cases:
   schema_const_unicode_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_unicode_allof
     description: 'Schema probe const_unicode_allof: independently authored value "café" under {"allOf": [{"const": "café"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_unicode_allof
     request: eb6d9367c16bfc849cf5bd9759161466698bb0c6b9537ae873f902fe01b74dae
@@ -5547,6 +5677,8 @@ cases:
   schema_const_unicode_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_unicode_ref
     description: 'Schema probe const_unicode_ref: independently authored value "café" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_unicode_ref
     request: a8e82adfe21b634f002f1a8b035d0ffdbb530c6c98e704d994d763265164d740
@@ -5558,6 +5690,8 @@ cases:
   schema_const_entity_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_entity_bare
     description: 'Schema probe const_entity_bare: independently authored value "&lt;" under {"const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_entity_bare
     request: fed7dbc4d8b04edf5da8286f76902185e001966b5c009413f28fbe008c85a649
@@ -5569,6 +5703,8 @@ cases:
   schema_const_entity_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_entity_typed
     description: 'Schema probe const_entity_typed: independently authored value "&lt;" under {"type": "string", "const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_entity_typed
     request: b8becabb16d3948d7f8c05b7d1bdf8e3689446838b0a4d689f2e96b22136cf06
@@ -5580,6 +5716,8 @@ cases:
   schema_const_entity_allof:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_entity_allof
     description: 'Schema probe const_entity_allof: independently authored value "&lt;" under {"allOf": [{"const": "&lt;"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_entity_allof
     request: e44e0b27819519a4dc309551287a66ab2103e1bc2d6c93d37febfed9419cefb7
@@ -5591,6 +5729,8 @@ cases:
   schema_const_entity_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_entity_ref
     description: 'Schema probe const_entity_ref: independently authored value "&lt;" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_entity_ref
     request: 53c9db4372373f0bcbced5f21e8eb0c6a37541c3caff542a55e3f2fe6d47012f
@@ -5602,6 +5742,8 @@ cases:
   schema_union_anyOf_integer_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_integer_string
     description: 'Schema probe union_anyOf_integer_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_string
     request: 7ed9f03d1588d8436526eabfb1b646f6d4909bc7df0f269431fe7bde18f82681
@@ -5613,6 +5755,8 @@ cases:
   schema_union_anyOf_integer_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_integer_typed
     description: 'Schema probe union_anyOf_integer_typed: independently authored value 42 under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_typed
     request: fcfca93da0b988d0a1b41cad467b703c1603a120da5e8f480e8236937b39d016
@@ -5624,6 +5768,8 @@ cases:
   schema_union_anyOf_number_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_number_string
     description: 'Schema probe union_anyOf_number_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_string
     request: 0609bb4553ce142b60c3bde89be940577cce8bafd097df0c0990a599c08108cc
@@ -5635,6 +5781,8 @@ cases:
   schema_union_anyOf_number_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_number_typed
     description: 'Schema probe union_anyOf_number_typed: independently authored value 3.5 under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_typed
     request: cee8d621ea4ea9f70dc699af48fa00a536b3ed3636c8c8d34624ce421d1f58e9
@@ -5646,6 +5794,8 @@ cases:
   schema_union_anyOf_boolean_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_boolean_string
     description: 'Schema probe union_anyOf_boolean_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_string
     request: 74751bb15c3cc5e51034e7a321550d940d8c8bca809a42f6e82dc7addcb76a0f
@@ -5657,6 +5807,8 @@ cases:
   schema_union_anyOf_boolean_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_boolean_typed
     description: 'Schema probe union_anyOf_boolean_typed: independently authored value true under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_typed
     request: 8fc2f0b559c9dea119e2a59cf8bb20eb4406f0e28fbdfecde3084d4f04e2c1ae
@@ -5668,6 +5820,8 @@ cases:
   schema_union_anyOf_object_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_object_string
     description: 'Schema probe union_anyOf_object_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_string
     request: 2b9e52f42e1f62bed88ac37b07363bd8c54450117e80428e38d1c2b690b07cdd
@@ -5679,6 +5833,8 @@ cases:
   schema_union_anyOf_object_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_object_typed
     description: 'Schema probe union_anyOf_object_typed: independently authored value {"x": 1} under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_typed
     request: 4b67f82a002a03f9327fbe7ca0db8371c142350cdff7c4222dcd6df77878e69d
@@ -5691,6 +5847,8 @@ cases:
   schema_union_anyOf_array_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_array_string
     description: 'Schema probe union_anyOf_array_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_string
     request: 817d5e983af01323987d0794794427214c344563596bdbe71e39a5f19edf38f5
@@ -5702,6 +5860,8 @@ cases:
   schema_union_anyOf_array_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_array_typed
     description: 'Schema probe union_anyOf_array_typed: independently authored value [1, 2] under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_typed
     request: 1eb1774d6124c0209d564e1b5dd724486d8358fa7a246b05004c315f6cf91441
@@ -5715,6 +5875,8 @@ cases:
   schema_union_anyOf_null_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_null_string
     description: 'Schema probe union_anyOf_null_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_string
     request: 074d767bf5ae3dcc5812abb2457b916faccb84475c7e9734466aa020712f2dae
@@ -5726,6 +5888,8 @@ cases:
   schema_union_anyOf_null_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_null_typed
     description: 'Schema probe union_anyOf_null_typed: independently authored value null under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_typed
     request: f678e2c70bb9d30866d36e8625c24ddee7694b221271edca0aceb5fe2805c7c1
@@ -5737,6 +5901,8 @@ cases:
   schema_union_anyOf_integer_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_integer_reverse_string
     description: 'Schema probe union_anyOf_integer_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_string
     request: 5e9844f0cc7fe3647440a87eac7ee10e0141908bff660fc1685031f05b39f841
@@ -5748,6 +5914,8 @@ cases:
   schema_union_anyOf_integer_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_integer_reverse_typed
     description: 'Schema probe union_anyOf_integer_reverse_typed: independently authored value 42 under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_typed
     request: 54b949d99cfcf3d7843f7703569c76695ba048261ba1927ab0c2c98a32ef2834
@@ -5759,6 +5927,8 @@ cases:
   schema_union_anyOf_number_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_number_reverse_string
     description: 'Schema probe union_anyOf_number_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_string
     request: 4e269ca228a450ce0cee13fd229813df302776469c86cd8599c033ee769ce75e
@@ -5770,6 +5940,8 @@ cases:
   schema_union_anyOf_number_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_number_reverse_typed
     description: 'Schema probe union_anyOf_number_reverse_typed: independently authored value 3.5 under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_typed
     request: fdb418c5df5a54bb3b0ba9029a4aed55d07b70658a6b124e165953ab4cff6176
@@ -5781,6 +5953,8 @@ cases:
   schema_union_anyOf_boolean_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_boolean_reverse_string
     description: 'Schema probe union_anyOf_boolean_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_string
     request: 6645986747cc4fc6f258ad36aebe0470ac0e60b40218f30835c78d08e515f68e
@@ -5792,6 +5966,8 @@ cases:
   schema_union_anyOf_boolean_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_boolean_reverse_typed
     description: 'Schema probe union_anyOf_boolean_reverse_typed: independently authored value true under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_typed
     request: 73938287d6455f4ebf97aacb69a0691eb5f109263738f98a54caef5f8c22df1f
@@ -5803,6 +5979,8 @@ cases:
   schema_union_anyOf_object_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_object_reverse_string
     description: 'Schema probe union_anyOf_object_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_string
     request: 3a6179c5612aceb144cf5cd6d800651460ea4d04b8f5bb37d689039dd936653f
@@ -5814,6 +5992,8 @@ cases:
   schema_union_anyOf_object_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_object_reverse_typed
     description: 'Schema probe union_anyOf_object_reverse_typed: independently authored value {"x": 1} under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_typed
     request: a0f53afcf98b2624c6ed70eb95e4a1470079b5f6c7b9d3afe7714ad347e9b436
@@ -5826,6 +6006,8 @@ cases:
   schema_union_anyOf_array_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_array_reverse_string
     description: 'Schema probe union_anyOf_array_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_string
     request: ef42e1e8e46a5a849b0a8baedf4811a81994a13af82c768a26948d25e6e1da50
@@ -5837,6 +6019,8 @@ cases:
   schema_union_anyOf_array_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_array_reverse_typed
     description: 'Schema probe union_anyOf_array_reverse_typed: independently authored value [1, 2] under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_typed
     request: fc10357ef0f0ec8b65d1a1c1536cfedf599192c2afb89785dc90eec43fdcdc9a
@@ -5850,6 +6034,8 @@ cases:
   schema_union_anyOf_null_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_null_reverse_string
     description: 'Schema probe union_anyOf_null_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_string
     request: 06cfdc4849116c5281eb4f6610041a7a5a8483b2e9e749b6e25d0a8c170d5e29
@@ -5861,6 +6047,8 @@ cases:
   schema_union_anyOf_null_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_anyOf_null_reverse_typed
     description: 'Schema probe union_anyOf_null_reverse_typed: independently authored value null under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_typed
     request: 39d83917083821bfc1381d3e38d57677ecf2e1944717665bae69aee7e348a845
@@ -5872,6 +6060,8 @@ cases:
   schema_union_oneOf_integer_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_integer_string
     description: 'Schema probe union_oneOf_integer_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_string
     request: 9214f5d796357ecb7f716d949afe35bf99662a010746cc09cdc06de281cdc0be
@@ -5883,6 +6073,8 @@ cases:
   schema_union_oneOf_integer_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_integer_typed
     description: 'Schema probe union_oneOf_integer_typed: independently authored value 42 under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_typed
     request: 85ca9bf47f5e02df262fa21f31b65162efc7df85f92f5ec48e997fa709d01caa
@@ -5894,6 +6086,8 @@ cases:
   schema_union_oneOf_number_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_number_string
     description: 'Schema probe union_oneOf_number_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_string
     request: 87a7d5383330e828a3a363aee145d5ba302914477c9d28714249506fc4bb9e20
@@ -5905,6 +6099,8 @@ cases:
   schema_union_oneOf_number_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_number_typed
     description: 'Schema probe union_oneOf_number_typed: independently authored value 3.5 under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_typed
     request: 90e65ba57f35486e142f88f99d5025d340a6ef34eb9d05c1a58aa5002b8e48c1
@@ -5916,6 +6112,8 @@ cases:
   schema_union_oneOf_boolean_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_boolean_string
     description: 'Schema probe union_oneOf_boolean_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_string
     request: 107eccd57af5a717481b61dba11ece17d730ea91589760ce2d99721d1363889b
@@ -5927,6 +6125,8 @@ cases:
   schema_union_oneOf_boolean_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_boolean_typed
     description: 'Schema probe union_oneOf_boolean_typed: independently authored value true under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_typed
     request: ff394f2fa861a4b7b1fb62d4f6d18d0740dc05b01e85fe667020c3b93b63bd11
@@ -5938,6 +6138,8 @@ cases:
   schema_union_oneOf_object_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_object_string
     description: 'Schema probe union_oneOf_object_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_string
     request: 1882fff359ef7f7e281959ef66dd7eded113692a00113c286264b0d71edab3ec
@@ -5949,6 +6151,8 @@ cases:
   schema_union_oneOf_object_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_object_typed
     description: 'Schema probe union_oneOf_object_typed: independently authored value {"x": 1} under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_typed
     request: 28283af6aef9d3b13e89508eea9dd7a9d492271e8c6f1b693818af2774763746
@@ -5961,6 +6165,8 @@ cases:
   schema_union_oneOf_array_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_array_string
     description: 'Schema probe union_oneOf_array_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_string
     request: 3e327aa44f36d1f3b3d06b2cc255844045060f6d5fa33b6b230e9bcfbba1e3c2
@@ -5972,6 +6178,8 @@ cases:
   schema_union_oneOf_array_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_array_typed
     description: 'Schema probe union_oneOf_array_typed: independently authored value [1, 2] under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_typed
     request: f83443a8b8132d0f810e6475a26551bd4c7d849ccfc9cdff2fdec92e08feaffa
@@ -5985,6 +6193,8 @@ cases:
   schema_union_oneOf_null_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_null_string
     description: 'Schema probe union_oneOf_null_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_string
     request: 4c19d88f496a6a9b08f46816d40f174653f26d2e85e4c087fb7c5aac35ec8ca6
@@ -5996,6 +6206,8 @@ cases:
   schema_union_oneOf_null_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_null_typed
     description: 'Schema probe union_oneOf_null_typed: independently authored value null under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_typed
     request: fb77c61c4dbfb9d6b4504fd2210fecade37825dd3d20278a19a63d8fa45a7eb7
@@ -6007,6 +6219,8 @@ cases:
   schema_union_oneOf_integer_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_integer_reverse_string
     description: 'Schema probe union_oneOf_integer_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_string
     request: 1e28dcaa8410063266c69d7f9a9cd33efcb9a531f4d6fd8c2e151b2e9c2a0e66
@@ -6018,6 +6232,8 @@ cases:
   schema_union_oneOf_integer_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_integer_reverse_typed
     description: 'Schema probe union_oneOf_integer_reverse_typed: independently authored value 42 under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_typed
     request: 6d860b7f1b138319729795b89b85f2566c72ff23e0393c1e9474fbb2fd9edd8a
@@ -6029,6 +6245,8 @@ cases:
   schema_union_oneOf_number_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_number_reverse_string
     description: 'Schema probe union_oneOf_number_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_string
     request: cbb131beabdbb97575737b5e1458015f0db72d8d8c86d2d27c2be3501783e834
@@ -6040,6 +6258,8 @@ cases:
   schema_union_oneOf_number_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_number_reverse_typed
     description: 'Schema probe union_oneOf_number_reverse_typed: independently authored value 3.5 under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_typed
     request: bb60eb63e6f56f86eaac0dd8e4fd427ae9402969cc60fd5a04e761d2d09e17c7
@@ -6051,6 +6271,8 @@ cases:
   schema_union_oneOf_boolean_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_boolean_reverse_string
     description: 'Schema probe union_oneOf_boolean_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_string
     request: 6cd84fb8e52a9a0250e2ccb33679dd1655ada5bb081889b8606665701bea24f9
@@ -6062,6 +6284,8 @@ cases:
   schema_union_oneOf_boolean_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_boolean_reverse_typed
     description: 'Schema probe union_oneOf_boolean_reverse_typed: independently authored value true under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_typed
     request: 34c8495ce35e251c809d0a83c5a46cfd75b72d9908062605e97082c9ace0cf5a
@@ -6073,6 +6297,8 @@ cases:
   schema_union_oneOf_object_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_object_reverse_string
     description: 'Schema probe union_oneOf_object_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_string
     request: 68ea0a5595ca694ab46dc0b5f1e28ff4941201b5842701f3339164c2ed45b02b
@@ -6084,6 +6310,8 @@ cases:
   schema_union_oneOf_object_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_object_reverse_typed
     description: 'Schema probe union_oneOf_object_reverse_typed: independently authored value {"x": 1} under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_typed
     request: 66a295292e162347e2af91356ef863252e897f76a94c24247dd1525049d5ce47
@@ -6096,6 +6324,8 @@ cases:
   schema_union_oneOf_array_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_array_reverse_string
     description: 'Schema probe union_oneOf_array_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_string
     request: eb29b88847c1b2fcd6b69589f919e287254abff1101d554bbed528b62bab10e4
@@ -6107,6 +6337,8 @@ cases:
   schema_union_oneOf_array_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_array_reverse_typed
     description: 'Schema probe union_oneOf_array_reverse_typed: independently authored value [1, 2] under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_typed
     request: b4781d09780d95724a542df6bcfcf0d8f8fe4bd94985bd901acc3245a4ce9b30
@@ -6120,6 +6352,8 @@ cases:
   schema_union_oneOf_null_reverse_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_null_reverse_string
     description: 'Schema probe union_oneOf_null_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_string
     request: d907ae0c4b795e4ef630c7de815bef262b4464e9ce43ba2323b1294a8484e430
@@ -6131,6 +6365,8 @@ cases:
   schema_union_oneOf_null_reverse_typed:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-union_oneOf_null_reverse_typed
     description: 'Schema probe union_oneOf_null_reverse_typed: independently authored value null under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_typed
     request: 1298587350fbc7e03972dbd97600cac55b77dde0d95bebfdeed43d3d38d36ef9
@@ -6142,6 +6378,8 @@ cases:
   schema_ref_union_anyOf_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-ref_union_anyOf_string
     description: 'Schema probe ref_union_anyOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_string
     request: 2a968d2e7c0cfe68297b6b4f9ed7d839a53f9f1c1306857b75ef7ae388c8faaa
@@ -6153,6 +6391,8 @@ cases:
   schema_ref_union_anyOf_integer:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-ref_union_anyOf_integer
     description: 'Schema probe ref_union_anyOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_integer
     request: 3fe5fa88bcf4e98acea04175c7bbcb6f5957997677d319516a07c00396e73c01
@@ -6164,6 +6404,8 @@ cases:
   schema_intersection_anyOf:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-intersection_anyOf
     description: 'Schema probe intersection_anyOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"anyOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-intersection_anyOf
     request: 4f21607e0b00d17fa3ba3d20f012f1fd4b0caa66d5063b121cd4dee5fa5db8e0
@@ -6175,6 +6417,8 @@ cases:
   schema_ref_union_oneOf_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-ref_union_oneOf_string
     description: 'Schema probe ref_union_oneOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_string
     request: b9c444698dc951cac658eadae2aa4e01a32c739b4bb5325c5a2c2807c34198e4
@@ -6186,6 +6430,8 @@ cases:
   schema_ref_union_oneOf_integer:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-ref_union_oneOf_integer
     description: 'Schema probe ref_union_oneOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_integer
     request: 1331761ab9d3a746965dcd2ede3b50ef2b2d77ef33bbf1c0e62f2f1b56d85d0e
@@ -6197,6 +6443,8 @@ cases:
   schema_intersection_oneOf:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-intersection_oneOf
     description: 'Schema probe intersection_oneOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"oneOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-intersection_oneOf
     request: ae28b993ec8cf29a320da40b8c84af0b984d727d570d89d9aac1b8f6c8abd45d
@@ -6208,6 +6456,8 @@ cases:
   schema_ref_sibling_integer:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-ref_sibling_integer
     description: 'Schema probe ref_sibling_integer: independently authored value 42 under {"$ref": "#/$defs/Choice", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-schema-references-ref_sibling_integer
     request: 3cdbb30fae5f40735ea5897333382b42bbd017331ed5f44a6a72930084cfc919
@@ -6219,6 +6469,8 @@ cases:
   schema_escaped_ref_const:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-escaped_ref_const
     description: 'Schema probe escaped_ref_const: independently authored value "\"hello\"" under {"$ref": "#/$defs/A~1B~0C"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
     request: 509a83ce4a2ae054443c38811233423ad6d4bb4742c838428d82445c61ecb768
@@ -6230,6 +6482,8 @@ cases:
   schema_percent_ref_const:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-percent_ref_const
     description: 'Schema probe percent_ref_const: independently authored value "42" under {"$ref": "#/$defs/Caf%C3%A9"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-schema-references-percent_ref_const
     request: 12b7db508ad24224ac2cfd23445d2acb7081da7034028f9fa3fcbec0ff81eb4c
@@ -6241,6 +6495,8 @@ cases:
   schema_enum_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-enum_string
     description: 'Schema probe enum_string: independently authored value "42" under {"type": "string", "enum": ["auto", "42"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-enum_string
     request: d6981beae42ee078c183b23aabbe94d964c47df87b49e04c973ca3e3755a9023
@@ -6252,6 +6508,8 @@ cases:
   schema_enum_integer:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-enum_integer
     description: 'Schema probe enum_integer: independently authored value 42 under {"type": "integer", "enum": [7, 42]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-enum_integer
     request: 91a82f136b3deb0f8f9e5f031ce9ab4f1537ae39f161c280e30d97fefbe5c4cf
@@ -6263,6 +6521,8 @@ cases:
   schema_type_array_string_integer:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-type_array_string_integer
     description: 'Schema probe type_array_string_integer: independently authored value "42" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer
     request: b72709ff8c21c7c7e64dfa595bd935c915f3e3b8160ff657e4db29576306b0d3
@@ -6274,6 +6534,8 @@ cases:
   schema_type_array_integer_null:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-type_array_integer_null
     description: 'Schema probe type_array_integer_null: independently authored value 42 under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-nullability-type_array_integer_null
     request: 749c29726dc820cdd47987721aac24ef7daae58f85677eb62c71cbbc0018d933
@@ -6285,6 +6547,8 @@ cases:
   schema_type_array_integer_null_null:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-type_array_integer_null_null
     description: 'Schema probe type_array_integer_null_null: independently authored value null under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-nullability-type_array_integer_null_null
     request: dfbd5693038249c8b98b429f331bedb99100936ad6c11f8cd95b1eb5e272bfd6
@@ -6296,6 +6560,8 @@ cases:
   schema_nullable_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-nullable_string
     description: 'Schema probe nullable_string: independently authored value null under {"type": "string", "nullable": true}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-nullability-nullable_string
     request: 93621963ef14f02c2099d7c3e58d7479f4529bc831321171adf7f959add7dcb3
@@ -6307,6 +6573,8 @@ cases:
   schema_const_null_bare:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-const_null_bare
     description: 'Schema probe const_null_bare: independently authored value "null" under {"const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-constants-const_null_bare
     request: 3bde2406b44c17b4ca3f8b2a9adfdefd957efa1f25e28ead117cd4cc24d987e1
@@ -6318,6 +6586,8 @@ cases:
   schema_null_union_ambiguous:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-null_union_ambiguous
     description: 'Schema probe null_union_ambiguous: independently authored value null under {"anyOf": [{"const": "null"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-null_union_ambiguous
     request: 8571915d04ad09cd10e2d0b742d04d90a529f040256e630aa876765738d63efe
@@ -6329,6 +6599,8 @@ cases:
   schema_integer_const_ambiguous:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-integer_const_ambiguous
     description: 'Schema probe integer_const_ambiguous: independently authored value "42" under {"anyOf": [{"const": "42"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-integer_const_ambiguous
     request: 06fee1741908e1aa933aeff34924b6276f3cded4e92075ddab33b9074d030474
@@ -6340,6 +6612,8 @@ cases:
   schema_object_const_union:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-object_const_union
     description: 'Schema probe object_const_union: independently authored value "{\"x\":1}" under {"anyOf": [{"const": "{\"x\":1}"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-unions-and-intersections-object_const_union
     request: d116f2ba7dbd97f50c80142e057ce7b0635c23eaaec146de2ad2223f70708918
@@ -6351,6 +6625,8 @@ cases:
   schema_id_direct_integer:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-id_direct_integer
     description: 'Schema probe id_direct_integer: independently authored value 42 under {"$id": "https://example.test/schema", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     display_id: UNIFIED.7-tool-argument-declared-types-id_direct_integer
     request: eb4b929dec5d0f62ae05eacd73d87f0c8b2c541bd4b1993ee8edce740e86789a
@@ -6396,6 +6672,8 @@ cases:
     policy:
     - I6
     - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
     description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
     display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
     request: e8299bfdd877d96f8728c4d4e50066276f5c99528792e89df1e75470c9ba6ee5
@@ -6408,6 +6686,8 @@ cases:
       arguments:
         x: 2
   arg_marker_in_string:
+    historical_ids:
+    - UNIFIED.7-arg_marker_in_string
     description: A close-marker-looking sequence INSIDE a string arg value. Invariant I7 — the value is data, preserved exactly, not truncated at the marker-looking substring.
     display_id: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
     request: 76a323ddbdaf91f7d7a13ec01bae7c3f9ae395ca6afe44e95dcb722e98a3b1e8
@@ -6628,6 +6908,8 @@ cases:
   deepseek_v41_mixed_control_text_in_string:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-deepseek_v41_mixed_control_text_in_string
     description: A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.
     display_id: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
     request: b144d713da4863735c48eb48c3fbd60dd485922569bf578dcb6681e36d1768f5
@@ -6886,6 +7168,8 @@ cases:
   arg_json_null_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_json_null_ref
     description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
     request: d775b5e6478ede529cfda91861ff760f5740771c95095e730fe79a17bcb25718
@@ -6897,6 +7181,8 @@ cases:
   arg_string_null_ref:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_string_null_ref
     description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
     request: f914471a8e68e357d8668ca8b8e6f8eff0952456d3159d5d43724468b3082d68
@@ -6908,6 +7194,8 @@ cases:
   arg_null_mixed_labels:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_null_mixed_labels
     description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-directed values use bare null text; typed grammars use native null and string values. Expect {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_null_mixed_labels
     request: 9e89fcc8e98098655649f671dcc5c1519d949f0e246f3814637167240525eca4
@@ -6921,6 +7209,8 @@ cases:
   arg_object_quoted_parameter_close:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_object_quoted_parameter_close
     description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
     display_id: UNIFIED.7-tool-argument-text-preservation-arg_object_quoted_parameter_close
     request: 14814669e0604451b9439bbfe0f2a7c098cffa386ac42dcc1061bf3f2250f743
@@ -6933,6 +7223,8 @@ cases:
   arg_array_quoted_parameter_close:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_array_quoted_parameter_close
     description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
     display_id: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
     request: f5b82ff0e187b01e81a8ae7cbc82f754bc57b59cc68ae934bfc1110368eeea6e
@@ -6945,6 +7237,8 @@ cases:
   arg_numeric_14_const_decimal:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_const_decimal
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_decimal
     request: 83a37943771dfef7863ac45109f0ca4a82b0e51862d85f2e4ed5526ad7564f83
@@ -6955,6 +7249,8 @@ cases:
   arg_numeric_14_const_exponent:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_const_exponent
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_exponent
     request: f5fd24027d2412efa8aeb0c41e91768240f0a5b07e88cf8de004884a9d7b47ab
@@ -6965,6 +7261,8 @@ cases:
   arg_numeric_14_enum_decimal:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_enum_decimal
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_decimal
     request: 86fb8ed21d760aab8e46bc7353b3ac28ca81f293844e182073e1895dfd7074c1
@@ -6975,6 +7273,8 @@ cases:
   arg_numeric_14_enum_exponent:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_enum_exponent
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_exponent
     request: bb689e3205c57f4f53eb419050792241a0b9f3b5dafe8ebd90f61d1aba66d33d
@@ -6985,6 +7285,8 @@ cases:
   arg_numeric_14_large_decimal:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_large_decimal
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_decimal
     request: e1cd0b42e4addd3b934dbd82dd561ed7cda9969d245c8c74f4f3939163692e22
@@ -6995,6 +7297,8 @@ cases:
   arg_numeric_14_large_exponent:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_large_exponent
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_exponent
     request: b1f1c797a3fa4e688013d3ab6eb54d2e3b90a00b472ef6cb5dda0695444b54be
@@ -7005,6 +7309,8 @@ cases:
   arg_numeric_14_negative:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_negative
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input -4.2E+1; expected -42.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative
     request: 40f4cfe083da61def282c66a6fbb8c49b739215cfb9ccfaeee2bfa4222a7cd30
@@ -7015,6 +7321,8 @@ cases:
   arg_numeric_14_negative_exponent:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_negative_exponent
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4200e-2; expected 42.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative_exponent
     request: 209018c1c7d22cc593ef970ee1b0d389b6d2b1608b73eead5cf1e25428490b63
@@ -7025,6 +7333,8 @@ cases:
   arg_numeric_14_zero_underflow:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_14_zero_underflow
     description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 0.0e-400; expected 0.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_zero_underflow
     request: a742c3e0f79df51db80b4e17922a54a36bacd866a734046c6dbe0a6d634a9f15
@@ -7035,6 +7345,8 @@ cases:
   arg_numeric_15_ordinary:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_15_ordinary
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 42.5; expected 42.5.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_ordinary
     request: 62672f7824103193888f5e1a435eb6a31e7d2bda5169028162fecb89d81989a5
@@ -7045,6 +7357,8 @@ cases:
   arg_numeric_15_round_down:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_15_round_down
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740992.5; expected 9007199254740992.5.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_down
     request: a23aca012790832b802bbcedf6dc9849b2a248f4bed2f5a53a7876d908673243
@@ -7055,6 +7369,8 @@ cases:
   arg_numeric_15_round_up:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_15_round_up
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.1; expected 9007199254740993.1.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_up
     request: 6da53d0a1ea1d221c5bc7331880ce541d8fb33030af7ca5bf9e3da0e6c840438
@@ -7065,6 +7381,8 @@ cases:
   arg_numeric_15_quarter:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_15_quarter
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.25; expected 9007199254740993.25.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_quarter
     request: 1f55d717b9c6d2c327b75d5e53ab6caacbec0c154526474276dc70a0d687cc14
@@ -7075,6 +7393,8 @@ cases:
   arg_numeric_15_exponent:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_15_exponent
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9.0071992547409925e15; expected 9.0071992547409925e15.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_exponent
     request: 05856afdd5019838f17d3945cf8cbc04469fdb8a7d8332dac7e509f65634962f
@@ -7085,6 +7405,8 @@ cases:
   arg_numeric_15_small:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_15_small
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 0.10000000000000000001; expected 0.10000000000000000001.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_small
     request: 164f8d3fe71b2188715324b6dfbd3767d0e957925abe0fbd62561839097d1c94
@@ -7095,6 +7417,8 @@ cases:
   arg_numeric_15_negative:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_15_negative
     description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input -9007199254740992.5; expected -9007199254740992.5.'
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_negative
     request: 5fa9e22ecf43dede4bde2e9b7a48e6db04bcfe3b22804659f70f4fb6f6789b01
@@ -7105,6 +7429,8 @@ cases:
   arg_numeric_nested_exact:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_nested_exact
     description: Nested objects and arrays preserve exact large integers, long decimals, and underflow-sized numbers.
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_nested_exact
     request: f0d009ea3918ea08d7f2259052c170ab2c829d8b9080a8529c7f066652044c2c
@@ -7115,6 +7441,8 @@ cases:
   arg_numeric_overflow_siblings_finite:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_overflow_siblings_finite
     description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
     request: 6ecb42d151bf853cf9ad5fd8c8753c35394323be66a0e239140fe6cd882dfcbd
@@ -7125,6 +7453,8 @@ cases:
   arg_numeric_overflow_siblings_positive:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_overflow_siblings_positive
     description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
     request: 1d31ae512de02dbb3770dd4ba6bda84fdfab47a1fc348eca6b4d6f30542304af
@@ -7135,6 +7465,8 @@ cases:
   arg_numeric_overflow_siblings_negative:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-arg_numeric_overflow_siblings_negative
     description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
     display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
     request: 4cd7dce28efc35f96ae850568a1bc8ee272620740d98fd6cbbf88390a525d437
@@ -7498,6 +7830,8 @@ cases:
   xml_string_type_single_quoted_object:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-xml_string_type_single_quoted_object
     description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
     display_id: UNIFIED.7-tool-argument-declared-types-xml_string_type_single_quoted_object
     request: b6755dc1853c0a57efe3878f5f611cf7fbf56c51b0427ca9ca27beee83aefdc4
@@ -7509,6 +7843,8 @@ cases:
   xml_string_type_double_quoted_object:
     policy:
     - I7
+    historical_ids:
+    - UNIFIED.7-xml_string_type_double_quoted_object
     description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
     display_id: UNIFIED.7-tool-argument-declared-types-xml_string_type_double_quoted_object
     request: cc8b98bd7170fa1a733b61ce5e34a20122b9cdf065febe2e0fc12cca0b37207d
