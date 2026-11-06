@@ -292,6 +292,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work |
 | `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels, and Pillow 12.3's pass order: images taller than 100× their width shrink vertically first) |
 | `image::resize::resize_rgb(AtenU8)` | `torchvision resize(antialias=True)` on uint8 | **bitwise** (ATen's per-axis i16 weight precision) |
+| `image::resize::resize_rgb(AtenF32Bilinear)` | torchvision v1 `transforms.functional.resize(BILINEAR)` on a uint8 tensor (f32 antialias, then round) | **bitwise** against torch's DEFAULT CPU dispatch (`ATEN_CPU_CAPABILITY=default`) for outputs at least 2 pixels wide; torch's AVX2 build fuses part of each sum into FMA and can differ by one |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |

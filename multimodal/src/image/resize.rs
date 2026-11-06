@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Bit-exact resamplers: PIL's fixed-point kernels and torchvision's uint8
-//! antialias path. Which one a family selects is part of its spec — the two
-//! quantize weights differently (i32 vs per-axis i16), so their outputs are
-//! NOT interchangeable at the byte level.
+//! Bit-exact resamplers: PIL's fixed-point kernels, torchvision's uint8
+//! antialias path, and ATen's float32 antialias bilinear. Which one a family
+//! selects is part of its spec — they quantize or round differently, so their
+//! outputs are NOT interchangeable at the byte level.
 
 use crate::execution;
 
@@ -20,22 +20,35 @@ pub enum Filter {
     Bicubic,
 }
 
-/// A resampler reproduced bit-exactly. Both share PIL's geometry, kernels and
-/// per-pass u8 rounding, and differ only in how the weights are quantized.
+/// A resampler reproduced bit-exactly.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Resample {
     /// PIL `Image.resize`, i32 weights.
     Pil(Filter),
     /// ATen's uint8 antialias bicubic — torchvision `resize(antialias=True)` on
     /// a uint8 tensor. i16 weights, so it rounds unlike `Pil(Bicubic)`.
     AtenU8,
+    /// ATen's float32 antialias bilinear: torchvision v1 `resize` on a uint8
+    /// tensor. Bitwise against torch's DEFAULT CPU dispatch for outputs at
+    /// least 2 pixels wide. x86 hosts pick torch's AVX2 kernels by default,
+    /// whose FMA can move a pixel by one.
+    AtenF32Bilinear,
 }
 
-impl Resample {
+/// The fixed-point resamplers. They share PIL's geometry, kernels and
+/// per-pass u8 rounding, and differ only in how the weights are quantized.
+#[derive(Clone, Copy)]
+enum FixedPoint {
+    Pil(Filter),
+    AtenU8,
+}
+
+impl FixedPoint {
     fn filter(self) -> Filter {
         match self {
-            Resample::Pil(filter) => filter,
-            Resample::AtenU8 => Filter::Bicubic,
+            FixedPoint::Pil(filter) => filter,
+            FixedPoint::AtenU8 => Filter::Bicubic,
         }
     }
 
@@ -44,15 +57,15 @@ impl Resample {
     /// horizontal first; Pillow's `Image.resize` (12.3) shrinks an image
     /// taller than 100× its width vertically first.
     fn vertical_first(self, h: usize, w: usize, out_h: usize) -> bool {
-        matches!(self, Resample::Pil(_)) && h > w * 100 && out_h < h
+        matches!(self, FixedPoint::Pil(_)) && h > w * 100 && out_h < h
     }
 
     /// Fixed-point precision for one axis's already-normalized weights. ATen
     /// (`_compute_weights_precision`) takes the widest that stays inside i16.
     fn precision(self, weights: &[f64]) -> u32 {
         match self {
-            Resample::Pil(_) => PIL_PRECISION_BITS,
-            Resample::AtenU8 => {
+            FixedPoint::Pil(_) => PIL_PRECISION_BITS,
+            FixedPoint::AtenU8 => {
                 let wmax = weights.iter().fold(0.0f64, |m, w| m.max(w.abs()));
                 (1..=PIL_PRECISION_BITS)
                     .take_while(|&p| (0.5 + wmax * (1u64 << p) as f64) < (1 << 15) as f64)
@@ -114,7 +127,7 @@ struct Coeffs {
     prec: u32,
 }
 
-fn precompute_coeffs(in_size: usize, out_size: usize, resample: Resample) -> Coeffs {
+fn precompute_coeffs(in_size: usize, out_size: usize, resample: FixedPoint) -> Coeffs {
     let filter = resample.filter();
     let scale = in_size as f64 / out_size as f64;
     let filterscale = if scale < 1.0 { 1.0 } else { scale };
@@ -246,9 +259,14 @@ fn resize_passes(
     out_w: usize,
     resample: Resample,
 ) -> Vec<u8> {
-    let coeffs = |in_size, out_size| precompute_coeffs(in_size, out_size, resample);
+    let fixed = match resample {
+        Resample::Pil(filter) => FixedPoint::Pil(filter),
+        Resample::AtenU8 => FixedPoint::AtenU8,
+        Resample::AtenF32Bilinear => return f32_bilinear(src, h, w, out_h, out_w),
+    };
+    let coeffs = |in_size, out_size| precompute_coeffs(in_size, out_size, fixed);
     match (out_w != w, out_h != h) {
-        (true, true) if resample.vertical_first(h, w, out_h) => {
+        (true, true) if fixed.vertical_first(h, w, out_h) => {
             let tmp = resample_vertical(src, w, out_h, &coeffs(h, out_h));
             resample_horizontal(&tmp, out_h, w, out_w, &coeffs(w, out_w))
         }
@@ -260,6 +278,84 @@ fn resize_passes(
         (false, true) => resample_vertical(src, w, out_h, &coeffs(h, out_h)),
         (false, false) => src.to_vec(),
     }
+}
+
+/// ATen's `_upsample_bilinear2d_aa` on f32; each output sums its taps in
+/// order, without FMA.
+fn f32_bilinear(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -> Vec<u8> {
+    let mut plane: Vec<f32> = src.iter().map(|&v| f32::from(v)).collect();
+    if out_w != w {
+        plane = f32_horizontal(&plane, h, w, out_w, &f32_bilinear_taps(w, out_w));
+    }
+    if out_h != h {
+        plane = f32_vertical(&plane, out_w, out_h, &f32_bilinear_taps(h, out_h));
+    }
+    plane.iter().map(|&v| v.round_ties_even() as u8).collect()
+}
+
+/// The f32/f64 mix mirrors ATen's promotions in
+/// `_compute_indices_min_size_weights_aa` and the bilinear `aa_filter`.
+fn f32_bilinear_taps(in_size: usize, out_size: usize) -> Vec<(usize, Vec<f32>)> {
+    let scale = in_size as f32 / out_size as f32;
+    let (support, invscale) = if scale >= 1.0 {
+        (scale, (1.0 / f64::from(scale)) as f32)
+    } else {
+        (1.0, 1.0)
+    };
+    let max_taps = f64::from(support).ceil() as i64 * 2 + 1;
+    (0..out_size)
+        .map(|i| {
+            let center = (f64::from(scale) * (i as f64 + 0.5)) as f32;
+            let xmin = ((f64::from(center - support) + 0.5) as i64).max(0);
+            let xmax = ((f64::from(center + support) + 0.5) as i64).min(in_size as i64);
+            let mut weights: Vec<f32> = (xmin..xmin + (xmax - xmin).clamp(0, max_taps))
+                .map(|x| {
+                    let d = ((f64::from(x as f32 - center) + 0.5) * f64::from(invscale)) as f32;
+                    (1.0 - f64::from(d.abs())).max(0.0) as f32
+                })
+                .collect();
+            let total = weights.iter().fold(0.0f32, |sum, &w| sum + w);
+            weights.iter_mut().for_each(|w| *w /= total);
+            (xmin as usize, weights)
+        })
+        .collect()
+}
+
+fn weighted_sum(weights: &[f32], value: impl Fn(usize) -> f32) -> f32 {
+    weights
+        .iter()
+        .enumerate()
+        .fold(0.0, |sum, (j, &w)| sum + value(j) * w)
+}
+
+fn f32_horizontal(
+    src: &[f32],
+    h: usize,
+    w: usize,
+    out_w: usize,
+    taps: &[(usize, Vec<f32>)],
+) -> Vec<f32> {
+    let mut out = vec![0.0f32; h * out_w * 3];
+    execution::for_chunks_mut(&mut out, out_w * 3, |y, row| {
+        let src_row = &src[y * w * 3..(y + 1) * w * 3];
+        for (xx, (xmin, weights)) in taps.iter().enumerate() {
+            for c in 0..3 {
+                row[xx * 3 + c] = weighted_sum(weights, |j| src_row[(xmin + j) * 3 + c]);
+            }
+        }
+    });
+    out
+}
+
+fn f32_vertical(src: &[f32], w: usize, out_h: usize, taps: &[(usize, Vec<f32>)]) -> Vec<f32> {
+    let mut out = vec![0.0f32; out_h * w * 3];
+    execution::for_chunks_mut(&mut out, w * 3, |yy, row| {
+        let (ymin, weights) = &taps[yy];
+        for (i, v) in row.iter_mut().enumerate() {
+            *v = weighted_sum(weights, |j| src[(ymin + j) * w * 3 + i]);
+        }
+    });
+    out
 }
 
 pub fn resize_lanczos_rgb(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -> Vec<u8> {
@@ -421,6 +517,80 @@ mod tests {
         assert_eq!(
             resize_rgb(&src, 1, 1024, 1, 4, Resample::AtenU8),
             [130, 131, 123, 127, 128, 128, 126, 128, 128, 128, 124, 131]
+        );
+    }
+
+    /// `torchvision.transforms.functional.resize(u8, size, BILINEAR)` on the
+    /// CHW tensor of `SRC`, torch 2.14.1 with `ATEN_CPU_CAPABILITY=default`.
+    /// The 7x11 upscale is one byte away from an all-FMA sum.
+    #[test]
+    fn f32_bilinear_matches_torch_default_dispatch() {
+        let cases: [(usize, usize, &[u8]); 4] = [
+            (
+                OH,
+                OW,
+                &[
+                    168, 55, 115, 143, 168, 115, 130, 168, 118, 168, 148, 179, 103, 147, 135, 132,
+                    116, 138, 155, 154, 95, 60, 171, 107, 95, 158, 142, 64, 101, 111, 115, 80, 82,
+                    138, 169, 82, 124, 117, 101, 129, 90, 84, 135, 95, 101, 76, 93, 128, 75, 130,
+                    147, 94, 102, 150, 122, 105, 110, 97, 113, 106,
+                ],
+            ),
+            (
+                H,
+                OW,
+                &[
+                    164, 42, 91, 163, 165, 111, 151, 213, 87, 157, 172, 213, 134, 160, 121, 174,
+                    76, 155, 109, 175, 121, 94, 95, 171, 185, 107, 123, 51, 124, 157, 111, 150,
+                    149, 184, 136, 91, 18, 223, 74, 29, 214, 169, 52, 100, 94, 110, 60, 32, 151,
+                    178, 39, 164, 140, 77, 154, 32, 59, 165, 38, 55, 126, 89, 142, 100, 166, 150,
+                    93, 45, 149, 119, 146, 97, 111, 188, 179, 46, 96, 120, 60, 108, 145, 94, 136,
+                    151, 124, 81, 117, 88, 69, 62,
+                ],
+            ),
+            (
+                OH,
+                W,
+                &[
+                    173, 58, 85, 160, 50, 158, 154, 220, 113, 84, 178, 61, 168, 156, 171, 196, 148,
+                    185, 107, 143, 174, 100, 149, 107, 64, 150, 171, 229, 66, 90, 165, 179, 101,
+                    24, 200, 87, 80, 141, 122, 117, 175, 161, 59, 133, 113, 68, 79, 109, 80, 94,
+                    81, 166, 60, 82, 128, 223, 67, 127, 160, 125, 120, 66, 83, 137, 106, 61, 117,
+                    72, 132, 147, 110, 79, 97, 93, 136, 45, 94, 117, 83, 145, 126, 94, 135, 250,
+                    92, 62, 56, 127, 127, 120, 132, 90, 126, 72, 130, 92,
+                ],
+            ),
+            (
+                7,
+                11,
+                &[
+                    190, 59, 63, 153, 34, 103, 149, 83, 131, 191, 222, 126, 135, 203, 48, 148, 214,
+                    78, 178, 217, 154, 170, 173, 219, 133, 147, 240, 128, 153, 160, 146, 177, 33,
+                    155, 57, 109, 180, 75, 155, 169, 128, 157, 107, 215, 94, 61, 171, 100, 101,
+                    115, 156, 170, 85, 196, 222, 121, 146, 137, 142, 109, 77, 138, 132, 49, 119,
+                    189, 63, 161, 193, 165, 108, 132, 214, 102, 97, 163, 172, 110, 47, 193, 95, 37,
+                    177, 106, 73, 163, 134, 108, 194, 176, 67, 163, 139, 50, 121, 118, 55, 81, 114,
+                    36, 152, 123, 144, 85, 76, 206, 87, 54, 173, 192, 75, 91, 215, 68, 87, 183, 74,
+                    104, 143, 91, 90, 137, 123, 87, 97, 117, 102, 72, 87, 124, 62, 48, 87, 79, 60,
+                    129, 67, 76, 145, 114, 78, 119, 229, 61, 136, 172, 112, 139, 101, 108, 139, 56,
+                    77, 149, 84, 45, 136, 69, 99, 141, 82, 107, 157, 113, 81, 130, 76, 140, 100,
+                    97, 136, 80, 139, 129, 84, 193, 128, 125, 106, 220, 91, 54, 154, 68, 60, 63,
+                    146, 161, 72, 121, 141, 155, 106, 152, 166, 106, 186, 127, 67, 109, 132, 36,
+                    91, 114, 37, 84, 111, 83, 100, 135, 60, 166, 223, 94, 140, 152, 129, 92, 77,
+                    106, 89, 159, 139, 65, 96, 109, 64, 63, 42, 79, 61,
+                ],
+            ),
+        ];
+        for (out_h, out_w, expected) in cases {
+            let out = resize_rgb(&SRC, H, W, out_h, out_w, Resample::AtenF32Bilinear);
+            assert_eq!(out, expected, "{out_h}x{out_w}");
+        }
+        let src: Vec<u8> = (0..1024 * 3)
+            .map(|i| (((i as u64 + 134_623) * 2_654_435_761 + 1649) >> 20) as u8)
+            .collect();
+        assert_eq!(
+            resize_rgb(&src, 1, 1024, 1, 4, Resample::AtenF32Bilinear),
+            [131, 130, 123, 126, 129, 127, 126, 128, 128, 128, 123, 131]
         );
     }
 
