@@ -151,20 +151,34 @@ impl TemplatedToolCallFormat {
         begin.push_str(self.tool_call_begin_suffix);
 
         let json_schema = resolve_tool_schema(tool, policy.schema_mode);
-        let content = if matches!(self.arguments_style, JsonSchemaStyle::QwenXml)
-            && is_closed_empty_object(&json_schema)
-        {
-            Format::ConstString(ConstStringFormat {
-                value: String::new(),
-            })
-        } else {
-            Format::JsonSchema(JsonSchemaFormat {
-                json_schema,
-                style: self.arguments_style,
-                any_order: tool_arguments_any_order,
-                max_whitespace_cnt: None,
-            })
-        };
+        if matches!(self.arguments_style, JsonSchemaStyle::QwenXml) {
+            use dynamo_structural_tag::format as native;
+            let content = if is_closed_empty_object(&json_schema) {
+                native::Format::ConstString(native::ConstStringFormat {
+                    value: String::new(),
+                })
+            } else {
+                native::Format::JsonSchema(native::JsonSchemaFormat {
+                    json_schema: json_schema.clone(),
+                    style: native::JsonSchemaStyle::QwenXml,
+                })
+            };
+            let tag = dynamo_structural_tag::qwen_xml::with_native_empty_call(
+                native::TagFormat {
+                    begin,
+                    content: Box::new(content),
+                    end: self.tool_call_end.to_string(),
+                },
+                &json_schema,
+            );
+            return crate::structural_tag::wire::import_tag(tag, tool_arguments_any_order);
+        }
+        let content = Format::JsonSchema(JsonSchemaFormat {
+            json_schema,
+            style: self.arguments_style,
+            any_order: tool_arguments_any_order,
+            max_whitespace_cnt: None,
+        });
 
         TagFormat {
             begin,
@@ -399,11 +413,16 @@ mod tests {
                             "type": "tag",
                             "begin": "<tool_call>\n<function=add_numbers>\n",
                             "content": {
-                                "type": "json_schema",
-                                "json_schema": true,
-                                "style": "qwen_xml"
+                                "type": "or",
+                                "elements": [
+                                    {"type": "const_string", "value": "</function>\n</tool_call>"},
+                                    {"type": "sequence", "elements": [
+                                        {"type": "json_schema", "json_schema": true, "style": "qwen_xml"},
+                                        {"type": "const_string", "value": "\n</function>\n</tool_call>"}
+                                    ]}
+                                ]
                             },
-                            "end": "\n</function>\n</tool_call>"
+                            "end": ""
                         },
                         {
                             "type": "tag",

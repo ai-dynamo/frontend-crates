@@ -184,6 +184,68 @@ fn empty_object_tool() -> ToolDefinition {
     }
 }
 
+fn qwen_argument_content(call: &Value) -> &Value {
+    if call["end"] == "" && call["content"]["type"] == "or" {
+        &call["content"]["elements"][1]["elements"][0]
+    } else {
+        &call["content"]
+    }
+}
+
+#[tokio::test]
+async fn qwen_native_empty_call_has_no_blank_line_and_preserves_strict_false() {
+    use crate::tool_calling::parsers::{get_tool_parser_map, try_tool_call_parse};
+
+    let native = "<tool_call>\n<function=get_server_time>\n</function>\n</tool_call>";
+    for parser in ["qwen3_coder", "nemotron_nano"] {
+        let config = &get_tool_parser_map()[parser];
+        for strict in [None, Some(true), Some(false)] {
+            let mut tool = empty_object_tool();
+            tool.strict = strict;
+            let tools = [tool];
+            for choice in [
+                ToolChoice::Auto,
+                ToolChoice::Required,
+                ToolChoice::Named("get_server_time".to_string()),
+            ] {
+                let tag = build_unwrap(
+                    config.structural_tag_builder.as_ref().unwrap(),
+                    &choice,
+                    &tools,
+                    None,
+                    StructuralTagSchemaMode::Auto,
+                );
+                let call = &tag["format"]["tags"][0];
+                assert_eq!(
+                    format!(
+                        "{}{}",
+                        call["begin"].as_str().unwrap(),
+                        call["content"]["elements"][0]["value"].as_str().unwrap()
+                    ),
+                    native,
+                );
+                if strict == Some(false) {
+                    assert_eq!(qwen_argument_content(call)["json_schema"], json!(true));
+                } else {
+                    assert_eq!(
+                        *qwen_argument_content(call),
+                        json!({"type": "const_string", "value": ""})
+                    );
+                }
+            }
+            let (calls, _) = try_tool_call_parse(native, config, Some(&tools))
+                .await
+                .unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].function.name, "get_server_time");
+            assert_eq!(
+                serde_json::from_str::<Value>(&calls[0].function.arguments).unwrap(),
+                json!({})
+            );
+        }
+    }
+}
+
 // Opt-in CPU checks: XGRAMMAR_PYTHON=python3 cargo test -p dynamo-parsers --lib
 // tool_calling::structural_tag::tests::empty_xml_tool -- --ignored --nocapture
 fn check_empty_xml_grammar(check: &str) {
@@ -192,7 +254,11 @@ fn check_empty_xml_grammar(check: &str) {
 
     use crate::tool_calling::parsers::get_tool_parser_map;
 
-    let tools = [empty_object_tool()];
+    let mut tool = empty_object_tool();
+    if check == "framing" {
+        tool.strict = Some(false);
+    }
+    let tools = [tool];
     let mut cases = Vec::new();
     for parser in ["qwen3_coder", "nemotron_nano"] {
         let builder = get_tool_parser_map()[parser]
@@ -230,7 +296,10 @@ for case in json.load(sys.stdin):
         compiled = compiler.compile_structural_tag(json.dumps(case["tag"]))
         tag = case["tag"]["format"]["tags"][0]
         matcher = xg.GrammarMatcher(compiled)
-        assert matcher.accept_string(tag["begin"] + tag["end"]), "empty call rejected"
+        # Official Qwen3-Coder / Nemotron templates do not put a blank line
+        # between an empty function's opening and closing tags.
+        native = "<tool_call>\n<function=get_server_time>\n</function>\n</tool_call>"
+        assert matcher.accept_string(native), "native empty call rejected"
         assert matcher.accept_token(256), "empty call cannot stop"
         assert matcher.is_terminated(), "empty call did not terminate"
         if sys.argv[1] == "bounded_body":
@@ -239,6 +308,22 @@ for case in json.load(sys.stdin):
                 matcher = xg.GrammarMatcher(compiled)
                 assert matcher.accept_string(tag["begin"]), "opening envelope rejected"
                 assert not matcher.accept_string(body), f"empty tool admits {body!r}"
+        if sys.argv[1] == "framing":
+            # Non-strict arguments stay unconstrained, but a nonempty body
+            # still needs the original newline before the function closer.
+            opening = "<tool_call>\n<function=get_server_time>\n"
+            body = "<parameter=city>\nParis\n</parameter>"
+            closing = "</function>\n</tool_call>"
+            for text, expected in [
+                (opening + "\n" + closing, True),
+                (opening + body + "\n" + closing, True),
+                (opening + body + closing, False),
+            ]:
+                matcher = xg.GrammarMatcher(compiled)
+                accepted = matcher.accept_string(text)
+                assert accepted == expected, (text, accepted, expected)
+                if accepted:
+                    assert matcher.accept_token(256)
         result["passed"] = True
     except Exception as exc:
         result.update(passed=False, error=str(exc))
@@ -282,6 +367,12 @@ fn empty_xml_tool_rejects_argument_whitespace_loop() {
     check_empty_xml_grammar("bounded_body");
 }
 
+#[test]
+#[ignore = "requires CPU XGrammar installed for XGRAMMAR_PYTHON"]
+fn native_empty_qwen_call_preserves_nonempty_framing() {
+    check_empty_xml_grammar("framing");
+}
+
 #[tokio::test]
 async fn closed_empty_xml_body_round_trips_empty_arguments() {
     use crate::tool_calling::parsers::{get_tool_parser_map, try_tool_call_parse};
@@ -308,13 +399,13 @@ async fn closed_empty_xml_body_round_trips_empty_arguments() {
             );
             let call = &tag["format"]["tags"][0];
             assert_eq!(
-                call["content"],
+                *qwen_argument_content(call),
                 json!({"type": "const_string", "value": ""})
             );
             let native = format!(
                 "{}{}",
                 call["begin"].as_str().unwrap(),
-                call["end"].as_str().unwrap()
+                call["content"]["elements"][0]["value"].as_str().unwrap()
             );
             let (calls, _) = try_tool_call_parse(&native, config, Some(&tools))
                 .await
@@ -356,7 +447,7 @@ fn empty_xml_rewrite_preserves_other_schema_constraints() {
             StructuralTagSchemaMode::Auto,
         );
         assert_eq!(
-            tag["format"]["tags"][0]["content"]["json_schema"],
+            qwen_argument_content(&tag["format"]["tags"][0])["json_schema"],
             tool.parameters.unwrap()
         );
     }
@@ -398,7 +489,7 @@ fn empty_xml_rewrite_respects_style_and_schema_policy() {
         StructuralTagSchemaMode::Auto,
     );
     assert_eq!(
-        relaxed["format"]["tags"][0]["content"]["json_schema"],
+        qwen_argument_content(&relaxed["format"]["tags"][0])["json_schema"],
         json!(true)
     );
     let strict = build_unwrap(
@@ -409,7 +500,7 @@ fn empty_xml_rewrite_respects_style_and_schema_policy() {
         StructuralTagSchemaMode::Strict,
     );
     assert_eq!(
-        strict["format"]["tags"][0]["content"],
+        *qwen_argument_content(&strict["format"]["tags"][0]),
         json!({"type": "const_string", "value": ""})
     );
 }
