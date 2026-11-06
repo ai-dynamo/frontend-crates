@@ -113,7 +113,7 @@ impl StructuralTagBuilder {
             .exclude_special_tokens
             .unwrap_or_else(|| grammar.default_exclude_special_tokens());
 
-        let format = match policy {
+        let mut format = match policy {
             ResolvedToolCalling::Disabled => {
                 if let Some(schema) = context.structured_output_schema {
                     grammar.build_structured_output(schema)
@@ -155,6 +155,9 @@ impl StructuralTagBuilder {
                 }
             }
         };
+        if exclude_special_tokens {
+            super::wire::reserve_v41_closing_prefix(&mut format);
+        }
         let format = if options.reasoning_boundary == ReasoningBoundary::StructuralTag {
             wrap_reasoning_if_needed(
                 context.starts_in_reasoning,
@@ -205,6 +208,7 @@ pub(super) trait ToolCallGrammar: Send + Sync {
             style: JsonSchemaStyle::Json,
             any_order: false,
             max_whitespace_cnt: None,
+            excludes: Vec::new(),
         })
     }
 

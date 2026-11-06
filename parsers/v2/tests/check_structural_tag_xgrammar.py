@@ -18,6 +18,9 @@ chunk boundaries. Grammar-negative cases do not require parser rejection:
 schema validation and native recovery are separate contracts. Harmony checks
 qualify grammar strings separately because its terminal <|call|> is engine-owned.
 The local byte vocabulary qualifies strings, not production tokenizer masks.
+A request may instead provide ``tokens``, decoded token strings appended to the
+byte vocabulary and fed through ``accept_token``. Every result reports the
+backend version and whether it honors ``JSONSchemaFormat.excludes``.
 """
 
 import importlib.util
@@ -48,32 +51,93 @@ NATIVE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(NATIVE)
 
 
+BYTE_VOCAB = [bytes([i]) for i in range(256)]
+
+
+def tokenizer_for(token_texts=()):
+    return NATIVE.TokenizerInfo(
+        BYTE_VOCAB + [text.encode("utf-8") for text in token_texts], 0, None, [], False
+    )
+
+
+def compiler_for(tokenizer):
+    return NATIVE.GrammarCompiler(tokenizer, 1, False, -1)
+
+
+def excludes_supported():
+    probe = {
+        "type": "structural_tag",
+        "format": {
+            "type": "tag",
+            "begin": "",
+            "content": {
+                "type": "json_schema",
+                "json_schema": {
+                    "type": "object",
+                    "properties": {"text": {"type": "string"}},
+                    "required": ["text"],
+                    "additionalProperties": False,
+                },
+                "style": "deepseek_v4_1_xml",
+                "excludes": ["probe"],
+            },
+            "end": "",
+        },
+    }
+    text = (
+        "<｜DSML｜ parameter name=\"text\" string=\"true\">"
+        "probe</｜DSML｜ parameter>"
+    )
+    try:
+        grammar = compiler_for(tokenizer_for()).compile_structural_tag(json.dumps(probe))
+        matcher = NATIVE.GrammarMatcher(grammar, None, True, 0, None)
+        return not matcher.accept_string(text, False)
+    except Exception:
+        return False
+
+
 def main():
     requests = json.load(sys.stdin)
     if not requests:
         raise ValueError("no grammar cases received")
-    tokenizer = NATIVE.TokenizerInfo([bytes([i]) for i in range(256)], 0, None, [], False)
-    compiler = NATIVE.GrammarCompiler(tokenizer, 1, False, -1)
+    byte_compiler = compiler_for(tokenizer_for())
+    supports_excludes = excludes_supported()
     results = []
     for request in requests:
         try:
+            if "tokens" in request:
+                tokens = request["tokens"]
+                compiler = compiler_for(tokenizer_for(tokens))
+            else:
+                compiler = byte_compiler
             grammar = compiler.compile_structural_tag(json.dumps(request["grammar"]))
         except Exception as error:
             raise RuntimeError(f"compile {request['id']}: {error}") from error
         matcher = NATIVE.GrammarMatcher(grammar, None, True, 0, None)
-        accepted = matcher.accept_string(request["input"], False)
-        rejected_at = None
-        if not accepted:
-            diagnostic = NATIVE.GrammarMatcher(grammar, None, True, 0, None)
-            for offset, character in enumerate(request["input"]):
-                if not diagnostic.accept_string(character, False):
-                    rejected_at = request["input"][: offset + 1]
+        if "tokens" in request:
+            accepted = True
+            rejected_at = None
+            for index in range(len(tokens)):
+                if not matcher.accept_token(len(BYTE_VOCAB) + index, False):
+                    accepted = False
+                    rejected_at = "".join(tokens[: index + 1])
                     break
+        else:
+            accepted = matcher.accept_string(request["input"], False)
+            rejected_at = None
+            if not accepted:
+                diagnostic = NATIVE.GrammarMatcher(grammar, None, True, 0, None)
+                for offset, character in enumerate(request["input"]):
+                    if not diagnostic.accept_string(character, False):
+                        rejected_at = request["input"][: offset + 1]
+                        break
         results.append({
             "id": request["id"],
             "accepted": accepted,
             "complete": accepted and matcher.is_completed(),
             "rejected_prefix": rejected_at,
+            "backend_version": EXPECTED_VERSION,
+            "excludes_supported": supports_excludes,
         })
     json.dump(results, sys.stdout)
 
