@@ -1693,6 +1693,17 @@ def test_provenance_override_preserves_inheritance_state_in_real_and_derived_vie
             assert record["document"]["inherited_from"] == expected
     wrapper = history.complete_snapshot("dynamo_v2-0.5.0")["records"]["text_only"]
     assert wrapper.get("suppress_inherited_from", False) is suppressed
+    checkpoints = history.ordered_capture_ids()
+    snapshots = {checkpoint: history.complete_snapshot(checkpoint) for checkpoint in checkpoints}
+    views = {(checkpoint, view): history.resolve(checkpoint, view_capture_id=view)
+             for checkpoint in checkpoints for view in checkpoints}
+    for _ in range(2):
+        unified_history.rewrite_store(tmp_path)
+        history = unified_history.load_store(tmp_path).histories["gemma4", "dynamo_v2"]
+        for checkpoint, snapshot in snapshots.items():
+            assert history.complete_snapshot(checkpoint) == snapshot
+        for (checkpoint, view), records in views.items():
+            assert history.resolve(checkpoint, view_capture_id=view) == records
 
 
 @pytest.mark.parametrize("mutation", [
