@@ -4646,6 +4646,9 @@ def _omitted_argument_specs() -> list[tuple]:
     }
     # A compact reference chain keeps serialization shallow while property lookup
     # must traverse 65 definitions. Its final string constraint excludes null.
+    # This eight-case set has no short-chain omission control. The direct required
+    # non-nullable case checks basic non-invention; this depth case pins the known
+    # exhaustion behavior without establishing shorter-chain omission handling.
     budget_schema = {
         "type": "object", "properties": {"note": nullable_array},
         "required": ["note"], "allOf": [{"$ref": "#/$defs/N0"}],
