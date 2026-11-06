@@ -14,6 +14,7 @@ use std::sync::OnceLock;
 use uuid::Uuid;
 
 static COMMENTARY_BLOCK_REGEX: OnceLock<Regex> = OnceLock::new();
+static MESSAGE_BOUNDARY_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_HEADER_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static ANALYSIS_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
@@ -274,11 +275,20 @@ fn contains_recipientless_commentary_call(text: &str) -> bool {
     false
 }
 
-fn contains_harmony_message_boundary(text: &str) -> bool {
-    ["<|start|>", "<|end|>", "<|channel|>", "<|message|>"]
-        .iter()
-        .any(|marker| text.contains(marker))
-        && serde_json::from_str::<Value>(text).is_err()
+fn harmony_message_boundary(text: &str) -> Option<regex::Match<'_>> {
+    // A lone header marker can be literal raw argument text. Require a complete
+    // header, or an explicit message end, before rejecting an unfinished call.
+    let boundary = MESSAGE_BOUNDARY_REGEX
+        .get_or_init(|| {
+            Regex::new(
+                r"<\|end\|>|(?:<\|start\|>[^<]*(?:<\|channel\|>[^<]*)?|<\|channel\|>[^<]*)(?:<\|constrain\|>[^<]*)?<\|message\|>",
+            )
+            .expect("message boundary regex")
+        })
+        .find(text)?;
+    serde_json::from_str::<Value>(text)
+        .is_err()
+        .then_some(boundary)
 }
 
 /// Extract calls via regex when harmony's strict tokenizer rejects the input
@@ -301,10 +311,12 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
             continue;
         }
         // A later message's stop must not complete an earlier unfinished call.
-        if contains_harmony_message_boundary(raw_args) {
-            if let Some(header) = raw_args.rfind("<|channel|>") {
-                search_start = args.start() + header;
-            }
+        if let Some(boundary) = harmony_message_boundary(raw_args) {
+            residual.push_str(&text[cursor..m.start()]);
+            // Discard this unfinished span before joining residual text, so its
+            // header cannot swallow text after a subsequently recovered call.
+            cursor = args.start() + boundary.start();
+            search_start = cursor;
             continue;
         }
         residual.push_str(&text[cursor..m.start()]);
@@ -450,7 +462,7 @@ pub async fn parse_tool_calls_harmony_complete(
             }) else {
                 continue;
             };
-            if contains_harmony_message_boundary(&args_json) {
+            if harmony_message_boundary(&args_json).is_some() {
                 continue;
             }
 
@@ -608,18 +620,29 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_harmony_regex_resumes_after_unfinished_call() {
-        let text = concat!(
-            "<|channel|>commentary to=functions.unfinished<|message|>{}<|end|>",
-            "<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>",
-            r#"{"city":"Paris"}<|return|>"#,
-        );
-        let (calls, _) = extract_calls_via_regex(text);
-        assert_eq!(calls.len(), 1);
-        let (name, arguments) = extract_name_and_args(calls[0].clone());
-        assert_eq!(name, "lookup");
-        assert_eq!(arguments, serde_json::json!({"city": "Paris"}));
+    #[tokio::test]
+    async fn test_harmony_regex_resumes_after_unfinished_call() {
+        for unfinished_ending in ["", "<|end|>"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                for suffix in [
+                    "Done.",
+                    "<|start|>assistant<|channel|>final<|message|>Done.<|return|>",
+                ] {
+                    let text = format!(
+                        "PREFIX <|channel|>commentary to=functions.unfinished<|message|>{{}}{unfinished_ending}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{{\"city\":\"Paris\"}}{ending}{suffix}"
+                    );
+                    let (calls, normal) =
+                        parse_tool_calls_harmony_complete(&text, &Default::default(), None)
+                            .await
+                            .unwrap();
+                    assert_eq!(calls.len(), 1);
+                    let (name, arguments) = extract_name_and_args(calls[0].clone());
+                    assert_eq!(name, "lookup");
+                    assert_eq!(arguments, serde_json::json!({"city": "Paris"}));
+                    assert_eq!(normal.as_deref(), Some("PREFIX Done."), "{text}");
+                }
+            }
+        }
     }
 
     #[tokio::test]
@@ -772,14 +795,25 @@ mod tests {
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.4.a in tests/parity/toolcalling/fixtures/harmony/TOOLCALLING.batch.4.yaml.
     #[tokio::test] // TOOLCALLING.batch.4 — gpt-oss
     async fn test_parse_harmony_malformed_json_preserves_raw_arguments() {
-        let text = r#"<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>not json at all<|call|>"#;
-        let (tool_calls, _normal) =
-            parse_tool_calls_harmony_complete(text, &Default::default(), None)
-                .await
-                .unwrap();
-        assert_eq!(tool_calls.len(), 1);
-        assert_eq!(tool_calls[0].function.name, "get_weather");
-        assert_eq!(tool_calls[0].function.arguments, "not json at all");
+        for arguments in [
+            "not json at all",
+            "not json <|channel|> at all",
+            "not json <|start|> at all",
+            "not json <|message|> at all",
+        ] {
+            for ending in ["<|call|>", "<|return|>"] {
+                let text = format!(
+                    "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{arguments}{ending}"
+                );
+                let (tool_calls, _normal) =
+                    parse_tool_calls_harmony_complete(&text, &Default::default(), None)
+                        .await
+                        .unwrap();
+                assert_eq!(tool_calls.len(), 1, "{text}");
+                assert_eq!(tool_calls[0].function.name, "get_weather");
+                assert_eq!(tool_calls[0].function.arguments, arguments);
+            }
+        }
     }
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.4.b in tests/parity/toolcalling/fixtures/harmony/TOOLCALLING.batch.4.yaml.
