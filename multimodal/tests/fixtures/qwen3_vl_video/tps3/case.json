@@ -47,9 +47,12 @@
  "media": [
   {
    "kind": "video",
-   "file": "m0.u8",
-   "height": 32,
-   "width": 32,
+   "shape": [
+    4,
+    32,
+    32
+   ],
+   "seed": 394,
    "frame_indices": [
     0,
     1,
@@ -116,6 +119,8 @@
   ]
  ],
  "mrope_delta": 0,
+ "pixel_values_videos_blake3": "abb01d54cf0386298f07c122216edfee9f1ccff52a4c9f1400bb48a4b28f7f7d",
+ "mrope_blake3": "234b5270eedba96d40fade4507c0ed8f23a190c6a0997a94feddf283836ebb7d",
  "provenance": {
   "generator": "multimodal/tests/fixtures/qwen3_vl_video/generate.py",
   "tokenizer": "Qwen/Qwen3-VL-2B-Instruct@89644892e4d85e24eaac8bacfd4f463576704203",
