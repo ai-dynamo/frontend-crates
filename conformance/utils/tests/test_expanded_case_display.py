@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import capture_sources
 import gen_unified_golden as generator
 import unified_history as history
 import unified_taxonomy as taxonomy
@@ -29,6 +30,8 @@ def test_related_case_names_preserve_previous_aliases(scenario, previous, expect
 
 def test_every_active_display_identity_matches_its_taxonomy_and_history() -> None:
     store = history.load_authored_store(ROOT / "conformance/fixtures-unified-v2")
+    current_families = {row["family"] for row in capture_sources.current(ROOT)["captures"]
+                        if row["surface"] == "unified"}
     direct_descriptive_scenarios = {
         "schema_enum_inferred_integer",
         "schema_const_numeric_bare",
@@ -47,7 +50,12 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history() -> Non
                 continue
             previous = f"UNIFIED.{taxonomy.tax(scenario)[0]}-{taxonomy.original_case_description(scenario)}"
             if previous != case["display_id"]:
-                assert previous in case["historical_ids"]
+                # Restored historical-only families were first authored with the
+                # expanded IDs and have no previously published aliases to retain.
+                if family in current_families:
+                    assert previous in case["historical_ids"]
+                else:
+                    assert case["historical_ids"] == []
                 for label in (previous, case["display_id"]):
                     assert taxonomy.scenario_for_label(label, scenario=scenario) == scenario
 
