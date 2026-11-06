@@ -23,7 +23,7 @@ use crate::tool_calling::v1core::{MiniMaxM3ParserConfig, ToolDefinition};
 use super::{GuidedRouted, ScannerUnified, UnifiedParser};
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
 use crate::tool_calling::v1core::xml::minimax_m3_parser::{
-    M3ParameterKind, parameter_kind, parameter_path_kind, parse_invoke_name,
+    M3ParameterKind, append_required_nulls, parameter_kind, parameter_path_kind, parse_invoke_name,
     parse_minimax_m3_invoke,
 };
 use std::{collections::HashSet, sync::Arc};
@@ -502,6 +502,8 @@ impl InvokeEmitter for M3Emitter {
             self.partial = None;
             return Ok(None);
         };
+        // Appended after every streamed member, so the streamed prefix still holds.
+        let arguments = append_required_nulls(&name, arguments, &self.tools)?;
         let partial = self.partial.take();
         let prefix = partial
             .as_ref()
