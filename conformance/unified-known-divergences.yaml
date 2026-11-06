@@ -37,4 +37,17 @@ qwen3:
     golden:
       note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
       actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
-minimax_m3: {}
+qwen3_coder:
+  UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type:
+    golden:
+      note: 'TODO (later, #527): the Qwen XML alias shares the existing declared-type/enum defect; array and integer arguments remain strings.'
+      actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
+minimax_m3:
+  UNIFIED.7-tool-argument-nullability-arg_required_nullable_ambiguous_oneof_omitted:
+    golden:
+      note: 'FIXME (v2 defect): omitted-argument repair flattens root oneOf alternatives and inserts null even though null satisfies both branches and is excluded.'
+      actual: tool_call record {"note":null}
+  UNIFIED.7-tool-argument-nullability-arg_required_nullable_lookup_budget_omitted:
+    golden:
+      note: 'FIXME (v2 defect): omitted-argument repair loses exhaustion from the property lookup and inserts null despite a string-only allOf constraint.'
+      actual: tool_call record {"note":null}
