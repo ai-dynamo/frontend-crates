@@ -58,6 +58,24 @@ impl<'a> EncodeSegment<'a> {
     }
 }
 
+/// Reject an ordinary segment that encoded to a control-token id.
+///
+/// Every backend demotes control-token spellings in ordinary segments, but a
+/// base vocabulary whose merges assemble an added token's id would still let
+/// request text become a control token. Refusing the encode keeps that
+/// property independent of the vocabulary.
+pub(crate) fn reject_control_ids_in_ordinary_segment(
+    ids: &[TokenIdType],
+    control_ids: &std::collections::HashSet<TokenIdType>,
+) -> Result<()> {
+    if let Some(id) = ids.iter().find(|id| control_ids.contains(id)) {
+        return Err(Error::msg(format!(
+            "ordinary segment encoded to control-token id {id}; this tokenizer cannot keep request text out of the control vocabulary"
+        )));
+    }
+    Ok(())
+}
+
 /// Represents the type of tokenizer being used
 #[derive(Debug)]
 pub enum TokenizerType {

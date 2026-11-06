@@ -7,7 +7,7 @@
 //! `tokenizer.json`. Baseten publishes compatible tokenizer artifacts,
 //! including [`baseten/kimi-k3-tokenizer`](https://huggingface.co/baseten/kimi-k3-tokenizer).
 
-use std::path::Path;
+use std::{collections::HashSet, path::Path};
 
 use super::{
     EncodeSegment, Encoding, Error, Result, TokenIdType, TokenizerOptions,
@@ -18,6 +18,9 @@ use super::{
 pub struct BasetenTokenizer {
     tokenizer: basetenkenizer::Tokenizer,
     options: TokenizerOptions,
+    /// Every added-token id, `special: true` or not; see
+    /// [`crate::reject_control_ids_in_ordinary_segment`].
+    added_ids: HashSet<u32>,
 }
 
 impl BasetenTokenizer {
@@ -33,9 +36,15 @@ impl BasetenTokenizer {
         }
         let tokenizer = basetenkenizer::Tokenizer::from_json(json)
             .map_err(|e| Error::msg(format!("Error loading Baseten tokenizer: {e}")))?;
+        let added_ids = tokenizer
+            .added_tokens()
+            .into_iter()
+            .flat_map(|added| added.iter().map(|info| info.id))
+            .collect();
         Ok(Self {
             tokenizer,
             options: TokenizerOptions::default(),
+            added_ids,
         })
     }
 }
@@ -136,13 +145,22 @@ impl Encoder for BasetenTokenizer {
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
-        let segments = segments
+        let pairs = segments
             .iter()
             .map(|segment| (segment.text, segment.allow_special));
         let ids = self
             .tokenizer
-            .encode_segments_tiktoken_safe(segments, self.options.add_special_tokens)
+            .encode_segments_tiktoken_safe(pairs, self.options.add_special_tokens)
             .map_err(|e| Error::msg(format!("Baseten tokenizer segment encode error: {e}")))?;
+        // Post-processing applies to the whole sequence, so the ordinary
+        // segments are checked on their own, without it.
+        for segment in segments.iter().filter(|segment| !segment.allow_special) {
+            let ordinary = self
+                .tokenizer
+                .encode_segments_tiktoken_safe([(segment.text, false)], false)
+                .map_err(|e| Error::msg(format!("Baseten tokenizer segment encode error: {e}")))?;
+            crate::reject_control_ids_in_ordinary_segment(&ordinary, &self.added_ids)?;
+        }
         Ok(Encoding::Sp(ids))
     }
 }
@@ -345,6 +363,40 @@ mod tests {
         );
         assert!(flattened.token_ids().contains(&26));
         assert!(!segmented.token_ids().contains(&26));
+    }
+
+    #[test]
+    fn segments_reject_ordinary_control_ids() {
+        // `H`+`e` merges to id 18, declared here as the added token `He`:
+        // ordinary text must not come back as that control id.
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json["added_tokens"] = serde_json::json!([{
+            "id": 18,
+            "content": "He",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let tokenizer: Arc<dyn TokenizerTrait> =
+            Arc::new(BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap());
+        let control = tokenizer
+            .encode_segments(&[EncodeSegment::new("He", true)])
+            .unwrap();
+        assert_eq!(control.token_ids(), &[18]);
+        let error = tokenizer
+            .encode_segments(&[EncodeSegment::new("He", false)])
+            .unwrap_err();
+        assert!(
+            error.to_string().contains("control-token id 18"),
+            "unexpected error: {error}"
+        );
     }
 
     #[test]

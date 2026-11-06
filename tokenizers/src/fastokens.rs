@@ -33,6 +33,7 @@ fn fast_encode(encoder: &fastokens::Tokenizer, input: &str) -> Result<Encoding> 
 fn fast_encode_segments(
     encoder: &fastokens::Tokenizer,
     segments: &[EncodeSegment<'_>],
+    control_ids: &HashSet<u32>,
 ) -> Result<Encoding> {
     let segments: Vec<fastokens::EncodeSegment<'_>> = segments
         .iter()
@@ -44,6 +45,14 @@ fn fast_encode_segments(
     let ids = encoder
         .encode_segments(&segments)
         .map_err(|e| Error::msg(format!("Fastokens segmented encode error: {e}")))?;
+    // Truncation, post-processing and padding apply to the whole sequence, so
+    // the ordinary segments are checked on their own, unpadded.
+    for segment in segments.iter().filter(|segment| !segment.allow_special) {
+        let ordinary: Vec<u32> = encoder
+            .encode_segments_unpadded(std::slice::from_ref(segment))
+            .map_err(|e| Error::msg(format!("Fastokens segmented encode error: {e}")))?;
+        crate::reject_control_ids_in_ordinary_segment(&ordinary, control_ids)?;
+    }
     Ok(Encoding::Sp(ids))
 }
 
@@ -77,7 +86,7 @@ impl Encoder for FastTokenizer {
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
-        fast_encode_segments(&self.fast_encoder, segments)
+        fast_encode_segments(&self.fast_encoder, segments, self.hf_decoder.added_ids())
     }
 }
 
@@ -132,6 +141,9 @@ pub struct FastTikTokenTokenizer {
     id_to_bytes: FxHashMap<u32, Vec<u8>>,
     special_token_ids: HashSet<u32>,
     special_tokens: Vec<String>,
+    /// Every added-token id, `special: true` or not; see
+    /// [`crate::reject_control_ids_in_ordinary_segment`].
+    added_ids: HashSet<u32>,
 }
 
 impl FastTikTokenTokenizer {
@@ -158,6 +170,7 @@ impl FastTikTokenTokenizer {
                 .map(|(content, &id)| (id, content.as_bytes().to_vec())),
         );
         let special_token_strings = tiktoken::sorted_special_token_strings(&tokens);
+        let added_ids = tokens.values().copied().collect();
 
         let config =
             fastokens::tiktoken::TiktokenConfig::new(pattern, tokens.into_iter().collect());
@@ -171,6 +184,7 @@ impl FastTikTokenTokenizer {
             id_to_bytes,
             special_token_ids: skip_ids,
             special_tokens: special_token_strings,
+            added_ids,
         })
     }
 
@@ -192,7 +206,7 @@ impl Encoder for FastTikTokenTokenizer {
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
-        fast_encode_segments(&self.inner, segments)
+        fast_encode_segments(&self.inner, segments, &self.added_ids)
     }
 }
 
@@ -376,6 +390,39 @@ mod tests {
                 .unwrap()
                 .token_ids()
                 .is_empty()
+        );
+    }
+
+    #[test]
+    fn test_fast_segmented_encoding_rejects_ordinary_control_ids() {
+        // `H`+`e` merges to id 18, declared here as the added token `He`:
+        // ordinary text must not come back as that control id.
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json["added_tokens"] = serde_json::json!([{
+            "id": 18,
+            "content": "He",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let tokenizer = FastTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        let control = tokenizer
+            .encode_segments(&[EncodeSegment::control("He")])
+            .unwrap();
+        assert_eq!(control.token_ids(), &[18]);
+        let error = tokenizer
+            .encode_segments(&[EncodeSegment::ordinary("He")])
+            .unwrap_err();
+        assert!(
+            error.to_string().contains("control-token id 18"),
+            "unexpected error: {error}"
         );
     }
 

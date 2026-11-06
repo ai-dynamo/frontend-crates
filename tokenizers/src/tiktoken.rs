@@ -111,6 +111,7 @@ impl Encoder for TikTokenTokenizer {
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
         let mut token_ids = Vec::new();
         for segment in segments {
+            let start = token_ids.len();
             for_each_reference_piece(segment.text, |piece| {
                 if segment.allow_special {
                     token_ids.extend(self.bpe.encode_with_special_tokens(piece));
@@ -118,6 +119,12 @@ impl Encoder for TikTokenTokenizer {
                     token_ids.extend(self.bpe.encode_ordinary(piece));
                 }
             });
+            if !segment.allow_special {
+                crate::reject_control_ids_in_ordinary_segment(
+                    &token_ids[start..],
+                    &self.special_token_ids,
+                )?;
+            }
         }
         Ok(Encoding::Sp(token_ids))
     }
