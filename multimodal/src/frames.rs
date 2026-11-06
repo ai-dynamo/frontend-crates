@@ -145,6 +145,11 @@ impl VideoFrames {
         &self.rgb
     }
 
+    /// [`Self::rgb`] without a copy, for [`crate::processor::DecodedMedia::Video`].
+    pub fn into_rgb(self) -> Vec<u8> {
+        self.rgb
+    }
+
     /// One frame's `height * width * 3` bytes, or `None` past the last frame.
     pub fn frame(&self, index: usize) -> Option<&[u8]> {
         // `new` checked that `frame_count * frame_len` fits the buffer, so

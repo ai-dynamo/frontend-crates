@@ -1,0 +1,132 @@
+{
+ "spec": {
+  "family": "qwen_vl",
+  "image_token_id": 151655,
+  "patch_size": 16,
+  "merge_size": 2,
+  "temporal_patch_size": 2,
+  "min_pixels": 65536,
+  "max_pixels": 16777216,
+  "image_mean": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "image_std": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "resample": "aten_u8",
+  "video": {
+   "video_token_id": 151656,
+   "vision_start_token_id": 151652,
+   "vision_end_token_id": 151653,
+   "processor": {
+    "video_processor_type": "Qwen3VLVideoProcessor",
+    "patch_size": 16,
+    "merge_size": 2,
+    "temporal_patch_size": 2,
+    "size": {
+     "shortest_edge": 4096,
+     "longest_edge": 25165824
+    }
+   },
+   "image_mean": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "image_std": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  }
+ },
+ "media": [
+  {
+   "kind": "video",
+   "file": "m0.u8",
+   "height": 32,
+   "width": 64,
+   "frame_indices": [
+    0,
+    14,
+    29
+   ],
+   "fps": 29.97002997002997
+  }
+ ],
+ "prompt_ids": [
+  14247,
+  220,
+  151652,
+  151656,
+  151653,
+  3328,
+  13
+ ],
+ "timestamp_ids": {
+  "<0.2 seconds>": [
+   27,
+   15,
+   13,
+   17,
+   6486,
+   29
+  ],
+  "<1.0 seconds>": [
+   27,
+   16,
+   13,
+   15,
+   6486,
+   29
+  ]
+ },
+ "input_ids": [
+  14247,
+  220,
+  151652,
+  27,
+  15,
+  13,
+  17,
+  6486,
+  29,
+  151652,
+  151656,
+  151656,
+  151653,
+  27,
+  16,
+  13,
+  15,
+  6486,
+  29,
+  151652,
+  151656,
+  151656,
+  151653,
+  151653,
+  3328,
+  13
+ ],
+ "video_grids": [
+  [
+   2,
+   2,
+   4
+  ]
+ ],
+ "mrope_delta": 0,
+ "provenance": {
+  "generator": "multimodal/tests/fixtures/qwen3_vl_video/generate.py",
+  "tokenizer": "Qwen/Qwen3-VL-2B-Instruct@89644892e4d85e24eaac8bacfd4f463576704203",
+  "transformers": "5.19.0",
+  "torch": "2.14.1+cu130",
+  "torchvision": "0.29.2+cu132",
+  "numpy": "2.3.5"
+ }
+}

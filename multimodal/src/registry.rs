@@ -458,6 +458,7 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
         // Both HF processor names run torchvision's uint8 path on a default
         // server; `Resampler::Pil` stays reachable through the spec JSON.
         resample: Resampler::AtenU8,
+        video: None,
     })
 }
 

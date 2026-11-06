@@ -12,15 +12,16 @@
 //!
 //! Video sizing is separate: [`Qwen3VlVideo`] mirrors HF's
 //! `Qwen3VLVideoProcessor` and reads the model's
-//! `video_preprocessor_config.json`, not the image spec.
+//! `video_preprocessor_config.json`, not the image spec. With a
+//! [`QwenVlVideoSpec`], the processor also takes Qwen3-VL video.
 
 use crate::image::resize;
 use crate::processor::{
-    DecodedMedia, Geometry, MediaMetadata, MmFamilyProcessor, PositionOutput, ProcessedItem,
-    Tensor, TensorData, TokenLayout,
+    Capabilities, DecodedMedia, ExpansionPart, Geometry, MediaMetadata, MmFamilyProcessor,
+    Modality, PositionOutput, ProcessedItem, Segment, Tensor, TensorData, TextEncoder, TokenLayout,
 };
 use crate::video::VideoPixelBudget;
-use crate::{MmError, Result, execution, token_layout};
+use crate::{MmError, Result, execution};
 
 const MAX_RATIO: f64 = 200.0;
 
@@ -45,6 +46,22 @@ pub struct QwenVlSpec {
     pub image_std: [f32; 3],
     #[serde(default)]
     pub resample: Resampler,
+    /// Video input (Qwen3-VL); `None` serves images only.
+    #[serde(default)]
+    pub video: Option<QwenVlVideoSpec>,
+}
+
+/// Video parameters of HF's `Qwen3VLProcessor`: the token ids its prompt
+/// expansion inserts, and its `Qwen3VLVideoProcessor`.
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct QwenVlVideoSpec {
+    pub video_token_id: i32,
+    pub vision_start_token_id: i32,
+    pub vision_end_token_id: i32,
+    /// The model's `video_preprocessor_config.json`.
+    pub processor: Qwen3VlVideo,
+    pub image_mean: [f32; 3],
+    pub image_std: [f32; 3],
 }
 
 /// The HF image processor the pipeline must match bit-exactly. Defaults to
@@ -72,6 +89,9 @@ pub struct QwenVlProcessor {
     spec: QwenVlSpec,
     /// Per-channel u8 → normalized-f32 lookup; see [`normalize_lut`].
     lut: [[f32; 256]; 3],
+    /// The video processor's lookup, when the spec takes video. HF video
+    /// processors are torchvision-backed, so it is always the fused one.
+    video_lut: Option<[[f32; 256]; 3]>,
 }
 
 /// `1 / rescale_factor`; the consumer's spec resolution must reject any
@@ -118,24 +138,30 @@ impl QwenVlProcessor {
                 "qwen_vl spec: min_pixels must be positive and no greater than max_pixels",
             ));
         }
-        if spec
-            .image_std
-            .iter()
-            .any(|std| !std.is_finite() || *std <= 0.0)
-        {
-            return Err(MmError::invalid_input(
-                "qwen_vl spec: image_std values must be finite and positive",
-            ));
-        }
-        if spec.image_mean.iter().any(|mean| !mean.is_finite()) {
-            return Err(MmError::invalid_input(
-                "qwen_vl spec: image_mean values must be finite",
-            ));
-        }
+        check_mean_std(&spec.image_mean, &spec.image_std)?;
         let lut = core::array::from_fn(|c| {
             normalize_lut(spec.resample, spec.image_mean[c], spec.image_std[c])
         });
-        Ok(Self { spec, lut })
+        let video_lut = match &spec.video {
+            Some(video) => {
+                // `get_rope_index` merges image and video grids with one size.
+                if video.processor.merge_size != spec.merge_size {
+                    return Err(MmError::unsupported(
+                        "qwen_vl spec: video merge_size must equal the image merge_size",
+                    ));
+                }
+                check_mean_std(&video.image_mean, &video.image_std)?;
+                Some(core::array::from_fn(|c| {
+                    normalize_lut(Resampler::AtenU8, video.image_mean[c], video.image_std[c])
+                }))
+            }
+            None => None,
+        };
+        Ok(Self {
+            spec,
+            lut,
+            video_lut,
+        })
     }
 
     pub fn from_spec_json(json: &str) -> Result<Self> {
@@ -168,47 +194,226 @@ impl QwenVlProcessor {
         3 * self.spec.temporal_patch_size * self.spec.patch_size * self.spec.patch_size
     }
 
-    /// HF flatten: patches ordered `(gh/m, gw/m, m, m)`, features `(C, tps,
-    /// ps, ps)`; parallel over merged-block rows.
-    fn patchify(&self, rgb: &[u8], h: usize, w: usize) -> Vec<f32> {
+    fn process_image(&self, rgb: &[u8], h: usize, w: usize) -> Result<ProcessedItem> {
+        if h.checked_mul(w).and_then(|n| n.checked_mul(3)) != Some(rgb.len()) {
+            return Err(MmError::invalid_input(
+                "qwen_vl: rgb length does not match height * width * 3",
+            ));
+        }
+        let (th, tw) = smart_resize(
+            h,
+            w,
+            self.factor(),
+            self.spec.min_pixels,
+            self.spec.max_pixels,
+        )?;
+        let resized;
+        let data = if (th, tw) != (h, w) {
+            resized = resize::resize_rgb(rgb, h, w, th, tw, self.spec.resample.into());
+            &resized
+        } else {
+            rgb
+        };
+        let grid = self.grid(th, tw);
+        let num_patches = grid[1] as usize * grid[2] as usize;
         let (ps, m, tps) = (
             self.spec.patch_size,
             self.spec.merge_size,
             self.spec.temporal_patch_size,
         );
-        let (gh, gw) = (h / ps, w / ps);
-        let dim = self.patch_dim();
-        let block_row = gw * m * dim; // one merged-block row of patches
-        let mut out = vec![0.0f32; gh * gw * dim];
+        Ok(ProcessedItem {
+            modality: Modality::Image,
+            feature_token_count: self.tokens_per_image(&grid),
+            feature: Tensor {
+                shape: vec![num_patches, self.patch_dim()],
+                data: TensorData::F32(patchify(
+                    &vec![data; tps],
+                    (th, tw),
+                    (ps, m, tps),
+                    &self.lut,
+                )),
+            },
+            aux: vec![grid_tensor("image_grid_thw", grid)],
+            geometry: Some(Geometry::Grid(grid)),
+        })
+    }
 
-        execution::for_chunks_mut(&mut out, block_row, |i, chunk| {
-            let mut p = 0;
-            for j in 0..gw / m {
-                for mh in 0..m {
-                    for mw in 0..m {
-                        let y0 = (i * m + mh) * ps;
-                        let x0 = (j * m + mw) * ps;
-                        let patch = &mut chunk[p * dim..(p + 1) * dim];
-                        for (c, ch) in patch.chunks_exact_mut(tps * ps * ps).enumerate() {
+    /// `Qwen3VLVideoProcessor` with `do_sample_frames=False`, and the
+    /// timestamps of `Qwen3VLProcessor._calculate_timestamps`.
+    fn process_video(
+        &self,
+        rgb: &[u8],
+        (h, w): (usize, usize),
+        frame_indices: &[u64],
+        fps: f64,
+    ) -> Result<ProcessedItem> {
+        let (Some(video), Some(lut)) = (&self.spec.video, &self.video_lut) else {
+            return Err(MmError::unsupported(
+                "qwen_vl: this spec has no video processor",
+            ));
+        };
+        let num_frames = frame_indices.len();
+        let frame_len = h.checked_mul(w).and_then(|n| n.checked_mul(3));
+        if frame_len.and_then(|n| n.checked_mul(num_frames)) != Some(rgb.len()) {
+            return Err(MmError::invalid_input(
+                "qwen_vl: video rgb length does not match frames * height * width * 3",
+            ));
+        }
+        if !(fps.is_finite() && fps > 0.0) {
+            return Err(MmError::invalid_input(
+                "qwen_vl: video fps must be a positive finite number",
+            ));
+        }
+        let sizing = &video.processor;
+        let (th, tw) = sizing.resize(num_frames, h, w, &VideoPixelBudget::default())?;
+        let frames: Vec<std::borrow::Cow<[u8]>> = rgb
+            .chunks_exact(h * w * 3)
+            .map(|frame| {
+                if (th, tw) == (h, w) {
+                    frame.into()
+                } else {
+                    resize::resize_rgb(frame, h, w, th, tw, resize::Resample::AtenU8).into()
+                }
+            })
+            .collect();
+        let (ps, m, tps) = (
+            sizing.patch_size,
+            sizing.merge_size,
+            sizing.temporal_patch_size,
+        );
+        let padded = num_frames.div_ceil(tps) * tps;
+        let padded_frames: Vec<&[u8]> = (0..padded)
+            .map(|t| &*frames[t.min(num_frames - 1)])
+            .collect();
+        let grid = [(padded / tps) as u32, (th / ps) as u32, (tw / ps) as u32];
+        let num_patches = grid.iter().map(|&g| g as usize).product::<usize>();
+        Ok(ProcessedItem {
+            modality: Modality::Video,
+            feature_token_count: num_patches / (m * m),
+            feature: Tensor {
+                shape: vec![num_patches, 3 * tps * ps * ps],
+                data: TensorData::F32(patchify(&padded_frames, (th, tw), (ps, m, tps), lut)),
+            },
+            aux: vec![grid_tensor("video_grid_thw", grid)],
+            geometry: Some(Geometry::TimedGrid {
+                grid,
+                timestamps: frame_timestamps(frame_indices, fps, tps),
+            }),
+        })
+    }
+
+    fn placeholder_modality(&self, id: i32) -> Option<Modality> {
+        if id == self.spec.image_token_id {
+            Some(Modality::Image)
+        } else if self.spec.video.as_ref().map(|video| video.video_token_id) == Some(id) {
+            Some(Modality::Video)
+        } else {
+            None
+        }
+    }
+
+    /// `Qwen3VLProcessor.replace_video_token`, once per temporal patch.
+    fn video_expansion(
+        &self,
+        grid: &[u32; 3],
+        timestamps: &[f64],
+        text: &dyn TextEncoder,
+    ) -> Result<Vec<ExpansionPart>> {
+        let Some(video) = &self.spec.video else {
+            return Err(MmError::invalid_input(
+                "qwen_vl: video item for a spec without video",
+            ));
+        };
+        let m = self.spec.merge_size;
+        let per_patch = grid[1] as usize * grid[2] as usize / (m * m);
+        let mut parts = Vec::with_capacity(4 * timestamps.len());
+        for seconds in timestamps {
+            parts.push(ExpansionPart::Literal(
+                text.encode(&format!("<{seconds:.1} seconds>"))?,
+            ));
+            parts.push(ExpansionPart::Literal(vec![video.vision_start_token_id]));
+            parts.push(ExpansionPart::Feature {
+                id: video.video_token_id,
+                n: per_patch,
+            });
+            parts.push(ExpansionPart::Literal(vec![video.vision_end_token_id]));
+        }
+        Ok(parts)
+    }
+}
+
+fn check_mean_std(mean: &[f32; 3], std: &[f32; 3]) -> Result<()> {
+    if std.iter().any(|std| !std.is_finite() || *std <= 0.0) {
+        return Err(MmError::invalid_input(
+            "qwen_vl spec: image_std values must be finite and positive",
+        ));
+    }
+    if mean.iter().any(|mean| !mean.is_finite()) {
+        return Err(MmError::invalid_input(
+            "qwen_vl spec: image_mean values must be finite",
+        ));
+    }
+    Ok(())
+}
+
+fn grid_tensor(name: &str, grid: [u32; 3]) -> (String, Tensor) {
+    (
+        name.to_string(),
+        Tensor {
+            shape: vec![3],
+            data: TensorData::I64(grid.iter().map(|&g| g as i64).collect()),
+        },
+    )
+}
+
+/// HF flatten of `frames` (`tps` per temporal patch, each HWC u8 RGB `h` x
+/// `w`): patches ordered `(t, gh/m, gw/m, m, m)`, features `(C, tps, ps,
+/// ps)`; parallel over merged-block rows. A frame repeated within a patch
+/// (a still's temporal copies) is normalized once and copied.
+fn patchify(
+    frames: &[&[u8]],
+    (h, w): (usize, usize),
+    (ps, m, tps): (usize, usize, usize),
+    lut: &[[f32; 256]; 3],
+) -> Vec<f32> {
+    let (gh, gw) = (h / ps, w / ps);
+    let dim = 3 * tps * ps * ps;
+    let block_row = gw * m * dim; // one merged-block row of patches
+    let block_rows = gh / m; // per temporal patch
+    let mut out = vec![0.0f32; frames.len() / tps * gh * gw * dim];
+
+    execution::for_chunks_mut(&mut out, block_row, |i, chunk| {
+        let (t, i) = (i / block_rows, i % block_rows);
+        let group = &frames[t * tps..(t + 1) * tps];
+        let mut p = 0;
+        for j in 0..gw / m {
+            for mh in 0..m {
+                for mw in 0..m {
+                    let y0 = (i * m + mh) * ps;
+                    let x0 = (j * m + mw) * ps;
+                    let patch = &mut chunk[p * dim..(p + 1) * dim];
+                    for (c, ch) in patch.chunks_exact_mut(tps * ps * ps).enumerate() {
+                        for (k, frame) in group.iter().enumerate() {
+                            let (done, slot) = ch.split_at_mut(k * ps * ps);
+                            let slot = &mut slot[..ps * ps];
+                            if k > 0 && std::ptr::eq(frame.as_ptr(), group[0].as_ptr()) {
+                                slot.copy_from_slice(&done[..ps * ps]);
+                                continue;
+                            }
                             for py in 0..ps {
                                 let src = ((y0 + py) * w + x0) * 3 + c;
                                 for px in 0..ps {
-                                    ch[py * ps + px] = self.lut[c][rgb[src + px * 3] as usize];
+                                    slot[py * ps + px] = lut[c][frame[src + px * 3] as usize];
                                 }
                             }
-                            // Temporal copies of a still are duplicates.
-                            let (t0, rest) = ch.split_at_mut(ps * ps);
-                            for frame in rest.chunks_exact_mut(ps * ps) {
-                                frame.copy_from_slice(t0);
-                            }
                         }
-                        p += 1;
                     }
+                    p += 1;
                 }
             }
-        });
-        out
-    }
+        }
+    });
+    out
 }
 
 impl MmFamilyProcessor for QwenVlProcessor {
@@ -230,54 +435,133 @@ impl MmFamilyProcessor for QwenVlProcessor {
         }
     }
 
+    fn capabilities(&self) -> Capabilities {
+        Capabilities::new(true, self.spec.video.is_some(), false)
+    }
+
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem> {
-        let DecodedMedia::Image { rgb, height, width } = media;
-        let (h, w) = (*height, *width);
-        if h.checked_mul(w).and_then(|n| n.checked_mul(3)) != Some(rgb.len()) {
-            return Err(MmError::invalid_input(
-                "qwen_vl: rgb length does not match height * width * 3",
-            ));
+        match media {
+            DecodedMedia::Image { rgb, height, width } => self.process_image(rgb, *height, *width),
+            DecodedMedia::Video {
+                rgb,
+                height,
+                width,
+                frame_indices,
+                fps,
+            } => self.process_video(rgb, (*height, *width), frame_indices, *fps),
         }
-        let (th, tw) = smart_resize(
-            h,
-            w,
-            self.factor(),
-            self.spec.min_pixels,
-            self.spec.max_pixels,
-        )?;
-        let resized;
-        let data = if (th, tw) != (h, w) {
-            resized = resize::resize_rgb(rgb, h, w, th, tw, self.spec.resample.into());
-            &resized
-        } else {
-            rgb.as_slice()
-        };
-        let grid = self.grid(th, tw);
-        let num_patches = grid[1] as usize * grid[2] as usize;
-        Ok(ProcessedItem {
-            modality: media.modality(),
-            feature_token_count: self.tokens_per_image(&grid),
-            feature: Tensor {
-                shape: vec![num_patches, self.patch_dim()],
-                data: TensorData::F32(self.patchify(data, th, tw)),
-            },
-            aux: vec![(
-                "image_grid_thw".to_string(),
-                Tensor {
-                    shape: vec![3],
-                    data: TensorData::I64(grid.iter().map(|&g| g as i64).collect()),
-                },
-            )],
-            geometry: Some(Geometry::Grid(grid)),
-        })
     }
 
     fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> Result<TokenLayout> {
-        let counts = items
+        self.layout_with_text(input_ids, items, &NoTextEncoder)
+    }
+
+    fn placeholder_modalities(&self, input_ids: &[i32]) -> Result<Vec<Modality>> {
+        Ok(input_ids
             .iter()
-            .map(|item| item.feature_token_count)
-            .collect::<Vec<_>>();
-        token_layout::layout_by_placeholder(input_ids, self.spec.image_token_id, &counts)
+            .filter_map(|&id| self.placeholder_modality(id))
+            .collect())
+    }
+
+    /// HF replaces a video placeholder in the prompt text, so text glued to
+    /// it can tokenize together with the first timestamp; Rust encodes each
+    /// timestamp alone. The two agree when a special token precedes the
+    /// placeholder, as `<|vision_start|>` does in Qwen's chat template.
+    fn layout_with_text(
+        &self,
+        input_ids: &[i32],
+        items: &[ProcessedItem],
+        text: &dyn TextEncoder,
+    ) -> Result<TokenLayout> {
+        let modality_of = |id: i32| self.placeholder_modality(id);
+        let found = input_ids
+            .iter()
+            .filter(|&&id| modality_of(id).is_some())
+            .count();
+        if found != items.len() {
+            return Err(MmError::invalid_input(format!(
+                "prompt has {found} media placeholder(s) but {} media item(s)",
+                items.len()
+            )));
+        }
+        let mut segments = Vec::new();
+        let mut text_start = 0;
+        let mut next = 0;
+        for (pos, &id) in input_ids.iter().enumerate() {
+            let Some(modality) = modality_of(id) else {
+                continue;
+            };
+            let item = &items[next];
+            if item.modality != modality {
+                return Err(MmError::invalid_input(format!(
+                    "media placeholder {next} is {modality:?} but its item is {:?}",
+                    item.modality
+                )));
+            }
+            if text_start < pos {
+                segments.push(Segment::Text(text_start..pos));
+            }
+            let expansion = match &item.geometry {
+                Some(Geometry::TimedGrid { grid, timestamps }) => {
+                    self.video_expansion(grid, timestamps, text)?
+                }
+                _ => vec![ExpansionPart::Feature {
+                    id,
+                    n: item.feature_token_count,
+                }],
+            };
+            segments.push(Segment::Media {
+                item: next,
+                src: pos..pos + 1,
+                expansion,
+            });
+            next += 1;
+            text_start = pos + 1;
+        }
+        if text_start < input_ids.len() {
+            segments.push(Segment::Text(text_start..input_ids.len()));
+        }
+        Ok(TokenLayout { segments })
+    }
+
+    /// Each feature range is its own M-RoPE item: an image's one range, or one
+    /// per temporal patch of a video, which `get_rope_index` splits into
+    /// `t = 1` grids (`video_grid_thw[:, 0] = 1`) with the timestamps between
+    /// them as text.
+    fn positions_with_features(
+        &self,
+        input_len: usize,
+        _offsets: &[(u32, u32)],
+        feature_ranges: &[Vec<std::ops::Range<u32>>],
+        items: &[ProcessedItem],
+    ) -> Result<PositionOutput> {
+        if feature_ranges.len() != items.len() {
+            return Err(MmError::invalid_input(
+                "qwen_vl: feature range and item counts differ",
+            ));
+        }
+        let mut mrope_items = Vec::new();
+        for (ranges, item) in feature_ranges.iter().zip(items) {
+            let (grid, runs) = match &item.geometry {
+                Some(Geometry::Grid(grid)) => (*grid, 1),
+                Some(Geometry::TimedGrid { grid, .. }) => ([1, grid[1], grid[2]], grid[0] as usize),
+                None => return Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
+            };
+            if ranges.len() != runs || ranges.iter().any(|range| range.is_empty()) {
+                return Err(MmError::invalid_input(format!(
+                    "qwen_vl: an item needs {runs} nonempty feature range(s), got {ranges:?}"
+                )));
+            }
+            for range in ranges {
+                mrope_items.push(MropeItem {
+                    start: range.start,
+                    end: range.end - 1,
+                    grid,
+                });
+            }
+        }
+        let (positions, delta) = mrope_image_only(input_len, &mrope_items, self.spec.merge_size)?;
+        Ok(PositionOutput::MRope { positions, delta })
     }
 
     fn positions(
@@ -286,26 +570,33 @@ impl MmFamilyProcessor for QwenVlProcessor {
         offsets: &[(u32, u32)],
         items: &[ProcessedItem],
     ) -> Result<PositionOutput> {
-        if offsets.len() != items.len() {
-            return Err(MmError::invalid_input(
-                "qwen_vl: offset and item counts differ",
-            ));
-        }
-        let mrope_items = offsets
+        let ranges: Vec<_> = offsets
             .iter()
-            .zip(items)
-            .map(|(&(start, end), item)| match &item.geometry {
-                Some(Geometry::Grid(grid)) => Ok(MropeItem {
-                    start,
-                    end,
-                    grid: *grid,
-                }),
-                None => Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
-            })
-            .collect::<Result<Vec<_>>>()?;
-        let (positions, delta) = mrope_image_only(input_len, &mrope_items, self.spec.merge_size)?;
-        Ok(PositionOutput::MRope { positions, delta })
+            .map(|&(start, end)| std::iter::once(start..end.saturating_add(1)).collect())
+            .collect();
+        self.positions_with_features(input_len, offsets, &ranges, items)
     }
+}
+
+/// The encoder behind [`QwenVlProcessor::layout`], which has none to give:
+/// only a video's expansion needs one.
+struct NoTextEncoder;
+
+impl TextEncoder for NoTextEncoder {
+    fn encode(&self, _text: &str) -> Result<Vec<i32>> {
+        Err(MmError::invalid_input(
+            "qwen_vl: video layout needs a text encoder (layout_with_text)",
+        ))
+    }
+}
+
+/// `Qwen3VLProcessor._calculate_timestamps`.
+fn frame_timestamps(frame_indices: &[u64], fps: f64, tps: usize) -> Vec<f64> {
+    let last = frame_indices.len() - 1;
+    let seconds = |i: usize| frame_indices[i.min(last)] as f64 / fps;
+    (0..frame_indices.len().div_ceil(tps))
+        .map(|g| (seconds(g * tps) + seconds(g * tps + tps - 1)) / 2.0)
+        .collect()
 }
 
 /// HF's `smart_resize`: round to multiples of `factor`, then adjust toward
@@ -535,6 +826,30 @@ impl TryFrom<RawQwen3VlVideo> for Qwen3VlVideo {
 }
 
 impl Qwen3VlVideo {
+    /// The sizing of a `Qwen3VLVideoProcessor` with these values, checked as
+    /// its deserialized config is (`min_pixels` and `max_pixels` are
+    /// `size["shortest_edge"]` and `size["longest_edge"]`).
+    pub fn new(
+        patch_size: usize,
+        merge_size: usize,
+        temporal_patch_size: usize,
+        min_pixels: usize,
+        max_pixels: usize,
+    ) -> Result<Self> {
+        Self::try_from(RawQwen3VlVideo {
+            video_processor_type: QWEN3_VL_VIDEO_PROCESSOR.to_string(),
+            patch_size,
+            merge_size,
+            temporal_patch_size,
+            size: RawVideoSize {
+                shortest_edge: min_pixels,
+                longest_edge: max_pixels,
+            },
+            do_resize: None,
+            cap_pixels_per_frame: None,
+        })
+    }
+
     /// Target `(height, width)` for each of `num_frames` sampled frames, as
     /// HF's `Qwen3VLVideoProcessor` computes it.
     ///
@@ -695,7 +1010,6 @@ pub fn mrope_image_only(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::processor::Modality;
 
     fn valid_spec() -> QwenVlSpec {
         QwenVlSpec {
@@ -708,6 +1022,7 @@ mod tests {
             image_mean: [0.481_454_66, 0.457_827_5, 0.408_210_73],
             image_std: [0.268_629_54, 0.261_302_6, 0.275_777_1],
             resample: Resampler::AtenU8,
+            video: None,
         }
     }
 
@@ -722,6 +1037,7 @@ mod tests {
             image_mean: [0.0; 3],
             image_std: [1.0; 3],
             resample: Resampler::default(),
+            video: None,
         }
     }
 
@@ -1104,6 +1420,112 @@ mod tests {
         assert!(!caps.supports(Modality::Video) && !caps.supports(Modality::Audio));
     }
 
+    fn video_spec() -> QwenVlSpec {
+        QwenVlSpec {
+            video: Some(QwenVlVideoSpec {
+                video_token_id: 2,
+                vision_start_token_id: 3,
+                vision_end_token_id: 4,
+                processor: Qwen3VlVideo::new(2, 2, 2, 16, 1 << 20).unwrap(),
+                image_mean: [0.0; 3],
+                image_std: [1.0; 3],
+            }),
+            ..tiny_spec()
+        }
+    }
+
+    fn video(frame_indices: Vec<u64>, fps: f64) -> DecodedMedia {
+        DecodedMedia::Video {
+            rgb: vec![9; frame_indices.len() * 4 * 4 * 3],
+            height: 4,
+            width: 4,
+            frame_indices,
+            fps,
+        }
+    }
+
+    struct Bytes;
+
+    impl TextEncoder for Bytes {
+        fn encode(&self, text: &str) -> Result<Vec<i32>> {
+            Ok(text.bytes().map(i32::from).collect())
+        }
+    }
+
+    #[test]
+    fn video_needs_a_video_spec_and_consistent_frames() {
+        let images_only = QwenVlProcessor::new(tiny_spec()).unwrap();
+        assert!(matches!(
+            images_only.process_item(&video(vec![0, 1], 2.0)),
+            Err(MmError::Unsupported { .. })
+        ));
+
+        let proc = QwenVlProcessor::new(video_spec()).unwrap();
+        assert!(proc.capabilities().supports(Modality::Video));
+        let short = DecodedMedia::Video {
+            rgb: vec![9; 2 * 4 * 4 * 3 - 1],
+            height: 4,
+            width: 4,
+            frame_indices: vec![0, 1],
+            fps: 2.0,
+        };
+        for bad in [
+            short,
+            video(vec![], 2.0),
+            video(vec![0, 1], 0.0),
+            video(vec![0, 1], f64::NAN),
+        ] {
+            assert!(proc.process_item(&bad).is_err());
+        }
+
+        let mut spec = video_spec();
+        spec.video.as_mut().unwrap().processor = Qwen3VlVideo::new(2, 1, 2, 16, 1 << 20).unwrap();
+        assert!(QwenVlProcessor::new(spec).is_err(), "merge sizes differ");
+    }
+
+    /// A video layout needs the host's text encoder; items must come in
+    /// placeholder order; a video's M-RoPE needs one nonempty range per
+    /// temporal patch.
+    #[test]
+    fn video_layout_and_positions_refuse_malformed_input() {
+        let proc = QwenVlProcessor::new(video_spec()).unwrap();
+        let image = || {
+            proc.process_item(&DecodedMedia::Image {
+                rgb: vec![9; 4 * 4 * 3],
+                height: 4,
+                width: 4,
+            })
+            .unwrap()
+        };
+        let clip = || proc.process_item(&video(vec![0, 2, 4], 2.0)).unwrap();
+        let prompt = [7, 1, 8, 2, 9];
+        let items = [image(), clip()];
+        assert_eq!(
+            proc.placeholder_modalities(&prompt).unwrap(),
+            [Modality::Image, Modality::Video]
+        );
+        assert!(proc.layout(&prompt, &items).is_err(), "no text encoder");
+        assert!(
+            proc.layout_with_text(&prompt, &[clip(), image()], &Bytes)
+                .is_err()
+        );
+        let positions = |runs: &[&[(u32, u32)]]| {
+            let ranges: Vec<Vec<_>> = (runs.iter())
+                .map(|run| run.iter().map(|&(start, end)| start..end).collect())
+                .collect();
+            proc.positions_with_features(9, &[], &ranges, &items)
+        };
+        assert!(
+            positions(&[&[(1, 2)], &[(3, 4)]]).is_err(),
+            "one patch range"
+        );
+        assert!(
+            positions(&[&[(1, 2)], &[(3, 4), (6, 6)]]).is_err(),
+            "empty range"
+        );
+        assert!(positions(&[&[(1, 2)], &[(3, 4), (6, 7)]]).is_ok());
+    }
+
     /// Routers must get the exact expanded token count from header metadata
     /// alone — the §2.3 example: 100×76 → 112×84 → 6×8 grid → 12 tokens.
     #[test]
@@ -1174,7 +1596,7 @@ mod tests {
             }
         }
         let proc = QwenVlProcessor::new(tiny_spec()).unwrap();
-        let pv = proc.patchify(&rgb, h, w);
+        let pv = patchify(&[&rgb, &rgb], (h, w), (2, 2, 2), &proc.lut);
         let dim = 24; // 3 * tps * ps * ps
         assert_eq!(pv.len(), 2 * 4 * dim);
 
