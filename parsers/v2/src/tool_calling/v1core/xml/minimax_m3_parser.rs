@@ -79,8 +79,10 @@ pub(crate) fn append_required_nulls(
     let Some(required) = root.get("required").and_then(Value::as_array) else {
         return Ok(arguments);
     };
-    let present: Value = serde_json::from_str(&arguments)?;
-    let Some(present) = present.as_object() else {
+    // Raw values: arguments may carry integers beyond 64 bits that `Value` rejects.
+    let Ok(present) =
+        serde_json::from_str::<HashMap<String, Box<serde_json::value::RawValue>>>(&arguments)
+    else {
         return Ok(arguments);
     };
     let mut missing = Vec::new();
