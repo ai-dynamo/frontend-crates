@@ -2235,7 +2235,23 @@ def _omitted_argument_wire_calls(family: str, case: dict) -> list[dict]:
             pattern = r'<parameter name="([^"]+)">(.*?)</parameter>'
         else:
             pattern = r'<parameter=([^>]+)>\n(.*?)\n</parameter>'
-        return [{"kind": "tool_call", "name": "record", "arguments": dict(re.findall(pattern, body, re.S))}]
+        parameter = re.compile(pattern, re.S)
+        arguments: dict[str, str] = {}
+        qwen_separators = family in {"nemotron_nano", "qwen3_coder"}
+        cursor = 1 if qwen_separators and body == "\n" else 0
+        while cursor < len(body):
+            match = parameter.match(body, cursor)
+            assert match is not None, (family, "unmatched native parameter body", body[cursor:])
+            key, value = match.groups()
+            assert key not in arguments, (family, "duplicate native parameter", key)
+            arguments[key] = value
+            cursor = match.end()
+            if qwen_separators and cursor < len(body):
+                assert body[cursor] == "\n" and cursor + 1 < len(body), (
+                    family, "unmatched native parameter body separator", body[cursor:],
+                )
+                cursor += 1
+        return [{"kind": "tool_call", "name": "record", "arguments": arguments}]
     # JSON-only EOF grammars include closing punctuation in their body. Every
     # JSON decoder consumes its complete framed payload, never a nested value
     # found by searching unrelated prefix or suffix text.
@@ -2390,6 +2406,50 @@ def test_omitted_argument_empty_invocation_rejects_broken_envelope(
         case["input"] = case["input"][:-len(closer)] + ("" if mutation.startswith("missing") else "</wrong_tool_call>")
     case["input_chunks"] = [case["input"]]
     with pytest.raises(AssertionError, match=f"native invocation {boundary}"):
+        _assert_omitted_argument_case(family, scenario, case)
+
+
+@pytest.mark.parametrize("family", ["deepseek_v3_2", "minimax_m2", "nemotron_nano", "qwen3_coder"])
+@pytest.mark.parametrize("mutation", ["hidden_note", "junk", "duplicate_city", "duplicate_note"])
+def test_omitted_argument_xml_rejects_unconsumed_or_duplicate_parameters(
+    family: str, mutation: str, omitted_argument_corpus: dict,
+) -> None:
+    scenario = "arg_required_nullable_supplied" if mutation == "duplicate_note" else "arg_required_nullable_omitted"
+    case = deepcopy(omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"])
+    _assert_omitted_argument_case(family, scenario, case)
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    body = case["input"][len(opener):-len(closer)]
+    key, value = ("note", "kept") if mutation == "duplicate_note" else ("city", "Paris")
+    if family == "deepseek_v3_2":
+        duplicate = f'<｜DSML｜parameter name="{key}" string="true">{value}</｜DSML｜parameter>'
+        hidden = '<｜DSML｜parameter name="note" string="false">null</｜DSML｜parameter>'
+    elif family == "minimax_m2":
+        duplicate = f'<parameter name="{key}">{value}</parameter>'
+        hidden = '<parameter name="note" type="null">null</parameter>'
+    else:
+        duplicate = f'<parameter={key}>\n{value}\n</parameter>'
+        hidden = '<parameter=note>null</parameter>'
+    injected = "junk" if mutation == "junk" else hidden if mutation == "hidden_note" else duplicate
+    separator = "\n" if family in {"nemotron_nano", "qwen3_coder"} else ""
+    case["input"] = opener + body + separator + injected + closer
+    case["input_chunks"] = [case["input"]]
+    with pytest.raises(AssertionError, match="unmatched native parameter body|duplicate native parameter"):
+        _assert_omitted_argument_case(family, scenario, case)
+
+
+@pytest.mark.parametrize("family", ["nemotron_nano", "qwen3_coder"])
+def test_omitted_argument_empty_qwen_body_allows_one_framing_newline(
+    family: str, omitted_argument_corpus: dict,
+) -> None:
+    scenario = "arg_required_nullable_empty_invoke"
+    case = deepcopy(omitted_argument_corpus[family][f"UNIFIED.{scenario}.{family}"])
+    opener, closer = OMITTED_ARGUMENT_FRAMING[family]
+    case["input"] = opener + "\n" + closer
+    case["input_chunks"] = [case["input"]]
+    _assert_omitted_argument_case(family, scenario, case)
+    case["input"] = opener + "\n\n" + closer
+    case["input_chunks"] = [case["input"]]
+    with pytest.raises(AssertionError, match="unmatched native parameter body"):
         _assert_omitted_argument_case(family, scenario, case)
 
 
