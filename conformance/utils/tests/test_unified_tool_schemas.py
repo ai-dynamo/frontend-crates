@@ -27,6 +27,69 @@ def _assert_value(value, schema):
     assert matches_schema(value, schema), (value, schema)
 
 
+REQUIRED_OMISSION_PROBES = (
+    "arg_required_nullable_omitted",
+    "arg_required_nullable_type_array_omitted",
+    "arg_required_nullable_empty_invoke",
+    "arg_required_nonnullable_omitted",
+    "arg_required_nullable_ambiguous_oneof_omitted",
+    "arg_required_nullable_lookup_budget_omitted",
+)
+M3_NULL_RESTORATION_PROBES = frozenset(REQUIRED_OMISSION_PROBES[:3])
+
+
+def _required_omission_schema(scenario: str) -> dict:
+    """Independent schemas for the six deliberate required-field controls."""
+    assert scenario in REQUIRED_OMISSION_PROBES
+    if scenario == "arg_required_nullable_ambiguous_oneof_omitted":
+        return {"type": "object", "required": ["note"], "oneOf": [
+            {"properties": {"note": {"type": ["string", "null"]}}},
+            {"properties": {"note": {"type": ["integer", "null"]}}},
+        ]}
+    if scenario == "arg_required_nullable_lookup_budget_omitted":
+        definitions = {f"N{index}": {"allOf": [{"$ref": f"#/$defs/N{index + 1}"}]}
+                       for index in range(64)}
+        definitions["N64"] = {"properties": {"note": {"type": "string"}}}
+        return {"type": "object", "properties": {"note": {"type": ["string", "null"]}},
+                "required": ["note"], "allOf": [{"$ref": "#/$defs/N0"}], "$defs": definitions}
+    note = ({"type": ["string", "null"]} if scenario == "arg_required_nullable_type_array_omitted"
+            else {"type": "string"} if scenario == "arg_required_nonnullable_omitted"
+            else {"anyOf": [{"type": "string"}, {"type": "null"}]})
+    if scenario == "arg_required_nullable_empty_invoke":
+        return {"type": "object", "properties": {"note": note}, "required": ["note"]}
+    return {"type": "object", "properties": {"city": {"type": "string"}, "note": note},
+            "required": ["city", "note"]}
+
+
+def _assert_required_omission_probe(case_id: str, case: dict) -> bool:
+    """Recognize only independently checked, intentionally schema-invalid calls."""
+    scenario, family = case_id.removeprefix("UNIFIED.").rsplit(".", 1)
+    if scenario not in REQUIRED_OMISSION_PROBES:
+        return False
+    assert case_id == f"UNIFIED.{scenario}.{family}"
+    assert family in G.FAMILIES, (case_id, "unregistered omission-probe family")
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    expected_schema = _required_omission_schema(scenario)
+    assert case["tools"] == [{"name": "record", "strict": False, "parameters": expected_schema}]
+    assert case["tools"][0]["strict"] is False
+    expected = ({"city": "Paris"} if scenario in {
+        "arg_required_nullable_omitted", "arg_required_nullable_type_array_omitted",
+        "arg_required_nonnullable_omitted",
+    } else {})
+    restored_null = family == "minimax_m3" and scenario in M3_NULL_RESTORATION_PROBES
+    if restored_null:
+        expected["note"] = None
+    assert case["golden"] == [{"kind": "tool_call", "name": "record", "arguments": expected}]
+    valid = matches_schema(expected, case["tools"][0]["parameters"])
+    assert valid == restored_null, (case_id, "required-omission schema validity changed")
+    if restored_null:
+        # These are successful calls, so the ordinary schema guard still applies.
+        return False
+    assert "note" not in expected
+    assert not valid
+    return True
+
+
 @pytest.mark.parametrize("kind, valid, invalid", [
     ("integer", [0, -2, 3, 2.0], [True, False, 1.5, "2", [], {}]),
     ("number", [0, -2, 1.5], [True, False, "2", [], {}]),
@@ -90,6 +153,8 @@ def test_schema_guard_corpus_keywords(schema, valid, invalid):
 def _assert_golden_schemas(cases, tools):
     for case_id, case in cases.items():
         scenario = case_id.removeprefix("UNIFIED.").rsplit(".", 1)[0]
+        if _assert_required_omission_probe(case_id, case):
+            continue
         custom_probe = next((probe for probe in XML_COMPATIBILITY_CASES
                              if probe["schema"]["type"] == "custom" and probe["name"] == scenario), None)
         if custom_probe is not None:
@@ -185,6 +250,84 @@ def test_custom_compatibility_exclusion_rejects_changed_contracts(mutation):
 @pytest.mark.parametrize("family", G.FAMILIES)
 def test_all_authored_successful_calls_match_offered_schemas(family):
     _assert_golden_schemas(G.build_cases(family), unified_tools())
+
+
+@pytest.fixture(scope="module")
+def required_omission_cases() -> dict[tuple[str, str], dict]:
+    result = {}
+    for family in G.FAMILIES:
+        cases = G.build_cases(family)
+        for scenario in REQUIRED_OMISSION_PROBES:
+            result[family, scenario] = copy.deepcopy(cases[f"UNIFIED.{scenario}.{family}"])
+    return result
+
+
+@pytest.mark.parametrize("family", G.FAMILIES)
+@pytest.mark.parametrize("scenario", REQUIRED_OMISSION_PROBES)
+def test_required_omission_contract_classifies_only_deliberate_schema_failures(
+    family: str, scenario: str, required_omission_cases: dict,
+) -> None:
+    case_id = f"UNIFIED.{scenario}.{family}"
+    case = required_omission_cases[family, scenario]
+    negative = not (family == "minimax_m3" and scenario in M3_NULL_RESTORATION_PROBES)
+    assert _assert_required_omission_probe(case_id, case) == negative
+    assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"]) != negative
+    _assert_golden_schemas({case_id: case}, unified_tools())
+
+
+@pytest.mark.parametrize("family,scenario", [
+    (family, scenario) for family in ("qwen3", "minimax_m3", "hermes")
+    for scenario in REQUIRED_OMISSION_PROBES
+    if family != "minimax_m3" or scenario not in M3_NULL_RESTORATION_PROBES
+])
+@pytest.mark.parametrize("mutation", ["schema", "value", "mode", "state", "strict", "tool", "scenario", "family", "extra_event"])
+def test_required_omission_exception_rejects_changed_contracts(
+    family: str, scenario: str, mutation: str, required_omission_cases: dict,
+) -> None:
+    case_id = f"UNIFIED.{scenario}.{family}"
+    case = copy.deepcopy(required_omission_cases[family, scenario])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    if mutation == "schema":
+        case["tools"][0]["parameters"]["required"].remove("note")
+    elif mutation == "value":
+        case["golden"][0]["arguments"]["note"] = "fabricated"
+    elif mutation == "mode":
+        case["init"]["tool_output_mode"] = "GuidedJson"
+    elif mutation == "state":
+        case["init"]["starting_state"] = "Response"
+    elif mutation == "strict":
+        case["tools"][0]["strict"] = True
+    elif mutation == "tool":
+        case["tools"][0]["name"] = "other"
+    elif mutation == "scenario":
+        case_id = f"UNIFIED.unrelated_required_omission_probe.{family}"
+    elif mutation == "family":
+        case_id = f"UNIFIED.{scenario}.unregistered_family"
+    else:
+        case["golden"].append({"kind": "text", "text": "unexpected"})
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
+
+
+@pytest.mark.parametrize("scenario", sorted(M3_NULL_RESTORATION_PROBES))
+@pytest.mark.parametrize("family,other_family", [("minimax_m3", "qwen3"), ("qwen3", "minimax_m3")])
+def test_required_omission_family_cannot_relabel_null_restoration(
+    family: str, other_family: str, scenario: str, required_omission_cases: dict,
+) -> None:
+    case = required_omission_cases[family, scenario]
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({f"UNIFIED.{scenario}.{other_family}": case}, unified_tools())
+
+
+@pytest.mark.parametrize("scenario", ["arg_optional_nullable_omitted", "arg_required_nullable_supplied"])
+def test_optional_and_supplied_arguments_keep_the_ordinary_schema_guard(scenario: str) -> None:
+    case_id = f"UNIFIED.{scenario}.qwen3"
+    case = copy.deepcopy(G.build_cases("qwen3")[case_id])
+    assert not _assert_required_omission_probe(case_id, case)
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    case["tools"][0]["parameters"]["properties"]["city"] = {"type": "integer"}
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
 
 
 @pytest.mark.parametrize("family", sorted(G.UNIFIED_FAMILIES))
