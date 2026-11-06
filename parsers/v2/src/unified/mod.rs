@@ -56,6 +56,7 @@ pub mod gemma4;
 pub mod glm47;
 mod guided_cursor;
 pub mod harmony;
+pub mod hermes;
 pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod minimax_m3;
@@ -6674,6 +6675,7 @@ unified_registry! {
     "deepseek_v41" => deepseek_v41::deepseek_v41_unified,
     "gemma4" => gemma4::gemma4_unified,
     "glm47" => glm47::glm47_unified,
+    "hermes" => hermes::hermes_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "nemotron_v3" | "nemotron3" => qwen3::nemotron_v3_unified,
     "minimax_m3" | "minimax-m3" => minimax_m3::minimax_m3_unified,
