@@ -184,6 +184,60 @@ fn invalid_pixel_specs_do_not_fall_back_to_the_planner() {
 }
 
 #[test]
+fn pil_refuses_patch_expansion_that_disagrees_with_the_shared_planner() {
+    let mut spec = fixture_spec();
+    spec["resample"] = json!("pil");
+    spec["patch_expand_factor"] = json!(2);
+    spec["min_image_tokens"] = json!(4);
+    spec["max_image_tokens"] = json!(32);
+    // For a 200x150 image, pinned HF PIL ignores the expansion factor and
+    // produces grid [1, 10, 12] (30 tokens); the shared planner produces
+    // [1, 12, 16] (48 tokens). Refuse the spec before either path is used.
+    assert!(matches!(
+        processor_from_spec(&spec.to_string()),
+        Err(dynamo_multimodal::MmError::Unsupported { .. })
+    ));
+}
+
+#[test]
+fn supported_resamplers_keep_pixel_and_metadata_geometry_in_sync() {
+    use dynamo_multimodal::processor::{DecodedMedia, Geometry};
+
+    for (resample, expand, grid, tokens) in
+        [("pil", 1, [1, 10, 12], 30), ("aten_u8", 2, [1, 12, 16], 48)]
+    {
+        let mut spec = fixture_spec();
+        spec["resample"] = json!(resample);
+        spec["patch_expand_factor"] = json!(expand);
+        spec["min_image_tokens"] = json!(4);
+        spec["max_image_tokens"] = json!(32);
+        let family = processor_from_spec(&spec.to_string()).unwrap();
+        let item = family
+            .process_item(&DecodedMedia::Image {
+                rgb: vec![42; 200 * 150 * 3],
+                height: 150,
+                width: 200,
+            })
+            .unwrap();
+        let Some(Geometry::Grid(actual_grid)) = item.geometry else {
+            panic!("expected an image grid");
+        };
+        assert_eq!(actual_grid, grid, "{resample}");
+        assert_eq!(item.feature_token_count, tokens, "{resample}");
+        assert_eq!(
+            family
+                .num_media_tokens(&MediaMetadata::Image {
+                    width: 200,
+                    height: 150,
+                })
+                .unwrap(),
+            tokens,
+            "{resample}"
+        );
+    }
+}
+
+#[test]
 fn full_pipeline_rejects_bad_buffers_video_and_mismatched_offsets() {
     use dynamo_multimodal::processor::DecodedMedia;
     let family = processor_from_spec(&fixture_spec().to_string()).unwrap();

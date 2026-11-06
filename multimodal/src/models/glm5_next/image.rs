@@ -24,6 +24,7 @@ pub struct Glm5NextImageSpec {
     pub planner: Glm5NextSpec,
     pub image_mean: [f32; 3],
     pub image_std: [f32; 3],
+    /// PIL preprocessing requires the planner's `patch_expand_factor` to be 1.
     #[serde(default)]
     pub resample: Resampler,
 }
@@ -38,6 +39,14 @@ pub struct Glm5NextImageProcessor {
 impl Glm5NextImageProcessor {
     pub fn new(spec: Glm5NextImageSpec) -> Result<Self, MmError> {
         let planner = Glm5NextProcessor::new(spec.planner.clone())?;
+        // The pinned HF PIL `_preprocess` ignores `patch_expand_factor` when
+        // calling resize. Refuse specs that would disagree with the shared
+        // metadata planner's canvas and token count.
+        if spec.resample == Resampler::Pil && spec.planner.geometry.patch_expand_factor != 1 {
+            return Err(MmError::unsupported(
+                "glm5_next: PIL preprocessing requires patch_expand_factor = 1 to match the shared planner",
+            ));
+        }
         if spec
             .image_std
             .iter()

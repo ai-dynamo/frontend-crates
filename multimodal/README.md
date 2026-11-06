@@ -399,6 +399,9 @@ planner. Select `ProcessorSpec::Glm5NextImage`, or pass a `glm5_next` JSON
 spec with `image_mean`, `image_std`, and `resample` (`aten_u8` or `pil`) in
 addition to the planning fields below. Supplying pixel fields requires both
 normalization arrays; an incomplete pixel spec is an error.
+PIL preprocessing requires `patch_expand_factor = 1`; other values return
+`Unsupported` because the pinned HF PIL processor ignores this knob during
+resize and would disagree with the shared metadata planner.
 
 Call `family.decode_image(bytes, &limits)` before `family.process_item`.
 The default trait method preserves Qwen's plain RGB conversion. GLM uses
