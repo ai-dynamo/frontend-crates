@@ -473,18 +473,6 @@ targets:
   checksum: 8a62c4aea442890712dcdb64e493fac636edad8c9b25f793948800507c41bedc
   git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
   reasoning_version: 10.0.7
-- implementation: dynamo_v1
-  version: 10.0.6
-  source_kind: crate
-  crate: dynamo-parsers
-  checksum: d3d22c36e7881d61cc540d733e434d752d7ff77b1578309d68b38ebe7bf004cf
-  git_commit: 547deacf32632f159ab6f1a8d398c947871be842
-- implementation: dynamo_v1
-  version: 10.0.7
-  source_kind: crate
-  crate: dynamo-parsers
-  checksum: 9d16648322cc1b4feb6fd722cb0b3cc23f6a545b7d37e167543a1675fa1c3d4a
-  git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
 - implementation: dynamo_v2
   version: 0.7.9
   source_kind: git
@@ -497,3 +485,15 @@ targets:
   git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
   source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
   reasoning_version: 9.2.8
+- implementation: dynamo_v1
+  version: 11.0.6
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+  git_commit: 5287ee787dc618cab517c0bc597cc4d7a19579f6
+- implementation: dynamo_v1
+  version: 11.0.7
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+  git_commit: a1fc6e7e7957a75df4fbe300b0e683f230727cb5
