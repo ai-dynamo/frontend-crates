@@ -502,7 +502,7 @@ impl InvokeEmitter for M3Emitter {
             self.partial = None;
             return Ok(None);
         };
-        // Appended after every streamed member, so the streamed prefix still holds.
+        // Appended at the end, so the streamed prefix still holds.
         let arguments = append_required_nulls(&name, arguments, &self.tools)?;
         let partial = self.partial.take();
         let prefix = partial

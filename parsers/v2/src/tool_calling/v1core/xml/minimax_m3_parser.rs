@@ -67,11 +67,7 @@ pub(crate) fn parse_minimax_m3_invoke(
     Ok(Some((name, arguments)))
 }
 
-/// MiniMax's chat template renders `None` arguments by omitting the field, so the
-/// model omits a key it means as null. When the tool declares that key `required`
-/// and its schema provably admits `null`, the only schema-valid reading of the
-/// omission is `null`: append it. A key whose schema does not admit null, or whose
-/// nullability cannot be proven, is left missing rather than invented.
+/// Appends `null` for omitted keys that are required and provably nullable (M3 omits null args).
 pub(crate) fn append_required_nulls(
     name: &str,
     arguments: String,

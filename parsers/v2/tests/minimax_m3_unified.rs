@@ -1185,8 +1185,7 @@ fn root_reference_with_definition_containers_resolves_parameters() {
 
 #[test]
 fn required_nullable_omitted_argument_is_null() {
-    // M3's template renders `None` arguments by omitting them, so the model omits a key it
-    // means as null. Only a key that is both required and provably nullable gets `null`.
+    // Only a key that is both required and provably nullable gets `null`.
     let note = |schema: Value, required: Value| json!({"type":"object","properties":{"city":{"type":"string"},"note":schema},"required":required});
     let city = call("]<]minimax[>[<city>Paris]<]minimax[>[</city>");
     let init = UnifiedParserInit::default;
