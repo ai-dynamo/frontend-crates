@@ -1219,7 +1219,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unifie
     checked = 0
     store = authored_unified_store
     materialized = _materialized_unified_root(tmp_path, store)
-    for fam in NATIVE_FAMILIES:
+    for fam in FAMILIES:
         spec = _emitted_spec(fam)
         scenarios = _taxonomy_scenarios(fam, store)
         packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"}, scenarios)
@@ -1244,7 +1244,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unifie
                         f"  {layer}: {got[field]!r}"
                     )
             checked += 1
-    assert checked == sum(len(build_cases(f)) for f in NATIVE_FAMILIES), (
+    assert checked == sum(len(build_cases(f)) for f in FAMILIES), (
         "the gate must cover every generated case with a retained authored family"
     )
 
