@@ -82,6 +82,23 @@ The thirteen native `UnifiedParser` families are `beam`, `deepseek_v4`, `deepsee
 
 The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to Beam, DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, Muse Spark Open, Nemotron 3 Ultra, and Qwen3. New observations are recorded only for v2. GPT-OSS captures before v2 0.7.28 use v1 reasoning followed by the v2 Harmony tool parser and are labeled split; v2 0.7.28 and later use native UnifiedParser. The split Harmony path remains covered by whole-input and every-boundary comparisons against the same GOLDEN.
 
+## Omitted required nullable arguments
+
+These eight shared group 7 cases apply to all 30 registered corpus families, including historical/split families, GPT-OSS, and grammar aliases. Each uses one completed family-native `record` invocation, Native output mode, and explicit `strict: false`. Nemotron v3 first closes its implicit empty thought. The IDs below all have prefix `UNIFIED.7-tool-argument-nullability-`; every scenario owns its own request, GOLDEN, and report column.
+
+| Scenario suffix | Authored invocation arguments | MiniMax M3 GOLDEN arguments | Other families' GOLDEN arguments |
+|---|---|---|---|
+| `arg_required_nullable_omitted` | `{"city":"Paris"}`; required `note`, nullable through `anyOf` | `{"city":"Paris","note":null}` | `{"city":"Paris"}` |
+| `arg_required_nullable_type_array_omitted` | `{"city":"Paris"}`; required `note`, `type: ["string","null"]` | `{"city":"Paris","note":null}` | `{"city":"Paris"}` |
+| `arg_required_nullable_empty_invoke` | `{}`; only required property is nullable `note` | `{"note":null}` | `{}` |
+| `arg_optional_nullable_omitted` | `{"city":"Paris"}`; nullable `note` is optional | `{"city":"Paris"}` | `{"city":"Paris"}` |
+| `arg_required_nonnullable_omitted` | `{"city":"Paris"}`; required `note` is a string | `{"city":"Paris"}` | `{"city":"Paris"}` |
+| `arg_required_nullable_supplied` | `{"city":"Paris","note":"kept"}`; required nullable `note` | `{"city":"Paris","note":"kept"}` | `{"city":"Paris","note":"kept"}` |
+| `arg_required_nullable_ambiguous_oneof_omitted` | `{}`; root requires `note`; root `oneOf` branches declare string-or-null and integer-or-null `note` | `{}` | `{}` |
+| `arg_required_nullable_lookup_budget_omitted` | `{}`; root requires direct nullable `note`; 65 `$defs` joined through `allOf` end in string-only `note` | `{}` | `{}` |
+
+MiniMax M3's template deliberately omits null-valued arguments, so only its first three GOLDENs restore the required nullable field. An optional field is not fabricated, a supplied value is not overwritten, and a non-nullable requirement does not trigger general schema repair. The root `oneOf` probe rejects inferred null because it would satisfy both branches. The compact reference chain probes an inconclusive property lookup: the distant string constraint excludes null, and budget exhaustion must not authorize insertion. These two defensive probes intentionally preserve `{}` even though the full schema requires `note`; parsing does not validate the complete tool schema. Other grammars preserve omission in every probe because their native omission does not encode null. GOLDEN is authored independently; missing peer and historical measurements remain explicit, and existing observations retain their requests and provenance.
+
 ## Nemotron 3 Ultra applicability
 
 The `nemotron_v3` corpus inherits every applicable Qwen XML scenario through the registry's `grammar: qwen3` declaration. Default-state shared inputs first close Ultra's implicit empty thought with `</think>`; explicitly initialized Reasoning and Response inputs keep their original request state and bytes. This preserves the shared scenario's channel semantics without disabling later reasoning markers. The Qwen XML header cases also apply to Nemotron. The structured-response scenario requires a registered structural-tag builder, which Nemotron does not have; it remains explicitly excluded while shared parser scenarios retain Qwen grammar inheritance. DSML, Harmony, Gemma, GLM, Kimi, and ATEM-specific scenarios remain excluded because they require other native grammars.
@@ -194,7 +211,7 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-tool
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 301 of the 438 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 309 of the 446 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
 - The 137 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
@@ -556,7 +573,7 @@ Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`,
 | `7-tool-argument-text-preservation` | 7 |
 | `7-tool-argument-numeric-precision` | 23 |
 | `7-tool-argument-declared-types` | 14 |
-| `7-tool-argument-nullability` | 19 |
+| `7-tool-argument-nullability` | 27 |
 | `7-tool-argument-constants` | 41 |
 | `7-tool-argument-unions-and-intersections` | 55 |
 | `7-tool-argument-schema-references` | 15 |

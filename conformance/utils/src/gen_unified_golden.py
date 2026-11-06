@@ -4624,6 +4624,98 @@ for _index, _edge in enumerate(EDGE):
     EDGE[_index] = tuple(_parts)
 
 
+def _omitted_argument_specs() -> list[tuple]:
+    nullable = {"anyOf": [{"type": "string"}, {"type": "null"}]}
+    nullable_array = {"type": ["string", "null"]}
+    required_schema = {
+        "type": "object",
+        "properties": {"city": {"type": "string"}, "note": nullable},
+        "required": ["city", "note"],
+    }
+    array_schema = deepcopy(required_schema)
+    array_schema["properties"]["note"] = nullable_array
+    optional_schema = {**required_schema, "required": ["city"]}
+    nonnullable_schema = deepcopy(required_schema)
+    nonnullable_schema["properties"]["note"] = {"type": "string"}
+    ambiguous_schema = {
+        "type": "object", "required": ["note"],
+        "oneOf": [
+            {"properties": {"note": {"type": ["string", "null"]}}},
+            {"properties": {"note": {"type": ["integer", "null"]}}},
+        ],
+    }
+    # A compact reference chain keeps serialization shallow while property lookup
+    # must traverse 65 definitions. Its final string constraint excludes null.
+    budget_schema = {
+        "type": "object", "properties": {"note": nullable_array},
+        "required": ["note"], "allOf": [{"$ref": "#/$defs/N0"}],
+        "$defs": {
+            f"N{index}": (
+                {"properties": {"note": {"type": "string"}}} if index == 64
+                else {"allOf": [{"$ref": f"#/$defs/N{index + 1}"}]}
+            ) for index in range(65)
+        },
+    }
+    probes = (
+        ("arg_required_nullable_omitted",
+         "Required anyOf string-or-null note is omitted beside city:Paris. "
+         "MiniMax-M3 encodes null by omission and restores note:null; other grammars preserve omission.",
+         required_schema, {"city": "Paris"}, {"city": "Paris", "note": None}),
+        ("arg_required_nullable_type_array_omitted",
+         "Required type-array string-or-null note is omitted beside city:Paris. "
+         "MiniMax-M3 restores note:null; other grammars preserve omission.",
+         array_schema, {"city": "Paris"}, {"city": "Paris", "note": None}),
+        ("arg_required_nullable_empty_invoke",
+         "An empty completed native invocation omits its only required nullable note. "
+         "MiniMax-M3 restores note:null even with no supplied fields; other grammars preserve the empty object.",
+         {"type": "object", "properties": {"note": nullable}, "required": ["note"]},
+         {}, {"note": None}),
+        ("arg_optional_nullable_omitted",
+         "Optional nullable note is omitted beside required city:Paris. "
+         "Every grammar preserves omission: nullability alone cannot fabricate an optional argument.",
+         optional_schema, {"city": "Paris"}, {"city": "Paris"}),
+        ("arg_required_nonnullable_omitted",
+         "Required non-nullable note is omitted beside city:Paris. "
+         "Every grammar preserves omission; argument parsing does not validate the complete tool schema.",
+         nonnullable_schema, {"city": "Paris"}, {"city": "Paris"}),
+        ("arg_required_nullable_supplied",
+         "Required nullable note is supplied as kept beside city:Paris. "
+         "Every grammar preserves the supplied string rather than overwriting it with null.",
+         required_schema, {"city": "Paris", "note": "kept"}, {"city": "Paris", "note": "kept"}),
+        ("arg_required_nullable_ambiguous_oneof_omitted",
+         "An empty invocation has required note in two root oneOf branches admitting null. "
+         "Null would satisfy both branches and violate oneOf, so every grammar preserves the empty object.",
+         ambiguous_schema, {}, {}),
+        ("arg_required_nullable_lookup_budget_omitted",
+         "An empty invocation has direct nullable note and a 65-definition allOf reference chain ending in note:string. "
+         "An exhausted property lookup cannot prove null is valid; every grammar preserves the empty object.",
+         budget_schema, {}, {}),
+    )
+    specs: list[tuple] = []
+    for scenario, description, parameters, supplied, m3_expected in probes:
+        inputs = OnlyFamilies({family: (
+            default_response_prefix(family) + r_tool_arguments(family, "record", supplied, 0),
+            D("UNSUPPORTED", "No peer capture recorded."), M,
+            [{"kind": "tool_call", "name": "record", "arguments": deepcopy(
+                m3_expected if family == "minimax_m3" else supplied
+            )}],
+        ) for family in FAMILIES})
+        specs.append((
+            scenario, description, ["I7"], [],
+            {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "stop", "input_chunks": {
+                family: [entry[0]] for family, entry in inputs.items()
+            }},
+            inputs,
+            [{"name": "record", "strict": False, "parameters": parameters}],
+        ))
+    return specs
+
+
+OMITTED_ARGUMENT_CASES = _omitted_argument_specs()
+EDGE.extend(OMITTED_ARGUMENT_CASES)
+
+
 def build_cases(fam):
     grammar = _MANIFEST[fam].get("grammar")
     if grammar is None:
@@ -4648,6 +4740,8 @@ def build_cases(fam):
         _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
         cases = _apply_unified_numeric_goldens(cases, fam)
+    # These shared native probes also cover historical/split scenario profiles.
+    cases.update(deepcopy(_build_edge_cases(fam, OMITTED_ARGUMENT_CASES)))
     return {
         key: case
         for key, case in cases.items()

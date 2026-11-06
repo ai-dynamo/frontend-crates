@@ -1,0 +1,147 @@
+capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v2","lineage":[{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.9.14.yaml","version":"0.9.14"}],"mode":"unified","payload_sha256":"26713f53343202303d24ec4caba4a0c9438b892d4971b030da1ca2fe3adfbac9","source":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.9.14.yaml","surface":"unified","version":"0.9.14"}
+document:
+  mode: unified
+schema_version: 3
+provenance:
+  status: captured
+  origin: origin_46cb8299e18b1445
+origins:
+  origin_46cb8299e18b1445:
+    crate_version: 0.9.14
+    source_sha256: 4cbffc1d81ba72e19f68a8ae0a5f3c26e4f28b3d8995e7a94694deb51518f0da
+    git_commit: 2136f99e66399583453bd54845dafe3abe9dbf26
+producers:
+  producer_5fef82bb2d9fe97f:
+    captured_with:
+      dynamo_v2: 0.9.14
+    capture_origin: origin_46cb8299e18b1445
+contexts:
+  context_cdf0b3c0134ec96f:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+record_defaults:
+  member: conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.9.14.yaml
+  producer: producer_5fef82bb2d9fe97f
+  context: context_cdf0b3c0134ec96f
+records:
+  arg_optional_nullable_omitted:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_optional_nullable_omitted
+    request: a89a14cb5aa8074c0492df1af43b634b71463652415f847147dbc07112870f70
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{"city":"Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{"city":"Paris"}'
+          complete: true
+      - expected: []
+  arg_required_nonnullable_omitted:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nonnullable_omitted
+    request: 3de50ca2152ceaf00ab3167cf9fd05303185af9d0a79a8edbdc2a72d1aafbb3f
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{"city":"Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{"city":"Paris"}'
+          complete: true
+      - expected: []
+  arg_required_nullable_ambiguous_oneof_omitted:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_ambiguous_oneof_omitted
+    request: db6cdbf64a950e311c54bd15ac5af1704360e4733600f7aab218fc2926908807
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{}'
+          complete: true
+      - expected: []
+  arg_required_nullable_empty_invoke:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_empty_invoke
+    request: 7741656c27ea00c718eba341d4aefb22e3e3455026f414d2a0389d7db3bcaa0b
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{}'
+          complete: true
+      - expected: []
+  arg_required_nullable_lookup_budget_omitted:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_lookup_budget_omitted
+    request: 74b6051b8a6c979e1363ac32d642f4b2b294545087d250acd59e75edd8e8e678
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{}'
+          complete: true
+      - expected: []
+  arg_required_nullable_omitted:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_omitted
+    request: d753d883d708e1ba61eeb4c6ea663052507e0b65bab14c4b8e5a74baf3630eb9
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{"city":"Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{"city":"Paris"}'
+          complete: true
+      - expected: []
+  arg_required_nullable_supplied:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_supplied
+    request: 5f5040db048266b15e07c01ad96e356a557d55a589c93cca44063d187543feaf
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{"city":"Paris","note":"kept"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{"city":"Paris","note":"kept"}'
+          complete: true
+      - expected: []
+  arg_required_nullable_type_array_omitted:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_required_nullable_type_array_omitted
+    request: 11343c7ac72824b7e99e4eeac154580114913b037bd386127dc27f2c2756d0a5
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{"city":"Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{"city":"Paris"}'
+          complete: true
+      - expected: []
