@@ -309,8 +309,7 @@ struct PartialParameter {
     start: usize,
     boundary: Option<M3InvokeBoundary>,
     streamable: bool,
-    /// Whether the one newline `trim_tag_newlines` drops after the open tag has
-    /// been ruled in or out (streamable parameters only).
+    /// Whether a leading newline was checked (see `trim_tag_newlines`).
     leading_checked: bool,
 }
 
@@ -399,8 +398,7 @@ impl InvokeEmitter for M3Emitter {
                     partial.active = None;
                     continue;
                 }
-                // Match `trim_tag_newlines`: one newline just inside either tag is
-                // dropped, so it is held back until the bytes around it decide.
+                // Match `trim_tag_newlines`: hold edge newlines until the close decides.
                 if !active.leading_checked {
                     let tail = &invoke[active.cursor..];
                     if tail.is_empty() || tail == "\r" {

@@ -67,11 +67,7 @@ pub(crate) fn parse_minimax_m3_invoke(
     Ok(Some((name, arguments)))
 }
 
-/// MiniMax-M3.1 often writes one newline just inside a string parameter's tags
-/// (`<text>café\n</text>`) that the intended value does not contain; MiniMax's own
-/// endpoint and schema-exact clients expect it gone. Drop exactly one `\n` (or
-/// `\r\n`) directly after the open tag and directly before the close tag. Any other
-/// whitespace, and every inner newline, is the model's text and stays.
+/// Drops one `\n`/`\r\n` just inside each tag, which M3.1 adds to string values.
 pub(crate) fn trim_tag_newlines(raw: &str) -> &str {
     let raw = raw
         .strip_prefix("\r\n")

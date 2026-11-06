@@ -1185,8 +1185,7 @@ fn root_reference_with_definition_containers_resolves_parameters() {
 
 #[test]
 fn string_argument_drops_one_newline_inside_each_tag() {
-    // M3.1 writes `<text>café ✓\n</text>` for "café ✓". Exactly one `\n`/`\r\n` directly
-    // inside each tag goes; other whitespace and inner newlines are the model's text.
+    // Exactly one edge `\n`/`\r\n` per tag goes; other whitespace stays.
     for (raw, want) in [
         ("caf\u{e9} \u{2713}\n", "caf\u{e9} \u{2713}"),
         ("\nhello", "hello"),
