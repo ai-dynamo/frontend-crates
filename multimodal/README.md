@@ -391,7 +391,33 @@ python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
 The stdlib-only generator executes the pinned source's pure geometry
 functions. Fixture settings are mathematical test inputs, not model defaults.
 
-## 6. GLM-5.3-Flash image planning
+## 6. GLM-5.3-Flash images
+
+
+`Glm5NextImageProcessor` adds the full image pipeline on top of the shared
+planner. Select `ProcessorSpec::Glm5NextImage`, or pass a `glm5_next` JSON
+spec with `image_mean`, `image_std`, and `resample` (`aten_u8` or `pil`) in
+addition to the planning fields below. Supplying pixel fields requires both
+normalization arrays; an incomplete pixel spec is an error.
+
+Call `family.decode_image(bytes, &limits)` before `family.process_item`.
+The default trait method preserves Qwen's plain RGB conversion. GLM uses
+`image::decode::decode_rgb_smart`: EXIF transpose followed by alpha compositing
+onto an edge-contrasting background, matching SGLang's `smart_to_rgb` for PNG,
+WebP, GIF, and alpha-bitmask BMP. GLM then resizes the content without
+unnecessary upscaling, zero-pads to the planned canvas, normalizes and
+patchifies, expands placeholders, and emits image-only M-RoPE positions.
+Video and samples deeper than 8 bits remain unsupported.
+
+The metadata-only `Glm5NextSpec` API and `spec_from_hf_configs` keep their
+planning contract. Python-free consumers can combine that planning spec
+with explicitly resolved normalization and resampling in `Glm5NextImageSpec`.
+
+The `glm5_next_pixels` test replays the 26 Python CPU cases captured in
+[SGLang PR #46563](https://github.com/sgl-project/sglang/pull/46563), including
+both resamplers, multiple images, token overrides, EXIF, and alpha formats.
+See `tests/fixtures/glm5_next/pixels/README.md` for provenance and regeneration.
+
 
 `models::glm5_next::plan_image_grid(width, height, &spec)` returns the padded
 canvas, the `patch_size` grid (`image_grid_thw = [1, grid_h, grid_w]`), and the
@@ -473,8 +499,8 @@ What remains:
    `MmError::Unsupported`.
 2. **Video families** — temporal patchify, timestamp layouts and video
    M-RoPE on decoded frames (`models::qwen_vl` first).
-3. **Family coverage** — GLM-5.3-Flash has metadata-only image planning
-   (§6); its pixel path and video expansion, then Kimi, are next after
+3. **Family coverage** — GLM-5.3-Flash has image preprocessing and metadata-only planning
+   (§6); its video expansion, then Kimi, are next after
    `models::qwen_vl`.
 
 ### Video and audio: planned layout
