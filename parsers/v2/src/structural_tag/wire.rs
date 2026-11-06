@@ -109,6 +109,8 @@ pub(crate) struct JsonSchemaFormat {
     pub any_order: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_whitespace_cnt: Option<usize>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub excludes: Vec<String>,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -188,6 +190,7 @@ pub(super) fn import_native(
             },
             any_order,
             max_whitespace_cnt: None,
+            excludes: Vec::new(),
         }),
         native::Format::AnyTokens(f) => Format::AnyTokens(f),
         native::Format::AnyText(f) => Format::AnyText(AnyTextFormat {
@@ -219,5 +222,43 @@ pub(super) fn import_tag(
         begin: tag.begin,
         content: Box::new(import_native(*tag.content, any_order)),
         end: tag.end,
+    }
+}
+
+/// Reserve V4.1 closing-control prefixes in tool arguments only. A final-response
+/// JSON schema has `Json` style and must not inherit this restriction.
+pub(super) fn reserve_v41_closing_prefix(format: &mut Format) {
+    match format {
+        Format::JsonSchema(schema) => {
+            if matches!(schema.style, JsonSchemaStyle::DeepseekV41Xml) {
+                schema.excludes.push("</｜".to_string());
+            }
+        }
+        Format::Tag(tag) => reserve_v41_closing_prefix(&mut tag.content),
+        Format::TriggeredTags(tags) => {
+            for tag in &mut tags.tags {
+                reserve_v41_closing_prefix(&mut tag.content);
+            }
+        }
+        Format::TagsWithSeparator(tags) => {
+            for tag in &mut tags.tags {
+                reserve_v41_closing_prefix(&mut tag.content);
+            }
+        }
+        Format::Sequence(sequence) => {
+            for element in &mut sequence.elements {
+                reserve_v41_closing_prefix(element);
+            }
+        }
+        Format::Or(alternatives) => {
+            for element in &mut alternatives.elements {
+                reserve_v41_closing_prefix(element);
+            }
+        }
+        Format::Optional(nested) | Format::Star(nested) => {
+            reserve_v41_closing_prefix(&mut nested.content);
+        }
+        Format::Repeat(repeat) => reserve_v41_closing_prefix(&mut repeat.content),
+        Format::ConstString(_) | Format::Regex(_) | Format::AnyText(_) | Format::AnyTokens(_) => {}
     }
 }

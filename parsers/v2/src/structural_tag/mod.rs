@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+//! DeepSeek V4.1 argument guards require `JSONSchemaFormat.excludes` support
+//! with preserved string-length constraints. XGrammar's initial implementation
+//! (mlc-ai/xgrammar#912) drops these constraints; it is not a suitable backend
+//! for enabling this guard with constrained strings. See frontend-crates#530.
+//!
 //! Model-family structural tags for tool calling, optionally combined with
 //! structured output.
 //!
