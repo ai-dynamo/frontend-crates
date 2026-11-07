@@ -2149,6 +2149,35 @@ def _assert_guided_native_recovery(family, scenario, case):
     return reasoning
 
 
+def _without_unquoted_markup(raw: str) -> str:
+    decoder = json.JSONDecoder()
+    parts = []
+    cursor = 0
+    for match in re.finditer(r'[\[{\"]', raw):
+        if match.start() < cursor:
+            continue
+        try:
+            _, end = decoder.raw_decode(raw, match.start())
+        except json.JSONDecodeError:
+            continue
+        parts.append(re.sub(r"<[^<>]*>", "", raw[cursor:match.start()]))
+        parts.append(raw[match.start():end])
+        cursor = end
+    parts.append(re.sub(r"<[^<>]*>", "", raw[cursor:]))
+    return "".join(parts)
+
+
+def test_coalesced_prose_preserves_json_literals_without_inventing_words():
+    raw = 'before<|end|>{"example":"<|channel|>commentary"}<|return|>after'
+    assert _without_unquoted_markup(raw) == 'before{"example":"<|channel|>commentary"}after'
+    case = {"input": raw, "golden": [{"kind": "text", "text": 'before\n{"example":"<|channel|>commentary"}\nafter'}]}
+    _assert_input_carries_events("gpt_oss", "coalesced_prose", case)
+    for text in ["after before", "before invented after"]:
+        case["golden"][0]["text"] = text
+        with pytest.raises(AssertionError, match="input lost output prose"):
+            _assert_input_carries_events("gpt_oss", "coalesced_prose", case)
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
@@ -2247,12 +2276,18 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 continue
             # Coalescing can remove intervening control/native spans, but it may
             # not invent or reorder the ordinary words on either side of them.
-            plain = re.sub(r"<[^<>]*>", "", raw)
-            cursor = 0
-            for word in re.findall(r"\S+", text):
-                at = plain.find(word, cursor)
-                assert at >= 0, (family, scenario, "input lost output prose", word)
-                cursor = at + len(word)
+            projections = (re.sub(r"<[^<>]*>", "", raw), _without_unquoted_markup(raw))
+            for plain in projections:
+                cursor = 0
+                for word in re.findall(r"\S+", text):
+                    at = plain.find(word, cursor)
+                    if at < 0:
+                        break
+                    cursor = at + len(word)
+                else:
+                    break
+            else:
+                raise AssertionError((family, scenario, "input lost output prose", text))
             continue
         assert event["kind"] == "tool_call"
         name, arguments = event["name"], event["arguments"]
