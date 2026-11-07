@@ -156,25 +156,6 @@ fn hash_prefixes<'a>(
     })
 }
 
-/// [`PrefixSplitRules`] indexed by the matcher's pattern ids.
-#[derive(Default)]
-struct SplitRules {
-    rstrip: Vec<bool>,
-    first_word_marker: Option<char>,
-}
-
-impl SplitRules {
-    fn new(special_tokens: &[String], rules: &PrefixSplitRules) -> Self {
-        Self {
-            rstrip: special_tokens
-                .iter()
-                .map(|token| rules.rstrip.contains(token))
-                .collect(),
-            first_word_marker: rules.first_word_marker,
-        }
-    }
-}
-
 /// Positions immediately after each special-token occurrence in `text`.
 ///
 /// Callers supply token strings that the inner tokenizer treats as atomic, so a boundary
@@ -185,35 +166,32 @@ impl SplitRules {
 /// is omitted because there is no suffix to encode.
 ///
 /// `rules` keep that invariant for tokenizers whose specials are not plain literals:
-/// - an `rstrip` token's boundary moves past the whitespace its match consumes;
-/// - with a first-word marker, a boundary is kept only where the suffix starts with a
-///   space, the marker, or another special token, so encoding the suffix alone does not
-///   prepend a marker the full input would not get.
-fn boundaries_with(text: &str, matcher: &AhoCorasick, rules: &SplitRules) -> Vec<usize> {
-    let mut starts = Vec::new();
+/// - an `rstrip` token's boundary moves past the whitespace it consumes, and is skipped if
+///   that whitespace runs into the next special token;
+/// - with a first-word marker, a boundary is kept only before a space, the marker, or the
+///   next special token, so the suffix never gains a marker the full input lacks.
+fn boundaries_with(text: &str, matcher: &AhoCorasick, rules: &PrefixSplitRules) -> Vec<usize> {
     let mut boundaries = Vec::new();
-    for m in matcher.find_overlapping_iter(text) {
+    let mut matches = matcher.find_overlapping_iter(text).peekable();
+    while let Some(m) = matches.next() {
+        let next_start = matches.peek().map_or(text.len(), |next| next.start());
         let mut end = m.end();
-        if rules.rstrip.get(m.pattern().as_usize()) == Some(&true) {
+        if rules.rstrip.iter().any(|token| *token == text[m.range()]) {
             let rest = &text[end..];
             end += rest.len() - rest.trim_start().len();
+            if end > next_start {
+                continue;
+            }
         }
-        if end < text.len() {
+        let suffix_ok = rules
+            .first_word_marker
+            .is_none_or(|marker| end == next_start || text[end..].starts_with([' ', marker]));
+        if end < text.len() && suffix_ok {
             boundaries.push(end);
-        }
-        if rules.first_word_marker.is_some() {
-            starts.push(m.start());
         }
     }
     boundaries.sort_unstable();
     boundaries.dedup();
-    if let Some(marker) = rules.first_word_marker {
-        starts.sort_unstable();
-        boundaries.retain(|&boundary| {
-            let suffix = &text[boundary..];
-            suffix.starts_with([' ', marker]) || starts.binary_search(&boundary).is_ok()
-        });
-    }
     boundaries
 }
 
@@ -269,7 +247,7 @@ fn find_special_token_boundaries(text: &str, special_tokens: &[&str]) -> Vec<usi
     }
     let matcher = AhoCorasick::new(special_tokens)
         .expect("special tokens form a valid Aho-Corasick automaton");
-    boundaries_with(text, &matcher, &SplitRules::default())
+    boundaries_with(text, &matcher, &PrefixSplitRules::default())
 }
 
 /// Optional per-event observer. `on_hit` runs after each cache hit, `on_miss`
@@ -288,7 +266,8 @@ pub struct L1Cache {
     /// Aho-Corasick automaton over the special tokens, built once at construction (`None`
     /// when there are no special tokens). Lets boundary detection be a single pass.
     matcher: Option<AhoCorasick>,
-    split_rules: SplitRules,
+    /// Set by [`super::CachedTokenizer`] from its inner tokenizer; empty otherwise.
+    pub(super) split_rules: PrefixSplitRules,
     hits: AtomicU64,
     misses: AtomicU64,
     on_hit: Option<CacheEventFn>,
@@ -299,44 +278,17 @@ impl L1Cache {
     /// `special_tokens` is the atomic special-token set whose boundaries the cache splits
     /// at; an empty set leaves L1 inert (no boundaries, no entries).
     pub fn new(max_memory: usize, special_tokens: Vec<String>) -> Self {
-        Self::new_with_rules(max_memory, special_tokens, &PrefixSplitRules::default())
+        Self {
+            shared: false,
+            ..Self::new_with_cache(SharedTokenizerCache::new(max_memory), special_tokens, b"")
+        }
     }
 
     /// Use shared storage. Equal namespaces must describe identical tokenizer behavior.
     pub fn new_with_cache(
         cache: SharedTokenizerCache,
-        special_tokens: Vec<String>,
-        namespace: &[u8],
-    ) -> Self {
-        Self::new_with_cache_and_rules(
-            cache,
-            special_tokens,
-            namespace,
-            &PrefixSplitRules::default(),
-        )
-    }
-
-    pub(super) fn new_with_rules(
-        max_memory: usize,
-        special_tokens: Vec<String>,
-        rules: &PrefixSplitRules,
-    ) -> Self {
-        Self {
-            shared: false,
-            ..Self::new_with_cache_and_rules(
-                SharedTokenizerCache::new(max_memory),
-                special_tokens,
-                b"",
-                rules,
-            )
-        }
-    }
-
-    pub(super) fn new_with_cache_and_rules(
-        cache: SharedTokenizerCache,
         mut special_tokens: Vec<String>,
         namespace: &[u8],
-        rules: &PrefixSplitRules,
     ) -> Self {
         special_tokens.retain(|token| !token.is_empty());
 
@@ -352,7 +304,7 @@ impl L1Cache {
             namespace: namespace.to_vec(),
             namespace_hash: *namespace_hasher(namespace).finalize().as_bytes(),
             matcher,
-            split_rules: SplitRules::new(&special_tokens, rules),
+            split_rules: PrefixSplitRules::default(),
             hits: AtomicU64::new(0),
             misses: AtomicU64::new(0),
             on_hit: None,

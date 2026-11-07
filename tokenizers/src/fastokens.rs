@@ -97,10 +97,19 @@ impl Tokenizer for FastTokenizer {
         Ok(())
     }
 
-    // fastokens applies the same `rstrip` and `single_word` flags as HuggingFace, read
-    // from the same tokenizer.json.
+    // Read the encoder's own entries: its `tokenizer_config.json` merge can keep different
+    // flags than the HF decoder's.
     fn prefix_split_rules(&self) -> PrefixSplitRules {
-        self.hf_decoder.prefix_split_rules()
+        let mut rules = PrefixSplitRules::default();
+        for token in self.fast_encoder.added_token_configs() {
+            if token.rstrip {
+                rules.rstrip.push(token.content.clone());
+            }
+            if token.single_word {
+                rules.single_word.push(token.content.clone());
+            }
+        }
+        rules
     }
 
     // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
