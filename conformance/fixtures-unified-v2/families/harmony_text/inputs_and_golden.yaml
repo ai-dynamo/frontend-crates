@@ -1,0 +1,4357 @@
+schema_version: 3
+family: harmony_text
+request_defaults:
+  init:
+    starting_state: None
+    tool_output_mode: Native
+    named_tool: null
+  finish_reason: stop
+tools:
+  tools_cf41a9070d48bbd7:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: '"hello"'
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_2251c40b9058421b:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: café
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_8284eae54735c3ce:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: '[1,2]'
+    strict: true
+  tools_746b20394956becb:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type: integer
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_480df45d35724608:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type: object
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_19a5070486dcbf53:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: 3
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_1b23518e992e91ed:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: '&lt;'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_d6a4b826765f05e9:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: '&lt;'
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_84d891e8e63c96d4:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: '[1,2]'
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_e4f3ce0956c11ca0:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
+  tools_7b239a503c923593:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        amount:
+          if:
+            minimum: 0
+          then:
+            type: number
+            minimum: 0
+          else:
+            type: number
+        retries:
+          if:
+            type: integer
+          then:
+            minimum: 0
+          else:
+            type: number
+  tools_c7317ba7db1bcfa8:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: 'null'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_c74338ba0ea3bd75:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: object
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_1c0b6cc6a42cfbde:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: '[1,2]'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_d0a5a1d2f9e7df17:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - const: auto
+          - type: number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_686a0bb91b79903e:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_cbf47ccf5fd2ef00:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+  - name: f
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+  - name: g
+    parameters:
+      type: object
+      properties:
+        y:
+          type: string
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+  - name: log
+    parameters:
+      type: object
+      properties:
+        note:
+          type: string
+  - name: sum_values
+    parameters:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            type: number
+  - name: functions.
+    parameters:
+      type: object
+      properties: {}
+  tools_d634a43e2a693178:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Alias'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Alias:
+          $ref: '#/$defs/Choice'
+        Choice:
+          anyOf:
+          - const: auto
+          - type: integer
+    strict: true
+  tools_20ef8090724eb9f3:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_1ffd69270532e13e:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type: boolean
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_f1fafc66c48cb347:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - type: integer
+          - anyOf:
+            - const: auto
+            - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_3142468a2190e640:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: '{"x":1}'
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_12306e4c8a078513:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          enum:
+          - 1
+          - 2
+          - 4
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_f2b0f8beaa119e52:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: '{"x":1}'
+    strict: true
+  tools_5c985640d00d3a91:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Choice'
+          type: integer
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Choice:
+          anyOf:
+          - const: auto
+          - type: integer
+    strict: true
+  tools_8de7a56dafcceaa4:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: array
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_fbb97c1a6a0aceda:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: '42'
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_5599198a8c83cd50:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: '{"x":1}'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_bc4305bb8be412b3:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+  tools_1098354780bc95a8:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type:
+          - string
+          - 'null'
+          oneOf:
+          - type: string
+          - type: integer
+  tools_87f9a4e69313cc76:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - integer
+          - boolean
+          - number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_592bf92c162ae226:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: auto
+          - type: array
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_2da5b5660d13bc3f:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: auto
+          - type: object
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_cecec550b41e2979:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - type: integer
+          - oneOf:
+            - const: auto
+            - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_59e18ecefd82da75:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_a6aee3f30418a3a4:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Alias'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Alias:
+          $ref: '#/$defs/Choice'
+        Choice:
+          oneOf:
+          - const: auto
+          - type: integer
+    strict: true
+  tools_2fcd8f3e1e42a651:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: '"hello"'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_94a229d519146b8d:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: café
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_b2265271b5a9f3a1:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: '{"x":1}'
+          - type: object
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_0e6c259d2e90182a:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: '  spaced  '
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_e9d7fa1fb290c04d:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type: array
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_36488b7f60ef21ad:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: boolean
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_edce2cf72af57686:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: integer
+          enum:
+          - 7
+          - 42
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_9df3142224567b2c:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - string
+          - integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_e3ff7e072a11e815:
+  - name: capture_payload
+    parameters:
+      type: object
+      $defs:
+        Integer:
+          type: integer
+        Number:
+          type: number
+        Boolean:
+          type: boolean
+        Scalar:
+          type:
+          - string
+          - integer
+      properties:
+        count:
+          $ref: '#/$defs/Integer'
+        ratio:
+          $ref: '#/$defs/Number'
+        flag:
+          $ref: '#/$defs/Boolean'
+        narrowed:
+          $ref: '#/$defs/Scalar'
+          type: integer
+  tools_d8f16597f742e3d4:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: '  spaced  '
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_68ad90d828650089:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+          nullable: true
+  tools_acabb07d9722c054:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: array
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_15d8cf86faa75ec3:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          enum:
+          - 1
+          - auto
+          const: 1
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_141694f76bec2b1b:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: 'true'
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_68095193d4321478:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: auto
+    strict: true
+  tools_7592cfa2edef2954:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: 'true'
+    strict: true
+  tools_b96fcb423a7855d0:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: auto
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_e3480ec214ef0c48:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: 'null'
+    strict: true
+  tools_7ae123f7897654fb:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          anyOf:
+          - type: string
+          - type: integer
+  tools_d3a7035c9b3abb76:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: café
+    strict: true
+  tools_9d7e29c38b45febb:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - const: auto
+          - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_48fa3ded1d3c517d:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: '  spaced  '
+    strict: true
+  tools_c98829c1934a2d66:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: auto
+          - type: number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_49d1d4dc29b4d728:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - const: auto
+          - type: boolean
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_5d30b2f70e9f541a:
+  - name: capture_payload
+    parameters:
+      type: object
+      $defs:
+        Category:
+          type: object
+          properties:
+            label:
+              type: string
+            children:
+              type: array
+        Node:
+          type: object
+          properties:
+            label:
+              type: string
+            children:
+              type: array
+              items:
+                $ref: '#/$defs/Node'
+      properties:
+        category:
+          $ref: '#/$defs/Category'
+        tree:
+          $ref: '#/$defs/Node'
+        retries:
+          type:
+          - integer
+          - 'null'
+        dry_run:
+          allOf:
+          - type: boolean
+          - description: flag
+  tools_8ec35ead2e0f48ac:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: 'null'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_b61bcb374d1c66b2:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          anyOf:
+          - const: null
+          - type: string
+  tools_d7ee0d5304d6d110:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/A~1B~0C'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        A/B~C:
+          const: '"hello"'
+    strict: true
+  tools_99160bb5b93d07f2:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: '42'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_dc442e5767620506:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: boolean
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_6943558dd8046b7b:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: auto
+          - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_d7d32f10737ac6cd:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: 'true'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_799032ba2fa9936f:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type: number
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_944c6af93200d6d4:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: '  spaced  '
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_7c3821d79a8dd3d3:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: number
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_8dffe495831aef95:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type: 'null'
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_8f1359f32bcc5c31:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: '&lt;'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_0e1126661e4ae595:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: '42'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_dc2ae18fede7bc39:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: 'null'
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_54f45eb2676e3be9:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        count:
+          type: integer
+          $id: https://example.com/count
+  tools_1ceb5fd473b8ba0a:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - integer
+          - 'null'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_d4c7d176f7825f77:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          anyOf:
+          - type: string
+          - type: 'null'
+  tools_f9599a86b7b8e1d2:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: '42'
+    strict: true
+  tools_def252fc833e1bdc:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: auto
+          - type: boolean
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_62a2a30f5fef87f0:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: '[1,2]'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_d84ac5f342102778:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          anyOf:
+          - const: 'null'
+          - type: integer
+  tools_3632e66e77144cef:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: café
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_3e9459ef2d935104:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - const: auto
+          - type: object
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_9c8a74c317d60415:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: '42'
+          - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_b216df93b649987b:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: integer
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_7097557402b15d50:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - const: auto
+          - type: 'null'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_a6445198800af10f:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          allOf:
+          - const: 'null'
+          - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_5215bd16730305ea:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Caf%C3%A9'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Café:
+          const: '42'
+    strict: true
+  tools_ca0b5b673641dda3:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: 'null'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_2931a9ad742a4419:
+  - name: capture_payload
+    parameters:
+      type: object
+      $defs:
+        postal code:
+          type: integer
+        café+:
+          type: integer
+        a/b~c:
+          type: integer
+      properties:
+        space:
+          $ref: '#/$defs/postal%20code'
+        utf8_plus:
+          $ref: '#/$defs/caf%c3%a9+'
+        pointer:
+          $ref: '#/$defs/a%7E1b%7E0c'
+  tools_a59dec8969ac978b:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: '{"x":1}'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_0af1c035b667e8b0:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_eb27882cf50cbcb6:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: object
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_4b74086a372173ba:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          const: '"hello"'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_9f0d61d69494be95:
+  - name: capture_payload
+    parameters:
+      type: object
+      $defs:
+        ConstAlias:
+          $ref: '#/$defs/ConstText'
+        EnumAlias:
+          $ref: '#/$defs/EnumText'
+        ConstText:
+          type: string
+          const: 'null'
+        EnumText:
+          type: string
+          enum:
+          - 'null'
+      properties:
+        const_text:
+          $ref: '#/$defs/ConstAlias'
+          nullable: true
+        enum_text:
+          $ref: '#/$defs/EnumAlias'
+          nullable: true
+  tools_eb14ad8c4a7a4413:
+  - name: capture_payload
+    parameters:
+      type: object
+      $defs:
+        Payload:
+          type: object
+          properties:
+            x:
+              type: integer
+      properties:
+        payload:
+          $ref: '#/$defs/Payload'
+  tools_70f2b5e9ad67ba1e:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: 'true'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_3b245127a58a1723:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          nullable: true
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_61f8e5714fc9d54c:
+  - name: capture_payload
+    parameters:
+      type: object
+      $defs:
+        N0:
+          allOf:
+          - $ref: '#/$defs/N1'
+          - $ref: '#/$defs/N1'
+          - $ref: '#/$defs/N1'
+          - $ref: '#/$defs/N1'
+        N1:
+          allOf:
+          - $ref: '#/$defs/N2'
+          - $ref: '#/$defs/N2'
+          - $ref: '#/$defs/N2'
+          - $ref: '#/$defs/N2'
+        N2:
+          allOf:
+          - $ref: '#/$defs/N3'
+          - $ref: '#/$defs/N3'
+          - $ref: '#/$defs/N3'
+          - $ref: '#/$defs/N3'
+        N3:
+          allOf:
+          - $ref: '#/$defs/N4'
+          - $ref: '#/$defs/N4'
+          - $ref: '#/$defs/N4'
+          - $ref: '#/$defs/N4'
+        N4:
+          allOf:
+          - $ref: '#/$defs/N5'
+          - $ref: '#/$defs/N5'
+          - $ref: '#/$defs/N5'
+          - $ref: '#/$defs/N5'
+        N5:
+          allOf:
+          - $ref: '#/$defs/N6'
+          - $ref: '#/$defs/N6'
+          - $ref: '#/$defs/N6'
+          - $ref: '#/$defs/N6'
+        N6:
+          type: string
+      properties:
+        a:
+          $ref: '#/$defs/N0'
+        count:
+          type: integer
+        flag:
+          type: boolean
+        text:
+          type: string
+  tools_7f03b4392817a770:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        metrics:
+          type: array
+          items:
+            type: string
+          enum:
+          - temperature
+          - humidity
+          - co2
+        count:
+          type: integer
+          enum:
+          - auto
+  tools_711e03afbe37c425:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          oneOf:
+          - type: string
+          - type: 'null'
+  tools_05f2125f365df522:
+  - name: capture_payload
+    parameters:
+      type: object
+      properties:
+        count:
+          not:
+            type: string
+        text:
+          not:
+            type: integer
+  tools_c887a73c6fbd0e1d:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+          anyOf:
+          - minLength: 1
+          - type: 'null'
+  tools_f7439c846ab88b86:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type:
+          - string
+          - 'null'
+  tools_4ce5fbd93f1be6e2:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: '&lt;'
+    strict: true
+  tools_56ea48eeba7ec14b:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: auto
+          - type: 'null'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_fb2820fd626f73c0:
+  - name: capture_payload
+    parameters:
+      type: object
+      $defs:
+        Text:
+          type: string
+      properties:
+        object_text:
+          $ref: '#/$defs/Text'
+        array_text:
+          $ref: '#/$defs/Text'
+        quoted_text:
+          $ref: '#/$defs/Text'
+        inline_text:
+          type: string
+  tools_354f5c938f5eb5c2:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - const: auto
+          - type: array
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_84aaff47dfbac1c3:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+          enum:
+          - 'null'
+          - null
+  tools_1348faa3b84df9fd:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_7351122c3d50bd6e:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+          enum:
+          - auto
+          - '42'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_51bb61b12cbf4d8a:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Literal'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Literal:
+          const: '"hello"'
+    strict: true
+  tools_97ab5757d6f3f219:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: 'null'
+          - type: 'null'
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_0ea0b97c8c1f95c9:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $id: https://example.test/schema
+          type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+requests:
+  023abe752aa25647836fd0f236f2d316e673bb91fc1f6bb4e0366bb71556d4ea:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"\"hello\""}<|call|>
+    tools: tools_cf41a9070d48bbd7
+  02f42f453f80ee64dc83a2bd0a7a6a72bd7b9664d0842ecb27d271c8333ca9f2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"café"}<|call|>
+    tools: tools_2251c40b9058421b
+  0517f5c8ad320cebc69aebbe3dbb3bb1415c997588f50467feb1d2b1323acad9:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"[1,2]"}<|call|>
+    tools: tools_8284eae54735c3ce
+  0882ac5cc5f3773b54ecc60b296b2edaead41c1bec5df638bcc75c0a2828a4fa:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_746b20394956becb
+  094c65c91a60146773090abbf60450a4f10cdc2bb99bf0672b40863ad45688f2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":{"x":1}}<|call|>
+    tools: tools_480df45d35724608
+  098c7ad62705deadf0e0b908daca8c57678e0b8512e300710c392d3f284ad2d0:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":3}<|call|>
+    tools: tools_19a5070486dcbf53
+  0a2503c1b2072bdc05580b5434c4f3d4184e813646b19315ed3a26a7a766cdf6:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"&lt;"}<|call|>
+    tools: tools_1b23518e992e91ed
+  0bb65292a4e487d00db24d51c28b673644a3d6384aa08f0cdf70b9f25a713e76:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"&lt;"}<|call|>
+    tools: tools_d6a4b826765f05e9
+  0c05673550b3cc99ce618f00cf2426945df8dde4915960b205096adec251e193:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"[1,2]"}<|call|>
+    tools: tools_84d891e8e63c96d4
+  0cbf7eedc833472df68028ec733fc9d0b15dc206aa1d6986f993fdd1fcb7c931:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"null"}<|call|>
+    tools: tools_e4f3ce0956c11ca0
+  0f404a550ac1eb746fd8fb2f8e2cee7870be895d93514cc6d54a9b16b0cfa658:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"amount":21.5,"retries":37}<|call|>
+    tools: tools_7b239a503c923593
+  128043e9a392b7646adae143db72eff3b82028a50dd9bf9f129b54fbbe1967d2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_480df45d35724608
+  141fdd29127d573b15daef5be9bccbfbcea8be476db992c649b1062f298c367a:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"null"}<|call|>
+    tools: tools_c7317ba7db1bcfa8
+  142cecd4b730dcceb9085bc4d2f836c33e976b87fdadc0a29043ea65b7ccf216:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":{"x":1}}<|call|>
+    tools: tools_c74338ba0ea3bd75
+  1467ed85283381cb91e5da358ad18559e9540b0630e2356a2810573517d5b988:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"[1,2]"}<|call|>
+    tools: tools_1c0b6cc6a42cfbde
+  15f978be6a065bbf1f6c9495c485529d7f97c213e919948172ce0288d7f9496f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":3.5}<|call|>
+    tools: tools_d0a5a1d2f9e7df17
+  170905dadda3d7865230e15f4106e636120a9406eac359b591fe9e2ee34543fc:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":3.5}<|call|>
+    tools: tools_686a0bb91b79903e
+  17b729a522f7e9a38ccd2d319f882836c59a64f51bd5c6b9d4053ae8ceaac1ca:
+    input: <|channel|>analysis<|message|>let me think<|end|><|channel|>final<|message|>The answer is 42.<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: run
+    input: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+    tools: tools_cbf47ccf5fd2ef00
+  191ea628942085c9c4d22aa2b54d2d1d899d1e6af9be6ae5871c71fa5f457ed6:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":-7}<|call|>
+    tools: tools_d634a43e2a693178
+  1bef83a6439cd28b010e3a8466aed9a2a0d10412b4340f210262b44570420943:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_20ef8090724eb9f3
+  201eca4cc3d2b3f1801cd6c54a4a3b34d3251f28d0056450e614996d0a5f7b31:
+    input: <|channel|>final<|message|>Sure, one sec. <|return|><|channel|>analysis<|message|>checking the forecast<|end|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  22a21da86cc878a9c843c3b9a0984740772078c08c058c31f0ba6a5b95f03a47:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":true}<|call|>
+    tools: tools_1ffd69270532e13e
+  22bf21cd2b48e364753aaff4e521f3a192c2948a925b614ea82caab49a7f5814:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: checking<|end|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  23abe5a3260bd76075edacb3ebf2d5c4bcb203faff7a55ce07bdf23e02391d65:
+    input: <|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>final<|message|> then <|return|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  2502a942b79b8219e43a51d556c5bed175daf7459ab028c8d7f095a84689c91a:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_f1fafc66c48cb347
+  2623476411f62199cda78fe1330feea25e3cd42d089147ae8ff5fa9ef184d1cb:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"{\"x\":1}"}<|call|>
+    tools: tools_3142468a2190e640
+  27558063784e55805c852ca69391ecf2f854bc5fd2c810ef6c7253ff02840cdb:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":2}<|call|>
+    tools: tools_12306e4c8a078513
+  279601247a55e846fca718041ecbd68b7e6933b1a2e5aa70a2419fed02207d0f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"{\"x\":1}"}<|call|>
+    tools: tools_f2b0f8beaa119e52
+  27cfe5ba6cb45d56b74602c7ab04154f37fcb2a9e1bbc1a2f8a37e6ce0cc7a48:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_5c985640d00d3a91
+  2a0f919e3289ed6a566ae16771d5b6fee24d5dc2cec648883fb27e52cacc53e8:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":[1,2]}<|call|>
+    tools: tools_8de7a56dafcceaa4
+  2d46d41ce667be726eae0e599bd8259b3ed83ca266b9fa11b0336f75d6398cb9:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_fbb97c1a6a0aceda
+  2ea581d15651870a1a6318c63d8e1c1e7c15369304807992be176f46b623e772:
+    input: <|channel|>final<|message|>Sure. <|return|><|channel|>analysis<|message|>check A<|end|><|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>final<|message|> and <|return|><|channel|>analysis<|message|>check B<|end|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  2f28bedca273eb6e657df795d78e23992cb86fd8a62a464959245855ffb185d7:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"{\"x\":1}"}<|call|>
+    tools: tools_5599198a8c83cd50
+  323793166bedd390cb393718d4d5b1b10d8eae3a09b7a40c70ed2e0d56fefc79:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"null"}<|call|>
+    tools: tools_bc4305bb8be412b3
+  342cbc854f7e95b1fa1718c5f1fdb6d6bef68835dfba86bcab482ea6c06749ba:
+    input: <|channel|>final<|message|>before<|return|><|channel|>analysis<|message|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|end|><|channel|>final<|message|>after<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  34bcec8fb35f854f1630da104e4efa07ba4f613c6c0302dd59e77d8042931c2f:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"null"}<|call|>
+    tools: tools_1098354780bc95a8
+  370e967e08ed16d61fbf467f3f49dfadaf73298d1706a2cfa0285a14a6ac7b5b:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":1}<|call|>
+    tools: tools_87f9a4e69313cc76
+  3ab8a63722c4535897f20cafdc607a6d4daad904d3ae1e2bd7e9778732f54b2c:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_592bf92c162ae226
+  3b57d83bd401ab8a4eeb82572b62034355b52a1b2ce3c90b6da474b6a83777c2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":{"x":1}}<|call|>
+    tools: tools_2da5b5660d13bc3f
+  3d443dc49f1f78cf48034a2238f2da26b153d2fac1c9fbec76fba960196723a5:
+    input: '<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": }<|call|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Tokyo"}<|call|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Berlin"}<|call|>'
+    tools: tools_cbf47ccf5fd2ef00
+  416fa2b120cadc85dd1b6d5104716e55c16d468b9b0b135e3c0a2fc41573d092:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_cecec550b41e2979
+  417402bf664c5b8e4ccd13435da7f80f56fe57231eacd6e97b9bf8b0418f32f2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_59e18ecefd82da75
+  44908f32bc48f1758413df2eb6d1f8a4494886153b621d3b363b09bba14261ac:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":-7}<|call|>
+    tools: tools_a6aee3f30418a3a4
+  45777958e38120fdd19b80dadef91184d47f199e9b1eb21499431f41d9d409e4:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"\"hello\""}<|call|>
+    tools: tools_2fcd8f3e1e42a651
+  4697d2780479b465721e8cada2ce023fab35931390358689f9ded9117c5c4ee8:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"café"}<|call|>
+    tools: tools_94a229d519146b8d
+  478f10c21645a2c1502cc6676c4698866445f7f0ef77917bc13d451bbec00844:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"{\"x\":1}"}<|call|>
+    tools: tools_b2265271b5a9f3a1
+  491ec329f90e3518ea49bdf411ce17f682136a4f45e35b388c92960053115c31:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"  spaced  "}<|call|>
+    tools: tools_0e6c259d2e90182a
+  49974d8772252570101587d1d43f9b2ca423d9e229e9ba4466a200a6e0926431:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":[1,2]}<|call|>
+    tools: tools_e9d7fa1fb290c04d
+  49bb7c90ce23144ca5fb743edfb50b142586ebb80da5749128616a7362ce245c:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":true}<|call|>
+    tools: tools_36488b7f60ef21ad
+  4a544c6e522b331b13763a6ab406b9a94ebf03a54fdd91b7b283e14c45dfc5f6:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_a6aee3f30418a3a4
+  4ad0b44f1b9c8f9f793976e96b298e02f8286f6b47635bf341e4cfe22fd0adf6:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_edce2cf72af57686
+  4d2d2db00674f1e47081341bdc172a098a5a2f6da9a2409cdbe9f4218825d273:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_9df3142224567b2c
+  4f3e83a895e4018d9e33de047f4dcdbce0595a549b485b19fcc059932dd55522:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: <|channel|>analysis<|message|>checking<|end|><|channel|>final<|message|>done<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  500af4ffbf29b37e1847b7fdaddc18338f8d9d6566ec56c1b7e18e0c31904653:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"count":42,"ratio":3.5,"flag":true,"narrowed":42}<|call|>
+    tools: tools_e3ff7e072a11e815
+  509d805752ae5695534e06dac714089197e42e70691e3dba65946f45eaf84958:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"  spaced  "}<|call|>
+    tools: tools_d8f16597f742e3d4
+  51b2781c82417984c086b1bb45ec664e1ab991fa275a02b911ae970495a74a20:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":null}<|call|>
+    tools: tools_68ad90d828650089
+  52154330f31d696baace73ad4510fb47f82f6dcfe2044a2c0e381b30c717207d:
+    input: <|channel|>analysis<|message|>check<|end|><|channel|>analysis<|message|>ing<|end|>
+    tools: tools_cbf47ccf5fd2ef00
+  5259a9a95f00f47d658174c8b1596ee3d671e6c30217f35372841df2aa5162c1:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":[1,2]}<|call|>
+    tools: tools_acabb07d9722c054
+  52941a9bbdfc953ee4aff49e2949e1eedc887a2a7a51a2c95052493c458cb42a:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":1}<|call|>
+    tools: tools_15d8cf86faa75ec3
+  5428b64e13ad49e5f76d71aad8d17ffa05ecbf27a116447bc6587d435059e608:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"true"}<|call|>
+    tools: tools_141694f76bec2b1b
+  54eb1aed28c3cdb2408ed5bdcaf13d7bec6ac3e692f36d63e7e880f53a4086a5:
+    input: <|channel|>analysis<|message|>A<|end|><|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>analysis<|message|>B<|end|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  58ea44ef615fa7a4e14ff8a22f82729b1f0410c581cae5784bd4b4bd8a529127:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '{"name": "get_weather", "arguments": {"city": "Par'
+    tools: tools_cbf47ccf5fd2ef00
+  5b08102a8422c149404f3b67ac01ba41ccd28418fda10972397209f8d5651a11:
+    input: <|channel|>analysis<|message|>Look it up.<|end|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|channel|>analysis<|message|>Now answer.<|end|><|channel|>final<|message|>It's 18C.<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  5b2367230041c5dcd2b29db91f82321c9ae1c979cb5cd75978c8c0e61d7c3ba4:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_68095193d4321478
+  5ce49892cd7cf4927fe4d30066e915d0415e0f238db8ae3f2ca9a0df427c8405:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"true"}<|call|>
+    tools: tools_7592cfa2edef2954
+  5eaff3482ac2b3b0dcb66db98b8eb540f0314afe90be4e5b97f53d1867e9315b:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_b96fcb423a7855d0
+  5f84a944b1db144745c0c15710eed68552b37fc23c747b5612ed89e386056221:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"
+    tools: tools_cbf47ccf5fd2ef00
+  62dd45863106d69d392a5fddbd0ee9a3bdc778630fc23ed510292152cb88191f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"null"}<|call|>
+    tools: tools_e3480ec214ef0c48
+  64ed72e0740ac77580143a2c6f511af4dc529169c65e42286f6a824c0944b1d6:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"null"}<|call|>
+    tools: tools_7ae123f7897654fb
+  655de2749adda27a42813fd1677cebd70c301a6142fa9b15075d0dd5430d78bb:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: 'checking<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  67e06826901f0ce67ff1434d8ad3b8c33d245c65cd18459ec98ebfb6e8309379:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"café"}<|call|>
+    tools: tools_d3a7035c9b3abb76
+  68d3fee595d6b1bb5495c2c0bcbc05a414b46377a995e64a042c59598f0dab6e:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_9d7e29c38b45febb
+  6a3a4812ecfef0f4a341e5cdeaa082ddb2920e3e49b37055cdd8033754867c90:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"  spaced  "}<|call|>
+    tools: tools_48fa3ded1d3c517d
+  6a3c43d805ed7af4d8a0802e790ae4c3f19bdd7805cf9f706d0b546fdc9c1d6a:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_c98829c1934a2d66
+  6c6e5942748e1921519c5d07ab22f39842534dea867d2f8e51916f69f3da58fa:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_49d1d4dc29b4d728
+  72e26efaead7f44a3ac94dc10309e96f7e46b3a8dbfbebb6090491b44014771f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_9d7e29c38b45febb
+  7302ddf536a8f639f7cbf48c47f27deec7d240be7de27dca8b4bb3d2e6a294af:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"category":{"label":"Garden Tools","children":[]},"tree":{"label":"root","children":[{"label":"leaf","children":[]}]},"retries":37,"dry_run":false}<|call|>
+    tools: tools_5d30b2f70e9f541a
+  730ea893cfeafc0aa7b9a376fe2c12b4079ceaceb345bc5c8ccdc748354caadc:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: checking<|end|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"
+    tools: tools_cbf47ccf5fd2ef00
+  74c3115956948b78802c605211d5e1d309d53bae003d1db2c195eeac01c0ac95:
+    input: <|channel|>analysis<|message|>checking
+    tools: tools_cbf47ccf5fd2ef00
+  7663db3d63f0ce99d374ca6536e9e22eeb243cfc45f3f1fc568da50a1d5d2efa:
+    input: <|channel|>analysis<|message|>just thinking, no answer<|end|>
+    tools: tools_cbf47ccf5fd2ef00
+  76789f50890eb4875d974d70ef8c256719f96f3a9a83baed1f87f768f305e91a:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_8ec35ead2e0f48ac
+  76b269f861a6938b1f2944907ba0e63b0a68a9088b4422a1751f31cb2dd95b7a:
+    input: <|channel|>final<|message|>before<|return|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"<|channel|>analysis<|message|>literal<|end|>"}<|call|><|channel|>final<|message|>after<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  781d904c29a2c99383e916938ba8f3baac2124b5036d8f173045c138ea76ddb8:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  78889947069ae6429eb48f1e288eedcdd69e6c29025ec858215764a88a8be463:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"<|channel|>analysis<|message|>literal<|end|>"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  7a17f3fa9b9bf986cc6c335c0da197a54c91808c694d439a4e31d098a5fa1b61:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":[1,2]}<|call|>
+    tools: tools_592bf92c162ae226
+  7b68cc24f5d39cd5ef62ce99f1139f60bd5a76a645b6d4e08bc184c301f7dfca:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":null}<|call|>
+    tools: tools_b61bcb374d1c66b2
+  7bf7caa75a76ef31fabd7f277f00dec9709bd561ab1da3de1405420c002beb3f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"\"hello\""}<|call|>
+    tools: tools_d7ee0d5304d6d110
+  7d671869b91f9492967b9ab4ce1fdee8320b2220457bdc1d156869eb2f6cbdff:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_99160bb5b93d07f2
+  7d909e1bfd8fb7d3af58997bae5870a47bd260e193750d0d850c88244e042e8c:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":true}<|call|>
+    tools: tools_dc442e5767620506
+  7f6413a447a1bc07e5b9b13ea65066786f8a91a41e0a8f033d629cc8b54e0db2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_6943558dd8046b7b
+  80ce786586af077e1a02b1e4a3db07c58f4a1af3fe6f288ecde63ea8c729e2e3:
+    input: '<|channel|>analysis<|message|>a<|end|><|channel|>final<|message|>Here you go: <|return|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>'
+    tools: tools_cbf47ccf5fd2ef00
+  82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  8453fc2233dcd40d02d8b67010131030392c269841df96d4750c9461f3010e4d:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"true"}<|call|>
+    tools: tools_d7d32f10737ac6cd
+  85a48fc2172f90d7c1b38cbb61c094f1a572d686ac818909c0caced0da9a6362:
+    input: <|channel|>analysis<|message|>A<|end|><|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>final<|message|>working on it<|return|><|channel|>analysis<|message|>B<|end|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  85ab646e6658aecb5a2bab54ec50610281a7ca551695f32212e68ff2df39adef:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_6943558dd8046b7b
+  875f776f256802655a0aab44d5d6850e75a29e21a66d27c8066b2ee9ad833ca6:
+    input: <|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>analysis<|message|>mid<|end|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  88f7009485ec587e32689db1453d72ac1cf14ee3b99ae55d6fae8b96feb60b04:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_2da5b5660d13bc3f
+  8bf10820a4e24e860f16c45087e393eb9066eb6f23cedc8ef003dd8203d78ee6:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":3.5}<|call|>
+    tools: tools_799032ba2fa9936f
+  8bff1d7a47c3f4e1641fd40c0cfc4dd123ecf4762867fe00b0ae3f98d9fa9cda:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":true}<|call|>
+    tools: tools_49d1d4dc29b4d728
+  8cb54fdc8e131250386f0df0813a682019a4b6c01301d9701585f43f96eaf8a3:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_dc442e5767620506
+  8efa590a030a73e4085ca6bfd5902b9bc1d2109ff10ef3f46f98c332f100f63e:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"  spaced  "}<|call|>
+    tools: tools_944c6af93200d6d4
+  8f419da173b549f70fafab218026a15c03ee6a9e7aa970c3b5408f6a5d55fe82:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":3.5}<|call|>
+    tools: tools_7c3821d79a8dd3d3
+  8f5e1f3880c129ecc07b2d90a0db0af4210eb4c2e71328fa4c9ec2c0461f6175:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":3.5}<|call|>
+    tools: tools_c98829c1934a2d66
+  9219ddbef46839d70e61c00f1f7d98565b383a1c16b29aa6d8ecca675e2dd118:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  9317f0c976b0087d2cde5f72cfc3ec2610746ed9412b63ea1aae60b61599ba14:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_8dffe495831aef95
+  93602a642f2f3e2d613a88d059e2365958f655dfcd40f9261901f213c273ce45:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_c74338ba0ea3bd75
+  98bdaf149ae9c1ab6514c62a9f183a04a6b561e7829dd8a2d286684722213199:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"&lt;"}<|call|>
+    tools: tools_8f1359f32bcc5c31
+  98c1341e1317df01ff639a45fa577b5df9464ab5d8b33b58fb912b65964560e7:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_d0a5a1d2f9e7df17
+  98e9bc89e275da53d92c5870571f52bac734404d645e8a5ec6043fdf341c5d93:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_0e1126661e4ae595
+  9cf6415d1d9673619add68b7a89612a388d8556d25461ca82d2278a5d2a7884c:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_dc2ae18fede7bc39
+  9d3cda52a1e7db13419c6848e0a40bb2fcc4b3ba86010e5e3e28dc0dec98c107:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"count":42}<|call|>
+    tools: tools_54f45eb2676e3be9
+  9d63a17ad77ae7c2fb7267f72a3ea72a204f186e5b0cd9682a6f2018c51c4d3f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_1ceb5fd473b8ba0a
+  a1636d4bf47e65569295b8a2f7c9219c472d093039aaa25db27d9c4920c0f31e:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  a1e67434a3dffdddd38be064d2468b5d273d5c92c25f08e14481063e4c9cf10d:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":null}<|call|>
+    tools: tools_d4c7d176f7825f77
+  a4a56955c5d440203c1632084ab9414967034fb51d9e950b68cf00410cc79fa4:
+    input: <|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  a577741a4eb22d3c80bf960052b2fb635a26fe72cb44a2ac8b43611c0aa31f43:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_f9599a86b7b8e1d2
+  a6f007eabf7274e9f6ae8321b5f686aba0d3f65cbd7f5dcce86baac414c334fd:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_1ceb5fd473b8ba0a
+  a723ef0d4e29eef74282b821d6228b8ae35f553346ff67d586af279aeb48e7ae:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":true}<|call|>
+    tools: tools_def252fc833e1bdc
+  a860b0a7571688a63c0d1b69334cad274a02c6d30c6f4415e1ee5ba6a10a286e:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"[1,2]"}<|call|>
+    tools: tools_62a2a30f5fef87f0
+  aab00098248914566989906db947a644d4ff7e341e8f6bbaff6da456a41e1068:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  aacc267745b12f730daf4573561678faff797e2c0816f9219e5cb8e039195214:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"null"}<|call|>
+    tools: tools_d84ac5f342102778
+  ab136decbd4d79338525e7565a50664443571315f7ad145614deb2761b1503cf:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_7c3821d79a8dd3d3
+  ab4d41b6947517e8846a2e58d4c1298a395978d3ab349c4a0751893f0b83836f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"café"}<|call|>
+    tools: tools_3632e66e77144cef
+  afcb90bb5c3cec34b5d432bfe363b58432215d44059d15448004ee8b70ca74f2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":{"x":1}}<|call|>
+    tools: tools_3e9459ef2d935104
+  b1719800b8ae2f5d3921e544d6b4428f9f3d3acf73e37a815f5928a3caa05f2f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_9c8a74c317d60415
+  b2fc40e549b29a5159df7fec2510ae5f8a4f2dae29d00ec01dd479386bb82f0c:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_8dffe495831aef95
+  b4a2df42af5dbe94ef359ee3258d9e856112b97a1f1a4132c1bc09ef1bd0e59f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_b216df93b649987b
+  b4daf01fab9983294de5d9fa4847a9d8ad1c3294339acfb0afc1f57ee05eab24:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_7097557402b15d50
+  b74b30bf2703c69ec3a7afad4238f0e7a84984328238aacb1926a239e60a7fdf:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"null"}<|call|>
+    tools: tools_a6445198800af10f
+  b7551d79e3a803ace873c1edf266368ed8913c13312e6443470b070351e477c1:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_5215bd16730305ea
+  b75ab1451efa8e6cebacd4b5802452a7368bf71fe665a62a7ab8d90b23cd21cf:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"null"}<|call|>
+    tools: tools_ca0b5b673641dda3
+  b7f531290e2f0ca8a52d248a02f6729357a6640bb74d5854d7f9284c8b24c04c:
+    input: <|channel|>final<|message|>The answer is 42, no tools needed.<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  b8953b34ba297e283b0400bdc6ecf71add8c40e545eeb72ead5621c37e2a27e7:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: checking<|end|><|channel|>final<|message|>done<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  b89cede9296e8a5af9f712da55ed4906f745947532eee9712db3751d96856db1:
+    input: <|channel|>analysis<|message|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|end|>
+    tools: tools_cbf47ccf5fd2ef00
+  b8f358982d911462542828959309f3ffe3f0ba2564f183e5a3d507495095a256:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '{"unexpected": "shape"}'
+    tools: tools_cbf47ccf5fd2ef00
+  b9a4998de1baed3015bdb0a99d49f3f43c49a55a6644cc914cd9c3e5870be3bd:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: checking<|end|><|channel|>final<|message|>done<|return|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  bb6d6b72f60838103ec072d8f3972e6ca4f595b96a6e0a1c6634a97f36aa6377:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|channel|>final<|message|>The forecast shows clear skies for the rest of the week.<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  bcb0e10b7ad23362cdd1141f531ba26570b0682887b81e257373ad13a64f23b8:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_d634a43e2a693178
+  bd0e62796d58b65dcc3f8105446cacabe8d9d512cea266b3965b8ea5baab2737:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"space":42,"utf8_plus":42,"pointer":42}<|call|>
+    tools: tools_2931a9ad742a4419
+  bd5efd1dd6ae590713ca77f86166cd10968f73241ddabd16cd0a4132ab98c286:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"{\"x\":1}"}<|call|>
+    tools: tools_a59dec8969ac978b
+  beca7df8a353692cb072cce0c59d9f7c4c599001eb340f519e9585645a15c9f7:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_746b20394956becb
+  c16c7b8185b0b68b74e2cc2d21c75c43fc29c0d1a09a71ec1e49894e84dae599:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_3e9459ef2d935104
+  c31a2adbc1fe4e91d56fbfc7971c33d3b182e865304425b4293815f1832e76b5:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"plain"}<|call|>
+    tools: tools_0af1c035b667e8b0
+  c74a202053660b76d422e84e4a52e2525884cdf53e4b0765764b5ee7c61ca20b:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_7097557402b15d50
+  c9bcc81d9dedfe3f6b4dcf998a908809cc661997ecef2008cbc79e67d0b2b2a7:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":{"x":1}}<|call|>
+    tools: tools_eb27882cf50cbcb6
+  cc270cfe092baf27b54a08ca0264ea0606ef4eb32fa598d689f4fac98272eefb:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"\"hello\""}<|call|>
+    tools: tools_4b74086a372173ba
+  ccd028b0c171e3779baa1c27f17efc43a606b73fd769bdbc2205e87050a62856:
+    input: <|channel|>analysis<|message|>Check weather.<|end|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: get_weather
+    input: '{"city": "Paris"}'
+    tools: tools_cbf47ccf5fd2ef00
+  cd1ab02e2e5eb89e8d71bb1532992e26217627bda444c0d3e4d6248470cbd5fd:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+    tools: tools_cbf47ccf5fd2ef00
+  cd9fc6a0fee005ce16fdd5a5589a5d45b16b47d355fec7d95c2c5bca2f3ad8a0:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"const_text":"null","enum_text":"null"}<|call|>
+    tools: tools_9f0d61d69494be95
+  ce7a52209ea7b632f0d770ff854df6c4c6bd69f991bc2c399754fe1beff377b4:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"payload":{"x":1}}<|call|>
+    tools: tools_eb14ad8c4a7a4413
+  cf4e86fa3bad67d02ed93287938fa91413dc1b00447a7417e1a974804bf604bf:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_1ffd69270532e13e
+  d0fedcceb10ceaec2b1a0ceb52712e617412a3981fe852c7d5949ac4d361cb5d:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_def252fc833e1bdc
+  d2c73eee2a8ad007a1d422aadc0fe22844fdc854d4e10df316057e0a5fc2db34:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"São Paulo 東京"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  d365cf55a3f36bd89326725842f8fba73b1293eca4292171d7f32a96749fe2ba:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"true"}<|call|>
+    tools: tools_70f2b5e9ad67ba1e
+  d4f2519b6c20222f56673a60a8b55ea77026eba7d9d5a7b681dd7fc5ca825c61:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_3b245127a58a1723
+  d5dc125c0e67c2abd4d1b3c8816e1d939ee1275b630296e73ab4eabd639c2ed1:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"count":42,"flag":false,"text":"null"}<|call|>
+    tools: tools_61f8e5714fc9d54c
+  d727fe225512d60c7f16e4e184621cbd5271152f0c3c31fbff4f1973e8817aaa:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"metrics":["temperature","humidity"],"count":5}<|call|>
+    tools: tools_7f03b4392817a770
+  d79ef7855f34f899c340e456610e6800bc37c3ca6ffb90630065d43aee96e4a8:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_8de7a56dafcceaa4
+  d7b9fb7fbdc99d2b67f068f9e3a78f912c86f49101c0f8804c8f7cb434d677e6:
+    input: <|channel|>analysis<|message|>A<|end|><|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>analysis<|message|>B<|end|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|><|channel|>analysis<|message|>C<|end|>
+    tools: tools_cbf47ccf5fd2ef00
+  ddbbfe925d98f155703fb3d411b687919dc824d9e74cfc1e39ccc656aa925065:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_e9d7fa1fb290c04d
+  de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  def3d0e1baa2d765bba07f8b52f61f881bc6d12f7f760a2399ebb3339917275d:
+    input: <|channel|>final<|message|>Before. <|return|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|channel|>final<|message|> After.<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  df1a3b3ee949c0eb188fcce8aafa9c3cda2e81eee37b43119ba4b1908be039e7:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Tokyo"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  e0b5ec2a054514f64b86dd427906d6627e15d9bdab83c79f53c5e05f408f6062:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":null}<|call|>
+    tools: tools_711e03afbe37c425
+  e497692315dae3a335c6fe5865af978af48164b3245ccb173d01b856729c13ec:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"count":-2500,"text":"42"}<|call|>
+    tools: tools_05f2125f365df522
+  e500b2765a511dd84f07a6816f0a3b26a889895a33f8c959bc330a3aa7ff6825:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"null"}<|call|>
+    tools: tools_c887a73c6fbd0e1d
+  e6d7eb9182b6d2aa6e11f75347d8c07ad644f4cf7b963f0ce968c06201542c26:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|channel|>final<|message|> then I'll run <|return|><|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x":"1"}<|call|><|channel|>final<|message|> and <|return|><|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y":"2"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
+  e829aa37aa488e5d3f5c35ab858f107bc9edbda20a335c019cb0b813b961b855:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":null}<|call|>
+    tools: tools_f7439c846ab88b86
+  e94415e51fc11d2f32cc3190daf16e94c54846e3c0418166ec0d3313e8c056ea:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"&lt;"}<|call|>
+    tools: tools_4ce5fbd93f1be6e2
+  e9eb2792c5b9fffef64e588842186c8337818ac9528ff117f5fa3c9489d69a51:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_56ea48eeba7ec14b
+  eaf787bc043ee80d9322b73980b06a54048d98dc2bc05a5d1f212377e8fee4e9:
+    input: <|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}<|call|>
+    tools: tools_fb2820fd626f73c0
+  eb2a2221c7b9f0f547e3ac550ca4dd07eaf3bdb5b4dff58fc82f6f3be670552f:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_b216df93b649987b
+  ecfe46634ccaabf50f1fe2eaadf57ef416bea3811751c4bfc622187ee4e9a4bb:
+    input: '<|channel|>final<|message|>On it: <|return|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>'
+    tools: tools_cbf47ccf5fd2ef00
+  eea4417d3d84a1155be53ad0bb1ae73166175f8b556aa1d2f4aa304c60c4faa0:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_354f5c938f5eb5c2
+  f069ccd5e4f8607d70ee7dcdc82343b434d0f50e1dc0bc6edc06d719a175a891:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"null"}<|call|>
+    tools: tools_84aaff47dfbac1c3
+  f0d5d89120e863b7ba7a35ce0e34c147c0757626465f7a4403eb8e9c373b2caf:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_1348faa3b84df9fd
+  f26a3472966ef8a3169b51b63c293440e2cf22af94447e48eb216a73f66995da:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"auto"}<|call|>
+    tools: tools_799032ba2fa9936f
+  f2c3054df7929bfead78dda7de1de7388110b394b743f84d6bfd30f6479d0af9:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"42"}<|call|>
+    tools: tools_7351122c3d50bd6e
+  f427e03a2c55f9591a7362f4151c14a00d3ef3df12babe357ef0b27a1c201d7e:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"\"hello\""}<|call|>
+    tools: tools_51bb61b12cbf4d8a
+  f5836a50bf93b2a4e48d936ded4a515b70c7c5fbf3c1a59fcd3ad1ddf7366214:
+    input: <|channel|>analysis<|message|>first thought<|end|><|channel|>final<|message|>interlude <|return|><|channel|>analysis<|message|>second thought<|end|><|channel|>final<|message|>done<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  f686badd9ed36b2803a5e3538d0b09d98feab81140d6a9dbb98c373ffecc623c:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_97ab5757d6f3f219
+  f7e2585e01894f2d59c47e48c0443ed8f59f1b10fca99b5459b986fcb97c84d8:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":[1,2]}<|call|>
+    tools: tools_354f5c938f5eb5c2
+  f8c9c5d62daf638b6f57c07fdc59c152c80e035830b77c82c6003f5ef8cc78fa:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_dc2ae18fede7bc39
+  f98b5ee0a2b6943ce5c254a7c8b27b483294f8b70322bab0b4cb582f4d280eb1:
+    input: <|channel|>final<|message|>Hello there. <|return|><|channel|>analysis<|message|>let me recall<|end|><|channel|>final<|message|>The capital is Paris.<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+  fbed1ed0f765b2df572c4823d682b41c20ca8026faa7ceb1f0a46684417aa2d2:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":42}<|call|>
+    tools: tools_0ea0b97c8c1f95c9
+  ff959260aaa0fa2e52dccf880d440779a52d77d33f2bf5017b1bbe30b85450bc:
+    input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":null}<|call|>
+    tools: tools_56ea48eeba7ec14b
+cases:
+  tool_only:
+    description: Single tool call, no reasoning. Must stay green everywhere (the existing tool suite's world).
+    display_id: UNIFIED.1-tool_only
+    request: aab00098248914566989906db947a644d4ff7e341e8f6bbaff6da456a41e1068
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  reason_then_tool:
+    description: Reasoning fully precedes one tool call (baseline).
+    display_id: UNIFIED.11-reason_then_tool
+    request: ccd028b0c171e3779baa1c27f17efc43a606b73fd769bdbc2205e87050a62856
+    golden:
+    - kind: reasoning
+      text: Check weather.
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  reason_then_content:
+    description: 'Reasoning then visible content, no tool call (baseline). This is also covered in: e2e case-0001-chinese_arithmetic__non-stream-budget_capped.json (+ 42 more: every `reasoning/core`, `reasoning/complex` and `reasoning/history` case, `tool_none_arithmetic__*`, and the SECOND step of both `lifecycle_*` — each with its `-budget_unlimited` pair).'
+    display_id: UNIFIED.10-reason_then_content
+    request: 17b729a522f7e9a38ccd2d319f882836c59a64f51bd5c6b9d4053ae8ceaac1ca
+    golden:
+    - kind: reasoning
+      text: let me think
+    - kind: text
+      text: The answer is 42.
+  interstitial_text:
+    description: Reasoning, then visible text, THEN a tool call. Text between reasoning-end and the call must survive as its own event, in order.
+    display_id: UNIFIED.11-interstitial_text
+    request: 80ce786586af077e1a02b1e4a3db07c58f4a1af3fe6f288ecde63ea8c729e2e3
+    golden:
+    - kind: reasoning
+      text: a
+    - kind: text
+      text: 'Here you go: '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  reason_after_tool:
+    description: Reasoning AFTER a tool call, then final text (Example A). The split cannot represent reasoning between the call and the answer.
+    display_id: UNIFIED.11-reason_after_tool
+    request: 5b08102a8422c149404f3b67ac01ba41ccd28418fda10972397209f8d5651a11
+    golden:
+    - kind: reasoning
+      text: Look it up.
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: reasoning
+      text: Now answer.
+    - kind: text
+      text: It's 18C.
+  content_then_reason:
+    description: Visible content, then reasoning, then more content. The split hoists reasoning to the front and merges the two content spans.
+    display_id: UNIFIED.11-content_then_reason
+    request: f98b5ee0a2b6943ce5c254a7c8b27b483294f8b70322bab0b4cb582f4d280eb1
+    golden:
+    - kind: text
+      text: 'Hello there. '
+    - kind: reasoning
+      text: let me recall
+    - kind: text
+      text: The capital is Paris.
+  content_then_reason_then_tool:
+    description: Visible content BEFORE reasoning, then a tool call. The split hoists all reasoning to the front, so content-before-reasoning loses order.
+    display_id: UNIFIED.11-content_then_reason_then_tool
+    request: 201eca4cc3d2b3f1801cd6c54a4a3b34d3251f28d0056450e614996d0a5f7b31
+    golden:
+    - kind: text
+      text: 'Sure, one sec. '
+    - kind: reasoning
+      text: checking the forecast
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  reason_interleaved:
+    description: reason -> tool -> reason -> tool. Two calls, each preceded by its own thought.
+    display_id: UNIFIED.11-reason_interleaved
+    request: 54eb1aed28c3cdb2408ed5bdcaf13d7bec6ac3e692f36d63e7e880f53a4086a5
+    golden:
+    - kind: reasoning
+      text: A
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: reasoning
+      text: B
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+  reason_tool_text_reason_tool:
+    description: reason -> tool -> text -> reason -> tool. Two reasoning spans separated by a call and text.
+    display_id: UNIFIED.11-reason_tool_text_reason_tool
+    request: 85a48fc2172f90d7c1b38cbb61c094f1a572d686ac818909c0caced0da9a6362
+    golden:
+    - kind: reasoning
+      text: A
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: text
+      text: working on it
+    - kind: reasoning
+      text: B
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+  trailing_text_after_tool:
+    policy:
+    - P1
+    description: Arbitrary visible prose AFTER the tool call (the point is it could be ANY content, so it must survive). Policy P1 (best-effort recovery) — trailing model text is preserved, not suppressed.
+    display_id: UNIFIED.8-trailing_text_after_tool
+    request: bb6d6b72f60838103ec072d8f3972e6ca4f595b96a6e0a1c6634a97f36aa6377
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: The forecast shows clear skies for the rest of the week.
+  two_calls:
+    description: 'Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv1.2.a.'
+    display_id: UNIFIED.2-two_calls
+    request: a4a56955c5d440203c1632084ab9414967034fb51d9e950b68cf00410cc79fa4
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+  two_calls_same_name:
+    description: 'The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.'
+    display_id: UNIFIED.2-two_calls_same_name
+    request: df1a3b3ee949c0eb188fcce8aafa9c3cda2e81eee37b43119ba4b1908be039e7
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Tokyo
+  text_only:
+    description: 'Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.'
+    display_id: UNIFIED.3-text_only
+    request: b7f531290e2f0ca8a52d248a02f6729357a6640bb74d5854d7f9284c8b24c04c
+    golden:
+    - kind: text
+      text: The answer is 42, no tools needed.
+  arg_unicode:
+    description: 'Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv1.7.b.'
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_unicode
+    request: d2c73eee2a8ad007a1d422aadc0fe22844fdc854d4e10df316057e0a5fc2db34
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: São Paulo 東京
+  text_before_tool:
+    description: 'Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv1.8.a.'
+    display_id: UNIFIED.8-text_before_tool
+    request: ecfe46634ccaabf50f1fe2eaadf57ef416bea3811751c4bfc622187ee4e9a4bb
+    golden:
+    - kind: text
+      text: 'On it: '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  text_sandwich:
+    description: 'Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv1.8.c.'
+    display_id: UNIFIED.8-text_sandwich
+    request: def3d0e1baa2d765bba07f8b52f61f881bc6d12f7f760a2399ebb3339917275d
+    golden:
+    - kind: text
+      text: 'Before. '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: ' After.'
+  text_between_calls:
+    description: 'Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv1.8.d.'
+    display_id: UNIFIED.8-text_between_calls
+    request: 23abe5a3260bd76075edacb3ebf2d5c4bcb203faff7a55ce07bdf23e02391d65
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: text
+      text: ' then '
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+  narrated_calls:
+    description: 'Multiple tool calls with visible narration between each — tool_call -> text -> tool_call -> text -> tool_call. The agentic pattern: call, narrate, call again. Every call and every inter-call text span must surface as its own ordered event.'
+    display_id: UNIFIED.8-narrated_calls
+    request: e6d7eb9182b6d2aa6e11f75347d8c07ad644f4cf7b963f0ce968c06201542c26
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: ' then I''ll run '
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: text
+      text: ' and '
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+  reason_only:
+    description: 'A reasoning span with no visible answer and no tool call. This is also covered in: REASONING.batch.2.a.'
+    display_id: UNIFIED.10-reason_only
+    request: 7663db3d63f0ce99d374ca6536e9e22eeb243cfc45f3f1fc568da50a1d5d2efa
+    golden:
+    - kind: reasoning
+      text: just thinking, no answer
+  two_reason_spans:
+    description: 'Two reasoning spans separated by visible text, no tool call. Streaming keeps both spans in order; batch merges them. This is also covered in: REASONING.batch.6.a.'
+    display_id: UNIFIED.10-two_reason_spans
+    request: f5836a50bf93b2a4e48d936ded4a515b70c7c5fbf3c1a59fcd3ad1ddf7366214
+    golden:
+    - kind: reasoning
+      text: first thought
+    - kind: text
+      text: 'interlude '
+    - kind: reasoning
+      text: second thought
+    - kind: text
+      text: done
+  reason_tool_reason_tool_reason:
+    description: reason -> tool -> reason -> tool -> reason. Three reasoning spans around two calls, including reasoning AFTER the last call — the split cannot place any of them.
+    display_id: UNIFIED.11-reason_tool_reason_tool_reason
+    request: d7b9fb7fbdc99d2b67f068f9e3a78f912c86f49101c0f8804c8f7cb434d677e6
+    golden:
+    - kind: reasoning
+      text: A
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: reasoning
+      text: B
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+    - kind: reasoning
+      text: C
+  reason_between_calls:
+    description: Reasoning BETWEEN two tool calls with no surrounding text — the tightest interleave.
+    display_id: UNIFIED.11-reason_between_calls
+    request: 875f776f256802655a0aab44d5d6850e75a29e21a66d27c8066b2ee9ad833ca6
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: reasoning
+      text: mid
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+  text_reason_tool_text_reason_tool:
+    description: Deep well-formed interleave — visible text, reasoning, and tool calls alternating (text -> reason -> tool -> text -> reason -> tool). Every segment must survive in emitted order; the point is that user text, reasoning, and calls all mix in one stream.
+    display_id: UNIFIED.11-text_reason_tool_text_reason_tool
+    request: 2ea581d15651870a1a6318c63d8e1c1e7c15369304807992be176f46b623e772
+    golden:
+    - kind: text
+      text: 'Sure. '
+    - kind: reasoning
+      text: check A
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: text
+      text: ' and '
+    - kind: reasoning
+      text: check B
+    - kind: tool_call
+      name: g
+      arguments:
+        y: '2'
+  empty_args:
+    policy:
+    - P2
+    description: An offered tool with no required parameters accepts an empty argument object.
+    display_id: UNIFIED.6-empty_args
+    request: 781d904c29a2c99383e916938ba8f3baac2124b5036d8f173045c138ea76ddb8
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: {}
+  truncated_tool_eof:
+    policy:
+    - P2
+    description: EOF interrupts the first argument value; emits nothing because no completed tool call exists.
+    display_id: UNIFIED.5-truncated_tool_eof
+    request: 5f84a944b1db144745c0c15710eed68552b37fc23c747b5612ed89e386056221
+    golden: []
+  malformed_json_then_two_valid_calls:
+    policy:
+    - P2
+    description: Discard a malformed JSON argument object, then recover the two later calls in order.
+    display_id: UNIFIED.5-malformed_json_then_two_valid_calls
+    request: 3d443dc49f1f78cf48034a2238f2da26b153d2fac1c9fbec76fba960196723a5
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Tokyo
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Berlin
+  arg_json_null:
+    policy:
+    - I7
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using a type array.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null
+    request: e829aa37aa488e5d3f5c35ab858f107bc9edbda20a335c019cb0b813b961b855
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: null
+  arg_json_null_anyof:
+    policy:
+    - I7
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using anyOf.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_anyof
+    request: a1e67434a3dffdddd38be064d2468b5d273d5c92c25f08e14481063e4c9cf10d
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: null
+  arg_json_null_oneof:
+    policy:
+    - I7
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as `string | null` using oneOf.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_oneof
+    request: e0b5ec2a054514f64b86dd427906d6627e15d9bdab83c79f53c5e05f408f6062
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: null
+  arg_json_null_nullable:
+    policy:
+    - I7
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema declares `city` as string with nullable: true.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_nullable
+    request: 51b2781c82417984c086b1bb45ec664e1ab991fa275a02b911ae970495a74a20
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: null
+  arg_json_null_const:
+    policy:
+    - I7
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. The request tool schema permits `city` to be null through an anyOf const-null branch.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_const
+    request: 7b68cc24f5d39cd5ef62ce99f1139f60bd5a76a645b6d4e08bc184c301f7dfca
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: null
+  arg_string_null:
+    policy:
+    - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema declares `city` as non-nullable `string`.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null
+    request: 323793166bedd390cb393718d4d5b1b10d8eae3a09b7a40c70ed2e0d56fefc79
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'
+  arg_string_null_union:
+    policy:
+    - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits string or integer through anyOf, but excludes null.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_union
+    request: 64ed72e0740ac77580143a2c6f511af4dc529169c65e42286f6a824c0944b1d6
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'
+  arg_string_null_sibling_anyof:
+    policy:
+    - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has type string alongside a nullable anyOf; both constraints apply, so null is excluded.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
+    request: 0cbf7eedc833472df68028ec733fc9d0b15dc206aa1d6986f993fdd1fcb7c931
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'
+  arg_string_null_sibling_oneof:
+    policy:
+    - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema has a nullable type array alongside a non-nullable oneOf; their intersection permits string.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
+    request: 34bcec8fb35f854f1630da104e4efa07ba4f613c6c0302dd59e77d8042931c2f
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'
+  arg_string_null_untyped_branch:
+    policy:
+    - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string; an anyOf branch without a type does not remove that requirement.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
+    request: e500b2765a511dd84f07a6816f0a3b26a889895a33f8c959bc330a3aa7ff6825
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'
+  arg_string_null_const:
+    policy:
+    - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema permits the literal string "null" through const, or an integer.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_const
+    request: aacc267745b12f730daf4573561678faff797e2c0816f9219e5cb8e039195214
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'
+  arg_string_null_enum:
+    policy:
+    - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. The request tool schema requires string alongside an enum containing string "null" and JSON null; the type excludes JSON null.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
+    request: f069ccd5e4f8607d70ee7dcdc82343b434d0f50e1dc0bc6edc06d719a175a891
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'
+  unused_reference_graph_parameter_types:
+    policy:
+    - I7
+    description: An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget.
+    display_id: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
+    request: d5dc125c0e67c2abd4d1b3c8816e1d939ee1275b630296e73ab4eabd639c2ed1
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        count: 42
+        flag: false
+        text: 'null'
+  nullable_reference_alias_literals:
+    policy:
+    - I7
+    description: Nullable reference aliases retain string const and enum restrictions; bare null is the schema-valid string "null".
+    display_id: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
+    request: cd9fc6a0fee005ce16fdd5a5589a5d45b16b47d355fec7d95c2c5bca2f3ad8a0
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        const_text: 'null'
+        enum_text: 'null'
+  local_schema_id_preserves_type:
+    policy:
+    - I7
+    description: A directly declared integer remains typed when a local $id disables reference resolution.
+    display_id: UNIFIED.7-tool-argument-schema-references-local_schema_id_preserves_type
+    request: 9d3cda52a1e7db13419c6848e0a40bb2fcc4b3ba86010e5e3e28dc0dec98c107
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        count: 42
+  glm_ref_object:
+    policy:
+    - I7
+    description: 'PR #271 compatibility control: a local object reference keeps JSON object text as an object.'
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_object
+    request: ce7a52209ea7b632f0d770ff854df6c4c6bd69f991bc2c399754fe1beff377b4
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        payload:
+          x: 1
+  glm_ref_encoded_targets:
+    policy:
+    - I7
+    description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping. Spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types.'
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
+    request: bd0e62796d58b65dcc3f8105446cacabe8d9d512cea266b3965b8ea5baab2737
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        space: 42
+        utf8_plus: 42
+        pointer: 42
+  glm_ref_json_looking_strings:
+    policy:
+    - I7
+    description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control.'
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
+    request: eaf787bc043ee80d9322b73980b06a54048d98dc2bc05a5d1f212377e8fee4e9
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        object_text: '{"x":1}'
+        array_text: '[1,2]'
+        quoted_text: '"hello"'
+        inline_text: '{"x":1}'
+  glm_ref_scalar_types:
+    policy:
+    - I7
+    description: 'PR #271: referenced integer, number, and boolean values keep their JSON types. A sibling integer type narrows a referenced string-or-integer union.'
+    display_id: UNIFIED.7-tool-argument-schema-references-glm_ref_scalar_types
+    request: 500af4ffbf29b37e1847b7fdaddc18338f8d9d6566ec56c1b7e18e0c31904653
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        count: 42
+        ratio: 3.5
+        flag: true
+        narrowed: 42
+  not_keyword_type_complement:
+    policy:
+    - I7
+    description: 'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
+    request: e497692315dae3a335c6fe5865af978af48164b3245ccb173d01b856729c13ec
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        count: -2500
+        text: '42'
+  conditional_schema_number_types:
+    policy:
+    - I7
+    description: 'ai-dynamo/dynamo#17662: `if`/`then`/`else` resolve to the union of the branch types. A number in both branches is a number; an integer `if` with a numeric `else` keeps 37 an integer.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
+    request: 0f404a550ac1eb746fd8fb2f8e2cee7870be895d93514cc6d54a9b16b0cfa658
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        amount: 21.5
+        retries: 37
+  reference_object_recursive_and_composed_types:
+    policy:
+    - I7
+    description: 'ai-dynamo/dynamo#17662: a `$ref` to an object definition, a recursive `$ref` tree, a `type` array with null, and a boolean declared only through `allOf` all keep their JSON types.'
+    display_id: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
+    request: 7302ddf536a8f639f7cbf48c47f27deec7d240be7de27dca8b4bb3d2e6a294af
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        category:
+          label: Garden Tools
+          children: []
+        tree:
+          label: root
+          children:
+          - label: leaf
+            children: []
+        retries: 37
+        dry_run: false
+  enum_contradicting_declared_type:
+    policy:
+    - I7
+    description: 'An `enum` written beside `type` instead of under `items` (as in BFCL live functions) admits no value of the declared type, so the declared type decides: the array text is a list and 5 is an integer.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    request: d727fe225512d60c7f16e4e184621cbd5271152f0c3c31fbff4f1973e8817aaa
+    golden:
+    - kind: tool_call
+      name: capture_payload
+      arguments:
+        metrics:
+        - temperature
+        - humidity
+        count: 5
+  reason_unterminated:
+    policy:
+    - P2
+    description: reason unterminated in None with Native output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.10-reason_unterminated
+    request: 74c3115956948b78802c605211d5e1d309d53bae003d1db2c195eeac01c0ac95
+    golden:
+    - kind: reasoning
+      text: checking
+  two_adjacent_reason_spans:
+    policy:
+    - P2
+    description: two adjacent reason spans in None with Native output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.10-two_adjacent_reason_spans
+    request: 52154330f31d696baace73ad4510fb47f82f6dcfe2044a2c0e381b30c717207d
+    golden:
+    - kind: reasoning
+      text: checking
+  prefilled_reasoning_with_tool:
+    policy:
+    - P2
+    description: prefilled reasoning with tool in Reasoning with Native output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.40-prefilled_reasoning_with_tool
+    request: 22bf21cd2b48e364753aaff4e521f3a192c2948a925b614ea82caab49a7f5814
+    golden:
+    - kind: reasoning
+      text: checking
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  prefilled_reasoning_then_text:
+    policy:
+    - P2
+    description: prefilled reasoning then text in Reasoning with Native output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.40-prefilled_reasoning_then_text
+    request: b8953b34ba297e283b0400bdc6ecf71add8c40e545eeb72ead5621c37e2a27e7
+    golden:
+    - kind: reasoning
+      text: checking
+    - kind: text
+      text: done
+  prefilled_reasoning_then_text_then_tool:
+    policy:
+    - P2
+    description: prefilled reasoning then text then tool in Reasoning with Native output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.40-prefilled_reasoning_then_text_then_tool
+    request: b9a4998de1baed3015bdb0a99d49f3f43c49a55a6644cc914cd9c3e5870be3bd
+    golden:
+    - kind: reasoning
+      text: checking
+    - kind: text
+      text: done
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  prefilled_reasoning_redundant_opener:
+    policy:
+    - P2
+    description: prefilled reasoning redundant opener in Reasoning with Native output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.41-prefilled_reasoning_redundant_opener
+    request: 4f3e83a895e4018d9e33de047f4dcdbce0595a549b485b19fcc059932dd55522
+    golden:
+    - kind: reasoning
+      text: checking
+    - kind: text
+      text: done
+  prefilled_reasoning_truncated:
+    policy:
+    - P2
+    description: prefilled reasoning truncated in Reasoning with Native output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.41-prefilled_reasoning_truncated
+    request: 730ea893cfeafc0aa7b9a376fe2c12b4079ceaceb345bc5c8ccdc748354caadc
+    golden:
+    - kind: reasoning
+      text: checking
+  prefilled_reasoning_with_guided_json:
+    policy:
+    - P2
+    description: prefilled reasoning with guided json in Reasoning with GuidedJson output; preserve channel boundaries and completed events.
+    display_id: UNIFIED.40-prefilled_reasoning_with_guided_json
+    request: 655de2749adda27a42813fd1677cebd70c301a6142fa9b15075d0dd5430d78bb
+    golden:
+    - kind: reasoning
+      text: checking
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  reason_markup_in_arg:
+    policy:
+    - I7
+    description: Reasoning delimiters owned by a native string argument remain literal data.
+    display_id: UNIFIED.12-reason_markup_in_arg
+    request: 78889947069ae6429eb48f1e288eedcdd69e6c29025ec858215764a88a8be463
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: <|channel|>analysis<|message|>literal<|end|>
+  tool_in_reason:
+    policy:
+    - I3
+    description: A native tool envelope inside reasoning remains structural and emits a tool call; surrounding text keeps its order.
+    display_id: UNIFIED.12-tool_in_reason
+    request: b89cede9296e8a5af9f712da55ed4906f745947532eee9712db3751d96856db1
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  reason_markup_in_arg_with_text:
+    policy:
+    - I7
+    description: Reasoning delimiters owned by a native string argument remain literal data.
+    display_id: UNIFIED.12-reason_markup_in_arg_with_text
+    request: 76b269f861a6938b1f2944907ba0e63b0a68a9088b4422a1751f31cb2dd95b7a
+    golden:
+    - kind: text
+      text: before
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: <|channel|>analysis<|message|>literal<|end|>
+    - kind: text
+      text: after
+  tool_in_reason_with_text:
+    policy:
+    - I3
+    description: A native tool envelope inside reasoning remains structural and emits a tool call; surrounding text keeps its order.
+    display_id: UNIFIED.12-tool_in_reason_with_text
+    request: 342cbc854f7e95b1fa1718c5f1fdb6d6bef68835dfba86bcab482ea6c06749ba
+    golden:
+    - kind: text
+      text: before
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: after
+  schema_declared_string:
+    policy:
+    - I7
+    description: 'Schema probe declared_string: independently authored value "plain" under {"type": "string"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_string
+    request: c31a2adbc1fe4e91d56fbfc7971c33d3b182e865304425b4293815f1832e76b5
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: plain
+  schema_declared_integer:
+    policy:
+    - I7
+    description: 'Schema probe declared_integer: independently authored value 42 under {"type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_integer
+    request: 417402bf664c5b8e4ccd13435da7f80f56fe57231eacd6e97b9bf8b0418f32f2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_declared_integer_boolean_number_order:
+    policy:
+    - I7
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    request: 370e967e08ed16d61fbf467f3f49dfadaf73298d1706a2cfa0285a14a6ac7b5b
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 1
+  schema_declared_number:
+    policy:
+    - I7
+    description: 'Schema probe declared_number: independently authored value 3.5 under {"type": "number"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_number
+    request: 170905dadda3d7865230e15f4106e636120a9406eac359b591fe9e2ee34543fc
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 3.5
+  schema_declared_boolean:
+    policy:
+    - I7
+    description: 'Schema probe declared_boolean: independently authored value true under {"type": "boolean"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_boolean
+    request: 49bb7c90ce23144ca5fb743edfb50b142586ebb80da5749128616a7362ce245c
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: true
+  schema_declared_object:
+    policy:
+    - I7
+    description: 'Schema probe declared_object: independently authored value {"x": 1} under {"type": "object"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_object
+    request: c9bcc81d9dedfe3f6b4dcf998a908809cc661997ecef2008cbc79e67d0b2b2a7
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+          x: 1
+  schema_declared_array:
+    policy:
+    - I7
+    description: 'Schema probe declared_array: independently authored value [1, 2] under {"type": "array"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_array
+    request: 5259a9a95f00f47d658174c8b1596ee3d671e6c30217f35372841df2aa5162c1
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+        - 1
+        - 2
+  schema_declared_null:
+    policy:
+    - I7
+    description: 'Schema probe declared_null: independently authored value null under {"type": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-declared_null
+    request: 76789f50890eb4875d974d70ef8c256719f96f3a9a83baed1f87f768f305e91a
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_const_plain_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_plain_bare: independently authored value "auto" under {"const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_bare
+    request: f0d5d89120e863b7ba7a35ce0e34c147c0757626465f7a4403eb8e9c373b2caf
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_const_plain_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_plain_typed: independently authored value "auto" under {"type": "string", "const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_typed
+    request: 1bef83a6439cd28b010e3a8466aed9a2a0d10412b4340f210262b44570420943
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_const_plain_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_plain_allof: independently authored value "auto" under {"allOf": [{"const": "auto"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_allof
+    request: 5eaff3482ac2b3b0dcb66db98b8eb540f0314afe90be4e5b97f53d1867e9315b
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_const_plain_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_plain_ref: independently authored value "auto" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_plain_ref
+    request: 5b2367230041c5dcd2b29db91f82321c9ae1c979cb5cd75978c8c0e61d7c3ba4
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_const_quoted_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_quoted_bare: independently authored value "\"hello\"" under {"const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_bare
+    request: 45777958e38120fdd19b80dadef91184d47f199e9b1eb21499431f41d9d409e4
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '"hello"'
+  schema_const_quoted_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_quoted_typed: independently authored value "\"hello\"" under {"type": "string", "const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_typed
+    request: cc270cfe092baf27b54a08ca0264ea0606ef4eb32fa598d689f4fac98272eefb
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '"hello"'
+  schema_const_quoted_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_quoted_allof: independently authored value "\"hello\"" under {"allOf": [{"const": "\"hello\""}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_allof
+    request: 023abe752aa25647836fd0f236f2d316e673bb91fc1f6bb4e0366bb71556d4ea
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '"hello"'
+  schema_const_quoted_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_quoted_ref: independently authored value "\"hello\"" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_quoted_ref
+    request: f427e03a2c55f9591a7362f4151c14a00d3ef3df12babe357ef0b27a1c201d7e
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '"hello"'
+  schema_const_object_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_object_bare: independently authored value "{\"x\":1}" under {"const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_object_bare
+    request: bd5efd1dd6ae590713ca77f86166cd10968f73241ddabd16cd0a4132ab98c286
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '{"x":1}'
+  schema_const_object_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_object_typed: independently authored value "{\"x\":1}" under {"type": "string", "const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_object_typed
+    request: 2f28bedca273eb6e657df795d78e23992cb86fd8a62a464959245855ffb185d7
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '{"x":1}'
+  schema_const_object_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_object_allof: independently authored value "{\"x\":1}" under {"allOf": [{"const": "{\"x\":1}"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_object_allof
+    request: 2623476411f62199cda78fe1330feea25e3cd42d089147ae8ff5fa9ef184d1cb
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '{"x":1}'
+  schema_const_object_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_object_ref: independently authored value "{\"x\":1}" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_object_ref
+    request: 279601247a55e846fca718041ecbd68b7e6933b1a2e5aa70a2419fed02207d0f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '{"x":1}'
+  schema_const_array_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_array_bare: independently authored value "[1,2]" under {"const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_array_bare
+    request: a860b0a7571688a63c0d1b69334cad274a02c6d30c6f4415e1ee5ba6a10a286e
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '[1,2]'
+  schema_const_array_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_array_typed: independently authored value "[1,2]" under {"type": "string", "const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_array_typed
+    request: 1467ed85283381cb91e5da358ad18559e9540b0630e2356a2810573517d5b988
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '[1,2]'
+  schema_const_array_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_array_allof: independently authored value "[1,2]" under {"allOf": [{"const": "[1,2]"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_array_allof
+    request: 0c05673550b3cc99ce618f00cf2426945df8dde4915960b205096adec251e193
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '[1,2]'
+  schema_const_array_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_array_ref: independently authored value "[1,2]" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_array_ref
+    request: 0517f5c8ad320cebc69aebbe3dbb3bb1415c997588f50467feb1d2b1323acad9
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '[1,2]'
+  schema_const_number_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_number_bare: independently authored value "42" under {"const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_number_bare
+    request: 98e9bc89e275da53d92c5870571f52bac734404d645e8a5ec6043fdf341c5d93
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_const_number_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_number_typed: independently authored value "42" under {"type": "string", "const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_number_typed
+    request: 7d671869b91f9492967b9ab4ce1fdee8320b2220457bdc1d156869eb2f6cbdff
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_const_number_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_number_allof: independently authored value "42" under {"allOf": [{"const": "42"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_number_allof
+    request: 2d46d41ce667be726eae0e599bd8259b3ed83ca266b9fa11b0336f75d6398cb9
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_const_number_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_number_ref: independently authored value "42" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_number_ref
+    request: a577741a4eb22d3c80bf960052b2fb635a26fe72cb44a2ac8b43611c0aa31f43
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_const_boolean_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_boolean_bare: independently authored value "true" under {"const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_bare
+    request: d365cf55a3f36bd89326725842f8fba73b1293eca4292171d7f32a96749fe2ba
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'true'
+  schema_const_boolean_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_boolean_typed: independently authored value "true" under {"type": "string", "const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_typed
+    request: 8453fc2233dcd40d02d8b67010131030392c269841df96d4750c9461f3010e4d
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'true'
+  schema_const_boolean_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_boolean_allof: independently authored value "true" under {"allOf": [{"const": "true"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_allof
+    request: 5428b64e13ad49e5f76d71aad8d17ffa05ecbf27a116447bc6587d435059e608
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'true'
+  schema_const_boolean_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_boolean_ref: independently authored value "true" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_boolean_ref
+    request: 5ce49892cd7cf4927fe4d30066e915d0415e0f238db8ae3f2ca9a0df427c8405
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'true'
+  schema_const_null_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_null_typed: independently authored value "null" under {"type": "string", "const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_null_typed
+    request: 141fdd29127d573b15daef5be9bccbfbcea8be476db992c649b1062f298c367a
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'null'
+  schema_const_null_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_null_allof: independently authored value "null" under {"allOf": [{"const": "null"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_null_allof
+    request: b74b30bf2703c69ec3a7afad4238f0e7a84984328238aacb1926a239e60a7fdf
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'null'
+  schema_const_null_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_null_ref: independently authored value "null" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_null_ref
+    request: 62dd45863106d69d392a5fddbd0ee9a3bdc778630fc23ed510292152cb88191f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'null'
+  schema_const_space_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_space_bare: independently authored value "  spaced  " under {"const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_space_bare
+    request: 491ec329f90e3518ea49bdf411ce17f682136a4f45e35b388c92960053115c31
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '  spaced  '
+  schema_const_space_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_space_typed: independently authored value "  spaced  " under {"type": "string", "const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_space_typed
+    request: 509d805752ae5695534e06dac714089197e42e70691e3dba65946f45eaf84958
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '  spaced  '
+  schema_const_space_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_space_allof: independently authored value "  spaced  " under {"allOf": [{"const": "  spaced  "}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_space_allof
+    request: 8efa590a030a73e4085ca6bfd5902b9bc1d2109ff10ef3f46f98c332f100f63e
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '  spaced  '
+  schema_const_space_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_space_ref: independently authored value "  spaced  " under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_space_ref
+    request: 6a3a4812ecfef0f4a341e5cdeaa082ddb2920e3e49b37055cdd8033754867c90
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '  spaced  '
+  schema_const_unicode_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_unicode_bare: independently authored value "café" under {"const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_bare
+    request: 4697d2780479b465721e8cada2ce023fab35931390358689f9ded9117c5c4ee8
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: café
+  schema_const_unicode_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_unicode_typed: independently authored value "café" under {"type": "string", "const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_typed
+    request: 02f42f453f80ee64dc83a2bd0a7a6a72bd7b9664d0842ecb27d271c8333ca9f2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: café
+  schema_const_unicode_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_unicode_allof: independently authored value "café" under {"allOf": [{"const": "café"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_allof
+    request: ab4d41b6947517e8846a2e58d4c1298a395978d3ab349c4a0751893f0b83836f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: café
+  schema_const_unicode_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_unicode_ref: independently authored value "café" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_unicode_ref
+    request: 67e06826901f0ce67ff1434d8ad3b8c33d245c65cd18459ec98ebfb6e8309379
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: café
+  schema_const_entity_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_entity_bare: independently authored value "&lt;" under {"const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_bare
+    request: 0a2503c1b2072bdc05580b5434c4f3d4184e813646b19315ed3a26a7a766cdf6
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '&lt;'
+  schema_const_entity_typed:
+    policy:
+    - I7
+    description: 'Schema probe const_entity_typed: independently authored value "&lt;" under {"type": "string", "const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_typed
+    request: 98bdaf149ae9c1ab6514c62a9f183a04a6b561e7829dd8a2d286684722213199
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '&lt;'
+  schema_const_entity_allof:
+    policy:
+    - I7
+    description: 'Schema probe const_entity_allof: independently authored value "&lt;" under {"allOf": [{"const": "&lt;"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_allof
+    request: 0bb65292a4e487d00db24d51c28b673644a3d6384aa08f0cdf70b9f25a713e76
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '&lt;'
+  schema_const_entity_ref:
+    policy:
+    - I7
+    description: 'Schema probe const_entity_ref: independently authored value "&lt;" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_entity_ref
+    request: e94415e51fc11d2f32cc3190daf16e94c54846e3c0418166ec0d3313e8c056ea
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '&lt;'
+  schema_union_anyOf_integer_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_integer_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_string
+    request: 7f6413a447a1bc07e5b9b13ea65066786f8a91a41e0a8f033d629cc8b54e0db2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_integer_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_integer_typed: independently authored value 42 under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_typed
+    request: 85ab646e6658aecb5a2bab54ec50610281a7ca551695f32212e68ff2df39adef
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_union_anyOf_number_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_number_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_string
+    request: 6a3c43d805ed7af4d8a0802e790ae4c3f19bdd7805cf9f706d0b546fdc9c1d6a
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_number_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_number_typed: independently authored value 3.5 under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_typed
+    request: 8f5e1f3880c129ecc07b2d90a0db0af4210eb4c2e71328fa4c9ec2c0461f6175
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 3.5
+  schema_union_anyOf_boolean_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_boolean_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_string
+    request: d0fedcceb10ceaec2b1a0ceb52712e617412a3981fe852c7d5949ac4d361cb5d
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_boolean_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_boolean_typed: independently authored value true under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_typed
+    request: a723ef0d4e29eef74282b821d6228b8ae35f553346ff67d586af279aeb48e7ae
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: true
+  schema_union_anyOf_object_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_object_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_string
+    request: 88f7009485ec587e32689db1453d72ac1cf14ee3b99ae55d6fae8b96feb60b04
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_object_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_object_typed: independently authored value {"x": 1} under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_typed
+    request: 3b57d83bd401ab8a4eeb82572b62034355b52a1b2ce3c90b6da474b6a83777c2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+          x: 1
+  schema_union_anyOf_array_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_array_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_string
+    request: 3ab8a63722c4535897f20cafdc607a6d4daad904d3ae1e2bd7e9778732f54b2c
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_array_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_array_typed: independently authored value [1, 2] under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_typed
+    request: 7a17f3fa9b9bf986cc6c335c0da197a54c91808c694d439a4e31d098a5fa1b61
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+        - 1
+        - 2
+  schema_union_anyOf_null_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_null_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_string
+    request: e9eb2792c5b9fffef64e588842186c8337818ac9528ff117f5fa3c9489d69a51
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_null_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_null_typed: independently authored value null under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_typed
+    request: ff959260aaa0fa2e52dccf880d440779a52d77d33f2bf5017b1bbe30b85450bc
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_union_anyOf_integer_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_integer_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_string
+    request: eb2a2221c7b9f0f547e3ac550ca4dd07eaf3bdb5b4dff58fc82f6f3be670552f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_integer_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_integer_reverse_typed: independently authored value 42 under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_typed
+    request: b4a2df42af5dbe94ef359ee3258d9e856112b97a1f1a4132c1bc09ef1bd0e59f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_union_anyOf_number_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_number_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_string
+    request: ab136decbd4d79338525e7565a50664443571315f7ad145614deb2761b1503cf
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_number_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_number_reverse_typed: independently authored value 3.5 under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_typed
+    request: 8f419da173b549f70fafab218026a15c03ee6a9e7aa970c3b5408f6a5d55fe82
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 3.5
+  schema_union_anyOf_boolean_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_boolean_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_string
+    request: 8cb54fdc8e131250386f0df0813a682019a4b6c01301d9701585f43f96eaf8a3
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_boolean_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_boolean_reverse_typed: independently authored value true under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_typed
+    request: 7d909e1bfd8fb7d3af58997bae5870a47bd260e193750d0d850c88244e042e8c
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: true
+  schema_union_anyOf_object_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_object_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_string
+    request: 93602a642f2f3e2d613a88d059e2365958f655dfcd40f9261901f213c273ce45
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_object_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_object_reverse_typed: independently authored value {"x": 1} under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_typed
+    request: 142cecd4b730dcceb9085bc4d2f836c33e976b87fdadc0a29043ea65b7ccf216
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+          x: 1
+  schema_union_anyOf_array_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_array_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_string
+    request: d79ef7855f34f899c340e456610e6800bc37c3ca6ffb90630065d43aee96e4a8
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_array_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_array_reverse_typed: independently authored value [1, 2] under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_typed
+    request: 2a0f919e3289ed6a566ae16771d5b6fee24d5dc2cec648883fb27e52cacc53e8
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+        - 1
+        - 2
+  schema_union_anyOf_null_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_null_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_string
+    request: 9cf6415d1d9673619add68b7a89612a388d8556d25461ca82d2278a5d2a7884c
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_anyOf_null_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_anyOf_null_reverse_typed: independently authored value null under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_typed
+    request: f8c9c5d62daf638b6f57c07fdc59c152c80e035830b77c82c6003f5ef8cc78fa
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_union_oneOf_integer_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_integer_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_string
+    request: 72e26efaead7f44a3ac94dc10309e96f7e46b3a8dbfbebb6090491b44014771f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_integer_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_integer_typed: independently authored value 42 under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_typed
+    request: 68d3fee595d6b1bb5495c2c0bcbc05a414b46377a995e64a042c59598f0dab6e
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_union_oneOf_number_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_number_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_string
+    request: 98c1341e1317df01ff639a45fa577b5df9464ab5d8b33b58fb912b65964560e7
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_number_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_number_typed: independently authored value 3.5 under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_typed
+    request: 15f978be6a065bbf1f6c9495c485529d7f97c213e919948172ce0288d7f9496f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 3.5
+  schema_union_oneOf_boolean_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_boolean_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_string
+    request: 6c6e5942748e1921519c5d07ab22f39842534dea867d2f8e51916f69f3da58fa
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_boolean_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_boolean_typed: independently authored value true under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_typed
+    request: 8bff1d7a47c3f4e1641fd40c0cfc4dd123ecf4762867fe00b0ae3f98d9fa9cda
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: true
+  schema_union_oneOf_object_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_object_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_string
+    request: c16c7b8185b0b68b74e2cc2d21c75c43fc29c0d1a09a71ec1e49894e84dae599
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_object_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_object_typed: independently authored value {"x": 1} under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_typed
+    request: afcb90bb5c3cec34b5d432bfe363b58432215d44059d15448004ee8b70ca74f2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+          x: 1
+  schema_union_oneOf_array_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_array_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_string
+    request: eea4417d3d84a1155be53ad0bb1ae73166175f8b556aa1d2f4aa304c60c4faa0
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_array_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_array_typed: independently authored value [1, 2] under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_typed
+    request: f7e2585e01894f2d59c47e48c0443ed8f59f1b10fca99b5459b986fcb97c84d8
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+        - 1
+        - 2
+  schema_union_oneOf_null_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_null_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_string
+    request: c74a202053660b76d422e84e4a52e2525884cdf53e4b0765764b5ee7c61ca20b
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_null_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_null_typed: independently authored value null under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_typed
+    request: b4daf01fab9983294de5d9fa4847a9d8ad1c3294339acfb0afc1f57ee05eab24
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_union_oneOf_integer_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_integer_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_string
+    request: beca7df8a353692cb072cce0c59d9f7c4c599001eb340f519e9585645a15c9f7
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_integer_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_integer_reverse_typed: independently authored value 42 under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_typed
+    request: 0882ac5cc5f3773b54ecc60b296b2edaead41c1bec5df638bcc75c0a2828a4fa
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_union_oneOf_number_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_number_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_string
+    request: f26a3472966ef8a3169b51b63c293440e2cf22af94447e48eb216a73f66995da
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_number_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_number_reverse_typed: independently authored value 3.5 under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_typed
+    request: 8bf10820a4e24e860f16c45087e393eb9066eb6f23cedc8ef003dd8203d78ee6
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 3.5
+  schema_union_oneOf_boolean_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_boolean_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_string
+    request: cf4e86fa3bad67d02ed93287938fa91413dc1b00447a7417e1a974804bf604bf
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_boolean_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_boolean_reverse_typed: independently authored value true under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_typed
+    request: 22a21da86cc878a9c843c3b9a0984740772078c08c058c31f0ba6a5b95f03a47
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: true
+  schema_union_oneOf_object_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_object_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_string
+    request: 128043e9a392b7646adae143db72eff3b82028a50dd9bf9f129b54fbbe1967d2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_object_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_object_reverse_typed: independently authored value {"x": 1} under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_typed
+    request: 094c65c91a60146773090abbf60450a4f10cdc2bb99bf0672b40863ad45688f2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+          x: 1
+  schema_union_oneOf_array_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_array_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_string
+    request: ddbbfe925d98f155703fb3d411b687919dc824d9e74cfc1e39ccc656aa925065
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_array_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_array_reverse_typed: independently authored value [1, 2] under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_typed
+    request: 49974d8772252570101587d1d43f9b2ca423d9e229e9ba4466a200a6e0926431
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value:
+        - 1
+        - 2
+  schema_union_oneOf_null_reverse_string:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_null_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_string
+    request: b2fc40e549b29a5159df7fec2510ae5f8a4f2dae29d00ec01dd479386bb82f0c
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_union_oneOf_null_reverse_typed:
+    policy:
+    - I7
+    description: 'Schema probe union_oneOf_null_reverse_typed: independently authored value null under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_typed
+    request: 9317f0c976b0087d2cde5f72cfc3ec2610746ed9412b63ea1aae60b61599ba14
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_ref_union_anyOf_string:
+    policy:
+    - I7
+    description: 'Schema probe ref_union_anyOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_string
+    request: bcb0e10b7ad23362cdd1141f531ba26570b0682887b81e257373ad13a64f23b8
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_ref_union_anyOf_integer:
+    policy:
+    - I7
+    description: 'Schema probe ref_union_anyOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_integer
+    request: 191ea628942085c9c4d22aa2b54d2d1d899d1e6af9be6ae5871c71fa5f457ed6
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: -7
+  schema_intersection_anyOf:
+    policy:
+    - I7
+    description: 'Schema probe intersection_anyOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"anyOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-intersection_anyOf
+    request: 2502a942b79b8219e43a51d556c5bed175daf7459ab028c8d7f095a84689c91a
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_ref_union_oneOf_string:
+    policy:
+    - I7
+    description: 'Schema probe ref_union_oneOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_string
+    request: 4a544c6e522b331b13763a6ab406b9a94ebf03a54fdd91b7b283e14c45dfc5f6
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: auto
+  schema_ref_union_oneOf_integer:
+    policy:
+    - I7
+    description: 'Schema probe ref_union_oneOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_integer
+    request: 44908f32bc48f1758413df2eb6d1f8a4494886153b621d3b363b09bba14261ac
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: -7
+  schema_intersection_oneOf:
+    policy:
+    - I7
+    description: 'Schema probe intersection_oneOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"oneOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-intersection_oneOf
+    request: 416fa2b120cadc85dd1b6d5104716e55c16d468b9b0b135e3c0a2fc41573d092
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_ref_sibling_integer:
+    policy:
+    - I7
+    description: 'Schema probe ref_sibling_integer: independently authored value 42 under {"$ref": "#/$defs/Choice", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_sibling_integer
+    request: 27cfe5ba6cb45d56b74602c7ab04154f37fcb2a9e1bbc1a2f8a37e6ce0cc7a48
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_escaped_ref_const:
+    policy:
+    - I7
+    description: 'Schema probe escaped_ref_const: independently authored value "\"hello\"" under {"$ref": "#/$defs/A~1B~0C"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
+    request: 7bf7caa75a76ef31fabd7f277f00dec9709bd561ab1da3de1405420c002beb3f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '"hello"'
+  schema_percent_ref_const:
+    policy:
+    - I7
+    description: 'Schema probe percent_ref_const: independently authored value "42" under {"$ref": "#/$defs/Caf%C3%A9"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-schema-references-percent_ref_const
+    request: b7551d79e3a803ace873c1edf266368ed8913c13312e6443470b070351e477c1
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_enum_string:
+    policy:
+    - I7
+    description: 'Schema probe enum_string: independently authored value "42" under {"type": "string", "enum": ["auto", "42"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_string
+    request: f2c3054df7929bfead78dda7de1de7388110b394b743f84d6bfd30f6479d0af9
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_enum_integer:
+    policy:
+    - I7
+    description: 'Schema probe enum_integer: independently authored value 42 under {"type": "integer", "enum": [7, 42]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_integer
+    request: 4ad0b44f1b9c8f9f793976e96b298e02f8286f6b47635bf341e4cfe22fd0adf6
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_type_array_string_integer:
+    policy:
+    - I7
+    description: 'Schema probe type_array_string_integer: independently authored value "42" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer
+    request: 4d2d2db00674f1e47081341bdc172a098a5a2f6da9a2409cdbe9f4218825d273
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_type_array_integer_null:
+    policy:
+    - I7
+    description: 'Schema probe type_array_integer_null: independently authored value 42 under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_integer_null
+    request: 9d63a17ad77ae7c2fb7267f72a3ea72a204f186e5b0cd9682a6f2018c51c4d3f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_type_array_integer_null_null:
+    policy:
+    - I7
+    description: 'Schema probe type_array_integer_null_null: independently authored value null under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_integer_null_null
+    request: a6f007eabf7274e9f6ae8321b5f686aba0d3f65cbd7f5dcce86baac414c334fd
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_nullable_string:
+    policy:
+    - I7
+    description: 'Schema probe nullable_string: independently authored value null under {"type": "string", "nullable": true}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-nullability-nullable_string
+    request: d4f2519b6c20222f56673a60a8b55ea77026eba7d9d5a7b681dd7fc5ca825c61
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_const_null_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_null_bare: independently authored value "null" under {"const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_null_bare
+    request: b75ab1451efa8e6cebacd4b5802452a7368bf71fe665a62a7ab8d90b23cd21cf
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'null'
+  schema_null_union_ambiguous:
+    policy:
+    - I7
+    description: 'Schema probe null_union_ambiguous: independently authored value null under {"anyOf": [{"const": "null"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-null_union_ambiguous
+    request: f686badd9ed36b2803a5e3538d0b09d98feab81140d6a9dbb98c373ffecc623c
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: null
+  schema_integer_const_ambiguous:
+    policy:
+    - I7
+    description: 'Schema probe integer_const_ambiguous: independently authored value "42" under {"anyOf": [{"const": "42"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-integer_const_ambiguous
+    request: b1719800b8ae2f5d3921e544d6b4428f9f3d3acf73e37a815f5928a3caa05f2f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_object_const_union:
+    policy:
+    - I7
+    description: 'Schema probe object_const_union: independently authored value "{\"x\":1}" under {"anyOf": [{"const": "{\"x\":1}"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-object_const_union
+    request: 478f10c21645a2c1502cc6676c4698866445f7f0ef77917bc13d451bbec00844
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '{"x":1}'
+  schema_id_direct_integer:
+    policy:
+    - I7
+    description: 'Schema probe id_direct_integer: independently authored value 42 under {"$id": "https://example.test/schema", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-id_direct_integer
+    request: fbed1ed0f765b2df572c4823d682b41c20ca8026faa7ceb1f0a46684417aa2d2
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42
+  schema_enum_inferred_integer:
+    policy:
+    - I7
+    description: 'Schema probe enum_inferred_integer: independently authored value 2 under {"enum": [1, 2, 4]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
+    request: 27558063784e55805c852ca69391ecf2f854bc5fd2c810ef6c7253ff02840cdb
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 2
+  schema_const_numeric_bare:
+    policy:
+    - I7
+    description: 'Schema probe const_numeric_bare: independently authored value 3 under {"const": 3}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-constants-const_numeric_bare
+    request: 098c7ad62705deadf0e0b908daca8c57678e0b8512e300710c392d3f284ad2d0
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 3
+  schema_enum_const_narrowing:
+    policy:
+    - I7
+    description: 'Schema probe enum_const_narrowing: independently authored value 1 under {"enum": [1, "auto"], "const": 1}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_const_narrowing
+    request: 52941a9bbdfc953ee4aff49e2949e1eedc887a2a7a51a2c95052493c458cb42a
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 1
+  guided_json_named_tool:
+    description: 'Guided decoding with a named tool (tool_choice=specific_tool). The model emits bare JSON object, not XML markup, which the parser receives with tool_output_mode=GuidedJson{named_tool=get_weather}. This is also covered in: e2e case-0047-tool_add_named__non-stream-budget_capped.json, e2e case-0048-tool_add_named__stream-budget_capped.json, e2e case-0054-tool_translate_named__stream-budget_capped.json (each with its `-budget_unlimited` pair).'
+    display_id: UNIFIED.30-guided_json_named_tool
+    request: ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_required_tool:
+    description: 'Guided decoding with required tool (tool_choice=required or auto after tool narrowing). The model emits a JSON array of call objects, parsed with tool_output_mode=GuidedJson{named_tool=None}. This is also covered in: e2e case-0129-lifecycle_single_result__stream-budget_capped.json, e2e case-0145-lifecycle_chained_calculation__stream-budget_capped.json (FIRST step of each; both with their `-budget_unlimited` pair).'
+    display_id: UNIFIED.30-guided_json_required_tool
+    request: a1636d4bf47e65569295b8a2f7c9219c472d093039aaa25db27d9c4920c0f31e
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_escaped_string_args:
+    description: 'A named choice whose argument value carries non-ASCII, escaped quotes and Windows backslashes. A named choice constrains output to the argument object alone and the parser passes that object through verbatim, so every escape has to survive untouched: re-escaping or unescaping here hands the tool a different string than the model wrote, and the tool still runs. This is also covered in: e2e case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json (and its `-budget_unlimited` pair).'
+    display_id: UNIFIED.30-guided_json_escaped_string_args
+    request: 17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c
+    golden:
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: echo "雪" > C:\tmp\a.txt
+  guided_json_array_argument:
+    description: 'A required choice whose argument VALUE is an array. Every other guided case passes scalar arguments, and the array-shaped payloads in this group are arrays OF CALLS — one level up. A list-valued argument has to reach the tool as a list; arriving as its string rendering is a silently wrong call, not a failed one. This is also covered in: e2e case-0108-schema_array__stream-budget_capped.json (and its `-budget_unlimited` pair).'
+    display_id: UNIFIED.30-guided_json_array_argument
+    request: de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c
+    golden:
+    - kind: tool_call
+      name: sum_values
+      arguments:
+        values:
+        - 2
+        - 3
+        - 5
+  guided_json_two_calls:
+    description: A required choice returns an array containing two calls. With no channel prefilled, both must surface as separate ordered events with distinct indices.
+    display_id: UNIFIED.30-guided_json_two_calls
+    request: 82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: git log
+  guided_json_partial_calls:
+    policy:
+    - P2
+    description: A guided array where one element is not a call (no `name`), with nothing pre-filled. The whole payload surfaces as text and no call is dispatched, because extracting a call from a document that failed validation would fail OPEN on a side-effecting action.
+    display_id: UNIFIED.31-guided_json_partial_calls
+    request: 9219ddbef46839d70e61c00f1f7d98565b383a1c16b29aa6d8ecca675e2dd118
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+  guided_json_list_with_broken_element:
+    policy:
+    - P2
+    description: 'A guided array whose SECOND element is not valid JSON — the payload is `[<valid call>, <broken>]`, which is what a constrained decode produces when it is cut off partway through a later call. Output is the whole payload as text and no call, same as 31-3 but reached differently: there the array parsed and one element failed to convert, here the array does not parse at all, so per-element recovery never gets a chance. Both land on all-or-nothing, which is the point — a half-validated array must not dispatch the half that looked fine.'
+    display_id: UNIFIED.31-guided_json_list_with_broken_element
+    request: cd1ab02e2e5eb89e8d71bb1532992e26217627bda444c0d3e4d6248470cbd5fd
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+  guided_json_invalid_call:
+    policy:
+    - P2
+    description: 'Guided decoding emits JSON that is well-formed but is NOT a tool call — no `name`, so there is nothing to dispatch. Policy P2: surface the payload as visible content rather than dropping it or erroring. Dropping it would lose the model''s entire output; erroring would fail a request the user can still read.'
+    display_id: UNIFIED.31-guided_json_invalid_call
+    request: b8f358982d911462542828959309f3ffe3f0ba2564f183e5a3d507495095a256
+    golden:
+    - kind: text
+      text: '{"unexpected": "shape"}'
+  guided_json_malformed_json:
+    policy:
+    - P2
+    description: 'Guided decoding emits JSON that does not PARSE — a truncated object, which is what a constrained decode looks like when the token budget runs out mid-payload. Distinct from the wrong-shape case: there the JSON was valid and merely not a call. Policy P2: surface the bytes as visible content. Dropping them loses the output silently, and erroring fails a request whose text is still readable.'
+    display_id: UNIFIED.31-guided_json_malformed_json
+    request: 58ea44ef615fa7a4e14ff8a22f82729b1f0410c581cae5784bd4b4bd8a529127
+    golden:
+    - kind: text
+      text: '{"name": "get_weather", "arguments": {"city": "Par'

@@ -2115,7 +2115,7 @@ def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *
     lineage_path = root / "lineage.json"
     if lineage_path.is_file():
         source_index.update({row["path"]: row for row in json.loads(lineage_path.read_bytes())})
-    chosen = [resource for resource in resources if resource["kind"] == "inputs-and-golden"]
+    chosen = []
     if preselected:
         chosen.extend(resource for resource in resources if resource["kind"] == "history")
     for implementation, version in (() if preselected else targets.items()):
@@ -2131,6 +2131,11 @@ def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *
         if not families:
             raise ValueError(f"no selected captures: {implementation}-{version}")
         chosen.extend(families.values())
+    # Historical-only authored families must not enter the current replay corpus.
+    # Keep all cases within selected families so missing capture records still fail.
+    selected_families = {resource["family"] for resource in chosen}
+    chosen.extend(resource for resource in resources
+                  if resource["kind"] == "inputs-and-golden" and resource["family"] in selected_families)
     local = []
     for resource in chosen:
         row = copy.deepcopy(resource)

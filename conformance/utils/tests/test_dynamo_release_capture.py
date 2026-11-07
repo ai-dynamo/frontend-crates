@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import capture_dynamo_unified
 import capture_dynamo_unified_batch
+import capture_sources
 from capture_dynamo_versions import coverage_inventory, freeze_adapters, validate_adapter_binding, validate_frozen_adapters, validate_source_identity
 import gen_unified_golden as golden
 import unified_history
@@ -130,7 +131,7 @@ def test_frozen_inventory_has_all_release_artifacts_and_separate_retained_anchor
     anchors = {target["version"]: target for target in targets if target["source_kind"] == "git"}
     assert set(anchors) == {"0.7.9", "0.7.16"}
     assert all(len(target["git_commit"]) == 40 and len(target["source_sha256"]) == 64 for target in anchors.values())
-    assert {target["version"] for target in targets if target["implementation"] == "dynamo_v1"} == {"10.0.7", "10.0.6"}
+    assert {target["version"] for target in targets if target["implementation"] == "dynamo_v1"} == {"11.0.7", "11.0.6"}
 
 
 def test_all_engine_inventory_retains_stable_releases_yanks_and_source_blockers():
@@ -148,6 +149,59 @@ def test_all_engine_inventory_retains_stable_releases_yanks_and_source_blockers(
             assert target["git_commit"] is not None or target["source_blocker"]
             assert target["artifacts"] or target["artifact_blocker"]
             assert all(len(artifact["sha256"]) == 64 and isinstance(artifact["yanked"], bool) for artifact in target["artifacts"])
+
+
+def test_v1_history_covers_registered_families_and_keeps_legacy_snapshots_historical(tmp_path):
+    store = ROOT / "conformance/fixtures-unified-v2"
+    registry = yaml.safe_load((ROOT / "conformance/utils/src/parser_families.yaml").read_text())["unified"]
+    families = {
+        family for family, entry in registry.items()
+        if entry["native"] is False
+        and not (store / "families" / family / "dynamo_v2.yaml").exists()
+    }
+    inventory = yaml.safe_load((ROOT / "conformance/dynamo-capture-inventory.yaml").read_text())
+    versions = {target["version"] for target in inventory["targets"] if target["implementation"] == "dynamo_v1"}
+    assert {"hermes", "llama3_json", "qwen25"} <= families
+    assert len(versions) == 2
+    for family in sorted(registry):
+        isolated = tmp_path / family
+        destination = isolated / "families" / family
+        destination.mkdir(parents=True)
+        names = ["inputs_and_golden.yaml", *[
+            f"{implementation}-{version}.yaml"
+            for implementation in ("dynamo_v1", "dynamo_v1_jail") for version in versions
+        ]]
+        for name in names:
+            shutil.copyfile(store / "families" / family / name, destination / name)
+        loaded = unified_history.load_store(isolated)
+        authored = unified_history.load_yaml(store / "families" / family / "inputs_and_golden.yaml")
+        expected = {case_id for case_id, case in authored["cases"].items() if case["lifecycle"] == "active"}
+        if family in families:
+            assert {authored["cases"][case_id]["scenario"] for case_id in expected} == {
+                case_id[len("UNIFIED."):].rsplit(".", 1)[0] for case_id in golden.build_cases(family)
+            }
+        for implementation in ("dynamo_v1", "dynamo_v1_jail"):
+            if family in families:
+                assert not (store / "families" / family / f"{implementation}.yaml").exists()
+            for version in versions:
+                path = store / "families" / family / f"{implementation}-{version}.yaml"
+                capture = unified_history.load_yaml(path)
+                assert capture["provenance"]["status"] == "captured"
+                assert capture["provenance"]["origin"]["crate_version"] == version
+                records = loaded.histories[family, implementation].resolve(f"{implementation}-{version}")
+                active = {case_id: record for case_id, record in records.items()
+                          if authored["cases"][case_id]["lifecycle"] == "active"}
+                assert set(active) == expected
+                for case_id, record in active.items():
+                    assert set(record["observation"]) & {"value", "error", "unavailable"}
+                    request = authored["cases"][case_id]["request"]
+                    stimulus = record["stimulus"]
+                    assert stimulus["semantic_sha256"] == unified_history._request_digest(request)
+                    if "inline" in stimulus:
+                        assert stimulus["inline"] == request
+                    else:
+                        assert stimulus["ref"] == "current"
+    assert not families.intersection(row["family"] for row in capture_sources.current(ROOT)["captures"])
 
 
 def test_wrong_published_artifact_is_rejected_before_unpacking(monkeypatch, tmp_path):
