@@ -93,6 +93,7 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
     ("image_url", "image"),
     ("video_url", "video"),
     ("audio_url", "audio"),
+    ("input_audio", "audio"),
 ];
 
 /// Project Custom payloads out of template input and normalize native media tags.
@@ -1744,6 +1745,18 @@ mod tests {
         // text should be unchanged
         assert_eq!(content_array[3]["type"], "text");
         assert_eq!(content_array[3]["text"], "hello");
+    }
+
+    #[test]
+    fn test_default_media_type_conversions_input_audio() {
+        let mut content_array = vec![serde_json::json!({
+            "type": "input_audio",
+            "input_audio": {"data": "AA==", "format": "wav"}
+        })];
+
+        convert_media_url_to_placeholder(&mut content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
+
+        assert_eq!(content_array, vec![serde_json::json!({"type": "audio"})]);
     }
 
     #[test]
