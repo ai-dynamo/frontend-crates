@@ -36,7 +36,10 @@ use aho_corasick::AhoCorasick;
 use moka::sync::Cache;
 use rustc_hash::FxHasher;
 
-use crate::{TokenIdType, traits::Encoder};
+use crate::{
+    TokenIdType,
+    traits::{Encoder, PrefixSplitRules},
+};
 
 /// Hash type for cache keys
 type Blake3Hash = [u8; 32];
@@ -161,12 +164,32 @@ fn hash_prefixes<'a>(
 /// is safe only when registered special-token occurrences cannot overlap; construction
 /// screens out other sets with [`first_unsafe_overlap`]. A boundary at the end of the input
 /// is omitted because there is no suffix to encode.
-fn boundaries_with(text: &str, matcher: &AhoCorasick) -> Vec<usize> {
-    let mut boundaries: Vec<usize> = matcher
-        .find_overlapping_iter(text)
-        .map(|m| m.end())
-        .filter(|&end| end < text.len())
-        .collect();
+///
+/// `rules` keep that invariant for tokenizers whose specials are not plain literals:
+/// - an `rstrip` token's boundary moves past the whitespace it consumes, and is skipped if
+///   that whitespace runs into the next special token;
+/// - with a first-word marker, a boundary is kept only before a space, the marker, or the
+///   next special token, so the suffix never gains a marker the full input lacks.
+fn boundaries_with(text: &str, matcher: &AhoCorasick, rules: &PrefixSplitRules) -> Vec<usize> {
+    let mut boundaries = Vec::new();
+    let mut matches = matcher.find_overlapping_iter(text).peekable();
+    while let Some(m) = matches.next() {
+        let next_start = matches.peek().map_or(text.len(), |next| next.start());
+        let mut end = m.end();
+        if rules.rstrip.iter().any(|token| *token == text[m.range()]) {
+            let rest = &text[end..];
+            end += rest.len() - rest.trim_start().len();
+            if end > next_start {
+                continue;
+            }
+        }
+        let suffix_ok = rules
+            .first_word_marker
+            .is_none_or(|marker| end == next_start || text[end..].starts_with([' ', marker]));
+        if end < text.len() && suffix_ok {
+            boundaries.push(end);
+        }
+    }
     boundaries.sort_unstable();
     boundaries.dedup();
     boundaries
@@ -224,7 +247,7 @@ fn find_special_token_boundaries(text: &str, special_tokens: &[&str]) -> Vec<usi
     }
     let matcher = AhoCorasick::new(special_tokens)
         .expect("special tokens form a valid Aho-Corasick automaton");
-    boundaries_with(text, &matcher)
+    boundaries_with(text, &matcher, &PrefixSplitRules::default())
 }
 
 /// Optional per-event observer. `on_hit` runs after each cache hit, `on_miss`
@@ -243,6 +266,8 @@ pub struct L1Cache {
     /// Aho-Corasick automaton over the special tokens, built once at construction (`None`
     /// when there are no special tokens). Lets boundary detection be a single pass.
     matcher: Option<AhoCorasick>,
+    /// Set by [`super::CachedTokenizer`] from its inner tokenizer; empty otherwise.
+    pub(super) split_rules: PrefixSplitRules,
     hits: AtomicU64,
     misses: AtomicU64,
     on_hit: Option<CacheEventFn>,
@@ -279,6 +304,7 @@ impl L1Cache {
             namespace: namespace.to_vec(),
             namespace_hash: *namespace_hasher(namespace).finalize().as_bytes(),
             matcher,
+            split_rules: PrefixSplitRules::default(),
             hits: AtomicU64::new(0),
             misses: AtomicU64::new(0),
             on_hit: None,
@@ -347,7 +373,7 @@ impl L1Cache {
     /// token. Empty when the cache has no special tokens.
     fn boundaries(&self, text: &str) -> Vec<usize> {
         match &self.matcher {
-            Some(matcher) => boundaries_with(text, matcher),
+            Some(matcher) => boundaries_with(text, matcher, &self.split_rules),
             None => Vec::new(),
         }
     }

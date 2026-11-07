@@ -30,6 +30,9 @@
 //! [`CachedTokenizer::new`] disables L1 for such sets because the boundary scanner could
 //! otherwise split inside the token selected by the underlying tokenizer.
 //!
+//! Tokenizers whose specials change the text around them report how through
+//! [`Tokenizer::prefix_split_rules`]; the cache moves or skips boundaries to match.
+//!
 //! # Storage normalization
 //!
 //! When L1 is enabled, **every** `encode` returns [`Encoding::Sp`] (token-ids only) —
@@ -189,15 +192,22 @@ impl CachedTokenizer {
             None => false,
         };
 
+        // A `single_word` token next to a word character is not a special token, so it is
+        // never a safe split point. Drop it only after the overlap check above.
+        let rules = inner.prefix_split_rules();
+        special_tokens.retain(|token| !rules.single_word.contains(token));
+
         let l1_enabled = !special_tokens.is_empty() && !overlapping_specials;
         let cache_tokens = if l1_enabled {
             special_tokens
         } else {
             Vec::new()
         };
+        let mut l1 = make_cache(cache_tokens);
+        l1.split_rules = rules;
         Ok(Self {
             inner,
-            l1: make_cache(cache_tokens),
+            l1,
             l1_enabled,
             extend_on_hit: false,
             token_observer: None,
@@ -737,6 +747,59 @@ mod tests {
 
         assert!(cached.encode("<s>this fails</s>").is_err());
         assert!(events.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn split_rules_keep_cached_ids_exact() {
+        let source: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TINYLLAMA_PATH).unwrap()).unwrap();
+        let with_flag = |flag: &str| {
+            let mut json = source.clone();
+            for token in json["added_tokens"].as_array_mut().unwrap() {
+                if token["content"] == "</s>" {
+                    token[flag] = true.into();
+                }
+            }
+            json
+        };
+        let mut metaspace_first = source.clone();
+        metaspace_first["normalizer"] = serde_json::Value::Null;
+        metaspace_first["pre_tokenizer"] = serde_json::json!({
+            "type": "Metaspace", "replacement": "▁", "prepend_scheme": "first", "split": false
+        });
+        // (tokenizer.json, input, also run fastokens). Every input keeps the split after
+        // `<s>`, so the cache must still hit. fastokens does not load Metaspace tokenizers.
+        let cases = [
+            (
+                with_flag("rstrip"),
+                "<s>user\nHi there</s>\n<s>assistant\n",
+                true,
+            ),
+            (with_flag("single_word"), "<s>abc </s>def", true),
+            (metaspace_first, "<s> Hello</s>Bye", false),
+        ];
+
+        let temp = tempfile::tempdir().unwrap();
+        for (i, (json, input, fastokens)) in cases.into_iter().enumerate() {
+            let path = temp.path().join(format!("{i}.json"));
+            std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+            let path = path.to_str().unwrap();
+            let mut backends: Vec<Arc<dyn Tokenizer>> =
+                vec![Arc::new(HuggingFaceTokenizer::from_file(path).unwrap())];
+            if fastokens {
+                backends.push(Arc::new(crate::FastTokenizer::from_file(path).unwrap()));
+            }
+            for inner in backends {
+                let expected = inner.encode(input).unwrap();
+                let cached = CachedTokenizer::new(inner, specials(), 64 * 1024).unwrap();
+                // Cold, then warm.
+                for _ in 0..2 {
+                    let ids = cached.encode(input).unwrap();
+                    assert_eq!(ids.token_ids(), expected.token_ids(), "{input:?}");
+                }
+                assert!(cached.cache_stats().hits > 0, "{input:?}");
+            }
+        }
     }
 
     #[test]
