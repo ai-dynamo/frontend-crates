@@ -1882,6 +1882,9 @@ requests:
     - 16
     - 8
     finish_step: true
+  10862a2710e5fff0e5bbd28a71f0ea61748b932b209e247d1c779f098415aa2f:
+    input: <|channel|>commentary to=functions.get_current_weather <|constrain|>json<|message|>{"format":"celsius","location":"San Francisco"}<|return|>
+    tools: tools_9db8284c68087826
   12a2fcdbb1b3c36a8d42251b0bacb5d212e2412ea59e55cb5fb373dbc852ec74:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "plain"}<|call|>'
     tools: tools_0af1c035b667e8b0
@@ -8986,3 +8989,17 @@ cases:
       arguments:
         value: 1
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+  gpt_oss_single_return_ending_tool_call:
+    description: A channel-first commentary tool call with a constrained JSON body ends with one turn-end marker and no handoff marker. It must still produce the complete tool call.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-single_return_ending_tool_call
+    request: 10862a2710e5fff0e5bbd28a71f0ea61748b932b209e247d1c779f098415aa2f
+    golden:
+    - kind: tool_call
+      name: get_current_weather
+      arguments:
+        format: celsius
+        location: San Francisco
