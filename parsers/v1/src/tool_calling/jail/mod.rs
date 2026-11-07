@@ -44,6 +44,7 @@ use uuid::Uuid;
 
 use crate::tool_calling::config::{JsonParserConfig, ParserConfig, TerminalMarkerPolicy};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
+use crate::tool_calling::harmony::harmony_parser::harmony_markers;
 use crate::tool_calling::json::base_json_parser::parse_indexed_calls;
 use crate::tool_calling::json::{JsonParserType, try_tool_call_parse_basic_json};
 use crate::tool_calling::parsers::get_tool_parser_map;
@@ -466,6 +467,7 @@ struct JailCompletionProgress {
     pending_end_marker: Option<usize>,
     pending_parse: Option<ParsedToolCalls>,
     json: JsonCompletionProgress,
+    harmony_json: HarmonyJsonProgress,
 }
 
 impl JailCompletionProgress {
@@ -474,6 +476,77 @@ impl JailCompletionProgress {
         self.pending_end_marker = None;
         self.pending_parse = None;
         self.json.reset();
+        self.harmony_json = HarmonyJsonProgress::default();
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+struct HarmonyJsonProgress {
+    scanned_len: usize,
+    body_pending: bool,
+    depth: usize,
+    in_string: bool,
+    escape: bool,
+}
+
+impl HarmonyJsonProgress {
+    fn find_end_marker(&mut self, content: &str, end_sequences: &[String]) -> Option<usize> {
+        const MESSAGE: &[u8] = b"<|message|>";
+        let bytes = content.as_bytes();
+        while self.scanned_len < bytes.len() {
+            if self.depth == 0 && !self.in_string {
+                let remaining = &bytes[self.scanned_len..];
+                if let Some(ending) = end_sequences
+                    .iter()
+                    .find(|ending| !ending.is_empty() && remaining.starts_with(ending.as_bytes()))
+                {
+                    self.scanned_len += ending.len();
+                    return Some(self.scanned_len);
+                }
+                if remaining.starts_with(MESSAGE) {
+                    self.scanned_len += MESSAGE.len();
+                    self.body_pending = true;
+                    continue;
+                }
+                if MESSAGE.starts_with(remaining)
+                    || end_sequences
+                        .iter()
+                        .any(|ending| ending.as_bytes().starts_with(remaining))
+                {
+                    return None;
+                }
+            }
+
+            let byte = bytes[self.scanned_len];
+            self.scanned_len += 1;
+            if self.body_pending {
+                if byte.is_ascii_whitespace() {
+                    continue;
+                }
+                self.body_pending = false;
+                match byte {
+                    b'{' | b'[' => self.depth = 1,
+                    b'"' => self.in_string = true,
+                    _ => {}
+                }
+            } else if self.escape {
+                self.escape = false;
+            } else if self.in_string {
+                match byte {
+                    b'\\' => self.escape = true,
+                    b'"' => self.in_string = false,
+                    _ => {}
+                }
+            } else if self.depth > 0 {
+                match byte {
+                    b'"' => self.in_string = true,
+                    b'{' | b'[' => self.depth += 1,
+                    b'}' | b']' => self.depth = self.depth.saturating_sub(1),
+                    _ => {}
+                }
+            }
+        }
+        None
     }
 }
 
@@ -2487,6 +2560,15 @@ impl JailedStream {
             return Some(end_pos);
         }
 
+        if is_harmony_parser(self.tool_call_parser.as_deref()) {
+            // Filter quoted stops before invoking the full Harmony parser.
+            let end_pos = progress
+                .harmony_json
+                .find_end_marker(accumulated_content, &self.jail_end_sequences)?;
+            progress.pending_end_marker = Some(end_pos);
+            return Some(end_pos);
+        }
+
         let max_marker_len = self
             .jail_end_sequences
             .iter()
@@ -2539,6 +2621,17 @@ impl JailedStream {
         let Some(parser) = self.tool_call_parser.as_deref() else {
             return ParsedCompletion::Invalid;
         };
+        // Until JSON closes, a literal Harmony stop can look like raw-argument
+        // recovery. Keep that recovery for finalize, not an early jail release.
+        if is_harmony_parser(Some(parser))
+            && parsed.0.iter().any(|call| {
+                let args = call.function.arguments.trim_start();
+                matches!(args.as_bytes().first(), Some(b'{' | b'[' | b'"'))
+                    && serde_json::from_str::<&RawValue>(args).is_err()
+            })
+        {
+            return ParsedCompletion::Invalid;
+        }
         let Some(split_pos) = find_tool_call_end_position(accumulated_content, Some(parser)) else {
             return ParsedCompletion::Pending(parsed);
         };
@@ -2633,13 +2726,34 @@ impl JailedStream {
                                     progress.pending_end_marker = None;
                                     progress.next_end_search_start = accumulated_content.len();
                                 }
-                                ParsedCompletion::Invalid => {}
+                                ParsedCompletion::Invalid => {
+                                    if is_harmony_parser(self.tool_call_parser.as_deref()) {
+                                        progress.pending_end_marker = None;
+                                        progress.next_end_search_start = accumulated_content.len();
+                                    }
+                                }
                             }
                             return JailCompletion::Incomplete;
                         }
                         _ => {
+                            let split_pos = if is_harmony_parser(self.tool_call_parser.as_deref()) {
+                                let Some((stop, _)) = harmony_markers(accumulated_content)
+                                    .filter(|(marker, in_json)| {
+                                        !in_json
+                                            && matches!(marker.as_str(), "<|call|>" | "<|return|>")
+                                    })
+                                    .last()
+                                else {
+                                    progress.pending_end_marker = None;
+                                    progress.next_end_search_start = accumulated_content.len();
+                                    return JailCompletion::Incomplete;
+                                };
+                                stop.end()
+                            } else {
+                                end_pos
+                            };
                             return JailCompletion::Complete(CompletedJail {
-                                split_pos: end_pos,
+                                split_pos,
                                 marker_parse_result: None,
                             });
                         }
@@ -5058,6 +5172,54 @@ mod tests {
             .await;
         let content = collect_stream_content(&responses);
         assert_eq!(content, "answer is x <");
+    }
+
+    #[tokio::test]
+    async fn harmony_quoted_stop_keeps_partial_json_jailed() {
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+        for literal in ["<|call|>", "<|return|>"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                let mut progress = JailCompletionProgress::default();
+                let partial = format!(
+                    "<|channel|>commentary to=functions.lookup<|message|>{{\"x\":\"literal {literal}"
+                );
+                for text in [&partial, &format!("{partial}\"}}")] {
+                    assert!(matches!(
+                        jail.check_jail_completion(text, &mut progress).await,
+                        JailCompletion::Incomplete
+                    ));
+                }
+                let complete = format!("{partial}\"}}{ending}");
+                assert!(matches!(
+                    jail.check_jail_completion(&complete, &mut progress).await,
+                    JailCompletion::Complete(completed) if completed.split_pos == complete.len()
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn harmony_end_marker_scan_skips_json_payloads() {
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+        let literal = "escaped \" \\ 雪 <|call|> <|return|> <|message|> ".repeat(32);
+        for args in [
+            serde_json::json!({"x": literal}),
+            serde_json::json!([literal]),
+            serde_json::json!(literal),
+        ] {
+            for ending in ["<|call|>", "<|return|>"] {
+                let text =
+                    format!("<|channel|>commentary to=functions.lookup<|message|>{args}{ending}");
+                let mut progress = JailCompletionProgress::default();
+                for end in (1..=text.len()).filter(|&end| text.is_char_boundary(end)) {
+                    assert_eq!(
+                        jail.find_incremental_end_marker(&text[..end], &mut progress),
+                        (end == text.len()).then_some(end),
+                        "quoted markers must not trigger prefix parsing at {end}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]
