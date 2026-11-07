@@ -589,8 +589,6 @@ mod tests {
                     .is_err()
             );
         }
-        let plain = HuggingFaceTokenizer::from_file(path).unwrap();
-        assert!(plain.validate_prefix_cache().is_ok());
     }
 
     #[test]

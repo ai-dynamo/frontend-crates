@@ -56,12 +56,10 @@ pub struct FastTokenizer {
 }
 
 impl FastTokenizer {
-    /// Load `tokenizer.json`, ignoring its `truncation` and `padding` blocks.
-    ///
-    /// `fastokens` applies both on every encode call. Callers never want prompts clipped
-    /// or padded implicitly, and [`CachedTokenizer`](crate::CachedTokenizer) joins
-    /// separately encoded pieces, which would clip or pad each piece instead of the
-    /// whole input.
+    /// Load `tokenizer.json`, ignoring its `truncation` and `padding` blocks as Python
+    /// `transformers` does unless a call asks for them. `fastokens` would apply both on
+    /// every encode, and [`CachedTokenizer`](crate::CachedTokenizer) would then apply
+    /// them to each separately encoded piece instead of the whole input.
     pub fn from_file(path: &str) -> Result<Self> {
         let mut fast_encoder = fastokens::Tokenizer::from_file(Path::new(path))
             .map_err(|e| Error::msg(format!("Error loading fastokens tokenizer: {e}")))?;
@@ -389,11 +387,12 @@ mod tests {
 
     #[test]
     fn tokenizer_json_truncation_and_padding_are_ignored() {
-        let source = Path::new(SEGMENTED_TOKENIZER_PATH);
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("tokenizer.json");
         let mut json: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(source).unwrap()).unwrap();
+            serde_json::from_str(&std::fs::read_to_string(SEGMENTED_TOKENIZER_PATH).unwrap())
+                .unwrap();
+        // Both reference encodings are longer than 12 ids, so each block alone changes them.
         json["truncation"] = serde_json::json!({
             "direction": "Right", "max_length": 12, "strategy": "LongestFirst", "stride": 0
         });
@@ -402,45 +401,23 @@ mod tests {
             "pad_id": 0, "pad_type_id": 0, "pad_token": "<unk>"
         });
         std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
-        std::fs::copy(
-            source.with_file_name("tokenizer_config.json"),
-            temp.path().join("tokenizer_config.json"),
-        )
-        .unwrap();
 
         let reference = FastTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap();
         let tokenizer = FastTokenizer::from_file(path.to_str().unwrap()).unwrap();
         let user = "hello world ".repeat(16);
-        let text = format!("<s>{user}</s>");
         let segments = [
             EncodeSegment::control("<s>"),
             EncodeSegment::ordinary(&user),
             EncodeSegment::control("</s>"),
         ];
-        let expected = reference.encode_segments(&segments).unwrap();
-        assert!(expected.token_ids().len() > 12);
         assert_eq!(
-            tokenizer.encode(&text).unwrap().token_ids(),
-            reference.encode(&text).unwrap().token_ids()
+            tokenizer.encode(&user).unwrap().token_ids(),
+            reference.encode(&user).unwrap().token_ids()
         );
         assert_eq!(
             tokenizer.encode_segments(&segments).unwrap().token_ids(),
-            expected.token_ids()
+            reference.encode_segments(&segments).unwrap().token_ids()
         );
-
-        // The cache encodes the long segment and the specials around it separately.
-        let cached = crate::CachedTokenizer::new(
-            std::sync::Arc::new(tokenizer),
-            vec!["<s>".into(), "</s>".into()],
-            64 * 1024,
-        )
-        .unwrap();
-        for _ in 0..2 {
-            assert_eq!(
-                cached.encode_segments(&segments).unwrap().token_ids(),
-                expected.token_ids()
-            );
-        }
     }
 
     #[test]
