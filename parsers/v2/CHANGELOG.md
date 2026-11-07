@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.14](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.13...dynamo-parsers-v2-v0.9.14) - 2026-11-07
+
+### Bug fixes
+
+- *(parsers-v2)* Fill omitted required-nullable MiniMax-M3 arguments with null ([#566](https://github.com/ai-dynamo/frontend-crates/pull/566))
+
 ## [0.9.12]
 
 ### Bug fixes
