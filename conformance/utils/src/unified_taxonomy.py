@@ -277,6 +277,7 @@ UNIFIED_TAX = {
     "gpt_oss_complete_alternate_message_ends": ("gpt_oss", "18"),
     "gpt_oss_single_return_ending_tool_call": ("gpt_oss", "19"),
     "gpt_oss_reasoning_then_return_ending_tool_call": ("gpt_oss", "20"),
+    "gpt_oss_quoted_tool_header_in_final_json": ("gpt_oss", "21"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),

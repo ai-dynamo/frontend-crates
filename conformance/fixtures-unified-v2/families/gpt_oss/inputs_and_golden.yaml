@@ -4520,6 +4520,9 @@ requests:
   fdaacaaa30d88df8112f3a478ba90e38c270c705fc0ba36e6adbe9c711c2a5c0:
     input: <|channel|>final<|message|>The answer is 42, no tools needed.<|return|>
     tools: tools_9db8284c68087826
+  fdafb5416fde09f02e1aaa477c82b1775fe063caff59a91e2397909138802da0:
+    input: <|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>
+    tools: tools_9db8284c68087826
   fe32f026e0625ee43ed1c368e80306eb1e8c5499035eeacb2300888cd8deaef2:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
     tools: tools_9df3142224567b2c
@@ -9017,3 +9020,16 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  gpt_oss_quoted_tool_header_in_final_json:
+    description: Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Preserve the existing newline between visible messages.
+    display_id: UNIFIED.gpt_oss-quoted_tool_header_in_final_json
+    request: fdafb5416fde09f02e1aaa477c82b1775fe063caff59a91e2397909138802da0
+    golden:
+    - kind: text
+      text: 'Preamble
+
+        {"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'
+    policy:
+    - I3
+    - I5
+    - I7

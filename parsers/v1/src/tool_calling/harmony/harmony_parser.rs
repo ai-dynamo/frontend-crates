@@ -3,6 +3,7 @@
 
 use super::super::ToolDefinition;
 use super::config::JsonParserConfig;
+use super::payload::{HARMONY_MARKERS, HarmonyVisible};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 use openai_harmony::chat::{Content, Role};
 use openai_harmony::{
@@ -19,7 +20,6 @@ static COMMENTARY_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_HEADER_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static ANALYSIS_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static FINAL_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
-static MESSAGE_CALL_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static SPECIAL_TOKEN_REGEX: OnceLock<Regex> = OnceLock::new();
 
 /// Regex fallback used only when `openai_harmony`'s tokenizer rejects the
@@ -37,7 +37,7 @@ fn commentary_header_regex() -> &'static Regex {
         // Between name and `<|message|>` we tolerate optional
         // `<|constrain|>json`, bare `code`, or nothing (non-greedy `.*?`).
         Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+).*?<\|message\|>",
+            r"(?s)(?:(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+)|(?:<\|start\|>assistant\s+)?to=functions\.(?P<recipient_first>[\w.\-]+)\s*<\|channel\|>(?:commentary|analysis)).*?<\|message\|>",
         )
         .expect("commentary header regex")
     })
@@ -83,17 +83,14 @@ fn final_block_cleanup_regex() -> &'static Regex {
     })
 }
 
-fn message_call_cleanup_regex() -> &'static Regex {
-    MESSAGE_CALL_CLEANUP_REGEX.get_or_init(|| {
-        Regex::new(r"(?s)<\|message\|>.*?(?:<\|(?:call|return)\|>|\z)")
-            .expect("message call cleanup regex")
-    })
-}
-
 fn special_token_regex() -> &'static Regex {
     SPECIAL_TOKEN_REGEX.get_or_init(|| {
-        Regex::new(r"<\|(?:start|channel|constrain|message|call|end|return)\|>")
-            .expect("special token cleanup regex")
+        let pattern = HARMONY_MARKERS
+            .iter()
+            .map(|marker| regex::escape(marker))
+            .collect::<Vec<_>>()
+            .join("|");
+        Regex::new(&pattern).expect("special token cleanup regex")
     })
 }
 
@@ -103,18 +100,97 @@ fn json_value_prefix_end(text: &str) -> Option<usize> {
     matches!(json.next(), Some(Ok(_))).then(|| json.byte_offset())
 }
 
-// Markers inside a complete JSON value are data. Malformed bodies keep the
-// existing raw-argument recovery, including an unclosed string before a stop.
+// Directed malformed arguments retain raw recovery. Recipientless and projected
+// visible JSON keep their markers as data even before the JSON value is complete.
 pub(crate) fn harmony_markers(text: &str) -> impl Iterator<Item = (regex::Match<'_>, bool)> {
     let mut json_end = 0;
+    let mut visible = Some(HarmonyVisible::default());
+    let mut cursor = 0;
+    let mut header_start = 0;
+    let mut header_pending = true;
     special_token_regex().find_iter(text).map(move |marker| {
-        let in_json = marker.start() < json_end;
-        if !in_json && marker.as_str() == "<|message|>" {
-            json_end =
-                marker.end() + json_value_prefix_end(&text[marker.end()..]).unwrap_or_default();
+        let mut visible_json = false;
+        if let Some(body) = &mut visible {
+            body.push_bytes(&text.as_bytes()[cursor..marker.start()]);
+            visible_json = body.in_string();
+            if visible_json {
+                body.push_bytes(marker.as_str().as_bytes());
+            }
         }
+        let in_json = marker.start() < json_end || visible_json;
+        if !in_json {
+            match marker.as_str() {
+                "<|start|>" => {
+                    header_start = marker.start();
+                    header_pending = true;
+                    visible = None;
+                }
+                "<|channel|>" => {
+                    if !header_pending {
+                        header_start = marker.start();
+                        header_pending = true;
+                    }
+                    visible = None;
+                }
+                "<|message|>" => {
+                    let directed = text[header_start..marker.start()]
+                        .split_whitespace()
+                        .any(|part| part.starts_with("to="));
+                    visible = (!directed).then(HarmonyVisible::default);
+                    json_end = if directed {
+                        marker.end()
+                            + json_value_prefix_end(&text[marker.end()..]).unwrap_or_default()
+                    } else {
+                        0
+                    };
+                    header_pending = false;
+                    header_start = marker.end();
+                }
+                "<|call|>" | "<|return|>" | "<|end|>" => {
+                    visible = Some(HarmonyVisible::default());
+                    header_start = marker.end();
+                    header_pending = true;
+                    json_end = 0;
+                }
+                _ => {}
+            }
+        }
+        cursor = marker.end();
         (marker, in_json)
     })
+}
+
+pub(crate) fn harmony_tool_headers(text: &str) -> impl Iterator<Item = Captures<'_>> {
+    let mut markers = harmony_markers(text).peekable();
+    let mut search_start = 0;
+    std::iter::from_fn(move || {
+        loop {
+            let cap = commentary_header_regex().captures_at(text, search_start)?;
+            let header = cap.get(0).expect("regex match has full span");
+            while markers
+                .peek()
+                .is_some_and(|(marker, _)| marker.start() < header.start())
+            {
+                markers.next();
+            }
+            if markers.peek().is_some_and(|(_, in_json)| *in_json) {
+                // A quoted partial header can extend into a real header's message
+                // marker. Resume outside its JSON value without consuming that header.
+                search_start = markers.find(|(_, in_json)| !in_json)?.0.start();
+                continue;
+            }
+            search_start = header.end();
+            return Some(cap);
+        }
+    })
+}
+
+pub(crate) fn harmony_initial_role(token_ids: &[u32], start_token_id: u32) -> Option<Role> {
+    if token_ids.first() == Some(&start_token_id) {
+        None
+    } else {
+        Some(Role::Assistant)
+    }
 }
 
 fn push_unique(items: &mut Vec<String>, item: String) {
@@ -131,68 +207,111 @@ fn record_special_tokens(text: &str, items: &mut Vec<String>) {
 
 fn strip_harmony_protocol_from_normal_text(text: &str, reason: &'static str) -> String {
     let mut stripped = Vec::new();
-
-    let cleaned = commentary_block_cleanup_regex()
-        .replace_all(text, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            let item = match caps.name("name").map(|m| m.as_str()) {
-                Some(name) => format!("commentary_tool_call:functions.{name}"),
-                None => "commentary_tool_call:missing_recipient".to_string(),
+    let markers: Vec<_> = harmony_markers(text).collect();
+    let action_stops = ["<|call|>", "<|return|>"];
+    let analysis_stops = ["<|call|>", "<|return|>", "<|end|>"];
+    let final_stops = ["<|return|>", "<|end|>"];
+    let cleanups = [
+        (
+            commentary_block_cleanup_regex(),
+            action_stops.as_slice(),
+            "commentary_tool_call",
+        ),
+        (
+            commentary_header_cleanup_regex(),
+            &[],
+            "commentary_tool_call_without_message",
+        ),
+        (
+            analysis_block_cleanup_regex(),
+            analysis_stops.as_slice(),
+            "analysis_envelope",
+        ),
+        (
+            final_block_cleanup_regex(),
+            final_stops.as_slice(),
+            "final_envelope",
+        ),
+    ];
+    let mut spans = Vec::new();
+    // Keep JSON ownership anchored to the original message marker. Replacing a
+    // final envelope first would expose its quoted markers to later cleanup passes.
+    for (priority, (regex, endings, label)) in cleanups.into_iter().enumerate() {
+        for caps in regex.captures_iter(text) {
+            let matched = caps.get(0).expect("regex match has full span");
+            let start_index =
+                markers.partition_point(|(marker, _)| marker.start() < matched.start());
+            if markers
+                .get(start_index)
+                .is_some_and(|(marker, in_json)| marker.start() == matched.start() && *in_json)
+            {
+                continue;
+            }
+            let mut end = matched.end();
+            let mut body_end = caps.name("body").map(|body| body.end());
+            let end_index = markers.partition_point(|(marker, _)| marker.end() <= end);
+            if end_index > 0
+                && let (marker, true) = &markers[end_index - 1]
+                && marker.end() == end
+                && endings.contains(&marker.as_str())
+            {
+                let stop = markers[end_index..]
+                    .iter()
+                    .find(|(marker, in_json)| !in_json && endings.contains(&marker.as_str()));
+                end = stop.map_or(text.len(), |(marker, _)| marker.end());
+                body_end = Some(stop.map_or(text.len(), |(marker, _)| marker.start()));
+            }
+            let item = match caps.name("name") {
+                Some(name) => format!("{label}:functions.{}", name.as_str()),
+                None => label.to_string(),
             };
-            push_unique(&mut stripped, item);
-            ""
-        })
-        .into_owned();
-
-    let cleaned = commentary_header_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            let item = match caps.name("name").map(|m| m.as_str()) {
-                Some(name) => format!("commentary_tool_call_without_message:functions.{name}"),
-                None => "commentary_tool_call_without_message:missing_recipient".to_string(),
-            };
-            push_unique(&mut stripped, item);
-            ""
-        })
-        .into_owned();
-
-    let cleaned = analysis_block_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            let item = match caps.name("name").map(|m| m.as_str()) {
-                Some(name) => format!("analysis_tool_call:functions.{name}"),
-                None => "analysis_envelope".to_string(),
-            };
-            push_unique(&mut stripped, item);
-            ""
-        })
-        .into_owned();
-
-    let cleaned = final_block_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            push_unique(&mut stripped, "final_envelope".to_string());
-            caps.name("body")
-                .map(|m| m.as_str())
-                .unwrap_or_default()
-                .to_string()
-        })
-        .into_owned();
-
-    let cleaned = message_call_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            push_unique(&mut stripped, "message_call_payload".to_string());
-            ""
-        })
-        .into_owned();
-
-    let cleaned = special_token_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            push_unique(&mut stripped, format!("special_token:{}", &caps[0]));
-            ""
-        })
-        .into_owned();
+            if label == "final_envelope" {
+                let body = caps.name("body").expect("final envelope has body");
+                spans.push((matched.start(), body.start(), priority, item.clone()));
+                spans.push((
+                    body_end.expect("final envelope has body end"),
+                    end,
+                    priority,
+                    item,
+                ));
+            } else {
+                spans.push((matched.start(), end, priority, item));
+            }
+        }
+    }
+    let mut stops = markers
+        .iter()
+        .filter(|(marker, in_json)| !in_json && action_stops.contains(&marker.as_str()))
+        .peekable();
+    for (marker, in_json) in &markers {
+        if *in_json {
+            continue;
+        }
+        if marker.as_str() == "<|message|>" {
+            while stops
+                .peek()
+                .is_some_and(|(stop, _)| stop.start() < marker.end())
+            {
+                stops.next();
+            }
+            let end = stops.peek().map_or(text.len(), |(stop, _)| stop.end());
+            spans.push((marker.start(), end, 4, "message_call_payload".to_string()));
+        }
+        spans.push((marker.start(), marker.end(), 5, "special_token".to_string()));
+    }
+    spans.sort_by_key(|(start, _, priority, _)| (*start, *priority));
+    let mut cleaned = String::new();
+    let mut cursor = 0;
+    for (start, end, _, item) in spans {
+        if start < cursor || start == end {
+            continue;
+        }
+        cleaned.push_str(&text[cursor..start]);
+        record_special_tokens(&text[start..end], &mut stripped);
+        push_unique(&mut stripped, item);
+        cursor = end;
+    }
+    cleaned.push_str(&text[cursor..]);
 
     if stripped.is_empty() {
         return text.to_string();
@@ -214,7 +333,11 @@ fn strip_harmony_protocol_from_normal_text(text: &str, reason: &'static str) -> 
 
 fn normal_text_after_parse_failure(text: &str, reason: &'static str) -> String {
     let cleaned = strip_harmony_protocol_from_normal_text(text, reason);
-    if cleaned == text && !text.trim().is_empty() {
+    if cleaned == text
+        && !text.trim().is_empty()
+        && json_value_prefix_end(text).is_none()
+        && !harmony_markers(text).any(|(_, in_json)| in_json)
+    {
         tracing::warn!(
             family = "harmony",
             reason,
@@ -252,48 +375,6 @@ fn content_looks_like_json(content: &[Content]) -> bool {
     })
 }
 
-fn contains_recipientless_commentary_call(text: &str) -> bool {
-    let channel_marker = "<|channel|>commentary";
-    let message_marker = "<|message|>";
-    let call_marker = "<|call|>";
-    let boundaries = ["<|end|>", "<|return|>", "<|start|>", "<|channel|>"];
-
-    let mut remaining = text;
-    while let Some(channel_start) = remaining.find(channel_marker) {
-        let after_channel = &remaining[channel_start + channel_marker.len()..];
-        let Some(message_start) = after_channel.find(message_marker) else {
-            return false;
-        };
-
-        let header = &after_channel[..message_start];
-        let after_message = &after_channel[message_start + message_marker.len()..];
-        remaining = after_message;
-
-        if header
-            .split_whitespace()
-            .any(|part| part.starts_with("to="))
-        {
-            continue;
-        }
-
-        let Some(call_start) = after_message.find(call_marker) else {
-            continue;
-        };
-
-        let next_boundary = boundaries
-            .iter()
-            .filter_map(|boundary| after_message.find(boundary))
-            .min();
-
-        match next_boundary {
-            Some(boundary) if call_start >= boundary => {}
-            _ => return true,
-        };
-    }
-
-    false
-}
-
 fn harmony_message_boundary(text: &str) -> Option<regex::Match<'_>> {
     // A lone header marker can be literal raw argument text. Require a complete
     // header, or an explicit message end, before rejecting an unfinished call.
@@ -324,10 +405,17 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
         })
         .map(|(marker, _)| marker)
         .peekable();
-    while let Some(cap) = commentary_header_regex().captures_at(text, search_start) {
+    for cap in harmony_tool_headers(text) {
         let m = cap.get(0).expect("regex match has full span");
+        if m.start() < search_start {
+            continue;
+        }
         search_start = m.end();
-        let name = cap.name("name").map(|x| x.as_str()).unwrap_or("");
+        let name = cap
+            .name("name")
+            .or_else(|| cap.name("recipient_first"))
+            .map(|x| x.as_str())
+            .unwrap_or("");
         if name.is_empty() {
             continue;
         }
@@ -421,6 +509,13 @@ pub async fn parse_tool_calls_harmony_complete(
     _config: &JsonParserConfig,
     _tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    if json_value_prefix_end(text).is_some()
+        || harmony_markers(text)
+            .next()
+            .is_some_and(|(_, in_json)| in_json)
+    {
+        return Ok(recover_harmony_calls(text));
+    }
     let enc = match get_harmony_encoding().await.as_ref() {
         Ok(e) => e,
         Err(e) => {
@@ -430,11 +525,11 @@ pub async fn parse_tool_calls_harmony_complete(
         }
     };
 
-    // Quoted action markers are argument bytes, not native Harmony control IDs.
+    // JSON-owned markers are payload bytes, not native Harmony control IDs.
     let mut tokens = Vec::new();
     let mut cursor = 0;
     for (marker, in_json) in harmony_markers(text) {
-        if in_json && matches!(marker.as_str(), "<|call|>" | "<|return|>") {
+        if in_json {
             tokens.extend(
                 enc.tokenizer()
                     .encode_with_special_tokens(&text[cursor..marker.start()]),
@@ -444,19 +539,28 @@ pub async fn parse_tool_calls_harmony_complete(
         }
     }
     tokens.extend(enc.tokenizer().encode_with_special_tokens(&text[cursor..]));
-    let has_quoted_action_markers = cursor != 0;
-    let mut message_has_action_stop = Vec::new();
+    let has_quoted_markers = cursor != 0;
+    let mut message_stops = Vec::new();
     let parsed: anyhow::Result<_> = (|| {
-        let mut parser = StreamableParser::new(enc.clone(), Some(Role::Assistant))?;
+        let start_tokens = enc.tokenizer().encode_with_special_tokens("<|start|>");
+        let [start_token_id] = start_tokens.as_slice() else {
+            anyhow::bail!("Harmony start marker must encode as one control token");
+        };
+        let mut parser =
+            StreamableParser::new(enc.clone(), harmony_initial_role(&tokens, *start_token_id))?;
         let action_stops = enc.stop_tokens_for_assistant_actions()?;
+        let call_stop = enc.tokenizer().encode_with_special_tokens("<|call|>");
         for token in tokens {
             parser.process(token)?;
-            if parser.messages().len() > message_has_action_stop.len() {
-                message_has_action_stop.push(action_stops.contains(&token));
+            if parser.messages().len() > message_stops.len() {
+                message_stops.push((
+                    action_stops.contains(&token),
+                    call_stop.as_slice() == [token],
+                ));
             }
         }
         parser.process_eos()?;
-        message_has_action_stop.resize(parser.messages().len(), false);
+        message_stops.resize(parser.messages().len(), (false, false));
         Ok(parser.into_messages())
     })();
     let messages = match parsed {
@@ -477,9 +581,7 @@ pub async fn parse_tool_calls_harmony_complete(
 
     let mut res = Vec::with_capacity(messages.len());
     let mut normal_text = String::new();
-    let has_recipientless_commentary_call = contains_recipientless_commentary_call(text);
-
-    for (message, has_action_stop) in messages.iter().zip(message_has_action_stop) {
+    for (message, (has_action_stop, has_call_stop)) in messages.iter().zip(message_stops) {
         if message.author.role != Role::Assistant {
             continue;
         }
@@ -513,7 +615,7 @@ pub async fn parse_tool_calls_harmony_complete(
                 continue;
             };
             if harmony_message_boundary(&args_json).is_some() {
-                if has_quoted_action_markers {
+                if has_quoted_markers {
                     return Ok(recover_harmony_calls(text));
                 }
                 continue;
@@ -530,7 +632,7 @@ pub async fn parse_tool_calls_harmony_complete(
         } else if channel == Some("final")
             || (channel == Some("commentary")
                 && recipient.is_empty()
-                && !(has_recipientless_commentary_call
+                && !(has_call_stop
                     && (message.content_type.as_deref() == Some("<|constrain|>json")
                         || content_looks_like_json(&message.content))))
         {
@@ -692,7 +794,7 @@ mod tests {
     async fn test_harmony_quoted_action_stops_remain_arguments() {
         use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
 
-        for literal in ["<|return|>", "<|call|>"] {
+        for literal in HARMONY_MARKERS {
             for ending in ["<|call|>", "<|return|>"] {
                 for channel in ["commentary", "analysis"] {
                     for prefix in ["", "<|start|>assistant", "PREFIX "] {
@@ -788,6 +890,187 @@ mod tests {
                             );
                         }
                     }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_harmony_regex_does_not_extract_quoted_headers() {
+        for outer_channel in ["final", "commentary", "analysis"] {
+            for tool_channel in ["commentary", "analysis"] {
+                for framing in ["", "<|start|>assistant"] {
+                    for complete_header in [false, true] {
+                        let literal = format!(
+                            "escaped \"quote and slash \\ {framing}<|channel|>{tool_channel} to=functions.fake{}",
+                            if complete_header { "<|message|>{}" } else { "" }
+                        );
+                        for body in [
+                            serde_json::json!(literal),
+                            serde_json::json!({"example": literal}),
+                            serde_json::json!([literal]),
+                        ] {
+                            for ending in ["<|call|>", "<|return|>"] {
+                                let quoted = format!(
+                                    "{framing}<|channel|>{outer_channel}<|message|>{body}{ending}"
+                                );
+                                for suffix in [
+                                    "",
+                                    " trailing",
+                                    "<|channel|>final<|message|>Done.<|return|>",
+                                ] {
+                                    let text = format!("{quoted}{suffix}");
+                                    let (calls, residual) = extract_calls_via_regex(&text);
+                                    assert!(calls.is_empty(), "{text}");
+                                    assert_eq!(residual, text, "{text}");
+                                }
+                                for arguments in ["{}", "not json <|channel|> at all"] {
+                                    let text = format!(
+                                        "{quoted}<|start|>assistant<|channel|>{tool_channel} to=functions.real<|message|>{arguments}{ending} trailing"
+                                    );
+                                    let (calls, residual) = extract_calls_via_regex(&text);
+                                    assert_eq!(calls.len(), 1, "{text}");
+                                    assert_eq!(calls[0].function.name, "real", "{text}");
+                                    assert_eq!(calls[0].function.arguments, arguments, "{text}");
+                                    assert_eq!(residual, format!("{quoted} trailing"), "{text}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_harmony_recovery_preserves_final_json_markers() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for channel in ["commentary", "analysis"] {
+            for complete_header in [false, true] {
+                let literal = format!(
+                    "<|channel|>{channel} to=functions.fake{} literal <|return|> <|call|>",
+                    if complete_header { "<|message|>{}" } else { "" }
+                );
+                let body = serde_json::json!({"example": literal}).to_string();
+                for framing in ["", "<|start|>assistant"] {
+                    for (suffix, visible) in [
+                        (" trailing", " trailing"),
+                        ("<|channel|>final<|message|>Done.<|return|>", "Done."),
+                    ] {
+                        let text =
+                            format!("{framing}<|channel|>final<|message|>{body}<|return|>{suffix}");
+                        let (calls, normal) =
+                            detect_and_parse_tool_call_with_recovery(&text, Some("harmony"), None)
+                                .await
+                                .unwrap();
+                        assert!(calls.is_empty(), "{text}");
+                        assert_eq!(
+                            normal.as_deref(),
+                            Some(format!("{body}{visible}").as_str()),
+                            "{text}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_harmony_visible_json_survives_prior_messages_and_inline_prose() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        let literal =
+            "escaped \" \\ <|channel|>commentary to=functions.fake<|message|>{}<|return|>";
+        for body in [
+            serde_json::json!(literal),
+            serde_json::json!({"example": literal}),
+            serde_json::json!([literal]),
+        ] {
+            let body = body.to_string();
+            for prefix in ["", "Preamble\n", "{}\n"] {
+                let text = format!("{prefix}{body}");
+                let (calls, normal) =
+                    detect_and_parse_tool_call_with_recovery(&text, Some("harmony"), None)
+                        .await
+                        .unwrap();
+                assert!(calls.is_empty(), "{text}");
+                assert_eq!(normal.as_deref(), Some(text.as_str()), "{text}");
+            }
+            if body.starts_with(['{', '[']) {
+                let text = format!("<|channel|>final<|message|>Example: {body}<|return|>");
+                let (calls, normal) =
+                    detect_and_parse_tool_call_with_recovery(&text, Some("harmony"), None)
+                        .await
+                        .unwrap();
+                assert!(calls.is_empty(), "{text}");
+                assert_eq!(
+                    normal.as_deref(),
+                    Some(format!("Example: {body}").as_str()),
+                    "{text}"
+                );
+            }
+        }
+    }
+
+    // With an unclosed final string, an exact corpus oracle cannot distinguish
+    // literal stops from terminal stops. Assert no executable call and keep the known prefix.
+    #[tokio::test]
+    async fn test_harmony_unclosed_final_json_never_fabricates_a_call() {
+        for channel in ["commentary", "analysis"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                for prefix in ["", "Example: "] {
+                    let body = format!(
+                        "{prefix}{{\"example\":\"<|channel|>{channel} to=functions.fake<|message|>{{}}{ending}"
+                    );
+                    let text = format!("<|channel|>final<|message|>{body}<|return|>");
+                    let (calls, normal) =
+                        parse_tool_calls_harmony_complete(&text, &Default::default(), None)
+                            .await
+                            .unwrap();
+                    assert!(calls.is_empty(), "{text}");
+                    assert!(
+                        normal.as_deref().unwrap().starts_with(&body),
+                        "{text}: {normal:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_recipientless_commentary_uses_only_its_own_unquoted_call_stop() {
+        for literal in HARMONY_MARKERS {
+            for body in [
+                serde_json::json!({"x": literal}),
+                serde_json::json!([literal]),
+            ] {
+                let body = body.to_string();
+                for ending in ["<|end|>", "<|return|>", ""] {
+                    for framing in ["", "<|start|>assistant"] {
+                        let text =
+                            format!("{framing}<|channel|>commentary<|message|>{body}{ending}");
+                        let (calls, normal) =
+                            parse_tool_calls_harmony_complete(&text, &Default::default(), None)
+                                .await
+                                .unwrap();
+                        assert!(calls.is_empty(), "{text}");
+                        assert_eq!(normal.as_deref(), Some(body.as_str()), "{text}");
+                    }
+                }
+                let visible =
+                    format!("<|start|>assistant<|channel|>commentary<|message|>{body}<|end|>");
+                let invalid_call = "<|start|>assistant<|channel|>commentary<|message|>{\"not_visible\":true}<|call|>";
+                for text in [
+                    format!("{visible}{invalid_call}"),
+                    format!("{invalid_call}{visible}"),
+                ] {
+                    let (calls, normal) =
+                        parse_tool_calls_harmony_complete(&text, &Default::default(), None)
+                            .await
+                            .unwrap();
+                    assert!(calls.is_empty(), "{text}");
+                    assert_eq!(normal.as_deref(), Some(body.as_str()), "{text}");
                 }
             }
         }

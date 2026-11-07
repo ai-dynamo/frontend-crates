@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod harmony_parser;
+pub(crate) mod payload;
 
 pub use super::config::JsonParserConfig;
 pub use super::{config, response};

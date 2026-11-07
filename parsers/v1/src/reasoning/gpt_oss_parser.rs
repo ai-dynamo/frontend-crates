@@ -5,6 +5,10 @@ use std::fmt::Debug;
 
 use crate::ParserResult;
 use crate::ReasoningParser;
+use crate::tool_calling::harmony::harmony_parser::{
+    harmony_initial_role, harmony_markers, harmony_tool_headers,
+};
+use crate::tool_calling::harmony::payload::{HarmonyPayload, HarmonyVisible};
 
 use openai_harmony::StreamableParser;
 use openai_harmony::chat::{Content, Message, TextContent};
@@ -15,10 +19,10 @@ use std::sync::OnceLock;
 
 static GLOBAL_HARMONY_GPTOSS_ENCODING: OnceLock<Result<HarmonyEncoding, anyhow::Error>> =
     OnceLock::new();
+static HARMONY_ACTION_TOKEN_IDS: OnceLock<Vec<u32>> = OnceLock::new();
 static HARMONY_CALL_TOKEN_IDS: OnceLock<Vec<u32>> = OnceLock::new();
 static HARMONY_START_TOKEN_ID: OnceLock<Option<u32>> = OnceLock::new();
 static HARMONY_ANALYSIS_BLOCK_REGEX: OnceLock<Regex> = OnceLock::new();
-const HARMONY_CALL_MARKER: &str = "<|call|>";
 const HARMONY_SPECIAL_TOKENS: &[&str] = &[
     "<|start|>",
     "<|end|>",
@@ -50,16 +54,12 @@ pub struct GptOssReasoningParser {
     // Recovery persists across chunks until `<|start|>`.
     resynchronizing: bool,
     pending_text: String,
-    pending_tool_call_text: String,
     emitted_reasoning_text: bool,
     insert_reasoning_separator: bool,
     emitted_normal_text: bool,
     insert_normal_separator: bool,
-    /// Channel/recipient of the directed tool call currently being streamed.
-    /// Persisted across chunks because the `<|call|>` terminator can arrive in a
-    /// later chunk than the one that resolved the recipient (and `<|call|>` resets
-    /// the live parser state), so the `<|call|>`-chunk envelope reconstruction
-    /// would otherwise lose the channel/recipient. Cleared once the call is emitted.
+    /// Retained across chunks because action stops reset the native recipient
+    /// before the downstream tool parser receives its complete envelope.
     last_directed_channel: Option<String>,
     last_directed_recipient: Option<String>,
     /// Content harmony decoded and attributed to a channel this parser does not
@@ -74,6 +74,8 @@ pub struct GptOssReasoningParser {
     /// naturally idempotent, so a second finalize must return nothing rather
     /// than re-emit text the caller already has.
     parser_finished: bool,
+    payload: HarmonyPayload,
+    visible_payload: HarmonyVisible,
 }
 
 /// Implement Debug for GptOssReasoningParser separately because StreamableParser does not implement Debug
@@ -108,7 +110,6 @@ impl GptOssReasoningParser {
             start_token_id,
             resynchronizing: false,
             pending_text: String::new(),
-            pending_tool_call_text: String::new(),
             emitted_reasoning_text: false,
             insert_reasoning_separator: false,
             emitted_normal_text: false,
@@ -117,6 +118,8 @@ impl GptOssReasoningParser {
             last_directed_recipient: None,
             unattributed_text: String::new(),
             parser_finished: false,
+            payload: HarmonyPayload::default(),
+            visible_payload: HarmonyVisible::default(),
         })
     }
 }
@@ -140,13 +143,16 @@ fn harmony_start_token_id() -> anyhow::Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("Harmony start marker must encode to one token"))
 }
 
-fn harmony_call_token_ids() -> Option<&'static [u32]> {
-    let ids = HARMONY_CALL_TOKEN_IDS.get_or_init(|| {
+fn harmony_action_token_ids() -> Option<&'static [u32]> {
+    let ids = HARMONY_ACTION_TOKEN_IDS.get_or_init(|| {
         get_harmony_encoding()
             .as_ref()
-            .map(|enc| {
-                enc.tokenizer()
-                    .encode_with_special_tokens(HARMONY_CALL_MARKER)
+            .ok()
+            .and_then(|enc| enc.stop_tokens_for_assistant_actions().ok())
+            .map(|ids| {
+                let mut ids: Vec<_> = ids.into_iter().collect();
+                ids.sort_unstable();
+                ids
             })
             .unwrap_or_default()
     });
@@ -157,26 +163,17 @@ fn harmony_call_token_ids() -> Option<&'static [u32]> {
     }
 }
 
-/// Token id(s) for the harmony `<|call|>` terminator.
+/// Token IDs for the legacy Harmony `<|call|>` terminator.
 ///
-/// `<|call|>` is simultaneously the harmony tool-call terminator the parser
-/// requires AND a gpt-oss EOS token. Pipelines that hide EOS tokens from the
+/// `<|call|>` also acts as a gpt-oss EOS token. Pipelines that hide EOS tokens from the
 /// decoded output (e.g. the preprocessor's stop-condition handling) must keep
 /// these ids visible when the harmony tool-call parser is active — otherwise the
 /// terminator is stripped before the parser sees it and tool calls are silently
 /// dropped. Empty if the harmony encoding is unavailable.
 pub fn harmony_terminator_token_ids() -> Vec<u32> {
-    harmony_call_token_ids()
-        .map(|ids| ids.to_vec())
-        .unwrap_or_default()
-}
-
-fn token_ids_contain_sequence(token_ids: &[u32], marker_ids: &[u32]) -> bool {
-    !marker_ids.is_empty()
-        && marker_ids.len() <= token_ids.len()
-        && token_ids
-            .windows(marker_ids.len())
-            .any(|window| window == marker_ids)
+    HARMONY_CALL_TOKEN_IDS
+        .get_or_init(|| encode_text_to_tokens("<|call|>").unwrap_or_default())
+        .clone()
 }
 
 fn prepare_initial_harmony_message(
@@ -185,7 +182,7 @@ fn prepare_initial_harmony_message(
     start_token_id: u32,
 ) -> anyhow::Result<()> {
     // Continuations inherit an assistant role; a fully framed first message supplies its own.
-    if parser.tokens().is_empty() && token_ids.first() == Some(&start_token_id) {
+    if parser.tokens().is_empty() && harmony_initial_role(token_ids, start_token_id).is_none() {
         let encoding = get_harmony_encoding()
             .as_ref()
             .map_err(|error| anyhow::anyhow!("Harmony encoding unavailable: {error}"))?;
@@ -196,30 +193,49 @@ fn prepare_initial_harmony_message(
 
 fn harmony_analysis_block_regex() -> &'static Regex {
     HARMONY_ANALYSIS_BLOCK_REGEX.get_or_init(|| {
-        // Match ONLY recipientless analysis reasoning blocks (the CoT channel).
-        // Requiring `<|message|>` to immediately follow `analysis` (no `.*?`
-        // gap) ensures that `analysis to=functions.X code<|message|>…` tool-call
-        // envelopes are NOT stripped — they must survive into normal_text so
-        // the downstream harmony tool-call jail can recover them.
-        Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>analysis<\|message\|>.*?(?:<\|call\|>|<\|end\|>|\z)",
-        )
+        Regex::new(r"(?:<\|start\|>assistant)?<\|channel\|>analysis<\|message\|>")
             .expect("harmony analysis block regex")
     })
 }
 
-fn input_contains_call_marker(
-    text: &str,
-    token_ids: &[u32],
-    caller_supplied_token_ids: bool,
-) -> bool {
-    if !token_ids.is_empty()
-        && let Some(call_ids) = harmony_call_token_ids()
-    {
-        return token_ids_contain_sequence(token_ids, call_ids);
+fn guard_payload_token(
+    payload: &mut HarmonyPayload,
+    visible_payload: &mut HarmonyVisible,
+    token_id: u32,
+    is_visible: bool,
+) -> anyhow::Result<Vec<u32>> {
+    let enc = get_harmony_encoding()
+        .as_ref()
+        .map_err(|error| anyhow::anyhow!("Harmony encoding unavailable: {error}"))?;
+    let bytes = enc.tokenizer().decode_bytes([token_id])?;
+    if enc.tokenizer().is_special_token(token_id) {
+        if if is_visible {
+            visible_payload.in_string()
+        } else {
+            payload.in_string()
+        } {
+            // Both native parsing and envelope reconstruction must see literal data.
+            if is_visible {
+                visible_payload.push_bytes(&bytes);
+            } else {
+                payload.push_bytes(&bytes);
+            }
+            return Ok(enc
+                .tokenizer()
+                .encode_ordinary(std::str::from_utf8(&bytes)?));
+        }
+        if bytes == b"<|message|>" {
+            payload.begin_body();
+        } else {
+            *payload = HarmonyPayload::default();
+        }
+        *visible_payload = HarmonyVisible::default();
+    } else if is_visible {
+        visible_payload.push_bytes(&bytes);
+    } else {
+        payload.push_bytes(&bytes);
     }
-
-    !caller_supplied_token_ids && text.contains(HARMONY_CALL_MARKER)
+    Ok(vec![token_id])
 }
 
 fn raw_input_text_for_tool_parser(
@@ -247,19 +263,56 @@ fn split_incomplete_harmony_suffix(text: &str) -> (&str, &str) {
 }
 
 fn contains_directed_harmony_function_call(text: &str) -> bool {
-    (text.contains("<|channel|>commentary to=functions.")
-        || text.contains("<|channel|>analysis to=functions."))
-        && crate::tool_calling::config::ToolCallConfig::harmony()
-            .parser_config
-            .tool_call_end_tokens()
-            .iter()
-            .any(|marker| text.contains(marker.as_str()))
+    harmony_tool_headers(text).next().is_some()
+        && harmony_markers(text).any(|(marker, in_json)| {
+            !in_json && matches!(marker.as_str(), "<|call|>" | "<|return|>")
+        })
 }
 
 fn strip_analysis_blocks_for_tool_handoff(text: &str) -> String {
-    harmony_analysis_block_regex()
-        .replace_all(text, "")
-        .into_owned()
+    let mut directed_headers = harmony_tool_headers(text).peekable();
+    let mut markers = harmony_markers(text)
+        .filter_map(|(marker, in_json)| (!in_json).then_some(marker))
+        .peekable();
+    let mut output = String::new();
+    let mut cursor = 0;
+    for header in harmony_analysis_block_regex().find_iter(text) {
+        while directed_headers
+            .peek()
+            .is_some_and(|directed| directed.get(0).unwrap().end() <= header.start())
+        {
+            directed_headers.next();
+        }
+        // A recipient before the channel still makes this a directed analysis call.
+        if directed_headers
+            .peek()
+            .is_some_and(|directed| directed.get(0).unwrap().start() <= header.start())
+        {
+            continue;
+        }
+        while markers
+            .peek()
+            .is_some_and(|marker| marker.start() < header.start())
+        {
+            markers.next();
+        }
+        if header.start() < cursor
+            || markers
+                .peek()
+                .is_none_or(|marker| marker.start() != header.start())
+        {
+            continue;
+        }
+        output.push_str(&text[cursor..header.start()]);
+        cursor = markers
+            .find(|marker| {
+                marker.start() >= header.end()
+                    && matches!(marker.as_str(), "<|call|>" | "<|return|>" | "<|end|>")
+            })
+            .map_or(text.len(), |marker| marker.end());
+    }
+    output.push_str(&text[cursor..]);
+    output
 }
 
 fn append_separated(target: &mut String, text: &str) {
@@ -330,11 +383,6 @@ fn is_visible_normal_channel(channel: Option<&str>, recipient: Option<&str>) -> 
         || (matches!(channel, Some("commentary")) && recipient.is_none())
 }
 
-fn starts_directed_harmony_tool_call(text: &str) -> bool {
-    text.contains("<|channel|>commentary to=functions.")
-        || text.contains("<|channel|>analysis to=functions.")
-}
-
 /// Reconstruct the complete harmony envelope for the directed tool call that
 /// just terminated, by decoding the cumulative parser token buffer from its
 /// last `<|channel|>` token to the end.
@@ -368,10 +416,22 @@ fn reconstruct_directed_envelope(
         .into_iter()
         .next()?;
     let last_channel_idx = tokens.iter().rposition(|t| *t == channel_token_id)?;
-    let decoded = enc
+    let mut decoded = enc
         .tokenizer()
         .decode_utf8(&tokens[last_channel_idx..])
         .unwrap_or_default();
+    if let Some(recipient) = recipient
+        && let Some((header, _)) = decoded.split_once("<|message|>")
+        && !header
+            .split_whitespace()
+            .any(|part| part.starts_with("to="))
+    {
+        // A role-first recipient precedes the channel slice used for handoff.
+        let channel_prefix = format!("<|channel|>{ch}");
+        if decoded.starts_with(&channel_prefix) {
+            decoded.insert_str(channel_prefix.len(), &format!(" to={recipient}"));
+        }
+    }
     if decoded.is_empty() {
         None
     } else {
@@ -525,18 +585,36 @@ impl ReasoningParser for GptOssReasoningParser {
     /// Idempotent: a second call returns an empty result. The first call
     /// consumes `process_eos()`, which cannot be repeated.
     fn finish_reasoning_stream(&mut self) -> ParserResult {
-        self.pending_tool_call_text.clear();
+        let directed_tool_pending = self.last_directed_recipient.is_some();
+        let incomplete_tool = self
+            .payload
+            .in_string()
+            .then(|| {
+                reconstruct_directed_envelope(
+                    &self.parser,
+                    self.last_directed_channel.as_deref(),
+                    self.last_directed_recipient.as_deref(),
+                )
+            })
+            .flatten()
+            .filter(|envelope| contains_directed_harmony_function_call(envelope));
         self.last_directed_channel = None;
         self.last_directed_recipient = None;
         if self.parser_finished {
             return ParserResult::default();
         }
         self.parser_finished = true;
+        self.payload = HarmonyPayload::default();
+        self.visible_payload = HarmonyVisible::default();
 
         // Existing behaviour, unchanged: a held partial special-token suffix
         // belongs to whatever channel the parser is currently in.
         let pending = std::mem::take(&mut self.pending_text);
-        let mut result = if pending.is_empty() {
+        let incomplete_tool = incomplete_tool.map(|mut envelope| {
+            envelope.push_str(&pending);
+            envelope
+        });
+        let mut result = if pending.is_empty() || directed_tool_pending {
             ParserResult::default()
         } else {
             match self.parser.current_channel().as_deref() {
@@ -577,6 +655,14 @@ impl ReasoningParser for GptOssReasoningParser {
             append_separated(&mut result.normal_text, &recovered.normal_text);
             append_separated(&mut result.reasoning_text, &recovered.reasoning_text);
         }
+        if let Some(envelope) = incomplete_tool {
+            tracing::warn!(
+                why = "harmony_unclosed_json_string_at_eof",
+                recovered_bytes = envelope.len(),
+                "Deferring malformed tool arguments to the tool parser's EOF recovery"
+            );
+            result.normal_text.push_str(&envelope);
+        }
 
         result
     }
@@ -612,12 +698,26 @@ impl ReasoningParser for GptOssReasoningParser {
                 token_ids.len(),
                 token_id
             );
-            if let Err(e) = parser.process(*token_id) {
-                tracing::warn!(
-                    why = "harmony_batch_parse_error",
-                    "Harmony parse error for token_id {token_id}: {e}"
-                );
-                return ParserResult::default();
+            let guarded = match guard_payload_token(
+                &mut self.payload,
+                &mut self.visible_payload,
+                *token_id,
+                parser.current_recipient().is_none(),
+            ) {
+                Ok(guarded) => guarded,
+                Err(error) => {
+                    tracing::warn!(why = "harmony_payload_token_error", %error, "Could not decode Harmony payload token");
+                    return ParserResult::default();
+                }
+            };
+            for token_id in guarded {
+                if let Err(e) = parser.process(token_id) {
+                    tracing::warn!(
+                        why = "harmony_batch_parse_error",
+                        "Harmony parse error for token_id {token_id}: {e}"
+                    );
+                    return ParserResult::default();
+                }
             }
         }
 
@@ -720,235 +820,153 @@ impl ReasoningParser for GptOssReasoningParser {
         }
         let mut normal_delta = String::new();
         let mut reasoning_delta = String::new();
-        // Tracks whether at least one directed call envelope was reconstructed inside
-        // the per-token loop below. When true the post-loop `has_call_marker` branch
-        // must not reconstruct again (it would pick the wrong `<|channel|>` token
-        // because the cumulative buffer by then includes post-`<|call|>` tokens).
-        let mut call_reconstructed_in_loop = false;
-        // Raw fallback must not re-emit skipped tokens after recovery.
-        let mut allow_raw_tool_handoff = !self.resynchronizing;
-
-        for (i, token_id) in token_ids.iter().enumerate() {
+        for (i, original_token) in token_ids.iter().enumerate() {
             // Wait for a message boundary before trusting channel or recipient.
-            if self.resynchronizing && *token_id != self.start_token_id {
+            if self.resynchronizing && *original_token != self.start_token_id {
                 continue;
             }
-            tracing::debug!(
-                "Processing streaming token {} of {}: {}",
-                i + 1,
-                token_ids.len(),
-                token_id
-            );
-            let previous_channel = parser.current_channel();
-            let previous_recipient = parser.current_recipient();
-            if let Err(e) = parser.process(*token_id) {
-                tracing::warn!(
-                    token_id,
-                    error = %e,
-                    "Harmony parse error, resynchronizing at the next start token"
-                );
-                allow_raw_tool_handoff = false;
-                self.resynchronizing = true;
-                self.pending_tool_call_text.clear();
-                self.last_directed_channel = None;
-                self.last_directed_recipient = None;
-                if let Ok(enc) = get_harmony_encoding() {
-                    match StreamableParser::new(enc.clone(), None) {
-                        Ok(replacement) => *parser = replacement,
-                        Err(error) => tracing::warn!(
-                            error = %error,
-                            "Failed to reset Harmony parser for resynchronization"
-                        ),
-                    }
-                }
-                // Preserve parsed deltas and scan the remaining tokens.
-                continue;
-            }
-            self.resynchronizing = false;
-            let current_channel = parser.current_channel();
-            let current_recipient = parser.current_recipient();
-
-            // Persist directed tool-call context before `<|call|>` can reset it.
-            // This is stored on `self` (not a local) because the `<|call|>`
-            // terminator can arrive in a later chunk than the one that resolved
-            // the recipient — e.g. for short responses split into tiny chunks the
-            // `<|call|>` token can be the first token of its own chunk, by which
-            // point the live parser recipient is already gone.
-            if let (Some(ch), Some(rec)) = (&current_channel, &current_recipient)
-                && (ch.as_str() == "commentary" || ch.as_str() == "analysis")
-                && rec.starts_with("functions.")
-            {
-                self.last_directed_channel = current_channel.clone();
-                self.last_directed_recipient = current_recipient.clone();
-            }
-
-            // Reconstruct each directed tool-call envelope the moment `<|call|>`
-            // resets the parser channel to None (detected by the directed→None
-            // channel transition while `last_directed_channel` is set).
-            //
-            // Doing this here — not in the post-loop section — is critical: at this
-            // point `parser.tokens()` ends exactly at the `<|call|>` token, so
-            // `reconstruct_directed_envelope`'s `rposition` scan finds the correct
-            // `<|channel|>` token for this call.  If we waited until after all
-            // tokens in the chunk were processed, subsequent tokens (e.g. a
-            // `<|channel|>final` that arrived in the same chunk) would have been
-            // appended to the buffer first, making `rposition` return the wrong
-            // index and corrupting the reconstructed envelope.
-            //
-            // If reconstruction returns None (encoding unavailable), `last_directed_channel`
-            // is left set so the post-loop fallback can flush `pending_tool_call_text`.
-            if self.last_directed_channel.is_some()
-                && previous_channel.is_some()
-                && current_channel.is_none()
-                && let Some(env) = reconstruct_directed_envelope(
-                    parser,
-                    self.last_directed_channel.as_deref(),
-                    self.last_directed_recipient.as_deref(),
-                )
-            {
-                self.pending_tool_call_text.clear();
-                normal_delta.push_str(&env);
-                self.last_directed_channel = None;
-                self.last_directed_recipient = None;
-                call_reconstructed_in_loop = true;
-            }
-
-            if previous_channel.as_deref() != Some("analysis")
-                && current_channel.as_deref() == Some("analysis")
-                && self.emitted_reasoning_text
-            {
-                self.insert_reasoning_separator = true;
-            }
-
-            if is_visible_normal_channel(current_channel.as_deref(), current_recipient.as_deref())
-                && !is_visible_normal_channel(
-                    previous_channel.as_deref(),
-                    previous_recipient.as_deref(),
-                )
-                && self.emitted_normal_text
-            {
-                self.insert_normal_separator = true;
-            }
-
-            if let (Some(delta), Some(channel)) = (
-                parser.last_content_delta().unwrap_or_default(),
-                current_channel,
+            let guarded = match guard_payload_token(
+                &mut self.payload,
+                &mut self.visible_payload,
+                *original_token,
+                parser.current_recipient().is_none(),
             ) {
-                // `last_content_delta` only exposes the newest token slice, so directed
-                // commentary still falls through to the raw handoff path for tool parsing.
-                match channel.as_str() {
-                    "final" => {
-                        if self.insert_normal_separator {
-                            normal_delta.push('\n');
-                            self.insert_normal_separator = false;
-                        }
-                        normal_delta.push_str(&delta);
-                        self.emitted_normal_text = true;
-                    }
-                    // Analysis WITHOUT a recipient is reasoning content.
-                    // Analysis WITH a functions recipient is a (malformed)
-                    // tool call — its payload is handed off via normal_delta
-                    // below; do not also surface it as reasoning_content.
-                    "analysis" if current_recipient.is_none() => {
-                        if self.insert_reasoning_separator {
-                            reasoning_delta.push('\n');
-                            self.insert_reasoning_separator = false;
-                        }
-                        reasoning_delta.push_str(&delta);
-                        self.emitted_reasoning_text = true;
-                    }
-                    "commentary" if current_recipient.is_none() => {
-                        if self.insert_normal_separator {
-                            normal_delta.push('\n');
-                            self.insert_normal_separator = false;
-                        }
-                        normal_delta.push_str(&delta);
-                        self.emitted_normal_text = true;
-                    }
-                    // `analysis`/`commentary` WITH a recipient is a directed
-                    // tool call; its payload is reconstructed as a whole
-                    // envelope on the `<|call|>` chunk, so dropping the delta
-                    // here is correct.
-                    "analysis" | "commentary" => {}
-                    // Any other channel name is not harmony: the model
-                    // mistyped the header (`finalx`) or invented a channel.
-                    // Harmony still decoded real content for it, so hold it
-                    // and surface it at EOF instead of losing the message.
-                    // A directed one (`to=...`) is a tool envelope, not prose:
-                    // drop it, as the stranded-header path does.
-                    _ if current_recipient.is_some() => {}
-                    _ => {
-                        self.unattributed_text.push_str(&delta);
-                    }
+                Ok(guarded) => guarded,
+                Err(error) => {
+                    tracing::warn!(why = "harmony_payload_token_error", %error, "Could not decode Harmony payload token");
+                    return ParserResult::default();
                 }
-            }
-        }
-
-        let has_call_marker = allow_raw_tool_handoff
-            && input_contains_call_marker(text, token_ids, caller_supplied_token_ids);
-        let raw_input_text = if allow_raw_tool_handoff
-            && (has_call_marker
-                || !self.pending_tool_call_text.is_empty()
-                || starts_directed_harmony_tool_call(text))
-        {
-            Some(raw_input_text_for_tool_parser(
-                text,
-                token_ids,
-                caller_supplied_token_ids,
-            ))
-        } else {
-            None
-        };
-
-        if let Some(raw_input_text) = raw_input_text {
-            // Streaming feeds the downstream Harmony tool parser through
-            // `normal_text`. This is an internal handoff, not visible-content
-            // semantics: directed commentary/analysis tool payloads must become
-            // tool calls, not assistant `content`.
-            if has_call_marker {
-                if call_reconstructed_in_loop {
-                    // The per-token loop already reconstructed every directed
-                    // envelope in this chunk at the correct buffer position (right
-                    // after each `<|call|>` token).  Nothing more to do here —
-                    // attempting another reconstruction now would use a stale
-                    // `rposition` over a buffer that includes post-`<|call|>` tokens
-                    // and would produce the wrong envelope or duplicate content.
-                } else {
-                    // Fallback: in-loop reconstruction was not attempted (encoding
-                    // unavailable) or did not complete.  Use the post-loop path,
-                    // which may produce a slightly wrong result when trailing tokens
-                    // follow `<|call|>` in the same chunk, but is still better than
-                    // silently dropping the tool call.
-                    let reconstructed = reconstruct_directed_envelope(
-                        parser,
-                        self.last_directed_channel.as_deref(),
-                        self.last_directed_recipient.as_deref(),
+            };
+            for token_id in &guarded {
+                tracing::debug!(
+                    "Processing streaming token {} of {}: {}",
+                    i + 1,
+                    token_ids.len(),
+                    token_id
+                );
+                let previous_channel = parser.current_channel();
+                let previous_recipient = parser.current_recipient();
+                if let Err(e) = parser.process(*token_id) {
+                    tracing::warn!(
+                        token_id,
+                        error = %e,
+                        "Harmony parse error, resynchronizing at the next start token"
                     );
-                    match reconstructed {
-                        Some(env) => {
-                            self.pending_tool_call_text.clear();
-                            normal_delta.push_str(&env);
+                    self.resynchronizing = true;
+                    self.last_directed_channel = None;
+                    self.last_directed_recipient = None;
+                    self.payload = HarmonyPayload::default();
+                    self.visible_payload = HarmonyVisible::default();
+                    if let Ok(enc) = get_harmony_encoding() {
+                        match StreamableParser::new(enc.clone(), None) {
+                            Ok(replacement) => *parser = replacement,
+                            Err(error) => tracing::warn!(
+                                error = %error,
+                                "Failed to reset Harmony parser for resynchronization"
+                            ),
                         }
-                        None if !self.pending_tool_call_text.is_empty() => {
-                            // Fallback: no clean reconstruction available; flush the
-                            // accumulated raw text plus this chunk.
-                            self.pending_tool_call_text.push_str(&raw_input_text);
-                            normal_delta
-                                .push_str(&std::mem::take(&mut self.pending_tool_call_text));
-                        }
-                        None => normal_delta.push_str(&raw_input_text),
                     }
-                    // Clear the persisted context so the next call (or trailing
-                    // reasoning) starts fresh.
+                    // Preserve parsed deltas and scan the remaining tokens.
+                    continue;
+                }
+                self.resynchronizing = false;
+                let current_channel = parser.current_channel();
+                let current_recipient = parser.current_recipient();
+
+                if let (Some(ch), Some(rec)) = (&current_channel, &current_recipient)
+                    && (ch.as_str() == "commentary" || ch.as_str() == "analysis")
+                    && rec.starts_with("functions.")
+                {
+                    self.last_directed_channel = current_channel.clone();
+                    self.last_directed_recipient = current_recipient.clone();
+                }
+
+                // Reconstruct at the action token: a later message in this same
+                // chunk would replace the last channel in the cumulative buffer.
+                if self.last_directed_channel.is_some()
+                    && previous_channel.is_some()
+                    && current_channel.is_none()
+                {
+                    if harmony_action_token_ids().is_some_and(|stops| stops.contains(token_id))
+                        && let Some(env) = reconstruct_directed_envelope(
+                            parser,
+                            self.last_directed_channel.as_deref(),
+                            self.last_directed_recipient.as_deref(),
+                        )
+                    {
+                        normal_delta.push_str(&env);
+                    }
                     self.last_directed_channel = None;
                     self.last_directed_recipient = None;
                 }
-            } else if !self.pending_tool_call_text.is_empty()
-                || starts_directed_harmony_tool_call(&raw_input_text)
-            {
-                // Mid tool call, terminator not yet seen: keep accumulating as a
-                // fallback (e.g. truncated streams that never emit `<|call|>`).
-                self.pending_tool_call_text.push_str(&raw_input_text);
+
+                if previous_channel.as_deref() != Some("analysis")
+                    && current_channel.as_deref() == Some("analysis")
+                    && self.emitted_reasoning_text
+                {
+                    self.insert_reasoning_separator = true;
+                }
+
+                if is_visible_normal_channel(
+                    current_channel.as_deref(),
+                    current_recipient.as_deref(),
+                ) && !is_visible_normal_channel(
+                    previous_channel.as_deref(),
+                    previous_recipient.as_deref(),
+                ) && self.emitted_normal_text
+                {
+                    self.insert_normal_separator = true;
+                }
+
+                if let (Some(delta), Some(channel)) = (
+                    parser.last_content_delta().unwrap_or_default(),
+                    current_channel,
+                ) {
+                    match channel.as_str() {
+                        "final" => {
+                            if self.insert_normal_separator {
+                                normal_delta.push('\n');
+                                self.insert_normal_separator = false;
+                            }
+                            normal_delta.push_str(&delta);
+                            self.emitted_normal_text = true;
+                        }
+                        // Analysis WITHOUT a recipient is reasoning content.
+                        // Analysis WITH a functions recipient is a (malformed)
+                        // tool call; its complete envelope is handed off at the action stop.
+                        "analysis" if current_recipient.is_none() => {
+                            if self.insert_reasoning_separator {
+                                reasoning_delta.push('\n');
+                                self.insert_reasoning_separator = false;
+                            }
+                            reasoning_delta.push_str(&delta);
+                            self.emitted_reasoning_text = true;
+                        }
+                        "commentary" if current_recipient.is_none() => {
+                            if self.insert_normal_separator {
+                                normal_delta.push('\n');
+                                self.insert_normal_separator = false;
+                            }
+                            normal_delta.push_str(&delta);
+                            self.emitted_normal_text = true;
+                        }
+                        // `analysis`/`commentary` WITH a recipient is a directed
+                        // tool call; its payload is reconstructed as a whole
+                        // envelope on the action-stop chunk, so dropping the delta
+                        // here is correct.
+                        "analysis" | "commentary" => {}
+                        // Any other channel name is not harmony: the model
+                        // mistyped the header (`finalx`) or invented a channel.
+                        // Harmony still decoded real content for it, so hold it
+                        // and surface it at EOF instead of losing the message.
+                        // A directed one (`to=...`) is a tool envelope, not prose:
+                        // drop it, as the stranded-header path does.
+                        _ if current_recipient.is_some() => {}
+                        _ => {
+                            self.unattributed_text.push_str(&delta);
+                        }
+                    }
+                }
             }
         }
 
@@ -964,39 +982,6 @@ impl ReasoningParser for GptOssReasoningParser {
             };
         }
 
-        if let Some(channel) = parser.current_channel() {
-            let is_directed_tool_call = channel == "commentary"
-                || (channel == "analysis"
-                    && parser
-                        .current_recipient()
-                        .as_deref()
-                        .is_some_and(|r| r.starts_with("functions.")));
-
-            if is_directed_tool_call {
-                // We are mid directed-tool-call (channel + functions recipient) but
-                // produced no delta this chunk. Emit NOTHING here:
-                //
-                //  * A complete tool call is reconstructed in full — header, message
-                //    and `<|call|>` together — from the cumulative token buffer on
-                //    the `<|call|>` chunk (the `has_call_marker` branch above). Any
-                //    emission here would be a redundant partial: a bare header (when
-                //    a chunk boundary lands at `<|message|>`) or a header-less body
-                //    fragment, neither of which the downstream jail can assemble into
-                //    a tool call — they only leak raw harmony markup into
-                //    `response_text`.
-                //  * A truncated tool call that never emits `<|call|>` has no complete
-                //    envelope to recover, so emitting its partial header would leak
-                //    too. Suppressing loses nothing recoverable.
-                tracing::debug!(
-                    "In directed tool-call channel ({channel}); suppressing partial mid-stream \
-                     content (complete envelope is recovered on the <|call|> chunk)"
-                );
-            } else if channel != "analysis" {
-                // Pure analysis reasoning (no recipient) is expected to be silent here —
-                // it was already emitted to reasoning_delta in the per-token loop.
-                tracing::warn!("Shouldn't be delta content after in channel: {}", channel);
-            }
-        }
         tracing::debug!("No deltas to return, returning empty result");
         ParserResult::default()
     }
@@ -1005,6 +990,27 @@ impl ReasoningParser for GptOssReasoningParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_harmony_action_stops_and_legacy_terminator_export() {
+        let encoding = get_harmony_encoding().as_ref().unwrap();
+        let native = encoding.stop_tokens_for_assistant_actions().unwrap();
+        let action_stops: std::collections::HashSet<_> = harmony_action_token_ids()
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+        assert_eq!(action_stops, native);
+        assert_eq!(
+            harmony_terminator_token_ids(),
+            encoding.tokenizer().encode_with_special_tokens("<|call|>")
+        );
+        for marker in ["<|call|>", "<|return|>"] {
+            let ids = encoding.tokenizer().encode_with_special_tokens(marker);
+            assert_eq!(ids.len(), 1);
+            assert!(action_stops.contains(&ids[0]));
+        }
+    }
 
     fn collect_stream<'a>(chunks: impl IntoIterator<Item = &'a str>) -> ParserResult {
         let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");

@@ -45,6 +45,7 @@ use uuid::Uuid;
 use crate::tool_calling::config::{JsonParserConfig, ParserConfig, TerminalMarkerPolicy};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
 use crate::tool_calling::harmony::harmony_parser::harmony_markers;
+use crate::tool_calling::harmony::payload::{HarmonyPayload, HarmonyVisible};
 use crate::tool_calling::json::base_json_parser::parse_indexed_calls;
 use crate::tool_calling::json::{JsonParserType, try_tool_call_parse_basic_json};
 use crate::tool_calling::parsers::get_tool_parser_map;
@@ -455,6 +456,9 @@ struct ChoiceJailState {
     /// Incremental lexical progress used to decide when parser validation is
     /// worthwhile. Parser acceptance is never cached here.
     completion_progress: JailCompletionProgress,
+    // Reasoning removes final envelopes and separates visible messages with a
+    // newline. Retain that payload context across chunks and pending markers.
+    harmony_visible: HarmonyVisible,
     /// Guided-payload cursor, present only in `Immediate` mode. Under a guided
     /// grammar the payload's shape is already known, so calls can be released as
     /// they arrive instead of at the closing brace.
@@ -483,10 +487,7 @@ impl JailCompletionProgress {
 #[derive(Debug, Clone, Default)]
 struct HarmonyJsonProgress {
     scanned_len: usize,
-    body_pending: bool,
-    depth: usize,
-    in_string: bool,
-    escape: bool,
+    payload: HarmonyPayload,
 }
 
 impl HarmonyJsonProgress {
@@ -494,7 +495,7 @@ impl HarmonyJsonProgress {
         const MESSAGE: &[u8] = b"<|message|>";
         let bytes = content.as_bytes();
         while self.scanned_len < bytes.len() {
-            if self.depth == 0 && !self.in_string {
+            if !self.payload.in_json() {
                 let remaining = &bytes[self.scanned_len..];
                 if let Some(ending) = end_sequences
                     .iter()
@@ -505,7 +506,7 @@ impl HarmonyJsonProgress {
                 }
                 if remaining.starts_with(MESSAGE) {
                     self.scanned_len += MESSAGE.len();
-                    self.body_pending = true;
+                    self.payload.begin_body();
                     continue;
                 }
                 if MESSAGE.starts_with(remaining)
@@ -519,32 +520,7 @@ impl HarmonyJsonProgress {
 
             let byte = bytes[self.scanned_len];
             self.scanned_len += 1;
-            if self.body_pending {
-                if byte.is_ascii_whitespace() {
-                    continue;
-                }
-                self.body_pending = false;
-                match byte {
-                    b'{' | b'[' => self.depth = 1,
-                    b'"' => self.in_string = true,
-                    _ => {}
-                }
-            } else if self.escape {
-                self.escape = false;
-            } else if self.in_string {
-                match byte {
-                    b'\\' => self.escape = true,
-                    b'"' => self.in_string = false,
-                    _ => {}
-                }
-            } else if self.depth > 0 {
-                match byte {
-                    b'"' => self.in_string = true,
-                    b'{' | b'[' => self.depth += 1,
-                    b'}' | b']' => self.depth = self.depth.saturating_sub(1),
-                    _ => {}
-                }
-            }
+            self.payload.push_bytes(&[byte]);
         }
         None
     }
@@ -851,6 +827,7 @@ impl ChoiceJailState {
             emitted_tool_calls_count: 0,
             pending_reasoning_content: None,
             completion_progress: JailCompletionProgress::default(),
+            harmony_visible: HarmonyVisible::default(),
             guided_cursor: guided.map(GuidedStreamCursor::new),
         }
     }
@@ -983,6 +960,7 @@ impl ChoiceJailState {
     /// End jailing and return the accumulated content
     fn end_jail(&mut self) -> String {
         self.is_jailed = false;
+        self.harmony_visible = HarmonyVisible::default();
         self.accumulated_logprobs = None;
         self.held_after_contentless.clear();
         self.completion_progress.reset();
@@ -1200,6 +1178,16 @@ impl ChoiceJailState {
         };
 
         self.feed_entries(logprobs);
+        let protected_len = if is_harmony_parser(jail_stream.tool_call_parser.as_deref()) {
+            self.harmony_visible_prefix_len(content, jail_stream)
+        } else {
+            0
+        };
+        let (protected, content) = content.split_at(protected_len);
+        self.emit_harmony_visible_prefix(protected, choice, emissions, ChoiceEmission::Trailing);
+        if content.is_empty() {
+            return;
+        }
 
         match jail_stream.marker_matcher.process_chunk_with_indent(
             content,
@@ -1504,6 +1492,43 @@ impl ChoiceJailState {
         self.handle_trailing_content(&trailing_owned, choice, None, jail_stream, emissions);
     }
 
+    fn harmony_visible_prefix_len(&mut self, content: &str, jail_stream: &JailedStream) -> usize {
+        let limit = jail_stream
+            .split_partial_tool_call_start(content)
+            .map_or(content.len(), |(prefix, _)| prefix.len());
+        let protected = self.harmony_visible.protected_prefix_len(&content[..limit]);
+        if protected < limit || !self.harmony_visible.in_string() {
+            return protected;
+        }
+        protected
+            + self
+                .harmony_visible
+                .protected_prefix_len(&content[protected..])
+    }
+
+    fn emit_harmony_visible_prefix(
+        &mut self,
+        protected: &str,
+        choice: &ChatChoiceStream,
+        emissions: &mut Vec<ChoiceEmission>,
+        emission: fn(ChatChoiceStream) -> ChoiceEmission,
+    ) {
+        if protected.is_empty() {
+            return;
+        }
+        self.prose_line_indent =
+            super::code_spans::advance_line_indent(self.prose_line_indent, protected);
+        let logprobs = self.consume_pending_entries(protected.chars().count());
+        emissions.push(emission(create_choice_stream(
+            choice.index,
+            choice.delta.role,
+            protected,
+            None,
+            None,
+            logprobs,
+        )));
+    }
+
     /// Process incoming content and return what should be emitted (if anything)
     async fn process_content(
         &mut self,
@@ -1513,6 +1538,23 @@ impl ChoiceJailState {
     ) -> Vec<ChoiceEmission> {
         let mut emissions = Vec::new();
         if !self.is_jailed {
+            let harmony = is_harmony_parser(jail_stream.tool_call_parser.as_deref());
+            let combined = if harmony && !self.partial_match_buffer.is_empty() {
+                std::borrow::Cow::Owned(format!("{}{}", self.partial_match_buffer, content))
+            } else {
+                std::borrow::Cow::Borrowed(content)
+            };
+            let protected_len = if harmony {
+                self.harmony_visible_prefix_len(&combined, jail_stream)
+            } else {
+                0
+            };
+            let (protected, content) = if protected_len > 0 {
+                self.partial_match_buffer.clear();
+                combined.split_at(protected_len)
+            } else {
+                ("", content)
+            };
             // Use the marker matcher to detect complete/partial markers
             let match_result = jail_stream.marker_matcher.process_chunk_with_indent(
                 content,
@@ -1544,6 +1586,13 @@ impl ChoiceJailState {
                 }
                 self.feed_entries(choice.logprobs.clone());
             }
+
+            self.emit_harmony_visible_prefix(
+                protected,
+                choice,
+                &mut emissions,
+                ChoiceEmission::PassThrough,
+            );
 
             match match_result {
                 MatchResult::Complete {
@@ -5222,6 +5271,319 @@ mod tests {
         }
     }
 
+    async fn harmony_reasoning_jail_events(
+        chunks: Vec<(String, Vec<u32>)>,
+        finish_reason: FinishReason,
+    ) -> Vec<(String, String)> {
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let mut reasoning = GptOssReasoningParser::new().unwrap();
+        let mut upstream = Vec::new();
+        for (text, tokens) in chunks {
+            let delta = reasoning.parse_reasoning_streaming_incremental(&text, &tokens);
+            upstream.push(text_chunk(&delta.normal_text));
+        }
+        let final_delta = reasoning.finish_reasoning_stream();
+        upstream.push(text_chunk(&final_delta.normal_text));
+        let repeated = reasoning.finish_reasoning_stream();
+        assert!(repeated.normal_text.is_empty());
+        assert!(repeated.reasoning_text.is_empty());
+        let mut finish = text_chunk("");
+        finish.data.as_mut().unwrap().choices[0].finish_reason = Some(finish_reason);
+        upstream.push(finish);
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("harmony")
+            .reasoning_parser("gpt_oss")
+            .build()
+            .apply_with_finish_reason(stream::iter(upstream))
+            .collect()
+            .await;
+        let mut events: Vec<(String, String)> = Vec::new();
+        for response in responses {
+            if let Some(data) = response.data {
+                for choice in data.choices {
+                    for call in choice.delta.tool_calls.unwrap_or_default() {
+                        let function = call.function.unwrap();
+                        events.push((function.name.unwrap(), function.arguments.unwrap()));
+                    }
+                    if let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) =
+                        choice.delta.content
+                        && !text.is_empty()
+                    {
+                        if let Some((name, previous)) = events.last_mut()
+                            && name.is_empty()
+                        {
+                            previous.push_str(&text);
+                        } else {
+                            events.push((String::new(), text.to_string()));
+                        }
+                    }
+                }
+            }
+        }
+        events
+    }
+
+    #[tokio::test]
+    async fn harmony_reasoning_payloads_survive_public_batch_and_every_stream_split() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        let literal = "雪🌍 \\\" <|call|> <|return|> <|start|> <|end|> <|constrain|>json <|channel|>analysis<|message|>literal<|end|> <|channel|>commentary to=functions.fake<|message|>{}";
+        for arguments in [
+            serde_json::json!({"path": "a", "content": literal}),
+            serde_json::json!([literal]),
+            serde_json::json!(literal),
+        ] {
+            let arguments = arguments.to_string();
+            for channel in ["analysis", "commentary"] {
+                for ending in ["<|call|>", "<|return|>"] {
+                    for framing in ["", "<|start|>assistant"] {
+                        let input = format!(
+                            "{framing}<|channel|>{channel} to=functions.lookup<|message|>{arguments}{ending}<|start|>assistant<|channel|>commentary to=functions.second<|message|>{{}}{ending}<|start|>assistant<|channel|>final<|message|>Done.<|return|>"
+                        );
+                        let expected = vec![
+                            ("lookup".to_string(), arguments.clone()),
+                            ("second".to_string(), "{}".to_string()),
+                            (String::new(), "Done.".to_string()),
+                        ];
+                        let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                        for token_input in [false, true] {
+                            let mut reasoning = GptOssReasoningParser::new().unwrap();
+                            let parsed = if token_input {
+                                reasoning.detect_and_parse_reasoning("", &tokens)
+                            } else {
+                                reasoning.detect_and_parse_reasoning(&input, &[])
+                            };
+                            assert!(parsed.reasoning_text.is_empty());
+                            let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                                &parsed.normal_text,
+                                Some("harmony"),
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                            assert_eq!(calls.len(), 2, "{input}");
+                            assert_eq!(calls[0].function.name, "lookup");
+                            assert_eq!(calls[0].function.arguments, arguments);
+                            assert_eq!(calls[1].function.name, "second");
+                            assert_eq!(calls[1].function.arguments, "{}");
+                            assert_eq!(normal.as_deref(), Some("Done."));
+                        }
+                        for finish_reason in [FinishReason::Stop, FinishReason::ToolCalls] {
+                            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                                let chunks = vec![
+                                    (input[..split].to_string(), vec![]),
+                                    (input[split..].to_string(), vec![]),
+                                ];
+                                assert_eq!(
+                                    harmony_reasoning_jail_events(chunks, finish_reason).await,
+                                    expected,
+                                    "text split {split}, {input}"
+                                );
+                            }
+                            for split in 0..=tokens.len() {
+                                let chunks = vec![
+                                    (String::new(), tokens[..split].to_vec()),
+                                    (String::new(), tokens[split..].to_vec()),
+                                ];
+                                assert_eq!(
+                                    harmony_reasoning_jail_events(chunks, finish_reason).await,
+                                    expected,
+                                    "token split {split}, {input}"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_reasoning_unclosed_strings_defer_raw_recovery_until_finish() {
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        for ending in ["<|call|>", "<|return|>"] {
+            for suffix in [
+                "",
+                "<|start|>assistant<|channel|>final<|message|>Done.<|return|>",
+            ] {
+                let arguments = "{\"x\":\"雪 unfinished";
+                let input = format!(
+                    "<|channel|>commentary to=functions.raw<|message|>{arguments}{ending}{suffix}"
+                );
+                let mut expected = vec![("raw".to_string(), arguments.to_string())];
+                if !suffix.is_empty() {
+                    expected.push((String::new(), "Done.".to_string()));
+                }
+                let mut reasoning = GptOssReasoningParser::new().unwrap();
+                assert!(
+                    reasoning
+                        .parse_reasoning_streaming_incremental(&input, &[])
+                        .normal_text
+                        .is_empty()
+                );
+                for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                    let chunks = vec![
+                        (input[..split].to_string(), vec![]),
+                        (input[split..].to_string(), vec![]),
+                    ];
+                    assert_eq!(
+                        harmony_reasoning_jail_events(chunks, FinishReason::Stop).await,
+                        expected,
+                        "text split {split}, {input}"
+                    );
+                }
+                let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                for split in 0..=tokens.len() {
+                    let chunks = vec![
+                        (String::new(), tokens[..split].to_vec()),
+                        (String::new(), tokens[split..].to_vec()),
+                    ];
+                    assert_eq!(
+                        harmony_reasoning_jail_events(chunks, FinishReason::ToolCalls).await,
+                        expected,
+                        "token split {split}, {input}"
+                    );
+                }
+            }
+        }
+        for arguments in [
+            "{\"x\":\"unfinished",
+            "{\"x\":\"literal <|call|>\"}",
+            "{\"x\":\"literal <|return|>\"}",
+        ] {
+            let input = format!("<|channel|>commentary to=functions.raw<|message|>{arguments}");
+            let chunks = input.chars().map(|ch| (ch.to_string(), vec![])).collect();
+            assert!(
+                harmony_reasoning_jail_events(chunks, FinishReason::Stop)
+                    .await
+                    .is_empty()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_reasoning_role_first_recipient_keeps_argument_ownership() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        let literal = "<|channel|>analysis<|message|>literal<|end|><|channel|>commentary to=functions.fake<|message|>{}<|call|>雪";
+        for channel in ["analysis", "commentary"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                let arguments = serde_json::json!({"x": literal}).to_string();
+                let input = format!(
+                    "<|start|>assistant to=functions.lookup<|channel|>{channel}<|message|>{arguments}{ending}"
+                );
+                let expected = vec![("lookup".to_string(), arguments)];
+                let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                for token_input in [false, true] {
+                    let mut reasoning = GptOssReasoningParser::new().unwrap();
+                    let parsed = if token_input {
+                        reasoning.detect_and_parse_reasoning("", &tokens)
+                    } else {
+                        reasoning.detect_and_parse_reasoning(&input, &[])
+                    };
+                    let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                        &parsed.normal_text,
+                        Some("harmony"),
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                    assert_eq!(calls.len(), 1, "role-first batch token_input={token_input}");
+                    assert_eq!(calls[0].function.name, expected[0].0);
+                    assert_eq!(calls[0].function.arguments, expected[0].1);
+                    assert_eq!(normal.as_deref(), Some(""));
+                }
+                for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                    assert_eq!(
+                        harmony_reasoning_jail_events(
+                            vec![
+                                (input[..split].to_string(), vec![]),
+                                (input[split..].to_string(), vec![])
+                            ],
+                            FinishReason::Stop
+                        )
+                        .await,
+                        expected,
+                        "role-first text split {split}"
+                    );
+                }
+                for split in 0..=tokens.len() {
+                    assert_eq!(
+                        harmony_reasoning_jail_events(
+                            vec![
+                                (String::new(), tokens[..split].to_vec()),
+                                (String::new(), tokens[split..].to_vec())
+                            ],
+                            FinishReason::ToolCalls
+                        )
+                        .await,
+                        expected,
+                        "role-first token split {split}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_reasoning_non_action_end_clears_directed_context() {
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        for channel in ["analysis", "commentary"] {
+            let input = format!(
+                "<|channel|>{channel} to=functions.unfinished<|message|>{{}}<|end|><|start|>assistant<|channel|>final<|message|>Done.<|return|>"
+            );
+            let expected = vec![(String::new(), "Done.".to_string())];
+            for split in 0..=input.len() {
+                assert_eq!(
+                    harmony_reasoning_jail_events(
+                        vec![
+                            (input[..split].to_string(), vec![]),
+                            (input[split..].to_string(), vec![])
+                        ],
+                        FinishReason::Stop
+                    )
+                    .await,
+                    expected,
+                    "non-action end text split {split}"
+                );
+            }
+            let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+            for split in 0..=tokens.len() {
+                assert_eq!(
+                    harmony_reasoning_jail_events(
+                        vec![
+                            (String::new(), tokens[..split].to_vec()),
+                            (String::new(), tokens[split..].to_vec())
+                        ],
+                        FinishReason::ToolCalls
+                    )
+                    .await,
+                    expected,
+                    "non-action end token split {split}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn test_split_partial_tool_call_start_harmony_short_suffix() {
         let jail = JailedStream::builder().tool_call_parser("harmony").build();
@@ -6085,5 +6447,315 @@ mod tests {
             .position(|c| c.delta.tool_calls.as_ref().is_some_and(|t| !t.is_empty()))
             .expect("call emitted");
         assert!(reasoning_at < call_at, "reasoning must precede the call");
+    }
+
+    #[tokio::test]
+    async fn harmony_visible_json_keeps_quoted_headers_across_public_stream_splits() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        let literal = "escaped \" \\ 雪 <|channel|>analysis<|message|>literal<|end|><|channel|>commentary to=functions.fake<|message|>{}<|call|><|return|>";
+        let call = "<|start|>assistant<|channel|>commentary to=functions.real<|message|>{}<|call|>";
+        for body in [
+            serde_json::json!(literal),
+            serde_json::json!({"example": literal}),
+            serde_json::json!([literal]),
+        ] {
+            let body = body.to_string();
+            let final_message =
+                format!("<|start|>assistant<|channel|>final<|message|>{body}<|return|>");
+            for (input, expected) in [
+                (final_message.clone(), vec![(String::new(), body.clone())]),
+                (
+                    format!("{final_message}{call}"),
+                    vec![
+                        (String::new(), body.clone()),
+                        ("real".to_string(), "{}".to_string()),
+                    ],
+                ),
+                (
+                    format!("{call}{final_message}"),
+                    vec![
+                        ("real".to_string(), "{}".to_string()),
+                        (String::new(), body.clone()),
+                    ],
+                ),
+            ] {
+                let mut reasoning = GptOssReasoningParser::new().unwrap();
+                let parsed = reasoning.detect_and_parse_reasoning(&input, &[]);
+                let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                    &parsed.normal_text,
+                    Some("harmony"),
+                    None,
+                )
+                .await
+                .unwrap();
+                assert_eq!(
+                    calls
+                        .iter()
+                        .map(|call| (call.function.name.clone(), call.function.arguments.clone()))
+                        .collect::<Vec<_>>(),
+                    expected
+                        .iter()
+                        .filter(|(name, _)| !name.is_empty())
+                        .cloned()
+                        .collect::<Vec<_>>(),
+                    "{input}"
+                );
+                assert_eq!(normal.as_deref(), Some(body.as_str()), "{input}");
+                for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+                    let chunks = vec![
+                        (input[..split].to_string(), vec![]),
+                        (input[split..].to_string(), vec![]),
+                    ];
+                    assert_eq!(
+                        harmony_reasoning_jail_events(chunks, FinishReason::Stop).await,
+                        expected,
+                        "text split {split}, {input}"
+                    );
+                }
+                let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                for split in 0..=tokens.len() {
+                    let chunks = vec![
+                        (String::new(), tokens[..split].to_vec()),
+                        (String::new(), tokens[split..].to_vec()),
+                    ];
+                    assert_eq!(
+                        harmony_reasoning_jail_events(chunks, FinishReason::Stop).await,
+                        expected,
+                        "token split {split}, {input}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn harmony_visible_json_progress_tracks_message_lines_and_choice_lifecycle() {
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+        let mut state = ChoiceJailState::new(0, false, None);
+        assert_eq!(
+            state.harmony_visible_prefix_len("  {\"x\":\"<|chan", &jail),
+            "  {\"x\":\"<|chan".len()
+        );
+        assert!(state.harmony_visible.in_json());
+        let close = "nel|>\"}<|channel|>commentary";
+        assert_eq!(
+            state.harmony_visible_prefix_len(close, &jail),
+            "nel|>\"}".len()
+        );
+        assert!(!state.harmony_visible.in_json());
+        assert_eq!(
+            state.harmony_visible_prefix_len("Preamble\n\"<|chan", &jail),
+            "Preamble\n\"<|chan".len()
+        );
+        assert!(state.harmony_visible.in_string());
+        state.end_jail();
+        assert!(!state.harmony_visible.in_json());
+        assert_eq!(
+            state.harmony_visible_prefix_len("\"<|call|>\"", &jail),
+            "\"<|call|>\"".len()
+        );
+        let mut other = ChoiceJailState::new(1, false, None);
+        assert_eq!(
+            other.harmony_visible_prefix_len("ordinary prose", &jail),
+            "ordinary prose".len()
+        );
+        assert!(!other.harmony_visible.in_json());
+        assert_eq!(
+            other.harmony_visible_prefix_len(" {\"x\":\"<|chan", &jail),
+            " {\"x\":\"<|chan".len()
+        );
+        assert!(other.harmony_visible.in_string());
+        for suffix in ["<", "< ", "<|", "<| \t"] {
+            let mut state = ChoiceJailState::new(0, false, None);
+            let text = format!("{{\"x\":\"tail {suffix}");
+            assert_eq!(state.harmony_visible_prefix_len(&text, &jail), text.len());
+            assert!(state.harmony_visible.in_string());
+            let mut state = ChoiceJailState::new(0, false, None);
+            let text = format!("tail {suffix}");
+            assert_eq!(
+                state.harmony_visible_prefix_len(&text, &jail),
+                "tail ".len()
+            );
+            assert!(!state.harmony_visible.in_string());
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_visible_json_preserves_logprobs_and_terminal_ownership() {
+        let body = serde_json::json!({"example": "雪 <|channel|>commentary to=functions.fake<|message|>{}<|call|>"}).to_string();
+        let input =
+            format!("{body}<|channel|>commentary to=functions.real<|message|>{{}}<|return|>");
+        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+            let mut chunks = vec![
+                text_chunk_with_logprobs(&input[..split]),
+                text_chunk_with_logprobs(&input[split..]),
+            ];
+            let expected_records: Vec<_> = chunks
+                .iter()
+                .flat_map(|chunk| chunk.data.as_ref().unwrap().choices.iter())
+                .flat_map(|choice| choice.logprobs.as_ref().unwrap().content.clone().unwrap())
+                .collect();
+            let mut finish = text_chunk("");
+            finish.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Stop);
+            chunks.push(finish);
+            let responses: Vec<_> = JailedStream::builder()
+                .tool_call_parser("harmony")
+                .build()
+                .apply_with_finish_reason(stream::iter(chunks))
+                .collect()
+                .await;
+            assert_eq!(collect_stream_content(&responses), body, "split {split}");
+            assert_eq!(
+                collect_tool_calls(&responses),
+                vec![("real".to_string(), "{}".to_string())],
+                "split {split}"
+            );
+            let choices: Vec<_> = responses
+                .iter()
+                .flat_map(|response| response.data.iter())
+                .flat_map(|response| &response.choices)
+                .collect();
+            let actual_records: Vec<_> = choices
+                .iter()
+                .flat_map(|choice| choice.logprobs.iter())
+                .flat_map(|logprobs| logprobs.content.clone().unwrap_or_default())
+                .collect();
+            assert_eq!(actual_records, expected_records, "split {split}");
+            assert_eq!(
+                choices
+                    .iter()
+                    .filter_map(|choice| choice.finish_reason)
+                    .collect::<Vec<_>>(),
+                vec![FinishReason::ToolCalls],
+                "split {split}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_visible_json_survives_visible_message_boundaries_and_inline_prose() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        let literal = "雪 <|channel|>commentary to=functions.fake<|message|>{}<|return|>";
+        for body in [
+            serde_json::json!(literal),
+            serde_json::json!({"example": literal}),
+            serde_json::json!([literal]),
+        ] {
+            let body = body.to_string();
+            let mut cases = vec![
+                (
+                    format!(
+                        "<|channel|>final<|message|>{{}}<|end|><|start|>assistant<|channel|>final<|message|>{body}<|return|>"
+                    ),
+                    format!("{{}}\n{body}"),
+                ),
+                (
+                    format!(
+                        "<|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{body}<|return|>"
+                    ),
+                    format!("Preamble\n{body}"),
+                ),
+            ];
+            if matches!(body.as_bytes().first(), Some(b'{' | b'[')) {
+                cases.push((
+                    format!("<|channel|>final<|message|>Example: {body}<|return|>"),
+                    format!("Example: {body}"),
+                ));
+            }
+            for (input, visible) in cases {
+                let mut reasoning = GptOssReasoningParser::new().unwrap();
+                let parsed = reasoning.detect_and_parse_reasoning(&input, &[]);
+                let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                    &parsed.normal_text,
+                    Some("harmony"),
+                    None,
+                )
+                .await
+                .unwrap();
+                assert!(calls.is_empty(), "{input}");
+                assert_eq!(normal.as_deref(), Some(visible.as_str()), "{input}");
+                let expected = vec![(String::new(), visible)];
+                for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+                    let chunks = vec![
+                        (input[..split].to_string(), vec![]),
+                        (input[split..].to_string(), vec![]),
+                    ];
+                    assert_eq!(
+                        harmony_reasoning_jail_events(chunks, FinishReason::Stop).await,
+                        expected,
+                        "text split {split}, {input}"
+                    );
+                }
+                let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                for split in 0..=tokens.len() {
+                    let chunks = vec![
+                        (String::new(), tokens[..split].to_vec()),
+                        (String::new(), tokens[split..].to_vec()),
+                    ];
+                    assert_eq!(
+                        harmony_reasoning_jail_events(chunks, FinishReason::Stop).await,
+                        expected,
+                        "token split {split}, {input}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_unclosed_visible_json_never_becomes_a_call_in_the_pipeline() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        for ending in ["<|call|>", "<|return|>"] {
+            for prefix in ["", "Example: "] {
+                let body = format!(
+                    "{prefix}{{\"example\":\"<|channel|>commentary to=functions.fake<|message|>{{}}{ending}"
+                );
+                let input = format!("<|channel|>final<|message|>{body}<|return|>");
+                let mut reasoning = GptOssReasoningParser::new().unwrap();
+                let parsed = reasoning.detect_and_parse_reasoning(&input, &[]);
+                let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                    &parsed.normal_text,
+                    Some("harmony"),
+                    None,
+                )
+                .await
+                .unwrap();
+                assert!(calls.is_empty(), "{input}");
+                assert!(
+                    normal.as_deref().unwrap().starts_with(&body),
+                    "{input}: {normal:?}"
+                );
+                for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+                    let chunks = vec![
+                        (input[..split].to_string(), vec![]),
+                        (input[split..].to_string(), vec![]),
+                    ];
+                    let events = harmony_reasoning_jail_events(chunks, FinishReason::Stop).await;
+                    assert!(
+                        events.iter().all(|(name, _)| name.is_empty()),
+                        "split {split}, {input}: {events:?}"
+                    );
+                    let visible: String = events.into_iter().map(|(_, text)| text).collect();
+                    assert!(
+                        visible.starts_with(&body),
+                        "split {split}, {input}: {visible}"
+                    );
+                }
+            }
+        }
     }
 }
