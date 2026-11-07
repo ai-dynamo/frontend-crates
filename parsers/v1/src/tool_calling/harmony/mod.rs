@@ -14,7 +14,16 @@ pub fn find_tool_call_end_position_harmony(chunk: &str, config: &JsonParserConfi
         .map(String::as_str)
         .chain(config.tool_call_end_tokens.is_empty().then_some("<|call|>"))
         .filter(|token| !token.is_empty())
-        .filter_map(|token| chunk.rfind(token).map(|pos| pos + token.len()))
+        .filter_map(|token| {
+            if matches!(token, "<|call|>" | "<|return|>") {
+                harmony_parser::harmony_markers(chunk)
+                    .filter(|(marker, in_json)| !in_json && marker.as_str() == token)
+                    .map(|(marker, _)| marker.end())
+                    .last()
+            } else {
+                chunk.rfind(token).map(|pos| pos + token.len())
+            }
+        })
         .max()
         .unwrap_or(chunk.len())
 }
@@ -56,6 +65,17 @@ mod tests {
                 find_tool_call_end_position_harmony(&text, &config),
                 complete.len()
             );
+        }
+        for literal in ["<|call|>", "<|return|>"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                let complete = format!("<|message|>{{}}{ending}");
+                let text = format!("{complete}<|message|>{{\"x\":\"literal {literal}\"}}");
+                assert_eq!(
+                    find_tool_call_end_position_harmony(&text, &config),
+                    complete.len(),
+                    "a quoted marker must not extend the completed span: {text}"
+                );
+            }
         }
         let mixed = "<|message|>{}<|call|><|message|>{}<|return|>";
         assert_eq!(

@@ -97,6 +97,26 @@ fn special_token_regex() -> &'static Regex {
     })
 }
 
+fn json_value_prefix_end(text: &str) -> Option<usize> {
+    let mut json =
+        serde_json::Deserializer::from_str(text).into_iter::<&serde_json::value::RawValue>();
+    matches!(json.next(), Some(Ok(_))).then(|| json.byte_offset())
+}
+
+// Markers inside a complete JSON value are data. Malformed bodies keep the
+// existing raw-argument recovery, including an unclosed string before a stop.
+pub(crate) fn harmony_markers(text: &str) -> impl Iterator<Item = (regex::Match<'_>, bool)> {
+    let mut json_end = 0;
+    special_token_regex().find_iter(text).map(move |marker| {
+        let in_json = marker.start() < json_end;
+        if !in_json && marker.as_str() == "<|message|>" {
+            json_end =
+                marker.end() + json_value_prefix_end(&text[marker.end()..]).unwrap_or_default();
+        }
+        (marker, in_json)
+    })
+}
+
 fn push_unique(items: &mut Vec<String>, item: String) {
     if !items.iter().any(|existing| existing == &item) {
         items.push(item);
@@ -277,17 +297,14 @@ fn contains_recipientless_commentary_call(text: &str) -> bool {
 fn harmony_message_boundary(text: &str) -> Option<regex::Match<'_>> {
     // A lone header marker can be literal raw argument text. Require a complete
     // header, or an explicit message end, before rejecting an unfinished call.
-    let boundary = MESSAGE_BOUNDARY_REGEX
+    MESSAGE_BOUNDARY_REGEX
         .get_or_init(|| {
             Regex::new(
-                r"<\|end\|>|(?:<\|start\|>[^<]*(?:<\|channel\|>[^<]*)?|<\|channel\|>[^<]*)(?:<\|constrain\|>[^<]*)?<\|message\|>",
+                r"<\|end\|>|(?:<\|start\|>|<\|channel\|>)[^<]*(?:<\|(?:channel|constrain|call|return)\|>[^<]*)*<\|message\|>",
             )
             .expect("message boundary regex")
         })
-        .find(text)?;
-    serde_json::from_str::<Value>(text)
-        .is_err()
-        .then_some(boundary)
+        .find_at(text, json_value_prefix_end(text).unwrap_or_default())
 }
 
 /// Extract calls via regex when harmony's strict tokenizer rejects the input
@@ -301,9 +318,11 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
     let mut cursor = 0;
     let mut search_start = 0;
     // Keep the pending stop when rejecting a header instead of rescanning its suffix.
-    let mut action_stops = special_token_regex()
-        .find_iter(text)
-        .filter(|marker| matches!(marker.as_str(), "<|call|>" | "<|return|>"))
+    let mut action_stops = harmony_markers(text)
+        .filter(|(marker, in_json)| {
+            !in_json && matches!(marker.as_str(), "<|call|>" | "<|return|>")
+        })
+        .map(|(marker, _)| marker)
         .peekable();
     while let Some(cap) = commentary_header_regex().captures_at(text, search_start) {
         let m = cap.get(0).expect("regex match has full span");
@@ -323,7 +342,9 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
         };
         let raw_args = &text[m.end()..stop.start()];
         // A later message's stop must not complete an earlier unfinished call.
-        if let Some(boundary) = harmony_message_boundary(raw_args) {
+        if let Some(boundary) = harmony_message_boundary(&text[m.end()..])
+            && boundary.start() < raw_args.len()
+        {
             residual.push_str(&text[cursor..m.start()]);
             // Discard this unfinished span before joining residual text, so its
             // header cannot swallow text after a subsequently recovered call.
@@ -347,6 +368,16 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
     }
     residual.push_str(&text[cursor..]);
     (out, residual.trim().to_string())
+}
+
+fn recover_harmony_calls(text: &str) -> (Vec<ToolCallResponse>, Option<String>) {
+    let (calls, residual) = extract_calls_via_regex(text);
+    let normal_text = if calls.is_empty() {
+        normal_text_after_parse_failure(text, "parse_failed_no_recovered_calls")
+    } else {
+        strip_harmony_protocol_from_normal_text(&residual, "regex_recovery_residual")
+    };
+    (calls, Some(normal_text))
 }
 
 static GLOBAL_HARMONY_GPTOSS_ENCODING: tokio::sync::OnceCell<
@@ -399,8 +430,21 @@ pub async fn parse_tool_calls_harmony_complete(
         }
     };
 
-    // // Encode the text into tokens using harmony encoding
-    let tokens: Vec<u32> = enc.tokenizer().encode_with_special_tokens(text);
+    // Quoted action markers are argument bytes, not native Harmony control IDs.
+    let mut tokens = Vec::new();
+    let mut cursor = 0;
+    for (marker, in_json) in harmony_markers(text) {
+        if in_json && matches!(marker.as_str(), "<|call|>" | "<|return|>") {
+            tokens.extend(
+                enc.tokenizer()
+                    .encode_with_special_tokens(&text[cursor..marker.start()]),
+            );
+            tokens.extend(enc.tokenizer().encode_ordinary(marker.as_str()));
+            cursor = marker.end();
+        }
+    }
+    tokens.extend(enc.tokenizer().encode_with_special_tokens(&text[cursor..]));
+    let has_quoted_action_markers = cursor != 0;
     let mut message_has_action_stop = Vec::new();
     let parsed: anyhow::Result<_> = (|| {
         let mut parser = StreamableParser::new(enc.clone(), Some(Role::Assistant))?;
@@ -427,15 +471,7 @@ pub async fn parse_tool_calls_harmony_complete(
             // Harmony differs from generic JSON/XML recovery: a tool call is
             // complete only once `<|call|>` or `<|return|>` is present. Do not synthesize a
             // call from EOF; that would diverge from vLLM/openai_harmony.
-            let (calls, residual) = extract_calls_via_regex(text);
-            if !calls.is_empty() {
-                let normal_text =
-                    strip_harmony_protocol_from_normal_text(&residual, "regex_recovery_residual");
-                return Ok((calls, Some(normal_text)));
-            }
-            let normal_text =
-                normal_text_after_parse_failure(text, "parse_failed_no_recovered_calls");
-            return Ok((vec![], Some(normal_text)));
+            return Ok(recover_harmony_calls(text));
         }
     };
 
@@ -477,6 +513,9 @@ pub async fn parse_tool_calls_harmony_complete(
                 continue;
             };
             if harmony_message_boundary(&args_json).is_some() {
+                if has_quoted_action_markers {
+                    return Ok(recover_harmony_calls(text));
+                }
                 continue;
             }
 
@@ -650,6 +689,58 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_harmony_quoted_action_stops_remain_arguments() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for literal in ["<|return|>", "<|call|>"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                for channel in ["commentary", "analysis"] {
+                    for prefix in ["", "<|start|>assistant", "PREFIX "] {
+                        for value in [
+                            format!("literal {literal}"),
+                            format!("escaped \"quote {literal} and slash \\"),
+                        ] {
+                            let arguments = serde_json::json!({"x": value}).to_string();
+                            let text = format!(
+                                "{prefix}<|channel|>{channel} to=functions.lookup<|message|>{arguments}{ending}"
+                            );
+                            let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                                &text,
+                                Some("harmony"),
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                            assert_eq!(calls.len(), 1, "{text}");
+                            assert_eq!(calls[0].function.name, "lookup", "{text}");
+                            assert_eq!(calls[0].function.arguments, arguments, "{text}");
+                            assert_eq!(
+                                normal.as_deref(),
+                                Some(if prefix == "PREFIX " { "PREFIX" } else { "" }),
+                                "{text}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        for literal in ["<|call|>", "<|return|>"] {
+            let text = format!(
+                "<|channel|>commentary to=functions.lookup<|message|>{{\"x\":\"literal {literal}\"}}"
+            );
+            let (calls, normal) =
+                detect_and_parse_tool_call_with_recovery(&text, Some("harmony"), None)
+                    .await
+                    .unwrap();
+            assert!(
+                calls.is_empty(),
+                "a quoted marker cannot complete a call: {text}"
+            );
+            assert_eq!(normal.as_deref(), Some(""));
+        }
+    }
+
+    #[tokio::test]
     async fn test_parse_harmony_requires_each_tool_message_to_end() {
         for ending in ["", "<|end|>"] {
             let text = format!(
@@ -667,24 +758,36 @@ mod tests {
 
     #[tokio::test]
     async fn test_harmony_regex_resumes_after_unfinished_call() {
-        for unfinished_ending in ["", "<|end|>"] {
-            for ending in ["<|call|>", "<|return|>"] {
-                for suffix in [
-                    "Done.",
-                    "<|start|>assistant<|channel|>final<|message|>Done.<|return|>",
-                ] {
-                    let text = format!(
-                        "PREFIX <|channel|>commentary to=functions.unfinished<|message|>{{}}{unfinished_ending}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{{\"city\":\"Paris\"}}{ending}{suffix}"
-                    );
-                    let (calls, normal) =
-                        parse_tool_calls_harmony_complete(&text, &Default::default(), None)
-                            .await
-                            .unwrap();
-                    assert_eq!(calls.len(), 1);
-                    let (name, arguments) = extract_name_and_args(calls[0].clone());
-                    assert_eq!(name, "lookup");
-                    assert_eq!(arguments, serde_json::json!({"city": "Paris"}));
-                    assert_eq!(normal.as_deref(), Some("PREFIX Done."), "{text}");
+        for (prefix, unfinished_args) in [
+            ("PREFIX ", "{}"),
+            ("", r#"{"text":"<|call|>"}"#),
+            ("", r#"{"text":"<|return|>"}"#),
+        ] {
+            for unfinished_ending in ["", "<|end|>"] {
+                for ending in ["<|call|>", "<|return|>"] {
+                    for header_stop in ["", "<|return|>"] {
+                        for suffix in [
+                            "Done.",
+                            "<|start|>assistant<|channel|>final<|message|>Done.<|return|>",
+                        ] {
+                            let text = format!(
+                                "{prefix}<|channel|>commentary to=functions.unfinished<|message|>{unfinished_args}{unfinished_ending}<|start|>assistant<|channel|>commentary to=functions.lookup {header_stop}<|message|>{{\"city\":\"Paris\"}}{ending}{suffix}"
+                            );
+                            let (calls, normal) =
+                                parse_tool_calls_harmony_complete(&text, &Default::default(), None)
+                                    .await
+                                    .unwrap();
+                            assert_eq!(calls.len(), 1);
+                            let (name, arguments) = extract_name_and_args(calls[0].clone());
+                            assert_eq!(name, "lookup");
+                            assert_eq!(arguments, serde_json::json!({"city": "Paris"}));
+                            assert_eq!(
+                                normal.as_deref(),
+                                Some(format!("{prefix}Done.").as_str()),
+                                "{text}"
+                            );
+                        }
+                    }
                 }
             }
         }
