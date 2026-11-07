@@ -1182,3 +1182,29 @@ fn root_reference_with_definition_containers_resolves_parameters() {
         );
     }
 }
+
+#[test]
+fn required_nullable_omitted_argument_is_null() {
+    // Only a key that is both required and provably nullable gets `null`.
+    let note = |schema: Value, required: Value| json!({"type":"object","properties":{"city":{"type":"string"},"note":schema},"required":required});
+    let city = call("]<]minimax[>[<city>Paris]<]minimax[>[</city>");
+    let init = UnifiedParserInit::default;
+    for schema in [
+        json!({"anyOf":[{"type":"string"},{"type":"null"}]}),
+        json!({"type":["integer","null"]}),
+    ] {
+        let s = note(schema, json!(["city", "note"]));
+        assert_splits(
+            &city,
+            s,
+            init(),
+            &[expected(json!({"city":"Paris","note":null}))],
+        );
+    }
+    let s = note(json!({"type":"integer"}), json!(["city", "note"]));
+    assert_splits(&city, s, init(), &[expected(json!({"city":"Paris"}))]);
+    let s = note(json!({"type":["string","null"]}), json!(["city"]));
+    assert_splits(&city, s, init(), &[expected(json!({"city":"Paris"}))]);
+    let s = note(json!({"type":["string","null"]}), json!(["note"]));
+    assert_splits(&call(""), s, init(), &[expected(json!({"note":null}))]);
+}
