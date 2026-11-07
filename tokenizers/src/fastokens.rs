@@ -20,7 +20,7 @@ use super::{
     EncodeSegment, Encoding, Error, Result, TokenIdType,
     hf::HuggingFaceTokenizer,
     tiktoken,
-    traits::{DecodeResult, Decoder, Encoder, Tokenizer},
+    traits::{DecodeResult, Decoder, Encoder, PrefixSplitRules, Tokenizer},
 };
 
 fn fast_encode(encoder: &fastokens::Tokenizer, input: &str) -> Result<Encoding> {
@@ -95,6 +95,12 @@ impl Decoder for FastTokenizer {
 impl Tokenizer for FastTokenizer {
     fn validate_prefix_cache(&self) -> Result<()> {
         Ok(())
+    }
+
+    // fastokens applies the same `rstrip` and `single_word` flags as HuggingFace, read
+    // from the same tokenizer.json.
+    fn prefix_split_rules(&self) -> PrefixSplitRules {
+        self.hf_decoder.prefix_split_rules()
     }
 
     // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
