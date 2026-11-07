@@ -434,6 +434,7 @@ These cases exercise Harmony message framing, which the other eight grammars do 
 - **`7-arg_marker_in_string_quoted_closer_and_response_header`** is the valid counterfactual: a complete header inside a valid JSON string remains argument data.
 - **`gpt_oss-complete_alternate_message_ends`** recovers complete JSON calls closed by Harmony message-end or turn-end. The legacy tool adapter continues to require handoff, and malformed provisional calls never receive completion.
 - **`gpt_oss-single_return_ending_tool_call`** checks the exact channel-first commentary request with constrained JSON arguments and a single turn-end marker; the expected result is one `get_current_weather` call.
+- **`gpt_oss-reasoning_then_return_ending_tool_call`** pairs with `11-reason_then_tool`: the request differs only in the tool ending (`return` versus `call`). Both preserve the visible reasoning event and the weather call; this catches a reasoning handoff that retains the thought but drops the tool. Harmony channel and action markers make the new case GPT-OSS-specific.
 
 ### DeepSeek V4-specific
 

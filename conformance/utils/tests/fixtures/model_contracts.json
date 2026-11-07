@@ -5,7 +5,9 @@
     "gpt_oss_chat_template_tool_header",
     "gpt_oss_complete_alternate_message_ends",
     "gpt_oss_constrained_final_header",
-    "gpt_oss_implicit_recipient_first_header"
+    "gpt_oss_implicit_recipient_first_header",
+    "gpt_oss_reasoning_then_return_ending_tool_call",
+    "gpt_oss_single_return_ending_tool_call"
   ],
   "structuralRequestHistory": {
     "sourceRevision": "570a403c34d06ff7a0d1ead99ab05332da47376d",

@@ -3188,6 +3188,9 @@ requests:
   8e0afc8ca051241ebf08ab8731ea74a2d93bc8e1705938f10e386a1f97219c8a:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 3.5}<|call|>'
     tools: tools_799032ba2fa9936f
+  8e4c47b9aa58bb34693dc77f9d354918722969514f0494f427729ee0c6ad3372:
+    input: '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>'
+    tools: tools_9db8284c68087826
   8ed80fcb415dd00c8de37f46adf5d9f56c3dbd2ce62893e506ba4da6f56bbfae:
     input: <|start|>assistant<|channel|>analysis<|message|>check<|end|><|start|>assistant to=functions.lookup<|channel|>commentary <|constrain|>json<|message|>{"q":"weather"}<|call|><|start|>assistant<|channel|>final<|message|>found<|return|>
     tools: tools_9db8284c68087826
@@ -8990,11 +8993,11 @@ cases:
         value: 1
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
   gpt_oss_single_return_ending_tool_call:
-    description: A channel-first commentary tool call with a constrained JSON body ends with one turn-end marker and no handoff marker. It must still produce the complete tool call.
     policy:
     - I3
     - I5
     - I7
+    description: A channel-first commentary tool call with a constrained JSON body ends with one turn-end marker and no handoff marker. It must still produce the complete tool call.
     display_id: UNIFIED.gpt_oss-single_return_ending_tool_call
     request: 10862a2710e5fff0e5bbd28a71f0ea61748b932b209e247d1c779f098415aa2f
     golden:
@@ -9003,3 +9006,14 @@ cases:
       arguments:
         format: celsius
         location: San Francisco
+  gpt_oss_reasoning_then_return_ending_tool_call:
+    description: Analysis precedes a channel-first constrained JSON tool call ending in return. Preserve both reasoning and the tool call through the reasoning-to-tool handoff. The existing reason_then_tool case is the call-ending control; only the ending differs.
+    display_id: UNIFIED.gpt_oss-reasoning_then_return_ending_tool_call
+    request: 8e4c47b9aa58bb34693dc77f9d354918722969514f0494f427729ee0c6ad3372
+    golden:
+    - kind: reasoning
+      text: Check weather.
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
