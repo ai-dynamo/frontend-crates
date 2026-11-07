@@ -179,6 +179,21 @@ fn token_ids_contain_sequence(token_ids: &[u32], marker_ids: &[u32]) -> bool {
             .any(|window| window == marker_ids)
 }
 
+fn prepare_initial_harmony_message(
+    parser: &mut StreamableParser,
+    token_ids: &[u32],
+    start_token_id: u32,
+) -> anyhow::Result<()> {
+    // Continuations inherit an assistant role; a fully framed first message supplies its own.
+    if parser.tokens().is_empty() && token_ids.first() == Some(&start_token_id) {
+        let encoding = get_harmony_encoding()
+            .as_ref()
+            .map_err(|error| anyhow::anyhow!("Harmony encoding unavailable: {error}"))?;
+        *parser = StreamableParser::new(encoding.clone(), None)?;
+    }
+    Ok(())
+}
+
 fn harmony_analysis_block_regex() -> &'static Regex {
     HARMONY_ANALYSIS_BLOCK_REGEX.get_or_init(|| {
         // Match ONLY recipientless analysis reasoning blocks (the CoT channel).
@@ -234,7 +249,11 @@ fn split_incomplete_harmony_suffix(text: &str) -> (&str, &str) {
 fn contains_directed_harmony_function_call(text: &str) -> bool {
     (text.contains("<|channel|>commentary to=functions.")
         || text.contains("<|channel|>analysis to=functions."))
-        && text.contains(HARMONY_CALL_MARKER)
+        && crate::tool_calling::config::ToolCallConfig::harmony()
+            .parser_config
+            .tool_call_end_tokens()
+            .iter()
+            .any(|marker| text.contains(marker.as_str()))
 }
 
 fn strip_analysis_blocks_for_tool_handoff(text: &str) -> String {
@@ -580,6 +599,11 @@ impl ReasoningParser for GptOssReasoningParser {
         };
 
         let parser = &mut self.parser;
+        if let Err(error) = prepare_initial_harmony_message(parser, token_ids, self.start_token_id)
+        {
+            tracing::warn!(why = "harmony_initial_message_unavailable", %error, "Could not initialize the Harmony message");
+            return ParserResult::default();
+        }
 
         for (i, token_id) in token_ids.iter().enumerate() {
             tracing::debug!(
@@ -589,7 +613,10 @@ impl ReasoningParser for GptOssReasoningParser {
                 token_id
             );
             if let Err(e) = parser.process(*token_id) {
-                tracing::warn!("Harmony parse error for token_id {token_id}: {e}");
+                tracing::warn!(
+                    why = "harmony_batch_parse_error",
+                    "Harmony parse error for token_id {token_id}: {e}"
+                );
                 return ParserResult::default();
             }
         }
@@ -686,6 +713,11 @@ impl ReasoningParser for GptOssReasoningParser {
         };
 
         let parser: &mut StreamableParser = &mut self.parser;
+        if let Err(error) = prepare_initial_harmony_message(parser, token_ids, self.start_token_id)
+        {
+            tracing::warn!(why = "harmony_initial_message_unavailable", %error, "Could not initialize the Harmony message");
+            return ParserResult::default();
+        }
         let mut normal_delta = String::new();
         let mut reasoning_delta = String::new();
         // Tracks whether at least one directed call envelope was reconstructed inside
@@ -1112,6 +1144,145 @@ mod tests {
             result.normal_text,
             "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"city\":\"SF\"}<|call|><|start|>assistant<|channel|>final<|message|>It is sunny."
         );
+    }
+
+    async fn assert_weather_handoff(output: ParserResult, location: &str, context: &str) {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        assert_eq!(output.reasoning_text, "");
+        let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+            &output.normal_text,
+            Some("harmony"),
+            Some(&[]),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            calls.len(),
+            1,
+            "{context}: handoff {:?}",
+            output.normal_text
+        );
+        assert_eq!(calls[0].function.name, "get_current_weather");
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&calls[0].function.arguments).unwrap(),
+            serde_json::json!({"format": "celsius", "location": location})
+        );
+        assert!(normal.as_deref().is_none_or(str::is_empty));
+    }
+
+    #[tokio::test]
+    async fn test_gpt_oss_action_endings_survive_batch_and_stream_handoff() {
+        for channel in ["commentary", "analysis"] {
+            for prefix in ["", "<|start|>assistant"] {
+                for ending in ["<|call|>", "<|return|>"] {
+                    for location in ["San Francisco", "San Francisco\u{1f30d}"] {
+                        let arguments =
+                            serde_json::json!({"format": "celsius", "location": location});
+                        let text = format!(
+                            "{prefix}<|channel|>{channel} to=functions.get_current_weather <|constrain|>json<|message|>{arguments}{ending}"
+                        );
+                        let token_ids = encode_text_to_tokens(&text).unwrap();
+                        for supplied_ids in [&[][..], token_ids.as_slice()] {
+                            let mut parser = GptOssReasoningParser::new().unwrap();
+                            let output = parser.detect_and_parse_reasoning(&text, supplied_ids);
+                            assert_weather_handoff(
+                                output,
+                                location,
+                                &format!("batch tokens={} {text}", !supplied_ids.is_empty()),
+                            )
+                            .await;
+                        }
+                        for split in text.char_indices().map(|(i, _)| i).chain([text.len()]) {
+                            assert_weather_handoff(
+                                collect_stream([&text[..split], &text[split..]]),
+                                location,
+                                &format!("text split={split} {text}"),
+                            )
+                            .await;
+                        }
+                        for split in 0..=token_ids.len() {
+                            let mut parser = GptOssReasoningParser::new().unwrap();
+                            let mut output = ParserResult::default();
+                            for ids in [&token_ids[..split], &token_ids[split..]] {
+                                let delta = parser.parse_reasoning_streaming_incremental("", ids);
+                                output.normal_text.push_str(&delta.normal_text);
+                                output.reasoning_text.push_str(&delta.reasoning_text);
+                            }
+                            let finished = parser.finish_reasoning_stream();
+                            output.normal_text.push_str(&finished.normal_text);
+                            output.reasoning_text.push_str(&finished.reasoning_text);
+                            let repeated = parser.finish_reasoning_stream();
+                            assert!(repeated.normal_text.is_empty());
+                            assert!(repeated.reasoning_text.is_empty());
+                            assert_weather_handoff(
+                                output,
+                                location,
+                                &format!("token split={split} {text}"),
+                            )
+                            .await;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_gpt_oss_action_endings_preserve_recipientless_text() {
+        for (prefix, channel) in [
+            ("", "commentary"),
+            ("", "final"),
+            ("<|start|>assistant", "commentary"),
+            ("<|start|>assistant", "final"),
+        ] {
+            let text = format!("{prefix}<|channel|>{channel}<|message|>Done.<|return|>");
+            let mut parser = GptOssReasoningParser::new().unwrap();
+            let output = parser.detect_and_parse_reasoning(&text, &[]);
+            assert_eq!(output.normal_text, "Done.");
+            assert_eq!(output.reasoning_text, "");
+            let streamed = collect_stream([text.as_str()]);
+            assert_eq!(streamed.normal_text, "Done.");
+            assert_eq!(streamed.reasoning_text, "");
+        }
+        for ending in ["", "<|end|>"] {
+            let text = format!(
+                "<|channel|>commentary to=functions.get_current_weather<|message|>{{}}{ending}"
+            );
+            let mut parser = GptOssReasoningParser::new().unwrap();
+            assert!(
+                parser
+                    .detect_and_parse_reasoning(&text, &[])
+                    .normal_text
+                    .is_empty()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_gpt_oss_final_marker_examples_are_not_tool_calls() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for prefix in ["", "<|start|>assistant"] {
+            let text = format!(
+                "{prefix}<|channel|>final<|message|>Example: <|channel|>commentary to=functions.get_current_weather<|message|>{{\"format\":\"celsius\",\"location\":\"San Francisco\"}}<|return|>"
+            );
+            let mut parser = GptOssReasoningParser::new().unwrap();
+            let output = parser.detect_and_parse_reasoning(&text, &[]);
+            let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                &output.normal_text,
+                Some("harmony"),
+                Some(&[]),
+            )
+            .await
+            .unwrap();
+            assert!(calls.is_empty(), "{text}");
+            assert!(
+                normal
+                    .as_deref()
+                    .is_some_and(|text| text.contains("Example:"))
+            );
+        }
     }
 
     #[test]

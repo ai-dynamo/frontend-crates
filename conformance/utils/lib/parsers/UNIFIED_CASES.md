@@ -194,9 +194,9 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-tool
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 301 of the 438 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 301 of the 440 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 137 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 139 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
 - The two `minimax_m3-guided_native_after_prefilled_reasoning_*` rows cover M3 recovery and are scoped to its conversion.
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
@@ -433,6 +433,8 @@ These cases exercise Harmony message framing, which the other eight grammars do 
 - **`5-tool_no_close_malformed_argument_then_visible_response`** recovers the later final answer after an unterminated native argument string; the ambiguous suffix stays buffered until EOF establishes that the original JSON cannot complete.
 - **`7-arg_marker_in_string_quoted_closer_and_response_header`** is the valid counterfactual: a complete header inside a valid JSON string remains argument data.
 - **`gpt_oss-complete_alternate_message_ends`** recovers complete JSON calls closed by Harmony message-end or turn-end. The legacy tool adapter continues to require handoff, and malformed provisional calls never receive completion.
+- **`gpt_oss-single_return_ending_tool_call`** checks the exact channel-first commentary request with constrained JSON arguments and a single turn-end marker; the expected result is one `get_current_weather` call.
+- **`gpt_oss-reasoning_then_return_ending_tool_call`** pairs with `11-reason_then_tool`: the request differs only in the tool ending (`return` versus `call`). Both preserve the visible reasoning event and the weather call; this catches a reasoning handoff that retains the thought but drops the tool. Harmony channel and action markers make the new case GPT-OSS-specific.
 
 ### DeepSeek V4-specific
 
