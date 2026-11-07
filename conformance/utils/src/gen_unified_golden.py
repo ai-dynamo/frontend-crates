@@ -4336,6 +4336,9 @@ _GPT_OSS_REVIEW_CASES = (
     ("gpt_oss_single_return_ending_tool_call", "A channel-first commentary tool call with a constrained JSON body ends with one turn-end marker and no handoff marker. It must still produce the complete tool call.",
      '<|channel|>commentary to=functions.get_current_weather <|constrain|>json<|message|>{"format":"celsius","location":"San Francisco"}<|return|>',
      [{"kind":"tool_call", "name":"get_current_weather", "arguments":{"format":"celsius", "location":"San Francisco"}}]),
+    ("gpt_oss_reasoning_then_return_ending_tool_call", "Analysis precedes a channel-first constrained JSON tool call ending in return. Preserve both reasoning and the tool call through the reasoning-to-tool handoff. The existing reason_then_tool case is the call-ending control; only the ending differs.",
+     '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>',
+     [{"kind":"reasoning", "text":"Check weather."}, {"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
 )
 
 

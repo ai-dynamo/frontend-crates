@@ -1,4 +1,4 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"2379abec1f679a6b1d4f1bfc80e3b9e62d817c2b050788073c09cb8fc136bec4","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.13.yaml","surface":"unified","version":"0.9.13"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e88a393d7a0a8bd1c1204fcb8cf2a01163c8e7f2793f9cf99b45003b96abaf46","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.13.yaml","surface":"unified","version":"0.9.13"}
 schema_version: 2
 provenance:
   status: captured
@@ -30915,5 +30915,90 @@ records:
           source_sha256: 1113ec22bcf26751e8afb160a58f4c5d82f15395d5cde6f2cb81d68aa6e2304f
           adapter_sha256: e6f9737f204f49cd3db6b38e1213026da07149f6e83c557cb2e8ec117c4ae474
           job_sha256: ff0165b7998b948247593049ff341b577ba17b69957b1b22b760c8b1b8ad0c55
+          git_commit: 99b089b38a2311df59f7718ec0e77c9342229221
+    member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.13.yaml
+  gpt_oss_reasoning_then_return_ending_tool_call:
+    value:
+      case_key: gpt_oss_reasoning_then_return_ending_tool_call
+      stimulus:
+        semantic_sha256: 8e4c47b9aa58bb34693dc77f9d354918722969514f0494f427729ee0c6ad3372
+        inline:
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          input: '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>'
+          tools: []
+          chunks:
+          - delta_text: '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>'
+      observation:
+        value:
+          assembled:
+          - kind: reasoning
+            text: Check weather.
+          - arguments: '{"city": "Paris"}'
+            kind: tool_call
+            name: get_weather
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: Check weather.
+            - arguments: ''
+              complete: false
+              kind: tool_call
+              name: get_weather
+            - arguments: '{"'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: city
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '":'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: ' "'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: Paris
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: '"}'
+              complete: false
+              kind: tool_call
+              name: null
+            - arguments: ''
+              complete: true
+              kind: tool_call
+              name: null
+          - expected: []
+      document:
+        mode: unified
+        captured_with:
+          dynamo_v2: 0.9.13
+        record_metadata:
+          parser_path: unified
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          dynamo_v2_capture_provenance:
+            implementation: dynamo_v2
+            version: 0.9.13
+            git_commit: 99b089b38a2311df59f7718ec0e77c9342229221
+            source_sha256: 1113ec22bcf26751e8afb160a58f4c5d82f15395d5cde6f2cb81d68aa6e2304f
+            adapter_sha256: d190a012c4972d89268647c0c71fb77b4037ba51a00f61ea1e082dc63ace4b4b
+            job_sha256: 73c4ea44836aad711d44de7fb19c6faeca97adea4a6b110466eaf117bc013595
+            results_sha256: 2a04b18f3556ada45565dd7dbb3660fa69da8674518687a66e8a4d869e3438e1
+        capture_origin:
+          crate_version: 0.9.13
+          source_sha256: 1113ec22bcf26751e8afb160a58f4c5d82f15395d5cde6f2cb81d68aa6e2304f
+          adapter_sha256: d190a012c4972d89268647c0c71fb77b4037ba51a00f61ea1e082dc63ace4b4b
+          job_sha256: 73c4ea44836aad711d44de7fb19c6faeca97adea4a6b110466eaf117bc013595
           git_commit: 99b089b38a2311df59f7718ec0e77c9342229221
     member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.9.13.yaml
