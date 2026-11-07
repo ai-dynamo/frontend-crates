@@ -468,6 +468,7 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         preserve_special_tokens: true,
         invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(kimi_boundary)),
         narrated_invoke_header_end: None,
+        dedupe_calls_repeated_after_thought: false,
     }
 }
 

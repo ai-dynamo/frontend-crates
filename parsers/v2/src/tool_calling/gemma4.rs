@@ -618,6 +618,7 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(gemma4_invoke_boundary)),
             preserve_special_tokens: true,
             narrated_invoke_header_end: None,
+            dedupe_calls_repeated_after_thought: false,
         },
         Gemma4InvokeEmitter {
             tools: tools.iter().map(ToolDefinition::from).collect(),

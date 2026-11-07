@@ -1494,6 +1494,18 @@ pub(crate) struct WrappedBlockSpec {
     /// `invoke_end` from the reasoning payload instead of recovering a call from
     /// it (ai-dynamo/dynamo#17663). `None` keeps the structural reading.
     pub narrated_invoke_header_end: Option<char>,
+    /// Drop a wrapped call the model REPEATS right after closing the thought
+    /// in which it already made that call.
+    ///
+    /// A wrapped block inside a thought is a real call (`I3`); Qwen3.6 sometimes
+    /// writes it inside `<think>` and then again, byte for byte, after
+    /// `</think>` (ai-dynamo/dynamo#17732). With this set, the scanner remembers
+    /// the calls it recovered from a thought and, once the thought closes, skips
+    /// the first post-closer calls that repeat them in order (same name, equal
+    /// arguments). Anything else after the closer (a different call, visible
+    /// text, a new thought) ends the comparison. Only meaningful for wrapper
+    /// families; a family whose block is the invoke keeps every call.
+    pub dedupe_calls_repeated_after_thought: bool,
 }
 
 /// The reasoning channel a unified scanner also owns.
@@ -2142,6 +2154,18 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     narrated_body: String,
     /// How many of the current `buffer` bytes are already in `narrated_body`.
     narrated_fed: usize,
+    /// Calls recovered from the open (or just-closed) thought, in order, for
+    /// [`WrappedBlockSpec::dedupe_calls_repeated_after_thought`]. Cleared when
+    /// the comparison window closes.
+    in_thought_calls: Vec<InThoughtCall>,
+    /// The thought that produced `in_thought_calls` has closed; the next
+    /// complete calls are compared against them until something else arrives.
+    repeat_window_open: bool,
+    /// Name and argument text already streamed as partial deltas for the open
+    /// invoke, so the call's identity covers the whole call and not only the
+    /// completing delta. Cleared with the invoke boundary.
+    streamed_call_name: Option<String>,
+    streamed_call_args: String,
     suppress_normal_text: bool,
     next_index: usize,
     pending_parse_error: Option<DeferredParseError>,
@@ -2173,6 +2197,28 @@ struct DeferredParseError {
     bytes: usize,
 }
 
+/// Identity of a call recovered inside a thought, for
+/// [`WrappedBlockSpec::dedupe_calls_repeated_after_thought`]: the name and the
+/// parsed arguments, so spelling differences in the JSON text do not matter.
+#[derive(Debug, PartialEq)]
+struct InThoughtCall {
+    name: String,
+    arguments: serde_json::Value,
+}
+
+impl InThoughtCall {
+    /// `None` when the argument text is not JSON; such a call is never treated
+    /// as a repeat.
+    fn from_parts(name: String, arguments: &str) -> Option<Self> {
+        let arguments = if arguments.trim().is_empty() {
+            serde_json::Value::Object(serde_json::Map::new())
+        } else {
+            serde_json::from_str(arguments).ok()?
+        };
+        Some(Self { name, arguments })
+    }
+}
+
 impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     pub(crate) fn new(spec: WrappedBlockSpec, emitter: E) -> Self {
         let invoke_boundary = spec
@@ -2198,6 +2244,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             narrated_boundary: None,
             narrated_body: String::new(),
             narrated_fed: 0,
+            in_thought_calls: Vec::new(),
+            repeat_window_open: false,
+            streamed_call_name: None,
+            streamed_call_args: String::new(),
             suppress_normal_text: false,
             next_index: 0,
             pending_parse_error: None,
@@ -2452,6 +2502,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         // armed, and the NEXT stream's first post-call answer is emitted as reasoning.
         self.resume_reasoning = false;
         self.clear_narration();
+        self.close_repeat_window();
         self.suppress_normal_text = false;
         self.next_index = 0;
         self.pending_parse_error = None;
@@ -2490,6 +2541,78 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.narrated_boundary = None;
         self.narrated_body.clear();
         self.narrated_fed = 0;
+    }
+
+    /// Whether this family drops a wrapped call repeated right after the thought
+    /// that already made it (see
+    /// [`WrappedBlockSpec::dedupe_calls_repeated_after_thought`]).
+    fn dedupes_calls_repeated_after_thought(&self) -> bool {
+        self.spec.dedupe_calls_repeated_after_thought
+            && !self.block_is_invoke()
+            && !self.spec.block_starts.is_empty()
+    }
+
+    /// Remember a call just recovered from inside an open thought.
+    fn note_in_thought_call(&mut self, call: Option<InThoughtCall>) {
+        if let Some(call) = call {
+            self.in_thought_calls.push(call);
+        }
+    }
+
+    /// The thought that made `in_thought_calls` has just closed: compare the
+    /// calls that follow against them.
+    fn open_repeat_window(&mut self) {
+        if !self.in_thought_calls.is_empty() {
+            self.repeat_window_open = true;
+        }
+    }
+
+    /// Stop comparing: visible text, a new thought, a different call, a reset.
+    fn close_repeat_window(&mut self) {
+        self.repeat_window_open = false;
+        self.in_thought_calls.clear();
+    }
+
+    /// Visible content after the closer means the model moved on; whitespace
+    /// framing between `</think>` and the next block does not.
+    fn visible_text_closes_repeat_window(&mut self, text: &str) {
+        if self.repeat_window_open && text.chars().any(|c| !c.is_whitespace()) {
+            self.close_repeat_window();
+        }
+    }
+
+    /// [`Self::visible_text_closes_repeat_window`] over `buffer[..end]`, for the
+    /// emit sites that read the text straight out of the buffer.
+    fn visible_text_in_buffer_closes_repeat_window(&mut self, end: usize) {
+        if self.repeat_window_open && self.buffer[..end].chars().any(|c| !c.is_whitespace()) {
+            self.close_repeat_window();
+        }
+    }
+
+    /// While the just-closed thought's calls await comparison, a post-closer
+    /// invoke is not streamed as partial deltas: a repeat must never reach the
+    /// caller, and the decision needs the complete call.
+    fn holds_partial_for_repeat_check(&self) -> bool {
+        self.repeat_window_open && !self.resume_reasoning && !self.in_thought_calls.is_empty()
+    }
+
+    /// Whether a complete post-closer call repeats the next call the preceding
+    /// thought already made. `true` consumes that entry and the caller skips the
+    /// call; `false` ends the comparison (the model moved on to new calls).
+    fn repeats_in_thought_call(&mut self, call: Option<InThoughtCall>) -> bool {
+        if !self.repeat_window_open || self.in_thought_calls.is_empty() {
+            return false;
+        }
+        let repeated = call.is_some_and(|call| call == self.in_thought_calls[0]);
+        if repeated {
+            self.in_thought_calls.remove(0);
+            if self.in_thought_calls.is_empty() {
+                self.repeat_window_open = false;
+            }
+        } else {
+            self.close_repeat_window();
+        }
+        repeated
     }
 
     /// Bytes of the narrated body the family boundary has not classified yet;
@@ -2559,6 +2682,31 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             boundary.reset();
         }
         self.invoke_boundary_len = 0;
+        self.streamed_call_name = None;
+        self.streamed_call_args.clear();
+    }
+
+    /// Record a partial delta streamed for the open invoke (see
+    /// `streamed_call_args`).
+    fn record_streamed_delta(&mut self, delta: &ToolCallDelta) {
+        if self.streamed_call_name.is_none() {
+            self.streamed_call_name = delta.name.clone();
+        }
+        self.streamed_call_args.push_str(&delta.arguments);
+    }
+
+    /// The identity of the invoke that just completed: the deltas streamed so
+    /// far plus the completing ones. Clears the streamed record.
+    fn completed_call_identity(&mut self, final_deltas: &[ToolCallDelta]) -> Option<InThoughtCall> {
+        let name = self
+            .streamed_call_name
+            .take()
+            .or_else(|| final_deltas.iter().find_map(|delta| delta.name.clone()));
+        let mut text = std::mem::take(&mut self.streamed_call_args);
+        for delta in final_deltas {
+            text.push_str(&delta.arguments);
+        }
+        InThoughtCall::from_parts(name?, &text)
     }
 
     fn block_is_invoke(&self) -> bool {
@@ -3019,9 +3167,15 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         "stream stripped a narrated bare invoke marker inside a reasoning span"
                     );
                 }
-                InReasoning::Narrated { open: false, .. }
-                | InReasoning::Close
-                | InReasoning::ToolOpen => self.clear_narration(),
+                InReasoning::Close => {
+                    self.clear_narration();
+                    // Calls made inside this thought may be repeated right after
+                    // it; compare the next calls against them.
+                    self.open_repeat_window();
+                }
+                InReasoning::Narrated { open: false, .. } | InReasoning::ToolOpen => {
+                    self.clear_narration()
+                }
             }
             return Ok(true);
         }
@@ -3651,6 +3805,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     let prose = self.buffer[..length].to_owned();
                     self.consume_buffer_prefix(length);
                     self.prose.consume(&prose);
+                    if !self.in_reasoning {
+                        self.visible_text_closes_repeat_window(&prose);
+                    }
                     if self.in_reasoning || !self.suppress_normal_text {
                         push_run(
                             out,
@@ -3738,12 +3895,19 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     self.reset_invoke_boundary();
                 }
                 let Some(end) = self.invoke_end_at(flush) else {
+                    if !flush && self.holds_partial_for_repeat_check() {
+                        // The call may repeat one the thought just made: wait
+                        // for it to complete rather than stream deltas of a
+                        // call that is then dropped.
+                        break;
+                    }
                     if !flush
                         && let Some(delta) = self
                             .emitter
                             .parse_partial_invoke(&self.buffer, self.next_index)?
                     {
                         self.provisional_invoke = true;
+                        self.record_streamed_delta(&delta);
                         out.push_call(delta);
                         break;
                     }
@@ -3853,16 +4017,37 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // the buffer, so `reset` could no longer hand them back and the
                 // documented recovery contract was false for the only shipped family.
                 let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
+                // Identity before the boundary reset clears the streamed record.
+                let mut identity = match &emitted {
+                    Some(deltas) if self.dedupes_calls_repeated_after_thought() => {
+                        self.completed_call_identity(deltas)
+                    }
+                    _ => None,
+                };
                 self.consume_buffer_prefix(end);
                 self.reset_invoke_boundary();
                 let provisional = std::mem::take(&mut self.provisional_invoke);
                 self.emitter.abandon_invoke();
                 if let Some(deltas) = emitted {
                     let emitted_call = !deltas.is_empty();
-                    for delta in deltas {
-                        out.push_call(delta);
+                    let dedupe = emitted_call && identity.is_some();
+                    if dedupe && self.resume_reasoning {
+                        self.note_in_thought_call(identity.take());
                     }
-                    self.next_index += 1;
+                    if dedupe && !self.resume_reasoning && self.repeats_in_thought_call(identity) {
+                        // The thought already made this exact call (`I3` kept it);
+                        // the model wrote it again after `</think>`.
+                        tracing::debug!(
+                            why = %format!("{}_call_repeated_after_thought", self.spec.family),
+                            tool_index = self.next_index,
+                            "stream dropped a wrapped call the model repeated after the thought that already made it"
+                        );
+                    } else {
+                        for delta in deltas {
+                            out.push_call(delta);
+                        }
+                        self.next_index += 1;
+                    }
                     self.clear_uncommitted_block();
                     if emitted_call && self.spec.invoke_latch == InvokeLatch::IfEmitted {
                         self.suppress_normal_text = true;
@@ -3905,6 +4090,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     .chain(self.find_reasoning_start(flush).map(|(p, _)| p))
                     .min();
                 if next_open.is_none_or(|open| pos < open) {
+                    self.visible_text_in_buffer_closes_repeat_window(pos);
                     if !self.suppress_normal_text && pos > 0 {
                         push_run(out, Kind::Text, &self.buffer[..pos]);
                     }
@@ -3938,6 +4124,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 let keep = if flush { 0 } else { self.holdback_len() };
                 let emit_len = self.buffer.len().saturating_sub(keep);
                 if emit_len > 0 {
+                    self.visible_text_in_buffer_closes_repeat_window(emit_len);
                     if !self.suppress_normal_text {
                         push_run(out, Kind::Text, &self.buffer[..emit_len]);
                     }
@@ -3950,6 +4137,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
             if start > 0 {
                 let emit_len = start - self.tool_separator_len_at(start);
+                self.visible_text_in_buffer_closes_repeat_window(emit_len);
                 if !self.suppress_normal_text {
                     push_run(out, Kind::Text, &self.buffer[..emit_len]);
                 }
@@ -3972,6 +4160,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 Marker::ReasoningStart(rlen) => {
                     self.consume_buffer_prefix(rlen);
                     self.in_reasoning = true;
+                    // A new thought means the previous thought's calls were
+                    // not repeated; stop comparing against them.
+                    self.close_repeat_window();
                     // An explicit reasoning opener is an unambiguous return to
                     // real content, so it ends any markup-suppression context
                     // left over from a bare-invoke recovery. Without this a
@@ -3991,12 +4182,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             .as_ref()
                             .is_some_and(|boundary| boundary.bare_invoke_uses_eof_boundary());
                     let Some(end) = self.invoke_end_at(use_eof_boundary) else {
+                        if !flush && self.holds_partial_for_repeat_check() {
+                            break;
+                        }
                         if !flush
                             && let Some(delta) = self
                                 .emitter
                                 .parse_partial_invoke(&self.buffer, self.next_index)?
                         {
                             self.provisional_invoke = true;
+                            self.record_streamed_delta(&delta);
                             out.push_call(delta);
                             break;
                         }
@@ -4014,21 +4209,42 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     let invoke = self.buffer[..end].to_string();
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
+                    let mut identity = match &emitted {
+                        Some(deltas) if self.dedupes_calls_repeated_after_thought() => {
+                            self.completed_call_identity(deltas)
+                        }
+                        _ => None,
+                    };
                     self.consume_buffer_prefix(end);
                     self.clear_uncommitted_block();
                     self.reset_invoke_boundary();
                     let provisional = std::mem::take(&mut self.provisional_invoke);
                     self.emitter.abandon_invoke();
                     if let Some(deltas) = emitted {
-                        tracing::warn!(
-                            why = %format!("{}_bare_invoke_recovery", self.spec.family),
-                            tool_index = self.next_index,
-                            "stream recovered a complete bare invoke"
-                        );
-                        for delta in deltas {
-                            out.push_call(delta);
+                        let dedupe = !deltas.is_empty() && identity.is_some();
+                        if dedupe && self.resume_reasoning {
+                            self.note_in_thought_call(identity.take());
                         }
-                        self.next_index += 1;
+                        if dedupe
+                            && !self.resume_reasoning
+                            && self.repeats_in_thought_call(identity)
+                        {
+                            tracing::debug!(
+                                why = %format!("{}_call_repeated_after_thought", self.spec.family),
+                                tool_index = self.next_index,
+                                "stream dropped a bare call the model repeated after the thought that already made it"
+                            );
+                        } else {
+                            tracing::warn!(
+                                why = %format!("{}_bare_invoke_recovery", self.spec.family),
+                                tool_index = self.next_index,
+                                "stream recovered a complete bare invoke"
+                            );
+                            for delta in deltas {
+                                out.push_call(delta);
+                            }
+                            self.next_index += 1;
+                        }
                         self.clear_uncommitted_block();
                         self.suppress_normal_text =
                             self.spec.bare_recovery_latch == BareRecoveryLatch::Set;
@@ -4095,6 +4311,7 @@ pub(crate) mod test_support {
                 invoke_boundary_factory: None,
                 preserve_special_tokens: true,
                 narrated_invoke_header_end: None,
+                dedupe_calls_repeated_after_thought: false,
             },
             FailOnBoom,
         )
