@@ -433,6 +433,7 @@ These cases exercise Harmony message framing, which the other eight grammars do 
 - **`5-tool_no_close_malformed_argument_then_visible_response`** recovers the later final answer after an unterminated native argument string; the ambiguous suffix stays buffered until EOF establishes that the original JSON cannot complete.
 - **`7-arg_marker_in_string_quoted_closer_and_response_header`** is the valid counterfactual: a complete header inside a valid JSON string remains argument data.
 - **`gpt_oss-complete_alternate_message_ends`** recovers complete JSON calls closed by Harmony message-end or turn-end. The legacy tool adapter continues to require handoff, and malformed provisional calls never receive completion.
+- **`gpt_oss-single_return_ending_tool_call`** checks the exact channel-first commentary request with constrained JSON arguments and a single turn-end marker; the expected result is one `get_current_weather` call.
 
 ### DeepSeek V4-specific
 
