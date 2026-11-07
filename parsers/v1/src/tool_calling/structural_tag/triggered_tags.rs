@@ -100,15 +100,20 @@ pub(crate) fn build_triggered_tags(
                 })
             } else {
                 Format::JsonSchema(JsonSchemaFormat {
-                    json_schema,
+                    json_schema: json_schema.clone(),
                     style: config.content_style,
                 })
             };
 
-            TagFormat {
+            let tag = TagFormat {
                 begin,
                 content: Box::new(content),
                 end: config.end_template.clone(),
+            };
+            if config.content_style == JsonSchemaStyle::QwenXml {
+                dynamo_structural_tag::qwen_xml::with_native_empty_call(tag, &json_schema)
+            } else {
+                tag
             }
         })
         .collect();

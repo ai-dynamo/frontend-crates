@@ -35,6 +35,62 @@ fn qwen_call_tag(tag: &Value) -> &Value {
     }
 }
 
+fn qwen_argument_content(call: &Value) -> &Value {
+    if call["end"] == "" && call["content"]["type"] == "or" {
+        &call["content"]["elements"][1]["elements"][0]
+    } else {
+        &call["content"]
+    }
+}
+
+#[test]
+fn qwen_native_empty_call_has_no_blank_line_and_preserves_strict_false() {
+    let native = "<tool_call>\n<function=get_server_time>\n</function>\n</tool_call>";
+    for strict in [None, Some(true), Some(false)] {
+        let mut tool = empty_qwen_tool();
+        tool.strict = strict;
+        for choice in [
+            StructuralTagToolChoice::Auto,
+            StructuralTagToolChoice::Required,
+            StructuralTagToolChoice::Named("get_server_time"),
+        ] {
+            let tag = QWEN3_CODER
+                .build_with_options(
+                    &StructuralTagContext {
+                        tool_choice: choice,
+                        tools: std::slice::from_ref(&tool),
+                        parallel_tool_calls: Some(false),
+                        schema_mode: StructuralTagSchemaMode::Auto,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    },
+                    &StructuralTagOptions::default(),
+                )
+                .unwrap()
+                .unwrap();
+            let call = qwen_call_tag(&tag);
+            assert_eq!(
+                format!(
+                    "{}{}",
+                    call["begin"].as_str().unwrap(),
+                    call["content"]["elements"][0]["value"].as_str().unwrap()
+                ),
+                native,
+            );
+            // v2 receives omitted-strict normalization from its caller; its
+            // standalone policy treats None as non-strict. Preserve that too.
+            if strict != Some(true) {
+                assert_eq!(qwen_argument_content(call)["json_schema"], json!(true));
+            } else {
+                assert_eq!(
+                    *qwen_argument_content(call),
+                    json!({"type": "const_string", "value": ""})
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn qwen_empty_tool_has_exact_empty_body() {
     for omit_required in [false, true] {
@@ -64,7 +120,7 @@ fn qwen_empty_tool_has_exact_empty_body() {
                 .unwrap()
                 .unwrap();
             assert_eq!(
-                qwen_call_tag(&tag)["content"],
+                *qwen_argument_content(qwen_call_tag(&tag)),
                 json!({"type": "const_string", "value": ""}),
                 "{choice:?}, omit_required={omit_required}"
             );
@@ -102,7 +158,7 @@ fn qwen_empty_tool_preserves_other_constraints() {
             .unwrap()
             .unwrap();
         assert_eq!(
-            qwen_call_tag(&tag)["content"],
+            *qwen_argument_content(qwen_call_tag(&tag)),
             json!({"type": "json_schema", "json_schema": schema, "style": "qwen_xml", "any_order": true})
         );
     }
@@ -132,7 +188,7 @@ fn qwen_empty_tool_preserves_strict_policy_and_other_formats() {
             json!({"type": "json_schema", "json_schema": true, "style": "qwen_xml"})
         };
         assert_eq!(
-            qwen_call_tag(&tag)["content"],
+            *qwen_argument_content(qwen_call_tag(&tag)),
             expected,
             "{schema_mode:?}, strict={strict:?}"
         );
@@ -949,7 +1005,10 @@ fn null_parameters_remain_unconstrained_even_in_strict_mode() {
         false,
     );
 
-    assert_eq!(actual["format"]["content"]["json_schema"], true);
+    assert_eq!(
+        qwen_argument_content(&actual["format"])["json_schema"],
+        true
+    );
 }
 
 #[test]
