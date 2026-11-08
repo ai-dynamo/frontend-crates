@@ -48,6 +48,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             || unsupported_schedule
             || cfg!(conformance_no_reasoning_init)
                 && request["init"]["starting_state"] == "Reasoning"
+            || cfg!(conformance_gpt_oss_no_reasoning_init)
+                && reasoning_name == "gpt_oss"
+                && request["init"]["starting_state"] == "Reasoning"
         {
             unavailable(
                 "unsupported_request_mode",

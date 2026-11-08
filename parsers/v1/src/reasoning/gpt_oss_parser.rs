@@ -6,7 +6,8 @@ use std::fmt::Debug;
 use crate::ParserResult;
 use crate::ReasoningParser;
 use crate::tool_calling::harmony::harmony_parser::{
-    harmony_initial_role, harmony_markers, harmony_tool_headers, process_harmony_token,
+    harmony_header_is_directed, harmony_initial_role, harmony_markers, harmony_tool_headers,
+    json_value_prefix_end, process_harmony_token,
 };
 use crate::tool_calling::harmony::payload::{HarmonyPayload, HarmonyVisible};
 
@@ -375,6 +376,57 @@ fn is_visible_normal_channel(channel: Option<&str>, recipient: Option<&str>) -> 
         || (channel.is_some_and(|channel| channel != "analysis") && recipient.is_none())
 }
 
+fn parse_harmony_header(
+    encoding: &HarmonyEncoding,
+    tokens: &[u32],
+    start_token: u32,
+) -> Option<StreamableParser> {
+    let mut header =
+        StreamableParser::new(encoding.clone(), harmony_initial_role(tokens, start_token)).ok()?;
+    for token in tokens {
+        header.process(*token).ok()?;
+    }
+    Some(header)
+}
+
+fn project_harmony_header(
+    header: &StreamableParser,
+    channel_header: &StreamableParser,
+    envelope: String,
+) -> Option<String> {
+    if header.current_role() != Some(Role::Assistant) {
+        return None;
+    }
+    let channel = header.current_channel()?;
+    let recipient = header.current_recipient();
+    let directed = matches!(channel.as_str(), "analysis" | "commentary")
+        && recipient
+            .as_deref()
+            .is_some_and(|recipient| recipient.starts_with("functions."));
+    if !directed && !is_visible_normal_channel(Some(&channel), recipient.as_deref()) {
+        return None;
+    }
+    if channel_header.current_recipient() == recipient {
+        return Some(envelope);
+    }
+    let channel_prefix = format!("<|channel|>{channel}");
+    let (source_header, body) = envelope.split_once("<|message|>")?;
+    let suffix = source_header.strip_prefix(&channel_prefix)?.trim();
+    let mut projected = channel_prefix;
+    if let Some(recipient) = recipient {
+        projected.push_str(&format!(" to={recipient}"));
+    }
+    if !suffix.is_empty() {
+        projected.push(' ');
+        projected.push_str(suffix);
+    } else if let Some(content_type) = header.current_content_type() {
+        projected.push_str(&format!(" {content_type}"));
+    }
+    projected.push_str("<|message|>");
+    projected.push_str(body);
+    Some(projected)
+}
+
 /// Reconstruct the complete harmony envelope for the directed tool call that
 /// just terminated, by decoding the cumulative parser token buffer from its
 /// last `<|channel|>` token to the end.
@@ -416,8 +468,85 @@ fn reconstruct_directed_envelope(
                 .is_ok_and(|marker| marker != "<|constrain|>")
     });
     let begin = previous_marker.unwrap_or(0);
+    let start_token = harmony_start_token_id().ok()?;
+    let message_token = *enc
+        .tokenizer()
+        .encode_with_special_tokens("<|message|>")
+        .first()?;
+    let message_index = last_channel_idx
+        + tokens[last_channel_idx..]
+            .iter()
+            .position(|token| *token == message_token)?;
+    let envelope = enc
+        .tokenizer()
+        .decode_utf8(&tokens[last_channel_idx..])
+        .ok()?;
+    let channel_header =
+        parse_harmony_header(enc, &tokens[last_channel_idx..=message_index], start_token)?;
+    let preceding_marker =
+        previous_marker.and_then(|index| enc.tokenizer().decode_utf8([tokens[index]]).ok());
+    if preceding_marker.as_deref() != Some("<|message|>") {
+        let header_start = previous_marker.map_or(0, |index| {
+            if tokens[index] == start_token {
+                index
+            } else {
+                index + 1
+            }
+        });
+        if let Some(header) =
+            parse_harmony_header(enc, &tokens[header_start..=message_index], start_token)
+        {
+            return project_harmony_header(&header, &channel_header, envelope);
+        }
+    } else {
+        // Channel-first routing is complete here even when a prior malformed body
+        // precedes it. A recipient before the channel still needs boundary recovery.
+        if channel_header
+            .current_recipient()
+            .as_deref()
+            .is_some_and(|recipient| recipient.starts_with("functions."))
+        {
+            return project_harmony_header(&channel_header, &channel_header, envelope);
+        }
+    }
     let decoded = enc.tokenizer().decode_utf8(&tokens[begin..]).ok()?;
-    let header = harmony_tool_headers(&decoded).last()?;
+    let header = match harmony_tool_headers(&decoded).last() {
+        Some(header) => header,
+        None => {
+            // An interrupted directed message can leave native recipient metadata
+            // behind a real final header; the jail still needs that final envelope.
+            let latest = enc
+                .tokenizer()
+                .decode_utf8(&tokens[last_channel_idx..])
+                .ok()?;
+            let (latest_header, _) = latest.split_once("<|message|>")?;
+            let prefix = enc
+                .tokenizer()
+                .decode_utf8(&tokens[begin..last_channel_idx])
+                .ok()?;
+            let prefix = if let Some(body) = prefix.strip_prefix("<|message|>") {
+                &body[json_value_prefix_end(body).unwrap_or_default()..]
+            } else {
+                &prefix
+            };
+            let channel = latest_header
+                .strip_prefix("<|channel|>")?
+                .split(|ch: char| ch.is_whitespace() || ch == '<')
+                .next()?;
+            if channel == "final"
+                && !harmony_header_is_directed(prefix)
+                && !harmony_header_is_directed(latest_header)
+            {
+                tracing::warn!(
+                    why = "harmony_interrupted_call_final_handoff",
+                    recovered_bytes = latest.len(),
+                    "Recovering a final message after an interrupted tool envelope"
+                );
+                return Some(latest);
+            }
+            return None;
+        }
+    };
     let start = header.get(0)?.start();
     let channel_start = start + decoded[start..].find("<|channel|>")?;
     let mut envelope = decoded[channel_start..].to_string();

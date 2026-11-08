@@ -14,6 +14,7 @@ use serde_json::Value;
 use std::sync::OnceLock;
 use uuid::Uuid;
 
+static COMMENTARY_HEADER_PREFIX_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_HEADER_REGEX: OnceLock<Regex> = OnceLock::new();
 static MESSAGE_BOUNDARY_REGEX: OnceLock<Regex> = OnceLock::new();
 static COMMENTARY_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
@@ -22,25 +23,41 @@ static ANALYSIS_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static FINAL_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
 static SPECIAL_TOKEN_REGEX: OnceLock<Regex> = OnceLock::new();
 
-/// Regex fallback used only when `openai_harmony`'s tokenizer rejects the
-/// input — alternative on this path is silent-drop. Worst case is missing
-/// a call, never fabricating one: directed calls must end with `<|call|>` or `<|return|>`.
+/// Header ownership for regex extraction, payload classification, and reasoning
+/// handoff. A quoted or incomplete header cannot borrow a later message's body.
+/// Directed calls must end with `<|call|>` or `<|return|>`.
 ///
 /// Matches tool calls on either `commentary` or `analysis` channel: the model
 /// emits ~47% of tool calls on the `analysis` channel with a bare `code`
-/// constraint marker instead of `<|constrain|>json`. The `.*?` non-greedy span
-/// between the recipient and `<|message|>` already tolerates any constraint
-/// marker form (`code`, `<|constrain|>json`, or nothing).
+/// constraint marker instead of `<|constrain|>json`. Header recovery accepts
+/// both forms without borrowing a later message's channel or start marker.
+const COMMENTARY_HEADER_PREFIX: &str = r"(?s)(?:(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis)[ \t\r\n\x0B\x0C]+to=functions\.(?P<name>[\w.\-]+)|(?:<\|start\|>assistant\s+)?to=functions\.(?P<recipient_first>[\w.\-]+)\s*(?:<\|constrain\|>[^<]*)?<\|channel\|>(?:commentary|analysis))";
+
 fn commentary_header_regex() -> &'static Regex {
     COMMENTARY_HEADER_REGEX.get_or_init(|| {
-        // Name is `[\w.\-]+` (alphanumeric / dot / hyphen / underscore).
-        // Between name and `<|message|>` we tolerate optional
-        // `<|constrain|>json`, bare `code`, or nothing (non-greedy `.*?`).
-        Regex::new(
-            r"(?s)(?:(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+)|(?:<\|start\|>assistant\s+)?to=functions\.(?P<recipient_first>[\w.\-]+)\s*(?:<\|constrain\|>[^<]*)?<\|channel\|>(?:commentary|analysis)).*?<\|message\|>",
-        )
-        .expect("commentary header regex")
+        Regex::new(&format!("{COMMENTARY_HEADER_PREFIX}.*?<\\|message\\|>"))
+            .expect("commentary header regex")
     })
+}
+
+fn bounded_harmony_header(text: &str, mut start: usize) -> Option<Captures<'_>> {
+    let prefix_regex = COMMENTARY_HEADER_PREFIX_REGEX
+        .get_or_init(|| Regex::new(COMMENTARY_HEADER_PREFIX).expect("header prefix regex"));
+    loop {
+        let prefix = prefix_regex.find_at(text, start)?;
+        let boundary = special_token_regex()
+            .find_iter(&text[prefix.end()..])
+            .find(|marker| {
+                matches!(marker.as_str(), "<|start|>" | "<|channel|>" | "<|message|>")
+            })?;
+        if boundary.as_str() == "<|message|>" {
+            return commentary_header_regex()
+                .captures_at(&text[..prefix.end() + boundary.end()], prefix.start());
+        }
+        // Retain any recipient before the competing channel without rescanning
+        // the rejected header or borrowing a later message's argument body.
+        start = prefix.end();
+    }
 }
 
 fn commentary_block_cleanup_regex() -> &'static Regex {
@@ -94,10 +111,16 @@ fn special_token_regex() -> &'static Regex {
     })
 }
 
-fn json_value_prefix_end(text: &str) -> Option<usize> {
+pub(crate) fn json_value_prefix_end(text: &str) -> Option<usize> {
     let mut json =
         serde_json::Deserializer::from_str(text).into_iter::<&serde_json::value::RawValue>();
     matches!(json.next(), Some(Ok(_))).then(|| json.byte_offset())
+}
+
+pub(crate) fn harmony_header_is_directed(header: &str) -> bool {
+    header
+        .split_whitespace()
+        .any(|part| part.starts_with("to="))
 }
 
 // Directed malformed arguments retain raw recovery. Recipientless and projected
@@ -107,6 +130,7 @@ pub(crate) fn harmony_markers(text: &str) -> impl Iterator<Item = (regex::Match<
     let mut visible = Some(HarmonyVisible::default());
     let mut cursor = 0;
     let mut header_start = 0;
+    let mut header_resume = 0;
     let mut header_pending = true;
     special_token_regex().find_iter(text).map(move |marker| {
         let mut visible_json = false;
@@ -122,20 +146,33 @@ pub(crate) fn harmony_markers(text: &str) -> impl Iterator<Item = (regex::Match<
             match marker.as_str() {
                 "<|start|>" => {
                     header_start = marker.start();
+                    header_resume = marker.start();
                     header_pending = true;
                     visible = None;
                 }
                 "<|channel|>" => {
                     if !header_pending {
+                        header_resume = header_start;
                         header_start = marker.start();
                         header_pending = true;
                     }
                     visible = None;
                 }
                 "<|message|>" => {
-                    let directed = text[header_start..marker.start()]
-                        .split_whitespace()
-                        .any(|part| part.starts_with("to="));
+                    let directed = harmony_header_is_directed(&text[header_start..marker.start()])
+                        || (header_resume < header_start
+                            && std::iter::from_fn({
+                                let span = &text[header_resume..marker.end()];
+                                let mut start = 0;
+                                move || {
+                                    let cap = bounded_harmony_header(span, start)?;
+                                    let header = cap.get(0)?;
+                                    start = header.end();
+                                    Some(header)
+                                }
+                            })
+                            .last()
+                            .is_some_and(|header| header.end() == marker.end() - header_resume));
                     visible = (!directed).then(HarmonyVisible::default);
                     json_end = if directed {
                         marker.end()
@@ -145,10 +182,12 @@ pub(crate) fn harmony_markers(text: &str) -> impl Iterator<Item = (regex::Match<
                     };
                     header_pending = false;
                     header_start = marker.end();
+                    header_resume = marker.end();
                 }
                 "<|call|>" | "<|return|>" | "<|end|>" => {
                     visible = (!header_pending).then(HarmonyVisible::default);
                     header_start = marker.end();
+                    header_resume = marker.end();
                     header_pending = true;
                     json_end = 0;
                 }
@@ -165,7 +204,7 @@ pub(crate) fn harmony_tool_headers(text: &str) -> impl Iterator<Item = Captures<
     let mut search_start = 0;
     std::iter::from_fn(move || {
         loop {
-            let cap = commentary_header_regex().captures_at(text, search_start)?;
+            let cap = bounded_harmony_header(text, search_start)?;
             let header = cap.get(0).expect("regex match has full span");
             while markers
                 .peek()
@@ -478,6 +517,11 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
             // Discard this unfinished span before joining residual text, so its
             // header cannot swallow text after a subsequently recovered call.
             cursor = m.end() + boundary.start();
+            tracing::warn!(
+                why = "harmony_unfinished_call_before_message",
+                skipped_bytes = cursor - m.start(),
+                "Discarding an unfinished tool envelope before the next message"
+            );
             search_start = cursor;
             continue;
         }
@@ -502,7 +546,14 @@ fn extract_calls_via_regex(text: &str) -> (Vec<ToolCallResponse>, String) {
 fn recover_harmony_calls(text: &str) -> (Vec<ToolCallResponse>, Option<String>) {
     let (calls, residual) = extract_calls_via_regex(text);
     let normal_text = if calls.is_empty() {
-        normal_text_after_parse_failure(text, "parse_failed_no_recovered_calls")
+        normal_text_after_parse_failure(
+            if residual == text.trim() {
+                text
+            } else {
+                &residual
+            },
+            "parse_failed_no_recovered_calls",
+        )
     } else {
         strip_harmony_protocol_from_normal_text(&residual, "regex_recovery_residual")
     };
@@ -1013,6 +1064,27 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn recovery_header_scan_stays_with_the_next_recipient() {
+        let partial = "<|channel|>commentary to=functions.incomplete ";
+        for tail in ["", "<|call|>", "<|return|>", "<|end|>", "<meta>"] {
+            let text = format!(
+                "{}to=functions.lookup<|channel|>commentary {tail}<|message|>{{}}<|return|>",
+                partial.repeat(1000)
+            );
+            let headers: Vec<_> = harmony_tool_headers(&text).collect();
+            assert_eq!(headers.len(), 1);
+            assert_eq!(
+                headers[0].name("recipient_first").unwrap().as_str(),
+                "lookup"
+            );
+        }
+        let text = "<|channel|>commentary to=functions.bad<|channel|>commentary to=functions.lookup<|message|>{}<|return|>";
+        let headers: Vec<_> = harmony_tool_headers(text).collect();
+        assert_eq!(headers.len(), 1);
+        assert_eq!(headers[0].name("name").unwrap().as_str(), "lookup");
     }
 
     #[test]

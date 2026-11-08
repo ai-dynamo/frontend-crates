@@ -115,6 +115,9 @@ def compatibility_flags(source: Path, has_protocol: bool) -> list[str]:
         flags.append("conformance_no_tool_strict")
     if "fn set_in_reasoning" not in reason_source:
         flags.append("conformance_no_reasoning_init")
+    gpt_oss_source = source / "src/reasoning/gpt_oss_parser.rs"
+    if not gpt_oss_source.is_file() or "fn set_in_reasoning" not in gpt_oss_source.read_text():
+        flags.append("conformance_gpt_oss_no_reasoning_init")
     if not has_protocol or not (source / "src/tool_calling/jail.rs").exists() and not (source / "src/tool_calling/jail/mod.rs").exists():
         flags.append("conformance_no_jail")
     return flags

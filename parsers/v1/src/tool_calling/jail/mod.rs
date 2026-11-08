@@ -5338,6 +5338,263 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn harmony_native_projection_preserves_header_domain() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        let names = [
+            "f",
+            "f/x",
+            "f:x",
+            "f+x",
+            "@f",
+            "f<x",
+            "f\u{00a0}x",
+            "f=x",
+            "f|x",
+            "f>x",
+            "雪/☃",
+            "f,x",
+            "f[x]",
+            "f\"x",
+            "f\\x",
+            "f{x}",
+            "f#x",
+            "🙂",
+        ];
+        for name in names {
+            for channel in ["analysis", "commentary"] {
+                for header in [
+                    format!("<|channel|>{channel} to=functions.{name}"),
+                    format!("<|channel|>{channel} functions.{name}"),
+                    format!("<|start|>assistant to=functions.{name}<|channel|>{channel}"),
+                    format!("<|start|>assistant functions.{name}<|channel|>{channel}"),
+                ] {
+                    let input = format!("{header}<|message|>{{\"q\":\"x\"}}<|return|>");
+                    let (calls, text) =
+                        detect_and_parse_tool_call_with_recovery(&input, Some("harmony"), None)
+                            .await
+                            .unwrap();
+                    assert_eq!(calls.len(), 1);
+                    assert_eq!(calls[0].function.name, name);
+                    assert_eq!(calls[0].function.arguments, r#"{"q":"x"}"#);
+                    assert_eq!(text.as_deref(), Some(""));
+                    assert_eq!(
+                        harmony_reasoning_jail_events(vec![(input, vec![])], FinishReason::Stop)
+                            .await,
+                        vec![(name.to_string(), r#"{"q":"x"}"#.to_string())]
+                    );
+                }
+            }
+        }
+        for (header, prefix) in [
+            (
+                "<|start|>assistant to=functions.a/b<|channel|>commentary",
+                "",
+            ),
+            ("<|channel|>commentary\u{00a0}to=functions.lookup", ""),
+            ("<|start|>assistant functions.lookup<|channel|>analysis", ""),
+            (
+                "<|start|>assistant to=functions.lookup code<|channel|>commentary",
+                "",
+            ),
+        ] {
+            let name = if header.contains("a/b") {
+                "a/b"
+            } else {
+                "lookup"
+            };
+            let arguments =
+                r#"{"q":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>雪"}"#;
+            let input = format!("{header}<|message|>{arguments}<|return|>");
+            let expected = vec![(name.to_string(), format!("{prefix}{arguments}"))];
+            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                assert_eq!(
+                    harmony_reasoning_jail_events(
+                        vec![
+                            (input[..split].to_string(), vec![]),
+                            (input[split..].to_string(), vec![])
+                        ],
+                        FinishReason::Length
+                    )
+                    .await,
+                    expected,
+                    "text split {split}: {input}"
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_native_header_whitespace_preserves_calls() {
+        for channel in ["analysis", "commentary"] {
+            for separator in [" ", "  ", "\t", "\n", "\r", "\x0b", "\x0c"] {
+                for ending in ["<|call|>", "<|return|>"] {
+                    let input = format!(
+                        "<|channel|>{channel}{separator}to=functions.lookup<|message|>{{\"q\":\"x\"}}{ending}"
+                    );
+                    let expected = vec![("lookup".to_string(), r#"{"q":"x"}"#.to_string())];
+                    for split in 0..=input.len() {
+                        assert_eq!(
+                            harmony_reasoning_jail_events(
+                                vec![
+                                    (input[..split].to_string(), vec![]),
+                                    (input[split..].to_string(), vec![])
+                                ],
+                                FinishReason::Stop
+                            )
+                            .await,
+                            expected,
+                            "text split {split}: {input}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_recovered_recipient_keeps_malformed_argument_policy() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        let arguments = r#"{"q":"oops 雪"#;
+        let expected = vec![("lookup".to_string(), arguments.to_string())];
+        for predecessor in [
+            "",
+            "<|channel|>commentary to=functions.bad<|message|>{\"x\":",
+        ] {
+            for channel in ["analysis", "commentary"] {
+                for constraint in ["", "<|constrain|>json"] {
+                    for ending in ["<|call|>", "<|return|>"] {
+                        let input = format!(
+                            "{predecessor}to=functions.lookup{constraint}<|channel|>{channel}<|message|>{arguments}{ending}"
+                        );
+                        let parsed = GptOssReasoningParser::new()
+                            .unwrap()
+                            .detect_and_parse_reasoning(&input, &[]);
+                        assert_eq!(parsed.reasoning_text, "");
+                        for raw in [&input, &parsed.normal_text] {
+                            let (calls, visible) = detect_and_parse_tool_call_with_recovery(
+                                raw,
+                                Some("harmony"),
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                            let actual: Vec<_> = calls
+                                .into_iter()
+                                .map(|call| (call.function.name, call.function.arguments))
+                                .collect();
+                            assert_eq!(actual, expected, "direct/batch {input}");
+                            assert_eq!(visible.as_deref(), Some(""));
+                        }
+                        for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                            assert_eq!(
+                                harmony_reasoning_jail_events(
+                                    vec![
+                                        (input[..split].to_string(), vec![]),
+                                        (input[split..].to_string(), vec![])
+                                    ],
+                                    FinishReason::Stop
+                                )
+                                .await,
+                                expected,
+                                "text split {split}: {input}"
+                            );
+                        }
+                        let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                        for split in 0..=tokens.len() {
+                            assert_eq!(
+                                harmony_reasoning_jail_events(
+                                    vec![
+                                        (String::new(), tokens[..split].to_vec()),
+                                        (String::new(), tokens[split..].to_vec())
+                                    ],
+                                    FinishReason::Length
+                                )
+                                .await,
+                                expected,
+                                "token split {split}: {input}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_interrupted_json_message_keeps_later_final() {
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        for arguments in [r#"{"q":"unfinished"}"#, r#"{"q":"to=browser 雪"}"#] {
+            for final_prefix in ["<|start|>assistant", ""] {
+                let chunks = vec![
+                    "<|start|>",
+                    "assistant to=functions.lookup",
+                    "<|channel|>",
+                    "commentary ",
+                    "<|message|>",
+                    arguments,
+                    final_prefix,
+                    "<|channel|>",
+                    "final",
+                    "<|message|>",
+                    "recovered",
+                    "<|return|>",
+                ];
+                let input = chunks.concat();
+                let expected = vec![(String::new(), "recovered".to_string())];
+                assert_eq!(
+                    harmony_reasoning_jail_events(
+                        chunks
+                            .iter()
+                            .map(|text| ((*text).to_string(), vec![]))
+                            .collect(),
+                        FinishReason::Stop
+                    )
+                    .await,
+                    expected
+                );
+                for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                    assert_eq!(
+                        harmony_reasoning_jail_events(
+                            vec![
+                                (input[..split].to_string(), vec![]),
+                                (input[split..].to_string(), vec![])
+                            ],
+                            FinishReason::Length
+                        )
+                        .await,
+                        expected,
+                        "text split {split}: {input}"
+                    );
+                }
+                let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                for split in 0..=tokens.len() {
+                    assert_eq!(
+                        harmony_reasoning_jail_events(
+                            vec![
+                                (String::new(), tokens[..split].to_vec()),
+                                (String::new(), tokens[split..].to_vec())
+                            ],
+                            FinishReason::Stop
+                        )
+                        .await,
+                        expected,
+                        "token split {split}: {input}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn harmony_recovery_preserves_call_identity_and_wire_order() {
         use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
         use crate::{GptOssReasoningParser, ReasoningParser};

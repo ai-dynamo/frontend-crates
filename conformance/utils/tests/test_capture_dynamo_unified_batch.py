@@ -188,3 +188,21 @@ def test_dynamo_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch):
     after = capture.source_unavailable("9.2.13", job, tmp_path / "second.json")
     assert before["adapter_sha256"] != after["adapter_sha256"]
     assert before["job_sha256"] == after["job_sha256"]
+
+
+@pytest.mark.parametrize("override", [None, False, True])
+def test_gpt_oss_prefill_capability_checks_implementation_not_trait(tmp_path: Path, override) -> None:
+    reason = tmp_path / "src/reasoning"
+    tools = tmp_path / "src/tool_calling"
+    reason.mkdir(parents=True)
+    tools.mkdir(parents=True)
+    (reason / "mod.rs").write_text("fn set_in_reasoning(&mut self, _value: bool) {}")
+    (tools / "parsers.rs").write_text("detect_and_parse_tool_call_with_recovery")
+    (tools / "mod.rs").write_text("ToolDefinition pub strict:")
+    if override is not None:
+        (reason / "gpt_oss_parser.rs").write_text(
+            "fn set_in_reasoning(&mut self, _value: bool) {}" if override else "impl ReasoningParser for GptOssReasoningParser {}"
+        )
+    flags = capture.compatibility_flags(tmp_path, False)
+    assert "conformance_no_reasoning_init" not in flags
+    assert ("conformance_gpt_oss_no_reasoning_init" in flags) is (override is not True)
