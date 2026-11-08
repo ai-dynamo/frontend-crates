@@ -9107,7 +9107,7 @@ cases:
     - I3
     - I5
     - I7
-    description: A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated.
+    description: A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated. The turn emits nothing.
     display_id: UNIFIED.gpt_oss-unfinished_directed_analysis
     request: bbe45b5e973572795594c7f4b68cb20a3117fa8456df48b989981e4be77bc1fe
     golden: []

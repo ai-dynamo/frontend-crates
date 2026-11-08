@@ -4318,7 +4318,7 @@ _GPT_OSS_RECOVERY_CASES = (
     ("gpt_oss_orphan_terminator_preserves_messages", "A completed recipientless commentary message is followed by an orphan turn terminator and then a framed final message. Preserve both visible messages in order while suppressing the orphan control.",
      '<|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>',
      [{"kind": "text", "text": "visible\ndone"}]),
-    ("gpt_oss_unfinished_directed_analysis", "A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated.",
+    ("gpt_oss_unfinished_directed_analysis", "A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated. The turn emits nothing.",
      '<|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished', []),
     ("gpt_oss_malformed_then_recipient_first_call", "An unfinished commentary call has a JSON string quoting a partial tool header, followed by an unframed recipient-first Harmony header and a complete call. Keep the quoted header as data and resume before the later recipient; discard the unfinished first call.",
      '<|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>',
