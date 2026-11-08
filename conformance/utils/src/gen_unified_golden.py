@@ -4314,6 +4314,21 @@ def _structured_response_case():
 EDGE.append(_structured_response_case())
 
 
+_GPT_OSS_RECOVERY_CASES = (
+    ("gpt_oss_orphan_terminator_preserves_messages", "A completed recipientless commentary message is followed by an orphan turn terminator and then a framed final message. Preserve both visible messages in order while suppressing the orphan control.",
+     '<|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>',
+     [{"kind": "text", "text": "visible\ndone"}]),
+    ("gpt_oss_unfinished_directed_analysis", "A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated.",
+     '<|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished', []),
+    ("gpt_oss_malformed_then_recipient_first_call", "An unfinished commentary call has a JSON string quoting a partial tool header, followed by an unframed recipient-first Harmony header and a complete call. Keep the quoted header as data and resume before the later recipient; discard the unfinished first call.",
+     '<|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>',
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}]),
+    ("gpt_oss_unknown_channel_before_final", "Recipientless text under an unknown Harmony channel precedes a framed final message. Recover the unknown-channel text at its original position, before the later visible response.",
+     '<|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>',
+     [{"kind": "text", "text": "first\nsecond"}]),
+)
+
+
 _GPT_OSS_REVIEW_CASES = (
     ("tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
      '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{"city":"Paris"}<|call|>',
@@ -4455,7 +4470,7 @@ def _native_review_variants(scenario):
     return {}
 
 
-for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
+for _name, _description, _input, _golden in (*_GPT_OSS_REVIEW_CASES, *_GPT_OSS_RECOVERY_CASES):
     _variants = _native_review_variants(_name)
     _inputs = OnlyFamilies({"gpt_oss": (_input, D("UNSUPPORTED", VLLM_UNCAPTURABLE["gpt_oss"]), M)})
     _inputs.update({family: (native_input, D("UNSUPPORTED", "No peer capture recorded."), dynamo, golden)
@@ -4464,6 +4479,10 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
     _tools = {"gpt_oss": [], **{family: [{"name": _tool_name, "parameters": {
         "type": "object", "properties": {_parameter: {"type": "string"}},
     }}] for family in _variants}}
+    if _name in {case[0] for case in _GPT_OSS_RECOVERY_CASES}:
+        _tools["gpt_oss"] = [{"name": name, "parameters": {"type": "object", "properties": {
+            "path": {"type": "string"}, "content": {"type": "string"}, "q": {"type": "string"}, "x": {"type": "string"},
+        }}} for name in ("lookup", "bad") if f"functions.{name}" in _input]
     EDGE.append((
         _name, _description, ["I3", "I5", "I7"], _golden,
         {"starting_state":"None", "tool_output_mode":"Native", "named_tool":None},

@@ -1028,7 +1028,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9
+    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -2178,9 +2178,46 @@ def test_coalesced_prose_preserves_json_literals_without_inventing_words():
             _assert_input_carries_events("gpt_oss", "coalesced_prose", case)
 
 
+GPT_OSS_RECOVERY_ORACLES = {
+    "gpt_oss_orphan_terminator_preserves_messages": (
+        '<|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>',
+        [{"kind": "text", "text": "visible\ndone"}],
+    ),
+    "gpt_oss_unfinished_directed_analysis": (
+        '<|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished', [],
+    ),
+    "gpt_oss_malformed_then_recipient_first_call": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>',
+        [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}],
+    ),
+    "gpt_oss_unknown_channel_before_final": (
+        '<|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>',
+        [{"kind": "text", "text": "first\nsecond"}],
+    ),
+}
+
+
+@pytest.mark.parametrize("scenario", GPT_OSS_RECOVERY_ORACLES)
+def test_harmony_recovery_oracles_reject_changed_input_or_output(scenario):
+    case = build_cases("gpt_oss")[f"UNIFIED.{scenario}.gpt_oss"]
+    _assert_input_carries_events("gpt_oss", scenario, case)
+    for field, replacement in [("input", ""), ("golden", [{"kind": "reasoning", "text": "invented"}])]:
+        changed = {**case, field: replacement}
+        with pytest.raises(AssertionError, match="Harmony recovery"):
+            _assert_input_carries_events("gpt_oss", scenario, changed)
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
+    if scenario in GPT_OSS_RECOVERY_ORACLES:
+        assert family == "gpt_oss", "Harmony recovery grammar"
+        expected_input, expected_events = GPT_OSS_RECOVERY_ORACLES[scenario]
+        assert case["input"] == expected_input, "Harmony recovery input"
+        assert case["golden"] == expected_events, "Harmony recovery output"
+        assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}, "Harmony recovery mode"
+        assert case["finish_reason"] == "stop", "Harmony recovery finish"
+        return
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return

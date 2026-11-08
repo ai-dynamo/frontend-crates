@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use crate::ParserResult;
 use crate::ReasoningParser;
 use crate::tool_calling::harmony::harmony_parser::{
-    harmony_initial_role, harmony_markers, harmony_tool_headers,
+    harmony_initial_role, harmony_markers, harmony_tool_headers, process_harmony_token,
 };
 use crate::tool_calling::harmony::payload::{HarmonyPayload, HarmonyVisible};
 
@@ -62,13 +62,6 @@ pub struct GptOssReasoningParser {
     /// before the downstream tool parser receives its complete envelope.
     last_directed_channel: Option<String>,
     last_directed_recipient: Option<String>,
-    /// Content harmony decoded and attributed to a channel this parser does not
-    /// recognize, e.g. the `finalx` of a mistyped `<|channel|>finalx<|message|>`
-    /// header. Harmony itself is happy — it is in `Content` and hands over
-    /// deltas — but no visible-channel arm claims them, so without this buffer
-    /// they are dropped and the turn answers with `content: null`. Surfaced by
-    /// `finish_reasoning_stream` as normal text.
-    unattributed_text: String,
     /// Set by the first `finish_reasoning_stream` call. `process_eos()` is not
     /// repeatable (it mutates harmony state) and the recovery below is not
     /// naturally idempotent, so a second finalize must return nothing rather
@@ -116,7 +109,6 @@ impl GptOssReasoningParser {
             insert_normal_separator: false,
             last_directed_channel: None,
             last_directed_recipient: None,
-            unattributed_text: String::new(),
             parser_finished: false,
             payload: HarmonyPayload::default(),
             visible_payload: HarmonyVisible::default(),
@@ -351,7 +343,7 @@ fn append_message_by_channel(reasoning_text: &mut String, normal_text: &mut Stri
         Some("analysis") | Some("commentary") | None => {}
         // Unknown channel name: a malformed header harmony still parsed. Treat
         // the content as the answer rather than dropping it, matching what the
-        // streaming path recovers via `unattributed_text`. A directed message
+        // streaming path emits in place. A directed message
         // (`to=...`) is a tool envelope, not prose: drop it, as the
         // stranded-header path refuses `to=` headers.
         Some(_) if msg.recipient.is_none() => append_text_content(normal_text, &msg.content),
@@ -367,10 +359,10 @@ fn append_current_by_channel(
     current: String,
 ) {
     match channel.as_deref() {
-        Some("analysis") => append_separated(reasoning_text, &current),
+        Some("analysis") if recipient.is_none() => append_separated(reasoning_text, &current),
         Some("final") => append_separated(normal_text, &current),
-        Some("commentary") => append_separated(normal_text, &current),
-        None => {}
+        Some("commentary") if recipient.is_none() => append_separated(normal_text, &current),
+        Some("analysis") | Some("commentary") | None => {}
         // See `append_message_by_channel`: an unrecognized channel is a
         // malformed header, not a reason to discard the model's output.
         Some(_) if recipient.is_none() => append_separated(normal_text, &current),
@@ -380,7 +372,7 @@ fn append_current_by_channel(
 
 fn is_visible_normal_channel(channel: Option<&str>, recipient: Option<&str>) -> bool {
     matches!(channel, Some("final"))
-        || (matches!(channel, Some("commentary")) && recipient.is_none())
+        || (channel.is_some_and(|channel| channel != "analysis") && recipient.is_none())
 }
 
 /// Reconstruct the complete harmony envelope for the directed tool call that
@@ -416,27 +408,29 @@ fn reconstruct_directed_envelope(
         .into_iter()
         .next()?;
     let last_channel_idx = tokens.iter().rposition(|t| *t == channel_token_id)?;
-    let mut decoded = enc
-        .tokenizer()
-        .decode_utf8(&tokens[last_channel_idx..])
-        .unwrap_or_default();
-    if let Some(recipient) = recipient
-        && let Some((header, _)) = decoded.split_once("<|message|>")
-        && !header
-            .split_whitespace()
-            .any(|part| part.starts_with("to="))
-    {
-        // A role-first recipient precedes the channel slice used for handoff.
-        let channel_prefix = format!("<|channel|>{ch}");
-        if decoded.starts_with(&channel_prefix) {
-            decoded.insert_str(channel_prefix.len(), &format!(" to={recipient}"));
-        }
+    let previous_marker = tokens[..last_channel_idx].iter().rposition(|token| {
+        enc.tokenizer().is_special_token(*token)
+            && enc
+                .tokenizer()
+                .decode_utf8([*token])
+                .is_ok_and(|marker| marker != "<|constrain|>")
+    });
+    let begin = previous_marker.unwrap_or(0);
+    let decoded = enc.tokenizer().decode_utf8(&tokens[begin..]).ok()?;
+    let header = harmony_tool_headers(&decoded).last()?;
+    let start = header.get(0)?.start();
+    let channel_start = start + decoded[start..].find("<|channel|>")?;
+    let mut envelope = decoded[channel_start..].to_string();
+    if let Some(name) = header.name("recipient_first") {
+        let channel_end = "<|channel|>".len()
+            + if envelope.starts_with("<|channel|>analysis") {
+                "analysis".len()
+            } else {
+                "commentary".len()
+            };
+        envelope.insert_str(channel_end, &format!(" to=functions.{}", name.as_str()));
     }
-    if decoded.is_empty() {
-        None
-    } else {
-        Some(decoded)
-    }
+    Some(envelope)
 }
 
 /// Harmony channel names this parser knows how to attribute.
@@ -614,29 +608,14 @@ impl ReasoningParser for GptOssReasoningParser {
             envelope.push_str(&pending);
             envelope
         });
-        let mut result = if pending.is_empty() || directed_tool_pending {
-            ParserResult::default()
-        } else {
-            match self.parser.current_channel().as_deref() {
-                Some("analysis") => ParserResult {
-                    normal_text: String::new(),
-                    reasoning_text: pending,
-                },
-                Some("final") | Some("commentary") => ParserResult {
-                    normal_text: pending,
-                    reasoning_text: String::new(),
-                },
-                _ => ParserResult::default(),
-            }
-        };
-
-        // Content harmony decoded under a channel name this parser does not
-        // recognize. It is real model output that no arm claimed, so surface it
-        // as the answer rather than dropping the turn.
-        if !self.unattributed_text.is_empty() {
-            append_separated(
+        let mut result = ParserResult::default();
+        if !pending.is_empty() && !directed_tool_pending {
+            append_current_by_channel(
+                &mut result.reasoning_text,
                 &mut result.normal_text,
-                &std::mem::take(&mut self.unattributed_text),
+                self.parser.current_channel(),
+                self.parser.current_recipient().as_deref(),
+                pending,
             );
         }
 
@@ -691,7 +670,14 @@ impl ReasoningParser for GptOssReasoningParser {
             return ParserResult::default();
         }
 
+        let mut retained = Vec::new();
+        let encoding = get_harmony_encoding()
+            .as_ref()
+            .expect("parser encoding was initialized");
         for (i, token_id) in token_ids.iter().enumerate() {
+            if self.resynchronizing && *token_id != self.start_token_id {
+                continue;
+            }
             tracing::debug!(
                 "Processing token {} of {}: {}",
                 i + 1,
@@ -711,12 +697,25 @@ impl ReasoningParser for GptOssReasoningParser {
                 }
             };
             for token_id in guarded {
-                if let Err(e) = parser.process(token_id) {
-                    tracing::warn!(
-                        why = "harmony_batch_parse_error",
-                        "Harmony parse error for token_id {token_id}: {e}"
-                    );
-                    return ParserResult::default();
+                match process_harmony_token(
+                    parser,
+                    encoding,
+                    &mut self.resynchronizing,
+                    token_id,
+                    self.start_token_id,
+                    |parser| {
+                        retained.extend_from_slice(parser.messages());
+                        Ok(())
+                    },
+                ) {
+                    Ok(true) => {}
+                    result => {
+                        self.payload = HarmonyPayload::default();
+                        self.visible_payload = HarmonyVisible::default();
+                        if let Err(error) = result {
+                            tracing::warn!(why = "harmony_resync_unavailable", %error, "Could not recover Harmony parser");
+                        }
+                    }
                 }
             }
         }
@@ -726,7 +725,7 @@ impl ReasoningParser for GptOssReasoningParser {
 
         let mut reasoning_text = String::new();
         let mut normal_text = String::new();
-        for msg in output_msgs {
+        for msg in retained.iter().chain(output_msgs) {
             append_message_by_channel(&mut reasoning_text, &mut normal_text, msg);
         }
 
@@ -846,30 +845,28 @@ impl ReasoningParser for GptOssReasoningParser {
                 );
                 let previous_channel = parser.current_channel();
                 let previous_recipient = parser.current_recipient();
-                if let Err(e) = parser.process(*token_id) {
-                    tracing::warn!(
-                        token_id,
-                        error = %e,
-                        "Harmony parse error, resynchronizing at the next start token"
-                    );
-                    self.resynchronizing = true;
-                    self.last_directed_channel = None;
-                    self.last_directed_recipient = None;
-                    self.payload = HarmonyPayload::default();
-                    self.visible_payload = HarmonyVisible::default();
-                    if let Ok(enc) = get_harmony_encoding() {
-                        match StreamableParser::new(enc.clone(), None) {
-                            Ok(replacement) => *parser = replacement,
-                            Err(error) => tracing::warn!(
-                                error = %error,
-                                "Failed to reset Harmony parser for resynchronization"
-                            ),
+                match process_harmony_token(
+                    parser,
+                    get_harmony_encoding()
+                        .as_ref()
+                        .expect("parser encoding was initialized"),
+                    &mut self.resynchronizing,
+                    *token_id,
+                    self.start_token_id,
+                    |_| Ok(()),
+                ) {
+                    Ok(true) => {}
+                    result => {
+                        if let Err(error) = result {
+                            tracing::warn!(why = "harmony_resync_unavailable", %error, "Could not recover Harmony parser");
                         }
+                        self.last_directed_channel = None;
+                        self.last_directed_recipient = None;
+                        self.payload = HarmonyPayload::default();
+                        self.visible_payload = HarmonyVisible::default();
+                        continue;
                     }
-                    // Preserve parsed deltas and scan the remaining tokens.
-                    continue;
                 }
-                self.resynchronizing = false;
                 let current_channel = parser.current_channel();
                 let current_recipient = parser.current_recipient();
 
@@ -955,15 +952,14 @@ impl ReasoningParser for GptOssReasoningParser {
                         // envelope on the action-stop chunk, so dropping the delta
                         // here is correct.
                         "analysis" | "commentary" => {}
-                        // Any other channel name is not harmony: the model
-                        // mistyped the header (`finalx`) or invented a channel.
-                        // Harmony still decoded real content for it, so hold it
-                        // and surface it at EOF instead of losing the message.
-                        // A directed one (`to=...`) is a tool envelope, not prose:
-                        // drop it, as the stranded-header path does.
                         _ if current_recipient.is_some() => {}
                         _ => {
-                            self.unattributed_text.push_str(&delta);
+                            if self.insert_normal_separator {
+                                normal_delta.push('\n');
+                                self.insert_normal_separator = false;
+                            }
+                            normal_delta.push_str(&delta);
+                            self.emitted_normal_text = true;
                         }
                     }
                 }
@@ -990,6 +986,85 @@ impl ReasoningParser for GptOssReasoningParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_recovery_schedules(input: &str, normal: &str, reasoning: &str) {
+        let batch = GptOssReasoningParser::new()
+            .unwrap()
+            .detect_and_parse_reasoning(input, &[]);
+        assert_eq!(batch.normal_text, normal);
+        assert_eq!(batch.reasoning_text, reasoning);
+        for split in (0..=input.len()).filter(|&split| input.is_char_boundary(split)) {
+            let output = collect_stream([&input[..split], &input[split..]]);
+            assert_eq!(output.normal_text, normal, "text split {split}");
+            assert_eq!(output.reasoning_text, reasoning, "text split {split}");
+        }
+        let tokens = encode_text_to_tokens(input).unwrap();
+        for split in 0..=tokens.len() {
+            let mut parser = GptOssReasoningParser::new().unwrap();
+            let mut output = ParserResult::default();
+            for chunk in [&tokens[..split], &tokens[split..]] {
+                let delta = parser.parse_reasoning_streaming_incremental("", chunk);
+                output.normal_text.push_str(&delta.normal_text);
+                output.reasoning_text.push_str(&delta.reasoning_text);
+            }
+            let tail = parser.finish_reasoning_stream();
+            output.normal_text.push_str(&tail.normal_text);
+            output.reasoning_text.push_str(&tail.reasoning_text);
+            assert_eq!(output.normal_text, normal, "token split {split}");
+            assert_eq!(output.reasoning_text, reasoning, "token split {split}");
+            let repeated = parser.finish_reasoning_stream();
+            assert_eq!(repeated.normal_text, "");
+            assert_eq!(repeated.reasoning_text, "");
+        }
+    }
+
+    #[test]
+    fn recovery_batch_keeps_completed_messages_after_orphan_stop() {
+        for framing in ["", "<|start|>assistant"] {
+            for stop in ["<|return|>", "<|call|>"] {
+                for discarded in ["", "unframed", r#"{"x":""#] {
+                    let input = format!(
+                        "{framing}<|channel|>analysis<|message|>thought<|end|><|start|>assistant<|channel|>commentary<|message|>雪<|end|>{stop}{discarded}<|start|>assistant<|channel|>final<|message|>done<|return|>"
+                    );
+                    assert_recovery_schedules(&input, "雪\ndone", "thought");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn recovery_unfinished_directed_analysis_is_not_reasoning() {
+        for framing in ["", "<|start|>assistant"] {
+            for channel in ["analysis", "commentary"] {
+                for recipient in ["functions.lookup", "browser"] {
+                    for suffix in ["", "<", "<|"] {
+                        let input = format!(
+                            r#"{framing}<|channel|>{channel} to={recipient}<|message|>{{"path":"雪","content":"unfinished{suffix}"#
+                        );
+                        assert_recovery_schedules(&input, "", "");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn recovery_unknown_channel_keeps_stream_position() {
+        for framing in ["", "<|start|>assistant"] {
+            for channel in ["finalx", "custom"] {
+                for suffix in ["", "<", "<|"] {
+                    let input = format!(
+                        "{framing}<|channel|>{channel}<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>雪{suffix}"
+                    );
+                    assert_recovery_schedules(&input, &format!("first\n雪{suffix}"), "");
+                }
+                let input = format!(
+                    "{framing}<|channel|>{channel} to=functions.lookup<|message|>{{}}<|return|><|start|>assistant<|channel|>final<|message|>visible<|return|>"
+                );
+                assert_recovery_schedules(&input, "visible", "");
+            }
+        }
+    }
 
     #[test]
     fn test_harmony_action_stops_and_legacy_terminator_export() {

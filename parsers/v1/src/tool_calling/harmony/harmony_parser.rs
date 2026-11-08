@@ -37,7 +37,7 @@ fn commentary_header_regex() -> &'static Regex {
         // Between name and `<|message|>` we tolerate optional
         // `<|constrain|>json`, bare `code`, or nothing (non-greedy `.*?`).
         Regex::new(
-            r"(?s)(?:(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+)|(?:<\|start\|>assistant\s+)?to=functions\.(?P<recipient_first>[\w.\-]+)\s*<\|channel\|>(?:commentary|analysis)).*?<\|message\|>",
+            r"(?s)(?:(?:<\|start\|>assistant)?<\|channel\|>(?:commentary|analysis) to=functions\.(?P<name>[\w.\-]+)|(?:<\|start\|>assistant\s+)?to=functions\.(?P<recipient_first>[\w.\-]+)\s*(?:<\|constrain\|>[^<]*)?<\|channel\|>(?:commentary|analysis)).*?<\|message\|>",
         )
         .expect("commentary header regex")
     })
@@ -147,7 +147,7 @@ pub(crate) fn harmony_markers(text: &str) -> impl Iterator<Item = (regex::Match<
                     header_start = marker.end();
                 }
                 "<|call|>" | "<|return|>" | "<|end|>" => {
-                    visible = Some(HarmonyVisible::default());
+                    visible = (!header_pending).then(HarmonyVisible::default);
                     header_start = marker.end();
                     header_pending = true;
                     json_end = 0;
@@ -176,7 +176,14 @@ pub(crate) fn harmony_tool_headers(text: &str) -> impl Iterator<Item = Captures<
             if markers.peek().is_some_and(|(_, in_json)| *in_json) {
                 // A quoted partial header can extend into a real header's message
                 // marker. Resume outside its JSON value without consuming that header.
-                search_start = markers.find(|(_, in_json)| !in_json)?.0.start();
+                let mut resume = header.start();
+                for (marker, in_json) in markers.by_ref() {
+                    if !in_json {
+                        break;
+                    }
+                    resume = marker.end();
+                }
+                search_start = resume;
                 continue;
             }
             search_start = header.end();
@@ -191,6 +198,32 @@ pub(crate) fn harmony_initial_role(token_ids: &[u32], start_token_id: u32) -> Op
     } else {
         Some(Role::Assistant)
     }
+}
+
+pub(crate) fn process_harmony_token(
+    parser: &mut StreamableParser,
+    encoding: &HarmonyEncoding,
+    resynchronizing: &mut bool,
+    token: u32,
+    start_token: u32,
+    before_reset: impl FnOnce(&StreamableParser) -> anyhow::Result<()>,
+) -> anyhow::Result<bool> {
+    if *resynchronizing && token != start_token {
+        return Ok(false);
+    }
+    if parser.process(token).is_err() {
+        before_reset(parser)?;
+        *parser = StreamableParser::new(encoding.clone(), None)?;
+        *resynchronizing = true;
+        tracing::warn!(
+            why = "harmony_orphan_token_resync",
+            skipped_tokens = 1,
+            "Harmony parser is waiting for the next message start"
+        );
+        return Ok(false);
+    }
+    *resynchronizing = false;
+    Ok(true)
 }
 
 fn push_unique(items: &mut Vec<String>, item: String) {
@@ -378,14 +411,22 @@ fn content_looks_like_json(content: &[Content]) -> bool {
 fn harmony_message_boundary(text: &str) -> Option<regex::Match<'_>> {
     // A lone header marker can be literal raw argument text. Require a complete
     // header, or an explicit message end, before rejecting an unfinished call.
-    MESSAGE_BOUNDARY_REGEX
+    let boundary = MESSAGE_BOUNDARY_REGEX
         .get_or_init(|| {
             Regex::new(
                 r"<\|end\|>|(?:<\|start\|>|<\|channel\|>)[^<]*(?:<\|(?:channel|constrain|call|return)\|>[^<]*)*<\|message\|>",
             )
             .expect("message boundary regex")
         })
-        .find_at(text, json_value_prefix_end(text).unwrap_or_default())
+        .find_at(text, json_value_prefix_end(text).unwrap_or_default());
+    let tool_header = harmony_tool_headers(text)
+        .next()
+        .and_then(|header| header.get(0));
+    match (boundary, tool_header) {
+        (Some(boundary), Some(header)) if header.start() < boundary.start() => Some(header),
+        (Some(boundary), _) => Some(boundary),
+        (None, header) => header,
+    }
 }
 
 /// Extract calls via regex when harmony's strict tokenizer rejects the input
@@ -539,7 +580,6 @@ pub async fn parse_tool_calls_harmony_complete(
         }
     }
     tokens.extend(enc.tokenizer().encode_with_special_tokens(&text[cursor..]));
-    let has_quoted_markers = cursor != 0;
     let mut message_stops = Vec::new();
     let parsed: anyhow::Result<_> = (|| {
         let start_tokens = enc.tokenizer().encode_with_special_tokens("<|start|>");
@@ -550,18 +590,47 @@ pub async fn parse_tool_calls_harmony_complete(
             StreamableParser::new(enc.clone(), harmony_initial_role(&tokens, *start_token_id))?;
         let action_stops = enc.stop_tokens_for_assistant_actions()?;
         let call_stop = enc.tokenizer().encode_with_special_tokens("<|call|>");
+        let mut resynchronizing = false;
+        let mut retained = Vec::new();
         for token in tokens {
-            parser.process(token)?;
-            if parser.messages().len() > message_stops.len() {
+            if !process_harmony_token(
+                &mut parser,
+                enc,
+                &mut resynchronizing,
+                token,
+                *start_token_id,
+                |parser| {
+                    anyhow::ensure!(
+                        action_stops.contains(&token)
+                            || enc.tokenizer().decode_utf8([token])? == "<|end|>",
+                        "Harmony framing requires regex recovery"
+                    );
+                    retained.extend_from_slice(parser.messages());
+                    Ok(())
+                },
+            )? {
+                continue;
+            }
+            if retained.len() + parser.messages().len() > message_stops.len() {
                 message_stops.push((
                     action_stops.contains(&token),
                     call_stop.as_slice() == [token],
                 ));
             }
         }
-        parser.process_eos()?;
-        message_stops.resize(parser.messages().len(), (false, false));
-        Ok(parser.into_messages())
+        if let Err(error) = parser.process_eos() {
+            if retained.is_empty() && parser.messages().is_empty() {
+                return Err(error);
+            }
+            tracing::warn!(
+                why = "harmony_unfinished_header_after_messages",
+                completed_messages = retained.len() + parser.messages().len(),
+                "Preserving completed Harmony messages at an unfinished header"
+            );
+        }
+        retained.extend(parser.into_messages());
+        message_stops.resize(retained.len(), (false, false));
+        Ok(retained)
     })();
     let messages = match parsed {
         Ok(messages) => messages,
@@ -615,10 +684,7 @@ pub async fn parse_tool_calls_harmony_complete(
                 continue;
             };
             if harmony_message_boundary(&args_json).is_some() {
-                if has_quoted_markers {
-                    return Ok(recover_harmony_calls(text));
-                }
-                continue;
+                return Ok(recover_harmony_calls(text));
             }
 
             res.push(ToolCallResponse {
@@ -629,9 +695,11 @@ pub async fn parse_tool_calls_harmony_complete(
                     arguments: args_json,
                 },
             });
-        } else if channel == Some("final")
+        } else if (channel.is_some_and(|channel| !matches!(channel, "analysis" | "commentary"))
+            && message.recipient.is_none())
+            || channel == Some("final")
             || (channel == Some("commentary")
-                && recipient.is_empty()
+                && message.recipient.is_none()
                 && !(has_call_stop
                     && (message.content_type.as_deref() == Some("<|constrain|>json")
                         || content_looks_like_json(&message.content))))
@@ -729,6 +797,58 @@ pub fn detect_tool_call_start_harmony(
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn recovery_orphan_stop_keeps_completed_messages_at_header_eof() {
+        for prefix in ["", "<|start|>assistant"] {
+            for orphan in ["", "<|call|>", "<|return|>"] {
+                for tail in [
+                    "",
+                    "<|start|>assistant<|channel|>final",
+                    "<|start|>assistant<|channel|>analysis to=functions.lookup",
+                ] {
+                    let input =
+                        format!("{prefix}<|channel|>commentary<|message|>one<|end|>{orphan}{tail}");
+                    let (calls, normal) = super::parse_tool_calls_harmony_complete(
+                        &input,
+                        &super::JsonParserConfig::default(),
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                    assert!(calls.is_empty());
+                    assert_eq!(normal.as_deref(), Some("one"), "{input}");
+                }
+            }
+        }
+        for recipient in ["", "browser", "functions.lookup"] {
+            let input = format!("<|channel|>finalx to={recipient}<|message|>secret<|return|>");
+            let (calls, normal) = super::parse_tool_calls_harmony_complete(
+                &input,
+                &super::JsonParserConfig::default(),
+                None,
+            )
+            .await
+            .unwrap();
+            assert!(calls.is_empty());
+            assert_eq!(normal.as_deref(), Some(""));
+        }
+    }
+
+    #[tokio::test]
+    async fn recovery_recipient_first_header_survives_malformed_predecessor() {
+        let input = r#"<|channel|>commentary to=functions.bad<|message|>{"x":to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>"#;
+        let (calls, _) = super::parse_tool_calls_harmony_complete(
+            input,
+            &super::JsonParserConfig::default(),
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].function.name, "lookup");
+        assert_eq!(calls[0].function.arguments, r#"{"path":"ok"}"#);
+    }
+
     use super::*;
 
     // Model-output fixtures cannot own or saturate a Tokio runtime blocking pool.

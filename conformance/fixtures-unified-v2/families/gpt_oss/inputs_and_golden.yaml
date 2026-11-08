@@ -312,6 +312,27 @@ tools:
         Literal:
           const: '[1,2]'
     strict: true
+  tools_6a0d489d9bf7b79c:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        x:
+          type: string
+  - name: bad
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        x:
+          type: string
   tools_d7d32f10737ac6cd:
   - name: schema_probe
     parameters:
@@ -1262,6 +1283,17 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_286d83a3fe238aa7:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        x:
+          type: string
   tools_61f8e5714fc9d54c:
   - name: capture_payload
     parameters:
@@ -2236,6 +2268,12 @@ requests:
     - 11
     - 2
     - 8
+    finish_step: true
+  3491fd00a60e4ff6ccd35c911036baf0824aa6ad68977f0534bbfade9c9ce631:
+    input: <|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>
+    tools: tools_6a0d489d9bf7b79c
+    chunk_sizes:
+    - 170
     finish_step: true
   34ad9ff9150c67b81ab16e2ad34d0b447f6a5960b5e79fdc75d2514a21c7d289:
     input: <|start|>assistant to=functions.lookup<|channel|>commentary <|message|>{"markers":"<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>"}<|call|>
@@ -3814,6 +3852,12 @@ requests:
     - 7
     - 17
     finish_step: true
+  bbe45b5e973572795594c7f4b68cb20a3117fa8456df48b989981e4be77bc1fe:
+    input: <|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished
+    tools: tools_286d83a3fe238aa7
+    chunk_sizes:
+    - 83
+    finish_step: true
   bc2e12ac5f5f0358e79166dd8a040ab6bb6292d1026cc886194c2e1c396923bc:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_9d7e29c38b45febb
@@ -4043,6 +4087,12 @@ requests:
     - 8
     - 7
     - 57
+    finish_step: true
+  d19438fd794e75d10dd2decb1bc6b3c9d9941185c3abf2584aad3dd77eede186:
+    input: <|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 101
     finish_step: true
   d1983d43f9ceffbd1d1fa294a0f0c86da3ab15de92d11d08483996fc181ba4f7:
     init:
@@ -4447,6 +4497,12 @@ requests:
   f6d9aec6c7d25e89b388ca4cd1f60a27eda9ec4a6ad5dbcfe2c8235f143c5ef3:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}<|call|>'
     tools: tools_e3ff7e072a11e815
+  f7ec73139e1a04a11aa6973b81122686d7deceb8ee6a4cfb5fd7dbd1cc27a3bc:
+    input: <|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 115
+    finish_step: true
   f8a0f32eba8f930dc98f37666d48cf93b5eadb7ce17555e0b311acde0e8021b1:
     init:
       starting_state: None
@@ -9021,6 +9077,10 @@ cases:
       arguments:
         city: Paris
   gpt_oss_quoted_tool_header_in_final_json:
+    policy:
+    - I3
+    - I5
+    - I7
     description: Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Preserve the existing newline between visible messages.
     display_id: UNIFIED.gpt_oss-quoted_tool_header_in_final_json
     request: fdafb5416fde09f02e1aaa477c82b1775fe063caff59a91e2397909138802da0
@@ -9029,7 +9089,51 @@ cases:
       text: 'Preamble
 
         {"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'
+  gpt_oss_orphan_terminator_preserves_messages:
     policy:
     - I3
     - I5
     - I7
+    description: A completed recipientless commentary message is followed by an orphan turn terminator and then a framed final message. Preserve both visible messages in order while suppressing the orphan control.
+    display_id: UNIFIED.gpt_oss-orphan_terminator_preserves_messages
+    request: f7ec73139e1a04a11aa6973b81122686d7deceb8ee6a4cfb5fd7dbd1cc27a3bc
+    golden:
+    - kind: text
+      text: 'visible
+
+        done'
+  gpt_oss_unfinished_directed_analysis:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated.
+    display_id: UNIFIED.gpt_oss-unfinished_directed_analysis
+    request: bbe45b5e973572795594c7f4b68cb20a3117fa8456df48b989981e4be77bc1fe
+    golden: []
+  gpt_oss_malformed_then_recipient_first_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unfinished commentary call has a JSON string quoting a partial tool header, followed by an unframed recipient-first Harmony header and a complete call. Keep the quoted header as data and resume before the later recipient; discard the unfinished first call.
+    display_id: UNIFIED.gpt_oss-malformed_then_recipient_first_call
+    request: 3491fd00a60e4ff6ccd35c911036baf0824aa6ad68977f0534bbfade9c9ce631
+    golden:
+    - kind: tool_call
+      name: lookup
+      arguments:
+        path: ok
+  gpt_oss_unknown_channel_before_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless text under an unknown Harmony channel precedes a framed final message. Recover the unknown-channel text at its original position, before the later visible response.
+    display_id: UNIFIED.gpt_oss-unknown_channel_before_final
+    request: d19438fd794e75d10dd2decb1bc6b3c9d9941185c3abf2584aad3dd77eede186
+    golden:
+    - kind: text
+      text: 'first
+
+        second'

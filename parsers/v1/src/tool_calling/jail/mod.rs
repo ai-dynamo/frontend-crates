@@ -5299,9 +5299,14 @@ mod tests {
             .collect()
             .await;
         let mut events: Vec<(String, String)> = Vec::new();
+        let mut finishes = Vec::new();
         for response in responses {
+            assert!(response.error.is_none(), "jail returned an error");
             if let Some(data) = response.data {
                 for choice in data.choices {
+                    if let Some(finish) = choice.finish_reason {
+                        finishes.push(finish);
+                    }
                     for call in choice.delta.tool_calls.unwrap_or_default() {
                         let function = call.function.unwrap();
                         events.push((function.name.unwrap(), function.arguments.unwrap()));
@@ -5321,7 +5326,111 @@ mod tests {
                 }
             }
         }
+        let expected_finish = if finish_reason == FinishReason::Stop
+            && events.iter().any(|(name, _)| !name.is_empty())
+        {
+            FinishReason::ToolCalls
+        } else {
+            finish_reason
+        };
+        assert_eq!(finishes, vec![expected_finish]);
         events
+    }
+
+    #[tokio::test]
+    async fn harmony_recovery_preserves_call_identity_and_wire_order() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let encoding = crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+            .await
+            .as_ref()
+            .unwrap();
+        for framing in ["", "<|start|>assistant"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                for channel in ["analysis", "commentary"] {
+                    for constraint in ["", "<|constrain|>json"] {
+                        let prior = format!(
+                            "{framing}<|channel|>commentary to=functions.first<|message|>{{}}{ending}"
+                        );
+                        let next = format!(
+                            "to=functions.lookup{constraint}<|channel|>{channel}<|message|>{{\"path\":\"雪\"}}{ending}"
+                        );
+                        for malformed in [
+                            r#"{"x":"#,
+                            r#"{"q":"<|channel|>commentary to=functions.fake"}"#,
+                        ] {
+                            let input = format!(
+                                "{prior}<|start|>assistant<|channel|>commentary to=functions.bad<|message|>{malformed}{next}"
+                            );
+                            let expected = vec![
+                                ("first".to_string(), "{}".to_string()),
+                                ("lookup".to_string(), r#"{"path":"雪"}"#.to_string()),
+                            ];
+                            for raw in [
+                                &input,
+                                &GptOssReasoningParser::new()
+                                    .unwrap()
+                                    .detect_and_parse_reasoning(&input, &[])
+                                    .normal_text,
+                            ] {
+                                let (calls, visible) = detect_and_parse_tool_call_with_recovery(
+                                    raw,
+                                    Some("harmony"),
+                                    None,
+                                )
+                                .await
+                                .unwrap();
+                                let actual: Vec<_> = calls
+                                    .into_iter()
+                                    .map(|call| (call.function.name, call.function.arguments))
+                                    .collect();
+                                assert_eq!(actual, expected, "direct/batch {input}");
+                                assert_eq!(visible.as_deref(), Some(""));
+                            }
+                            for finish in [
+                                FinishReason::Stop,
+                                FinishReason::Length,
+                                FinishReason::ToolCalls,
+                            ] {
+                                for split in
+                                    (0..=input.len()).filter(|&i| input.is_char_boundary(i))
+                                {
+                                    assert_eq!(
+                                        harmony_reasoning_jail_events(
+                                            vec![
+                                                (input[..split].to_string(), vec![]),
+                                                (input[split..].to_string(), vec![])
+                                            ],
+                                            finish
+                                        )
+                                        .await,
+                                        expected,
+                                        "text split {split}: {input}"
+                                    );
+                                }
+                                let tokens =
+                                    encoding.tokenizer().encode_with_special_tokens(&input);
+                                for split in 0..=tokens.len() {
+                                    assert_eq!(
+                                        harmony_reasoning_jail_events(
+                                            vec![
+                                                (String::new(), tokens[..split].to_vec()),
+                                                (String::new(), tokens[split..].to_vec())
+                                            ],
+                                            finish
+                                        )
+                                        .await,
+                                        expected,
+                                        "token split {split}: {input}"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[tokio::test]
@@ -5484,58 +5593,60 @@ mod tests {
         let literal = "<|channel|>analysis<|message|>literal<|end|><|channel|>commentary to=functions.fake<|message|>{}<|call|>雪";
         for channel in ["analysis", "commentary"] {
             for ending in ["<|call|>", "<|return|>"] {
-                let arguments = serde_json::json!({"x": literal}).to_string();
-                let input = format!(
-                    "<|start|>assistant to=functions.lookup<|channel|>{channel}<|message|>{arguments}{ending}"
-                );
-                let expected = vec![("lookup".to_string(), arguments)];
-                let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
-                for token_input in [false, true] {
-                    let mut reasoning = GptOssReasoningParser::new().unwrap();
-                    let parsed = if token_input {
-                        reasoning.detect_and_parse_reasoning("", &tokens)
-                    } else {
-                        reasoning.detect_and_parse_reasoning(&input, &[])
-                    };
-                    let (calls, normal) = detect_and_parse_tool_call_with_recovery(
-                        &parsed.normal_text,
-                        Some("harmony"),
-                        None,
-                    )
-                    .await
-                    .unwrap();
-                    assert_eq!(calls.len(), 1, "role-first batch token_input={token_input}");
-                    assert_eq!(calls[0].function.name, expected[0].0);
-                    assert_eq!(calls[0].function.arguments, expected[0].1);
-                    assert_eq!(normal.as_deref(), Some(""));
-                }
-                for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
-                    assert_eq!(
-                        harmony_reasoning_jail_events(
-                            vec![
-                                (input[..split].to_string(), vec![]),
-                                (input[split..].to_string(), vec![])
-                            ],
-                            FinishReason::Stop
-                        )
-                        .await,
-                        expected,
-                        "role-first text split {split}"
+                for constraint in ["", "<|constrain|>json"] {
+                    let arguments = serde_json::json!({"x": literal}).to_string();
+                    let input = format!(
+                        "<|start|>assistant to=functions.lookup{constraint}<|channel|>{channel}<|message|>{arguments}{ending}"
                     );
-                }
-                for split in 0..=tokens.len() {
-                    assert_eq!(
-                        harmony_reasoning_jail_events(
-                            vec![
-                                (String::new(), tokens[..split].to_vec()),
-                                (String::new(), tokens[split..].to_vec())
-                            ],
-                            FinishReason::ToolCalls
+                    let expected = vec![("lookup".to_string(), arguments)];
+                    let tokens = encoding.tokenizer().encode_with_special_tokens(&input);
+                    for token_input in [false, true] {
+                        let mut reasoning = GptOssReasoningParser::new().unwrap();
+                        let parsed = if token_input {
+                            reasoning.detect_and_parse_reasoning("", &tokens)
+                        } else {
+                            reasoning.detect_and_parse_reasoning(&input, &[])
+                        };
+                        let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                            &parsed.normal_text,
+                            Some("harmony"),
+                            None,
                         )
-                        .await,
-                        expected,
-                        "role-first token split {split}"
-                    );
+                        .await
+                        .unwrap();
+                        assert_eq!(calls.len(), 1, "role-first batch token_input={token_input}");
+                        assert_eq!(calls[0].function.name, expected[0].0);
+                        assert_eq!(calls[0].function.arguments, expected[0].1);
+                        assert_eq!(normal.as_deref(), Some(""));
+                    }
+                    for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                        assert_eq!(
+                            harmony_reasoning_jail_events(
+                                vec![
+                                    (input[..split].to_string(), vec![]),
+                                    (input[split..].to_string(), vec![])
+                                ],
+                                FinishReason::Stop
+                            )
+                            .await,
+                            expected,
+                            "role-first text split {split}"
+                        );
+                    }
+                    for split in 0..=tokens.len() {
+                        assert_eq!(
+                            harmony_reasoning_jail_events(
+                                vec![
+                                    (String::new(), tokens[..split].to_vec()),
+                                    (String::new(), tokens[split..].to_vec())
+                                ],
+                                FinishReason::ToolCalls
+                            )
+                            .await,
+                            expected,
+                            "role-first token split {split}"
+                        );
+                    }
                 }
             }
         }
