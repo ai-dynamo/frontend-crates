@@ -40,9 +40,13 @@ fn commentary_header_regex() -> &'static Regex {
     })
 }
 
+fn commentary_header_prefix_regex() -> &'static Regex {
+    COMMENTARY_HEADER_PREFIX_REGEX
+        .get_or_init(|| Regex::new(COMMENTARY_HEADER_PREFIX).expect("header prefix regex"))
+}
+
 fn bounded_harmony_header(text: &str, mut start: usize) -> Option<Captures<'_>> {
-    let prefix_regex = COMMENTARY_HEADER_PREFIX_REGEX
-        .get_or_init(|| Regex::new(COMMENTARY_HEADER_PREFIX).expect("header prefix regex"));
+    let prefix_regex = commentary_header_prefix_regex();
     loop {
         let prefix = prefix_regex.find_at(text, start)?;
         let boundary = special_token_regex()
@@ -306,6 +310,34 @@ fn strip_harmony_protocol_from_normal_text(text: &str, reason: &'static str) -> 
         ),
     ];
     let mut spans = Vec::new();
+    for prefix in commentary_header_prefix_regex().find_iter(text) {
+        let first = markers.partition_point(|(marker, _)| marker.start() < prefix.start());
+        if markers
+            .get(first)
+            .is_some_and(|(marker, in_json)| *in_json && marker.start() < prefix.end())
+        {
+            continue;
+        }
+        let after_prefix = markers.partition_point(|(marker, _)| marker.start() < prefix.end());
+        let boundary = markers[after_prefix..].iter().find(|(marker, in_json)| {
+            !in_json
+                && marker.start() >= prefix.end()
+                && matches!(marker.as_str(), "<|start|>" | "<|channel|>" | "<|message|>")
+        });
+        if boundary.is_none_or(|(marker, _)| marker.as_str() != "<|message|>") {
+            let boundary_start = boundary.map_or(text.len(), |(marker, _)| marker.start());
+            let end = commentary_header_prefix_regex()
+                .find_at(text, prefix.end())
+                .map_or(boundary_start, |next| next.start().min(boundary_start));
+            spans.push((
+                prefix.start(),
+                end,
+                0,
+                "unfinished_directed_header".to_string(),
+            ));
+        }
+    }
+
     // Keep JSON ownership anchored to the original message marker. Replacing a
     // final envelope first would expose its quoted markers to later cleanup passes.
     for (priority, (regex, endings, label)) in cleanups.into_iter().enumerate() {
@@ -898,6 +930,37 @@ mod tests {
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].function.name, "lookup");
         assert_eq!(calls[0].function.arguments, r#"{"path":"ok"}"#);
+    }
+
+    #[tokio::test]
+    async fn recovery_unfinished_recipient_first_header_does_not_leak() {
+        for channel in ["commentary", "analysis"] {
+            for ending in ["<|call|>", "<|return|>"] {
+                for suffix in [
+                    "",
+                    "<|start|>assistant<|channel|>final<|message|>Done.<|return|>",
+                ] {
+                    let input = format!(
+                        "<|start|>assistant to=functions.bad<|channel|>{channel}<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{{\"q\":\"x\"}}{ending}{suffix}"
+                    );
+                    let (calls, normal) = super::parse_tool_calls_harmony_complete(
+                        &input,
+                        &super::JsonParserConfig::default(),
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                    assert_eq!(calls.len(), 1);
+                    assert_eq!(calls[0].function.name, "lookup");
+                    assert_eq!(calls[0].function.arguments, r#"{"q":"x"}"#);
+                    assert_eq!(
+                        normal.as_deref(),
+                        Some(if suffix.is_empty() { "" } else { "Done." }),
+                        "{input}"
+                    );
+                }
+            }
+        }
     }
 
     use super::*;
