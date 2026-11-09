@@ -85,7 +85,7 @@ def finalizer(tmp_path, monkeypatch):
 @pytest.mark.parametrize("failures,expected_attempts,delays", [
     ([b"gh: HTTP 503\n"], 2, [1]),
     ([b"gh: Bad Gateway (HTTP 502)\n", b"gh: HTTP 504\n"], 3, [1, 2]),
-    ([b"gh: HTTP 503\n"] * 3, 3, [1, 2]),
+    ([b"gh: HTTP 503\n"] * 6, 7, [1, 2, 4, 8, 15, 15]),
     ([b"gh: Not Found (HTTP 404)\n"], 1, []),
     ([b"gh: HTTP 429\n"], 1, []),
     ([b"connection reset\n"], 1, []),
@@ -129,6 +129,8 @@ def test_artifact_download_retries_only_server_errors(finalizer, monkeypatch, ca
     assert not (destination / "must-not-extract").exists()
     assert len(attempts) == expected_attempts
     assert waits == delays
+    if expected_attempts == 7:
+        assert sum(waits) == 45
     assert capsys.readouterr().err == b"".join(failures).decode()
 
 

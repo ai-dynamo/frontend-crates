@@ -22,6 +22,8 @@ PUBLICATION = "conformance-publication"
 CANDIDATE = "conformance-native-publication"
 SITE_CANDIDATE = "conformance-site-candidate"
 INVENTORY = "ci-evidence/artifact-inventory.json"
+# Bound the full backoff to 45 seconds; time spent waiting on GitHub requests is additional.
+ARTIFACT_DOWNLOAD_RETRY_DELAYS_SECONDS = (1, 2, 4, 8, 15, 15)
 
 
 def latest_artifacts(artifacts: list) -> dict:
@@ -52,7 +54,7 @@ class Finalizer:
     def api(self, endpoint: str, *, method: str = "GET", destination: Path | None = None):
         command = ["gh", "api", "--method", method, endpoint]
         if destination is not None:
-            for attempt in range(3):
+            for attempt in range(len(ARTIFACT_DOWNLOAD_RETRY_DELAYS_SECONDS) + 1):
                 try:
                     with destination.open("wb") as output:
                         subprocess.run(command, stdout=output, stderr=subprocess.PIPE, check=True)
@@ -60,9 +62,12 @@ class Finalizer:
                 except subprocess.CalledProcessError as error:
                     destination.unlink(missing_ok=True)
                     sys.stderr.write((error.stderr or b"").decode(errors="replace"))
-                    if attempt == 2 or re.search(rb"\bHTTP 5[0-9]{2}\b", error.stderr or b"") is None:
+                    is_server_error = re.search(
+                        rb"\bHTTP 5[0-9]{2}\b", error.stderr or b""
+                    ) is not None
+                    if attempt == len(ARTIFACT_DOWNLOAD_RETRY_DELAYS_SECONDS) or not is_server_error:
                         raise
-                    time.sleep(2 ** attempt)
+                    time.sleep(ARTIFACT_DOWNLOAD_RETRY_DELAYS_SECONDS[attempt])
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         return json.loads(result.stdout) if result.stdout.strip() else None
 
