@@ -866,16 +866,15 @@ impl HfTokenizerConfigJsonFormatter {
             // the core in any case, since the check after rendering folds case.
             let kwargs = req.chat_template_args();
             let mut core = "DYNAMO_CONTROL_LITERAL".to_string();
-            while contains_ignore_ascii_case(tmpl.source(), &core)
+            while holds_core(tmpl.source(), &core)
                 || json_mentions(&messages_for_template, &core)
                 || [&tool_json, &response_format]
                     .into_iter()
                     .flatten()
                     .any(|value| json_mentions(value, &core))
                 || kwargs.is_some_and(|args| {
-                    args.iter().any(|(key, value)| {
-                        contains_ignore_ascii_case(key, &core) || json_mentions(value, &core)
-                    })
+                    args.iter()
+                        .any(|(key, value)| holds_core(key, &core) || json_mentions(value, &core))
                 })
             {
                 core.push('X');
@@ -1211,22 +1210,27 @@ fn template_reads(source: &str, spelling: &str) -> bool {
     })
 }
 
-/// Whether any string or object key in `value` contains `needle`, ignoring ASCII case.
-fn json_mentions(value: &serde_json::Value, needle: &str) -> bool {
+/// Whether any string or object key in `value` holds `core` in any ASCII case.
+fn json_mentions(value: &serde_json::Value, core: &str) -> bool {
     match value {
-        serde_json::Value::String(text) => contains_ignore_ascii_case(text, needle),
-        serde_json::Value::Array(values) => values.iter().any(|value| json_mentions(value, needle)),
-        serde_json::Value::Object(values) => values.iter().any(|(key, value)| {
-            contains_ignore_ascii_case(key, needle) || json_mentions(value, needle)
-        }),
+        serde_json::Value::String(text) => holds_core(text, core),
+        serde_json::Value::Array(values) => values.iter().any(|value| json_mentions(value, core)),
+        serde_json::Value::Object(values) => values
+            .iter()
+            .any(|(key, value)| holds_core(key, core) || json_mentions(value, core)),
         _ => false,
     }
 }
 
-fn contains_ignore_ascii_case(text: &str, needle: &str) -> bool {
-    text.as_bytes()
-        .windows(needle.len())
-        .any(|window| window.eq_ignore_ascii_case(needle.as_bytes()))
+/// Whether `text` holds the placeholder core in any ASCII case. `_` is the same
+/// in every case, so only the spans around each `_` in `text` are compared.
+fn holds_core(text: &str, core: &str) -> bool {
+    let offset = core.find('_').expect("the placeholder core holds an `_`");
+    text.match_indices('_').any(|(at, _)| {
+        at.checked_sub(offset)
+            .and_then(|start| text.as_bytes().get(start..start + core.len()))
+            .is_some_and(|window| window.eq_ignore_ascii_case(core.as_bytes()))
+    })
 }
 
 /// Whether any string or object key in `value` spells a marker or ends with
