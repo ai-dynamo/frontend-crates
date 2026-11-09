@@ -183,6 +183,11 @@ fn allows_empty_arguments(schema: &Value) -> bool {
 /// the native empty close when the schema permits it. The common opening tag
 /// already ends in a newline; a native empty call needs no second newline.
 /// The legacy branch deliberately keeps its required leading closing newline.
+///
+/// `schema` must be policy-resolved but retain its original JSON Schema reference
+/// spelling. Backend-canonicalized references use literal path segments; passing
+/// them here would decode JSON Pointer escapes a second time and can select a
+/// different target. The tag's argument body still uses the backend spelling.
 pub fn with_native_empty_call(mut tag: TagFormat, schema: &Value) -> TagFormat {
     if !tag.begin.ends_with('\n') || !allows_empty_arguments(schema) {
         return tag;

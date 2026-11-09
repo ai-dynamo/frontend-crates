@@ -4,7 +4,7 @@
 use super::{ToolCallGrammar, triggered_calls_format};
 use crate::Tool;
 use crate::structural_tag::policy::{
-    ResolvedToolCallingPolicy, ToolCallingMode, resolve_tool_schema,
+    ResolvedToolCallingPolicy, ToolCallingMode, declared_tool_schema, resolve_tool_schema,
 };
 use crate::structural_tag::wire::{
     ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, SequenceFormat, TagFormat,
@@ -163,13 +163,16 @@ impl TemplatedToolCallFormat {
                     style: native::JsonSchemaStyle::QwenXml,
                 })
             };
+            // Validate the policy-resolved original schema, not the backend's
+            // rewritten references, which would be JSON-Pointer-decoded twice.
+            let eligibility_schema = declared_tool_schema(tool, policy.schema_mode);
             let tag = dynamo_structural_tag::qwen_xml::with_native_empty_call(
                 native::TagFormat {
                     begin,
                     content: Box::new(content),
                     end: self.tool_call_end.to_string(),
                 },
-                &json_schema,
+                &eligibility_schema,
             );
             return crate::structural_tag::wire::import_tag(tag, tool_arguments_any_order);
         }
