@@ -165,8 +165,18 @@ def test_reported_families_have_independent_tool_text_reasoning_schema_and_recov
     assert case("tool_only")["golden"] == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
     assert case("text_only")["golden"] == [{"kind": "text", "text": "The answer is 42, no tools needed."}]
     assert case("reason_then_tool")["golden"][0] == {"kind": "reasoning", "text": "Check weather."}
-    assert case("truncated_tool_eof")["golden"] == []
-    assert [event["arguments"]["city"] for event in case("malformed_json_then_two_valid_calls")["golden"]] == ["Tokyo", "Berlin"]
+    assert case("truncated_tool_eof")["golden"] == (
+        [{"kind": "reasoning", "text": "ok"}]
+        if golden._MANIFEST[family].get("shared_scenarios") else []
+    )
+    if golden._MANIFEST[family].get("shared_scenarios"):
+        assert case("malformed_json_then_two_valid_calls")["golden"] == [
+            {"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}},
+            {"kind": "tool_call", "name": "echo", "arguments": {"value": "é"}},
+            {"kind": "tool_call", "name": "echo", "arguments": {"value": "Café"}},
+        ]
+    else:
+        assert [event["arguments"]["city"] for event in case("malformed_json_then_two_valid_calls")["golden"]] == ["Tokyo", "Berlin"]
     assert any(key.startswith("UNIFIED.schema_") for key in cases)
     assert family in golden.scenario_families("tool_only")
 
@@ -490,6 +500,19 @@ def test_parallel_store_emission_matches_serial_bytes(v2_capture, tmp_path):
 def test_structural_tool_recovery_agrees_with_shared_corpus_policy(family):
     cases = golden.build_cases(family)
     call = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
-    assert cases[f"UNIFIED.tool_in_reason.{family}"]["golden"] == [call]
-    assert cases[f"UNIFIED.tool_in_reason_with_text.{family}"]["golden"] == [
-        {"kind": "text", "text": "before"}, call, {"kind": "text", "text": "after"}]
+    if golden._MANIFEST[family].get("shared_scenarios"):
+        expected = [
+            {"kind": "reasoning", "text": "I should check. "}, call,
+            {"kind": "reasoning", "text": " now answer"},
+        ]
+        expected_with_text = [
+            {"kind": "text", "text": "Sure. "}, *expected,
+            {"kind": "text", "text": " Here you go."},
+        ]
+    else:
+        expected = [call]
+        expected_with_text = [
+            {"kind": "text", "text": "before"}, call, {"kind": "text", "text": "after"},
+        ]
+    assert cases[f"UNIFIED.tool_in_reason.{family}"]["golden"] == expected
+    assert cases[f"UNIFIED.tool_in_reason_with_text.{family}"]["golden"] == expected_with_text

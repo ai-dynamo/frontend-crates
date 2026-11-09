@@ -20,7 +20,7 @@ families:
   deepseek_v4:    {vllm_python: deepseek_v4,    vllm_rust: deepseek_v4,  sglang_python: deepseekv4,  dynamo_v2: deepseek_v4, preferred_input: text}
   gemma4:         {vllm_python: gemma4,         vllm_rust: gemma4,       sglang_python: gemma4,      dynamo_v2: gemma4,      preferred_input: text}
   glm47:          {vllm_python: glm47,          vllm_rust: glm47,        sglang_python: glm47,       dynamo_v2: glm47,       preferred_input: text}
-  hermes:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: hermes,      dynamo_v2: null,        preferred_input: text}
+  hermes:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: hermes,      dynamo_v2: hermes,      preferred_input: text}
   # inkling uses vLLM's unified parser (vllm/parser/inkling.py), not the legacy ToolParserManager
   # the capture harness drives, so a `check.sh vllm` refresh needs unified-parser support.
   inkling:        {vllm_python: inkling,        vllm_rust: null,         sglang_python: inkling,     dynamo_v2: null,        preferred_input: text}
@@ -448,8 +448,15 @@ unified:
     reasoning_grammar: think
   hermes:
     registry: hermes
-    native: false
+    native: true
     scenario_profile: native
+    shared_scenarios: true
+    scenario_exclusions:
+      guided_json_native_markup_only: Hermes native JSON is a valid guided call payload; wrapped guided JSON already covers it.
+      guided_json_native_parameter_body_inside_reasoning: Hermes has no native parameter markup; unwrapped call JSON inside reasoning is literal thought text.
+      guided_json_reasoning_markers_inside_native_parameter: Hermes has no native parameter markup to suppress inside reasoning.
+      guided_response_native_wrapper_whitespace_before_prose: Hermes native JSON envelopes are valid guided call payloads, not foreign parameter syntax to suppress.
+    spec: https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B/blob/main/tokenizer_config.json
     reasoning_parser: basic
     tool_parser: hermes
     golden_spec: hermes.yaml
