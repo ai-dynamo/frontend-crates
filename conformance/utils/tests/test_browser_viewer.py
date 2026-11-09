@@ -207,6 +207,86 @@ def _ready(driver, tab):
     settle(driver, tab, history_ready=True, idle=False)
 
 
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
+def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer, implementation):
+    catalog = _published_catalog(published_viewer)
+    version = max((source["version"] for source in catalog["sources"]["candidates"]
+                   if source["implementation"] == implementation), key=capture_release_sort_key)
+    key = f"{implementation}@{version}"
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
+                           "search_tab-unified": "gpt_oss AND tool_only"})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+        _ready(driver, "tab-unified")
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
+        candidate = driver.execute_script("""
+            const model = window.__conformanceTooltipModel(arguments[0]);
+            const candidate = model.candidates.find(item => item.key === arguments[1]);
+            window.__buildTooltip(arguments[0]);
+            arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'}));
+            arguments[0].click();
+            return candidate;
+        """, cell, key)
+        assert candidate["parse_mode"] == "batch"
+        assert "batch_final" in candidate["block"]
+        popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+        output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
+        for field in ("reasoning_text=", "normal_text=", "calls="):
+            assert field in output.text
+        assert "Batch output is compared with ordered GOLDEN." in output.text
+        chunks = popup.find_elements(By.CSS_SELECTOR, f'tbody tr:not(.ttip-final) td[data-cand="{key}"]')
+        assert chunks
+        assert all(chunk.text == "Order/chunk not applicable for batch" for chunk in chunks)
+    finally:
+        driver.quit()
+        server.shutdown()
+
+
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail", "dynamo_v2"])
+@pytest.mark.parametrize("scenario,has_origin", [("tool_only", True), ("gpt_oss_assistant_default_channel_visible_response", False)])
+def test_unified_popup_shows_actual_observation_producer(published_viewer, implementation, scenario, has_origin):
+    catalog = _published_catalog(published_viewer)
+    version = max((source["version"] for source in catalog["sources"]["candidates"]
+                   if source["implementation"] == implementation), key=capture_release_sort_key)
+    key = f"{implementation}@{version}"
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
+                           "search_tab-unified": f'model:gpt_oss AND "{scenario}"'})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+        _ready(driver, "tab-unified")
+        selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
+        assert len(selected) == 1
+        key = selected[0]
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
+        rendered = driver.execute_script("""
+            const candidate=window.__conformanceTooltipModel(arguments[0]).candidates.find(item=>item.key===arguments[1]);
+            const expectedProducer=candidate.block.producer_origin ? 'Producer: '+JSON.stringify(candidate.block.producer_origin) : null;
+            window.__buildTooltip(arguments[0]);
+            arguments[0].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
+            arguments[0].click();
+            return {candidate,expectedProducer};
+        """, cell, key)
+        candidate = rendered["candidate"]
+        origin = candidate["block"].get("producer_origin")
+        assert bool(origin) == has_origin
+        popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+        output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
+        labels = [element.text for element in output.find_elements(By.CSS_SELECTOR, ".expl")
+                  if element.text.startswith("Producer: ")]
+        expected = [rendered["expectedProducer"]] if has_origin else []
+        assert labels == expected
+        if has_origin:
+            assert json.loads(labels[0].removeprefix("Producer: ")) == origin
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
     button = driver.find_element("css selector", f"[data-slot-open='{slot}']")
     if programmatic:
@@ -479,6 +559,15 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         direct_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1@")}
         jail_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1_jail@")}
         assert direct_v1_versions and jail_v1_versions
+        legacy_choices = {}
+        for implementation in ("dynamo_v1", "dynamo_v1_jail"):
+            candidates = [candidate for candidate in catalog["sources"]["candidates"]
+                          if candidate["implementation"] == implementation
+                          and f"{implementation}@{candidate['version']}" in v1_values]
+            legacy_choices[implementation] = max(candidates, key=lambda candidate: (
+                len(candidate["capture_families"]), capture_release_sort_key(candidate["version"])))
+        direct_key = f"dynamo_v1@{legacy_choices['dynamo_v1']['version']}"
+        jail_key = f"dynamo_v1_jail@{legacy_choices['dynamo_v1_jail']['version']}"
         assert {"dynamo_v1@5.1.3", "dynamo_v1_jail@5.1.3"} <= set(v1_values)
         selected_identity = driver.execute_script("""
           const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === 'tab-unified');
@@ -498,13 +587,13 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         assert not identities_after_picker, "opening a selector fetched capture payloads"
         driver.find_element("css selector", ".comparison-picker[open]").send_keys("\ue00c")
         second = _choose_engine(driver, 1, "dynamo")
-        Select(second).select_by_value("dynamo_v1@10.0.7")
+        Select(second).select_by_value(direct_key)
         _ready(driver, "tab-unified")
         third = _choose_engine(driver, 2, "dynamo")
-        Select(third).select_by_value("dynamo_v1_jail@10.0.7")
+        Select(third).select_by_value(jail_key)
         _ready(driver, "tab-unified")
         visible_families = set(driver.execute_script("return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label)"))
-        selected_sources = {selected_identity, "dynamo_v1@unified@10.0.7", "dynamo_v1_jail@unified@10.0.7"}
+        selected_sources = {selected_identity, identity_for_key(catalog, direct_key), identity_for_key(catalog, jail_key)}
         expected_families = {family for candidate in catalog["sources"]["candidates"]
                              if f"{candidate['implementation']}@{candidate['mode']}@{candidate['version']}" in selected_sources
                              for family in candidate.get("native_unified_families", candidate["capture_families"])}
@@ -519,20 +608,23 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         """, _historical_dynamo_key(driver))
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == [
-            "dynamo", "dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"]
+            "dynamo", direct_key, jail_key]
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         WebDriverWait(driver, 10).until(lambda page: page.execute_script("return document.body.classList.contains('transpose-mode')"))
         cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified table[data-comparison-table] .matrix-cell[data-ttip-id]')].find(cell => cell.offsetWidth && cell.offsetHeight);")
         assert cell is not None
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
-        assert "10.0.7" in popup.text
+        assert all(legacy_choices[implementation]["version"] in popup.text
+                   for implementation in ("dynamo_v1", "dynamo_v1_jail"))
         assert "golden" in popup.text.lower()
         assert not any(path.endswith(".yaml") or "/fixtures-unified-v2/" in path for path in requests)
         fetched = {resources[urlsplit(path).path.removeprefix("/")]["capture_identity"]
                    for path in requests if urlsplit(path).path.removeprefix("/") in resources}
         allowed = {selected_identity, "dynamo_v2@unified@0.7.24", "dynamo_v2@unified@0.6.1",
-                   "dynamo_v1@unified@5.1.3", "dynamo_v1@unified@10.0.7", "dynamo_v1_jail@unified@10.0.7"}
+                   "dynamo_v1@unified@5.1.3", *selected_sources,
+                   f"dynamo_v1@unified@{max(direct_v1_versions, key=capture_release_sort_key)}",
+                   f"dynamo_v1_jail@unified@{max(jail_v1_versions, key=capture_release_sort_key)}"}
         # Switching engines may admit the picker's most recent historical capture
         # before the following explicit selection replaces it.
         allowed.update(f"dynamo_v2@unified@{item['version']}" for item in recent_v2)
