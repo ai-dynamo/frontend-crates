@@ -10297,7 +10297,7 @@ cases:
 
         I''ve found the bug in `app.py`.'
   tool_call_ids_unique:
-    description: Two identical invocations must remain distinct calls, including when native wire indices repeat. Parser-supplied API IDs must not collide; absent IDs delegate identity generation to the serving layer.
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
     display_id: UNIFIED.2-tool_call_ids_unique
     request: 6bde27929aba1d45b053c0fc413c24050cf57aedaf50c93961c44d6589743206
     golden:

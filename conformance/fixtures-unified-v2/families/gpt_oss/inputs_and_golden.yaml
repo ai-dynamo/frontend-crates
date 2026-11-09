@@ -9623,22 +9623,22 @@ cases:
     request: 11245492e574092c4d46be774fcdc05e2217bb923b2cbc7557dedb514ae1d6b6
     golden: []
   gpt_oss_recovered_final_header_return:
-    description: A malformed predecessor is followed by a recovered assistant final header containing a premature return before its message delimiter. Header metadata does not own body termination; preserve the complete final answer.
     policy:
     - I3
     - I5
     - I7
+    description: A malformed predecessor is followed by a recovered assistant final header containing a premature return before its message delimiter. Header metadata does not own body termination; preserve the complete final answer.
     display_id: UNIFIED.gpt_oss-recovered_final_header_return
     request: ba440b467ef6b977987efde446de78ab0ed517c41f5120a39c8c89f50286d7e9
     golden:
     - kind: text
       text: Done.
   gpt_oss_recovered_tool_header_return:
-    description: A malformed predecessor is followed by a recovered assistant tool header containing a premature return before its message delimiter. That header action cannot end or discard the later complete lookup body; preserve the lookup call and subsequent final answer.
     policy:
     - I3
     - I5
     - I7
+    description: A malformed predecessor is followed by a recovered assistant tool header containing a premature return before its message delimiter. That header action cannot end or discard the later complete lookup body; preserve the lookup call and subsequent final answer.
     display_id: UNIFIED.gpt_oss-recovered_tool_header_return
     request: 4278e4078f439cb737dca1b0b9cea0577a451372c87653d0e0d775e5efd6b099
     golden:
@@ -9904,18 +9904,18 @@ cases:
     - kind: text
       text: " \n{\"x\":\"<|start|>\"}\nDone"
   gpt_oss_assistant_default_channel_visible_response:
-    description: A complete native assistant message omits both recipient and channel. The message delimiter begins an ordinary visible body; preserve Answer through the return ending without requiring an explicit final channel or inventing a tool call.
     policy:
     - I3
     - I5
     - I7
+    description: A complete native assistant message omits both recipient and channel. The message delimiter begins an ordinary visible body; preserve Answer through the return ending without requiring an explicit final channel or inventing a tool call.
     display_id: UNIFIED.gpt_oss-assistant_default_channel_visible_response
     request: d903a94de40ebbc0d355c32616d70f93ad487022d285e5e2094e47277116064b
     golden:
     - kind: text
       text: Answer
   tool_call_ids_unique:
-    description: Two identical invocations must remain distinct calls, including when native wire indices repeat. Parser-supplied API IDs must not collide; absent IDs delegate identity generation to the serving layer.
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
     display_id: UNIFIED.2-tool_call_ids_unique
     request: 2cd6777c1f622ddaedb72e00046749816b01e2dc8c4146cfb554298811a1d937
     golden:

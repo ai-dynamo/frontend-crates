@@ -481,11 +481,13 @@ pub trait UnifiedParser: Send {
 
     /// The parser-supplied API ID for a tool call, when available.
     ///
-    /// Qwen3's XML grammar does not, so the default is correct for it; families
+    /// Qwen3's XML grammar carries no ID, so the default is correct for it.
     /// Kimi K2 preserves its model-emitted `functions.NAME:INDEX`, while Kimi K3
     /// generates a unique ID because its wire index restarts every response.
     /// `None` delegates ID generation to the serving layer. An available ID must
     /// remain stable across deltas for the same call.
+    /// K2 IDs belong to the model protocol and may repeat in another response;
+    /// they must retain their association with the originating assistant message.
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }

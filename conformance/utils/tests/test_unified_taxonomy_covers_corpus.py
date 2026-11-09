@@ -3178,8 +3178,8 @@ def test_tool_call_ids_unique_uses_identical_calls_for_every_native_family():
         assert case["golden"] == expected
         assert case["input"].count("Paris") == 2
         if family == "kimi_k2":
-            assert case["input"].count("functions.get_weather:0") == 2
-            assert "functions.get_weather:1" not in case["input"]
+            assert case["input"].count("functions.get_weather:0") == 1
+            assert case["input"].count("functions.get_weather:1") == 1
         elif family == "kimi_k3":
             assert case["input"].count('index="1"') == 2
             assert 'index="2"' not in case["input"]
