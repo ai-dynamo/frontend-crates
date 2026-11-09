@@ -244,6 +244,49 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
         server.shutdown()
 
 
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail", "dynamo_v2"])
+@pytest.mark.parametrize("scenario,has_origin", [("tool_only", True), ("gpt_oss_assistant_default_channel_visible_response", False)])
+def test_unified_popup_shows_actual_observation_producer(published_viewer, implementation, scenario, has_origin):
+    catalog = _published_catalog(published_viewer)
+    version = max((source["version"] for source in catalog["sources"]["candidates"]
+                   if source["implementation"] == implementation), key=capture_release_sort_key)
+    key = f"{implementation}@{version}"
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
+                           "search_tab-unified": f'model:gpt_oss AND "{scenario}"'})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+        _ready(driver, "tab-unified")
+        selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
+        assert len(selected) == 1
+        key = selected[0]
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
+        rendered = driver.execute_script("""
+            const candidate=window.__conformanceTooltipModel(arguments[0]).candidates.find(item=>item.key===arguments[1]);
+            const expectedProducer=candidate.block.producer_origin ? 'Producer: '+JSON.stringify(candidate.block.producer_origin) : null;
+            window.__buildTooltip(arguments[0]);
+            arguments[0].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
+            arguments[0].click();
+            return {candidate,expectedProducer};
+        """, cell, key)
+        candidate = rendered["candidate"]
+        origin = candidate["block"].get("producer_origin")
+        assert bool(origin) == has_origin
+        popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+        output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
+        labels = [element.text for element in output.find_elements(By.CSS_SELECTOR, ".expl")
+                  if element.text.startswith("Producer: ")]
+        expected = [rendered["expectedProducer"]] if has_origin else []
+        assert labels == expected
+        if has_origin:
+            assert json.loads(labels[0].removeprefix("Producer: ")) == origin
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
     button = driver.find_element("css selector", f"[data-slot-open='{slot}']")
     if programmatic:
