@@ -32,6 +32,17 @@ fn guided_families() -> impl Iterator<Item = &'static str> {
         .filter(|family| !NATIVE_ONLY_FAMILIES.contains(family))
 }
 
+/// `mistral` stays the v1 parser's name: a bare alias would move every caller that
+/// configures `mistral` onto the native v11+ parser with a routine version bump.
+#[test]
+fn mistral_4_registers_without_a_bare_mistral_alias() {
+    assert_eq!(
+        dynamo_parsers_v2::canonical_unified_family("mistral_4"),
+        Some("mistral_4")
+    );
+    assert_eq!(dynamo_parsers_v2::canonical_unified_family("mistral"), None);
+}
+
 #[test]
 fn native_only_families_refuse_guided_output() {
     for family in NATIVE_ONLY_FAMILIES {

@@ -207,7 +207,7 @@ def test_all_authored_successful_calls_match_offered_schemas(family):
 
 
 # `sum_values` is offered only by the guided cases.
-@pytest.mark.parametrize("family", sorted(G.UNIFIED_FAMILIES & G.GUIDED_FAMILIES))
+@pytest.mark.parametrize("family", sorted(f for f in G.UNIFIED_FAMILIES if G._MANIFEST[f].get("guided_tool_output", True)))
 def test_schema_guard_rejects_old_array_as_string_declaration(family):
     tools = unified_tools()
     next(tool for tool in tools if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}

@@ -570,8 +570,8 @@ GRAMMAR_EXCLUSIONS = {
         "quoted_name_double_quote_nonpossessive_s_name": _MISTRAL_QUOTE_NOTE,
         "quoted_name_backtick_possessive_reasoning": _MISTRAL_QUOTE_WHITESPACE_NOTE,
         "quoted_name_double_quote_possessive_reasoning": _MISTRAL_QUOTE_WHITESPACE_NOTE,
-        "quoted_name_backtick_possessive_then_call": _MISTRAL_QUOTE_WHITESPACE_NOTE,
-        "quoted_name_double_quote_possessive_then_call": _MISTRAL_QUOTE_WHITESPACE_NOTE,
+        "quoted_name_backtick_possessive_then_call": _MISTRAL_QUOTE_WHITESPACE_NOTE + " " + _CLOSERLESS_NOTE,
+        "quoted_name_double_quote_possessive_then_call": _MISTRAL_QUOTE_WHITESPACE_NOTE + " " + _CLOSERLESS_NOTE,
     },
 }
 
@@ -1252,7 +1252,7 @@ EDGE = [
                          V_MUSE,
                          {"verdict": "match", "note": "P2: the invoke never reached its `</atem:invoke>` fence, so the call is dropped and its markup never leaks; the reasoning channel is kept"}),
         "mistral_4": ('[THINK]ok[/THINK][TOOL_CALLS]get_weather[ARGS]{"city": "Par',
-                    D("ARG_MISMATCH", "upstream vLLM emits the truncated call with its unparsed argument prefix (`_extract_args_json` falls back to raw text); unverified, no capture recorded"),
+                    D("ARG_MISMATCH", "stock vLLM emits the truncated call with its unparsed argument prefix (`_extract_args_json` falls back to raw text); unverified, no capture recorded"),
                     {"verdict": "match", "note": "P2: the unterminated JSON body is dropped and the reasoning kept"}),
      }),
 
@@ -1316,7 +1316,7 @@ EDGE = [
                          {"verdict": "match", "note": "the parameter value runs to its own `</atem:parameter>`, so the enclosing `</atem:function_calls>` inside it is data"},
                          "git log </atem:function_calls> --oneline"),
         "mistral_4": (r_tool("mistral_4", "run", "cmd", "git log [TOOL_CALLS] --oneline", 0),
-                    D("ARG_MISMATCH", "upstream vLLM's text lexer matches `[TOOL_CALLS]` inside the JSON string and starts a new call; unverified, no capture recorded"),
+                    D("ARG_MISMATCH", "stock vLLM's text lexer matches `[TOOL_CALLS]` inside the JSON string and starts a new call; unverified, no capture recorded"),
                     {"verdict": "match", "note": "a marker inside a JSON string is argument data"},
                     "git log [TOOL_CALLS] --oneline"),
      }),
@@ -4961,7 +4961,7 @@ for _index, _edge in enumerate(EDGE):
 # Mistral calls end at their JSON value and the block never closes, so these pin
 # what that grammar does where the shared scenarios cannot reach.
 _MISTRAL_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
-_VLLM_MISTRAL_TEST = "upstream vLLM `tests/parser/mistral/test_tool_calls.py::{}`; no capture recorded"
+_VLLM_MISTRAL_TEST = "stock vLLM `tests/parser/mistral/test_tool_calls.py::{}`; no capture recorded"
 
 
 def _mistral_case(name, description, golden, raw, vllm, policy=(), chunks=None):
@@ -4989,13 +4989,13 @@ EDGE += [
         "Reasoning markers after a call's JSON are leftover argument text too, so the thought and the answer after it are dropped. Contrast `11-2` (`reason_after_tool`), which other grammars can express.",
         [_weather("Paris")],
         '[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}[THINK]Now answer.[/THINK]It\'s 18C.',
-        {"verdict": "match", "note": "upstream vLLM's grammar has no reasoning transition from TOOL_ARGS, so the markers stay argument text; unverified, no capture recorded"}),
+        {"verdict": "match", "note": "stock vLLM's grammar has no reasoning transition from TOOL_ARGS, so the markers stay argument text; unverified, no capture recorded"}),
     _mistral_case(
         "mistral_call_inside_reasoning_ends_thought",
         "`[TOOL_CALLS]` inside a thought ends the thought for good: the call follows, and the rest of the thought and the answer are its leftover. Reasoning loses its trailing whitespace. Contrast `12-2` (`tool_in_reason`), where the thought resumes after the call's closer.",
         [{"kind": "reasoning", "text": "I should check."}, _weather("Paris")],
         '[THINK]I should check. [TOOL_CALLS]get_weather[ARGS]{"city": "Paris"} now answer[/THINK] Here you go.',
-        {"verdict": "match", "note": "upstream vLLM's REASONING + TOOL_CALLS transition ends reasoning; unverified, no capture recorded"}),
+        {"verdict": "match", "note": "stock vLLM's REASONING + TOOL_CALLS transition ends reasoning; unverified, no capture recorded"}),
     _mistral_case(
         "mistral_brace_fallback_calls",
         "Parallel calls in the fallback `[TOOL_CALLS]NAME{json}` form, where the `{` starts the arguments.",
@@ -5007,7 +5007,7 @@ EDGE += [
         "The v11 `[CALL_ID]ID` between the name and `[ARGS]` is stripped, not kept in the name.",
         [_weather("Paris")],
         '[TOOL_CALLS]get_weather[CALL_ID]a1b2c3d4e[ARGS]{"city": "Paris"}',
-        D("NAME_MISMATCH", "upstream vLLM's Mistral grammar declares no `[CALL_ID]` terminal, so the id stays in the name; unverified, no capture recorded")),
+        D("NAME_MISMATCH", "stock vLLM's Mistral grammar declares no `[CALL_ID]` terminal, so the id stays in the name; unverified, no capture recorded")),
     _mistral_case(
         "mistral_name_before_marker",
         "A name written before `[TOOL_CALLS]` is content, and the call keeps an empty name so the malformed generation surfaces instead of disappearing.",
@@ -5026,26 +5026,26 @@ EDGE += [
         "Reasoning loses its trailing whitespace when the thought ends.",
         [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "The answer is 42."}],
         "[THINK]checking  \n[/THINK]The answer is 42.",
-        {"verdict": "match", "note": "upstream vLLM `strip_trailing_reasoning_whitespace`; no capture recorded"}),
+        {"verdict": "match", "note": "stock vLLM `strip_trailing_reasoning_whitespace`; no capture recorded"}),
     _mistral_case(
         "mistral_duplicate_think_opener_stripped",
         "A second `[THINK]` inside an open thought is stripped, and the thought continues.",
         [{"kind": "reasoning", "text": "ab"}, {"kind": "text", "text": "c"}],
         "[THINK]a[THINK]b[/THINK]c",
-        {"verdict": "match", "note": "upstream vLLM absorbs a duplicate THINK_START; no capture recorded"}),
+        {"verdict": "match", "note": "stock vLLM absorbs a duplicate THINK_START; no capture recorded"}),
     _mistral_case(
         "mistral_quoted_marker_is_structural",
         "Markers are special tokens, so an odd quote in a thought cannot make `[/THINK]` literal or hold it until a later quote turns the answer into reasoning.",
         [{"kind": "reasoning", "text": 'He said "hi'}, {"kind": "text", "text": 'The answer is "42".'}],
         '[THINK]He said "hi[/THINK]The answer is "42".',
-        {"verdict": "match", "note": "upstream vLLM's lexer has no prose-quote rule; no capture recorded"},
+        {"verdict": "match", "note": "stock vLLM's lexer has no prose-quote rule; no capture recorded"},
         ["I3"]),
     _mistral_case(
         "mistral_malformed_body_ends_at_next_call",
         "A body that is not yet a JSON value ends at the next `[TOOL_CALLS]` outside a string. Its raw arguments do not parse, and the later call survives.",
         [{"kind": "tool_call", "name": "run", "arguments": {}}, _weather("Paris")],
         '[TOOL_CALLS]run[ARGS]{"cmd": [TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}',
-        {"verdict": "match", "note": "upstream vLLM ends the call at the next TOOL_CALLS and keeps the raw arguments; unverified, no capture recorded"},
+        {"verdict": "match", "note": "stock vLLM ends the call at the next TOOL_CALLS and keeps the raw arguments; unverified, no capture recorded"},
         ["P2", "P3"]),
 ]
 
@@ -5065,28 +5065,28 @@ EDGE += [
         "Text between two calls, braces and a stray `[ARGS]` included, is the first call's leftover. It is dropped, and it cannot start a call.",
         [_call("f", {"x": "1"}), _call("g", {"y": "2"})],
         '[TOOL_CALLS]f[ARGS]{"x": "1"} then {braces} [ARGS][TOOL_CALLS]g[ARGS]{"y": "2"}',
-        {"verdict": "match", "note": f"upstream vLLM keeps only the first JSON value of each call; {_UNCAPTURED}"},
+        {"verdict": "match", "note": f"stock vLLM keeps only the first JSON value of each call; {_UNCAPTURED}"},
         ["P2"]),
     _mistral_case(
         "mistral_reasoning_between_calls_dropped",
         "A thought between two calls is the first call's leftover. It is dropped, and the second call still survives.",
         [{"kind": "reasoning", "text": "Check both."}, _call("f", {"x": "1"}), _call("g", {"y": "2"})],
         '[THINK]Check both.[/THINK][TOOL_CALLS]f[ARGS]{"x": "1"}[THINK]Now g.[/THINK][TOOL_CALLS]g[ARGS]{"y": "2"}',
-        {"verdict": "match", "note": f"upstream vLLM has no reasoning transition from TOOL_ARGS; {_UNCAPTURED}"},
+        {"verdict": "match", "note": f"stock vLLM has no reasoning transition from TOOL_ARGS; {_UNCAPTURED}"},
         ["P2"]),
     _mistral_case(
         "mistral_quoted_tool_marker_in_answer",
         "A quoted `[TOOL_CALLS]` in an answer is the special token, so it opens a call. Its name is prose, not a tool identifier, so no call is emitted and the rest of the answer is dropped.",
         [{"kind": "text", "text": 'The literal "'}],
         'The literal "[TOOL_CALLS]" marker is part of the explanation.',
-        D("UNSUPPORTED", f"upstream vLLM's text path emits a call named by the prose; {_UNCAPTURED}"),
+        D("UNSUPPORTED", f"stock vLLM's text path emits a call named by the prose; {_UNCAPTURED}"),
         ["P2"]),
     _mistral_case(
         "mistral_quoted_tool_marker_then_call",
         "A rejected name after a quoted `[TOOL_CALLS]` does not hide the real call that follows.",
         [{"kind": "text", "text": 'The literal "'}, _weather("Paris")],
         'The literal "[TOOL_CALLS]" marker.[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}',
-        D("UNSUPPORTED", f"upstream vLLM's text path emits an extra call named by the prose; {_UNCAPTURED}"),
+        D("UNSUPPORTED", f"stock vLLM's text path emits an extra call named by the prose; {_UNCAPTURED}"),
         ["P2"]),
     _mistral_case(
         "mistral_call_id_variants",
@@ -5107,7 +5107,7 @@ EDGE += [
         "Escaped quotes and backslashes, a surrogate-pair escape, and marker text stay argument data inside a JSON string (`I7`).",
         [_call("log", json.loads(_ESCAPED_NOTE))],
         f"[TOOL_CALLS]log[ARGS]{_ESCAPED_NOTE}",
-        {"verdict": "match", "note": f"upstream vLLM decodes the arguments with json; {_UNCAPTURED}"}),
+        {"verdict": "match", "note": f"stock vLLM decodes the arguments with json; {_UNCAPTURED}"}),
     _mistral_case(
         "mistral_marker_lookalikes_stay_text",
         "Brackets that only resemble markers stay visible text: `[TOOL_CALL]`, `[ARG]`, `[THINKING]`, and `[/THINK ]`.",
@@ -5119,7 +5119,7 @@ EDGE += [
         "Whitespace around markers: a thought keeps its leading newline and loses its trailing one, the answer keeps its newline, the name is trimmed, and the body may start on a new line.",
         [{"kind": "reasoning", "text": "\nplan"}, {"kind": "text", "text": "On it.\n"}, _weather("Paris")],
         '[THINK]\nplan\n[/THINK]On it.\n[TOOL_CALLS] get_weather \n[ARGS]\n{"city": "Paris"}\n',
-        {"verdict": "match", "note": f"upstream vLLM strips trailing reasoning whitespace; {_UNCAPTURED}"}),
+        {"verdict": "match", "note": f"stock vLLM strips trailing reasoning whitespace; {_UNCAPTURED}"}),
     _mistral_case(
         "mistral_markers_split_across_chunks",
         "Every marker and a name split across deltas: `[THINK]`, `[/THINK]`, `[TOOL_CALLS]` twice, and `[ARGS]`.",
@@ -5143,7 +5143,7 @@ EDGE += [
         "EOF inside the second call's string value drops that call (P2); the first call survives.",
         [_call("f", {"x": "1"})],
         '[TOOL_CALLS]f[ARGS]{"x": "1"}[TOOL_CALLS]g[ARGS]{"y": "unfinished',
-        D("UNSUPPORTED", f"upstream vLLM emits the raw prefix as arguments; {_UNCAPTURED}"),
+        D("UNSUPPORTED", f"stock vLLM emits the raw prefix as arguments; {_UNCAPTURED}"),
         ["P2"]),
     _mistral_case(
         "mistral_truncated_inside_args_marker",
@@ -5154,24 +5154,24 @@ EDGE += [
         ["P2"]),
     _mistral_case(
         "mistral_non_object_arguments",
-        "Arguments that are JSON but not an object pass through, and text after the first JSON value is dropped, as upstream vLLM's `_extract_args_json` keeps them. A forced tool grammar keeps arguments an object, so only unconstrained output reaches this.",
+        "Arguments that are JSON but not an object pass through, and text after the first JSON value is dropped, as stock vLLM's `_extract_args_json` keeps them. A forced tool grammar keeps arguments an object, so only unconstrained output reaches this.",
         [_call("f", [1, 2]), _call("g", 42), _call("run", json.dumps("done"))],
         '[TOOL_CALLS]f[ARGS][1, 2][TOOL_CALLS]g[ARGS]42[TOOL_CALLS]run[ARGS]"done" trailing words',
-        {"verdict": "match", "note": f"upstream vLLM `raw_decode` keeps the first JSON value of any type; {_UNCAPTURED}"},
+        {"verdict": "match", "note": f"stock vLLM `raw_decode` keeps the first JSON value of any type; {_UNCAPTURED}"},
         ["P3"]),
     _mistral_case(
         "mistral_pre_v11_array_not_a_call",
         "The pre-v11 `[TOOL_CALLS] [{...}]` array is not a v11 call: its name is not a tool identifier, so nothing is emitted.",
         [],
         '[TOOL_CALLS] [{"name": "get_weather", "arguments": {"city": "Paris"}}]',
-        D("UNSUPPORTED", f"upstream SGLang parses the array as calls; the v11 tokenizer never emits it; {_UNCAPTURED}"),
+        D("UNSUPPORTED", f"stock SGLang parses the array as calls; the v11 tokenizer never emits it; {_UNCAPTURED}"),
         ["P2"]),
     _mistral_case(
         "mistral_empty_thoughts_emit_nothing",
         "An empty thought and a whitespace-only thought emit no reasoning; the answer after them is content.",
         [{"kind": "text", "text": "Answer"}],
         "[THINK][/THINK][THINK] \n [/THINK]Answer",
-        {"verdict": "match", "note": f"upstream vLLM strips trailing reasoning whitespace; {_UNCAPTURED}"}),
+        {"verdict": "match", "note": f"stock vLLM strips trailing reasoning whitespace; {_UNCAPTURED}"}),
     _mistral_case(
         "mistral_json_reply_after_reasoning",
         "A JSON reply after a thought, with no `[TOOL_CALLS]`, is visible content, as a structured-output reply is.",
@@ -5183,7 +5183,7 @@ EDGE += [
         "Whitespace-only and empty-object bodies are `{}`; a body that starts and ends on its own line keeps its arguments.",
         [_call("f", {}), _call("g", {}), _call("run", {"cmd": "ls"})],
         '[TOOL_CALLS]f[ARGS] \n [TOOL_CALLS]g[ARGS]{ }[TOOL_CALLS]run[ARGS]\n{"cmd": "ls"}\n',
-        {"verdict": "match", "note": f"upstream vLLM returns {{}} for an empty body; {_UNCAPTURED}"},
+        {"verdict": "match", "note": f"stock vLLM returns {{}} for an empty body; {_UNCAPTURED}"},
         ["P3"]),
 ]
 
