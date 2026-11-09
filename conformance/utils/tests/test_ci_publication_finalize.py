@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import subprocess
 import tarfile
+import time
 import zipfile
 
 import pytest
@@ -79,6 +80,75 @@ def finalizer(tmp_path, monkeypatch):
     result = Finalizer(tmp_path, environment)
     monkeypatch.setattr(result, "api", service.api)
     return result, service
+
+
+@pytest.mark.parametrize("failures,expected_attempts,delays", [
+    ([b"gh: HTTP 503\n"], 2, [1]),
+    ([b"gh: Bad Gateway (HTTP 502)\n", b"gh: HTTP 504\n"], 3, [1, 2]),
+    ([b"gh: HTTP 503\n"] * 3, 3, [1, 2]),
+    ([b"gh: Not Found (HTTP 404)\n"], 1, []),
+    ([b"gh: HTTP 429\n"], 1, []),
+    ([b"connection reset\n"], 1, []),
+])
+def test_artifact_download_retries_only_server_errors(finalizer, monkeypatch, capsys, failures, expected_attempts, delays):
+    target, service = finalizer
+    identifier = service.add(CANDIDATE, {"restored": b"complete"})
+    partial = service.add("partial", {"must-not-extract": b"failed response"})
+    monkeypatch.delattr(target, "api")
+    attempts, waits, errors = [], [], []
+
+    def run(command, *, stdout, stderr, check):
+        assert command == ["gh", "api", "--method", "GET", f"{target.api_root}/artifacts/{identifier}/zip"]
+        assert check
+        assert stderr == subprocess.PIPE
+        assert stdout.tell() == 0
+        attempts.append(command)
+        if len(attempts) <= len(failures):
+            stdout.write(service.bundles[partial])
+            error = subprocess.CalledProcessError(1, command, stderr=failures[len(attempts) - 1])
+            errors.append(error)
+            raise error
+        stdout.write(service.bundles[identifier])
+        return subprocess.CompletedProcess(command, 0, stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setattr(time, "sleep", waits.append)
+    destination = target.inventory.parent / "restored-artifact"
+    destination.mkdir()
+    (destination / "existing").write_bytes(b"preserved on failure")
+    if len(failures) == expected_attempts:
+        with pytest.raises(subprocess.CalledProcessError) as raised:
+            target.download(service.items[identifier], destination, replace=True)
+        assert raised.value is errors[-1]
+        assert (destination / "existing").read_bytes() == b"preserved on failure"
+        assert not (target.inventory.parent / f"artifact-{identifier}.zip").exists()
+    else:
+        target.download(service.items[identifier], destination, replace=True)
+        assert (destination / "restored").read_bytes() == b"complete"
+        assert not (destination / "existing").exists()
+    assert not (destination / "must-not-extract").exists()
+    assert len(attempts) == expected_attempts
+    assert waits == delays
+    assert capsys.readouterr().err == b"".join(failures).decode()
+
+
+@pytest.mark.parametrize("method", ["GET", "DELETE"])
+def test_non_download_api_does_not_retry_server_errors(finalizer, monkeypatch, method):
+    target, _ = finalizer
+    monkeypatch.delattr(target, "api")
+    command = ["gh", "api", "--method", method, f"{target.api_root}/artifacts/1"]
+    error = subprocess.CalledProcessError(1, command, stderr="gh: HTTP 503\n")
+    calls = []
+
+    def run(arguments, **kwargs):
+        calls.append(arguments)
+        raise error
+
+    monkeypatch.setattr(subprocess, "run", run)
+    with pytest.raises(subprocess.CalledProcessError) as raised:
+        target.api(command[-1], method=method)
+    assert raised.value is error
+    assert calls == [command]
 
 
 @pytest.mark.parametrize("validation,deployment", [("success", "success"), ("failure", "skipped"),

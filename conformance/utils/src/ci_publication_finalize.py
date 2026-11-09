@@ -9,7 +9,9 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
+import time
 import zipfile
 
 import ci_plan
@@ -50,9 +52,17 @@ class Finalizer:
     def api(self, endpoint: str, *, method: str = "GET", destination: Path | None = None):
         command = ["gh", "api", "--method", method, endpoint]
         if destination is not None:
-            with destination.open("wb") as output:
-                subprocess.run(command, stdout=output, check=True)
-            return None
+            for attempt in range(3):
+                try:
+                    with destination.open("wb") as output:
+                        subprocess.run(command, stdout=output, stderr=subprocess.PIPE, check=True)
+                    return None
+                except subprocess.CalledProcessError as error:
+                    destination.unlink(missing_ok=True)
+                    sys.stderr.write((error.stderr or b"").decode(errors="replace"))
+                    if attempt == 2 or re.search(rb"\bHTTP 5[0-9]{2}\b", error.stderr or b"") is None:
+                        raise
+                    time.sleep(2 ** attempt)
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         return json.loads(result.stdout) if result.stdout.strip() else None
 
