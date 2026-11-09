@@ -6,17 +6,7 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-beam:
-  # TODO: Beam's typing resolves `$ref`/`allOf`/type arrays but not `not` or
-  # `if`/`then`/`else` (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
-  UNIFIED.not_keyword_type_complement.beam:
-    golden:
-      note: 'FIXME (v2 defect): Beam typing ignores `not`; the negated-string integer stays the string "-2500".'
-      actual: 'tool_call capture_payload {"count": "-2500", "text": "42"}'
-  UNIFIED.conditional_schema_number_types.beam:
-    golden:
-      note: 'FIXME (v2 defect): Beam typing ignores `if`/`then`/`else`; both numbers stay strings.'
-      actual: 'tool_call capture_payload {"amount": "21.5", "retries": "37"}'
+beam: {}
 gpt_oss: {}
 kimi_k3: {}
 muse_glimmer: {}
@@ -26,18 +16,7 @@ deepseek_v41:
     golden:
       note: 'FIXME (v2 defect): an unterminated parameter consumes the later invoke instead of preserving the complete trailing call.'
       actual: tool_call f {"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}
-
-glm47:
-  # TODO: the GLM typer resolves `$ref`/`allOf`/unions but not `not` or
-  # `if`/`then`/`else` (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
-  UNIFIED.not_keyword_type_complement.glm47:
-    golden:
-      note: 'FIXME (v2 defect): GLM typing ignores `not`; the negated-string integer stays the string "-2500".'
-      actual: 'tool_call capture_payload {"count":"-2500","text":"42"}'
-  UNIFIED.conditional_schema_number_types.glm47:
-    golden:
-      note: 'FIXME (v2 defect): GLM typing ignores `if`/`then`/`else`; both numbers stay strings.'
-      actual: 'tool_call capture_payload {"amount":"21.5","retries":"37"}'
+glm47: {}
 deepseek_v4:
   UNIFIED.5-dsml_unterminated_parameter_then_call:
     golden:
@@ -51,17 +30,11 @@ kimi_k2: {}
 nemotron_v3:
   UNIFIED.enum_contradicting_declared_type.nemotron_v3:
     golden:
-      note: 'FIXME (v2 defect): the Qwen-family XML resolver still lets the enum literals veto the declared type, so the array and integer stay text (fixed by #527).'
-      actual: 'tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}'
+      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
+      actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
 qwen3:
   UNIFIED.enum_contradicting_declared_type.qwen3:
     golden:
-      note: 'FIXME (v2 defect): the Qwen-family XML resolver still lets the enum literals veto the declared type, so the array and integer stay text (fixed by #527).'
-      actual: 'tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}'
-minimax_m3:
-  # TODO: the MiniMax M3 typer resolves `not` but not `if`/`then`/`else`
-  # (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
-  UNIFIED.conditional_schema_number_types.minimax_m3:
-    golden:
-      note: 'FIXME (v2 defect): MiniMax M3 typing ignores `if`/`then`/`else`; both numbers stay strings.'
-      actual: 'tool_call capture_payload {"amount":"21.5","retries":"37"}'
+      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
+      actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
+minimax_m3: {}

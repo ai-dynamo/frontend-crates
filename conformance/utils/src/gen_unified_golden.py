@@ -17,6 +17,7 @@ render -> explode -> package, exactly like every other conformance fixture shard
 Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
 import argparse
+from collections.abc import Iterator
 from functools import cache
 import json
 from copy import deepcopy
@@ -25,6 +26,7 @@ import os
 import re
 from pathlib import Path
 
+import normalized_yaml
 import yaml
 
 import markers
@@ -2742,7 +2744,7 @@ EDGE += [
 
 
 def _entry(spec, fam):
-    """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
+    """Resolve shared or family-specific authored metadata for `fam`."""
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
         if fam == "muse_spark" and fam not in spec and "muse_glimmer" in spec:
             return spec["muse_glimmer"]
@@ -2835,44 +2837,80 @@ EDGE.append((
 ))
 
 
-# The first call loses its inner closers but
-# keeps the outer close, then a complete call follows. Scoped to grammars with inner
-# closers; Kimi K2 arguments are bare JSON, which 5-malformed_json_then_two_valid_calls
-# already covers.
-MISSING_INNER_CLOSERS_PREFIX = {
-    "beam": '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|>',
-    "minimax_m3": ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>',
-    "deepseek_v4": '<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls>',
-    "deepseek_v41": '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls>',
-    "gemma4": '<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>',
-    "glm47": "<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>",
-    "kimi_k3": '<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|>',
-    "muse_glimmer": '<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name="get_weather">\n<atem:parameter name="location">unfinished</atem:function_calls><|eom|>',
-    "qwen3": "<tool_call><function=get_weather><parameter=location>unfinished</tool_call>",
+# Keep this published stimulus intact: apparent outer closers are still raw
+# argument data in most of these grammars. GLM and Gemma have different boundaries.
+MISSING_INNER_CLOSERS = {
+    'beam': ('<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">unfinished<|call|>', '</rfl:parameter>', None),
+    'minimax_m3': (']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>unfinished]<]minimax[>[</tool_call>', ']<]minimax[>[</location>', None),
+    'deepseek_v4': ('<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls>', '</｜DSML｜parameter>', None),
+    'deepseek_v41': ('<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="location" string="true">unfinished</｜DSML｜ calls>', '</｜DSML｜ parameter>', None),
+    'gemma4': ('<|tool_call>call:get_weather{location:<|"|>unfinished<tool_call|>', '<|"|>', None),
+    'glm47': ('<tool_call>get_weather<arg_key>location</arg_key><arg_value>unfinished</tool_call>', '</arg_value>', None),
+    'kimi_k3': ('<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|>', '<|close|>argument<|sep|>', None),
+    'muse_glimmer': ('<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name="get_weather">\n<atem:parameter name="location">unfinished</atem:function_calls><|eom|>', '</atem:parameter>', None),
+    'qwen3': ('<tool_call><function=get_weather><parameter=location>unfinished</tool_call>', '</parameter>', '<tool_call><function=get_weather><parameter=location>Paris</parameter></function></tool_call>'),
 }
-MISSING_INNER_CLOSERS_FOLLOWING = {
-    "qwen3": "<tool_call><function=get_weather><parameter=location>Paris</parameter></function></tool_call>",
+
+SCENARIO_SUMMARIES = {
+    "missing_inner_closers_then_valid_call": 'Native mode, default initialization: outer-close-looking bytes precede a call-shaped header while an argument is open. Deliver the whole input in one push, then finish.',
+}
+
+
+def _missing_inner_closers_case(family, prefix, closer, following):
+    if following is None:
+        following = r_tool(family, "get_weather", "location", "Paris", 0)
+    paris = {"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}
+    if family == "gemma4":
+        golden = [paris]
+        explanation = (
+            'The second <|"|> closes the original string, leaving bare Paris where an object '
+            'separator or closer is required. Discard that malformed candidate and recover only '
+            'the complete get_weather(location=Paris) call.'
+        )
+    elif family == "glm47":
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "unfinished"}}, paris]
+        explanation = (
+            "The outer </tool_call> can terminate GLM's final argument without </arg_value>. "
+            "Preserve get_weather(location=unfinished), then emit the separate get_weather(location=Paris): two calls."
+        )
+    else:
+        value = "unfinished" + prefix.partition("unfinished")[2] + following.partition(closer)[0]
+        if family == "beam":
+            value = value.removesuffix("\n")
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": value}}]
+        explanation = (
+            f"For this input, {closer} ends the raw string argument. Earlier outer-close-looking markers "
+            "and the following call-shaped header are literal argument data. Emit one get_weather "
+            "call whose location contains those bytes through Paris; do not dispatch a nested call."
+        )
+    description = (
+        SCENARIO_SUMMARIES["missing_inner_closers_then_valid_call"] + " Oracle: " + explanation
+    )
+    return prefix + following, golden, description
+
+
+MISSING_INNER_CLOSERS_CASES = {
+    family: _missing_inner_closers_case(family, *stimulus)
+    for family, stimulus in MISSING_INNER_CLOSERS.items()
 }
 
 EDGE.append((
     "missing_inner_closers_then_valid_call",
-    "The first call's argument value is missing its inner closers (Qwen3: </parameter> and </function>) but keeps the outer call close; a complete get_weather(location=Paris) follows. Deliver the entire native input in one push, then finish. Reject the incomplete call and return only the complete one.",
+    {family: description for family, (_wire, _golden, description) in MISSING_INNER_CLOSERS_CASES.items()},
     ["I2", "I7", "P2"],
     [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop", "single_chunk": True},
     OnlyFamilies({
         family: (
-            prefix + MISSING_INNER_CLOSERS_FOLLOWING.get(
-                family, r_tool(family, "get_weather", "location", "Paris", 0)),
-            D("UNSUPPORTED", "No peer capture recorded."), M,
+            wire, D("UNSUPPORTED", "No peer capture recorded."), M, golden,
         )
-        for family, prefix in MISSING_INNER_CLOSERS_PREFIX.items()
+        for family, (wire, golden, _description) in MISSING_INNER_CLOSERS_CASES.items()
     }),
     {family: [{"name": "get_weather", "parameters": {
         "type": "object", "properties": {"location": {"type": "string"}},
         "required": ["location"],
-    }}] for family in MISSING_INNER_CLOSERS_PREFIX},
+    }}] for family in MISSING_INNER_CLOSERS},
 ))
 
 
@@ -3641,6 +3679,66 @@ def _native_quoted_control_cases():
 EDGE += list(_native_quoted_control_cases())
 
 
+def _quoted_name_possessive_cases() -> Iterator[tuple]:
+    # Beam and Harmony consume control-token identities, not prose quote guesses.
+    families = sorted(UNIFIED_FAMILIES - {"beam", "gpt_oss", "qwen3_coder", "nemotron_v3"})
+    for span, quote in (("backtick", "`"), ("double_quote", '"')):
+        name = f"{quote}load_config{quote}"
+        tail = " check is fine, but `open('/tmp/x')` is not.\n"
+        reasoning = name + "'s" + tail
+        answer = "\n\nI've found the bug in `app.py`."
+        for output in ("reasoning", "then_call", "guided"):
+            inputs, chunks = {}, {}
+            for family in families:
+                closer = control_tokens(family)[1]
+                if output == "reasoning":
+                    suffix = closer + r_text(family, answer)
+                    pieces = [name, "'", "s", tail, suffix]
+                    golden = [{"kind": "reasoning", "text": reasoning}, {"kind": "text", "text": answer}]
+                elif output == "then_call":
+                    pieces = [name, "'", "s", tail, closer,
+                              r_tool(family, "get_weather", "city", "Paris", 0), r_text(family, answer)]
+                    golden = [{"kind": "reasoning", "text": reasoning},
+                              {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+                              {"kind": "text", "text": answer}]
+                else:
+                    payload = json.dumps({"name": "get_weather", "arguments": {"city": "`Paris`"}})
+                    pieces = [name, "'", "s", tail, closer, payload]
+                    golden = [{"kind": "reasoning", "text": reasoning},
+                              {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "`Paris`"}}]
+                inputs[family] = ("".join(pieces), M, M, golden)
+                chunks[family] = pieces
+            yield (
+                f"quoted_name_{span}_possessive_{output}",
+                "A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.",
+                ["I2", "I5", "I7"], [],
+                {"starting_state": "Reasoning",
+                 "tool_output_mode": "GuidedJson" if output == "guided" else "Native", "named_tool": None},
+                {"finish_reason": "stop", "input_chunks": chunks}, OnlyFamilies(inputs),
+            )
+        for word in ("some", "s_name"):
+            inputs, chunks = {}, {}
+            for family in families:
+                closer = control_tokens(family)[1]
+                prefix = name + "'" + word + " "
+                tail = " marker' stays quoted."
+                reasoning = prefix + closer + tail
+                pieces = [name, "'", word, " ", closer, tail, closer, r_text(family, answer)]
+                golden = [{"kind": "reasoning", "text": reasoning}, {"kind": "text", "text": answer}]
+                inputs[family] = ("".join(pieces), M, M, golden)
+                chunks[family] = pieces
+            yield (
+                f"quoted_name_{span}_nonpossessive_{word}",
+                "A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.",
+                ["I5", "I7"], [],
+                {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+                {"finish_reason": "stop", "input_chunks": chunks}, OnlyFamilies(inputs),
+            )
+
+
+EDGE += list(_quoted_name_possessive_cases())
+
+
 EDGE.append((
     "guided_response_rejected_header_quote_ownership",
     "DeepSeek V4 prefilled guided Response rejects an incomplete invoke header, then strips its parameter markup; the rejected attribute quote cannot become a prose quote and protect that markup.",
@@ -4216,6 +4314,138 @@ def _structured_response_case():
 EDGE.append(_structured_response_case())
 
 
+_GPT_OSS_RECOVERY_CASES = (
+    ("gpt_oss_orphan_terminator_preserves_messages", "A completed recipientless commentary message is followed by an orphan turn terminator and then a framed final message. Preserve both visible messages in order while suppressing the orphan control.",
+     '<|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>',
+     [{"kind": "text", "text": "visible\ndone"}]),
+    ("gpt_oss_unfinished_directed_analysis", "A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated. The turn emits nothing.",
+     '<|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished', []),
+    ("gpt_oss_malformed_then_recipient_first_call", "An unfinished commentary call has a JSON string quoting a partial tool header, followed by an unframed recipient-first Harmony header and a complete call. Keep the quoted header as data and resume before the later recipient; discard the unfinished first call.",
+     '<|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>',
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}]),
+    ("gpt_oss_unknown_channel_before_final", "Recipientless text under an unknown Harmony channel precedes a framed final message. Recover the unknown-channel text at its original position, before the later visible response.",
+     '<|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>',
+     [{"kind": "text", "text": "first\nsecond"}]),
+    ("gpt_oss_final_then_unframed_recipient_first_call", "After a completed Harmony final message, an unframed recipient precedes the next commentary channel. Preserve the final text before the complete routed call; its quoted return marker belongs to the JSON arguments.",
+     '<|channel|>final<|message|>before<|return|>to=functions.lookup<|channel|>commentary<|message|>{"path":"雪","content":"<|return|>"}<|call|>',
+     [{"kind": "text", "text": "before"}, {"kind": "tool_call", "name": "lookup", "arguments": {"path": "雪", "content": "<|return|>"}}]),
+    ("gpt_oss_unfinished_header_then_valid_call", "A directed Harmony commentary header has no message delimiter or body before a new framed tool message begins. The unfinished header cannot borrow the later body or recipient; emit only the later complete call.",
+     '<|channel|>commentary to=functions.bad<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{"path":"ok"}<|return|>',
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}]),
+    ("gpt_oss_unfinished_directed_header_then_final", "A directed Harmony commentary header has no message delimiter or body before a recipientless final channel begins. Discard the unfinished routing metadata and preserve the later final answer as visible text.",
+     '<|channel|>commentary to=functions.bad<|channel|>final<|message|>ANSWER<|return|>',
+     [{"kind": "text", "text": "ANSWER"}]),
+    ("gpt_oss_nonassistant_analysis_then_final", "A framed user message names the analysis channel before an assistant final message. The message role owns attribution: user bytes cannot become assistant reasoning or content; preserve only the assistant answer.",
+     '<|start|>user<|channel|>analysis<|message|>UNTRUSTED<|end|><|start|>assistant<|channel|>final<|message|>ANSWER<|return|>',
+     [{"kind": "text", "text": "ANSWER"}]),
+    ("gpt_oss_recipientless_json_call_then_final", "Recipientless constrained commentary JSON ends with a call action, followed by an assistant final answer. A missing recipient makes the attempted call unexecutable; suppress its arguments rather than exposing them as commentary content.",
+     '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+     [{"kind": "text", "text": "Done"}]),
+    ("gpt_oss_recipientless_json_return_then_final", "Recipientless constrained commentary JSON ends with a return action, followed by an assistant final answer. Unlike a call action with no recipient, the return ends visible commentary; preserve its JSON before the final answer.",
+     '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+     [{"kind": "text", "text": '{"city":"NYC"}\nDone'}]),
+    ("gpt_oss_final_then_unframed_visible_tail", "A completed Harmony final message precedes bare visible text without another message header. Preserve the final message and recover the never-emitted trailing header text at EOF, separated as visible messages.",
+     '<|channel|>final<|message|>before<|return|>after',
+     [{"kind": "text", "text": "before\nafter"}]),
+    ("gpt_oss_recipientless_json_interrupted_by_final", "Recipientless commentary contains complete JSON but no own message ending before a framed final message. The new header owns the final body; preserve the commentary JSON and final text in order without exposing the intervening protocol markers.",
+     '<|channel|>commentary<|message|>{"x":1}<|start|>assistant<|channel|>final<|message|>Done.<|return|>',
+     [{"kind": "text", "text": '{"x":1}\nDone.'}]),
+    ("gpt_oss_recipientless_constrained_whitespace_call", "Recipientless commentary explicitly constrained to JSON contains only two spaces before a call action, followed by a final answer. The content type still identifies an unroutable call payload when no JSON opening byte arrives; suppress its whitespace and preserve only the final answer.",
+     '<|channel|>commentary <|constrain|>json<|message|>  <|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+     [{"kind": "text", "text": "Done"}]),
+    ("gpt_oss_nonassistant_unfinished_final_header", "A framed user message ends in an unfinished final-channel header without a message delimiter. EOF recovery must retain its user role rather than projecting its header text as an assistant answer. The turn emits nothing.",
+     '<|start|>user<|channel|>final SHOULD_HIDE', []),
+    ("gpt_oss_nonassistant_unfinished_analysis_header", "A framed user message ends in an unfinished analysis-channel header without a message delimiter. EOF recovery must retain its user role rather than projecting its header text as assistant reasoning. The turn emits nothing.",
+     '<|start|>user<|channel|>analysis SHOULD_HIDE', []),
+    ("gpt_oss_malformed_then_nonassistant_call", "A malformed directed assistant call precedes a complete user-authored commentary call. Recovery must discard the malformed assistant payload and preserve the later user role; the offered fake function must not execute from user bytes. The turn emits nothing.",
+     '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>user<|channel|>commentary to=functions.fake<|message|>{"x":1}<|return|>', []),
+    ("gpt_oss_malformed_then_native_opaque_name", "A malformed directed assistant call precedes a complete assistant call whose native recipient is f/x. Recovery must retain the entire recipient, as ordinary native extraction already does, instead of truncating it to a different function name.",
+     '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>commentary to=functions.f/x<|message|>{"x":1}<|return|>',
+     [{"kind": "tool_call", "name": "f/x", "arguments": {"x": 1}}]),
+    ("gpt_oss_native_opaque_name_handoff", "A complete native assistant call uses the recipient @f, accepted verbatim by baseline direct extraction. Reasoning-to-tool handoff must preserve the entire native name even though its first character is outside an identifier-style recovery regex.",
+     '<|start|>assistant<|channel|>commentary to=functions.@f<|message|>{"x":1}<|return|>',
+     [{"kind": "tool_call", "name": "@f", "arguments": {"x": 1}}]),
+    ("gpt_oss_named_tool_unfinished_final_header", "The native named tool author python ends in an unfinished final-channel header without a message delimiter. Native author parsing assigns it the tool role, so EOF recovery must not treat its header text as an assistant answer just because it is not a fixed role word. The turn emits nothing.",
+     '<|start|>python<|channel|>final SECRET', []),
+    ("gpt_oss_named_author_less_than_lookalike", "The native author assistant<g ends in an unfinished final-channel header. Its ordinary less-than character is part of a named tool author, not the end of the exact assistant role word; EOF recovery must not expose the header text as an assistant answer. The turn emits nothing.",
+     '<|start|>assistant<g<|channel|>final SECRET', []),
+    ("gpt_oss_named_author_nbsp_lookalike", "The native author starts with assistant followed by a non-breaking space and user, then ends in an unfinished final-channel header. That Unicode space belongs to the named tool author instead of separating an exact assistant role word; EOF recovery must not expose the header text. The turn emits nothing.",
+     '<|start|>assistant\u00a0user<|channel|>final SECRET', []),
+    ('gpt_oss_recovered_tool_header_return', 'A malformed predecessor is followed by a recovered assistant tool header containing a premature return before its message delimiter. That header action cannot end or discard the later complete lookup body; preserve the lookup call and subsequent final answer.',
+     '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>commentary to=functions.lookup <|return|><|message|>{"city":"Paris"}<|call|><|start|>assistant<|channel|>final<|message|>Done.<|return|>',
+     [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'city': 'Paris'}}, {'kind': 'text', 'text': 'Done.'}]),
+    ('gpt_oss_recovered_final_header_return', 'A malformed predecessor is followed by a recovered assistant final header containing a premature return before its message delimiter. Header metadata does not own body termination; preserve the complete final answer.',
+     '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>',
+     [{'kind': 'text', 'text': 'Done.'}]),
+    ('gpt_oss_initial_json_prefix_then_tool', 'An initial visible JSON object contains a quoted Harmony start marker before a complete assistant tool call. JSON string ownership keeps that marker literal; preserve the visible JSON text before the lookup call instead of treating it as an unfinished header.',
+     '{"visible":"<|start|>"}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>',
+     [{'kind': 'text', 'text': '{"visible":"<|start|>"}'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}]),
+    ('gpt_oss_initial_json_prefix_then_recovered_final', 'An initial visible JSON object contains a quoted Harmony start marker before a malformed directed call and a recovered final header with a premature return action. Preserve the literal JSON prefix and final body; the bare prelude is not a separate completed message and introduces no newline.',
+     '{"visible":"<|start|>"}<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>',
+     [{'kind': 'text', 'text': '{"visible":"<|start|>"}Done.'}]),
+    ('gpt_oss_tab_separated_assistant_recipient', 'An unframed assistant author is separated from its recipient by an ASCII tab before a commentary tool body. Native role-header whitespace includes tabs as well as spaces; preserve the complete lookup call and its Unicode argument without leaking routing text.',
+     'assistant\tto=functions.lookup<|channel|>commentary<|message|>{"q":"雪"}<|return|>',
+     [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}]),
+    ('gpt_oss_implicit_recipient_prelude', 'A generated native header begins with functions.lookup and omits both the assistant author and the to= spelling before its commentary channel. Preserve this native implicit recipient call instead of reclassifying the recipient as visible prelude text.',
+     'functions.lookup<|channel|>commentary<|message|>{"q":"x"}<|return|>',
+     [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': 'x'}}]),
+    ('gpt_oss_assistant_implicit_recipient_analysis', 'A generated native header begins with assistant followed by functions.lookup without the to= spelling before an analysis channel. The directed payload belongs to the function, so preserve its call and Unicode argument without leaking routing metadata into reasoning.',
+     'assistant functions.lookup<|channel|>analysis<|message|>{"q":"雪"}<|return|>',
+     [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}]),
+    ('gpt_oss_assistant_role_only_final', 'A generated native header retains only the assistant author and a space before its final channel. The role prefix is header metadata rather than bare visible text; emit only the final answer.',
+     'assistant <|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': 'Done'}]),
+    ('gpt_oss_analysis_text_interrupted_by_final', 'An assistant analysis body contains ordinary text without its own message ending before a framed assistant final answer. The new message header owns its final body; preserve the earlier analysis as reasoning and the answer as visible text without absorbing protocol markers into reasoning.',
+     '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}]),
+    ('gpt_oss_commentary_text_interrupted_by_final', 'Recipientless commentary contains ordinary visible text without its own message ending before a framed assistant final answer. Recover the next message at the body transition and preserve both visible messages with the established newline separator.',
+     '<|channel|>commentary<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': 'Before\nDone'}]),
+    ('gpt_oss_commentary_text_interrupted_by_user', 'Recipientless assistant commentary contains ordinary visible text without its own message ending before a framed user message. Preserve the earlier assistant commentary, while the new user role owns and excludes its body from assistant output.',
+     '<|channel|>commentary<|message|>Before<|start|>user<|channel|>final<|message|>UNTRUSTED<|return|>',
+     [{'kind': 'text', 'text': 'Before'}]),
+    ('gpt_oss_commentary_text_interrupted_by_invalid_author', 'Recipientless assistant commentary is interrupted without its own ending by a complete python author frame that lacks native routing metadata, followed by a valid assistant final answer. Native header validation rejects that unknown author frame; preserve both assistant messages while suppressing the invalid frame and its body.',
+     '<|channel|>commentary<|message|>Before<|start|>python<|channel|>final<|message|>UNTRUSTED<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': 'Before\nDone'}]),
+    ('gpt_oss_unconfirmed_header_return_at_eof', 'An existing final body is followed by a framed-looking assistant final header without a message delimiter or body before EOF. The unconfirmed header bytes remain literal data in the original body; the true return action ends that body and must not be exposed as visible payload.',
+     '<|channel|>final<|message|>Before<|start|>assistant<|channel|>final<|return|>',
+     [{'kind': 'text', 'text': 'Before<|start|>assistant<|channel|>final'}]),
+    ('gpt_oss_unknown_channel_header_only_eof', 'An unframed Harmony header names the unknown channel finalx and reaches EOF without a message delimiter, body, or ending. Native header metadata cannot become visible content or reasoning merely because a known channel name is its prefix. The turn emits nothing.',
+     '<|channel|>finalx',
+     []),
+    ('gpt_oss_analysis_interrupted_by_final_then_tool', 'Analysis text lacks its own message ending before a complete framed assistant final answer and a later lookup call. The first new framed header owns the transition; preserve the earlier reasoning, the intermediate visible answer, and the later complete call in order, without borrowing the final or tool action as the earlier analysis ending.',
+     '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Visible<|return|><|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>',
+     [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Visible'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}]),
+    ('gpt_oss_commentary_text_interrupted_by_bare_final', 'Recipientless commentary contains ordinary visible text without its own ending before a bare final channel header with a message delimiter. Native generated suffixes can omit the start frame; preserve both visible messages with the established newline separator without exposing routing markers.',
+     '<|channel|>commentary<|message|>Before<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': 'Before\nDone'}]),
+    ('gpt_oss_analysis_text_interrupted_by_bare_final', 'Analysis contains ordinary reasoning text without its own ending before a bare final channel header with a message delimiter. The new native header owns the final body even without a start frame; preserve the earlier reasoning and the later visible answer separately.',
+     '<|channel|>analysis<|message|>Before<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}]),
+    ('gpt_oss_initial_json_prefix_then_bare_final', 'Initial visible JSON contains a quoted start marker before a bare final channel header. Keep the marker literal inside its JSON string and preserve the complete JSON prefix before the final answer; the bare prelude is not a completed message and introduces no newline.',
+     '{"x":"<|start|>"}<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': '{"x":"<|start|>"}Done'}]),
+    ('gpt_oss_literal_bare_analysis_in_visible_body', 'An existing commentary body contains a bare analysis header without a start frame or earlier message ending. The bare header remains literal text in the original visible body; reasoning handoff and tool extraction must preserve its exact marker bytes instead of reinterpreting them as new reasoning.',
+     '<|channel|>commentary<|message|>Before<|channel|>analysis<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': 'Before<|channel|>analysis<|message|>Done'}]),
+    ('gpt_oss_literal_bare_unknown_channel_in_visible_body', 'An existing commentary body contains a bare finalx channel header without a start frame or earlier message ending. This unknown channel is literal body data, including its marker bytes; composition must preserve it rather than treating the flattened visible string as a new native message.',
+     '<|channel|>commentary<|message|>Before<|channel|>finalx<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': 'Before<|channel|>finalx<|message|>Done'}]),
+    ('gpt_oss_literal_bare_tool_header_in_visible_body', 'An existing final body narrates a bare commentary tool header and empty argument object without a new start frame. Ownership keeps the offered lookup header literal and prevents tool execution; the call action ends the original body without becoming visible content.',
+     '<|channel|>final<|message|>Use <|channel|>commentary to=functions.lookup<|message|>{}<|call|>',
+     [{'kind': 'text', 'text': 'Use <|channel|>commentary to=functions.lookup<|message|>{}'}]),
+    ('gpt_oss_visible_json_prelude_indentation', 'A visible JSON prelude begins with four spaces and ends with a newline before a bare final header. The spaces are meaningful Markdown code-block indentation; preserve them and the newline exactly while removing only the final header and its ending.',
+     '    {"x":1}\n<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': '    {"x":1}\nDone'}]),
+    ('gpt_oss_visible_quoted_json_prelude_whitespace', 'A visible JSON prelude begins with a space and newline and contains a quoted start marker before a bare final header. The quoted marker belongs to JSON data; select the first unquoted protocol boundary and preserve all leading and trailing prelude whitespace exactly.',
+     ' \n{"x":"<|start|>"}\n<|channel|>final<|message|>Done<|return|>',
+     [{'kind': 'text', 'text': ' \n{"x":"<|start|>"}\nDone'}]),
+    ('gpt_oss_assistant_default_channel_visible_response', 'A complete native assistant message omits both recipient and channel. The message delimiter begins an ordinary visible body; preserve Answer through the return ending without requiring an explicit final channel or inventing a tool call.',
+     '<|start|>assistant<|message|>Answer<|return|>',
+     [{'kind': 'text', 'text': 'Answer'}]),
+)
+
+
 _GPT_OSS_REVIEW_CASES = (
     ("tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
      '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{"city":"Paris"}<|call|>',
@@ -4235,6 +4465,16 @@ _GPT_OSS_REVIEW_CASES = (
     ("gpt_oss_complete_alternate_message_ends", "Harmony native function messages contain complete JSON and end with message-end or turn-end instead of handoff. Unified recovers both delimiter-complete calls; legacy missing-handoff behavior remains separate.",
      '<|start|>assistant to=functions.lookup<|message|>{"q":"end"}<|end|><|start|>assistant to=functions.lookup<|message|>{"q":"return"}<|return|>',
      [{"kind":"tool_call", "name":"lookup", "arguments":{"q":"end"}}, {"kind":"tool_call", "name":"lookup", "arguments":{"q":"return"}}]),
+    ("gpt_oss_single_return_ending_tool_call", "A channel-first commentary tool call with a constrained JSON body ends with one turn-end marker and no handoff marker. It must still produce the complete tool call.",
+     '<|channel|>commentary to=functions.get_current_weather <|constrain|>json<|message|>{"format":"celsius","location":"San Francisco"}<|return|>',
+     [{"kind":"tool_call", "name":"get_current_weather", "arguments":{"format":"celsius", "location":"San Francisco"}}]),
+    ("gpt_oss_reasoning_then_return_ending_tool_call", "Analysis precedes a channel-first constrained JSON tool call ending in return. Preserve both reasoning and the tool call through the reasoning-to-tool handoff. The existing reason_then_tool case is the call-ending control; only the ending differs.",
+     '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>',
+     [{"kind":"reasoning", "text":"Check weather."}, {"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
+    ("gpt_oss_quoted_tool_header_in_final_json", "Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Preserve the existing newline between visible messages.",
+     '<|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>',
+     [{"kind":"text", "text":'Preamble\n{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'}]),
+
 )
 
 
@@ -4347,7 +4587,7 @@ def _native_review_variants(scenario):
     return {}
 
 
-for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
+for _name, _description, _input, _golden in (*_GPT_OSS_REVIEW_CASES, *_GPT_OSS_RECOVERY_CASES):
     _variants = _native_review_variants(_name)
     _inputs = OnlyFamilies({"gpt_oss": (_input, D("UNSUPPORTED", VLLM_UNCAPTURABLE["gpt_oss"]), M)})
     _inputs.update({family: (native_input, D("UNSUPPORTED", "No peer capture recorded."), dynamo, golden)
@@ -4356,6 +4596,15 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
     _tools = {"gpt_oss": [], **{family: [{"name": _tool_name, "parameters": {
         "type": "object", "properties": {_parameter: {"type": "string"}},
     }}] for family in _variants}}
+    if _name in {case[0] for case in _GPT_OSS_RECOVERY_CASES}:
+        _recovery_names = ("lookup", "bad", "unfinished") + (("fake", "f/x", "@f") if _name in {
+            "gpt_oss_malformed_then_nonassistant_call", "gpt_oss_malformed_then_native_opaque_name", "gpt_oss_native_opaque_name_handoff",
+        } else ())
+        _tools["gpt_oss"] = [{"name": name, "parameters": {"type": "object", "properties": {
+            "path": {"type": "string"}, "content": {"type": "string"}, "q": {"type": "string"}, "x": {"type": "integer" if name in {"fake", "f/x", "@f"} else "string"},
+        }}} for name in _recovery_names if f"functions.{name}" in _input]
+        if _name in {"gpt_oss_recovered_tool_header_return", "gpt_oss_recovered_final_header_return", "gpt_oss_initial_json_prefix_then_tool"}:
+            _tools["gpt_oss"] = [{"name": name, "parameters": {"type": "object", "properties": {"city": {"type": "string"}} if name == "lookup" else {}}} for name in _recovery_names if f"functions.{name}" in _input]
     EDGE.append((
         _name, _description, ["I3", "I5", "I7"], _golden,
         {"starting_state":"None", "tool_output_mode":"Native", "named_tool":None},
@@ -4624,7 +4873,7 @@ def _build_cases(fam):
 
 @lru_cache(maxsize=16)
 def _historical_cases(document_text):
-    return yaml.safe_load(document_text)["cases"]
+    return normalized_yaml.expand_family(yaml.safe_load(document_text))["cases"]
 
 
 def _preserve_historical_requests(cases, family):
@@ -4648,7 +4897,10 @@ def _preserve_historical_requests(cases, family):
                 continue
             raise KeyError(f"historical {family} case disappeared: {scenario}")
         # Validation callers mutate returned cases; isolate the cached canonical record.
-        case["golden"] = deepcopy(old_case["golden"]["assembled"])
+        # This published stimulus had a shared Paris-only oracle that violated
+        # raw-value ownership and GLM recovery; retain the independent correction.
+        if scenario != "missing_inner_closers_then_valid_call":
+            case["golden"] = deepcopy(old_case["golden"]["assembled"])
         if scenario.endswith("_pr424"):
             case["description"] = old_case["description"]
         request = deepcopy(old_case["request"])
@@ -4807,7 +5059,7 @@ def _build_edge_cases(fam, specs):
                 "`init` and cannot honour this request mode",
             )
         case = {
-            "description": desc,
+            "description": _entry(desc, fam),
             "policy": _entry(policy, fam),
             "input": inp,
             "golden": g,

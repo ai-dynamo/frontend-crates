@@ -187,7 +187,7 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
             raise ValueError("capture identity must use single components")
     if mode != "unified" and mode not in sources.LEGACY_CORPORA:
         raise ValueError("unsupported capture mode")
-    release_order(version, mode)
+    capture_release_sort_key(version)
     path = sources.latest_path(mode, family, implementation)
     target = root / path
     journal = target.parent / f".capture-update-{implementation}.json"
@@ -197,14 +197,14 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
         data = capture.read_bytes()
         if data.startswith(b"capture_selection: "):
             data = data.split(b"\n", 1)[1]
-        document = yaml.load(data, Loader=unified_history.StrictLoader)
+        document = unified_history._parse_yaml(capture, data)
         # Stable serialization makes independent captures of the same records idempotent.
         data = yaml.safe_dump(document, sort_keys=True, allow_unicode=True, width=4096).encode()
         authored_rows, lineage = [], []
         if mode == "unified":
             authored_name = authored_paths(root, family, mode)[0].relative_to(root).as_posix()
             authored_bytes = sources.read(root, authored_name)
-            authored = unified_history._validate_family(root / authored_name, yaml.load(authored_bytes, Loader=unified_history.StrictLoader))
+            authored = unified_history._validate_family(root / authored_name, unified_history._parse_yaml(root / authored_name, authored_bytes))
             unified_history._validate_complete_snapshot(capture, document, authored, implementation, version)
             document = sources.independent_snapshot(document, authored.document)
             data = yaml.safe_dump(document, sort_keys=True, allow_unicode=True, width=4096).encode()
@@ -229,11 +229,12 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
         row = {"source": logical, "surface": mode, "mode": mode, "family": family,
                "implementation": implementation, "version": version}
         selected = sources.selected_bytes(data, row, lineage,
-                                          authored=authored.document if mode == "unified" else None)
+                                          authored=authored.document if mode == "unified" else None,
+                                          authored_storage=unified_history._parse_yaml_raw(root / authored_name, authored_bytes) if mode == "unified" else None)
         previous_data = sources.read(root, path) if target.exists() else None
         previous_selection = json.loads(previous_data.split(b"\n", 1)[0].removeprefix(b"capture_selection: ")) if previous_data else None
         if previous_selection and previous_selection["version"] == version:
-            previous_document = yaml.load(previous_data.split(b"\n", 1)[1], Loader=unified_history.StrictLoader)
+            previous_document = unified_history._parse_yaml(target, previous_data.split(b"\n", 1)[1])
             comparable = sources.independent_snapshot(document, authored.document, source_member=logical) if mode == "unified" else document
             previous_comparable = sources.independent_snapshot(previous_document, authored.document, source_member=logical) if mode == "unified" else previous_document
             if not unified_history.typed_equal(previous_comparable, comparable):
@@ -407,7 +408,9 @@ def reconcile(root, history):
                     continue
             authored = retained_authored(root, history, family) if mode == "unified" else None
             atomic_write(path, sources.selected_bytes(data, descriptor["selection"], descriptor["lineage"],
-                                                     authored=authored))
+                                                     authored=authored, authored_storage=unified_history._parse_yaml_raw(
+                                                         root / sources.STORE / "families" / family / "inputs_and_golden.yaml",
+                                                         (root / sources.STORE / "families" / family / "inputs_and_golden.yaml").read_bytes()) if mode == "unified" else None))
     return {"reconciled": len(grouped)}
 
 

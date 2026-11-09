@@ -1573,10 +1573,20 @@ def test_schema_v3_origin_only_change_inherits_without_a_checkpoint(tmp_path):
     assert inherited["inherited_from"] == "0.5.0"
     assert inherited["captured_with"] == {"dynamo_v2": "0.5.0"}
 @pytest.mark.parametrize("version", ["0.5.1.patch1", "0.5.1+source." + "a" * 64])
-def test_history_rejects_patch_and_source_qualified_filenames(tmp_path, version):
+def test_history_rejects_patch_and_unbound_source_filenames(tmp_path, version):
     _write_family(tmp_path)
     _write_capture(tmp_path, version, {"text_only": _change()})
 
+    with pytest.raises(ValueError, match="capture identity differs|qualified capture identity requires captured origin"):
+        unified_history.load_store(tmp_path)
+
+
+def test_source_qualified_selection_is_rejected_even_with_matching_origin(tmp_path):
+    _write_family(tmp_path)
+    version = "0.5.1+source." + "a" * 64
+    _write_capture(tmp_path, version, {"text_only": _change()}, provenance={
+        "status":"captured", "origin":{"crate_version":"0.5.1","source_sha256":"a"*64}
+    })
     with pytest.raises(ValueError, match="capture identity differs"):
         unified_history.load_store(tmp_path)
 
@@ -1997,8 +2007,60 @@ def test_restore_historical_snapshot_preserves_later_execution_and_additions(tmp
     assert reloaded.resolve(f"{implementation}-0.26.0") == later
 
 
-@pytest.mark.parametrize('corruption', [None, 'deduplicated_origin', 'missing_member', 'changed_digest', 'unproved_record', 'partial_bad', 'partial_hex', 'empty_execution'])
-def test_frozen_snapshot_proof_keeps_its_executed_members_after_authored_growth(tmp_path, corruption):
+@pytest.mark.parametrize("changed_request", [False, True])
+@pytest.mark.parametrize("corruption", [None, "missing", "extra", "digest", "partial", "unbound"])
+def test_sparse_proof_membership_uses_frozen_record_bindings(tmp_path, corruption, changed_request):
+    root = tmp_path / "store"
+    _write_family(root)
+    family_path = root / "families/gemma4/inputs_and_golden.yaml"
+    family = unified_history._validate_family(family_path, unified_history.load_yaml(family_path))
+    request = family.cases["text_only"]["request"]
+    origin = {"crate_version": "0.26.0", "source_sha256": "a" * 64,
+              "adapter_sha256": "b" * 64, "job_sha256": "c" * 64}
+    change = _change()
+    change["stimulus"] = {"inline": copy.deepcopy(request), "semantic_sha256": unified_history._request_digest(request)}
+    path = _write_capture(root, "0.26.0", {"text_only": change}, provenance={"status": "captured", "origin": origin})
+    checkpoint = unified_history.load_yaml(path)
+    proof = {"receipt": {**origin, "implementation": "dynamo_v2", "version": "0.26.0", "results_sha256": "d" * 64},
+             "requests": {"text_only": unified_history._request_digest(request)}}
+    checkpoint["execution_proof"] = proof
+    authored = unified_history.load_yaml(family_path)
+    later = copy.deepcopy(authored["cases"]["text_only"])
+    later.update(scenario="reason_only", display_id="reason_only")
+    later["request"]["input"] = "new request"
+    later["request"]["chunks"] = [{"delta_text": "new request"}]
+    authored["cases"]["later"] = later
+    if changed_request:
+        authored["cases"]["text_only"]["request"]["input"] = "changed request"
+        authored["cases"]["text_only"]["request"]["chunks"] = [{"delta_text": "changed request"}]
+    family_path.write_text(unified_history.dump_yaml(authored))
+    grown = unified_history._validate_family(family_path, authored)
+    # Direct capture validation remains strict; historical loading supplies independent bound membership.
+    with pytest.raises(ValueError, match="proof request membership mismatch"):
+        unified_history._validate_capture_file(path, checkpoint, {"gemma4": grown})
+    if corruption == "missing":
+        proof["requests"].clear()
+    elif corruption == "extra":
+        proof["requests"]["later"] = unified_history._request_digest(later["request"])
+    elif corruption == "digest":
+        proof["requests"]["text_only"] = "e" * 64
+    elif corruption in {"partial", "unbound"}:
+        change = checkpoint["changes"]["text_only"]
+        change["stimulus"] = ({"partial": {"input": "old"}, "semantic_sha256": "e" * 64}
+                              if corruption == "partial" else {"unavailable": {"code": "original_request_not_retained"}})
+    path.write_text(unified_history.dump_yaml(checkpoint))
+    if corruption:
+        with pytest.raises(ValueError, match="(proof request membership mismatch|sealed request digests|complete request)"):
+            unified_history.load_store(root)
+    else:
+        loaded = unified_history.load_store(root).histories["gemma4", "dynamo_v2"]
+        assert loaded.captures["dynamo_v2-0.26.0"]["execution_proof"] == proof
+        assert set(loaded.resolve("dynamo_v2-0.26.0")) == {"text_only"}
+
+
+@pytest.mark.parametrize('filename', ['versioned', 'latest'])
+@pytest.mark.parametrize('corruption', [None, 'deduplicated_origin', 'missing_member', 'changed_digest', 'unproved_record', 'partial_bad', 'partial_hex', 'empty_execution', 'wrong_filename', 'receipt_version'])
+def test_frozen_snapshot_proof_keeps_its_executed_members_after_authored_growth(tmp_path, corruption, filename):
     root = tmp_path / 'store'
     _write_family(root)
     path = _write_capture(root, '0.26.0', {'text_only': _change()})
@@ -2016,8 +2078,14 @@ def test_frozen_snapshot_proof_keeps_its_executed_members_after_authored_growth(
     snapshot = {'schema_version': 2, 'provenance': {'status': 'captured', 'origin': origin}, 'document': {},
                 'records': {'text_only': {'value': record, 'member': 'conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.26.0.yaml'}},
                 'execution_proof': proof}
+    if filename == 'latest':
+        path = path.with_name('dynamo_v2.yaml')
     family.cases['later'] = copy.deepcopy(family.cases['text_only'])
-    if corruption == 'deduplicated_origin':
+    if corruption == 'wrong_filename':
+        path = path.with_name('dynamo_v2-0.26.1.yaml')
+    elif corruption == 'receipt_version':
+        proof['receipt']['version'] = '0.26.1'
+    elif corruption == 'deduplicated_origin':
         record['document']['capture_origin']['source_sha256'] = 'f' * 64
     elif corruption in {'partial_bad', 'partial_hex'}:
         digest = 'bad' if corruption == 'partial_bad' else 'e' * 64
@@ -2033,30 +2101,33 @@ def test_frozen_snapshot_proof_keeps_its_executed_members_after_authored_growth(
     elif corruption == 'unproved_record':
         snapshot['records']['later'] = copy.deepcopy(snapshot['records']['text_only'])
     if corruption and corruption != 'deduplicated_origin':
-        with pytest.raises(ValueError, match='(proof request membership mismatch|sealed request digests|complete request)'):
+        pattern = '(version|identity)' if corruption in {'wrong_filename', 'receipt_version'} else '(proof request membership mismatch|sealed request digests|complete request)'
+        with pytest.raises(ValueError, match=pattern):
             unified_history._validate_complete_snapshot(path, snapshot, family, 'dynamo_v2', '0.26.0')
     else:
         unified_history._validate_complete_snapshot(path, snapshot, family, 'dynamo_v2', '0.26.0')
 
 
 def test_retained_kimi_sparse_history_preserves_observation_origins(history_source):
-    root = history_source / 'conformance/fixtures-unified-v2'
-    store = unified_history.load_store(root)
-    history = store.histories['kimi_k3', 'sglang_python_batch']
-    capture_id = max(history.captures, key=lambda name: unified_history._capture_release_sort_key(name.removeprefix('sglang_python_batch-')))
-    snapshot = history.complete_snapshot(capture_id)
-    assert snapshot['records']
-    members = history.snapshot_members[capture_id]
-    assert set(snapshot['records']) == set(members)
-    assert any(not unified_history.typed_equal(record['value']['document']['capture_origin'], snapshot['provenance']['origin'])
-               for record in snapshot['records'].values())
-    resolved = history.resolve(capture_id)
-    for case, wrapped in snapshot['records'].items():
-        assert wrapped['member'] == members[case]
-        assert wrapped['value'] == resolved[case]
-    family = store.families['kimi_k3']
-    version = capture_id.removeprefix('sglang_python_batch-')
-    unified_history._validate_complete_snapshot(root / f'families/kimi_k3/{capture_id}.yaml', snapshot, family, 'sglang_python_batch', version)
+    with capture_sources.history_view(Path(__file__).resolve().parents[3], history_source) as view:
+        root = view / 'conformance/fixtures-unified-v2'
+        store = unified_history.load_store(root)
+        history = store.histories['kimi_k3', 'sglang_python_batch']
+        # This retained checkpoint deduplicates observations; a fresh full capture need not.
+        capture_id = 'sglang_python_batch-0.5.14'
+        snapshot = history.complete_snapshot(capture_id)
+        assert snapshot['records']
+        members = history.snapshot_members[capture_id]
+        assert set(snapshot['records']) == set(members)
+        assert any(not unified_history.typed_equal(record['value']['document']['capture_origin'], snapshot['provenance']['origin'])
+                   for record in snapshot['records'].values())
+        resolved = history.resolve(capture_id)
+        for case, wrapped in snapshot['records'].items():
+            assert wrapped['member'] == members[case]
+            assert wrapped['value'] == resolved[case]
+        family = store.families['kimi_k3']
+        version = capture_id.removeprefix('sglang_python_batch-')
+        unified_history._validate_complete_snapshot(root / f'families/kimi_k3/{capture_id}.yaml', snapshot, family, 'sglang_python_batch', version)
 
 
 def test_routed_sparse_history_keeps_requests_precedence_and_lazy_fragments(tmp_path, monkeypatch):

@@ -46,7 +46,9 @@
 //! a reasoning marker inside it is argument data, not a control token (`I7`).
 
 use std::collections::HashSet;
+use std::sync::OnceLock;
 
+use crate::tool_calling::debug::env_is_truthy;
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
 use crate::unified::{
     GuidedChannel, GuidedChannelState, GuidedTurnScope, Kind, MalformedToolCall,
@@ -1628,12 +1630,28 @@ pub(crate) trait InvokeEmitter {
     }
 }
 
+/// Whether quotes in model output can make a reasoning or tool-call marker literal text.
+fn quote_aware_parsing() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| !env_is_truthy("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING"))
+}
+
+#[derive(Clone, Copy, Default)]
+enum PossessiveSuffix {
+    #[default]
+    None,
+    Apostrophe,
+    S,
+}
+
 #[derive(Clone, Default)]
 struct ProseQuoteState {
     quote: Option<char>,
     escaped: bool,
     previous: Option<char>,
     pending_apostrophe: bool,
+    previous_closed_span: bool,
+    possessive_suffix: PossessiveSuffix,
 }
 
 impl ProseQuoteState {
@@ -1644,10 +1662,30 @@ impl ProseQuoteState {
             }
             self.pending_apostrophe = false;
         }
+        if matches!(self.possessive_suffix, PossessiveSuffix::S) {
+            if !next.is_some_and(|ch| ch.is_alphanumeric() || ch == '_') {
+                self.quote = None;
+            }
+            self.possessive_suffix = PossessiveSuffix::None;
+        }
     }
 
     fn advance(&mut self, character: char, next: Option<char>) {
         self.resolve_apostrophe(Some(character));
+        if matches!(
+            std::mem::take(&mut self.possessive_suffix),
+            PossessiveSuffix::Apostrophe
+        ) && matches!(character, 's' | 'S')
+        {
+            if let Some(next) = next {
+                if !next.is_alphanumeric() && next != '_' {
+                    self.quote = None;
+                }
+            } else {
+                self.possessive_suffix = PossessiveSuffix::S;
+            }
+        }
+        let mut closed_span = false;
         if self.escaped {
             self.escaped = false;
         } else if character == '\\' {
@@ -1664,14 +1702,20 @@ impl ProseQuoteState {
                 self.pending_apostrophe = true;
             } else {
                 self.quote = None;
+                closed_span = matches!(character, '"' | '`');
             }
         } else if self.quote.is_none()
+            && quote_aware_parsing()
             && matches!(character, '"' | '\'' | '`')
             && !(character == '\'' && self.previous.is_some_and(char::is_alphanumeric))
         {
             self.quote = Some(character);
+            if character == '\'' && self.previous_closed_span {
+                self.possessive_suffix = PossessiveSuffix::Apostrophe;
+            }
         }
         self.previous = Some(character);
+        self.previous_closed_span = closed_span;
     }
 
     fn consume(&mut self, text: &str) {
@@ -4163,6 +4207,39 @@ mod tests {
             }),
             ProseControl::Ordinary
         ));
+    }
+
+    #[test]
+    fn possessive_suffix_requires_a_closed_span_and_a_word_boundary() {
+        for quote in ['`', '"'] {
+            let name = format!("{quote}config{quote}");
+            for (suffix, expected) in [
+                ("'s", None),
+                ("'S", None),
+                ("'s ", None),
+                ("'s.", None),
+                ("'some", Some('\'')),
+                ("'s_name", Some('\'')),
+                ("'s2", Some('\'')),
+                ("'s猫", Some('\'')),
+                (" 's", Some('\'')),
+            ] {
+                let text = format!("{name}{suffix}");
+                for split in (0..=text.len()).filter(|at| text.is_char_boundary(*at)) {
+                    let mut state = ProseQuoteState::default();
+                    state.consume(&text[..split]);
+                    state.consume(&text[split..]);
+                    state.resolve_apostrophe(None);
+                    assert_eq!(state.quote, expected, "{text:?} split={split}");
+                }
+            }
+
+            let escaped = format!("\\{quote}config\\{quote}'s ");
+            let mut state = ProseQuoteState::default();
+            state.consume(&escaped);
+            state.resolve_apostrophe(None);
+            assert_eq!(state.quote, Some('\''), "{escaped:?}");
+        }
     }
 
     #[test]

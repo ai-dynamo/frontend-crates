@@ -727,7 +727,7 @@ fn request_json(node: &Node) -> Result<String> {
     })
 }
 
-fn request_digest(node: &Node) -> Result<String> {
+pub(crate) fn request_digest(node: &Node) -> Result<String> {
     Ok(sha256(request_json(node)?.as_bytes()))
 }
 
@@ -1016,29 +1016,11 @@ fn observation(node: &Node) -> Result<()> {
     Ok(())
 }
 
-pub fn capture(node: &Node, authored: &Node, implementation: &str, version: &str) -> Result<()> {
-    capture_with_proof_requests(node, authored, implementation, version, None)
-}
-
-fn capture_with_proof_requests(
-    node: &Node,
-    authored: &Node,
-    implementation: &str,
-    version: &str,
-    proof_requests: Option<&Node>,
-) -> Result<()> {
-    fields(
-        node,
-        &[
-            "provenance",
-            "document",
-            "changes",
-            "metadata_changes",
-            "document_overrides",
-        ],
-        &["parent", "execution_proof"],
-    )?;
-    let provenance = node.field("provenance")?;
+fn capture_provenance(provenance: &Node, implementation: &str, version: &str) -> Result<()> {
+    ensure!(
+        !version.contains("+source.") || provenance.field("status")?.string()? == "captured",
+        "qualified capture identity requires captured origin"
+    );
     match provenance.field("status")?.string()? {
         "captured" => {
             fields(provenance, &["status", "origin"], &[])?;
@@ -1054,6 +1036,34 @@ fn capture_with_proof_requests(
         }
         _ => anyhow::bail!("invalid capture provenance"),
     }
+    Ok(())
+}
+
+pub fn capture(node: &Node, authored: &Node, implementation: &str, version: &str) -> Result<()> {
+    capture_with_proof_requests(node, authored, implementation, version, None, false)
+}
+
+fn capture_with_proof_requests(
+    node: &Node,
+    authored: &Node,
+    implementation: &str,
+    version: &str,
+    proof_requests: Option<&Node>,
+    defer_proof_membership: bool,
+) -> Result<()> {
+    fields(
+        node,
+        &[
+            "provenance",
+            "document",
+            "changes",
+            "metadata_changes",
+            "document_overrides",
+        ],
+        &["parent", "execution_proof"],
+    )?;
+    let provenance = node.field("provenance")?;
+    capture_provenance(provenance, implementation, version)?;
     let document = node.field("document")?;
     document.mapping()?;
     ensure!(
@@ -1148,21 +1158,25 @@ fn capture_with_proof_requests(
                 "execution proof requires sealed request digests"
             );
         }
-        let mut expected = Node::map();
-        for (id, case) in cases.mapping()? {
-            if case.field("lifecycle")?.string()? != "retired" {
-                expected.set(
-                    id.string()?,
-                    Node::Str(request_digest(case.field("request")?)?),
-                )?;
+        if !defer_proof_membership {
+            let mut expected = Node::map();
+            if proof_requests.is_none() {
+                for (id, case) in cases.mapping()? {
+                    if case.field("lifecycle")?.string()? != "retired" {
+                        expected.set(
+                            id.string()?,
+                            Node::Str(request_digest(case.field("request")?)?),
+                        )?;
+                    }
+                }
             }
+            ensure!(
+                proof_requests
+                    .unwrap_or(&expected)
+                    .equivalent(proof.field("requests")?),
+                "proof request membership mismatch"
+            );
         }
-        ensure!(
-            proof_requests
-                .unwrap_or(&expected)
-                .equivalent(proof.field("requests")?),
-            "proof request membership mismatch"
-        );
     }
     Ok(())
 }
@@ -1188,21 +1202,7 @@ pub fn resolved_snapshot<'a>(
         "invalid Unified snapshot schema"
     );
     let provenance = node.field("provenance")?;
-    match provenance.field("status")?.string()? {
-        "captured" => {
-            fields(provenance, &["status", "origin"], &[])?;
-            origin(provenance.field("origin")?, Some(version))?;
-        }
-        "legacy" => {
-            fields(provenance, &["status", "captured_with"], &[])?;
-            let with = provenance.field("captured_with")?;
-            ensure!(
-                with.mapping()?.len() == 1 && with.field(implementation)?.string()? == version,
-                "legacy provenance mismatch"
-            );
-        }
-        _ => anyhow::bail!("invalid snapshot provenance"),
-    }
+    capture_provenance(provenance, implementation, version)?;
     let document = node.field("document")?;
     document.mapping()?;
     ensure!(
@@ -1282,6 +1282,7 @@ pub fn resolved_snapshot<'a>(
             implementation,
             version,
             Some(&executed),
+            false,
         )?;
     }
     if let Some(Node::Array(evidence_items)) = node.get("historical_evidence") {
@@ -1391,6 +1392,17 @@ pub fn load_history(
         );
         let bytes = verified(root, resource)?;
         let raw = yaml::load_str(std::str::from_utf8(&bytes)?)?;
+        let raw = if crate::normalization::is_normalized(&raw) {
+            let input_path = format!("{STORE}/families/{family}/inputs_and_golden.yaml");
+            let input = admission
+                .index
+                .get(&input_path)
+                .context("missing normalized request library")?;
+            let bytes = verified(root, input)?;
+            crate::normalization::snapshot(&raw, &yaml::load_str(std::str::from_utf8(&bytes)?)?)?
+        } else {
+            raw
+        };
         if raw.get("schema_version") == Some(&Node::Int(2.into())) {
             let records = resolved_snapshot(&raw, authored, family, implementation, version)
                 .with_context(|| member.to_string())?;
@@ -1491,7 +1503,7 @@ pub fn load_history(
         if let Some(parent) = raw.get("parent") {
             document.set("parent", parent.clone())?;
         }
-        capture(&document, authored, implementation, version)
+        capture_with_proof_requests(&document, authored, implementation, version, None, true)
             .with_context(|| member.to_string())?;
         remaining = remaining
             .checked_sub(document.heap_bytes())
@@ -1509,11 +1521,49 @@ pub fn load_history(
         captures,
     };
     history.validate()?;
-    if batch {
+    let sparse_proof = history.captures.iter().any(|capture| {
+        capture.resolved_records.is_none() && capture.document.get("execution_proof").is_some()
+    });
+    if batch || sparse_proof {
         let mut cursor = crate::history::Cursor::default();
         for (index, capture) in history.captures.iter().enumerate() {
             cursor.apply(&history, index)?;
-            batch_records(&cursor.records(&history, &capture.version)?)?;
+            let records = cursor.records(&history, &capture.version)?;
+            if capture.resolved_records.is_none()
+                && capture.document.get("execution_proof").is_some()
+            {
+                // Corpus growth must not expand an earlier execution's frozen request set.
+                let mut executed = Node::map();
+                for (id, wrapped) in records.mapping()? {
+                    let case = authored.field("cases")?.field(id.string()?)?;
+                    if case.field("lifecycle")?.string()? == "retired" {
+                        continue;
+                    }
+                    let stimulus = wrapped.field("value")?.field("stimulus")?;
+                    let request = if let Some(inline) = stimulus.get("inline") {
+                        inline
+                    } else {
+                        ensure!(
+                            stimulus.get("ref").is_some(),
+                            "execution proof requires a complete request"
+                        );
+                        case.field("request")?
+                    };
+                    executed.set(id.string()?, Node::Str(request_digest(request)?))?;
+                }
+                capture_with_proof_requests(
+                    &capture.document,
+                    authored,
+                    implementation,
+                    &capture.version,
+                    Some(&executed),
+                    false,
+                )
+                .with_context(|| capture.member.clone())?;
+            }
+            if batch {
+                batch_records(&records)?;
+            }
         }
     }
     Ok(history)
@@ -1634,6 +1684,95 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn sparse_proof_membership_follows_bound_history_after_corpus_growth() -> Result<()> {
+        let request = serde_json::json!({"input":"hello","init":{},"finish_reason":"stop","tools":[],"chunks":[{"delta_text":"hello"}]});
+        let mut later = request.clone();
+        later["input"] = serde_json::json!("new request");
+        later["chunks"] = serde_json::json!([{"delta_text":"new request"}]);
+        let authored = yaml::load_str(&serde_json::to_string(&serde_json::json!({"cases":{
+            "id":{"lifecycle":"active","request":request},
+            "later":{"lifecycle":"active","request":later}
+        }}))?)?;
+        let digest = request_digest(authored.field("cases")?.field("id")?.field("request")?)?;
+        let root = tempfile::tempdir()?;
+        for implementation in ["dynamo_v2", "sglang_python_batch"] {
+            let member = format!("{STORE}/families/sample/{implementation}-0.1.0.yaml");
+            fs::create_dir_all(root.path().join(&member).parent().unwrap())?;
+            let origin = serde_json::json!({"crate_version":"0.1.0","source_sha256":"a".repeat(64),
+                "adapter_sha256":"b".repeat(64),"job_sha256":"c".repeat(64)});
+            let receipt = serde_json::json!({"crate_version":"0.1.0","source_sha256":"a".repeat(64),
+                "adapter_sha256":"b".repeat(64),"job_sha256":"c".repeat(64),"results_sha256":"d".repeat(64),
+                "implementation":implementation,"version":"0.1.0"});
+            let valid = serde_json::json!({"provenance":{"status":"captured","origin":origin},"document":{},
+                "changes":{"id":{"case_key":"UNIFIED.id","stimulus":{"inline":request,"semantic_sha256":digest},
+                    "observation":{"value":{"assembled":[{"kind":"text","text":"hello"}]}}}},
+                "metadata_changes":{"id":{"batch_final":{"reasoning_text":"","normal_text":"hello","calls":[]}}},
+                "document_overrides":{},"execution_proof":{"receipt":receipt,"requests":{"id":digest}}});
+            let direct = yaml::load_str(&serde_json::to_string(&valid)?)?;
+            assert!(capture(&direct, &authored, implementation, "0.1.0").is_err());
+            for corruption in [
+                "valid", "missing", "extra", "digest", "partial", "unbound", "producer", "version",
+            ] {
+                let mut document = valid.clone();
+                match corruption {
+                    "missing" => document["execution_proof"]["requests"] = serde_json::json!({}),
+                    "extra" => {
+                        document["execution_proof"]["requests"]["later"] = serde_json::json!(digest)
+                    }
+                    "digest" => {
+                        document["execution_proof"]["requests"]["id"] =
+                            serde_json::json!("e".repeat(64))
+                    }
+                    "partial" => {
+                        document["changes"]["id"]["stimulus"] = serde_json::json!({"partial":{"input":"old"},"semantic_sha256":"e".repeat(64)})
+                    }
+                    "unbound" => {
+                        document["changes"]["id"]["stimulus"] = serde_json::json!({"unavailable":{"code":"original_request_not_retained"}})
+                    }
+                    "producer" => {
+                        document["execution_proof"]["receipt"]["implementation"] =
+                            serde_json::json!("vllm_python_batch")
+                    }
+                    "version" => {
+                        document["execution_proof"]["receipt"]["version"] =
+                            serde_json::json!("0.1.1")
+                    }
+                    _ => {}
+                }
+                let bytes = serde_json::to_vec(&document)?;
+                fs::write(root.path().join(&member), &bytes)?;
+                let resource = serde_json::json!({"path":member,"version":"0.1.0","size":bytes.len(),"sha256":sha256(&bytes)});
+                let index = BTreeMap::from([(member.clone(), &resource)]);
+                let loaded = load_history(
+                    root.path(),
+                    &authored,
+                    "sample",
+                    implementation,
+                    &[&resource],
+                    implementation.ends_with("_batch"),
+                    HistoryAdmission {
+                        limit: 16 * 1024 * 1024,
+                        index: &index,
+                    },
+                );
+                if corruption == "valid" {
+                    let history = loaded?;
+                    assert_eq!(history.captures.len(), 1);
+                    assert!(
+                        history.captures[0]
+                            .document
+                            .field("execution_proof")?
+                            .equivalent(direct.field("execution_proof")?)
+                    );
+                } else {
+                    assert!(loaded.is_err(), "accepted {implementation}/{corruption}");
+                }
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn complete_snapshot_binds_stimulus_and_record_provenance() -> Result<()> {

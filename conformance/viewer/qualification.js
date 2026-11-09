@@ -9,6 +9,7 @@ import { resolve, dirname } from 'node:path';
 import { createNodeResourceStore } from './data.js';
 import { initializeDevelopmentParser } from './yaml_data.js';
 initializeDevelopmentParser();
+import { expandFamily, expandSnapshot, isNormalized } from './normalization.js';
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
 import { selectedCellOutcome } from './model.js';
@@ -289,7 +290,15 @@ async function readOracleCapture(reader, file, input) {
     })));
     execution = { ...execution, receipts };
   }
-  const document = await validateUnifiedCapture(parsed.value, input, file, execution);
+  let value = parsed.value;
+  if (isNormalized(value)) {
+    const inputPath = file.path.replace(/[^/]+$/, 'inputs_and_golden.yaml');
+    const authoredResource = originals.find(item => item.path === inputPath && item.kind === 'inputs-and-golden');
+    assert(authoredResource, `normalized request library not indexed: ${inputPath}`);
+    const authored = await reader.yaml(authoredResource, null, true);
+    value = await expandSnapshot(value, authored.value);
+  }
+  const document = await validateUnifiedCapture(value, input, file, execution);
   return { ...file, document, bytes: parsed.sourceBytes };
 }
 const authoredFamilies = new Set(originals.filter(item => item.kind === 'inputs-and-golden').map(item => item.family));
@@ -303,7 +312,8 @@ for (const inputResource of inputResources) {
   const family = inputResource.family;
   const snapshot = await readSnapshot(inputResource);
   const original = originals.find(item => item.family === family && item.kind === 'inputs-and-golden');
-  const { value: yaml } = await authoredReader.yaml(original, null, true);
+  const { value: rawYaml } = await authoredReader.yaml(original, null, true);
+  const yaml = await expandFamily(rawYaml);
   assert(sameValue(snapshot, yaml), `authored JSON differs from YAML: ${family}`);
   validateUnifiedInputs(snapshot, family, inputResource.path, catalog.metadata.unified_aliases);
   authoredComparisons += 1;
@@ -457,8 +467,8 @@ const { initializeDevelopmentParser } = await import('./yaml_data.js');
 const { FixtureResources } = await import('./resources.js');
 const { buildPage, buildTab, pageMetadata } = await import('./presentation.js');
 
-const { tabCandidates, selectedUnifiedFamilies } = await import('./model.js');
-const { classifyUnified, compareLegacyVersions, resolveUnified } = await import('./model.js');
+const { tabCandidates, selectedUnifiedFamilies, sourceCapturesFamily } = await import('./model.js');
+const { classifyUnified, compareLegacyVersions, compareVersions, resolveUnified } = await import('./model.js');
 const { leafCells } = await import('./model.js');
 const { columnKeysFor, tabPresentation } = await import('./presentation.js');
 const { sameValue } = await import('./values.js');
@@ -518,8 +528,9 @@ function validateTab(tab, loadedKeys = null) {
     assert.ok(descriptor.source.version);
     const owner = `${descriptor.source.implementation}@${descriptor.source.mode}`;
     const prior = sources.get(owner);
-    if (prior) assert.ok(compareLegacyVersions(prior, descriptor.source.version) >= 0);
+    if (prior) assert.ok(compareVersions(prior, descriptor.source.version) >= 0);
     sources.set(owner, descriptor.source.version);
+    assert.ok(descriptor.control.label.includes(descriptor.source.version));
     assert.ok(!descriptor.control.label.includes('+source.'));
     if (spec.mode === 'stream') assert.ok(!descriptor.source.version.match(/\.patch\d+$/));
   }
@@ -727,7 +738,7 @@ function warnGoldenDifference(cell, key, label) {
   if (selectedCaptureOutcome(cell, key) !== 'pass') console.warn(`WARNING: ${label}: recorded result differs from GOLDEN`);
   return current;
 }
-function checkDottedNameContracts(tab, loadedKeys) {
+async function checkDottedNameContracts(tab, loadedKeys, reader) {
   const cases = {
     dotted_name_minimal: [{ kind: 'tool_call', name: 'a.b', arguments: {} }],
     dotted_name_mixed_punctuation: [{ kind: 'tool_call', name: 'my-tool.v2', arguments: { location: 'Beijing' } }],
@@ -738,6 +749,13 @@ function checkDottedNameContracts(tab, loadedKeys) {
   for (const family of families) {
     const row = tab.rows.find(item => item.family === family);
     assert.ok(row, `${family}: dotted-name family is rendered`);
+    const retainedScenarios = new Map();
+    for (const descriptor of allUnifiedDescriptors.filter(item => loadedKeys.has(item.control.key)
+      && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.control.key))) {
+      const captured = await reader.unified(family, descriptor.source.implementation, descriptor.source.version);
+      retainedScenarios.set(descriptor.control.key, new Set([...captured.records.keys()]
+        .map(id => captured.inputs.value.cases[id].scenario)));
+    }
     for (const [scenario, expected] of Object.entries(cases)) {
       const cell = leafCells(row).get(scenario);
       const golden = cell.tooltip.candidates.find(item => item.key === 'golden');
@@ -746,15 +764,17 @@ function checkDottedNameContracts(tab, loadedKeys) {
       assert.equal(cell.cmp[defaultKey].na, 0);
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
-        const measured = descriptor.source.implementation.startsWith('dynamo_v1')
-          && catalog.capture_generation?.current.some(item => item.family === family
-          && item.implementation === descriptor.source.implementation && item.version === descriptor.source.version);
+        if (!sourceCapturesFamily(descriptor.source, family)) {
+          assert.deepEqual(other.block, { unavailable: `No parser for ${family}` });
+          continue;
+        }
+        const measured = retainedScenarios.get(other.key).has(scenario);
         if (measured) {
           assert.notEqual(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}: refreshed capture is retained`);
           assert.ok(Array.isArray(other.block.events) || other.block.unavailable_code === 'unsupported_family',
             `${family}/${scenario}/${other.key}: ${JSON.stringify(other.block)}`);
         } else {
-          assert.equal(other.block.unavailable_code, 'missing_capture');
+          assert.equal(other.block.unavailable_code, 'missing_capture', `${family}/${scenario}/${other.key}: unmeasured capture`);
           assert.equal(Object.hasOwn(other.block, 'events'), false);
         }
       }
@@ -783,7 +803,7 @@ async function checkUnifiedBatch(batch) {
     validateTab(tab, loadedKeys);
     validateUnifiedColumns(tab);
     await checkRebaseContracts(tab, reader);
-    checkDottedNameContracts(tab, loadedKeys);
+    await checkDottedNameContracts(tab, loadedKeys, reader);
     const beam = tab.rows.find(row => row.family === 'beam');
     if (beam) {
       for (const scenario of ['glm_ref_object', 'glm_ref_encoded_targets', 'glm_ref_json_looking_strings', 'glm_ref_scalar_types']) {
@@ -792,7 +812,11 @@ async function checkUnifiedBatch(batch) {
         for (const descriptor of batch.filter(item => catalog.capture_generation?.mode !== 'latest' && item.source.implementation === 'dynamo_v2' && compareLegacyVersions(item.source.version, '0.7.29') < 0)) {
           const comparison = cell.cmp[descriptor.control.key];
           assert.equal(comparison.na, 1, `Beam ${scenario}: ${descriptor.source.version} predates its introduction`);
-          assert.equal(comparison.sig, 0);
+          assert.equal(selectedCaptureOutcome(cell, descriptor.control.key), 'missing');
+          const historical = cell.tooltip.candidates.find(item => item.key === descriptor.control.key);
+          assert.equal(historical.block.unavailable_code, 'missing_capture');
+          assert.equal(Object.hasOwn(historical.block, 'events'), false);
+          assert.notEqual(comparison.sig, cell.cmp.golden.sig, `Beam ${scenario}: unmeasured history must not match GOLDEN`);
         }
       }
     }

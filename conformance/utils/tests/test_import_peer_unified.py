@@ -454,3 +454,102 @@ def test_cli_rejects_implementation_bundle_without_consumed_registry(peer_captur
         "--bundle", str(bundle), "--implementation", implementation])
     with pytest.raises(ValueError, match="omits parser_families.yaml"):
         main()
+
+
+@pytest.mark.parametrize("archive", [None, {}, "invalid", [None], [{}],
+    [{"result": {}, "provenance": {}, "resolution": "fresh_execution"}]])
+def test_history_rejects_malformed_archived_recaptures(tmp_path, archive):
+    store = tmp_path / "store"
+    _write_family(store)
+    _write_capture(store, "0.25.1", {"text_only": _change("historic")},
+                   implementation="vllm_python",
+                   metadata_changes={"text_only": {"verified_recaptures": archive}})
+    with pytest.raises(ValueError, match="verified recapture"):
+        history = unified_history.load_store(store).histories["gemma4", "vllm_python"]
+        history.resolve("vllm_python-0.25.1")
+
+
+@pytest.mark.parametrize("archive", [None, {}, "invalid", [None], [{}]])
+def test_selection_rejects_malformed_archive_without_active_recapture(archive):
+    with pytest.raises(ValueError, match="verified recapture"):
+        select_peer_observation({"verified_recaptures": archive}, _request(),
+                                implementation="vllm_python", version="0.25.1")
+
+
+def _archived_recapture():
+    return {"resolution": "fresh_execution", "provenance": {
+        "implementation": "vllm_python", "version": "0.24.0", "source_sha256": "a" * 64,
+        "adapter_sha256": "b" * 64, "job_sha256": "c" * 64},
+        "result": {"capture_input": _request("older retained input"),
+                   "chunks": [[{"kind": "text", "text": "older output"}]]}}
+
+
+@pytest.mark.parametrize("field,value", [("provenance", None), ("resolution", []),
+    ("resolution", "unknown"), ("result", None),
+    ("result", {"capture_input": {}, "chunks": "not a list"}),
+    ("result", {"capture_input": {}, "chunks": [], "unavailable": "unsupported"})])
+def test_archived_recapture_evidence_is_validated(field, value):
+    archived = _archived_recapture()
+    archived[field] = value
+    with pytest.raises(ValueError, match="recapture"):
+        select_peer_observation({"verified_recaptures": [archived]}, _request(),
+                                implementation="vllm_python", version="0.25.1")
+
+
+@pytest.mark.parametrize("resolution", ["fresh_execution", "historical_request_not_retained", "historical_adapter_unsupported"])
+def test_archived_requests_and_versions_are_independent_of_current_selection(tmp_path, resolution):
+    store = tmp_path / "store"
+    _write_family(store)
+    archived = _archived_recapture()
+    archived["resolution"] = resolution
+    _write_capture(store, "0.25.1", {"text_only": _change("historic")},
+                   implementation="vllm_python",
+                   metadata_changes={"text_only": {"verified_recaptures": [archived]}})
+    record = unified_history.load_store(store).histories["gemma4", "vllm_python"].resolve(
+        "vllm_python-0.25.1")["text_only"]
+    assert record["document"]["record_metadata"]["verified_recaptures"] == [archived]
+    displayed = {"capture_input": _request(), "verified_recaptures": [archived]}
+    assert select_peer_observation(displayed, _request(), implementation="vllm_python",
+                                   version="0.25.1") is displayed
+
+
+@pytest.mark.parametrize("implementation", ["vllm_python_batch", "sglang_python_batch", "dynamo_v1", "dynamo_v1_jail"])
+@pytest.mark.parametrize("valid", [False, True])
+def test_archived_batch_final_fields_are_validated(implementation, valid):
+    archived = _archived_recapture()
+    archived["provenance"]["implementation"] = implementation
+    archived["result"] = {"capture_input": _request("old request"),
+        "assembled": [{"kind": "text", "text": "old output"}],
+        "batch_final": {"reasoning_text": "", "normal_text": "old output" if valid else "different", "calls": []}}
+    record = {"verified_recaptures": [archived]}
+    if valid:
+        assert select_peer_observation(record, _request(), implementation=implementation,
+                                       version="0.25.1") is record
+    else:
+        with pytest.raises(ValueError, match="invalid verified batch final fields"):
+            select_peer_observation(record, _request(), implementation=implementation, version="0.25.1")
+
+
+@pytest.mark.parametrize("mutation", ["missing_request", "invalid_chunk", "invalid_assembly", "invalid_partial_chunk"])
+@pytest.mark.parametrize("reader", ["selection", "history"])
+def test_archived_request_and_event_shapes_fail_closed(tmp_path, mutation, reader):
+    archived = _archived_recapture()
+    if mutation == "missing_request":
+        archived["result"]["capture_input"] = {}
+    elif mutation == "invalid_chunk":
+        archived["result"]["chunks"] = [None]
+    elif mutation == "invalid_partial_chunk":
+        archived["result"].pop("chunks")
+        archived["result"].update(error="parser error", partial_chunks=[None])
+    else:
+        archived["result"]["assembled"] = 42
+    metadata = {"verified_recaptures": [archived]}
+    with pytest.raises(ValueError):
+        if reader == "selection":
+            select_peer_observation(metadata, _request(), implementation="vllm_python", version="0.25.1")
+        else:
+            store = tmp_path / "store"
+            _write_family(store)
+            _write_capture(store, "0.25.1", {"text_only": _change("historic")},
+                           implementation="vllm_python", metadata_changes={"text_only": metadata})
+            unified_history.load_store(store).histories["gemma4", "vllm_python"].resolve("vllm_python-0.25.1")

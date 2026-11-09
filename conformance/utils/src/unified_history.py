@@ -36,6 +36,7 @@ import execution_manifests
 import unified_taxonomy
 import unified_archives
 import generation_workers
+import normalized_yaml
 from viewer_codec import canonical_typed, decode_typed, typed_equal
 
 
@@ -71,7 +72,7 @@ CHANGE_KEY_ORDER = ("case_key", "stimulus", "observation")
 CHANGE_KEYS = set(CHANGE_KEY_ORDER)
 OBSERVATION_STATES = {"value", "error", "unavailable"}
 STIMULUS_STATES = {"ref", "inline", "partial", "error", "unavailable"}
-REQUEST_KEYS = {"input", "init", "finish_reason", "tools", "chunks"}
+REQUEST_KEYS = capture_stimulus.REQUEST_KEYS
 CAPTURE_DIRECTORY_RE = re.compile(
     rf"(?P<implementation>[a-z0-9_]+)-(?P<runtime_version>{UNIFIED_VERSION_PATTERN})"
 )
@@ -133,7 +134,7 @@ def load_yaml(path: Path) -> dict:
     return _parse_yaml(path, path.read_text(encoding="utf-8"))
 
 
-def _parse_yaml(path: Path, text: str | bytes) -> dict:
+def _parse_yaml_raw(path: Path, text: str | bytes) -> dict:
     try:
         value = yaml.load(text, Loader=StrictLoader)
     except ValueError as exc:
@@ -143,6 +144,17 @@ def _parse_yaml(path: Path, text: str | bytes) -> dict:
     if not isinstance(value, dict):
         raise ValueError(f"YAML document must be a mapping: {path}")
     return value
+
+
+def _parse_yaml(path: Path, text: str | bytes) -> dict:
+    document = _parse_yaml_raw(path, text)
+    if document.get("schema_version") != normalized_yaml.SCHEMA:
+        return document
+    if "family" in document:
+        return normalized_yaml.expand_family(document)
+    authored_path = path.parent / FAMILY_DOCUMENT_NAME
+    authored = _parse_yaml_raw(authored_path, authored_path.read_bytes())
+    return normalized_yaml.expand_snapshot(document, authored)
 
 
 def dump_yaml(value: dict, *, shared_metadata: bool = False) -> str:
@@ -198,23 +210,6 @@ def _request_digest(request: dict) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _validate_request(request: Any, where: str) -> None:
-    request = _mapping(request, where)
-    _require_keys(request, REQUEST_KEYS, REQUEST_KEYS, where)
-    if not isinstance(request["input"], str):
-        raise ValueError(f"{where}.input must be a string")
-    if not isinstance(request["init"], dict):
-        raise ValueError(f"{where}.init must be a mapping")
-    if not isinstance(request["finish_reason"], str):
-        raise ValueError(f"{where}.finish_reason must be a string")
-    if not isinstance(request["tools"], list):
-        raise ValueError(f"{where}.tools must be a list")
-    if not isinstance(request["chunks"], list) or any(
-        not isinstance(chunk, dict) for chunk in request["chunks"]
-    ):
-        raise ValueError(f"{where}.chunks must be a list of mappings")
-
-
 def _validate_case_metadata(
     description: Any,
     policy: Any,
@@ -245,7 +240,7 @@ def _validate_stimulus(stimulus: Any, case: dict, where: str) -> None:
         if digest is not None and digest != expected:
             raise ValueError(f"{where} stimulus digest differs from the canonical request")
     elif state == "inline":
-        _validate_request(stimulus["inline"], f"{where}.inline")
+        capture_stimulus.validate_capture_input(stimulus["inline"], f"{where}.inline")
         digest = stimulus.get("semantic_sha256")
         if digest is not None and digest != _request_digest(stimulus["inline"]):
             raise ValueError(f"{where} stimulus digest differs from its inline request")
@@ -284,6 +279,7 @@ def _validate_resolved_record_contract(
 ) -> None:
     if "capture_origin" in document:
         _validate_source_origin(document["capture_origin"], f"{where}.capture_origin", source_version)
+    capture_stimulus.validate_recapture_archive(document.get("record_metadata", {}), implementation=implementation)
     if capture_stimulus.unified_record_contract(implementation, document) != "batch" or "value" not in observation:
         return
     value = observation["value"]
@@ -612,10 +608,10 @@ def _validate_family(path: Path, document: dict) -> Family:
                 owner = unified_taxonomy.scenario_for_label(alias, family=family, scenario=scenario)
                 if owner != scenario:
                     raise ValueError(f"case ID does not own scenario {scenario}: {alias}")
-            _validate_request(case["request"], f"{path}:{case_id}.request")
+            capture_stimulus.validate_capture_input(case["request"], f"{path}:{case_id}.request")
             _validate_golden(case["golden"], f"{path}:{case_id}.golden")
         elif case["request"] is not None:
-            _validate_request(case["request"], f"{path}:{case_id}.request")
+            capture_stimulus.validate_capture_input(case["request"], f"{path}:{case_id}.request")
     return Family(family, document, path)
 
 
@@ -668,6 +664,8 @@ def _validate_capture_provenance(
     if status not in CAPTURE_PROVENANCE_STATUSES:
         raise ValueError(f"invalid capture provenance status in {path}: {status!r}")
 
+    if "+source." in runtime_version and status != "captured":
+        raise ValueError(f"qualified capture identity requires captured origin: {path}")
     if status == "captured":
         _require_keys(provenance, {"status", "origin"}, {"status", "origin"}, f"{path}.provenance")
         _validate_source_origin(provenance["origin"], f"{path}.provenance.origin", runtime_version)
@@ -685,7 +683,7 @@ def _validate_capture_file(
     path: Path,
     document: dict,
     families: dict[str, Family],
-    *, resource_index=None, proof_requests=None, read_yaml=load_yaml,
+    *, resource_index=None, proof_requests=None, read_yaml=load_yaml, defer_proof_membership=False,
 ) -> tuple[str, str, str, dict]:
     parent = document.get("parent")
     if "parent" in document and parent is None:
@@ -752,9 +750,10 @@ def _validate_capture_file(
         requests = _mapping(proof["requests"], f"{path}.execution_proof.requests")
         if not requests or any(not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None for digest in requests.values()):
             raise ValueError(f"execution proof requires sealed request digests: {path}")
-        expected = proof_requests if proof_requests is not None else {key: _request_digest(case["request"]) for key, case in families[family_name].cases.items() if case.get("lifecycle", "active") != "retired"}
-        if not typed_equal(requests, expected):
-            raise ValueError(f"execution proof request membership mismatch: {path}")
+        if not defer_proof_membership:
+            expected = proof_requests if proof_requests is not None else {key: _request_digest(case["request"]) for key, case in families[family_name].cases.items() if case.get("lifecycle", "active") != "retired"}
+            if not typed_equal(requests, expected):
+                raise ValueError(f"execution proof request membership mismatch: {path}")
     shared_document = _mapping(capture["document"], f"{path}.document")
     repeated = set(DOCUMENT_DERIVED_KEYS) & shared_document.keys()
     if repeated:
@@ -934,7 +933,9 @@ def _validate_complete_snapshot(path: Path, snapshot: dict, family: Family,
             if "ref" not in stimulus and "inline" not in stimulus:
                 raise ValueError(f"execution proof requires a complete request: {path}:{key}")
             executed[key] = stimulus.get("semantic_sha256")
-        _validate_capture_file(path, proof_capture, {family.name: family}, proof_requests=executed)
+        # Latest snapshots have versionless filenames; proof identity is the selected release.
+        proof_path = path.with_name(f"{implementation}-{version}.yaml") if path.stem == implementation else path
+        _validate_capture_file(proof_path, proof_capture, {family.name: family}, proof_requests=executed)
 
 
 def _validate_history(
@@ -980,6 +981,18 @@ def _validate_history(
             raise ValueError(
                 f"document override has no observation in {capture_paths[capture_id]}: {missing}"
             )
+        if "execution_proof" in capture:
+            # New authored cases cannot expand an older execution's frozen request set.
+            executed = {}
+            for key, record in state.items():
+                if family.cases[key].get("lifecycle", "active") == "retired":
+                    continue
+                stimulus = record["stimulus"]
+                if "inline" not in stimulus and "ref" not in stimulus:
+                    raise ValueError(f"execution proof requires a complete request: {capture_paths[capture_id]}:{key}")
+                executed[key] = _request_digest(stimulus["inline"] if "inline" in stimulus else family.cases[key]["request"])
+            document = {key: value for key, value in capture.items() if key != "runtime_version"}
+            _validate_capture_file(capture_paths[capture_id], document, {family.name: family}, proof_requests=executed)
         if snapshot_callback is not None:
             snapshot_callback(history, capture_id, state)
     return history
@@ -1052,7 +1065,7 @@ def _load_family(item, snapshot_callback=None, *, external_captures=None, docume
             path,
             document,
             {family.name: family},
-            resource_index=resources, read_yaml=read_yaml,
+            resource_index=resources, read_yaml=read_yaml, defer_proof_membership=True,
         )
         if capture_family != family_name:
             raise ValueError(f"capture family differs from directory: {path}")
@@ -1285,7 +1298,7 @@ def mutate_authored_store(root: Path, mutate: Callable[[Store], Any]) -> list[Pa
                 continue
             _validate_family(family.path, family.document)
             candidate = Path(temporary) / f"{index}.yaml"
-            candidate.write_text(dump_yaml(family.document))
+            candidate.write_text(_render_document((family.path, family.document))[1])
             pairs.append((candidate, family.path))
         if pairs:
             publish_paths_transactionally(pairs, backup_parent=root.parent)
@@ -1941,6 +1954,11 @@ def _materialized_case_path(
 
 def _render_document(item: tuple[Path, dict]) -> tuple[Path, str]:
     path, document = item
+    if path.name == FAMILY_DOCUMENT_NAME and set(document) == FAMILY_KEYS:
+        raw = _parse_yaml_raw(path, path.read_bytes()) if path.exists() else None
+        if raw is None or raw.get("schema_version") == normalized_yaml.SCHEMA:
+            frozen = normalized_yaml.expand_requests(raw).values() if raw is not None else ()
+            document = normalized_yaml.encode_family(document, frozen)
     return path, dump_yaml(document, shared_metadata=path.parent.name in {"executions", "receipts"})
 
 
@@ -2130,16 +2148,19 @@ def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *
         for resource, data in sources:
             documents[resource["path"]] = yaml.load(data, Loader=StrictLoader)
     families = {}
+    authored_sources = {}
     for resource in local:
         if resource["kind"] == "inputs-and-golden":
-            families[resource["family"]] = _validate_family(root / resource["path"], documents[resource["path"]])
+            raw = documents[resource["path"]]
+            authored_sources[resource["family"]] = raw
+            families[resource["family"]] = _validate_family(root / resource["path"], normalized_yaml.expand_family(raw))
     histories = {}
     for resource in local:
         if resource["kind"] != "history":
             continue
         name, implementation, version = resource["family"], resource["implementation"], resource["version"]
         path = root / resource["path"]
-        document = documents[resource["path"]]
+        document = normalized_yaml.expand_snapshot(documents[resource["path"]], authored_sources[name])
         _validate_complete_snapshot(path, document, families[name], implementation, version)
         for record in document["records"].values():
             origin = source_index.get(record["member"])
@@ -2201,16 +2222,8 @@ def materialize_store(
     for family_name, family in sorted(store.families.items()):
         if not include_current_inputs:
             continue
-        input_metadata = family.document.get("input_document") or {
-            "family": family_name,
-            "mode": "unified",
-            "model_label": family_name,
-        }
-        golden_metadata = family.document.get("golden_document") or {
-            "family": family_name,
-            "mode": "unified",
-            "captured_with": {"golden": "v1"},
-        }
+        input_metadata = family.document.get("input_document") or {"family": family_name}
+        golden_metadata = family.document.get("golden_document") or {"family": family_name}
         for case in family.cases.values():
             if case["lifecycle"] != "active":
                 continue
@@ -2664,7 +2677,7 @@ def _add_bound_legacy_cases(
             len(stimulus.keys() & {"ref", "inline"}) != 1
             or not isinstance(stimulus.get("semantic_sha256"), str)
             or not stimulus["semantic_sha256"]
-            or (origin is not None and origin.get("crate_version") != capture["runtime_version"])
+            or (origin is not None and origin.get("crate_version") != provenance_release_version(capture["runtime_version"]))
         ):
             return False
 
@@ -3047,7 +3060,7 @@ def _update_from_loose(
                         if (
                             captured_with.get(implementation) != runtime_version
                             and isinstance(origin, dict)
-                            and origin.get("crate_version") == runtime_version
+                            and origin.get("crate_version") == provenance_release_version(runtime_version)
                         ):
                             provenance_enrichments.append(case_id)
                         continue
@@ -3250,8 +3263,8 @@ def _sync_current_corpus(
             store.families[family_name] = Family(
                 family_name,
                 {
-                    "input_document": {"family": family_name, "mode": "unified", "model_label": family_name},
-                    "golden_document": {"family": family_name, "mode": "unified", "captured_with": {"golden": "v1"}},
+                    "input_document": {"family": family_name},
+                    "golden_document": {"family": family_name},
                     "cases": {},
                 },
                 family_path,
@@ -3392,12 +3405,15 @@ def _sync_current_corpus(
                     "request": new_request,
                     "golden": golden_document["cases"][case_key],
                 }
-                family.document["input_document"] = {
-                    key: value for key, value in input_document.items() if key != "cases"
-                }
-                family.document["golden_document"] = {
-                    key: value for key, value in golden_document.items() if key != "cases"
-                }
+                for header, supplied in (("input_document", input_document), ("golden_document", golden_document)):
+                    metadata = {key: value for key, value in supplied.items() if key != "cases"}
+                    if set(family.document[header]) == {"family"}:
+                        legacy = {"family": family_name, "mode": "unified", **(
+                            {"model_label": family_name} if header == "input_document" else {"captured_with": {"golden": "v1"}})}
+                        if any(key not in legacy or not typed_equal(value, legacy[key]) for key, value in metadata.items()):
+                            raise ValueError("custom authored metadata cannot be discarded by normalized storage")
+                        metadata = {"family": family_name}
+                    family.document[header] = metadata
         for case in cases.values():
             case.setdefault("description", None)
             case.setdefault("policy", [])
