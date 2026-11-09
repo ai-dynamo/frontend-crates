@@ -869,6 +869,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "hermes",
         "kimi_k2",
         "kimi_k3",
+        "mistral_4",
         "muse_glimmer",
         "muse_spark",
         "nemotron_v3",
