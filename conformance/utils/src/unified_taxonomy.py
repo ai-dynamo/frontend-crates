@@ -54,6 +54,7 @@ UNIFIED_TAX = {
     "adjacent_calls_partial_header": (2, "3"),
     "three_calls_partial_header": (2, "4"),
     "dotted_name_shared_prefix": (2, "5"),
+    "tool_call_ids_unique": (2, "6"),
     # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.

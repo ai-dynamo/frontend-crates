@@ -132,6 +132,36 @@ pub fn native_capture(
     Ok(rows)
 }
 
+/// Validate API identity separately from the parser's assembled-event contract.
+#[cfg(not(conformance_split_only))]
+pub fn check_tool_call_ids(
+    parser: &dyn dynamo_parsers_v2::UnifiedParser,
+    rows: &[Vec<NativeEvent>],
+) -> Result<(), CaptureFailure> {
+    let mut ids = std::collections::BTreeMap::new();
+    for (row_index, events) in rows.iter().enumerate() {
+        for event in events {
+            if let NativeEvent::ToolCall(call) = event
+                // None delegates API ID generation to the serving layer.
+                && let Some(id) = parser.tool_call_id(call.tool_index)
+                && let Some(previous) = ids.insert(id.to_string(), call.tool_index)
+                && previous != call.tool_index
+            {
+                let stage = if row_index + 1 == rows.len() {
+                    "native finish"
+                } else {
+                    "native push"
+                };
+                return Err(CaptureFailure::Error(format!(
+                    "{stage}: duplicate parser-supplied tool-call ID for indices {previous} and {}",
+                    call.tool_index
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// One raw argument projection for current capture production and report replay.
 #[cfg(not(conformance_split_only))]
 pub fn assembled_native_capture(

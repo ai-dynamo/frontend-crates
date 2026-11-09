@@ -5807,6 +5807,9 @@ requests:
     - 17
     - 26
     finish_step: true
+  b897ff9e24c541f2a05ae05f534751d8933e696a8524f890f91889add132b3e9:
+    input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+    tools: tools_cbf47ccf5fd2ef00
   b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5:
     input: <think>just thinking, no answer</think>
     tools: tools_cbf47ccf5fd2ef00
@@ -6132,6 +6135,9 @@ requests:
     - 8
     - 57
     finish_step: true
+  d0e7390255493b48b717ef9297225be0c7950ec5a6907027bc6151e6d8a931b6:
+    input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+    tools: tools_cbf47ccf5fd2ef00
   d230fd4b830e33092a4d113d45833c858b8dbf474a7adc3b751e0a479531a980:
     input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.schema_probe:0<|tool_call_argument_begin|>{"value": [1, 2]}<|tool_call_end|><|tool_calls_section_end|>'
     tools: tools_e9d7fa1fb290c04d
@@ -11364,3 +11370,16 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: d0e7390255493b48b717ef9297225be0c7950ec5a6907027bc6151e6d8a931b6
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

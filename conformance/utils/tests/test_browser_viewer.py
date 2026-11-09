@@ -244,8 +244,15 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
         server.shutdown()
 
 
-@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail", "dynamo_v2"])
-@pytest.mark.parametrize("scenario,has_origin", [("tool_only", True), ("gpt_oss_assistant_default_channel_visible_response", False)])
+@pytest.mark.parametrize("implementation,scenario,has_origin", [
+    ("dynamo_v1", "tool_only", True),
+    ("dynamo_v1_jail", "tool_only", True),
+    # The latest native snapshot is a full fresh capture, without a verified
+    # recapture overlay. Historical v1 observations retain their overlay origin.
+    ("dynamo_v2", "tool_only", False),
+    *[(implementation, "gpt_oss_assistant_default_channel_visible_response", False)
+      for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")],
+])
 def test_unified_popup_shows_actual_observation_producer(historical_published_viewer, implementation, scenario, has_origin):
     catalog = _published_catalog(historical_published_viewer)
     versions = {capture["version"] for capture in catalog["capture_generation"]["current"]

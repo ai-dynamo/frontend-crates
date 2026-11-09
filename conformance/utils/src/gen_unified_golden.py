@@ -813,6 +813,9 @@ CLEAN = [
     ("two_calls_same_name",
      "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.",
      [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Tokyo")], M, M),
+    ("tool_call_ids_unique",
+     "Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.",
+     [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Paris")], M, M),
 
     # --- Group 3: no tool call ---
     ("text_only",
@@ -4839,6 +4842,17 @@ def build_cases(fam):
         _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
         cases = _apply_unified_numeric_goldens(cases, fam)
+    if fam == "kimi_k2":
+        case = cases[f"UNIFIED.tool_call_ids_unique.{fam}"]
+        # K2 IDs are part of its model protocol. A valid parallel-call message
+        # assigns a different native ID to each call and preserves those IDs.
+        case["input"] = "".join(r_tool(fam, "get_weather", "city", "Paris", index)
+                                for index in range(2)).replace(
+            "<|tool_calls_section_end|><|tool_calls_section_begin|>", "")
+        case["input_chunks"] = [case["input"]]
+    if fam == "kimi_k3":
+        case = cases[f"UNIFIED.tool_call_ids_unique.{fam}"]
+        case["input"] = case["input"].replace('index="2"', 'index="1"')
     if _MANIFEST[fam].get("shared_scenarios"):
         for case in cases.values():
             case.setdefault("input_chunks", re.findall(r"<[^>]*(?:>|$)|[^<]+", case["input"]))
