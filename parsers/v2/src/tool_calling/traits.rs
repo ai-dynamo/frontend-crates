@@ -170,7 +170,7 @@ pub trait ToolParser: Send {
         Ok(ToolParseResult::default())
     }
 
-    /// Return the model-emitted identifier for a completed call, when the grammar names one.
+    /// Return the parser-supplied identifier for a call, when available.
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }

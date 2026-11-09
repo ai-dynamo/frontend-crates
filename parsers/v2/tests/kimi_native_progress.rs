@@ -538,7 +538,10 @@ fn compact_native_inputs_match_unified_at_every_utf8_split() {
                 assert_eq!(left, right, "{family} split={split}");
                 legacy_output.append(left);
                 unified_output.append(right);
-                assert_eq!(legacy.tool_call_id(0), unified.tool_call_id(0));
+                match (legacy.tool_call_id(0), unified.tool_call_id(0)) {
+                    (Some(left), Some(right)) if family == "kimi_k3" => assert_ne!(left, right),
+                    (left, right) => assert_eq!(left, right),
+                }
             }
             legacy_output.append(legacy.finish().unwrap());
             unified_output.append(ToolParseResult::from_deltas(

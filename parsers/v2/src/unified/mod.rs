@@ -479,10 +479,10 @@ pub trait UnifiedParser: Send {
         false
     }
 
-    /// The model-emitted id for a tool call, when the grammar carries one.
+    /// The parser-supplied id for a tool call, when available.
     ///
     /// Qwen3's XML grammar does not, so the default is correct for it; families
-    /// whose envelope names the call (kimi's `functions.NAME:INDEX`) override.
+    /// with model-emitted IDs (Kimi K2) or generated IDs (Kimi K3) override.
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }
@@ -1093,7 +1093,7 @@ pub(crate) trait NativeUnified {
         Ok(())
     }
 
-    /// The model-emitted id for a tool call, when the native grammar carries one.
+    /// The parser-supplied id for a tool call, when available.
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }
@@ -1594,10 +1594,8 @@ impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
         recovered
     }
 
-    /// The model-emitted id for a call, delegated to the scanner's emitter.
-    /// See [`InvokeEmitter::tool_call_id`] — the trait default (`None`) is
-    /// correct for every family whose grammar does not name the call; Kimi
-    /// is the one family that overrides it.
+    /// The parser-supplied id for a call, delegated to the native parser.
+    /// This includes model-emitted IDs (Kimi K2) and generated IDs (Kimi K3).
     fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
         if self.native_fallback_active
             && let Some(native_index) = self.native_named_call

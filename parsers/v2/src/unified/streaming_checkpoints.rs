@@ -116,6 +116,25 @@ fn assert_checkpoints(
         let mut parser = create_unified_parser_for_family(family, tools).unwrap();
         for reuse in 0..2 {
             parser.initialize_request(init.clone()).unwrap();
+            // K3's fixture IDs label calls; generated API IDs must stay stable
+            // for each label and distinct between labels within this request.
+            let mut generated_ids = BTreeMap::new();
+            let mut assert_id = |parser: &dyn UnifiedParser, index, expected: Option<&str>| {
+                let actual = parser.tool_call_id(index);
+                if family == "kimi_k3"
+                    && let Some(label) = expected
+                {
+                    let actual = actual.unwrap();
+                    if let Some(previous) = generated_ids.get(label) {
+                        assert_eq!(actual, previous);
+                    } else {
+                        assert!(!generated_ids.values().any(|id| id == actual));
+                        generated_ids.insert(label.to_string(), actual.to_string());
+                    }
+                } else {
+                    assert_eq!(actual, expected);
+                }
+            };
             let mut events = Vec::new();
             for (index, phase) in phases.iter().enumerate() {
                 let input = phase.input.as_str();
@@ -178,7 +197,7 @@ fn assert_checkpoints(
                     );
                     assert!(completed.len() <= phase.ids.len(), "premature completion");
                     for (index, id) in completed.iter().zip(&phase.ids) {
-                        assert_eq!(parser.tool_call_id(*index), id.as_deref());
+                        assert_id(parser.as_ref(), *index, id.as_deref());
                     }
                 }
                 assert_eq!(
@@ -208,7 +227,7 @@ fn assert_checkpoints(
                 "duplicate/unfinished EOF call"
             );
             for (index, id) in completed.iter().zip(&final_ids) {
-                assert_eq!(parser.tool_call_id(*index), *id);
+                assert_id(parser.as_ref(), *index, *id);
             }
             let mut expected = phases.last().unwrap().events.clone();
             expected.extend_from_slice(eof);
