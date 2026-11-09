@@ -20,6 +20,7 @@ keywords = ["llm", "chat-template", "prompt", "jinja", "inference"]
 dynamo-protocols = { workspace = true }
 dynamo-tokenizers = { workspace = true }
 
+aho-corasick = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 either = { workspace = true }

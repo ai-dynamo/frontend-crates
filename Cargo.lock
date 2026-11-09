@@ -1293,6 +1293,7 @@ dependencies = [
 name = "dynamo-renderer"
 version = "10.2.0"
 dependencies = [
+ "aho-corasick",
  "anyhow",
  "chrono",
  "dynamo-protocols",

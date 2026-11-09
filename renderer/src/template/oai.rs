@@ -4,6 +4,7 @@
 use super::*;
 
 use crate::{OAIChatLikeRequest, PromptRenderError, TextInput};
+use aho_corasick::{AhoCorasick, Input, MatchKind};
 use minijinja::{context, value::Value};
 use serde_json::json;
 use std::{collections::HashMap, result::Result::Ok};
@@ -840,7 +841,25 @@ impl HfTokenizerConfigJsonFormatter {
             .map(crate::python::template_json)
             .transpose()?;
         let mut placeholder = "__DYNAMO_CONTROL_LITERAL_".to_string();
-        if protect_literals {
+        // Most requests spell no marker: one read-only scan settles that, and
+        // they skip the placeholder search and the shield.
+        if protect_literals
+            && (messages_for_template
+                .as_array()
+                .into_iter()
+                .flatten()
+                .any(|message| {
+                    json_spells_marker(
+                        message,
+                        &self.control_markers,
+                        is_assistant_message(message),
+                    )
+                })
+                || [&tool_json, &response_format]
+                    .into_iter()
+                    .flatten()
+                    .any(|value| json_spells_marker(value, &self.control_markers, false)))
+        {
             let kwargs = req.chat_template_args();
             while tmpl.source().contains(&placeholder)
                 || json_mentions(&messages_for_template, &placeholder)
@@ -998,6 +1017,8 @@ fn push_segment(segments: &mut Vec<crate::RenderedSegment>, text: &str, allow_sp
 pub(crate) struct ControlMarkers {
     /// Longest first; the flag is whether the template reads the spelling.
     spellings: Vec<(String, bool)>,
+    /// The spellings, then `<|` for Harmony templates; longest match first.
+    matcher: AhoCorasick,
     first_bytes: [bool; 256],
     /// The template writes Harmony framing (`<|start|>`, `<|message|>`).
     is_harmony: bool,
@@ -1038,11 +1059,20 @@ impl ControlMarkers {
         for (spelling, _) in &spellings {
             first_bytes[spelling.as_bytes()[0] as usize] = true;
         }
+        let mut patterns: Vec<&str> = spellings
+            .iter()
+            .map(|(spelling, _)| spelling.as_str())
+            .collect();
         if is_harmony {
-            first_bytes[usize::from(b'<')] = true;
+            patterns.push("<|");
         }
+        let matcher = AhoCorasick::builder()
+            .match_kind(MatchKind::LeftmostLongest)
+            .build(patterns)
+            .expect("control-token spellings form a valid Aho-Corasick automaton");
         Self {
             spellings,
+            matcher,
             first_bytes,
             is_harmony,
         }
@@ -1052,39 +1082,34 @@ impl ControlMarkers {
     /// In assistant history (`is_assistant`), spellings the template reads are skipped.
     /// Declared spellings win over the `<|…|>` shape.
     fn find(&self, text: &str, from: usize, is_assistant: bool) -> Option<std::ops::Range<usize>> {
-        let bytes = text.as_bytes();
         let mut shapes = self.is_harmony;
         let mut start = from;
-        while start < bytes.len() {
-            if self.first_bytes[usize::from(bytes[start])] && text.is_char_boundary(start) {
-                let rest = &text[start..];
-                if let Some((spelling, read)) = self
-                    .spellings
-                    .iter()
-                    .find(|(spelling, _)| rest.starts_with(spelling.as_str()))
-                {
-                    if !(is_assistant && *read) {
-                        return Some(start..start + spelling.len());
-                    }
-                    start += spelling.len();
-                    continue;
-                }
-                if shapes && rest.starts_with("<|") {
-                    match rest[2..].find("|>") {
-                        Some(end) => {
-                            let span = &rest[..2 + end + 2];
-                            // These are not Harmony controls; tojson must escape
-                            // their original bytes.
-                            if !span.chars().any(|c| c == '"' || c == '\\' || c <= '\u{1f}') {
-                                return Some(start..start + span.len());
+        while let Some(hit) = self.matcher.find(Input::new(text).span(start..text.len())) {
+            match self.spellings.get(hit.pattern().as_usize()) {
+                Some((_, read)) if is_assistant && *read => start = hit.end(),
+                Some(_) => return Some(hit.range()),
+                // `<|`, matched only for Harmony templates.
+                None => {
+                    if shapes {
+                        match text[hit.end()..].find("|>") {
+                            Some(end) => {
+                                let span = hit.start()..hit.end() + end + 2;
+                                // These are not Harmony controls; tojson must escape
+                                // their original bytes.
+                                if !text[span.clone()]
+                                    .chars()
+                                    .any(|c| c == '"' || c == '\\' || c <= '\u{1f}')
+                                {
+                                    return Some(span);
+                                }
                             }
+                            // No `|>` follows, so no later `<|` closes either.
+                            None => shapes = false,
                         }
-                        // No `|>` follows, so no later `<|` closes either.
-                        None => shapes = false,
                     }
+                    start = hit.start() + 1;
                 }
             }
-            start += 1;
         }
         None
     }
@@ -1128,6 +1153,12 @@ impl ControlMarkers {
                 };
                 start..end
             })
+    }
+
+    /// Whether `text` spells a marker or ends with the start of one.
+    fn is_spelled_in(&self, text: &str, is_assistant: bool) -> bool {
+        self.find(text, 0, is_assistant).is_some()
+            || self.partial_tail(text, 0, is_assistant).is_some()
     }
 }
 
@@ -1186,6 +1217,30 @@ fn json_mentions(value: &serde_json::Value, needle: &str) -> bool {
     }
 }
 
+/// Whether any string or object key in `value` spells a marker or ends with
+/// the start of one: whether [`shield_control_literals`] would change it.
+fn json_spells_marker(
+    value: &serde_json::Value,
+    markers: &ControlMarkers,
+    is_assistant: bool,
+) -> bool {
+    match value {
+        serde_json::Value::String(text) => markers.is_spelled_in(text, is_assistant),
+        serde_json::Value::Array(values) => values
+            .iter()
+            .any(|value| json_spells_marker(value, markers, is_assistant)),
+        serde_json::Value::Object(values) => values.iter().any(|(key, value)| {
+            markers.is_spelled_in(key, is_assistant)
+                || json_spells_marker(value, markers, is_assistant)
+        }),
+        _ => false,
+    }
+}
+
+fn is_assistant_message(message: &serde_json::Value) -> bool {
+    message.get("role").and_then(|role| role.as_str()) == Some("assistant")
+}
+
 /// Shield every message with the policy for its role: assistant history keeps
 /// the markers the template reads out of prior answers; every other role is
 /// request text through and through.
@@ -1199,7 +1254,7 @@ fn shield_message_literals(
         return;
     };
     for message in list {
-        let is_assistant = message.get("role").and_then(|role| role.as_str()) == Some("assistant");
+        let is_assistant = is_assistant_message(message);
         shield_control_literals(message, markers, is_assistant, prefix, literals);
     }
 }
@@ -1241,10 +1296,10 @@ fn shield_control_literals(
             }
         }
         serde_json::Value::Object(values) => {
-            if values.keys().any(|key| {
-                markers.find(key, 0, is_assistant).is_some()
-                    || markers.partial_tail(key, 0, is_assistant).is_some()
-            }) {
+            if values
+                .keys()
+                .any(|key| markers.is_spelled_in(key, is_assistant))
+            {
                 for (mut key, mut value) in std::mem::take(values) {
                     shield_text(&mut key, markers, is_assistant, prefix, literals);
                     shield_control_literals(&mut value, markers, is_assistant, prefix, literals);
