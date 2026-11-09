@@ -129,13 +129,26 @@ def _assert_golden_schemas(cases, tools):
                     continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
                     family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
-                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3"}
+                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3", "hermes"}
                     assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
                     continue
                 arguments = event["arguments"]
                 if isinstance(arguments, str):
                     arguments = json.loads(arguments, parse_float=Decimal)
                 _assert_value(arguments, schemas[event["name"]])
+
+
+@pytest.mark.parametrize("mutation", ["malformed_arguments", "successor_schema"])
+def test_hermes_malformed_recovery_exclusion_preserves_exact_calls(mutation):
+    case_id = "UNIFIED.malformed_json_then_two_valid_calls.hermes"
+    case = copy.deepcopy(G.build_cases("hermes")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    if mutation == "malformed_arguments":
+        case["golden"][0]["arguments"]["value"] = "changed"
+    else:
+        case["golden"][1]["arguments"]["value"] = 42
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
 
 
 @pytest.mark.parametrize("family", ["qwen3", "gpt_oss"])

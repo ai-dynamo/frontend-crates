@@ -72,7 +72,9 @@ from unified_taxonomy import (  # noqa: E402
 )
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
-NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES and G._MANIFEST[family].get("scenario_profile") != "native")
+NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES
+                        and (G._MANIFEST[family].get("scenario_profile") != "native"
+                             or G._MANIFEST[family].get("shared_scenarios")))
 V1_SPLIT_SCENARIOS = frozenset(G.V1_SPLIT_SCENARIOS)
 NATIVE_UNIFIED_TAX = {scenario: entry for scenario, entry in UNIFIED_TAX.items() if scenario not in V1_SPLIT_SCENARIOS and scenario not in taxonomy.RETIRED_SCENARIOS}
 
@@ -183,9 +185,9 @@ def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
 def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
     for family in NATIVE_FAMILIES:
         prefix = invoke_header_prefix(family)
-        if family in {"glm47", "gpt_oss"}:
-            # GLM uses its outer marker as the invoke opener. Harmony routes a
-            # native call in the message header, so neither has a body prefix.
+        if family in {"glm47", "gpt_oss", "hermes"}:
+            # GLM and Hermes use their outer marker as the invoke opener;
+            # Harmony routes the native call in the message header.
             assert prefix == ""
             continue
         assert prefix
@@ -651,7 +653,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
             })
-        expected = response_scenarios | extra
+        expected = {scenario for scenario in response_scenarios | extra
+                    if family in G.scenario_families(scenario)}
         if family == "gpt_oss":
             expected -= G.HARMONY_INAPPLICABLE_EDGE_CASES
             expected |= {
@@ -760,9 +763,9 @@ def test_scenario_families_matches_declared_scope():
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer", "muse_spark"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
-        "arg_json_null_ref": set(G._TEMPLATE_FAMILIES),
-        "arg_string_null_ref": set(G._TEMPLATE_FAMILIES),
-        "arg_null_mixed_labels": set(G._TEMPLATE_FAMILIES),
+        "arg_json_null_ref": set(NATIVE_FAMILIES),
+        "arg_string_null_ref": set(NATIVE_FAMILIES),
+        "arg_null_mixed_labels": set(NATIVE_FAMILIES),
         "glm_ref_object": set(FAMILIES),
         "glm_ref_encoded_targets": set(FAMILIES),
         "glm_ref_json_looking_strings": set(FAMILIES),
@@ -1419,6 +1422,7 @@ def _family_value(scenario, family):
             "deepseek_v41": "</｜DSML｜ invoke>",
             "gemma4": "}<tool_call|>",
             "glm47": "</tool_call>",
+            "hermes": "</tool_call>",
             "kimi_k2": "<|tool_call_end|>",
             "kimi_k3": "<|close|>call<|sep|>",
             "muse_glimmer": "</atem:function_calls>",
@@ -1665,6 +1669,27 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
     body is not evidence that the parser must dispatch it. The caller keeps DSML's
     empty-output EOF contract separate.
     """
+    if family == "hermes":
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
+        calls = []
+        cursor = 0
+        while (start := raw.find("<tool_call>", cursor)) >= 0:
+            at = start + len("<tool_call>")
+            at += len(raw[at:]) - len(raw[at:].lstrip())
+            if not raw.startswith("{", at):
+                cursor = at
+                continue
+            try:
+                envelope, end = decoder.raw_decode(raw, at)
+            except json.JSONDecodeError:
+                cursor = at
+                continue
+            cursor = end
+            if isinstance(envelope, dict) and isinstance(envelope.get("name"), str):
+                arguments = envelope.get("arguments", envelope.get("parameters", {}))
+                if isinstance(arguments, dict):
+                    calls.append({"kind": "tool_call", "name": envelope["name"], "arguments": arguments})
+        return calls
     if family == "minimax_m3":
         return _m3_input_calls(raw, tools, exact_numbers=exact_numbers)
     if family == "glm47":
@@ -1964,6 +1989,7 @@ def _assert_malformed_recovery(family, case):
         "kimi_k3": '<|open|>call tool="echo"',
         "qwen3": "<tool_call>\n<function=echo>",
         "glm47": "<tool_call>echo",
+        "hermes": '<tool_call>{"name":"echo"',
         "deepseek_v4": '<｜DSML｜invoke name="echo">',
         "deepseek_v41": '<｜DSML｜ invoke name="echo">',
         "gemma4": "<|tool_call>call:echo{",
@@ -1977,10 +2003,10 @@ def _assert_malformed_recovery(family, case):
     prefix, suffix = raw[:at], raw[at:]
     broken = (
         'x:<|"|>unfinished' if family == "gemma4"
-        else '{\\"x\\":\\"unfinished' if family == "gpt_oss"
+        else '{\\"x\\":\\"unfinished' if family in {"gpt_oss", "hermes"}
         else '{"x":"unfinished'
     )
-    if family == "gpt_oss":
+    if family in {"gpt_oss", "hermes"}:
         assert broken in prefix
         calls = _native_input_calls(family, prefix)
         assert len(calls) == 1
@@ -1997,6 +2023,7 @@ def _assert_malformed_recovery(family, case):
         "deepseek_v41": "</｜DSML｜ parameter></｜DSML｜ invoke>",
         "gemma4": "}}<tool_call|>", "muse_glimmer": "</atem:invoke>", "muse_spark": "</atem:invoke>",
         "gpt_oss": "<|call|>",
+        "hermes": "</tool_call>",
         "beam": "</rfl:parameter><|call|>",
         "minimax_m3": "]<]minimax[>[</value>]<]minimax[>[</invoke>",
     }
@@ -2006,7 +2033,7 @@ def _assert_malformed_recovery(family, case):
     bad = []
     if family == "kimi_k2":
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
-    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3"}:
+    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3", "hermes"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
     assert case["golden"] == bad + echoes
     if family != "gpt_oss":

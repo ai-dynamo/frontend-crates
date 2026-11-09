@@ -866,6 +866,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "gemma4",
         "glm47",
         "gpt_oss",
+        "hermes",
         "kimi_k2",
         "kimi_k3",
         "muse_glimmer",
@@ -920,7 +921,10 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         .count();
     let template_families = common::unified_families()
         .values()
-        .filter(|family| family.native && family.scenario_profile.as_deref() != Some("native"))
+        .filter(|family| {
+            family.native
+                && (family.scenario_profile.as_deref() != Some("native") || family.shared_scenarios)
+        })
         .count();
     assert_eq!(
         checked,

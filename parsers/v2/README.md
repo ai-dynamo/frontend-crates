@@ -149,6 +149,8 @@ The vLLM Rust parser API is streaming-first. `push()` consumes decoded text delt
 
 Dynamo duplicates the small Rust data model instead of depending on vLLM crates directly. The names and fields are aligned so an adapter stays trivial now, and so vLLM can later import Dynamo-owned parser types if it switches to frontend-crates.
 
+Hermes is available through `create_unified_parser_for_family("hermes", tools)`. Its [model template](https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B/blob/main/tokenizer_config.json) emits one JSON call object per `<tool_call>...</tool_call>` envelope. The shared scanner preserves surrounding text, optional `<think>` reasoning, literal markers in arguments, and raw JSON numbers; complete JSON bodies can recover a missing outer close. Unwrapped JSON answers remain visible text in native mode. Guided named and required choices use the shared JSON router; native arrays of call envelopes are outside this model template. Tool availability and schema authorization remain serving-layer responsibilities.
+
 ## What's In The Crate
 
 ```text
