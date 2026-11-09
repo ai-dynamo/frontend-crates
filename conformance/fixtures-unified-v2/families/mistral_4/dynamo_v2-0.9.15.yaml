@@ -1,0 +1,5107 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.15
+    source_sha256: d41d86a1b4c2bd980b6a31b255ccf23bedcd9bf0b0fb5ad3e921ae17ccc6fbcd
+    git_commit: 17f463855d9a3a791bef7a8c366ed61229ca3335
+document:
+  mode: unified
+changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 0762d00552a7af7480f8865994b7b1fa6b347a2902d0aef5ba304754797ff89a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"a":"1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{"b":"2"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_array_quoted_parameter_close:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: 001fc1f875bc12b5e4220a2353a95e801c084498d42f39d3ce67038191ef2056
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: record
+          arguments: '{"value": ["é \\\" </atem:parameter>"]}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: record
+            arguments: '{"value": ["é \\\" </atem:parameter>"]}'
+            complete: true
+        - expected: []
+  arg_json_null:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null
+    stimulus:
+      ref: current
+      semantic_sha256: 1a545d8fe4a218186d388c1f1398872711805de51216eedd7e1e349c1899bf29
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: e4a633dc29b1363714e68220cbc909e5398d806323db98d9e0fecbe78fdabd7a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_const:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: e58714b04b1487a459911bcef2739b0444d489104abae25ae42b93cbceaf0729
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 6b5d7384a630589712614a0ab222be66dd692863756667bad1c304c06e05167e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: f27d1a820095ee439168757326c78967cc255afde0c898d6efa6193e407f6a22
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 3bcdeba7b9f84270a888a7787543991aeb8660a0ecc5b334d9f8e8dccca1571d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_marker_in_string:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: 6cf1ce72ff38734c53bcaa7653f7098d104675d1f1967cdaa23a8af4d6dfcd78
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "git log [TOOL_CALLS] --oneline"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "git log [TOOL_CALLS] --oneline"}'
+            complete: true
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: 3ebb815e544d7e8ca1cd15fd10578c00a91ffb1cb9ba590ee70349c5e79e8cac
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments: '{"label": null, "note": null, "literal": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label": null, "note": null, "literal": "null"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: b79049806b3af0561c1f84f1e86c829afe19b22680d514669bedd48c28c2119d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":42.0}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            complete: true
+        - expected: []
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 71fd6458ab4a20f5240764a21d9e6b84eb1122430acefe779b923ecd3bbfdde8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":4.2e1}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4.2e1}'
+            complete: true
+        - expected: []
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: c0e3097695bc15245c6444a6ecc371dac09baa7b44dc0a46239a51a646e7c1c0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":42.0}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            complete: true
+        - expected: []
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: cae3a8a4c19b1ce5a469f09947727a41ec0c4bb07479870a6af62e51f008bc8a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":4.2e1}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4.2e1}'
+            complete: true
+        - expected: []
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 23217880c4bd8a35f4afc9d37ebda6a628b9fde54a14b6ff34a0a47b3d42c181
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740993.0}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.0}'
+            complete: true
+        - expected: []
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: a5895078df81c4f384162f244dea7d82f63363ff5f7cbbf0c3eb75f3f48beeeb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9.007199254740993e15}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9.007199254740993e15}'
+            complete: true
+        - expected: []
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 555fee87a1e0c719598512aacf0010c6ceebd81e0bc3f922f84356f3576ee255
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":-4.2E+1}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":-4.2E+1}'
+            complete: true
+        - expected: []
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 419c056b11180d277cde78a15d6da4370c4631b86ffd40fe5341f83e83ddf9e7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":4200e-2}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4200e-2}'
+            complete: true
+        - expected: []
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: 68c0a1de04767a1abf00773c7c01409ba7fa7e96a210d48d633284a72b816311
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":0.0e-400}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":0.0e-400}'
+            complete: true
+        - expected: []
+  arg_numeric_15_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: c2edba0bd9dc3619292834937cbcb609b1931aed338e48a0038c18c13b32c31f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9.0071992547409925e15}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9.0071992547409925e15}'
+            complete: true
+        - expected: []
+  arg_numeric_15_negative:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 8b947869ecde5a4a67d95ca5dcd3948298d745f4cef1e88fed382276084f69e2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":-9007199254740992.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":-9007199254740992.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_ordinary:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_ordinary
+    stimulus:
+      ref: current
+      semantic_sha256: 669ba70f1a8d8b5469fcc86399e0a9095629e4616e033fb41d3941ac4fd230ff
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":42.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_quarter:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_quarter
+    stimulus:
+      ref: current
+      semantic_sha256: 683d86d70e71e3ebdc1bf6ee48e58ef9be684d86000963c4e85164205e281fe8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740993.25}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.25}'
+            complete: true
+        - expected: []
+  arg_numeric_15_round_down:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_down
+    stimulus:
+      ref: current
+      semantic_sha256: f5e99476d01a035713b35c99099d6848321a5b3cd03fe194a6c2f69b9e43a7d1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740992.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740992.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_round_up:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_up
+    stimulus:
+      ref: current
+      semantic_sha256: b6bfbd9a1651bb47d86069af27c03b886becf57633bf4c7c81a32de29fb895fc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740993.1}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.1}'
+            complete: true
+        - expected: []
+  arg_numeric_15_small:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_small
+    stimulus:
+      ref: current
+      semantic_sha256: 893038b6424929a841c8e053685c09a983005bec76115d1aca8c7ec65d3a147a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":0.10000000000000000001}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":0.10000000000000000001}'
+            complete: true
+        - expected: []
+  arg_numeric_nested_exact:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_nested_exact
+    stimulus:
+      ref: current
+      semantic_sha256: c37b83044eed2c0086d0390ef731fdf698d998aa84b5f48a224bb6b35c7387e4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: inspect
+            arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+            complete: true
+        - expected: []
+  arg_numeric_overflow_siblings_finite:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
+    stimulus:
+      ref: current
+      semantic_sha256: a7d1833f17bfd043ed5475da1f444fd867b2e50e96ff9e0aafb32544d4ff9327
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: echo
+          arguments: '{"city":"Paris","value":1.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: echo
+            arguments: '{"city":"Paris","value":1.5}'
+            complete: true
+        - expected: []
+  arg_numeric_overflow_siblings_negative:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
+    stimulus:
+      ref: current
+      semantic_sha256: bc81af91aac41425fa44d26fe82955324a25dbcfe31c64b9681b09c698fafbfd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: echo
+          arguments: '{"city":"Paris","value":-1E+400}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: echo
+            arguments: '{"city":"Paris","value":-1E+400}'
+            complete: true
+        - expected: []
+  arg_numeric_overflow_siblings_positive:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
+    stimulus:
+      ref: current
+      semantic_sha256: ef0a4880f4b6a8653ae283befdc2cc2649cd3f4728c10343a5fc3e7577b80944
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: echo
+          arguments: '{"city":"Paris","value":1e400}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: echo
+            arguments: '{"city":"Paris","value":1e400}'
+            complete: true
+        - expected: []
+  arg_object_quoted_parameter_close:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_object_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: 0ce35e19a2f0d6265bfc4e9aea238031b657014014ef1a9afbdec97c0154b69a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: record
+          arguments: '{"value": {"s": "</atem:parameter>"}}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: record
+            arguments: '{"value": {"s": "</atem:parameter>"}}'
+            complete: true
+        - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null
+    stimulus:
+      ref: current
+      semantic_sha256: 82baf993733c21fe4ea26067aabe6658b08a3198e7f713d8a3dd84d77b5c4ea4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_const:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: 475a02788c15fe510025ce59dfed99645ba675978decf987b62ae3f6179f7ead
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_enum:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
+    stimulus:
+      ref: current
+      semantic_sha256: 12fb77952cbb80f62240692a75a961e3a0a09fa49e82a5d1a148a01197883fae
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 62a4749a395ca5b2469ca06310900710dc344744cb29b98d050bfe0a83bf00fb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: d5429e01ed32c98f9e64078d532e80cbd5dd81e0779f73902ebeddfe6e3b404b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 2f5f29af8077db900419e78467a54d1d70aa89b99fd1da2dfcf8ab6483198778
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_union:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_union
+    stimulus:
+      ref: current
+      semantic_sha256: 0d1a75c3432f4666f9d4563ad7d62146849f0fa2485c769e62dd1340e187e917
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: cb52fed2d942e6ebd88f3e72b092ba2dd4213d202cd9459cea287beb4066df48
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_unicode:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_unicode
+    stimulus:
+      ref: current
+      semantic_sha256: 9bc7ac945655fb88a025c913a2a28b51cd1db609472a09bac4af53a4cbbd3ef5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "São Paulo 東京"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "São Paulo 東京"}'
+            complete: true
+        - expected: []
+  blank_output_without_call:
+    case_key: UNIFIED.3-blank_output_without_call
+    stimulus:
+      ref: current
+      semantic_sha256: f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            '
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+        - expected: []
+  conditional_schema_number_types:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
+    stimulus:
+      ref: current
+      semantic_sha256: 55d1f507224defe0aa99410166e291ac737757641018da4b1acd670b36d79478
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"amount": 21.5, "retries": 37}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"amount": 21.5, "retries": 37}'
+            complete: true
+        - expected: []
+  content_then_reason:
+    case_key: UNIFIED.11-content_then_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 7cf9dd2b28335fb351e214993f110058feecadfa261cf00464a256ed83838deb
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Hello there. '
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: The capital is Paris.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Hello there. '
+          - kind: reasoning
+            text: let me recall
+          - kind: text
+            text: The capital is Paris.
+        - expected: []
+  content_then_reason_then_tool:
+    case_key: UNIFIED.11-content_then_reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: fb91d78e0e2307bc5913be6e0d3e34f4036de07f3c943908633c40a7d6f0403a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: reasoning
+          text: checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+          - kind: reasoning
+            text: checking the forecast
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: 4d7e1209b16bb1ba4f86123a5f209a462f8fc2ccd21c7012883f47ee93b49847
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: 6356f9b198c839ca0e023123463713759330bbbbcacfe4457d11dea986373f41
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: '{}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 111496ca8a2333a04cca0d8878d782268e44d58426bec00c78180ea625344eeb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments: '{"location": "Beijing"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location": "Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: 021138749da124cd6e90c70468e1b366d63718dcc0036de00feabfaa2dfdcf5a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments: '{"location": "Beijing"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location": "Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: 3385d4734b228f3b8952d6a6ced48d3ee4e1013e099af8ae76ce283cc318de43
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments: '{"location": "Beijing"}'
+        - kind: tool_call
+          name: server.time
+          arguments: '{"timezone": "Asia/Shanghai"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location": "Beijing"}'
+            complete: true
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone": "Asia/Shanghai"}'
+            complete: true
+        - expected: []
+  empty_args:
+    case_key: UNIFIED.6-empty_args
+    stimulus:
+      ref: current
+      semantic_sha256: 21ec4e05b83d5c0c34e2b77a5429695d03e475ed0e7ff49e4b4bba9d7e6e17e3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            complete: true
+        - expected: []
+  enum_contradicting_declared_type:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    stimulus:
+      ref: current
+      semantic_sha256: 22198328df128b30b8bd1e5bf1de60d68e0e0dd896a045c1ff2aea41b9446ffb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
+            complete: true
+        - expected: []
+  glm_ref_encoded_targets:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
+    stimulus:
+      ref: current
+      semantic_sha256: b3685f5413f799182f9192f53e2d1056e932f1fe17b08b4e93ef77944a92c97e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
+            complete: true
+        - expected: []
+  glm_ref_json_looking_strings:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
+    stimulus:
+      ref: current
+      semantic_sha256: b47d991a9e655776650668ab3a23e14e9a39f788d0174990b41db983172c89db
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+  glm_ref_object:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_object
+    stimulus:
+      ref: current
+      semantic_sha256: cc8cddf2ef5c2db964dd13e3b9353909bc6682384e2a58e11f33d34938995c63
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"payload": {"x": 1}}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload": {"x": 1}}'
+            complete: true
+        - expected: []
+  glm_ref_scalar_types:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_scalar_types
+    stimulus:
+      ref: current
+      semantic_sha256: 88b21ceb0d6a9af217c37ee6246b32910f10c62a0bf23a1056485d2c1ca1ff2d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
+            complete: true
+        - expected: []
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_native_controls_in_arguments
+    stimulus:
+      ref: current
+      semantic_sha256: b8717da9ef59c7d99bfe267ee801615c4f2c497ab7e2319593fd7033e83df650
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments: '{"markers": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"markers": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]"}'
+            complete: true
+        - expected: []
+  gpt_oss_invalid_tool_body_then_empty_call:
+    case_key: UNIFIED.5-malformed_json_then_two_valid_calls_invalid_text_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: 260514f518c37401eb6dd254ba20de2b4585bce1d29a6a489a99243af48b1713
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: '{}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: not-json
+            complete: true
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            complete: true
+        - expected: []
+  gpt_oss_invalid_tool_body_then_valid_call:
+    case_key: UNIFIED.5-malformed_json_then_two_valid_calls_truncated_json_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: d39d47e92f6c12a8f2a9a87a7c674cde0f6839c8e03bd571f39eb256d7bb1ad3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: '{}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: '{"city":'
+            complete: true
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    stimulus:
+      ref: current
+      semantic_sha256: 0c4eb581c5ec83cb808efa18606ffb0e80f45e0b92e4eb32aab4beec789ba5ef
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: '{}'
+        - kind: tool_call
+          name: not_offered
+          arguments: '{"x": 2}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x": 2}'
+            complete: true
+        - expected: []
+  gpt_oss_quoted_message_header_literal:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_quoted_closer_and_response_header
+    stimulus:
+      ref: current
+      semantic_sha256: 1089bd9b99bc1d5723987c9917974a32a5e12841156961b73eb65ad1d3eb08cb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments: '{"q": "[TOOL_CALLS]literal[ARGS]{}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q": "[TOOL_CALLS]literal[ARGS]{}"}'
+            complete: true
+        - expected: []
+  interstitial_text:
+    case_key: UNIFIED.11-interstitial_text
+    stimulus:
+      ref: current
+      semantic_sha256: 4d164ac9a8c330562ca245353dced2fc8ce2a7e868b3b2da6dd5bcc5e5362a60
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: a
+          - kind: text
+            text: 'Here you go: '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-tool-argument-schema-references-local_schema_id_preserves_type
+    stimulus:
+      ref: current
+      semantic_sha256: dffb261151f3d54cf135a25455998d1555ce7d27bd44aa150bce86841884fb34
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42}'
+            complete: true
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-malformed_json_then_two_valid_calls
+    stimulus:
+      ref: current
+      semantic_sha256: b725ca6895c8504d80dc10d3188a7f1923d7fa4aca830a1554486bdc24514bb0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: '{}'
+        - kind: tool_call
+          name: echo
+          arguments: '{"value": "é"}'
+        - kind: tool_call
+          name: echo
+          arguments: '{"value": "Café"}'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: '{"value": {"x":"unfinished'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "é"}'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "Café"}'
+            complete: true
+  mistral_brace_fallback_calls:
+    case_key: UNIFIED.mistral-brace_fallback_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 5c5925554f6d873d06f21e9ea23d99ec35ba2d74a3cf23bc6168469a3fd72d2d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Tokyo"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Tokyo"}'
+            complete: true
+        - expected: []
+  mistral_call_id_stripped:
+    case_key: UNIFIED.mistral-call_id_stripped
+    stimulus:
+      ref: current
+      semantic_sha256: 5cef8eb73ae97c75a81997c2e81f9610c8b7cce51cdb2244be28e56a319e8487
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  mistral_call_id_variants:
+    case_key: UNIFIED.mistral-call_id_variants
+    stimulus:
+      ref: current
+      semantic_sha256: 97bf402d5622ba1fcf522c04f8f85e9c7db45d8be7d42a286dad35c06c136eb0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{}'
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "ls"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{}'
+            complete: true
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "ls"}'
+            complete: true
+        - expected: []
+  mistral_call_inside_reasoning_ends_thought:
+    case_key: UNIFIED.mistral-call_inside_reasoning_ends_thought
+    stimulus:
+      ref: current
+      semantic_sha256: 3e0b576d6f16d0196c7f7109229712fa4b6c5e05ea9321e28f4a86cb2af44896
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I should check.
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: I should check.
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  mistral_duplicate_think_opener_stripped:
+    case_key: UNIFIED.mistral-duplicate_think_opener_stripped
+    stimulus:
+      ref: current
+      semantic_sha256: 50f6af2e44de9bf6e28abf886ebdf661b4103df6a818cc38ec49326f815c0263
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ab
+        - kind: text
+          text: c
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: ab
+          - kind: text
+            text: c
+        - expected: []
+  mistral_empty_thoughts_emit_nothing:
+    case_key: UNIFIED.mistral-empty_thoughts_emit_nothing
+    stimulus:
+      ref: current
+      semantic_sha256: f2bde4240db48d09a8f96b933c6c2252fecc2837fae09d4d7e4f63609796aeea
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Answer
+        chunks:
+        - expected:
+          - kind: text
+            text: Answer
+        - expected: []
+  mistral_json_escapes_and_lookalikes:
+    case_key: UNIFIED.mistral-json_escapes_and_lookalikes
+    stimulus:
+      ref: current
+      semantic_sha256: 2c7ff36936d24c74c82945222652e163177e7f9c96ce352dac638174d9f12a66
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments: '{"note": "} \"]\" \"[TOOL_CALLS]\" \\ [ARGS] \ud83d\ude00 [THINK]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "} \"]\" \"[TOOL_CALLS]\" \\ [ARGS] \ud83d\ude00 [THINK]"}'
+            complete: true
+        - expected: []
+  mistral_json_reply_after_reasoning:
+    case_key: UNIFIED.mistral-json_reply_after_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: f14b83995bf339cb461a70642d90a6a32ce9dee6c14ef3504a65d21da8ad731f
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The user wants JSON.
+        - kind: text
+          text: '{"location": "London", "unit": "celsius"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The user wants JSON.
+          - kind: text
+            text: '{"location": "London", "unit": "celsius"}'
+        - expected: []
+  mistral_malformed_body_ends_at_next_call:
+    case_key: UNIFIED.mistral-malformed_body_ends_at_next_call
+    stimulus:
+      ref: current
+      semantic_sha256: a52ef623dba16866727295c21a3da5dcd0ca92ac5729e98e843dc189b31db224
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: '{}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":'
+            complete: true
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  mistral_many_mixed_form_calls:
+    case_key: UNIFIED.mistral-many_mixed_form_calls
+    stimulus:
+      ref: current
+      semantic_sha256: b615f095c3c54787c95f72166f1a7b64d4220537446fc3d81c0d1e9559d5ec8e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "ls"}'
+        - kind: tool_call
+          name: log
+          arguments: '{}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "}"}'
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "ls"}'
+            complete: true
+          - kind: tool_call
+            name: log
+            arguments: '{}'
+            complete: true
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "}"}'
+            complete: true
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "]"}'
+            complete: true
+        - expected: []
+  mistral_marker_lookalikes_stay_text:
+    case_key: UNIFIED.mistral-marker_lookalikes_stay_text
+    stimulus:
+      ref: current
+      semantic_sha256: 63ee81fd59f7c3e17ef0311787362d6ac4ed93307ea97a976547ae2d273f59d7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Use [TOOL_CALL], [ARG], [THINKING] or [/THINK ] literally.
+        chunks:
+        - expected:
+          - kind: text
+            text: Use [TOOL_CALL], [ARG], [THINKING] or [/THINK ] literally.
+        - expected: []
+  mistral_markers_split_across_chunks:
+    case_key: UNIFIED.mistral-markers_split_across_chunks
+    stimulus:
+      ref: current
+      semantic_sha256: 90538bfb6f395bac195ccfcba27e8b67254cd7dd309e9df50ead10f63ba70a5e
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: plan
+        - kind: text
+          text: On it.
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: plan
+        - expected:
+          - kind: text
+            text: On it.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+  mistral_name_before_marker:
+    case_key: UNIFIED.mistral-name_before_marker
+    stimulus:
+      ref: current
+      semantic_sha256: cdd4e39fc15eec2cbdd5eb74bcf6a3eb787c872cd2c7e04e39a1bd2368fcb37e
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: bash
+        - kind: tool_call
+          name: ''
+          arguments: '{"command": "ls"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: bash
+          - kind: tool_call
+            name: ''
+            arguments: '{"command": "ls"}'
+            complete: true
+        - expected: []
+  mistral_name_without_arguments:
+    case_key: UNIFIED.mistral-name_without_arguments
+    stimulus:
+      ref: current
+      semantic_sha256: 0a256b487e3a54b569433b4fab0c74809ebaccd708efd5f9c026196e63924b42
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{}'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            complete: true
+  mistral_non_object_arguments:
+    case_key: UNIFIED.mistral-non_object_arguments
+    stimulus:
+      ref: current
+      semantic_sha256: 96c76252a3ed86c01cc5e3276ea68b0db6432143fa211b1c14e66f803d925fbe
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '[1, 2]'
+        - kind: tool_call
+          name: g
+          arguments: '42'
+        - kind: tool_call
+          name: run
+          arguments: '"done"'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '[1, 2]'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '42'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '"done"'
+            complete: true
+  mistral_pre_v11_array_not_a_call:
+    case_key: UNIFIED.mistral-pre_v11_array_not_a_call
+    stimulus:
+      ref: current
+      semantic_sha256: 8e6b6d95ffa4b5a54ebfde117e2a5b815c729e329db9f4c332e433fbbd3d3083
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+  mistral_quoted_marker_is_structural:
+    case_key: UNIFIED.mistral-quoted_marker_is_structural
+    stimulus:
+      ref: current
+      semantic_sha256: 851ecd1ed5a59843fc7b138297c596bf9d55f5e01084798afe7ae069b40ea655
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: He said "hi
+        - kind: text
+          text: The answer is "42".
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: He said "hi
+          - kind: text
+            text: The answer is "42".
+        - expected: []
+  mistral_quoted_tool_marker_in_answer:
+    case_key: UNIFIED.mistral-quoted_tool_marker_in_answer
+    stimulus:
+      ref: current
+      semantic_sha256: 563710ab1442644a2425029f8d96a5196772ba2e19ed1deaf4c84578aa64441c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+  mistral_quoted_tool_marker_then_call:
+    case_key: UNIFIED.mistral-quoted_tool_marker_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: 6d1c7404a35c1ff86e02d7da85ca53b61457e19f8aa9a07bac50e23ab41c6480
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  mistral_reasoning_after_call_dropped:
+    case_key: UNIFIED.mistral-reasoning_after_call_dropped
+    stimulus:
+      ref: current
+      semantic_sha256: 265073f6d949aece98b7b2c161be19ae36455299b90651e918a47fe346906397
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  mistral_reasoning_between_calls_dropped:
+    case_key: UNIFIED.mistral-reasoning_between_calls_dropped
+    stimulus:
+      ref: current
+      semantic_sha256: 708fb3a4933a16d4c248b1b50d429e05852528a67e3c6e9813f8197548b768dc
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check both.
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Check both.
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  mistral_reasoning_trailing_whitespace_stripped:
+    case_key: UNIFIED.mistral-reasoning_trailing_whitespace_stripped
+    stimulus:
+      ref: current
+      semantic_sha256: e41417836403c7bbaec28fd533b0ee43e0ae20925ebae5b2df62e285e3902611
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+  mistral_stray_separator_after_args:
+    case_key: UNIFIED.mistral-stray_separator_after_args
+    stimulus:
+      ref: current
+      semantic_sha256: 4b5583bded8f2e4bbd88115049620ed47a67a5f7d2659a4c725206ae4ebee6c9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  mistral_text_after_call_dropped:
+    case_key: UNIFIED.mistral-text_after_call_dropped
+    stimulus:
+      ref: current
+      semantic_sha256: 946e2faa1cb1f390cfd1b87a7efe179c9699910c1d6c97a48d25c06a4e14e9b2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "SF"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "SF"}'
+            complete: true
+        - expected: []
+  mistral_text_between_calls_dropped:
+    case_key: UNIFIED.mistral-text_between_calls_dropped
+    stimulus:
+      ref: current
+      semantic_sha256: e0434434afaaee5e47a762cf36e7915deed2973881a3161157e7974d39247ad8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  mistral_truncated_inside_args_marker:
+    case_key: UNIFIED.mistral-truncated_inside_args_marker
+    stimulus:
+      ref: current
+      semantic_sha256: f5d86a7ae84dd5061071fd30ac51ce944f0fea1bff36de080d30d3e249964a3a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+  mistral_truncated_second_call_dropped:
+    case_key: UNIFIED.mistral-truncated_second_call_dropped
+    stimulus:
+      ref: current
+      semantic_sha256: 6aeb2aa30ac178125e86927061672d462582ac0fe4d7b5323e4416c7a32c369a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+  mistral_whitespace_between_markers:
+    case_key: UNIFIED.mistral-whitespace_between_markers
+    stimulus:
+      ref: current
+      semantic_sha256: 90295d1bee54ea38854dda6f00394585c936564b783b9e60358673aa50048fcb
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '
+
+            plan'
+        - kind: text
+          text: 'On it.
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '
+
+              plan'
+          - kind: text
+            text: 'On it.
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  mistral_whitespace_only_arguments:
+    case_key: UNIFIED.mistral-whitespace_only_arguments
+    stimulus:
+      ref: current
+      semantic_sha256: 83b0bb82f8181da4d4058cae5a83c87b55d977177c6a0251d4e636a9f66798af
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{}'
+        - kind: tool_call
+          name: g
+          arguments: '{ }'
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "ls"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{ }'
+            complete: true
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "ls"}'
+            complete: true
+        - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-native_unmatched_quote_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: c929885d866d626ecb83263e4e5a0a8a366753bc4cf5d1ad017f521e0141c32a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  not_keyword_type_complement:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
+    stimulus:
+      ref: current
+      semantic_sha256: 46c99d428feadf8fd92280dada373ac414226af81523a587c761fc3d33c54fa4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count": -2500, "text": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": -2500, "text": "42"}'
+            complete: true
+        - expected: []
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
+    stimulus:
+      ref: current
+      semantic_sha256: e941ab4fedf702687d32c78eaa7212eca62fe80788b6b21311caa1ac34417ca4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"const_text": "null", "enum_text": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"const_text": "null", "enum_text": "null"}'
+            complete: true
+        - expected: []
+  orphan_close_after_prose:
+    case_key: UNIFIED.5-orphan_close_after_prose
+    stimulus:
+      ref: current
+      semantic_sha256: b9320176cb32741d53e3f13ab9d398945cf70d40aafef88cc1846c6ee3a720af
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check that. '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will check that. '
+        - expected: []
+  prefilled_reasoning_redundant_opener:
+    case_key: UNIFIED.41-prefilled_reasoning_redundant_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 307cabd54da207fd6752c32bf8a815e93013f7b3b0c872d470dcdf23086ebf05
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "London"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "London"}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_then_text:
+    case_key: UNIFIED.40-prefilled_reasoning_then_text
+    stimulus:
+      ref: current
+      semantic_sha256: ce30c318783b1fc458a0eec2e3690300aaae361fa396b9faaacad99e1071966a
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: no tool needed
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_then_text_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 7bfb70eda3c3e6c7f1635810bbf22e7eba5a5da0f6372fd5e0b2c7e35828ebd5
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+          - kind: text
+            text: 'Here''s what I found: '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_truncated:
+    case_key: UNIFIED.41-prefilled_reasoning_truncated
+    stimulus:
+      ref: current
+      semantic_sha256: 1bb08b21e172ee57cbfbd0575581105a46b47d2400a56db903baeb351ab6ac70
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: analyzing data
+        - expected: []
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_with_tool
+    stimulus:
+      ref: current
+      semantic_sha256: e9ed2ade278741c36db6512ed06cdef93d6bb095ade5228649154edf7b61830c
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  prefilled_response_reasoning_markers_literal:
+    case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
+    stimulus:
+      ref: current
+      semantic_sha256: 1d0223e2e0086e546946c65c4b234c531f763d490fb6463ec7e2aa89f6b39934
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[THINK]literal[/THINK] then a call'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[THINK]literal[/THINK] then a call'
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  reason_markup_in_arg:
+    case_key: UNIFIED.12-reason_markup_in_arg
+    stimulus:
+      ref: current
+      semantic_sha256: 7e63acbf3a53e99ccaa704e397bfaedefe9398f656faad184e7d8623c0d19289
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments: '{"note": "[THINK]reconsider[/THINK]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "[THINK]reconsider[/THINK]"}'
+            complete: true
+        - expected: []
+  reason_only:
+    case_key: UNIFIED.10-reason_only
+    stimulus:
+      ref: current
+      semantic_sha256: 9569759764cbf0a899361dd723bd8faad87bd37b123f5f90a019542179d345c7
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: just thinking, no answer
+        - expected: []
+  reason_then_content:
+    case_key: UNIFIED.10-reason_then_content
+    stimulus:
+      ref: current
+      semantic_sha256: 5dcc7f289dbba6319bfbe5cf042a813ad2aa6edf79469c83a96e6be52cc44683
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: let me think
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+  reason_then_tool:
+    case_key: UNIFIED.11-reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 27868e09ae785e258ca2d234241877c7a6c961e0158a7c48f1b50df6e0bf271b
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  reason_unterminated:
+    case_key: UNIFIED.10-reason_unterminated
+    stimulus:
+      ref: current
+      semantic_sha256: fe0f5938593c9479fb2a805a345e6907d6c40af6862484ce0235be4f9221714a
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking but stream ends
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: thinking but stream ends
+        - expected: []
+  reference_object_recursive_and_composed_types:
+    case_key: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
+    stimulus:
+      ref: current
+      semantic_sha256: 1b7290c46c54c0397f7ce93ceb2feb581c152a36e54f6944d1b284ac781facb7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
+            complete: true
+        - expected: []
+  schema_const_array_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_array_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 9d57967bdd047e576268c66cd10c2a438c03c955786a2a5f21d00aa6b260e9e7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "[1,2]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+  schema_const_array_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_array_bare
+    stimulus:
+      ref: current
+      semantic_sha256: de9a9111b961ca9707b21bd2b86b8a0c7af1e3df6c3735592d69897e7ee8095c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "[1,2]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+  schema_const_array_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_array_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 535939f0d692e56572fcce519b0a82b299207015f381c869e1d9da145b38d5e6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "[1,2]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+  schema_const_array_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: a4bb642f162fd054b55744add3e39ad19145387af55114c51dff14f9ff0a42bc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "[1,2]"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_boolean_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 5f9bc55e0cd4fda57cda87f876dc39668f9b3e1725a2356af2f927af23892891
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "true"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_boolean_bare
+    stimulus:
+      ref: current
+      semantic_sha256: a46fd3e46f55e2edf7c4a8001e0d3b6f8ce193a267d303a4c562a1f2610e917c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "true"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_boolean_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 0d85c8dd3b4ac5dc1cf62a237b8c5e95f37d6a94de4e95357c50dc4e1227b8dd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "true"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+  schema_const_boolean_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 79ccb085acb49a13d1e41dd5ad7f4bcbf6908ffe7e02ad4cffb9af1eb5dd628b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "true"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+  schema_const_entity_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_entity_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 1c9a70581ed9e91cc55104298fb536d40ac41160d010f99a2fb77bb351f4b15d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "&lt;"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_entity_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 9ef7e7edcf9acd83261bcf1abb4af3f82c89cd12157dc1f898857ba34db49680
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "&lt;"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_entity_ref
+    stimulus:
+      ref: current
+      semantic_sha256: e4eec659fd9a68eb14faebc9901eaca31ffa49f61552f413bcc83a33b4beb60b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "&lt;"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_entity_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 957e231d54cb4edfa3cebb0cbd24bb96c973317115bb632d5866257517975b32
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "&lt;"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_null_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_null_allof
+    stimulus:
+      ref: current
+      semantic_sha256: f2991eb77b04ea0d256b0034870f4a4880c2d3d3a886dafdc12e533c3a208177
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+  schema_const_null_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_null_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 006b3dbc4d06e5f5b630e1c832da130180f2bfc3f273f1a55005bfba2b3daa62
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+  schema_const_null_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: f8cdf9c7866fd96baf76402c5344d8ffb6255ee1e60670e0f2d75c9586e712a0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+  schema_const_null_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 30694105fd3d3d3fcaef3f7d59ce9ef5ceaa501bcf3a62927c57906ee0b81357
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+  schema_const_number_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_number_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 587719522ca51286fdc2781f09c870b7e1ee5d947004ffa41f8ad331774b3bd6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_const_number_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_number_bare
+    stimulus:
+      ref: current
+      semantic_sha256: dc92d55f4107c78af4e2c637a4eba7a44375e044a5496ec2e4da43a92a329e38
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_const_number_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_number_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 8654c41c6c4c8986ad3161ea3e1d144a4b116c0629dca9730ff823fb218773ba
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_const_number_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: b8a77e52c8a6df67a0d4d3b6a3c34bd47d82c586de518a5be4bb1a7062b75334
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_const_numeric_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_numeric_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 2070d32a64a348d795b69468782ae440954eb4acd02cbfdc1aaa92452fb2f043
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 3}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3}'
+            complete: true
+        - expected: []
+  schema_const_object_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_object_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 9763ec6905944157d2ac25736016e2e1b4a6462c7dc44139921ed20e2aa235f2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "{\"x\":1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_object_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_object_bare
+    stimulus:
+      ref: current
+      semantic_sha256: c4bdf447e845487439fc01ffb6004174819f6a97891860f28ab36917b8936b07
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "{\"x\":1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_object_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_object_ref
+    stimulus:
+      ref: current
+      semantic_sha256: c1411f3b192662158b302d05eca23ea03b6258fe5e15ee5c398b949454905809
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "{\"x\":1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_object_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 36cc8ba934ced52d2511f8bd435e41c056e5e0ba309e946e9a9bf3892c7077ee
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "{\"x\":1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_const_plain_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_plain_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 447987a0fdf91232007e293ad55fc992423bcd65c772333ae985fd22d43f29df
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_const_plain_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_plain_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 902099cfa347ba606c2bba3296edb76a9b2249cf289c75881815aba7c96e12f7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_const_plain_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_plain_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 5563385890a0ab88a6f5af155f365981ba326e3111279d5dcd842610bc2274c5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_const_plain_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_plain_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d53f88aabad5d42d62eb2ad034b21bca3ed01ce8b40c74d3ad102ab7d9c9db28
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_const_quoted_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_quoted_allof
+    stimulus:
+      ref: current
+      semantic_sha256: b5d428fb530b3969f1acf85df0109c8adf9ce81dbc2c75f7dac2e1347feb1902
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "\"hello\""}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_quoted_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_quoted_bare
+    stimulus:
+      ref: current
+      semantic_sha256: f2eff4d9d72e18a8f1fa7adec40a6f29e71930ccab8f272e26889c0e260cdf80
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "\"hello\""}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_quoted_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_quoted_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 647da0c69f6bdf1721515675862ef7594c31ca35465ef7d32acf9f2d370eb0cc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "\"hello\""}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_quoted_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_quoted_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 99d75cb289b686800fa1d555a9c321071b417cbb864ce57ee392460fa85330e2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "\"hello\""}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+  schema_const_space_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_space_allof
+    stimulus:
+      ref: current
+      semantic_sha256: fcb185076270ccc0151abf78976febff80b61252511e4de47b9c5d03ca46b0bc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "  spaced  "}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_space_bare
+    stimulus:
+      ref: current
+      semantic_sha256: e7ea8adcabe4d2134229c5565e4dda6008a572e0908a4f69a2c11ba712057c24
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "  spaced  "}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_space_ref
+    stimulus:
+      ref: current
+      semantic_sha256: ad1d51190598d4c6b6a1e509c7ce572630c7e7310efc262654a73ecff27a0683
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "  spaced  "}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_space_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 9411ce41364754909aff729471c6dd31137e7f9bd10eec3ca33a48b9f8f7aa25
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "  spaced  "}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_unicode_allof:
+    case_key: UNIFIED.7-tool-argument-constants-const_unicode_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 19490b82d9948069285b8dd44b3bac7d2a12c02b1cfe4d792a84baced27c73bc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "café"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+  schema_const_unicode_bare:
+    case_key: UNIFIED.7-tool-argument-constants-const_unicode_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 80b426eb54e05ca6467c770d432856cae69523974e1a41ceea325b2c147d0585
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "café"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+  schema_const_unicode_ref:
+    case_key: UNIFIED.7-tool-argument-constants-const_unicode_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 582e22fec9ae351580baa1d9e071149008a7939ec4e03f96836de7c283455870
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "café"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+  schema_const_unicode_typed:
+    case_key: UNIFIED.7-tool-argument-constants-const_unicode_typed
+    stimulus:
+      ref: current
+      semantic_sha256: e548ffc4eb376dec2ee19d9b6ff3ed26ca1a3293ff7fe8f8cda9fa95994d3cbf
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "café"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+  schema_declared_array:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_array
+    stimulus:
+      ref: current
+      semantic_sha256: 79b003de9b7e6d322ce5e7506f81131f9c262a9b584405902704c787a26f8e33
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": [1, 2]}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+  schema_declared_boolean:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_boolean
+    stimulus:
+      ref: current
+      semantic_sha256: e730a499f74750ac8818ae09a70c7e28ed939cff6bcbecd09c6ca406f893a9bc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": true}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+  schema_declared_integer:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 33cd64659e4c88334fc6f20bf24a1decae95cd60ae544023de2d263f06f8ae14
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_declared_integer_boolean_number_order:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    stimulus:
+      ref: current
+      semantic_sha256: 7df4b9cd68a0d2378c2fdea6b7513d47ea966067acd26d909aa7916a569a0392
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 1}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 1}'
+            complete: true
+        - expected: []
+  schema_declared_null:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_null
+    stimulus:
+      ref: current
+      semantic_sha256: 3938b44a8985feba332fa4e972dcda244071996613dadbab28723e2a1849078e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_declared_number:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_number
+    stimulus:
+      ref: current
+      semantic_sha256: 95b908d48eb4b663075fad0cb59496bfff4536d4dddaecb0b53409b764580005
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 3.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+  schema_declared_object:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_object
+    stimulus:
+      ref: current
+      semantic_sha256: 444ca3d0466d295109255c7ece004a7110d711858c1670473e35956ce2eface6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": {"x": 1}}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+  schema_declared_string:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_string
+    stimulus:
+      ref: current
+      semantic_sha256: c2ce28d43215444be342c217a79119234fea710c84580f3f31b7c0f8178a0032
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "plain"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "plain"}'
+            complete: true
+        - expected: []
+  schema_enum_const_narrowing:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_const_narrowing
+    stimulus:
+      ref: current
+      semantic_sha256: 7bc9f2fef2cce0eaa2733d8bd0e1c9b41a499772ef2cd8854c2593f5853545ec
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 1}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 1}'
+            complete: true
+        - expected: []
+  schema_enum_inferred_integer:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
+    stimulus:
+      ref: current
+      semantic_sha256: e0e67e8be9be9a6d9c7b108be461323d94e5164f58518eedfe4e2adac259a615
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 2}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 2}'
+            complete: true
+        - expected: []
+  schema_enum_integer:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_integer
+    stimulus:
+      ref: current
+      semantic_sha256: ad84de56dea669eb17496999178a372e7a64c5cdb4f26fdddcc3579b3c4b6ccc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_enum_string:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_string
+    stimulus:
+      ref: current
+      semantic_sha256: a8397d4f9e5e6a7da0d7d0724d8484be54788f3bc17804e012942582af8780fe
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_escaped_ref_const:
+    case_key: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: 824ca6fbc36427fe44a14c6562882900b745c7505891aae073663a8a23906558
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "\"hello\""}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+  schema_id_direct_integer:
+    case_key: UNIFIED.7-tool-argument-declared-types-id_direct_integer
+    stimulus:
+      ref: current
+      semantic_sha256: c53c7b4fb509b7c65de4d1986dd0e786a333c1c3c9b3923cec7a5ef4b2bb8b6d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_integer_const_ambiguous:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-integer_const_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: 16bed5dc7becc9aadfa388755e2ee2db95722dfb89785f05e1eb34c13271e053
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_intersection_anyof:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_anyOf
+    stimulus:
+      ref: current
+      semantic_sha256: be13ad87452efed727b38f61e8c4538ab594968bae6b5cece5425a64e112120b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_intersection_oneof:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_oneOf
+    stimulus:
+      ref: current
+      semantic_sha256: b29d5c9376eefe81f1303722bd3604f9cd1d6aac803584153c973a8998d7486a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_null_union_ambiguous:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-null_union_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: d63571c2fd939e61efd2c4a44743029d814d4e6652f1ffe4af3247b08ff2adb8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_nullable_string:
+    case_key: UNIFIED.7-tool-argument-nullability-nullable_string
+    stimulus:
+      ref: current
+      semantic_sha256: 94ef1c0be1ed6455d0768fb5e2757e3911d8fe580828a2d0db7935a25347c4e7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_object_const_union:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-object_const_union
+    stimulus:
+      ref: current
+      semantic_sha256: 1e34ecd9bbdd16ef4487643ed22f3888438db737b77d35d85a2dfd33a607c42e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "{\"x\":1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+  schema_percent_ref_const:
+    case_key: UNIFIED.7-tool-argument-schema-references-percent_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: e7aac0b7a148ad5f2b494ae0bb18ba85d1faa0ca76c052f74c1c4989e1a26290
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_ref_sibling_integer:
+    case_key: UNIFIED.7-tool-argument-schema-references-ref_sibling_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 2a900fb510e41f1230ac9ba8967079bc14c6b652599a7b5f94cc1e6072bffb72
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_ref_union_anyof_integer:
+    case_key: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 9dd973eb42017e7bbe598aa623fa1c74e65d8ced2a267de4efd4132492ddd868
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": -7}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": -7}'
+            complete: true
+        - expected: []
+  schema_ref_union_anyof_string:
+    case_key: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: 576ef85e138547ef9e0de805898c3e80ec66955e8a88a7903e8219408b58d831
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_ref_union_oneof_integer:
+    case_key: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 2e6be7c0866666c80d82d603fcade9ce3d5cd9191fc46e89532eac1d99083162
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": -7}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": -7}'
+            complete: true
+        - expected: []
+  schema_ref_union_oneof_string:
+    case_key: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: d6205124d4d8e2623858d94ddc92e79b6ebf7c5333ed99808e3ea56b11e7f23b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_type_array_integer_null:
+    case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null
+    stimulus:
+      ref: current
+      semantic_sha256: 35a35c7d0a8c0a25e749f074afde9a63e766c03e8592e469c66c608b0d14b6aa
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_type_array_integer_null_null:
+    case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null_null
+    stimulus:
+      ref: current
+      semantic_sha256: 8e51db1951ecaedf8f0a6c47614d2657a786d043699c956516a5cad452dbd806
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_type_array_string_integer:
+    case_key: UNIFIED.7-tool-argument-nullability-type_array_string_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 28d37f4802026a5d05b19cf1d981dad334395de7051a59c9bb9971638b6a713f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "42"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: d17c2fed1715b283c927ab32c1a3c7b96258fb30c5d4c2a99228c011f0f0b161
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d6d55ff22b4caa552d0f9a43dc48f8ea0089aca25187486806bd6feec3b8be74
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": [1, 2]}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: 776e5b9d3b5b01e4f2c08f9af7b088839c6c2581b9ff397d7eed147019d01d61
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_array_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 0ae9ebfbdf9b2d84f33598c53a2078f15e3248db383baf0968e85c40bc09a57b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": [1, 2]}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: d7cdc97f5db4b6a9bd863fa34b6c952c0b3b287ed41e3f6a950f5755c83d99e6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: de96fa16bf0edbea1a32f26f23f7120aae3410f983d79a04953dab308fe3e1c5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": true}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: b3dd151b20e59578d09ca34c10b0d96ef528ebc2b51289b10eacec8d826f2428
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_boolean_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 376f9ec3dd0965ed4d0a38f76ba997391ee07dedec57c8669eb9bfb2223c3b31
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": true}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: d0ca9c02263ac3e58345635fa666d7bbd3477854cf7b00fbc8c5553d3c6729f8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2bbad00c70d4384c848d080ee4397f858fe7857d3a110ed6a2c0621d4854ca5b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 3fa35b13c98cf9f8a39bd56d779c997163903c23befa41fae73fc9bc0a01b596
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_integer_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d06c3245d50a03992ce6345d26034a5039825514204565a922a2a1c04b3b51be
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: bd750bb6b1b5f14f655a42cda2f933ff9e04209ca8dd9f6e237da34b70e4b9df
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8c0d7865f9c5879c271a2d3db9e8688414399cf2932735b72beeca6f32c00e56
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: 91bb25e558d8b6721dc5e09bca9f5270ba2759ca853ad57e6f242a23d41ba3d3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_null_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2dbf52cd11d3751b6cb85acf4e4b80b5036f3fdb9c1b07439a301ecf3dd2fde7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 160cbbba91c5873b78f30a4c176d6ebe13c50f46ff2f78f300355bbb8d14ef44
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 42eab8f55c4a7d00443555aa79f99ccd2d891f3acc670fd070879662383288f9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 3.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 3c368131cc2af1d7c922a996c7f9d3287dc1489346d5d0b4089a6f3759db51aa
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_number_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5040b65d869be0285a906f8ed6bc9067d5aacb1f83e6c4fca880b3d6c5a29f77
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 3.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: e9818f6e0eb8b6ae32c0cf3adb418ab43626dd6f14128062d8a05020c4462541
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 7b83a6b76325b581d49f833ff6177bb6b7d28917308204f2e72196e661b00ade
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": {"x": 1}}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: 5a503d264c1b82debf13b8c949c754098789ec72ed11a273eb2936f72359ffc6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_anyof_object_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: c071ff58b7578b518d0ead484133021256e71220e0d11f627ce1c229c50403a5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": {"x": 1}}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 23a7c2c99940bb47e8ed7c0bf352dfb10d40204cc879054ec99e0f63cdf2e5d3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f1d189fb0dd8e7940e3b40b7f553919afceaadc9cddb77480350c5cc217bf48e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": [1, 2]}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: a0d36c8bfd6db224168b3be7c51a5fe5852c054575d5a197107be09c89dd9609
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_array_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ca49bd8bb595c3e490877a4439e3c1737fa24bd5a942f82f1a1d716bfe329b20
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": [1, 2]}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 931a66b30312cb5e3e94d8b7552a5e9b71fea99ad19e6038de53511671815d93
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1d06765f0b9edf6607fb17a24ea511269970f695ce9fcf17890d49c61f2ade8c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": true}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: 563ff3cde12404dfbceae626a0003d8c5fed6072bc37ea9ee1f34124459698b3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_boolean_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 701e7355f90972aec058f1b684374a643b1d06df77287e6a8b8ed427db21e6dc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": true}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 96df8367e2a1738fef10a59557bfbf9741d200ae51343977781a0d9f9fabbff5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: b8530dcd20e0e3a1971115459bbf82420978ef7f4f4f19ff508986265cc30d11
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 8dad349c3d24f5a72fbc14eaeab038fd72f5f7099f12c207b9fd668fd8e4f92d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_integer_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: acc2ab10dd2976cd376268c1d3986860770ecd3e8e053e06e5d87bbe1a8b24f3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 42}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: e7a8689c0252c62cb5b1fabd48ed2a640175cf070eda19f40132612802699847
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ddd185e4e9adcd12c3421cc6d1b37b4ec7aa1ef3acc70328b88bf2b504d8cd09
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: 5047eab73e137d7eb87e0a8ebcf12661cf3d5a3131d5c4086f9ae8c9d8b503f5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_null_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 6828c40a2362ef512e81ae4a73dc7d6a09be1eb32f0cba78f71673bbe6ba41f6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": null}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 741c181f698953ec3449b8dc059b3710b5badd29359af2d81d58007965465306
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ccfc781b63d6881826f54f3694738ca67a55c15bd78c8b9001d2846a89d0a5aa
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 3.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: edb62699024c77810d09b55170d55b2c9a225c210cbe300f77ce39c771366f36
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_number_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2e169681bfb768220bcba4a362138cb0c9dd9f9b4073102be29af768af93f479
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 3.5}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_reverse_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: eb6ac1602f7d6d393cbf73dc986f4ac1d6511b0c8a0d4b4e10eed00aa44d36f9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_reverse_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1957678a23f99a8600cfbabaeb2870db1259823d967bbba2b375fd6801092f59
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": {"x": 1}}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_string:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: 9c6a9cd3b80cfc23159f4a53222353c76af5059a4a6424465f2cddcacf1f7732
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "auto"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+  schema_union_oneof_object_typed:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ed553a04728cc68a10cf0cf077bc89e2534ffcfc934315fcfc53f0d07c64facc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": {"x": 1}}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+  text_before_tool:
+    case_key: UNIFIED.8-text_before_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 00f7c8f0470a510ed4ed2ebb99eb8e9f4a7c9ceaf18b860aa4eb1ae7cd38d5a1
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'On it: '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  text_only:
+    case_key: UNIFIED.3-text_only
+    stimulus:
+      ref: current
+      semantic_sha256: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The answer is 42, no tools needed.
+        chunks:
+        - expected:
+          - kind: text
+            text: The answer is 42, no tools needed.
+        - expected: []
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 926bf98da03f3a5211019bf88ba3535aa1f9fdcf8bae83a3dac7244e0e5e7506
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x":"1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{"x":"2"}'
+        - kind: tool_call
+          name: h
+          arguments: '{"x":"3"}'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
+  tool_block_never_closed_then_text:
+    case_key: UNIFIED.4-tool_block_never_closed_then_text
+    stimulus:
+      ref: current
+      semantic_sha256: 74a0d906131ed444a4341d0ba69046a12d0381620b2308694badff00ef485421
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+  tool_body_whitespace:
+    case_key: UNIFIED.1-tool_only_leading_json_body_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: cd95add30a03bd273bf4586e50c185d92a77debab9633a6deab0cbfb1e758032
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  tool_markup_only_emits_nothing:
+    case_key: UNIFIED.4-tool_markup_only_emits_nothing
+    stimulus:
+      ref: current
+      semantic_sha256: 28ded4e9a561864ffb25eb1dcc45e837e52167487ac40d8a609f66fec85ba31b
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+  tool_only:
+    case_key: UNIFIED.1-tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: 11f51a4723afce40da742464fea19c269863ec2aa016dca8163dfe099b83f418
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  truncated_tool_eof:
+    case_key: UNIFIED.5-truncated_tool_eof
+    stimulus:
+      ref: current
+      semantic_sha256: 9a19284971d3f2f3af652b22f7ef05d5cd227f52322d597f6d8df1abf91950b8
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: ok
+        - expected: []
+  two_adjacent_reason_spans:
+    case_key: UNIFIED.10-two_adjacent_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: a49508953c75c027ead2afd47a37ed8e5b172d95937da28dab7434b18fdd2765
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'first
+
+            second'
+        - kind: text
+          text: done
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'first
+
+              second'
+          - kind: text
+            text: done
+        - expected: []
+  two_calls:
+    case_key: UNIFIED.2-two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 9191497e624e4d96af3200d6ced61628a31ada3169f09375ce179e6377e4c01b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  two_calls_same_name:
+    case_key: UNIFIED.2-two_calls_same_name
+    stimulus:
+      ref: current
+      semantic_sha256: f5fb682ec8cab1980aad8362df12ece39a1d2af2a1d71a6ab4150f8f3435f3b3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Tokyo"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Tokyo"}'
+            complete: true
+        - expected: []
+  two_reason_spans:
+    case_key: UNIFIED.10-two_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: 722abb5faddaa97e142539c45b734cd038040ec26cbec1214c9dba5aee2c41ee
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: 'interlude '
+        - kind: reasoning
+          text: second thought
+        - kind: text
+          text: done
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: first thought
+          - kind: text
+            text: 'interlude '
+          - kind: reasoning
+            text: second thought
+          - kind: text
+            text: done
+        - expected: []
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
+    stimulus:
+      ref: current
+      semantic_sha256: f9aa9b5ebd7180f3db062076420246e1800cb7937fbc20065cad3ccaf24e98e4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count": 42, "flag": false, "text": "null"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42, "flag": false, "text": "null"}'
+            complete: true
+        - expected: []
+  xml_string_type_double_quoted_object:
+    case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_double_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: b4d6e99820c6913ce60f7b3a5faea57bb64bf9b8f50ef16445da5e577f8a7729
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "{\"a\":1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"a\":1}"}'
+            complete: true
+        - expected: []
+  xml_string_type_single_quoted_object:
+    case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_single_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: afb1e58f65a061a1e7b0aaa7f5cbea2a0b5221f6885dec6ab06374c833292e41
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "{''a'':1}"}'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{''a'':1}"}'
+            complete: true
+        - expected: []
+metadata_changes:
+  adjacent_calls_partial_header:
+    parser_path: unified
+  arg_array_quoted_parameter_close:
+    parser_path: unified
+  arg_json_null:
+    parser_path: unified
+  arg_json_null_anyof:
+    parser_path: unified
+  arg_json_null_const:
+    parser_path: unified
+  arg_json_null_nullable:
+    parser_path: unified
+  arg_json_null_oneof:
+    parser_path: unified
+  arg_json_null_ref:
+    parser_path: unified
+  arg_marker_in_string:
+    parser_path: unified
+  arg_null_mixed_labels:
+    parser_path: unified
+  arg_numeric_14_const_decimal:
+    parser_path: unified
+  arg_numeric_14_const_exponent:
+    parser_path: unified
+  arg_numeric_14_enum_decimal:
+    parser_path: unified
+  arg_numeric_14_enum_exponent:
+    parser_path: unified
+  arg_numeric_14_large_decimal:
+    parser_path: unified
+  arg_numeric_14_large_exponent:
+    parser_path: unified
+  arg_numeric_14_negative:
+    parser_path: unified
+  arg_numeric_14_negative_exponent:
+    parser_path: unified
+  arg_numeric_14_zero_underflow:
+    parser_path: unified
+  arg_numeric_15_exponent:
+    parser_path: unified
+  arg_numeric_15_negative:
+    parser_path: unified
+  arg_numeric_15_ordinary:
+    parser_path: unified
+  arg_numeric_15_quarter:
+    parser_path: unified
+  arg_numeric_15_round_down:
+    parser_path: unified
+  arg_numeric_15_round_up:
+    parser_path: unified
+  arg_numeric_15_small:
+    parser_path: unified
+  arg_numeric_nested_exact:
+    parser_path: unified
+  arg_numeric_overflow_siblings_finite:
+    parser_path: unified
+  arg_numeric_overflow_siblings_negative:
+    parser_path: unified
+  arg_numeric_overflow_siblings_positive:
+    parser_path: unified
+  arg_object_quoted_parameter_close:
+    parser_path: unified
+  arg_string_null:
+    parser_path: unified
+  arg_string_null_const:
+    parser_path: unified
+  arg_string_null_enum:
+    parser_path: unified
+  arg_string_null_ref:
+    parser_path: unified
+  arg_string_null_sibling_anyof:
+    parser_path: unified
+  arg_string_null_sibling_oneof:
+    parser_path: unified
+  arg_string_null_union:
+    parser_path: unified
+  arg_string_null_untyped_branch:
+    parser_path: unified
+  arg_unicode:
+    parser_path: unified
+  blank_output_without_call:
+    parser_path: unified
+  conditional_schema_number_types:
+    parser_path: unified
+  content_then_reason:
+    parser_path: unified
+  content_then_reason_then_tool:
+    parser_path: unified
+  deepseek_v41_mixed_control_text_in_string:
+    parser_path: unified
+  dotted_name_minimal:
+    parser_path: unified
+  dotted_name_mixed_punctuation:
+    parser_path: unified
+  dotted_name_multiple_segments:
+    parser_path: unified
+  dotted_name_shared_prefix:
+    parser_path: unified
+  empty_args:
+    parser_path: unified
+  enum_contradicting_declared_type:
+    parser_path: unified
+  glm_ref_encoded_targets:
+    parser_path: unified
+  glm_ref_json_looking_strings:
+    parser_path: unified
+  glm_ref_object:
+    parser_path: unified
+  glm_ref_scalar_types:
+    parser_path: unified
+  gpt_oss_control_marker_inside_argument_string:
+    parser_path: unified
+  gpt_oss_invalid_tool_body_then_empty_call:
+    parser_path: unified
+  gpt_oss_invalid_tool_body_then_valid_call:
+    parser_path: unified
+  gpt_oss_multiple_unknown_and_empty_tools:
+    parser_path: unified
+  gpt_oss_quoted_message_header_literal:
+    parser_path: unified
+  interstitial_text:
+    parser_path: unified
+  local_schema_id_preserves_type:
+    parser_path: unified
+  malformed_json_then_two_valid_calls:
+    parser_path: unified
+  mistral_brace_fallback_calls:
+    parser_path: unified
+  mistral_call_id_stripped:
+    parser_path: unified
+  mistral_call_id_variants:
+    parser_path: unified
+  mistral_call_inside_reasoning_ends_thought:
+    parser_path: unified
+  mistral_duplicate_think_opener_stripped:
+    parser_path: unified
+  mistral_empty_thoughts_emit_nothing:
+    parser_path: unified
+  mistral_json_escapes_and_lookalikes:
+    parser_path: unified
+  mistral_json_reply_after_reasoning:
+    parser_path: unified
+  mistral_malformed_body_ends_at_next_call:
+    parser_path: unified
+  mistral_many_mixed_form_calls:
+    parser_path: unified
+  mistral_marker_lookalikes_stay_text:
+    parser_path: unified
+  mistral_markers_split_across_chunks:
+    parser_path: unified
+  mistral_name_before_marker:
+    parser_path: unified
+  mistral_name_without_arguments:
+    parser_path: unified
+  mistral_non_object_arguments:
+    parser_path: unified
+  mistral_pre_v11_array_not_a_call:
+    parser_path: unified
+  mistral_quoted_marker_is_structural:
+    parser_path: unified
+  mistral_quoted_tool_marker_in_answer:
+    parser_path: unified
+  mistral_quoted_tool_marker_then_call:
+    parser_path: unified
+  mistral_reasoning_after_call_dropped:
+    parser_path: unified
+  mistral_reasoning_between_calls_dropped:
+    parser_path: unified
+  mistral_reasoning_trailing_whitespace_stripped:
+    parser_path: unified
+  mistral_stray_separator_after_args:
+    parser_path: unified
+  mistral_text_after_call_dropped:
+    parser_path: unified
+  mistral_text_between_calls_dropped:
+    parser_path: unified
+  mistral_truncated_inside_args_marker:
+    parser_path: unified
+  mistral_truncated_second_call_dropped:
+    parser_path: unified
+  mistral_whitespace_between_markers:
+    parser_path: unified
+  mistral_whitespace_only_arguments:
+    parser_path: unified
+  native_unmatched_quote_then_call:
+    parser_path: unified
+  not_keyword_type_complement:
+    parser_path: unified
+  nullable_reference_alias_literals:
+    parser_path: unified
+  orphan_close_after_prose:
+    parser_path: unified
+  prefilled_reasoning_redundant_opener:
+    parser_path: unified
+  prefilled_reasoning_then_text:
+    parser_path: unified
+  prefilled_reasoning_then_text_then_tool:
+    parser_path: unified
+  prefilled_reasoning_truncated:
+    parser_path: unified
+  prefilled_reasoning_with_tool:
+    parser_path: unified
+  prefilled_response_reasoning_markers_literal:
+    parser_path: unified
+  reason_markup_in_arg:
+    parser_path: unified
+  reason_only:
+    parser_path: unified
+  reason_then_content:
+    parser_path: unified
+  reason_then_tool:
+    parser_path: unified
+  reason_unterminated:
+    parser_path: unified
+  reference_object_recursive_and_composed_types:
+    parser_path: unified
+  schema_const_array_allof:
+    parser_path: unified
+  schema_const_array_bare:
+    parser_path: unified
+  schema_const_array_ref:
+    parser_path: unified
+  schema_const_array_typed:
+    parser_path: unified
+  schema_const_boolean_allof:
+    parser_path: unified
+  schema_const_boolean_bare:
+    parser_path: unified
+  schema_const_boolean_ref:
+    parser_path: unified
+  schema_const_boolean_typed:
+    parser_path: unified
+  schema_const_entity_allof:
+    parser_path: unified
+  schema_const_entity_bare:
+    parser_path: unified
+  schema_const_entity_ref:
+    parser_path: unified
+  schema_const_entity_typed:
+    parser_path: unified
+  schema_const_null_allof:
+    parser_path: unified
+  schema_const_null_bare:
+    parser_path: unified
+  schema_const_null_ref:
+    parser_path: unified
+  schema_const_null_typed:
+    parser_path: unified
+  schema_const_number_allof:
+    parser_path: unified
+  schema_const_number_bare:
+    parser_path: unified
+  schema_const_number_ref:
+    parser_path: unified
+  schema_const_number_typed:
+    parser_path: unified
+  schema_const_numeric_bare:
+    parser_path: unified
+  schema_const_object_allof:
+    parser_path: unified
+  schema_const_object_bare:
+    parser_path: unified
+  schema_const_object_ref:
+    parser_path: unified
+  schema_const_object_typed:
+    parser_path: unified
+  schema_const_plain_allof:
+    parser_path: unified
+  schema_const_plain_bare:
+    parser_path: unified
+  schema_const_plain_ref:
+    parser_path: unified
+  schema_const_plain_typed:
+    parser_path: unified
+  schema_const_quoted_allof:
+    parser_path: unified
+  schema_const_quoted_bare:
+    parser_path: unified
+  schema_const_quoted_ref:
+    parser_path: unified
+  schema_const_quoted_typed:
+    parser_path: unified
+  schema_const_space_allof:
+    parser_path: unified
+  schema_const_space_bare:
+    parser_path: unified
+  schema_const_space_ref:
+    parser_path: unified
+  schema_const_space_typed:
+    parser_path: unified
+  schema_const_unicode_allof:
+    parser_path: unified
+  schema_const_unicode_bare:
+    parser_path: unified
+  schema_const_unicode_ref:
+    parser_path: unified
+  schema_const_unicode_typed:
+    parser_path: unified
+  schema_declared_array:
+    parser_path: unified
+  schema_declared_boolean:
+    parser_path: unified
+  schema_declared_integer:
+    parser_path: unified
+  schema_declared_integer_boolean_number_order:
+    parser_path: unified
+  schema_declared_null:
+    parser_path: unified
+  schema_declared_number:
+    parser_path: unified
+  schema_declared_object:
+    parser_path: unified
+  schema_declared_string:
+    parser_path: unified
+  schema_enum_const_narrowing:
+    parser_path: unified
+  schema_enum_inferred_integer:
+    parser_path: unified
+  schema_enum_integer:
+    parser_path: unified
+  schema_enum_string:
+    parser_path: unified
+  schema_escaped_ref_const:
+    parser_path: unified
+  schema_id_direct_integer:
+    parser_path: unified
+  schema_integer_const_ambiguous:
+    parser_path: unified
+  schema_intersection_anyof:
+    parser_path: unified
+  schema_intersection_oneof:
+    parser_path: unified
+  schema_null_union_ambiguous:
+    parser_path: unified
+  schema_nullable_string:
+    parser_path: unified
+  schema_object_const_union:
+    parser_path: unified
+  schema_percent_ref_const:
+    parser_path: unified
+  schema_ref_sibling_integer:
+    parser_path: unified
+  schema_ref_union_anyof_integer:
+    parser_path: unified
+  schema_ref_union_anyof_string:
+    parser_path: unified
+  schema_ref_union_oneof_integer:
+    parser_path: unified
+  schema_ref_union_oneof_string:
+    parser_path: unified
+  schema_type_array_integer_null:
+    parser_path: unified
+  schema_type_array_integer_null_null:
+    parser_path: unified
+  schema_type_array_string_integer:
+    parser_path: unified
+  schema_union_anyof_array_reverse_string:
+    parser_path: unified
+  schema_union_anyof_array_reverse_typed:
+    parser_path: unified
+  schema_union_anyof_array_string:
+    parser_path: unified
+  schema_union_anyof_array_typed:
+    parser_path: unified
+  schema_union_anyof_boolean_reverse_string:
+    parser_path: unified
+  schema_union_anyof_boolean_reverse_typed:
+    parser_path: unified
+  schema_union_anyof_boolean_string:
+    parser_path: unified
+  schema_union_anyof_boolean_typed:
+    parser_path: unified
+  schema_union_anyof_integer_reverse_string:
+    parser_path: unified
+  schema_union_anyof_integer_reverse_typed:
+    parser_path: unified
+  schema_union_anyof_integer_string:
+    parser_path: unified
+  schema_union_anyof_integer_typed:
+    parser_path: unified
+  schema_union_anyof_null_reverse_string:
+    parser_path: unified
+  schema_union_anyof_null_reverse_typed:
+    parser_path: unified
+  schema_union_anyof_null_string:
+    parser_path: unified
+  schema_union_anyof_null_typed:
+    parser_path: unified
+  schema_union_anyof_number_reverse_string:
+    parser_path: unified
+  schema_union_anyof_number_reverse_typed:
+    parser_path: unified
+  schema_union_anyof_number_string:
+    parser_path: unified
+  schema_union_anyof_number_typed:
+    parser_path: unified
+  schema_union_anyof_object_reverse_string:
+    parser_path: unified
+  schema_union_anyof_object_reverse_typed:
+    parser_path: unified
+  schema_union_anyof_object_string:
+    parser_path: unified
+  schema_union_anyof_object_typed:
+    parser_path: unified
+  schema_union_oneof_array_reverse_string:
+    parser_path: unified
+  schema_union_oneof_array_reverse_typed:
+    parser_path: unified
+  schema_union_oneof_array_string:
+    parser_path: unified
+  schema_union_oneof_array_typed:
+    parser_path: unified
+  schema_union_oneof_boolean_reverse_string:
+    parser_path: unified
+  schema_union_oneof_boolean_reverse_typed:
+    parser_path: unified
+  schema_union_oneof_boolean_string:
+    parser_path: unified
+  schema_union_oneof_boolean_typed:
+    parser_path: unified
+  schema_union_oneof_integer_reverse_string:
+    parser_path: unified
+  schema_union_oneof_integer_reverse_typed:
+    parser_path: unified
+  schema_union_oneof_integer_string:
+    parser_path: unified
+  schema_union_oneof_integer_typed:
+    parser_path: unified
+  schema_union_oneof_null_reverse_string:
+    parser_path: unified
+  schema_union_oneof_null_reverse_typed:
+    parser_path: unified
+  schema_union_oneof_null_string:
+    parser_path: unified
+  schema_union_oneof_null_typed:
+    parser_path: unified
+  schema_union_oneof_number_reverse_string:
+    parser_path: unified
+  schema_union_oneof_number_reverse_typed:
+    parser_path: unified
+  schema_union_oneof_number_string:
+    parser_path: unified
+  schema_union_oneof_number_typed:
+    parser_path: unified
+  schema_union_oneof_object_reverse_string:
+    parser_path: unified
+  schema_union_oneof_object_reverse_typed:
+    parser_path: unified
+  schema_union_oneof_object_string:
+    parser_path: unified
+  schema_union_oneof_object_typed:
+    parser_path: unified
+  text_before_tool:
+    parser_path: unified
+  text_only:
+    parser_path: unified
+  three_calls_partial_header:
+    parser_path: unified
+  tool_block_never_closed_then_text:
+    parser_path: unified
+  tool_body_whitespace:
+    parser_path: unified
+  tool_markup_only_emits_nothing:
+    parser_path: unified
+  tool_only:
+    parser_path: unified
+  truncated_tool_eof:
+    parser_path: unified
+  two_adjacent_reason_spans:
+    parser_path: unified
+  two_calls:
+    parser_path: unified
+  two_calls_same_name:
+    parser_path: unified
+  two_reason_spans:
+    parser_path: unified
+  unused_reference_graph_parameter_types:
+    parser_path: unified
+  xml_string_type_double_quoted_object:
+    parser_path: unified
+  xml_string_type_single_quoted_object:
+    parser_path: unified
+document_overrides: {}
