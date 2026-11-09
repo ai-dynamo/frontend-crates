@@ -541,8 +541,8 @@ mod tests {
         );
     }
 
-    /// A string that never closes swallows the later calls while streaming.
-    /// At EOF the body ends at the first marker it swallowed, so they survive.
+    /// A malformed string can swallow later calls while streaming. An invalid
+    /// delimiter after a swallowed quote confirms recovery at EOF.
     #[test]
     fn unterminated_string_releases_later_calls_at_eof() {
         let echo = |value: &str| call("echo", serde_json::json!({"value": value}));
@@ -552,8 +552,8 @@ mod tests {
         );
     }
 
-    /// A truncated body whose marker sits in a closed string keeps it as data:
-    /// the quote parity is even, so no quote is missing and the call is dropped.
+    /// A valid string closer keeps its marker as data even when a later value
+    /// is truncated, so EOF cannot turn that marker into a call.
     #[test]
     fn truncated_body_keeps_a_quoted_marker_as_data() {
         assert_every_split(r#"[TOOL_CALLS]f[ARGS]{"x":"[TOOL_CALLS]g[ARGS]{}""#, &[]);

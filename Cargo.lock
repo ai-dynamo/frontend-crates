@@ -1326,6 +1326,7 @@ dependencies = [
  "base64 0.22.1",
  "basetenkenizer",
  "blake3",
+ "fancy-regex 0.13.0",
  "fastokens",
  "moka",
  "rayon",

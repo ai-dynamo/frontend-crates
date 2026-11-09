@@ -16,10 +16,13 @@
 //! the image size; whoever loads the image must do that expansion.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::fmt;
 
 use anyhow::{Context, Result};
+use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Serialize as _};
+use serde_json::value::RawValue;
 use serde_json::{Map, Value};
 
 use crate::python::PyJsonFormatter;
@@ -134,6 +137,7 @@ impl MistralFormatter {
             .map(Message::from_openai)
             .collect::<Result<Vec<_>>>()?;
         validate_message_order(&messages)?;
+        validate_tool_pairs(&messages)?;
         if req.should_add_generation_prompt()
             && messages.len() > 1
             && messages.last().is_some_and(|m| m.role == Role::Assistant)
@@ -623,6 +627,50 @@ fn validate_message_order(messages: &[Message]) -> Result<()> {
     Ok(())
 }
 
+/// V11 pairing validation in mistral-common's `test` mode: a later assistant
+/// requires all prior results, but an unfinished final turn may still be continued.
+fn validate_tool_pairs(messages: &[Message]) -> Result<()> {
+    let mut expected = HashSet::new();
+    let mut observed = HashSet::new();
+    for message in messages.iter().skip(1) {
+        match message.role {
+            Role::Tool => {
+                let id = message.tool_call_id.as_deref();
+                if observed.contains(&id) {
+                    return Err(invalid(format!(
+                        "duplicate tool call id {id:?} in tool results"
+                    )));
+                }
+                if !expected.contains(&id) {
+                    return Err(invalid(format!(
+                        "unexpected tool call id {id:?} in tool results"
+                    )));
+                }
+                observed.insert(id);
+            }
+            Role::Assistant => {
+                if expected.len() != observed.len() {
+                    return Err(invalid(
+                        "not the same number of function calls and responses",
+                    ));
+                }
+                expected.clear();
+                observed.clear();
+                for call in &message.tool_calls {
+                    let id = call.id.as_deref();
+                    if !expected.insert(id) {
+                        return Err(invalid(format!(
+                            "duplicate tool call id {id:?} in assistant message"
+                        )));
+                    }
+                }
+            }
+            Role::System | Role::User => {}
+        }
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq)]
 enum AggregatedContent {
     Text(String),
@@ -889,8 +937,8 @@ fn normalize_arguments(arguments: &str) -> String {
     if arguments.is_empty() {
         return "{}".to_string();
     }
-    match serde_json::from_str::<Value>(arguments) {
-        Ok(value) => python_json(&value),
+    match normalized_argument_json(arguments) {
+        Ok(value) => value,
         Err(_) => arguments.to_string(),
     }
 }
@@ -898,9 +946,107 @@ fn normalize_arguments(arguments: &str) -> String {
 /// The argument text the V13 encoder emits: parsed JSON re-dumped, or an
 /// unparseable string dumped as a JSON string.
 fn encoded_arguments(arguments: &str) -> String {
-    match serde_json::from_str::<Value>(arguments) {
-        Ok(value) => python_json(&value),
+    match normalized_argument_json(arguments) {
+        Ok(value) => value,
         Err(_) => python_json(&Value::String(arguments.to_string())),
+    }
+}
+
+/// Borrow JSON values before numeric conversion: Python preserves unbounded
+/// integers, while decimal/exponent forms still use its ordinary float formatting.
+fn normalized_argument_json(arguments: &str) -> serde_json::Result<String> {
+    let value: &RawValue = serde_json::from_str(arguments)?;
+    let mut out = String::with_capacity(arguments.len());
+    write_argument_json(value, &mut out, 128)?;
+    Ok(out)
+}
+
+fn write_argument_json(
+    value: &RawValue,
+    out: &mut String,
+    remaining_depth: usize,
+) -> serde_json::Result<()> {
+    let raw = value.get();
+    // RawValue can borrow arbitrarily nested input; retain serde_json::Value's
+    // default depth bound before recursively formatting it.
+    if remaining_depth <= 1 && raw.starts_with(['{', '[']) {
+        return Err(<serde_json::Error as serde::de::Error>::custom(
+            "recursion limit exceeded",
+        ));
+    }
+    match raw.as_bytes()[0] {
+        b'{' => {
+            let object: ArgumentObject<'_> = serde_json::from_str(raw)?;
+            out.push('{');
+            for (index, (key, value)) in object.0.into_iter().enumerate() {
+                if index > 0 {
+                    out.push_str(", ");
+                }
+                out.push_str(&python_json(&Value::String(key)));
+                out.push_str(": ");
+                write_argument_json(value, out, remaining_depth - 1)?;
+            }
+            out.push('}');
+        }
+        b'[' => {
+            let values: Vec<&RawValue> = serde_json::from_str(raw)?;
+            out.push('[');
+            for (index, value) in values.into_iter().enumerate() {
+                if index > 0 {
+                    out.push_str(", ");
+                }
+                write_argument_json(value, out, remaining_depth - 1)?;
+            }
+            out.push(']');
+        }
+        b'-' | b'0'..=b'9' if !raw.contains(['.', 'e', 'E']) => {
+            out.push_str(if raw == "-0" { "0" } else { raw });
+        }
+        b'-' | b'0'..=b'9' => {
+            let number: f64 = serde_json::from_str(raw)?;
+            out.push_str(&python_json(&Value::from(number)));
+        }
+        _ => out.push_str(&python_json(&serde_json::from_str(raw)?)),
+    }
+    Ok(())
+}
+
+/// A Python dict keeps a duplicate key's first position and last value.
+struct ArgumentObject<'a>(Vec<(String, &'a RawValue)>);
+
+impl<'de> Deserialize<'de> for ArgumentObject<'de> {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct ObjectVisitor;
+
+        impl<'de> Visitor<'de> for ObjectVisitor {
+            type Value = ArgumentObject<'de>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a JSON object")
+            }
+
+            fn visit_map<M>(self, mut map: M) -> std::result::Result<Self::Value, M::Error>
+            where
+                M: MapAccess<'de>,
+            {
+                let mut fields: Vec<(String, &'de RawValue)> = Vec::new();
+                let mut positions: HashMap<String, usize> = HashMap::new();
+                while let Some((key, value)) = map.next_entry::<String, &'de RawValue>()? {
+                    if let Some(&index) = positions.get(&key) {
+                        fields[index].1 = value;
+                    } else {
+                        positions.insert(key.clone(), fields.len());
+                        fields.push((key, value));
+                    }
+                }
+                Ok(ArgumentObject(fields))
+            }
+        }
+
+        deserializer.deserialize_map(ObjectVisitor)
     }
 }
 
@@ -1208,6 +1354,111 @@ mod tests {
                 r#"[TOOL_CALLS]h[ARGS]"not json"</s>"#,
                 "[TOOL_RESULTS]A[/TOOL_RESULTS][TOOL_RESULTS]B[/TOOL_RESULTS]",
             )
+        );
+    }
+
+    #[test]
+    fn tool_history_keeps_large_integers_and_python_float_normalization() {
+        let arguments = concat!(
+            r#"{"n":18446744073709551617,"nested":[-9223372036854775809,"#,
+            r#"0.1000000000000000055511151231257827,-0,-0.0,1E2],"#,
+            r#""duplicate":1,"last":"é","duplicate":18446744073709551618}"#,
+        );
+        let expected = concat!(
+            r#"{"n": 18446744073709551617, "nested": [-9223372036854775809, "#,
+            r#"0.1, 0, -0.0, 100.0], "duplicate": 18446744073709551618, "last": "é"}"#,
+        );
+        assert_eq!(normalize_arguments(arguments), expected);
+        assert_eq!(encoded_arguments(&normalize_arguments(arguments)), expected);
+        let request = Request::new(json!([
+            {"role": "user", "content": "go"},
+            {"role": "assistant", "tool_calls": [
+                {"id": "aaaaaaaaa", "type": "function", "function": {"name": "f", "arguments": arguments}}
+            ]},
+            {"role": "tool", "tool_call_id": "aaaaaaaaa", "content": "done"}
+        ]));
+        assert!(v15().render(&request).unwrap().ends_with(&format!(
+            "[TOOL_CALLS]f[ARGS]{expected}</s>[TOOL_RESULTS]done[/TOOL_RESULTS]"
+        )));
+    }
+
+    #[test]
+    fn argument_normalization_retains_the_depth_bound_and_invalid_fallback() {
+        for depth in [127, 128] {
+            let nested = format!("{}0{}", "[".repeat(depth), "]".repeat(depth));
+            assert_eq!(
+                normalized_argument_json(&nested).is_ok(),
+                serde_json::from_str::<Value>(&nested).is_ok()
+            );
+        }
+        assert_eq!(encoded_arguments("not json"), r#""not json""#);
+    }
+
+    fn assistant_calls(ids: &[&str]) -> Value {
+        json!({"role": "assistant", "tool_calls": ids.iter().map(|id| json!({
+            "id": id, "type": "function", "function": {"name": "f", "arguments": "{}"}
+        })).collect::<Vec<_>>()})
+    }
+
+    fn tool_result(id: &str) -> Value {
+        json!({"role": "tool", "tool_call_id": id, "content": "result"})
+    }
+
+    #[test]
+    fn rejects_mismatched_duplicate_and_unanswered_tool_histories() {
+        let user = json!({"role": "user", "content": "go"});
+        let answer = json!({"role": "assistant", "content": "answer"});
+        let a = "aaaaaaaaa";
+        let b = "bbbbbbbbb";
+        let cases = [
+            json!([user, assistant_calls(&[a]), tool_result(b)]),
+            json!([user, assistant_calls(&[a]), tool_result(a), tool_result(a)]),
+            json!([user, assistant_calls(&[a, a]), tool_result(a)]),
+            json!([user, assistant_calls(&[a]), answer, user]),
+            json!([user, assistant_calls(&[a]), user, answer, user]),
+            json!([
+                user,
+                assistant_calls(&[a]),
+                tool_result(a),
+                assistant_calls(&[b]),
+                tool_result(a)
+            ]),
+        ];
+        for messages in cases {
+            let error = v15().render(&Request::new(messages.clone())).unwrap_err();
+            assert!(
+                error.downcast_ref::<PromptRenderError>().is_some(),
+                "{messages}: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn trailing_tool_calls_can_be_unanswered_and_completed_ids_can_be_reused() {
+        let user = json!({"role": "user", "content": "go"});
+        let a = "aaaaaaaaa";
+        let b = "bbbbbbbbb";
+        // The reference's test mode permits an incomplete final tool turn.
+        for messages in [
+            json!([user, assistant_calls(&[a]), user]),
+            json!([user, assistant_calls(&[a, b]), tool_result(a)]),
+            json!([
+                user,
+                assistant_calls(&[a]),
+                tool_result(a),
+                assistant_calls(&[a]),
+                tool_result(a)
+            ]),
+        ] {
+            v15().render(&Request::new(messages)).unwrap();
+        }
+        let mut continuation = Request::new(json!([user, assistant_calls(&[a])]));
+        continuation.add_generation_prompt = false;
+        assert!(
+            v15()
+                .render(&continuation)
+                .unwrap()
+                .ends_with("[TOOL_CALLS]f[ARGS]{}")
         );
     }
 

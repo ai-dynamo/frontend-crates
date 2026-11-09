@@ -16,12 +16,14 @@
 
 use std::path::Path;
 
+use aho_corasick::{AhoCorasick, MatchKind};
 use anyhow::Context as _;
 use base64::Engine as _;
+use fancy_regex::Regex;
 use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
-use tiktoken_rs::CoreBPE;
+use tiktoken_rs::{CoreBPE, byte_pair_split};
 
 use super::{
     EncodeSegment, Encoding, Error, Result, TokenIdType, TokenizerOptions,
@@ -72,6 +74,9 @@ struct TekkenSpecialToken {
 
 pub struct TekkenTokenizer {
     bpe: CoreBPE,
+    pattern: Regex,
+    special_token_matcher: AhoCorasick,
+    ordinary_token_ids: FxHashMap<Vec<u8>, TokenIdType>,
     num_special_tokens: u32,
     vocab_size: u32,
     special_token_ids: FxHashMap<String, TokenIdType>,
@@ -124,7 +129,7 @@ impl TekkenTokenizer {
         else {
             anyhow::bail!("tekken default_vocab_size is smaller than its special tokens");
         };
-        // CoreBPE panics when it meets a byte that has no token.
+        // Byte-pair merging requires every byte to have a token.
         if inner_vocab_size < BYTE_TOKENS {
             anyhow::bail!(
                 "tekken keeps {inner_vocab_size} ordinary tokens, fewer than the {BYTE_TOKENS} single bytes"
@@ -177,8 +182,7 @@ impl TekkenTokenizer {
             if (rank as usize) < BYTE_TOKENS && bytes != [rank as u8] {
                 anyhow::bail!("tekken vocab entry {rank} is not the single byte {rank}");
             }
-            // BPE merge priority compares ranks only by order, so shifting every
-            // rank by the special-token count makes CoreBPE emit tekken ids.
+            // Shifting every rank preserves merge priority and emits tekken ids.
             if ordinary_token_ids
                 .insert(bytes, num_special_tokens + rank)
                 .is_some()
@@ -187,8 +191,19 @@ impl TekkenTokenizer {
             }
         }
 
-        let bpe = CoreBPE::new(ordinary_token_ids, special_token_ids.clone(), &pattern)
-            .map_err(|err| Error::msg(format!("Error creating tekken BPE: {err}")))?;
+        let pattern = Regex::new(&pattern).context("Error creating tekken split regex")?;
+        // CoreBPE's encoder unwraps regex failures. Keep the same ranks and
+        // pattern for fallible encoding, and use CoreBPE only for decoding.
+        let bpe = CoreBPE::new(
+            ordinary_token_ids.clone(),
+            special_token_ids.clone(),
+            pattern.as_str(),
+        )
+        .map_err(|err| Error::msg(format!("Error creating tekken BPE: {err}")))?;
+        let special_token_matcher = AhoCorasick::builder()
+            .match_kind(MatchKind::LeftmostFirst)
+            .build(special_token_ids.keys())
+            .context("Error creating tekken special-token matcher")?;
 
         let kept_on_skip = PARSER_MARKERS
             .iter()
@@ -197,6 +212,9 @@ impl TekkenTokenizer {
 
         Ok(Self {
             bpe,
+            pattern,
+            special_token_matcher,
+            ordinary_token_ids,
             num_special_tokens,
             vocab_size,
             special_token_ids,
@@ -244,11 +262,47 @@ impl TekkenTokenizer {
             None => Ok(()),
         }
     }
+
+    fn encode_ordinary_into(&self, input: &str, token_ids: &mut Vec<u32>) -> Result<()> {
+        for piece in self.pattern.find_iter(input) {
+            let piece = piece.context("Failed to match tekken split regex")?;
+            let bytes = piece.as_str().as_bytes();
+            if let Some(&id) = self.ordinary_token_ids.get(bytes) {
+                token_ids.push(id);
+            } else {
+                anyhow::ensure!(
+                    !bytes.is_empty(),
+                    "tekken split regex matched an empty string"
+                );
+                // Every one-byte token exists, so a missing whole piece has at
+                // least two bytes. Use the same merge primitive as CoreBPE.
+                token_ids.extend(
+                    byte_pair_split(bytes, &self.ordinary_token_ids)
+                        .into_iter()
+                        .map(|piece| self.ordinary_token_ids[piece]),
+                );
+            }
+        }
+        Ok(())
+    }
+
+    fn encode_special_into(&self, input: &str, token_ids: &mut Vec<u32>) -> Result<()> {
+        let mut end = 0;
+        for matched in self.special_token_matcher.find_iter(input) {
+            self.encode_ordinary_into(&input[end..matched.start()], token_ids)?;
+            let id = self.special_token_ids[&input[matched.start()..matched.end()]];
+            token_ids.push(id);
+            end = matched.end();
+        }
+        self.encode_ordinary_into(&input[end..], token_ids)
+    }
 }
 
 impl Encoder for TekkenTokenizer {
     fn encode(&self, input: &str) -> Result<Encoding> {
-        Ok(Encoding::Sp(self.bpe.encode_ordinary(input)))
+        let mut token_ids = Vec::new();
+        self.encode_ordinary_into(input, &mut token_ids)?;
+        Ok(Encoding::Sp(token_ids))
     }
 
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
@@ -259,13 +313,12 @@ impl Encoder for TekkenTokenizer {
         let mut token_ids = Vec::new();
         for segment in segments {
             if !segment.allow_special {
-                token_ids.extend(self.bpe.encode_ordinary(segment.text));
+                self.encode_ordinary_into(segment.text, &mut token_ids)?;
             } else if let Some(&id) = self.special_token_ids.get(segment.text) {
-                // Renderers emit one control segment per marker; a direct lookup
-                // avoids CoreBPE rebuilding its special-token set on every call.
+                // Renderers emit one control segment per marker.
                 token_ids.push(id);
             } else {
-                token_ids.extend(self.bpe.encode_with_special_tokens(segment.text));
+                self.encode_special_into(segment.text, &mut token_ids)?;
             }
         }
         Ok(Encoding::Sp(token_ids))
@@ -317,7 +370,7 @@ impl Tokenizer for TekkenTokenizer {
             return Ok(Some(id));
         }
         // A string that BPE encodes to exactly one id is that token.
-        Ok(match self.bpe.encode_ordinary(token).as_slice() {
+        Ok(match self.encode(token)?.token_ids() {
             &[id] => Some(id),
             _ => None,
         })
@@ -485,6 +538,56 @@ mod tests {
             .unwrap();
         assert_eq!(fast.token_ids(), [3]);
         assert_eq!(mixed.token_ids(), [3, 4]);
+    }
+
+    #[test]
+    fn fallible_encoding_matches_core_bpe() {
+        let tokenizer = fixture();
+        for text in [
+            "We're in Beijing 北京 😀\nDon't split café's accents.",
+            "'re\u{0301} I'M 123\r\n\t  /[INST]/ [ARGS]{}",
+            "<s>[INST]hi[/INST][TOOL_CALLS]f[ARGS]{}[THINK]plan[/THINK]",
+        ] {
+            assert_eq!(
+                tokenizer.encode(text).unwrap().token_ids(),
+                tokenizer.bpe.encode_ordinary(text)
+            );
+            assert_eq!(
+                tokenizer
+                    .encode_segments(&[EncodeSegment::control(text)])
+                    .unwrap()
+                    .token_ids(),
+                tokenizer.bpe.encode_with_special_tokens(text)
+            );
+        }
+
+        let long = "A".repeat(100_000);
+        assert_eq!(
+            tokenizer.encode(&long).unwrap().token_ids(),
+            tokenizer.bpe.encode_ordinary(&long)
+        );
+    }
+
+    #[test]
+    fn long_regex_failures_are_returned_from_all_encoding_entry_points() {
+        let tokenizer = fixture();
+        for text in ["A".repeat(1_000_000), " ".repeat(1_000_000)] {
+            let error = tokenizer.encode(&text).unwrap_err();
+            assert!(error.to_string().contains("split regex"), "{error:#}");
+            assert!(tokenizer.encode_batch(&[&text]).is_err());
+            assert!(
+                tokenizer
+                    .encode_segments(&[EncodeSegment::ordinary(&text)])
+                    .is_err()
+            );
+            let controlled = format!("<s>[INST]{text}[/INST]");
+            assert!(
+                tokenizer
+                    .encode_segments(&[EncodeSegment::control(&controlled)])
+                    .is_err()
+            );
+            assert!(tokenizer.token_to_id(&text).is_err());
+        }
     }
 
     /// Load the fixture after `edit`, and return the load error.

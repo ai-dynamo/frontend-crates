@@ -197,6 +197,10 @@ UNIFIED_TAX = {
         "mistral_non_object_arguments", "mistral_pre_v11_array_not_a_call",
         "mistral_empty_thoughts_emit_nothing", "mistral_json_reply_after_reasoning",
         "mistral_whitespace_only_arguments",
+        "mistral_closed_string_marker_before_truncation",
+        "mistral_unclosed_string_marker_at_eof",
+        "mistral_escaped_call_in_unclosed_string",
+        "mistral_closed_string_marker_before_recovery",
     ], 1)},
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),

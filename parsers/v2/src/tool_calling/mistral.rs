@@ -80,6 +80,13 @@ enum Step {
     Exhausted,
 }
 
+#[derive(Clone, Copy)]
+enum QuotedCallMarker {
+    InString(usize),
+    AfterQuote(usize),
+    Recovery(usize),
+}
+
 /// One resumable scan of a call. The boundary drives it over the growing
 /// buffer; the emitter replays it over the delimited call to type it.
 #[derive(Default)]
@@ -93,8 +100,8 @@ struct CallScan {
     body_start: Option<usize>,
     closers: Vec<char>,
     string: JsonStringState,
-    /// The first `[TOOL_CALLS]` inside a JSON string of the body.
-    marker_in_string: Option<usize>,
+    /// A quoted marker can recover a call only after an invalid string closer.
+    marker_in_string: Option<QuotedCallMarker>,
     /// Names rejected so far, so the boundary can report each one once.
     rejected: usize,
 }
@@ -232,12 +239,33 @@ impl CallScan {
                         if !self.string.is_inside() {
                             break Step::Ended(self.at);
                         }
-                        self.marker_in_string.get_or_insert(self.at);
+                        self.marker_in_string
+                            .get_or_insert(QuotedCallMarker::InString(self.at));
                     } else if pending(rest, &[TOOL_CALLS]) {
                         break Step::Pending;
                     }
+                    if !self.string.is_inside()
+                        && !ch.is_whitespace()
+                        && let Some(QuotedCallMarker::AfterQuote(at)) = self.marker_in_string
+                    {
+                        // A normal delimiter proves that the marker was string data.
+                        // Other text means a later call swallowed the missing quote.
+                        self.marker_in_string = if matches!(ch, ',' | ':' | '}' | ']') {
+                            None
+                        } else {
+                            Some(QuotedCallMarker::Recovery(at))
+                        };
+                    }
+                    let was_in_string = self.string.is_inside();
                     self.at += ch.len_utf8();
-                    if self.string.advance(ch) {
+                    let string_byte = self.string.advance(ch);
+                    if was_in_string
+                        && !self.string.is_inside()
+                        && let Some(QuotedCallMarker::InString(at)) = self.marker_in_string
+                    {
+                        self.marker_in_string = Some(QuotedCallMarker::AfterQuote(at));
+                    }
+                    if string_byte {
                         continue;
                     }
                     match ch {
@@ -266,12 +294,12 @@ impl CallScan {
         match self.phase? {
             // Only the previous call's leftover text.
             Phase::Lead => None,
-            // A missing quote leaves the body inside a string at EOF, because
-            // every later call adds an even number of quotes. Such a body ends
-            // at the first marker it swallowed, so later calls survive. With the
-            // body outside a string, any marker sat in a closed string and is
-            // data, so the call was truncated and is dropped (policy P2).
-            Phase::Json => self.marker_in_string.filter(|_| self.string.is_inside()),
+            // An open string alone can be ordinary token truncation. Recover only
+            // when text after a closer proved the string was already malformed.
+            Phase::Json => match self.marker_in_string {
+                Some(QuotedCallMarker::Recovery(at)) if self.string.is_inside() => Some(at),
+                _ => None,
+            },
             Phase::Name => {
                 let name = text[self.name_start..].trim();
                 if !is_tool_name(name) {

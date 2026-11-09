@@ -1889,6 +1889,9 @@ requests:
   1957678a23f99a8600cfbabaeb2870db1259823d967bbba2b375fd6801092f59:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": {"x": 1}}'
     tools: tools_480df45d35724608
+  1a50d59e309449cd5c789b1820b509e4ca85cdef7d58bedbb59f75a1858339e5:
+    input: '[TOOL_CALLS]f[ARGS]{"x":"[TOOL_CALLS]g[ARGS]{}","tail":"unfinished[TOOL_CALLS]run[ARGS]{"cmd":"ls"}'
+    tools: tools_cbf47ccf5fd2ef00
   1a545d8fe4a218186d388c1f1398872711805de51216eedd7e1e349c1899bf29:
     input: '[TOOL_CALLS]get_weather[ARGS]{"city": null}'
     tools: tools_f7439c846ab88b86
@@ -1922,6 +1925,9 @@ requests:
   2070d32a64a348d795b69468782ae440954eb4acd02cbfdc1aaa92452fb2f043:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": 3}'
     tools: tools_19a5070486dcbf53
+  21880a2903be2b14901b178f19a15bb427c232c499087c8106fc9805d3e37d99:
+    input: '[TOOL_CALLS]f[ARGS]{"x":"[TOOL_CALLS]g[ARGS]{}","tail":"unfinished'
+    tools: tools_cbf47ccf5fd2ef00
   21ec4e05b83d5c0c34e2b77a5429695d03e475ed0e7ff49e4b4bba9d7e6e17e3:
     input: '[TOOL_CALLS]get_weather[ARGS]{}'
     tools: tools_cbf47ccf5fd2ef00
@@ -1967,6 +1973,9 @@ requests:
   2e6be7c0866666c80d82d603fcade9ce3d5cd9191fc46e89532eac1d99083162:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": -7}'
     tools: tools_a6aee3f30418a3a4
+  2eb1a571fa92695b537b8f6feefac44ed52775b2325f11f1503986dca2d931d6:
+    input: '[TOOL_CALLS]write_file[ARGS]{"path":"t.md","content":"Example: [TOOL_CALLS]delete_all[ARGS]{} and then more text that was cut'
+    tools: tools_cbf47ccf5fd2ef00
   2f5f29af8077db900419e78467a54d1d70aa89b99fd1da2dfcf8ab6483198778:
     input: '[TOOL_CALLS]get_weather[ARGS]{"city": "null"}'
     tools: tools_1098354780bc95a8
@@ -2206,6 +2215,9 @@ requests:
   893038b6424929a841c8e053685c09a983005bec76115d1aca8c7ec65d3a147a:
     input: '[TOOL_CALLS]get_weather[ARGS]{"value":0.10000000000000000001}'
     tools: tools_be922244cdee705c
+  8ae9fdddb4d304efebeb1e5b19b5817362043091da700f83dc8bc5d66cbf9800:
+    input: '[TOOL_CALLS]write_file[ARGS]{"path":"t.md","content":"Example: [TOOL_CALLS]delete_all[ARGS]{\"force\": true} and then more text that was cut'
+    tools: tools_cbf47ccf5fd2ef00
   8b947869ecde5a4a67d95ca5dcd3948298d745f4cef1e88fed382276084f69e2:
     input: '[TOOL_CALLS]get_weather[ARGS]{"value":-9007199254740992.5}'
     tools: tools_be922244cdee705c
@@ -5755,3 +5767,42 @@ cases:
       name: run
       arguments:
         cmd: ls
+  mistral_closed_string_marker_before_recovery:
+    description: A marker in a closed string stays data; a later missing quote with a syntactically invalid close recovers only the genuine following call, retaining the malformed outer call as empty arguments (P3).
+    policy:
+    - I7
+    - P3
+    display_id: UNIFIED.mistral-closed_string_marker_before_recovery
+    request: 1a50d59e309449cd5c789b1820b509e4ca85cdef7d58bedbb59f75a1858339e5
+    golden:
+    - kind: tool_call
+      name: f
+      arguments: {}
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: ls
+  mistral_closed_string_marker_before_truncation:
+    description: EOF inside a later string drops the incomplete call; a call-shaped marker in an earlier, closed string stays data (`I7`, P2).
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.mistral-closed_string_marker_before_truncation
+    request: 21880a2903be2b14901b178f19a15bb427c232c499087c8106fc9805d3e37d99
+    golden: []
+  mistral_escaped_call_in_unclosed_string:
+    description: EOF inside a string containing JSON-escaped call arguments drops the incomplete call instead of emitting either the outer prefix or the embedded call (`I7`, P2).
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.mistral-escaped_call_in_unclosed_string
+    request: 8ae9fdddb4d304efebeb1e5b19b5817362043091da700f83dc8bc5d66cbf9800
+    golden: []
+  mistral_unclosed_string_marker_at_eof:
+    description: EOF inside a file-content string drops the incomplete call; a literal call with quote-free arguments inside that same string is not a recovery boundary (`I7`, P2).
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.mistral-unclosed_string_marker_at_eof
+    request: 2eb1a571fa92695b537b8f6feefac44ed52775b2325f11f1503986dca2d931d6
+    golden: []
