@@ -10,7 +10,6 @@ use openai_harmony::{
     HarmonyEncoding, HarmonyEncodingName, StreamableParser, load_harmony_encoding,
 };
 use regex::Regex;
-use serde_json::Value;
 use std::sync::OnceLock;
 use uuid::Uuid;
 
@@ -198,7 +197,7 @@ pub(crate) struct HarmonyToolHeader {
     pub(crate) start: usize,
     pub(crate) end: usize,
     pub(crate) name: String,
-    pub(crate) channel: String,
+    pub(crate) channel: Option<String>,
     pub(crate) recipient_first: bool,
 }
 
@@ -440,7 +439,30 @@ fn harmony_bare_header_spans(
     let start = encoding.tokenizer().encode_with_special_tokens("<|start|>")[0];
     let mut spans = Vec::new();
     let mut boundary = 0;
+    let mut channel_less_start = Some(0);
     for (index, marker) in markers.iter().enumerate() {
+        match marker.as_str() {
+            "<|start|>" => channel_less_start = None,
+            "<|call|>" | "<|return|>" | "<|end|>" => channel_less_start = Some(marker.end()),
+            "<|message|>" => {
+                if let Some(begin) = channel_less_start.take() {
+                    let tokens = encoding
+                        .tokenizer()
+                        .encode_with_special_tokens(&text[begin..marker.end()]);
+                    if parse_harmony_header(encoding, &tokens, start).is_some_and(|header| {
+                        header.current_role() == Some(Role::Assistant)
+                            && header.current_channel().is_none()
+                            && harmony_is_function_call(
+                                None,
+                                harmony_current_recipient(&header).as_deref(),
+                            )
+                    }) {
+                        spans.push(begin..marker.end());
+                    }
+                }
+            }
+            _ => {}
+        }
         if marker.as_str() != "<|channel|>" {
             boundary = marker.end();
             continue;
@@ -563,12 +585,13 @@ fn harmony_tool_headers_from_roles(
             if header.current_role() != Some(Role::Assistant) {
                 continue;
             }
-            let Some(channel) = header
-                .current_channel()
-                .filter(|channel| matches!(channel.as_str(), "analysis" | "commentary"))
-            else {
+            let channel = header.current_channel();
+            if !harmony_is_function_call(
+                channel.as_deref(),
+                harmony_current_recipient(header).as_deref(),
+            ) {
                 continue;
-            };
+            }
             let Some(name) = harmony_current_recipient(header).and_then(|recipient| {
                 recipient
                     .strip_prefix("functions.")
@@ -1161,9 +1184,10 @@ fn strip_harmony_protocol_from_normal_text(
 
 fn serialize_harmony_arguments(raw_args: &str) -> String {
     let trimmed = raw_args.trim();
-    match serde_json::from_str::<Value>(trimmed) {
-        Ok(value) => serde_json::to_string(&value).unwrap_or_else(|_| trimmed.to_string()),
-        Err(_) => trimmed.to_string(),
+    if serde_json::from_str::<&serde_json::value::RawValue>(trimmed).is_ok() {
+        crate::tool_calling::json::compact_json_lexically(trimmed)
+    } else {
+        trimmed.to_string()
     }
 }
 
@@ -1202,6 +1226,13 @@ pub(crate) fn harmony_current_recipient(parser: &StreamableParser) -> Option<Str
     } else {
         recipient
     }
+}
+
+pub(crate) fn harmony_is_function_call(channel: Option<&str>, recipient: Option<&str>) -> bool {
+    matches!(channel, None | Some("analysis" | "commentary"))
+        && recipient
+            .and_then(|recipient| recipient.strip_prefix("functions."))
+            .is_some_and(|name| !name.is_empty())
 }
 
 pub(crate) fn harmony_current_content_type(parser: &StreamableParser) -> Option<String> {
@@ -1630,7 +1661,6 @@ async fn parse_harmony_body(text: &str) -> anyhow::Result<(Vec<ToolCallResponse>
             message.recipient.as_deref(),
             message.content_type.as_deref(),
         );
-        let recipient_name = recipient.unwrap_or_default();
         let pending_body = if pending_content && index + 1 == messages.len() {
             let mut body = String::new();
             push_harmony_text(&mut body, &message.content);
@@ -1643,11 +1673,9 @@ async fn parse_harmony_body(text: &str) -> anyhow::Result<(Vec<ToolCallResponse>
             None
         };
 
-        // A `to=functions.NAME` recipient is the definitive signal of a tool
-        // call, regardless of channel label. The model emits tool calls on both
-        // `commentary` (canonical) and `analysis` (malformed-but-common) channels.
-        let is_tool_channel = channel == Some("commentary") || channel == Some("analysis");
-        if is_tool_channel && recipient_name.starts_with("functions.") {
+        // A native function recipient can omit its channel or use commentary
+        // or analysis. Other channels keep their existing visibility policy.
+        if harmony_is_function_call(channel, recipient) {
             if !has_action_stop {
                 // A stop deferred while a new header was pending is still the
                 // old call's ending if EOF never confirmed that new header.
@@ -2115,6 +2143,42 @@ mod tests {
         assert!(!events[0].contains("REQUEST_PRIVATE_SENTINEL"));
         assert!(events[0].contains("harmony_encoding_unavailable"));
         assert!(events[0].contains("commentary_tool_call"));
+    }
+
+    #[tokio::test]
+    async fn numeric_argument_lexemes_survive_native_extraction() {
+        for number in [
+            "9007199254740993.0",
+            "9007199254740993.1",
+            "-9007199254740993.1",
+            "1e-400",
+            "1e400",
+            "-0.0",
+            "1.2300",
+            "1e+20",
+        ] {
+            for arguments in [
+                format!("{{\"value\":{number}}}"),
+                format!("{{\"z\":\"雪 \\\" <|return|>\",\"a\":[{number},{{\"n\":{number}}}]}}"),
+                format!("[{number},null,true]"),
+            ] {
+                for ending in ["<|call|>", "<|return|>"] {
+                    let input = format!(
+                        "<|start|>assistant<|channel|>commentary to=functions.f<|message|>{arguments}{ending}"
+                    );
+                    let (calls, normal) =
+                        parse_tool_calls_harmony_complete(&input, &Default::default(), None)
+                            .await
+                            .unwrap();
+                    assert_eq!(calls.len(), 1);
+                    assert_eq!(calls[0].function.arguments, arguments, "{input}");
+                    assert_eq!(normal.as_deref(), Some(""));
+                }
+            }
+        }
+        for malformed in ["", "{\"x\":", "[1,", "not json"] {
+            assert_eq!(serialize_harmony_arguments(malformed), malformed);
+        }
     }
 
     #[tokio::test]

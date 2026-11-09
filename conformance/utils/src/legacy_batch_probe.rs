@@ -119,7 +119,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 parsed.map(|(calls, content)| json!({
                     "reasoning_text": reasoning.reasoning_text,
                     "normal_text": content.unwrap_or_default(),
-                    "calls": calls.into_iter().map(|call| json!({"name":call.function.name, "arguments":serde_json::from_str::<Value>(&call.function.arguments).unwrap_or(Value::String(call.function.arguments))})).collect::<Vec<_>>()
+                    "calls": calls.into_iter().map(|call| json!({"name":call.function.name, "arguments":call.function.arguments})).collect::<Vec<_>>()
                 })).map_err(|error| error.to_string())
                 }
             }).await {

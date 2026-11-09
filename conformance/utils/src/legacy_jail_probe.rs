@@ -156,7 +156,7 @@ pub async fn capture(
     }
     Ok(
         json!({"reasoning_text":reasoning_text,"normal_text":normal_text,
-        "calls":calls.into_values().map(|(name, arguments)| json!({"name":name,"arguments":serde_json::from_str::<Value>(&arguments).unwrap_or(Value::String(arguments))})).collect::<Vec<_>>()}),
+        "calls":calls.into_values().map(|(name, arguments)| json!({"name":name,"arguments":arguments})).collect::<Vec<_>>()}),
     )
 }
 
@@ -173,6 +173,18 @@ mod tests {
         assert!(text_chunks(&request).is_err());
         request["chunks"] = json!([{"delta_text":"different"}]);
         assert!(text_chunks(&request).is_err());
+    }
+
+    #[tokio::test]
+    async fn capture_preserves_raw_numeric_arguments() {
+        let arguments = r#"{"value":9007199254740993.1}"#;
+        let text = format!(
+            "<think></think><tool_call>{{\"name\":\"f\",\"arguments\":{arguments}}}</tool_call>"
+        );
+        let request = json!({"input":text,"chunks":[{"delta_text":text}],"finish_reason":"stop"});
+        let parser = ReasoningParserType::get_reasoning_parser_from_name("qwen3");
+        let result = capture(parser, "hermes", vec![], request).await.unwrap();
+        assert_eq!(result["calls"][0]["arguments"].as_str(), Some(arguments));
     }
 
     #[tokio::test]
@@ -208,7 +220,7 @@ mod tests {
         assert_eq!(result["reasoning_text"], "");
         assert_eq!(
             result["calls"],
-            json!([{"name":"lookup","arguments":{"x":1}}])
+            json!([{"name":"lookup","arguments":"{\"x\":1}"}])
         );
     }
 

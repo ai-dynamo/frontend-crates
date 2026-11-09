@@ -9,8 +9,8 @@ use crate::tool_calling::harmony::harmony_parser::{
     harmony_commentary_is_payload, harmony_content_header_can_start, harmony_current_content_type,
     harmony_current_recipient, harmony_header_eof_is_metadata, harmony_header_is_directed,
     harmony_header_metadata, harmony_header_role, harmony_header_spans, harmony_initial_role,
-    harmony_json_prelude, harmony_markers, harmony_message_is_visible, harmony_tool_headers,
-    json_value_prefix_end, parse_harmony_header, process_harmony_token,
+    harmony_is_function_call, harmony_json_prelude, harmony_markers, harmony_message_is_visible,
+    harmony_tool_headers, json_value_prefix_end, parse_harmony_header, process_harmony_token,
 };
 use crate::tool_calling::harmony::payload::{HarmonyPayload, HarmonyVisible};
 use crate::{NormalTextSegment, ParserResult, ReasoningOutput};
@@ -478,10 +478,7 @@ fn project_harmony_header(
     }
     let channel = header.current_channel()?;
     let recipient = harmony_current_recipient(header);
-    let directed = matches!(channel.as_str(), "analysis" | "commentary")
-        && recipient
-            .as_deref()
-            .is_some_and(|recipient| recipient.starts_with("functions."));
+    let directed = harmony_is_function_call(Some(&channel), recipient.as_deref());
     if !directed && !is_visible_normal_channel(Some(&channel), recipient.as_deref()) {
         return None;
     }
@@ -506,28 +503,16 @@ fn project_harmony_header(
     Some(projected)
 }
 
-/// Reconstruct the complete harmony envelope for the directed tool call that
-/// just terminated, by decoding the cumulative parser token buffer from its
-/// last `<|channel|>` token to the end.
-///
-/// This is the canonical handoff to the downstream tool-call jail: it always
-/// starts exactly at the tool call's `<|channel|>` token, so it (a) survives a
-/// channel header that was split across streaming chunks, and (b) excludes any
-/// leading `<|end|>` / text from a preceding reasoning message that raw
-/// per-chunk accumulation would otherwise prepend (and leak).
-///
-/// Returns `None` when the captured channel is not a directed tool call, when
-/// the harmony encoding is unavailable, or when no `<|channel|>` token is found.
+/// Reconstruct a directed native envelope using its cached owning Message.
+/// Channel-less calls retain their native header; channel-bearing calls reuse
+/// the established projection. Neither path borrows a prior message's body.
 fn reconstruct_directed_envelope(
     parser: &StreamableParser,
     channel: Option<&str>,
     recipient: Option<&str>,
     body_start: Option<usize>,
 ) -> Option<String> {
-    let ch = channel?;
-    let is_tool_ch = ch == "commentary"
-        || (ch == "analysis" && recipient.is_some_and(|r| r.starts_with("functions.")));
-    if !is_tool_ch {
+    if !harmony_is_function_call(channel, recipient) {
         return None;
     }
     let Ok(enc) = get_harmony_encoding() else {
@@ -547,6 +532,33 @@ fn reconstruct_directed_envelope(
     if tokens.get(message_index) != Some(&message_token) {
         return None;
     }
+    let start_token = harmony_start_token_id().ok()?;
+    if channel.is_none() {
+        let preceding = tokens[..message_index].iter().rposition(|token| {
+            enc.tokenizer().is_special_token(*token)
+                && enc
+                    .tokenizer()
+                    .decode_bytes([*token])
+                    .is_ok_and(|bytes| bytes != b"<|constrain|>")
+        });
+        let begin = preceding.map_or(0, |index| {
+            if tokens[index] == start_token {
+                index
+            } else {
+                index + 1
+            }
+        });
+        let header = parse_harmony_header(enc, &tokens[begin..=message_index], start_token)?;
+        if header.current_role() != Some(Role::Assistant)
+            || !harmony_is_function_call(
+                header.current_channel().as_deref(),
+                harmony_current_recipient(&header).as_deref(),
+            )
+        {
+            return None;
+        }
+        return enc.tokenizer().decode_utf8(&tokens[begin..]).ok();
+    }
     let last_channel_idx = tokens[..message_index]
         .iter()
         .rposition(|t| *t == channel_token_id)?;
@@ -558,7 +570,6 @@ fn reconstruct_directed_envelope(
                 .is_ok_and(|marker| marker != "<|constrain|>")
     });
     let begin = previous_marker.unwrap_or(0);
-    let start_token = harmony_start_token_id().ok()?;
     let envelope = enc
         .tokenizer()
         .decode_utf8(&tokens[last_channel_idx..])
@@ -632,7 +643,7 @@ fn reconstruct_directed_envelope(
     let channel_start = start + decoded[start..].find("<|channel|>")?;
     let mut envelope = decoded[channel_start..].to_string();
     if header.recipient_first {
-        let channel_end = "<|channel|>".len() + header.channel.len();
+        let channel_end = "<|channel|>".len() + header.channel.as_ref()?.len();
         envelope.insert_str(channel_end, &format!(" to=functions.{}", header.name));
     }
     Some(envelope)
@@ -1452,19 +1463,19 @@ impl ReasoningParser for GptOssReasoningParser {
                     continue;
                 }
 
-                if let (Some(ch), Some(rec)) = (&current_channel, &current_recipient)
-                    && (ch.as_str() == "commentary" || ch.as_str() == "analysis")
-                    && rec.starts_with("functions.")
-                {
+                if harmony_is_function_call(
+                    current_channel.as_deref(),
+                    current_recipient.as_deref(),
+                ) {
                     self.last_directed_channel = current_channel.clone();
                     self.last_directed_recipient = current_recipient.clone();
                 }
 
                 // Reconstruct at the action token: a later message in this same
                 // chunk would replace the last channel in the cumulative buffer.
-                if self.last_directed_channel.is_some()
-                    && previous_channel.is_some()
-                    && current_channel.is_none()
+                if self.last_directed_recipient.is_some()
+                    && previous_role == Some(Role::Assistant)
+                    && parser.current_role().is_none()
                 {
                     if harmony_action_token_ids().is_some_and(|stops| stops.contains(token_id))
                         && let Some(env) = reconstruct_directed_envelope(
@@ -1600,6 +1611,176 @@ impl ReasoningParser for GptOssReasoningParser {
 
 #[cfg(test)]
 mod tests {
+    fn collect_context_chunks(
+        chunks: impl IntoIterator<Item = (String, Vec<u32>)>,
+    ) -> ReasoningOutput {
+        let mut parser = GptOssReasoningParser::new().unwrap();
+        let mut output = ReasoningOutput::default();
+        for (text, tokens) in chunks {
+            let part = parser.parse_reasoning_streaming_with_context(&text, &tokens);
+            assert!(
+                part.normal_segments.is_empty(),
+                "an unfinished quoted payload cannot be published before EOF"
+            );
+            output.reasoning_text.push_str(&part.reasoning_text);
+            output.normal_segments.extend(part.normal_segments);
+        }
+        let tail = parser.finish_reasoning_stream_with_context();
+        output.reasoning_text.push_str(&tail.reasoning_text);
+        output.normal_segments.extend(tail.normal_segments);
+        assert!(
+            parser
+                .finish_reasoning_stream_with_context()
+                .normal_segments
+                .is_empty()
+        );
+        output
+    }
+
+    #[tokio::test]
+    async fn optional_channel_truncated_quoted_arguments_recover_only_at_eof() {
+        use crate::tool_calling::parsers::{
+            detect_and_parse_tool_call_with_context, detect_and_parse_tool_call_with_recovery,
+        };
+        let arguments = r#"{"q":"abc"#;
+        for channel in ["", "<|channel|>commentary", "<|channel|>analysis"] {
+            for ending in ["<|call|>", "<|return|>", ""] {
+                let input = format!(
+                    "<|start|>assistant to=functions.lookup {channel}<|constrain|>json<|message|>{arguments}{ending}<|start|>assistant<|channel|>final<|message|>Answer<|return|>"
+                );
+                let expected_calls = usize::from(!ending.is_empty());
+                let direct = crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete(&input, &Default::default(), None).await.unwrap();
+                assert_eq!(direct.0.len(), expected_calls, "{input}");
+                assert_eq!(direct.1.as_deref(), Some("Answer"), "{input}");
+                let raw_batch = GptOssReasoningParser::new()
+                    .unwrap()
+                    .detect_and_parse_reasoning(&input, &[]);
+                let raw_composed = detect_and_parse_tool_call_with_recovery(
+                    &raw_batch.normal_text,
+                    Some("harmony"),
+                    None,
+                )
+                .await
+                .unwrap();
+                assert_eq!(raw_composed.1.as_deref(), Some("Answer"), "{input}");
+                let mut outputs = vec![
+                    GptOssReasoningParser::new()
+                        .unwrap()
+                        .detect_and_parse_reasoning_with_context(&input, &[]),
+                ];
+                for split in 0..=input.len() {
+                    outputs.push(collect_context_chunks([
+                        (input[..split].to_string(), Vec::new()),
+                        (input[split..].to_string(), Vec::new()),
+                    ]));
+                }
+                let tokens = encode_text_to_tokens(&input).unwrap();
+                for split in 0..=tokens.len() {
+                    outputs.push(collect_context_chunks([
+                        (String::new(), tokens[..split].to_vec()),
+                        (String::new(), tokens[split..].to_vec()),
+                    ]));
+                }
+                for output in outputs {
+                    assert!(output.reasoning_text.is_empty(), "{input}");
+                    let parsed =
+                        detect_and_parse_tool_call_with_context(&output, Some("harmony"), None)
+                            .await
+                            .unwrap();
+                    assert_eq!(parsed.1.as_deref(), Some("Answer"), "{input}");
+                    assert_eq!(parsed.0.len(), expected_calls, "{input}");
+                    if expected_calls > 0 {
+                        assert_eq!(parsed.0[0].function.arguments, arguments);
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn optional_channel_function_calls_keep_native_completion_and_quotes() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_context;
+        for (prefix, visible) in [
+            ("<|start|>assistant to=functions.lookup", ""),
+            ("to=functions.lookup", ""),
+            ("functions.lookup", ""),
+            (
+                "<|channel|>final<|message|>Before<|return|>to=functions.lookup",
+                "Before",
+            ),
+        ] {
+            for arguments in [
+                "",
+                r#"{"x":1}"#,
+                r#"{"q":"<|call|><|start|>assistant<|channel|>final<|message|>literal<|return|>"}"#,
+            ] {
+                for ending in ["<|call|>", "<|return|>", "<|end|>", ""] {
+                    let input = format!("{prefix}<|message|>{arguments}{ending}");
+                    let completed = matches!(ending, "<|call|>" | "<|return|>");
+                    let direct = crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete(&input, &Default::default(), None).await.unwrap();
+                    assert_eq!(direct.0.len(), usize::from(completed), "{input}");
+                    let mut outputs = vec![
+                        GptOssReasoningParser::new()
+                            .unwrap()
+                            .detect_and_parse_reasoning_with_context(&input, &[]),
+                    ];
+                    for split in (0..=input.len()).filter(|&split| input.is_char_boundary(split)) {
+                        let mut parser = GptOssReasoningParser::new().unwrap();
+                        let mut output = ReasoningOutput::default();
+                        for chunk in [&input[..split], &input[split..]] {
+                            let part = parser.parse_reasoning_streaming_with_context(chunk, &[]);
+                            output.reasoning_text.push_str(&part.reasoning_text);
+                            output.normal_segments.extend(part.normal_segments);
+                        }
+                        let tail = parser.finish_reasoning_stream_with_context();
+                        output.reasoning_text.push_str(&tail.reasoning_text);
+                        output.normal_segments.extend(tail.normal_segments);
+                        assert!(
+                            parser
+                                .finish_reasoning_stream_with_context()
+                                .normal_segments
+                                .is_empty()
+                        );
+                        outputs.push(output);
+                    }
+                    let tokens = encode_text_to_tokens(&input).unwrap();
+                    for split in 0..=tokens.len() {
+                        let mut parser = GptOssReasoningParser::new().unwrap();
+                        let mut output = ReasoningOutput::default();
+                        for chunk in [&tokens[..split], &tokens[split..]] {
+                            let part = parser.parse_reasoning_streaming_with_context("", chunk);
+                            output.reasoning_text.push_str(&part.reasoning_text);
+                            output.normal_segments.extend(part.normal_segments);
+                        }
+                        let tail = parser.finish_reasoning_stream_with_context();
+                        output.reasoning_text.push_str(&tail.reasoning_text);
+                        output.normal_segments.extend(tail.normal_segments);
+                        outputs.push(output);
+                    }
+                    for output in outputs {
+                        assert!(output.reasoning_text.is_empty(), "{input}");
+                        let parsed =
+                            detect_and_parse_tool_call_with_context(&output, Some("harmony"), None)
+                                .await
+                                .unwrap();
+                        assert_eq!(parsed.0.len(), direct.0.len(), "{input}");
+                        assert_eq!(
+                            parsed.1.as_deref(),
+                            (!visible.is_empty()).then_some(visible),
+                            "{input}"
+                        );
+                        if completed {
+                            assert_eq!(
+                                parsed.0[0].function.arguments, direct.0[0].function.arguments,
+                                "{input}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     #[tokio::test]
     async fn context_preserves_literal_protocol_collisions_and_real_calls() {
         use crate::tool_calling::parsers::detect_and_parse_tool_call_with_context;
