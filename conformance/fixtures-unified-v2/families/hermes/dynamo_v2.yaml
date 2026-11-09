@@ -1,28 +1,28 @@
-capture_selection: {"family":"hermes","implementation":"dynamo_v2","lineage":[{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.0.yaml","version":"0.10.0"}],"mode":"unified","payload_sha256":"7a3764bbfdff0a1284ac8b2a063337cd9ebcac77d8af975444d8649aa99aaf4a","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.0.yaml","surface":"unified","version":"0.10.0"}
+capture_selection: {"family":"hermes","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"a9fee0a7c6507877456cd3125b7dc2fccab2e2633f6dcc81ae421cffa7107b49","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.1.yaml","surface":"unified","version":"0.10.1"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_49d48c144f7f59c6
+  origin: origin_7d8b245929660a70
 origins:
-  origin_49d48c144f7f59c6:
-    crate_version: 0.10.0
-    source_sha256: 3f5fb006caad07faa7be16a1c251642c5b78249dad0592b5068a1a14583d5d91
-    git_commit: ca4d9256380803fe456dea7b87c6ae1986712c8f
+  origin_7d8b245929660a70:
+    crate_version: 0.10.1
+    source_sha256: fd11348a91035fe3700916b5183e3bb3523beb91b8858dfbb623568dc88c311b
+    git_commit: 3d068ca39629455490fa68b03a1734bdd704c7c7
 producers:
-  producer_84057fe990a62f8f:
+  producer_7a3ff64dd6b80342:
     captured_with:
-      dynamo_v2: 0.10.0
-    capture_origin: origin_49d48c144f7f59c6
+      dynamo_v2: 0.10.1
+    capture_origin: origin_7d8b245929660a70
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.0.yaml
-  producer: producer_84057fe990a62f8f
+  member: conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.1.yaml
+  producer: producer_7a3ff64dd6b80342
   context: context_cdf0b3c0134ec96f
 records:
   adjacent_calls_partial_header:
@@ -6241,6 +6241,41 @@ records:
       chunks:
       - expected: []
       - expected: []
+      - expected: []
+  tool_call_ids_unique:
+    case_key: UNIFIED.2-tool_call_ids_unique
+    request: 12f0df0db8ad09ba1d8a76468eab9260acdd4e9b45ae560286db665123c911c4
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ''
+          complete: true
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ''
+          complete: true
       - expected: []
   tool_in_reason:
     case_key: UNIFIED.12-tool_in_reason

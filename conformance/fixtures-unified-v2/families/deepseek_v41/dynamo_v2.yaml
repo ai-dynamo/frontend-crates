@@ -1,28 +1,28 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"0ef081cf14453e69bf19e8e04a4bc5789575c05dde1b478d4bb90066bbae2a31","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.16.yaml","surface":"unified","version":"0.9.16"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"8b3922fef9970efdaf870be372ab37e22a93b5f9ab730a46a23d09e6b20bfba7","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.1.yaml","surface":"unified","version":"0.10.1"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_29d6d3ab866ec0c9
+  origin: origin_7d8b245929660a70
 origins:
-  origin_29d6d3ab866ec0c9:
-    crate_version: 0.9.16
-    source_sha256: 7cf6ed84f03226d93436a47b3c892765d9aef46d3540eb54504dfde3de9bb1d5
-    git_commit: dde4723f96150df80d11bc1425de44905e387e38
+  origin_7d8b245929660a70:
+    crate_version: 0.10.1
+    source_sha256: fd11348a91035fe3700916b5183e3bb3523beb91b8858dfbb623568dc88c311b
+    git_commit: 3d068ca39629455490fa68b03a1734bdd704c7c7
 producers:
-  producer_b86f17c64bebf1c0:
+  producer_7a3ff64dd6b80342:
     captured_with:
-      dynamo_v2: 0.9.16
-    capture_origin: origin_29d6d3ab866ec0c9
+      dynamo_v2: 0.10.1
+    capture_origin: origin_7d8b245929660a70
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.16.yaml
-  producer: producer_b86f17c64bebf1c0
+  member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.1.yaml
+  producer: producer_7a3ff64dd6b80342
   context: context_cdf0b3c0134ec96f
 records:
   adjacent_calls_partial_header:
