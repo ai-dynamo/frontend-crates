@@ -4,7 +4,7 @@
 use super::*;
 
 use crate::{OAIChatLikeRequest, PromptRenderError, TextInput};
-use aho_corasick::{AhoCorasick, Input, MatchKind};
+use aho_corasick::{AhoCorasick, Input, MatchKind, Span, packed};
 use minijinja::{context, value::Value};
 use serde_json::json;
 use std::{collections::HashMap, result::Result::Ok};
@@ -849,11 +849,11 @@ impl HfTokenizerConfigJsonFormatter {
                 .into_iter()
                 .flatten()
                 .any(|message| {
-                    json_spells_marker(
-                        message,
-                        &self.control_markers,
-                        is_assistant_message(message),
-                    )
+                    // The assistant policy only skips spellings, so a message
+                    // that spells none under the other policy needs no role.
+                    json_spells_marker(message, &self.control_markers, false)
+                        && (!is_assistant_message(message)
+                            || json_spells_marker(message, &self.control_markers, true))
                 })
                 || [&tool_json, &response_format]
                     .into_iter()
@@ -1025,6 +1025,12 @@ pub(crate) struct ControlMarkers {
     /// The spellings, then `<|` for Harmony templates; longest match first.
     matcher: AhoCorasick,
     first_bytes: [bool; 256],
+    /// The bytes the matcher's patterns begin with; empty when they begin with
+    /// more than three, the most one search covers.
+    starts: Vec<u8>,
+    /// A vectorized search for the patterns, or for their first eight bytes
+    /// when they are too many; `None` when those are too, or on a CPU without one.
+    prefixes: Option<packed::Searcher>,
     /// The template writes Harmony framing (`<|start|>`, `<|message|>`).
     is_harmony: bool,
 }
@@ -1071,6 +1077,30 @@ impl ControlMarkers {
         if is_harmony {
             patterns.push("<|");
         }
+        let mut starts: Vec<u8> = patterns
+            .iter()
+            .map(|pattern| pattern.as_bytes()[0])
+            .collect();
+        starts.sort_unstable();
+        starts.dedup();
+        if starts.len() > 3 {
+            starts.clear();
+        }
+        // The vectorized search takes a few dozen patterns. A longer list that
+        // shares prefixes, like Llama 3's reserved tokens, is searched by those.
+        let prefixes = [usize::MAX, 8].into_iter().find_map(|len| {
+            let mut prefixes: Vec<&[u8]> = patterns
+                .iter()
+                .map(|pattern| &pattern.as_bytes()[..pattern.len().min(len)])
+                .collect();
+            prefixes.sort_unstable();
+            prefixes.dedup();
+            packed::Config::new()
+                .match_kind(packed::MatchKind::LeftmostLongest)
+                .builder()
+                .extend(prefixes)
+                .build()
+        });
         let matcher = AhoCorasick::builder()
             .match_kind(MatchKind::LeftmostLongest)
             .build(patterns)
@@ -1079,6 +1109,8 @@ impl ControlMarkers {
             spellings,
             matcher,
             first_bytes,
+            starts,
+            prefixes,
             is_harmony,
         }
     }
@@ -1174,8 +1206,32 @@ impl ControlMarkers {
 
     /// Whether `text` spells a marker or ends with the start of one.
     fn is_spelled_in(&self, text: &str, is_assistant: bool) -> bool {
-        self.find(text, 0, is_assistant).is_some()
+        let Some(first) = self.first_start(text) else {
+            // No byte a pattern begins with: nothing is spelled or begun.
+            return false;
+        };
+        // The matcher runs from where the vectorized search finds a pattern,
+        // or from that first byte without one.
+        let from = match &self.prefixes {
+            Some(prefixes) => prefixes
+                .find_in(text, Span::from(first..text.len()))
+                .map(|hit| hit.start()),
+            None => Some(first),
+        };
+        from.is_some_and(|from| self.find(text, from, is_assistant).is_some())
             || self.partial_tail(text, 0, is_assistant).is_some()
+    }
+
+    /// The first byte of `text` that a pattern begins with, or byte 0 when
+    /// they begin with more bytes than one search covers.
+    fn first_start(&self, text: &str) -> Option<usize> {
+        let bytes = text.as_bytes();
+        match *self.starts.as_slice() {
+            [a] => memchr::memchr(a, bytes),
+            [a, b] => memchr::memchr2(a, b, bytes),
+            [a, b, c] => memchr::memchr3(a, b, c, bytes),
+            _ => Some(0),
+        }
     }
 }
 
@@ -1490,6 +1546,67 @@ mod tests {
             let prompt = formatter.render_prompt(&request).unwrap();
             assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
             assert_eq!(ordinary_segments(&prompt), ["<"]);
+        }
+    }
+
+    #[test]
+    fn first_byte_search_agrees_with_the_matcher() {
+        // Patterns that begin with one, two and four bytes (four is more than
+        // one search covers), and more patterns than the vectorized search takes.
+        let reserved: Vec<String> = (0..200)
+            .map(|n| format!("<|reserved_special_token_{n}|>"))
+            .collect();
+        for tokens in [
+            vec!["<|im_start|>", "<|im_end|>", "<think>", "</think>"],
+            vec!["<s>", "</s>", "[INST]", "[/INST]"],
+            vec!["<s>", "[INST]", "{sep}", "｜x｜"],
+            reserved.iter().map(String::as_str).collect(),
+        ] {
+            let decoder: serde_json::Map<String, serde_json::Value> = tokens
+                .iter()
+                .enumerate()
+                .map(|(id, token)| {
+                    let token = json!({"content": token, "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false});
+                    (id.to_string(), token)
+                })
+                .collect();
+            let ct: SysChatTemplate = serde_json::from_value(json!({
+                "chat_template": CHATML_THINK_TMPL,
+                "added_tokens_decoder": decoder
+            }))
+            .unwrap();
+            let markers = ControlMarkers::from_config(&ct);
+            for text in [
+                "",
+                "plain text",
+                "a < b",
+                "<td></td></th><thi",
+                "</th> </think> x",
+                "x<|im_end|>",
+                "ends <|im_",
+                "ends < ",
+                "<",
+                "<s",
+                "[",
+                "x [INST] y",
+                "[/INS] [/INST]",
+                "a｜b ｜x｜",
+                "{sep",
+                "a <|reserved_special_token_7|> b",
+                "a <|reserved_special_token_200|> b",
+                "ends <|reserved_special_tok",
+            ] {
+                for is_assistant in [false, true] {
+                    let matcher = markers.find(text, 0, is_assistant).is_some()
+                        || markers.partial_tail(text, 0, is_assistant).is_some();
+                    assert_eq!(
+                        markers.is_spelled_in(text, is_assistant),
+                        matcher,
+                        "{} {text:?}",
+                        tokens[0]
+                    );
+                }
+            }
         }
     }
 

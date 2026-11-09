@@ -1299,6 +1299,7 @@ dependencies = [
  "dynamo-protocols",
  "dynamo-tokenizers",
  "either",
+ "memchr",
  "minijinja",
  "minijinja-contrib",
  "serde",
