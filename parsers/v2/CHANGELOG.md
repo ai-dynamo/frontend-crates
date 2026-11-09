@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.15](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.14...dynamo-parsers-v2-v0.9.15) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Retain GPT-OSS return calls through v1 reasoning ([#574](https://github.com/ai-dynamo/frontend-crates/pull/574))
+
 ## [0.9.14](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.13...dynamo-parsers-v2-v0.9.14) - 2026-11-07
 
 ### Bug fixes

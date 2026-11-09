@@ -1028,7 +1028,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
+    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -2149,9 +2149,209 @@ def _assert_guided_native_recovery(family, scenario, case):
     return reasoning
 
 
+def _without_unquoted_markup(raw: str) -> str:
+    decoder = json.JSONDecoder()
+    parts = []
+    cursor = 0
+    for match in re.finditer(r'[\[{\"]', raw):
+        if match.start() < cursor:
+            continue
+        try:
+            _, end = decoder.raw_decode(raw, match.start())
+        except json.JSONDecodeError:
+            continue
+        parts.append(re.sub(r"<[^<>]*>", "", raw[cursor:match.start()]))
+        parts.append(raw[match.start():end])
+        cursor = end
+    parts.append(re.sub(r"<[^<>]*>", "", raw[cursor:]))
+    return "".join(parts)
+
+
+def test_coalesced_prose_preserves_json_literals_without_inventing_words():
+    raw = 'before<|end|>{"example":"<|channel|>commentary"}<|return|>after'
+    assert _without_unquoted_markup(raw) == 'before{"example":"<|channel|>commentary"}after'
+    case = {"input": raw, "golden": [{"kind": "text", "text": 'before\n{"example":"<|channel|>commentary"}\nafter'}]}
+    _assert_input_carries_events("gpt_oss", "coalesced_prose", case)
+    for text in ["after before", "before invented after"]:
+        case["golden"][0]["text"] = text
+        with pytest.raises(AssertionError, match="input lost output prose"):
+            _assert_input_carries_events("gpt_oss", "coalesced_prose", case)
+
+
+GPT_OSS_RECOVERY_ORACLES = {
+    "gpt_oss_orphan_terminator_preserves_messages": (
+        '<|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>',
+        [{"kind": "text", "text": "visible\ndone"}],
+    ),
+    "gpt_oss_unfinished_directed_analysis": (
+        '<|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished', [],
+    ),
+    "gpt_oss_malformed_then_recipient_first_call": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>',
+        [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}],
+    ),
+    "gpt_oss_unknown_channel_before_final": (
+        '<|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>',
+        [{"kind": "text", "text": "first\nsecond"}],
+    ),
+    "gpt_oss_final_then_unframed_recipient_first_call": (
+        '<|channel|>final<|message|>before<|return|>to=functions.lookup<|channel|>commentary<|message|>{"path":"雪","content":"<|return|>"}<|call|>',
+        [{"kind": "text", "text": "before"}, {"kind": "tool_call", "name": "lookup", "arguments": {"path": "雪", "content": "<|return|>"}}],
+    ),
+    "gpt_oss_unfinished_header_then_valid_call": (
+        '<|channel|>commentary to=functions.bad<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{"path":"ok"}<|return|>',
+        [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}],
+    ),
+    "gpt_oss_unfinished_directed_header_then_final": (
+        '<|channel|>commentary to=functions.bad<|channel|>final<|message|>ANSWER<|return|>',
+        [{"kind": "text", "text": "ANSWER"}],
+    ),
+    "gpt_oss_nonassistant_analysis_then_final": (
+        '<|start|>user<|channel|>analysis<|message|>UNTRUSTED<|end|><|start|>assistant<|channel|>final<|message|>ANSWER<|return|>',
+        [{"kind": "text", "text": "ANSWER"}],
+    ),
+    "gpt_oss_recipientless_json_call_then_final": (
+        '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{"kind": "text", "text": "Done"}],
+    ),
+    "gpt_oss_recipientless_json_return_then_final": (
+        '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{"kind": "text", "text": '{"city":"NYC"}\nDone'}],
+    ),
+    "gpt_oss_final_then_unframed_visible_tail": (
+        '<|channel|>final<|message|>before<|return|>after',
+        [{"kind": "text", "text": "before\nafter"}],
+    ),
+    "gpt_oss_recipientless_json_interrupted_by_final": (
+        '<|channel|>commentary<|message|>{"x":1}<|start|>assistant<|channel|>final<|message|>Done.<|return|>',
+        [{"kind": "text", "text": '{"x":1}\nDone.'}],
+    ),
+    "gpt_oss_recipientless_constrained_whitespace_call": (
+        '<|channel|>commentary <|constrain|>json<|message|>  <|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{"kind": "text", "text": "Done"}],
+    ),
+    "gpt_oss_nonassistant_unfinished_final_header": (
+        '<|start|>user<|channel|>final SHOULD_HIDE', [],
+    ),
+    "gpt_oss_nonassistant_unfinished_analysis_header": (
+        '<|start|>user<|channel|>analysis SHOULD_HIDE', [],
+    ),
+    "gpt_oss_malformed_then_nonassistant_call": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>user<|channel|>commentary to=functions.fake<|message|>{"x":1}<|return|>', [],
+    ),
+    "gpt_oss_malformed_then_native_opaque_name": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>commentary to=functions.f/x<|message|>{"x":1}<|return|>',
+        [{"kind": "tool_call", "name": "f/x", "arguments": {"x": 1}}],
+    ),
+    "gpt_oss_native_opaque_name_handoff": (
+        '<|start|>assistant<|channel|>commentary to=functions.@f<|message|>{"x":1}<|return|>',
+        [{"kind": "tool_call", "name": "@f", "arguments": {"x": 1}}],
+    ),
+    "gpt_oss_named_tool_unfinished_final_header": (
+        '<|start|>python<|channel|>final SECRET', [],
+    ),
+    "gpt_oss_named_author_less_than_lookalike": (
+        '<|start|>assistant<g<|channel|>final SECRET', [],
+    ),
+    "gpt_oss_named_author_nbsp_lookalike": (
+        '<|start|>assistant\u00a0user<|channel|>final SECRET', [],
+    ),
+    'gpt_oss_recovered_tool_header_return': (
+        '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>commentary to=functions.lookup <|return|><|message|>{"city":"Paris"}<|call|><|start|>assistant<|channel|>final<|message|>Done.<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'city': 'Paris'}}, {'kind': 'text', 'text': 'Done.'}],
+    ),
+    'gpt_oss_recovered_final_header_return': (
+        '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>', [{'kind': 'text', 'text': 'Done.'}],
+    ),
+    'gpt_oss_initial_json_prefix_then_tool': (
+        '{"visible":"<|start|>"}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>', [{'kind': 'text', 'text': '{"visible":"<|start|>"}'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}],
+    ),
+    'gpt_oss_initial_json_prefix_then_recovered_final': (
+        '{"visible":"<|start|>"}<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>', [{'kind': 'text', 'text': '{"visible":"<|start|>"}Done.'}],
+    ),
+    'gpt_oss_tab_separated_assistant_recipient': (
+        'assistant\tto=functions.lookup<|channel|>commentary<|message|>{"q":"雪"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}],
+    ),
+    'gpt_oss_implicit_recipient_prelude': (
+        'functions.lookup<|channel|>commentary<|message|>{"q":"x"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': 'x'}}],
+    ),
+    'gpt_oss_assistant_implicit_recipient_analysis': (
+        'assistant functions.lookup<|channel|>analysis<|message|>{"q":"雪"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}],
+    ),
+    'gpt_oss_assistant_role_only_final': (
+        'assistant <|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_analysis_text_interrupted_by_final': (
+        '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_final': (
+        '<|channel|>commentary<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before\nDone'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_user': (
+        '<|channel|>commentary<|message|>Before<|start|>user<|channel|>final<|message|>UNTRUSTED<|return|>', [{'kind': 'text', 'text': 'Before'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_invalid_author': (
+        '<|channel|>commentary<|message|>Before<|start|>python<|channel|>final<|message|>UNTRUSTED<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before\nDone'}],
+    ),
+    'gpt_oss_unconfirmed_header_return_at_eof': (
+        '<|channel|>final<|message|>Before<|start|>assistant<|channel|>final<|return|>', [{'kind': 'text', 'text': 'Before<|start|>assistant<|channel|>final'}],
+    ),
+    'gpt_oss_unknown_channel_header_only_eof': (
+        '<|channel|>finalx', [],
+    ),
+    'gpt_oss_analysis_interrupted_by_final_then_tool': (
+        '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Visible<|return|><|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Visible'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_bare_final': (
+        '<|channel|>commentary<|message|>Before<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before\nDone'}],
+    ),
+    'gpt_oss_analysis_text_interrupted_by_bare_final': (
+        '<|channel|>analysis<|message|>Before<|channel|>final<|message|>Done<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_initial_json_prefix_then_bare_final': (
+        '{"x":"<|start|>"}<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': '{"x":"<|start|>"}Done'}],
+    ),
+    'gpt_oss_literal_bare_analysis_in_visible_body': (
+        '<|channel|>commentary<|message|>Before<|channel|>analysis<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before<|channel|>analysis<|message|>Done'}],
+    ),
+    'gpt_oss_literal_bare_unknown_channel_in_visible_body': (
+        '<|channel|>commentary<|message|>Before<|channel|>finalx<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before<|channel|>finalx<|message|>Done'}],
+    ),
+    'gpt_oss_literal_bare_tool_header_in_visible_body': (
+        '<|channel|>final<|message|>Use <|channel|>commentary to=functions.lookup<|message|>{}<|call|>', [{'kind': 'text', 'text': 'Use <|channel|>commentary to=functions.lookup<|message|>{}'}],
+    ),
+    'gpt_oss_visible_json_prelude_indentation': (
+        '    {"x":1}\n<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': '    {"x":1}\nDone'}],
+    ),
+    'gpt_oss_visible_quoted_json_prelude_whitespace': (
+        ' \n{"x":"<|start|>"}\n<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': ' \n{"x":"<|start|>"}\nDone'}],
+    ),
+    'gpt_oss_assistant_default_channel_visible_response': (
+        '<|start|>assistant<|message|>Answer<|return|>', [{'kind': 'text', 'text': 'Answer'}],
+    ),
+}
+
+
+@pytest.mark.parametrize("scenario", GPT_OSS_RECOVERY_ORACLES)
+def test_harmony_recovery_oracles_reject_changed_input_or_output(scenario):
+    case = build_cases("gpt_oss")[f"UNIFIED.{scenario}.gpt_oss"]
+    _assert_input_carries_events("gpt_oss", scenario, case)
+    for field, replacement in [("input", ""), ("golden", [{"kind": "reasoning", "text": "invented"}])]:
+        changed = {**case, field: replacement}
+        with pytest.raises(AssertionError, match="Harmony recovery"):
+            _assert_input_carries_events("gpt_oss", scenario, changed)
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
+    if scenario in GPT_OSS_RECOVERY_ORACLES:
+        assert family == "gpt_oss", "Harmony recovery grammar"
+        expected_input, expected_events = GPT_OSS_RECOVERY_ORACLES[scenario]
+        assert case["input"] == expected_input, "Harmony recovery input"
+        assert case["golden"] == expected_events, "Harmony recovery output"
+        assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}, "Harmony recovery mode"
+        assert case["finish_reason"] == "stop", "Harmony recovery finish"
+        return
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
@@ -2247,12 +2447,18 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 continue
             # Coalescing can remove intervening control/native spans, but it may
             # not invent or reorder the ordinary words on either side of them.
-            plain = re.sub(r"<[^<>]*>", "", raw)
-            cursor = 0
-            for word in re.findall(r"\S+", text):
-                at = plain.find(word, cursor)
-                assert at >= 0, (family, scenario, "input lost output prose", word)
-                cursor = at + len(word)
+            projections = (re.sub(r"<[^<>]*>", "", raw), _without_unquoted_markup(raw))
+            for plain in projections:
+                cursor = 0
+                for word in re.findall(r"\S+", text):
+                    at = plain.find(word, cursor)
+                    if at < 0:
+                        break
+                    cursor = at + len(word)
+                else:
+                    break
+            else:
+                raise AssertionError((family, scenario, "input lost output prose", text))
             continue
         assert event["kind"] == "tool_call"
         name, arguments = event["name"], event["arguments"]

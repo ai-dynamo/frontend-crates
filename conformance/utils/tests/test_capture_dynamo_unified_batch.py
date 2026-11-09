@@ -85,7 +85,8 @@ def test_registered_source_blocker_binds_every_unattempted_request(tmp_path: Pat
 
 
 @pytest.mark.parametrize("jail_buffer", [False, True])
-def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, jail_buffer: bool) -> None:
+@pytest.mark.parametrize("reasoning_context", [False, True])
+def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, jail_buffer: bool, reasoning_context: bool) -> None:
     job_path = tmp_path / "job.json"
     output_path = tmp_path / "capture.json"
     work_dir = tmp_path / "producer"
@@ -123,6 +124,13 @@ def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, 
             (cwd / "Cargo.lock").write_text(lock_text)
             metadata = {"packages": [{"name": "dynamo-parsers", "version": "10.0.1", "manifest_path": str(published / "Cargo.toml")}]}
             return CompletedProcess(args, 0, json.dumps(metadata).encode() if "metadata" in args else b"", b"")
+        if "check" in args:
+            if reasoning_context:
+                return CompletedProcess(args, 0, b"", b"")
+            diagnostic = {"reason": "compiler-message", "target": {
+                "src_path": str(cwd / "examples/reasoning_context_capability.rs")},
+                "message": {"level": "error", "code": {"code": "E0432"}}}
+            return CompletedProcess(args, 101, json.dumps(diagnostic).encode() + b"\n", b"missing context exports")
         return CompletedProcess(
             args,
             0,
@@ -138,11 +146,14 @@ def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, 
     monkeypatch.setattr(capture.subprocess, "run", fake_run)
     monkeypatch.setattr(capture, "PROBE", tmp_path / "legacy_batch_probe.rs")
     capture.PROBE.write_text("probe")
+    monkeypatch.setattr(capture, "JAIL_PROBE", tmp_path / "legacy_jail_probe.rs")
+    capture.JAIL_PROBE.write_text("jail probe")
 
     receipt = capture.capture("10.0.1", job_path, output_path, work_dir, target_dir=target_dir,
                               lockfile=reviewed_lock if jail_buffer else None, jail_buffer=jail_buffer)
 
-    assert [call[2] for call in calls] == [str(target_dir)] * 3
+    assert ("conformance_reasoning_context" in receipt["compatibility_flags"]) is reasoning_context
+    assert [call[2] for call in calls] == [str(target_dir)] * 4
     assert receipt["job_sha256"] == capture._sha256(job_path.read_bytes())
     result = json.loads(output_path.read_text())["results"]["case"]
     assert result["capture_input"] == request
@@ -188,3 +199,54 @@ def test_dynamo_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch):
     after = capture.source_unavailable("9.2.13", job, tmp_path / "second.json")
     assert before["adapter_sha256"] != after["adapter_sha256"]
     assert before["job_sha256"] == after["job_sha256"]
+
+
+@pytest.mark.parametrize("override", [None, False, True])
+def test_gpt_oss_prefill_capability_checks_implementation_not_trait(tmp_path: Path, override) -> None:
+    reason = tmp_path / "src/reasoning"
+    tools = tmp_path / "src/tool_calling"
+    reason.mkdir(parents=True)
+    tools.mkdir(parents=True)
+    (reason / "mod.rs").write_text("fn set_in_reasoning(&mut self, _value: bool) {}")
+    (tools / "parsers.rs").write_text("detect_and_parse_tool_call_with_recovery")
+    (tools / "mod.rs").write_text("ToolDefinition pub strict:")
+    if override is not None:
+        (reason / "gpt_oss_parser.rs").write_text(
+            "fn set_in_reasoning(&mut self, _value: bool) {}" if override else "impl ReasoningParser for GptOssReasoningParser {}"
+        )
+    flags = capture.compatibility_flags(tmp_path, False)
+    assert "conformance_no_reasoning_init" not in flags
+    assert ("conformance_gpt_oss_no_reasoning_init" in flags) is (override is not True)
+
+
+@pytest.mark.parametrize("code", ["E0425", "E0432", "E0599", "E0603", "E0624"])
+def test_context_probe_preserves_legacy_for_missing_or_private_exports(tmp_path, monkeypatch, code):
+    def compiler(_cargo, args, *, work_dir, log, env, allow_failure):
+        assert allow_failure and "--example" in args and "json" in args
+        source = work_dir / "examples/reasoning_context_capability.rs"
+        assert "detect_and_parse_reasoning_with_context" in source.read_text()
+        diagnostics = [{"reason": "compiler-message", "target": {"src_path": str(source)},
+                        "message": {"level": "error", "code": {"code": code}}},
+                       {"reason": "compiler-message", "target": {"src_path": str(source)},
+                        "message": {"level": "error", "code": None, "spans": [], "message": "aborting due to 1 previous error"}}]
+        output = b"\n".join(json.dumps(row).encode() for row in diagnostics)
+        log.write_bytes(output)
+        return CompletedProcess(args, 101, output, b"")
+
+    monkeypatch.setattr(capture, "_cargo", compiler)
+    assert capture.reasoning_context_flags("cargo", work_dir=tmp_path, env={}, jail_buffer=False) == []
+
+
+@pytest.mark.parametrize("failure", ["dependency", "signature", "no_diagnostic", "malformed_output"])
+def test_context_probe_propagates_build_failures_instead_of_claiming_legacy(tmp_path, monkeypatch, failure):
+    def compiler(_cargo, args, *, work_dir, log, env, allow_failure):
+        source = work_dir / ("dependency.rs" if failure == "dependency" else "examples/reasoning_context_capability.rs")
+        diagnostic = {"reason": "compiler-message", "target": {"src_path": str(source)},
+                      "message": {"level": "error", "code": {"code": "E0308" if failure == "signature" else "E0432"}}}
+        output = b"" if failure == "no_diagnostic" else b"not JSON" if failure == "malformed_output" else json.dumps(diagnostic).encode()
+        log.write_bytes(output)
+        return CompletedProcess(args, 101, output, b"build failed")
+
+    monkeypatch.setattr(capture, "_cargo", compiler)
+    with pytest.raises(RuntimeError, match="context capability probe"):
+        capture.reasoning_context_flags("cargo", work_dir=tmp_path, env={}, jail_buffer=True)

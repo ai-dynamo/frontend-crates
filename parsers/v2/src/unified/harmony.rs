@@ -144,16 +144,28 @@ enum Route {
     Suppress,
 }
 
-fn implicit_recipient_prefix(text: &str) -> bool {
+fn implicit_recipient_prefix(text: &str) -> Option<&str> {
     let trimmed = text.trim_start();
-    trimmed.is_empty()
-        || "to=".starts_with(trimmed)
+    if "assistant".starts_with(trimmed) {
+        return Some("");
+    }
+    let trimmed = if let Some(rest) = trimmed.strip_prefix("assistant") {
+        let recipient = rest.trim_start_matches(|ch: char| ch.is_ascii() && ch.is_whitespace());
+        if recipient.len() == rest.len() {
+            return None;
+        }
+        recipient
+    } else {
+        trimmed
+    };
+    ("to=".starts_with(trimmed)
         || trimmed.strip_prefix("to=").is_some_and(|recipient| {
             recipient
                 .trim_end()
                 .chars()
                 .all(|ch| ch.is_alphanumeric() || matches!(ch, '_' | '.' | '-'))
-        })
+        }))
+    .then_some(trimmed)
 }
 
 #[derive(Clone)]
@@ -404,22 +416,25 @@ impl HarmonyRuntime {
     fn process_token(&mut self, id: u32, output: &mut UnifiedParserOutput) -> Result<()> {
         if !self.inside_message {
             let marker = self.marker_ids.get(&id).copied();
-            let has_recipient = self.allow_implicit_channel_header
-                && matches!(marker, Some(CHANNEL | MESSAGE | FORMAT))
-                && self
-                    .encoding
+            let implicit_header = (self.allow_implicit_channel_header
+                && matches!(marker, Some(CHANNEL | MESSAGE | FORMAT)))
+            .then(|| {
+                self.encoding
                     .tokenizer()
                     .decode_utf8(&self.outside_pending)
-                    .is_ok_and(|text| {
-                        implicit_recipient_prefix(&text)
-                            && text
-                                .trim()
-                                .strip_prefix("to=")
-                                .is_some_and(|recipient| !recipient.is_empty())
-                    });
-            // Only a complete recipient belongs to an implicit header. Preserve
-            // whitespace and incomplete prefixes before a channel boundary.
-            if id == self.start_id || (marker == Some(CHANNEL) && !has_recipient) {
+                    .ok()
+            })
+            .flatten()
+            .and_then(|text| {
+                let header = implicit_recipient_prefix(&text)?;
+                (text.trim() == "assistant"
+                    || header
+                        .trim()
+                        .strip_prefix("to=")
+                        .is_some_and(|recipient| !recipient.is_empty()))
+                .then(|| header.trim().to_string())
+            });
+            if id == self.start_id || (marker == Some(CHANNEL) && implicit_header.is_none()) {
                 self.flush_outside_pending(output);
             }
             if id == self.start_id {
@@ -427,15 +442,17 @@ impl HarmonyRuntime {
                 self.process_parser_token(id, output)?;
             } else if self.allow_implicit_channel_header
                 && (marker == Some(CHANNEL)
-                    || (has_recipient && matches!(marker, Some(MESSAGE | FORMAT))))
+                    || (implicit_header.is_some() && matches!(marker, Some(MESSAGE | FORMAT))))
             {
-                let pending = std::mem::take(&mut self.outside_pending);
-                let prefix = encode_harmony(&format!("{START}assistant"))?;
+                self.outside_pending.clear();
+                let header = implicit_header
+                    .filter(|header| !header.is_empty())
+                    .map(|header| format!(" {header}"))
+                    .unwrap_or_default();
+                // The header separator is grammar, independent of how BPE split its whitespace.
+                let prefix = encode_harmony(&format!("{START}assistant{header}"))?;
                 for prefix_id in prefix {
                     self.process_token(prefix_id, output)?;
-                }
-                for pending_id in pending {
-                    self.process_token(pending_id, output)?;
                 }
                 self.process_token(id, output)?;
             } else if self.marker_ids.contains_key(&id) {
@@ -450,7 +467,9 @@ impl HarmonyRuntime {
             } else {
                 self.outside_pending.push(id);
                 if let Ok(text) = self.encoding.tokenizer().decode_utf8(&self.outside_pending) {
-                    if self.allow_implicit_channel_header && implicit_recipient_prefix(&text) {
+                    if self.allow_implicit_channel_header
+                        && implicit_recipient_prefix(&text).is_some()
+                    {
                         return Ok(());
                     }
                     self.outside_pending.clear();
@@ -3321,6 +3340,84 @@ mod tests {
                 text: "{\"a\":1}".into(),
             }],
         );
+    }
+
+    #[test]
+    fn implicit_recipient_header_whitespace_is_chunk_invariant() {
+        for whitespace in [" ", "\t", "\r", "\n", "\x0b", "\x0c"] {
+            for role in ["", "assistant"] {
+                for ending in [HANDOFF, TURN_END] {
+                    let input = format!(
+                        "{role}{whitespace}to=functions.lookup{CHANNEL}commentary{MESSAGE}{{\"q\":\"雪 \\t x\"}}{ending}"
+                    );
+                    for legacy in [false, true] {
+                        let expected = if !legacy || ending == HANDOFF {
+                            vec![UnifiedEvent::ToolCall {
+                                name: "lookup".into(),
+                                arguments: serde_json::json!({"q":"雪 \t x"}),
+                            }]
+                        } else {
+                            vec![]
+                        };
+                        let mut parser: Box<dyn UnifiedParser> = if legacy {
+                            gpt_oss_legacy_tool_adapter()
+                        } else {
+                            gpt_oss_unified(&[])
+                        };
+                        parser.initialize(&[]).unwrap();
+                        let mut events = Vec::new();
+                        for ch in input.chars() {
+                            events.extend(parser.push(ch.encode_utf8(&mut [0; 4])).unwrap());
+                        }
+                        events.extend(parser.finish().unwrap().events);
+                        assert_eq!(
+                            crate::unified::assemble(&events),
+                            expected,
+                            "character whitespace={whitespace:?} role={role:?} legacy={legacy} ending={ending}"
+                        );
+                        assert_parser_splits(parser, &input, &expected);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn implicit_assistant_prefixes_preserve_unconfirmed_visible_bytes() {
+        for input in [
+            "a",
+            "ass",
+            "assistant",
+            "assistant ",
+            "assistant\t",
+            "assistantx",
+            "assistant<",
+            "assistant\u{a0}",
+            "t\t",
+        ] {
+            let expected = [UnifiedEvent::Text { text: input.into() }];
+            assert_native_splits(input, &expected);
+            assert_parser_splits(gpt_oss_legacy_tool_adapter(), input, &expected);
+        }
+        let input = format!("assistant{CHANNEL}final{MESSAGE}Done{TURN_END}");
+        let expected = [UnifiedEvent::Text {
+            text: "Done".into(),
+        }];
+        assert_native_splits(&input, &expected);
+        assert_parser_splits(gpt_oss_legacy_tool_adapter(), &input, &expected);
+    }
+
+    #[test]
+    fn implicit_assistant_recipient_owns_message_and_format_boundaries() {
+        for header in [MESSAGE.to_string(), format!("{FORMAT}json{MESSAGE}")] {
+            let input = format!("assistant\tto=functions.lookup{header}{{\"q\":\"雪\"}}{HANDOFF}");
+            let expected = [UnifiedEvent::ToolCall {
+                name: "lookup".into(),
+                arguments: serde_json::json!({"q":"雪"}),
+            }];
+            assert_native_splits(&input, &expected);
+            assert_parser_splits(gpt_oss_legacy_tool_adapter(), &input, &[]);
+        }
     }
 
     #[test]
