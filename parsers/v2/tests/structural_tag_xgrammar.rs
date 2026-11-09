@@ -886,3 +886,482 @@ fn grammar_negative_schema_is_still_extractable() {
         assert_parser(&case);
     }
 }
+
+const V41_BAR: char = '\u{FF5C}';
+
+fn v41_tool(parameters: Value) -> Tool {
+    Tool {
+        name: "reply".into(),
+        description: None,
+        strict: Some(true),
+        parameters,
+    }
+}
+
+fn text_tool() -> Tool {
+    v41_tool(json!({
+        "type":"object",
+        "properties":{"text":{"type":"string"}},
+        "required":["text"],
+        "additionalProperties":false
+    }))
+}
+
+fn v41_grammar(
+    tool: &Tool,
+    choice: StructuralTagToolChoice<'_>,
+    exclude_special_tokens: bool,
+    parallel_tool_calls: Option<bool>,
+    structured_output_schema: Option<&Value>,
+) -> Value {
+    structural_tag_builder_for_family("deepseek_v41")
+        .expect("deepseek_v41 builder")
+        .build_with_options(
+            &StructuralTagContext {
+                tools: std::slice::from_ref(tool),
+                tool_choice: choice,
+                parallel_tool_calls,
+                schema_mode: StructuralTagSchemaMode::Strict,
+                structured_output_schema,
+                starts_in_reasoning: false,
+            },
+            &StructuralTagOptions {
+                exclude_special_tokens: Some(exclude_special_tokens),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .expect("constrained request")
+}
+
+fn v41_parameter(name: &str, string: bool, value: &str) -> String {
+    let bar = V41_BAR;
+    format!(
+        "<{bar}DSML{bar} parameter name=\"{name}\" string=\"{string}\">{value}</{bar}DSML{bar} parameter>\n"
+    )
+}
+
+fn v41_invoke(name: &str, arguments: &str) -> String {
+    let bar = V41_BAR;
+    format!("<{bar}DSML{bar} invoke name=\"{name}\">\n{arguments}</{bar}DSML{bar} invoke>\n")
+}
+
+fn v41_block(calls: &str) -> String {
+    let bar = V41_BAR;
+    format!("\n\n<{bar}DSML{bar} calls>\n{calls}</{bar}DSML{bar} calls>")
+}
+
+fn v41_arguments(text: &str) -> String {
+    v41_parameter("text", true, text)
+}
+
+fn v41_input(text: &str) -> String {
+    v41_block(&v41_invoke("reply", &v41_arguments(text)))
+}
+
+fn v41_open_input(text: &str) -> String {
+    let bar = V41_BAR;
+    format!(
+        "\n\n<{bar}DSML{bar} calls>\n<{bar}DSML{bar} invoke name=\"reply\">\n<{bar}DSML{bar} parameter name=\"text\" string=\"true\">{text}"
+    )
+}
+
+fn named_argument_schema(grammar: &Value) -> &Value {
+    let format = &grammar["format"];
+    let tags = if format["type"] == "tag" && format["content"]["type"] == "tags_with_separator" {
+        &format["content"]["tags"]
+    } else {
+        &format["elements"][1]["tags"]
+    };
+    &tags.as_array().expect("tool call tags")[0]["content"]
+}
+
+fn check_cases(results: &[Value], expected: &[(String, bool, bool)]) {
+    assert_eq!(expected.len(), results.len(), "worker skipped cases");
+    let mut failures = Vec::new();
+    for ((id, accepted, complete), result) in expected.iter().zip(results) {
+        assert_eq!(&result["id"], id);
+        if result["accepted"] != *accepted || result["complete"] != *complete {
+            failures.push(format!("{id}: {result}"));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+fn v4_grammar(tool: &Tool) -> Value {
+    structural_tag_builder_for_family("deepseek_v4")
+        .expect("deepseek_v4 builder")
+        .build_with_options(
+            &StructuralTagContext {
+                tools: std::slice::from_ref(tool),
+                tool_choice: StructuralTagToolChoice::Named("reply"),
+                parallel_tool_calls: Some(false),
+                schema_mode: StructuralTagSchemaMode::Strict,
+                structured_output_schema: None,
+                starts_in_reasoning: false,
+            },
+            &StructuralTagOptions {
+                exclude_special_tokens: Some(true),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .expect("constrained request")
+}
+
+fn v4_input(text: &str) -> String {
+    let bar = V41_BAR;
+    format!(
+        "\n\n<{bar}DSML{bar}tool_calls>\n<{bar}DSML{bar}invoke name=\"reply\">\n<{bar}DSML{bar}parameter name=\"text\" string=\"true\">{text}</{bar}DSML{bar}parameter>\n</{bar}DSML{bar}invoke>\n</{bar}DSML{bar}tool_calls>"
+    )
+}
+
+#[test]
+#[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
+fn v41_argument_exclusion_xgrammar() {
+    let tool = text_tool();
+    let mut requests = Vec::new();
+    let mut expected = Vec::new();
+    for (mode, choice) in [
+        ("auto", StructuralTagToolChoice::Auto),
+        ("required", StructuralTagToolChoice::Required),
+        ("named", StructuralTagToolChoice::Named("reply")),
+    ] {
+        for guarded in [true, false] {
+            let grammar = v41_grammar(&tool, choice, guarded, Some(false), None);
+            for (sample, input, guarded_case, free_case) in [
+                ("valid", v41_input("hello 東京"), (true, true), (true, true)),
+                ("empty", v41_input(""), (true, true), (true, true)),
+                // A valid prefix stays acceptable; nothing force-closes it at a token limit.
+                (
+                    "unfinished",
+                    v41_open_input("hello</"),
+                    (true, false),
+                    (true, false),
+                ),
+                (
+                    "malformed-double-space",
+                    v41_input("hello</｜  parameter> world"),
+                    (false, false),
+                    (true, true),
+                ),
+                (
+                    "wrong-close-name",
+                    v41_input("hello</｜ unknown> world"),
+                    (false, false),
+                    (true, true),
+                ),
+                (
+                    "invoke-close-in-string",
+                    v41_input("hello</｜ invoke> world"),
+                    (false, false),
+                    (true, true),
+                ),
+                (
+                    "literal-marker",
+                    v41_input("literal </｜ marker"),
+                    (false, false),
+                    (true, true),
+                ),
+                ("unicode", v41_input("東京🙂"), (true, true), (true, true)),
+            ] {
+                let id = format!("v41/{mode}/guarded={guarded}/{sample}");
+                requests.push(json!({"id":id, "grammar":grammar, "input":input}));
+                expected.push((id, guarded, guarded_case, free_case));
+            }
+        }
+    }
+    let results = run_xgrammar(requests);
+    let supports = results[0]["excludes_supported"]
+        .as_bool()
+        .expect("worker capability");
+    let adjusted: Vec<_> = expected
+        .into_iter()
+        .map(|(id, guarded, guarded_case, free_case)| {
+            let case = if guarded && supports {
+                guarded_case
+            } else {
+                free_case
+            };
+            (id, case.0, case.1)
+        })
+        .collect();
+    check_cases(&results, &adjusted);
+    eprintln!(
+        "V4.1 argument exclusion cases passed on XGrammar {} (excludes supported: {supports})",
+        results[0]["backend_version"].as_str().unwrap_or("unknown")
+    );
+}
+
+#[test]
+#[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
+fn v41_exclusion_token_boundaries_xgrammar() {
+    let tool = text_tool();
+    let bar = V41_BAR;
+    let prefix = [
+        format!("\n\n<{bar}DSML{bar} calls>\n"),
+        format!("<{bar}DSML{bar} invoke name=\"reply\">\n"),
+        format!("<{bar}DSML{bar} parameter name=\"text\" string=\"true\">"),
+    ];
+    let parameter_end = format!("</{bar}DSML{bar} parameter>");
+    let suffix = format!("</{bar}DSML{bar} invoke>\n</{bar}DSML{bar} calls>");
+    let mut requests = Vec::new();
+    let mut expected = Vec::new();
+    for guarded in [true, false] {
+        let grammar = v41_grammar(
+            &tool,
+            StructuralTagToolChoice::Named("reply"),
+            guarded,
+            Some(false),
+            None,
+        );
+        let cases = [
+            // A token may cross the content/structural boundary and contain the complete
+            // valid terminator, including the reserved prefix.
+            (
+                "content-and-terminator",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([format!("hello{parameter_end}\n")])
+                    .chain([suffix.clone()])
+                    .collect::<Vec<_>>(),
+                (true, true),
+                (true, true),
+            ),
+            // The valid terminator may start a new token at the content boundary.
+            (
+                "terminator-starts-token",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([
+                        "hello".to_string(),
+                        format!("{parameter_end}\n"),
+                        suffix.clone(),
+                    ])
+                    .collect::<Vec<_>>(),
+                (true, true),
+                (true, true),
+            ),
+            // The reserved prefix may span tokens; malformed spacing is still rejected.
+            (
+                "malformed-close-split",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([
+                        "hello</".to_string(),
+                        format!("{bar}  parameter>"),
+                        " world".to_string(),
+                        format!("{parameter_end}\n"),
+                        suffix.clone(),
+                    ])
+                    .collect::<Vec<_>>(),
+                (false, false),
+                (true, true),
+            ),
+            // A literal marker split across tokens is representable without the guard.
+            (
+                "literal-marker-split",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([
+                        "hello</".to_string(),
+                        format!("{bar} marker"),
+                        format!("{parameter_end}\n"),
+                        suffix.clone(),
+                    ])
+                    .collect::<Vec<_>>(),
+                (false, false),
+                (true, true),
+            ),
+            // A token may end inside the valid terminator after `</`; XGrammar 0.2.8
+            // accepts the completed closing marker with the exclusion active.
+            (
+                "terminator-split-after-slash",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([
+                        "hello</".to_string(),
+                        format!("{bar}DSML{bar} parameter>\n"),
+                        suffix.clone(),
+                    ])
+                    .collect::<Vec<_>>(),
+                (true, true),
+                (true, true),
+            ),
+            // A token may end after the reserved prefix; XGrammar 0.2.8 accepts the
+            // completed closing marker with the exclusion active.
+            (
+                "terminator-split-after-prefix",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([
+                        format!("hello</{bar}"),
+                        format!("DSML{bar} parameter>\n"),
+                        suffix.clone(),
+                    ])
+                    .collect::<Vec<_>>(),
+                (true, true),
+                (true, true),
+            ),
+            // The reserved prefix may begin a valid structural ending.
+            (
+                "unfinished-terminator",
+                prefix
+                    .iter()
+                    .cloned()
+                    .chain([format!("hello</{bar}")])
+                    .collect::<Vec<_>>(),
+                (true, false),
+                (true, false),
+            ),
+        ];
+        for (sample, tokens, guarded_case, free_case) in cases {
+            let id = format!("v41/tokens/guarded={guarded}/{sample}");
+            requests.push(json!({"id":id, "grammar":grammar, "tokens":tokens}));
+            expected.push((id, guarded, guarded_case, free_case));
+        }
+    }
+    let results = run_xgrammar(requests);
+    let supports = results[0]["excludes_supported"]
+        .as_bool()
+        .expect("worker capability");
+    let adjusted: Vec<_> = expected
+        .into_iter()
+        .map(|(id, guarded, guarded_case, free_case)| {
+            let case = if guarded && supports {
+                guarded_case
+            } else {
+                free_case
+            };
+            (id, case.0, case.1)
+        })
+        .collect();
+    check_cases(&results, &adjusted);
+}
+
+#[test]
+#[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
+fn v41_exclusion_length_bounds_xgrammar() {
+    let schema = json!({
+        "type":"object",
+        "properties":{"text":{"type":"string","minLength":2,"maxLength":3}},
+        "required":["text"],
+        "additionalProperties":false
+    });
+    let tool = v41_tool(schema);
+    let guarded = v41_grammar(
+        &tool,
+        StructuralTagToolChoice::Named("reply"),
+        true,
+        Some(false),
+        None,
+    );
+    let unguarded = v41_grammar(
+        &tool,
+        StructuralTagToolChoice::Named("reply"),
+        false,
+        Some(false),
+        None,
+    );
+    assert_eq!(
+        named_argument_schema(&guarded)["excludes"],
+        json!(["</｜"]),
+        "the guard must be emitted for the bounded schema"
+    );
+    assert_eq!(
+        named_argument_schema(&guarded)["json_schema"]["properties"]["text"]["minLength"],
+        2
+    );
+    assert!(named_argument_schema(&unguarded).get("excludes").is_none());
+
+    let mut requests = Vec::new();
+    let mut expected = Vec::new();
+    for (label, grammar, guarded_mode) in [
+        ("guarded", &guarded, true),
+        ("unguarded", &unguarded, false),
+    ] {
+        for (sample, text, free_ok) in [
+            ("empty", "", false),
+            ("one", "a", false),
+            ("two", "ab", true),
+            ("three", "東京🙂", true),
+            ("four", "abcd", false),
+        ] {
+            let id = format!("v41/bounds/{label}/{sample}");
+            requests.push(json!({"id":id, "grammar":grammar, "input":v41_input(text)}));
+            // XGrammar 0.2.8 drops minLength/maxLength when exclusions are active.
+            expected.push((id, guarded_mode, true, free_ok));
+        }
+    }
+    let results = run_xgrammar(requests);
+    let supports = results[0]["excludes_supported"]
+        .as_bool()
+        .expect("worker capability");
+    let adjusted: Vec<_> = expected
+        .into_iter()
+        .map(|(id, guarded_mode, guarded_ok, free_ok)| {
+            let accepted = if guarded_mode && supports {
+                guarded_ok
+            } else {
+                free_ok
+            };
+            (id, accepted, accepted)
+        })
+        .collect();
+    check_cases(&results, &adjusted);
+}
+
+#[test]
+#[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
+fn v41_argument_exclusion_does_not_leak_xgrammar() {
+    let tool = text_tool();
+    let v4 = v4_grammar(&tool);
+    assert!(
+        v4["format"]["content"]["tags"][0]["content"]
+            .get("excludes")
+            .is_none(),
+        "V4 must not inherit V4.1 argument exclusions"
+    );
+    let v4_input = v4_input("hello</｜  parameter>world");
+
+    let response_schema = json!({
+        "type":"object",
+        "properties":{"text":{"type":"string"}},
+        "required":["text"],
+        "additionalProperties":false
+    });
+    let tool = text_tool();
+    let v41_response = v41_grammar(
+        &tool,
+        StructuralTagToolChoice::Auto,
+        true,
+        Some(false),
+        Some(&response_schema),
+    );
+    assert!(
+        v41_response["format"]["elements"][1]
+            .get("excludes")
+            .is_none(),
+        "a structured-output response schema must not inherit argument exclusions"
+    );
+    let response_input = json!({"text":"literal </｜ marker"}).to_string();
+
+    let requests = vec![
+        json!({"id":"v4/argument-marker", "grammar":v4, "input":v4_input}),
+        json!({"id":"v41/response-marker", "grammar":v41_response, "input":response_input}),
+    ];
+    let results = run_xgrammar(requests);
+    check_cases(
+        &results,
+        &[
+            ("v4/argument-marker".to_string(), true, true),
+            ("v41/response-marker".to_string(), true, true),
+        ],
+    );
+}

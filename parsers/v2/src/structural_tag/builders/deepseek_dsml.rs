@@ -92,6 +92,7 @@ impl DeepSeekDsmlFormat {
                     style: self.argument_style(),
                     any_order: tool_arguments_any_order,
                     max_whitespace_cnt: None,
+                    excludes: Vec::new(),
                 })),
                 end: [self.invoke_end(), "\n"].concat(),
             })

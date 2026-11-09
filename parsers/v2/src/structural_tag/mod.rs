@@ -12,6 +12,12 @@
 //! format node. Check the version bundled with the inference backend.
 //! XGrammar 0.1.32 also ignores JSON Schema `any_order`, so it does not honor
 //! reordered JSON keys requested by [`StructuralTagOptions::tool_arguments_any_order`].
+//!
+//! DeepSeek V4.1 tool arguments reserve the `</｜` closing-control prefix with
+//! `JSONSchemaFormat.excludes` when special-token exclusion is enabled. This is a
+//! generation restriction, not parser recovery. XGrammar 0.2.8 honors the exclusion but
+//! drops `minLength`/`maxLength` on strings while it is active. A backend that preserves
+//! those bounds is needed before the exclusion can be relied on with bounded strings.
 
 pub(crate) mod builders;
 mod context;
