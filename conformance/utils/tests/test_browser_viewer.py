@@ -207,6 +207,43 @@ def _ready(driver, tab):
     settle(driver, tab, history_ready=True, idle=False)
 
 
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
+def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer, implementation):
+    catalog = _published_catalog(published_viewer)
+    version = max((source["version"] for source in catalog["sources"]["candidates"]
+                   if source["implementation"] == implementation), key=capture_release_sort_key)
+    key = f"{implementation}@{version}"
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
+                           "search_tab-unified": "gpt_oss AND tool_only"})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+        _ready(driver, "tab-unified")
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
+        candidate = driver.execute_script("""
+            const model = window.__conformanceTooltipModel(arguments[0]);
+            const candidate = model.candidates.find(item => item.key === arguments[1]);
+            window.__buildTooltip(arguments[0]);
+            arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'}));
+            arguments[0].click();
+            return candidate;
+        """, cell, key)
+        assert candidate["parse_mode"] == "batch"
+        assert "batch_final" in candidate["block"]
+        popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+        output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
+        for field in ("reasoning_text=", "normal_text=", "calls="):
+            assert field in output.text
+        assert "Batch output is compared with ordered GOLDEN." in output.text
+        chunks = popup.find_elements(By.CSS_SELECTOR, f'tbody tr:not(.ttip-final) td[data-cand="{key}"]')
+        assert chunks
+        assert all(chunk.text == "Order/chunk not applicable for batch" for chunk in chunks)
+    finally:
+        driver.quit()
+        server.shutdown()
+
+
 def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
     button = driver.find_element("css selector", f"[data-slot-open='{slot}']")
     if programmatic:

@@ -4,10 +4,12 @@
 use dynamo_parsers::reasoning::{
     get_available_reasoning_parsers, ReasoningParser, ReasoningParserType,
 };
-#[cfg(all(not(feature = "jail"), conformance_old_tool_api))]
+#[cfg(all(not(feature = "jail"), conformance_old_tool_api, not(conformance_reasoning_context)))]
 use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call;
-#[cfg(all(not(feature = "jail"), not(conformance_old_tool_api)))]
+#[cfg(all(not(feature = "jail"), not(conformance_old_tool_api), not(conformance_reasoning_context)))]
 use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+#[cfg(all(not(feature = "jail"), conformance_reasoning_context))]
+use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_context;
 use dynamo_parsers::tool_calling::parsers::get_available_tool_parsers;
 #[cfg(not(conformance_no_tool_definitions))]
 use dynamo_parsers::tool_calling::ToolDefinition;
@@ -100,14 +102,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 return Err::<Value, String>("JailedStream is unavailable".to_owned());
                 #[cfg(not(feature = "jail"))]
                 {
+                #[cfg(conformance_reasoning_context)]
+                let reasoning = parser.detect_and_parse_reasoning_with_context(&raw_text, &[]);
+                #[cfg(not(conformance_reasoning_context))]
                 let reasoning = parser.detect_and_parse_reasoning(&raw_text, &[]);
-                #[cfg(not(conformance_old_tool_api))]
+                #[cfg(conformance_reasoning_context)]
+                let parsed = detect_and_parse_tool_call_with_context(&reasoning, Some(&tool_name), Some(&tools)).await;
+                #[cfg(all(not(conformance_reasoning_context), not(conformance_old_tool_api)))]
                 let parsed = detect_and_parse_tool_call_with_recovery(&reasoning.normal_text, Some(&tool_name), Some(&tools)).await;
-                #[cfg(all(conformance_old_tool_api, not(conformance_async_tool_api)))]
+                #[cfg(all(not(conformance_reasoning_context), conformance_old_tool_api, not(conformance_async_tool_api)))]
                 let parsed = detect_and_parse_tool_call(&reasoning.normal_text, Some(&tool_name));
-                #[cfg(all(conformance_old_tool_api, conformance_async_tool_api, not(conformance_tool_api_schemas)))]
+                #[cfg(all(not(conformance_reasoning_context), conformance_old_tool_api, conformance_async_tool_api, not(conformance_tool_api_schemas)))]
                 let parsed = detect_and_parse_tool_call(&reasoning.normal_text, Some(&tool_name)).await;
-                #[cfg(all(conformance_old_tool_api, conformance_async_tool_api, conformance_tool_api_schemas))]
+                #[cfg(all(not(conformance_reasoning_context), conformance_old_tool_api, conformance_async_tool_api, conformance_tool_api_schemas))]
                 let parsed = detect_and_parse_tool_call(&reasoning.normal_text, Some(&tool_name), Some(&tools)).await;
                 parsed.map(|(calls, content)| json!({
                     "reasoning_text": reasoning.reasoning_text,

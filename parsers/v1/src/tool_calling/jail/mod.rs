@@ -44,7 +44,9 @@ use uuid::Uuid;
 
 use crate::tool_calling::config::{JsonParserConfig, ParserConfig, TerminalMarkerPolicy};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
-use crate::tool_calling::harmony::harmony_parser::harmony_markers;
+use crate::tool_calling::harmony::harmony_parser::{
+    get_harmony_encoding, harmony_body_action_markers, harmony_header_spans, harmony_tool_headers,
+};
 use crate::tool_calling::harmony::payload::{HarmonyPayload, HarmonyVisible};
 use crate::tool_calling::json::base_json_parser::parse_indexed_calls;
 use crate::tool_calling::json::{JsonParserType, try_tool_call_parse_basic_json};
@@ -491,7 +493,12 @@ struct HarmonyJsonProgress {
 }
 
 impl HarmonyJsonProgress {
-    fn find_end_marker(&mut self, content: &str, end_sequences: &[String]) -> Option<usize> {
+    fn find_end_marker(
+        &mut self,
+        content: &str,
+        end_sequences: &[String],
+        encoding: Option<&openai_harmony::HarmonyEncoding>,
+    ) -> Option<usize> {
         const MESSAGE: &[u8] = b"<|message|>";
         let bytes = content.as_bytes();
         while self.scanned_len < bytes.len() {
@@ -502,6 +509,18 @@ impl HarmonyJsonProgress {
                     .find(|ending| !ending.is_empty() && remaining.starts_with(ending.as_bytes()))
                 {
                     self.scanned_len += ending.len();
+                    if let Some(encoding) = encoding {
+                        let mut prefix = content[..self.scanned_len].to_string();
+                        prefix.push_str("<|message|>");
+                        let tools: Vec<_> = harmony_tool_headers(&prefix, encoding).collect();
+                        let headers = harmony_header_spans(&prefix, encoding, &tools);
+                        if !harmony_body_action_markers(&prefix, &headers)
+                            .iter()
+                            .any(|marker| marker.end() == self.scanned_len)
+                        {
+                            continue;
+                        }
+                    }
                     return Some(self.scanned_len);
                 }
                 if remaining.starts_with(MESSAGE) {
@@ -2066,9 +2085,29 @@ pub enum EmissionMode {
     SingleChoicePerChunk,
 }
 
-/// A stream transformer that can "jail" tokens based on configurable start/end sequences
-/// When jailed, tokens are accumulated rather than yielded immediately
-/// When the jail ends (via end sequence or stream completion), accumulated content is processed and released
+/// Out-of-band content ownership. The annotated wire response is unchanged.
+/// A listed choice's content is already literal and bypasses protocol parsing.
+/// Duplicate indices are idempotent; indices absent from this response have no
+/// effect. Empty responses retain their metadata unchanged. Ownership applies
+/// only to content; existing tool calls, logprobs, and other metadata are retained.
+/// Literal ownership applies to native marker-based output. In required/named
+/// modes the configured JSON format owns interpretation, as for raw inputs.
+pub struct ContextualChatResponse {
+    pub response: Annotated<CreateChatCompletionStreamResponse>,
+    pub literal_choices: Vec<u32>,
+}
+
+impl From<Annotated<CreateChatCompletionStreamResponse>> for ContextualChatResponse {
+    fn from(response: Annotated<CreateChatCompletionStreamResponse>) -> Self {
+        Self {
+            response,
+            literal_choices: Vec::new(),
+        }
+    }
+}
+
+/// A stream transformer that can "jail" tokens based on configurable start/end sequences.
+/// Accumulated protocol content is parsed at its closing marker or stream completion.
 pub struct JailedStream {
     jail_start_sequences: Vec<String>,
     jail_end_sequences: Vec<String>,
@@ -2143,6 +2182,31 @@ impl JailedStream {
     where
         S: Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send + 'static,
     {
+        self.apply_with_context(stream.map(ContextualChatResponse::from))
+    }
+
+    pub fn apply_with_context_and_finish_reason<S>(
+        self,
+        stream: S,
+    ) -> impl Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send
+    where
+        S: Stream<Item = ContextualChatResponse> + Send + 'static,
+    {
+        let jail_mode = self.jail_mode.clone();
+        let named_tool_active = self.named_tool_name.is_some();
+        let jailed_stream = self.apply_with_context(stream);
+        JailedStream::fix_finish_reason(jailed_stream, jail_mode, named_tool_active)
+    }
+
+    /// Preserve ownership established upstream while using the same jail state
+    /// and finish handling for actual protocol envelopes.
+    pub fn apply_with_context<S>(
+        self,
+        stream: S,
+    ) -> impl Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send
+    where
+        S: Stream<Item = ContextualChatResponse> + Send + 'static,
+    {
         let separates_k3_reasoning = is_kimi_k3_parser(self.tool_call_parser.as_deref());
         // Use the stream! macro for cleaner async stream processing
         stream! {
@@ -2162,7 +2226,7 @@ impl JailedStream {
 
 
             // Process each item in the stream
-            while let Some(response) = stream.next().await {
+            while let Some(ContextualChatResponse { response, literal_choices }) = stream.next().await {
                 if let Some(chat_response) = response.data.as_ref() {
                     last_stream_id.clone_from(&chat_response.id);
                     last_stream_model.clone_from(&chat_response.model);
@@ -2184,6 +2248,37 @@ impl JailedStream {
                             .then(|| recover_kimi_k3_reasoning_handoff(choice))
                             .flatten();
                         let choice = recovered_choice.as_ref().unwrap_or(choice);
+
+                        if literal_choices.contains(&choice.index) && !self.is_immediate()
+                            && matches!(&choice.delta.content, Some(ChatCompletionMessageContent::Text(text)) if !text.is_empty())
+                        {
+                            let state = choice_states.get_or_create_state(choice.index, self.is_immediate(), self.guided_format());
+                            // Settle the preceding protocol transaction before
+                            // publishing this distinct literal-owned segment.
+                            all_emissions.extend(state.finalize(&self).await);
+                            // The following protocol segment cannot inherit an
+                            // unfinished JSON string or code indentation from
+                            // the transaction before this literal boundary.
+                            state.harmony_visible = HarmonyVisible::default();
+                            state.prose_line_indent = 0;
+                            state.completion_progress.reset();
+                            state.blank_hold_closed = true;
+                            if matches!(&choice.delta.content, Some(ChatCompletionMessageContent::Text(text)) if !text.trim().is_empty()) {
+                                state.terminal_suffix_after_tool_call = false;
+                            }
+                            if choice.finish_reason.is_some() {
+                                state.stream_finish_reason = choice.finish_reason;
+                            }
+                            let mut literal = choice.clone();
+                            if let Some(mut pending) = state.pending_reasoning_content.take() {
+                                if let Some(reasoning) = literal.delta.reasoning_content.take() {
+                                    pending.push_str(&reasoning);
+                                }
+                                literal.delta.reasoning_content = Some(pending);
+                            }
+                            all_emissions.push(ChoiceEmission::Trailing(literal));
+                            continue;
+                        }
 
                         if let Some(ref content) = choice.delta.content {
                             // Jailing only applies to text content
@@ -2604,6 +2699,7 @@ impl JailedStream {
         &self,
         accumulated_content: &str,
         progress: &mut JailCompletionProgress,
+        harmony_encoding: Option<&openai_harmony::HarmonyEncoding>,
     ) -> Option<usize> {
         if let Some(end_pos) = progress.pending_end_marker {
             return Some(end_pos);
@@ -2611,9 +2707,11 @@ impl JailedStream {
 
         if is_harmony_parser(self.tool_call_parser.as_deref()) {
             // Filter quoted stops before invoking the full Harmony parser.
-            let end_pos = progress
-                .harmony_json
-                .find_end_marker(accumulated_content, &self.jail_end_sequences)?;
+            let end_pos = progress.harmony_json.find_end_marker(
+                accumulated_content,
+                &self.jail_end_sequences,
+                harmony_encoding,
+            )?;
             progress.pending_end_marker = Some(end_pos);
             return Some(end_pos);
         }
@@ -2709,6 +2807,11 @@ impl JailedStream {
         accumulated_content: &str,
         progress: &mut JailCompletionProgress,
     ) -> JailCompletion {
+        let harmony_encoding = if is_harmony_parser(self.tool_call_parser.as_deref()) {
+            get_harmony_encoding().await.as_ref().ok()
+        } else {
+            None
+        };
         match &self.jail_mode {
             JailMode::MarkerBased => {
                 // Inkling's end token may legally appear inside a JSON string
@@ -2751,9 +2854,11 @@ impl JailedStream {
                     }
                 }
 
-                if let Some(end_pos) =
-                    self.find_incremental_end_marker(accumulated_content, progress)
-                {
+                if let Some(end_pos) = self.find_incremental_end_marker(
+                    accumulated_content,
+                    progress,
+                    harmony_encoding,
+                ) {
                     if self.tool_call_parser.is_none() {
                         return JailCompletion::Complete(CompletedJail {
                             split_pos: end_pos,
@@ -2786,12 +2891,18 @@ impl JailedStream {
                         }
                         _ => {
                             let split_pos = if is_harmony_parser(self.tool_call_parser.as_deref()) {
-                                let Some((stop, _)) = harmony_markers(accumulated_content)
-                                    .filter(|(marker, in_json)| {
-                                        !in_json
-                                            && matches!(marker.as_str(), "<|call|>" | "<|return|>")
+                                let headers = harmony_encoding
+                                    .map(|encoding| {
+                                        let tools: Vec<_> =
+                                            harmony_tool_headers(accumulated_content, encoding)
+                                                .collect();
+                                        harmony_header_spans(accumulated_content, encoding, &tools)
                                     })
-                                    .last()
+                                    .unwrap_or_default();
+                                let Some(stop) =
+                                    harmony_body_action_markers(accumulated_content, &headers)
+                                        .into_iter()
+                                        .last()
                                 else {
                                     progress.pending_end_marker = None;
                                     progress.next_end_search_start = accumulated_content.len();
@@ -5262,10 +5373,428 @@ mod tests {
                 let mut progress = JailCompletionProgress::default();
                 for end in (1..=text.len()).filter(|&end| text.is_char_boundary(end)) {
                     assert_eq!(
-                        jail.find_incremental_end_marker(&text[..end], &mut progress),
+                        jail.find_incremental_end_marker(&text[..end], &mut progress, None),
                         (end == text.len()).then_some(end),
                         "quoted markers must not trigger prefix parsing at {end}"
                     );
+                }
+            }
+        }
+    }
+
+    fn contextual_text_chunks(output: crate::ReasoningOutput) -> Vec<ContextualChatResponse> {
+        let mut chunks = Vec::new();
+        if !output.reasoning_text.is_empty() {
+            let mut response = text_chunk("");
+            response.data.as_mut().unwrap().choices[0]
+                .delta
+                .reasoning_content = Some(output.reasoning_text);
+            chunks.push(response.into());
+        }
+        for segment in output.normal_segments {
+            let (text, literal) = match segment {
+                crate::NormalTextSegment::Literal(text) => (text, true),
+                crate::NormalTextSegment::Protocol(text) => (text, false),
+            };
+            chunks.push(ContextualChatResponse {
+                response: text_chunk(&text),
+                literal_choices: if literal { vec![0] } else { Vec::new() },
+            });
+        }
+        chunks
+    }
+
+    #[tokio::test]
+    async fn context_literal_cannot_bypass_required_or_named_tool_choice() {
+        use crate::{GptOssReasoningParser, ReasoningParser};
+        let finishes = |responses: &[Annotated<CreateChatCompletionStreamResponse>]| {
+            responses
+                .iter()
+                .flat_map(|response| response.data.iter())
+                .flat_map(|data| &data.choices)
+                .filter_map(|choice| choice.finish_reason)
+                .collect::<Vec<_>>()
+        };
+        for (named, payload) in [
+            (false, r#"[{"name":"real","parameters":{"x":1}}]"#),
+            (true, r#"{"x":1}"#),
+        ] {
+            for guided in [false, true] {
+                let build = || {
+                    let builder = JailedStream::builder()
+                        .tool_call_parser("harmony")
+                        .guided_streaming(guided);
+                    if named {
+                        builder.tool_choice_named("real".to_string()).build()
+                    } else {
+                        builder.tool_choice_required().build()
+                    }
+                };
+                let mut terminal = terminal_chunk();
+                terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Stop);
+                let raw: Vec<_> = build()
+                    .apply_with_finish_reason(stream::iter(vec![
+                        text_chunk(payload),
+                        terminal.clone(),
+                    ]))
+                    .collect()
+                    .await;
+                let output = GptOssReasoningParser::new()
+                    .unwrap()
+                    .detect_and_parse_reasoning_with_context(payload, &[]);
+                assert!(
+                    output
+                        .normal_segments
+                        .iter()
+                        .all(|segment| matches!(segment, crate::NormalTextSegment::Literal(_)))
+                );
+                let mut contextual = contextual_text_chunks(output.clone());
+                contextual.push(terminal.clone().into());
+                let actual: Vec<_> = build()
+                    .apply_with_context_and_finish_reason(stream::iter(contextual))
+                    .collect()
+                    .await;
+                assert!(
+                    !collect_tool_calls(&raw).is_empty(),
+                    "raw guided owner: named={named},guided={guided}"
+                );
+                assert_eq!(
+                    collect_tool_calls(&actual),
+                    collect_tool_calls(&raw),
+                    "named={named},guided={guided}"
+                );
+                assert_eq!(collect_text_content(&actual), collect_text_content(&raw));
+                assert_eq!(finishes(&actual), finishes(&raw));
+                let native: Vec<_> = JailedStream::builder()
+                    .tool_call_parser("harmony")
+                    .build()
+                    .apply_with_context(stream::iter(contextual_text_chunks(output)))
+                    .collect()
+                    .await;
+                assert!(collect_tool_calls(&native).is_empty());
+                assert_eq!(collect_text_content(&native), payload);
+                let protocol: Vec<_> = build()
+                    .apply_with_context_and_finish_reason(stream::iter(vec![
+                        text_chunk(payload).into(),
+                        terminal.into(),
+                    ]))
+                    .collect()
+                    .await;
+                assert_eq!(collect_tool_calls(&protocol), collect_tool_calls(&raw));
+                assert_eq!(collect_text_content(&protocol), collect_text_content(&raw));
+                assert_eq!(finishes(&protocol), finishes(&raw));
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn context_protocol_recovery_never_reparses_visible_text() {
+        let literal = "Before<|channel|>analysis<|message|>Done";
+        for ending in ["<|return|>", ""] {
+            let protocol = format!(
+                "<|channel|>commentary to=functions.bad<|message|>{{\"x\":<|start|>assistant<|channel|>final<|message|>{literal}{ending}"
+            );
+            let direct =
+                crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete(
+                    &protocol,
+                    &Default::default(),
+                    None,
+                )
+                .await
+                .unwrap();
+            assert_eq!(direct.1.as_deref(), Some(literal), "direct: {protocol}");
+            let mut terminal = terminal_chunk();
+            terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+            let responses: Vec<_> = JailedStream::builder()
+                .tool_call_parser("harmony")
+                .build()
+                .apply_with_context_and_finish_reason(stream::iter(vec![
+                    ContextualChatResponse::from(text_chunk(&protocol)),
+                    ContextualChatResponse::from(terminal),
+                ]))
+                .collect()
+                .await;
+            assert_eq!(collect_text_content(&responses), literal, "{protocol}");
+            assert!(collect_tool_calls(&responses).is_empty());
+            assert_eq!(
+                responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+                Some(FinishReason::Length)
+            );
+        }
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("harmony")
+            .build()
+            .apply_with_context(stream::iter(vec![
+                ContextualChatResponse::from(text_chunk(
+                    "<|channel|>commentary to=functions.real<|message|>{}<|return|>",
+                )),
+                ContextualChatResponse {
+                    response: text_chunk(" \n"),
+                    literal_choices: vec![0],
+                },
+            ]))
+            .collect()
+            .await;
+        assert_eq!(collect_text_content(&responses), " \n");
+        assert_eq!(collect_tool_calls(&responses).len(), 1);
+    }
+
+    // Wire requests cannot encode the independent ownership segments accepted by
+    // this public sidecar; this adapter test protects that additional boundary.
+    #[tokio::test]
+    async fn context_literal_settles_prior_protocol_lexical_state() {
+        for prefix in [
+            "Plain",
+            "{\"x\":\"",
+            "[\"",
+            "{\"x\":\"\\",
+            "\n{\"x\":\"",
+            "    ",
+        ] {
+            for ending in ["<|return|>", "<|call|>"] {
+                for finish in [FinishReason::Stop, FinishReason::Length] {
+                    let protocol =
+                        format!("<|channel|>commentary to=functions.real<|message|>{{}}{ending}");
+                    let mut terminal = terminal_chunk();
+                    terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(finish);
+                    let responses: Vec<_> = JailedStream::builder()
+                        .tool_call_parser("harmony")
+                        .build()
+                        .apply_with_context_and_finish_reason(stream::iter(vec![
+                            text_chunk(prefix).into(),
+                            ContextualChatResponse {
+                                response: text_chunk("LITERAL"),
+                                literal_choices: vec![0],
+                            },
+                            text_chunk(&protocol).into(),
+                            terminal.into(),
+                        ]))
+                        .collect()
+                        .await;
+                    let calls = collect_tool_calls(&responses);
+                    assert_eq!(calls.len(), 1, "{prefix:?} {ending} {finish:?}");
+                    assert_eq!(calls[0].0, "real");
+                    assert_eq!(calls[0].1, "{}");
+                    assert_eq!(collect_text_content(&responses), format!("{prefix}LITERAL"));
+                    assert_eq!(
+                        responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+                        Some(if finish == FinishReason::Length {
+                            FinishReason::Length
+                        } else {
+                            FinishReason::ToolCalls
+                        })
+                    );
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn context_literal_closes_tool_only_whitespace_policy() {
+        for literal in ["VISIBLE", " \n"] {
+            for trailing in [" ", "\n", " \n"] {
+                let mut terminal = terminal_chunk();
+                terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Stop);
+                let responses: Vec<_> = JailedStream::builder()
+                    .tool_call_parser("qwen3_coder")
+                    .reasoning_parser("nemotron_v3")
+                    .build()
+                    .apply_with_context_and_finish_reason(stream::iter(vec![
+                        text_chunk("<tool_call><function=f></function></tool_call>").into(),
+                        ContextualChatResponse {
+                            response: text_chunk(literal),
+                            literal_choices: vec![0],
+                        },
+                        text_chunk(trailing).into(),
+                        terminal.into(),
+                    ]))
+                    .collect()
+                    .await;
+                assert_eq!(collect_tool_calls(&responses).len(), 1);
+                assert_eq!(
+                    collect_text_content(&responses),
+                    format!("{literal}{trailing}")
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn context_literal_updates_terminal_suffix_ownership() {
+        for literal in ["VISIBLE", " \n"] {
+            let mut terminal = terminal_chunk();
+            terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+            let responses: Vec<_> = JailedStream::builder()
+                .tool_call_parser("kimi_k3")
+                .build()
+                .apply_with_context_and_finish_reason(stream::iter(vec![
+                    text_chunk("<|open|>tools<|sep|><|open|>call tool=\"f\" index=\"1\"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>").into(),
+                    ContextualChatResponse { response: text_chunk(literal), literal_choices: vec![0] },
+                    text_chunk("message<|sep|>").into(),
+                    terminal.into(),
+                ]))
+                .collect()
+                .await;
+            assert_eq!(collect_tool_calls(&responses).len(), 1);
+            let suffix = if literal.trim().is_empty() {
+                ""
+            } else {
+                "message<|sep|>"
+            };
+            assert_eq!(
+                collect_text_content(&responses),
+                format!("{literal}{suffix}")
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn context_metadata_does_not_settle_protocol() {
+        for content in [None, Some("")] {
+            for ending in ["<|return|>", "<|call|>"] {
+                for finish in [FinishReason::Stop, FinishReason::Length] {
+                    let mut metadata = text_chunk("");
+                    let delta = &mut metadata.data.as_mut().unwrap().choices[0].delta;
+                    delta.content =
+                        content.map(|text| ChatCompletionMessageContent::Text(text.into()));
+                    delta.reasoning_content = Some("REASON".into());
+                    let mut terminal = terminal_chunk();
+                    terminal.data.as_mut().unwrap().choices[0].finish_reason = Some(finish);
+                    let responses: Vec<_> = JailedStream::builder()
+                        .tool_call_parser("harmony")
+                        .build()
+                        .apply_with_context_and_finish_reason(stream::iter(vec![
+                            text_chunk("<|channel|>commentary to=functions.real<|message|>{")
+                                .into(),
+                            ContextualChatResponse {
+                                response: metadata,
+                                literal_choices: vec![0],
+                            },
+                            text_chunk(&format!("}}{ending}")).into(),
+                            terminal.into(),
+                        ]))
+                        .collect()
+                        .await;
+                    assert_eq!(
+                        collect_tool_calls(&responses),
+                        vec![("real".into(), "{}".into())]
+                    );
+                    assert_eq!(collect_text_content(&responses), "");
+                    let reasoning: String = responses
+                        .iter()
+                        .flat_map(|r| r.data.iter())
+                        .flat_map(|r| &r.choices)
+                        .filter_map(|c| c.delta.reasoning_content.as_deref())
+                        .collect();
+                    assert_eq!(reasoning, "REASON");
+                    assert_eq!(
+                        responses.last().unwrap().data.as_ref().unwrap().choices[0].finish_reason,
+                        Some(if finish == FinishReason::Length {
+                            FinishReason::Length
+                        } else {
+                            FinishReason::ToolCalls
+                        })
+                    );
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn context_routes_choices_and_retains_literal_metadata() {
+        let literal = " \nBefore<|channel|>analysis<|message|>Done<|return|> ";
+        let mut response = text_chunk_with_logprobs(literal);
+        response.id = Some("sse-id".to_string());
+        response.event = Some("chunk".to_string());
+        response.comment = Some(vec!["ownership".to_string()]);
+        let expected_logprobs = response.data.as_ref().unwrap().choices[0].logprobs.clone();
+        response.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+        let mut protocol =
+            text_chunk("<|channel|>commentary to=functions.real<|message|>{}<|return|>")
+                .data
+                .unwrap()
+                .choices
+                .remove(0);
+        protocol.index = 1;
+        protocol.finish_reason = Some(FinishReason::Length);
+        response.data.as_mut().unwrap().choices.push(protocol);
+        let mut usage = usage_only_chunk();
+        usage.id = Some("usage-id".to_string());
+        let expected_usage = serde_json::to_value(&usage).unwrap();
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("harmony")
+            .build()
+            .apply_with_context(stream::iter(vec![
+                ContextualChatResponse {
+                    response,
+                    literal_choices: vec![0, 0, 999],
+                },
+                ContextualChatResponse {
+                    response: usage,
+                    literal_choices: vec![999],
+                },
+            ]))
+            .collect()
+            .await;
+        let literal_choices: Vec<_> = responses
+            .iter()
+            .flat_map(|response| response.data.iter())
+            .flat_map(|data| &data.choices)
+            .filter(|choice| choice.index == 0)
+            .collect();
+        assert_eq!(literal_choices.len(), 1);
+        assert_eq!(
+            literal_choices[0].delta.content,
+            Some(ChatCompletionMessageContent::Text(literal.to_string()))
+        );
+        assert_eq!(
+            serde_json::to_value(&literal_choices[0].logprobs).unwrap(),
+            serde_json::to_value(&expected_logprobs).unwrap()
+        );
+        assert_eq!(literal_choices[0].finish_reason, Some(FinishReason::Length));
+        assert_eq!(collect_tool_calls(&responses).len(), 1);
+        let literal_response = responses
+            .iter()
+            .find(|response| {
+                response
+                    .data
+                    .as_ref()
+                    .is_some_and(|data| data.choices.iter().any(|choice| choice.index == 0))
+            })
+            .unwrap();
+        assert_eq!(literal_response.id.as_deref(), Some("sse-id"));
+        assert_eq!(literal_response.event.as_deref(), Some("chunk"));
+        assert_eq!(literal_response.comment.as_ref().unwrap(), &["ownership"]);
+        let actual_usage = responses
+            .iter()
+            .find(|response| {
+                response
+                    .data
+                    .as_ref()
+                    .is_some_and(|data| data.choices.is_empty())
+            })
+            .unwrap();
+        assert_eq!(serde_json::to_value(actual_usage).unwrap(), expected_usage);
+    }
+
+    #[tokio::test]
+    async fn harmony_context_keeps_literal_collisions_around_real_calls() {
+        let literal = "Use <|channel|>commentary to=functions.lookup<|message|>{}";
+        for (input, expected, call_count) in [
+            ("<|channel|>commentary<|message|>Before<|channel|>analysis<|message|>Done<|return|>".to_string(), "Before<|channel|>analysis<|message|>Done".to_string(), 0),
+            ("<|channel|>final<|message|>Before<|channel|>finalx<|message|>Done<|return|>".to_string(), "Before<|channel|>finalx<|message|>Done".to_string(), 0),
+            (format!("<|channel|>final<|message|>{literal}<|call|>"), literal.to_string(), 0),
+            (format!("<|channel|>final<|message|>{literal}<|call|><|start|>assistant<|channel|>commentary to=functions.real<|message|>{{\"x\":1}}<|return|><|start|>assistant<|channel|>final<|message|>Tail<|return|>"), format!("{literal}\nTail"), 1),
+        ] {
+            for split in 0..=input.len() {
+                let events = harmony_reasoning_jail_events(vec![(input[..split].to_string(), Vec::new()), (input[split..].to_string(), Vec::new())], FinishReason::Stop).await;
+                let text: String = events.iter().filter(|(kind, _)| kind.is_empty()).map(|(_, text)| text.as_str()).collect();
+                assert_eq!(text, expected, "split{split}: {input}");
+                let calls: Vec<_> = events.iter().filter(|(kind, _)| !kind.is_empty()).collect();
+                assert_eq!(calls.len(), call_count, "split{split}: {events:?}");
+                if call_count > 0 {
+                    assert!(events.iter().position(|(kind, _)| !kind.is_empty()).unwrap() > 0);
+                    assert!(events.last().unwrap().0.is_empty());
                 }
             }
         }
@@ -5280,22 +5809,22 @@ mod tests {
         let mut reasoning = GptOssReasoningParser::new().unwrap();
         let mut upstream = Vec::new();
         for (text, tokens) in chunks {
-            let delta = reasoning.parse_reasoning_streaming_incremental(&text, &tokens);
-            upstream.push(text_chunk(&delta.normal_text));
+            let delta = reasoning.parse_reasoning_streaming_with_context(&text, &tokens);
+            upstream.extend(contextual_text_chunks(delta));
         }
-        let final_delta = reasoning.finish_reasoning_stream();
-        upstream.push(text_chunk(&final_delta.normal_text));
-        let repeated = reasoning.finish_reasoning_stream();
-        assert!(repeated.normal_text.is_empty());
+        let final_delta = reasoning.finish_reasoning_stream_with_context();
+        upstream.extend(contextual_text_chunks(final_delta));
+        let repeated = reasoning.finish_reasoning_stream_with_context();
+        assert!(repeated.normal_segments.is_empty());
         assert!(repeated.reasoning_text.is_empty());
         let mut finish = text_chunk("");
         finish.data.as_mut().unwrap().choices[0].finish_reason = Some(finish_reason);
-        upstream.push(finish);
+        upstream.push(finish.into());
         let responses: Vec<_> = JailedStream::builder()
             .tool_call_parser("harmony")
             .reasoning_parser("gpt_oss")
             .build()
-            .apply_with_finish_reason(stream::iter(upstream))
+            .apply_with_context_and_finish_reason(stream::iter(upstream))
             .collect()
             .await;
         let mut events: Vec<(String, String)> = Vec::new();
@@ -5335,6 +5864,184 @@ mod tests {
         };
         assert_eq!(finishes, vec![expected_finish]);
         events
+    }
+
+    #[tokio::test]
+    async fn harmony_nonjson_replacement_delivers_answer_before_upstream_finish() {
+        use crate::{GptOssReasoningParser, ReasoningParser};
+        for channel in ["analysis", "commentary", "final", "finalx"] {
+            let mut reasoning = GptOssReasoningParser::new().unwrap();
+            let mut inputs = Vec::new();
+            for text in [
+                format!("<|channel|>{channel}<|message|>Before"),
+                "<|start|>assistant<|channel|>final<|message|>".to_string(),
+                "Done<|return|>".to_string(),
+            ] {
+                let delta = reasoning.parse_reasoning_streaming_incremental(&text, &[]);
+                let mut input = text_chunk(&delta.normal_text);
+                input.data.as_mut().unwrap().choices[0]
+                    .delta
+                    .reasoning_content = Some(delta.reasoning_text);
+                inputs.push(input);
+            }
+            let upstream = stream::iter(inputs).chain(stream::once(std::future::pending()));
+            let output = JailedStream::builder()
+                .tool_call_parser("harmony")
+                .build()
+                .apply_with_finish_reason(upstream);
+            tokio::pin!(output);
+            let (normal, thought) =
+                tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                    let mut normal = String::new();
+                    let mut thought = String::new();
+                    while let Some(response) = output.next().await {
+                        assert!(response.error.is_none());
+                        for choice in response.data.unwrap().choices {
+                            assert!(choice.finish_reason.is_none());
+                            assert!(choice.delta.tool_calls.is_none());
+                            thought.push_str(
+                                choice
+                                    .delta
+                                    .reasoning_content
+                                    .as_deref()
+                                    .unwrap_or_default(),
+                            );
+                            if let Some(ChatCompletionMessageContent::Text(text)) =
+                                choice.delta.content
+                            {
+                                normal.push_str(&text);
+                            }
+                        }
+                        if normal.ends_with("Done") {
+                            return (normal, thought);
+                        }
+                    }
+                    panic!("the unfinished upstream cannot terminate")
+                })
+                .await
+                .expect("the answer must arrive before upstream finish");
+            assert_eq!(
+                normal,
+                if channel == "analysis" {
+                    "Done"
+                } else {
+                    "Before\nDone"
+                }
+            );
+            assert_eq!(thought, if channel == "analysis" { "Before" } else { "" });
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_header_action_stops_keep_body_completion_and_progress() {
+        use crate::{GptOssReasoningParser, ReasoningParser};
+
+        let prefix = "<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>commentary to=functions.lookup <|return|>";
+        let body = "<|message|>{\"city\":\"Paris\"}<|call|>";
+        let input =
+            format!("{prefix}{body}<|start|>assistant<|channel|>final<|message|>Done.<|return|>");
+        let expected = vec![
+            ("lookup".to_string(), "{\"city\":\"Paris\"}".to_string()),
+            (String::new(), "Done.".to_string()),
+        ];
+        for split in 0..=input.len() {
+            assert_eq!(
+                harmony_reasoning_jail_events(
+                    vec![
+                        (input[..split].to_string(), vec![]),
+                        (input[split..].to_string(), vec![])
+                    ],
+                    FinishReason::Stop,
+                )
+                .await,
+                expected,
+                "split {split}"
+            );
+        }
+        for through_reasoning in [false, true] {
+            let mut reasoning = GptOssReasoningParser::new().unwrap();
+            let mut chunks = Vec::new();
+            for text in [prefix, body] {
+                let normal = if through_reasoning {
+                    reasoning
+                        .parse_reasoning_streaming_incremental(text, &[])
+                        .normal_text
+                } else {
+                    text.to_string()
+                };
+                chunks.push(text_chunk(&normal));
+            }
+            let upstream = stream::iter(chunks).chain(stream::once(std::future::pending()));
+            let output = JailedStream::builder()
+                .tool_call_parser("harmony")
+                .build()
+                .apply_with_finish_reason(upstream);
+            tokio::pin!(output);
+            let calls = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                while let Some(response) = output.next().await {
+                    assert!(response.error.is_none());
+                    if let Some(data) = response.data {
+                        for choice in data.choices {
+                            assert!(choice.finish_reason.is_none());
+                            if let Some(calls) = choice.delta.tool_calls {
+                                return calls;
+                            }
+                        }
+                    }
+                }
+                panic!("the unfinished upstream cannot terminate")
+            })
+            .await
+            .expect("the call must arrive before upstream finish");
+            assert_eq!(calls.len(), 1);
+            assert_eq!(
+                calls[0].function.as_ref().unwrap().name.as_deref(),
+                Some("lookup")
+            );
+            assert_eq!(
+                calls[0].function.as_ref().unwrap().arguments.as_deref(),
+                Some("{\"city\":\"Paris\"}")
+            );
+        }
+        for ending in ["<|call|>", "<|return|>"] {
+            let input = format!(
+                "<|channel|>commentary to=functions.lookup<|message|>{{\"q\":1}}<|start|>assistant<|channel|>commentary to=functions.next {ending}"
+            );
+            assert_eq!(
+                harmony_reasoning_jail_events(vec![(input, vec![])], FinishReason::Stop).await,
+                vec![(
+                    "lookup".to_string(),
+                    "{\"q\":1}<|start|>assistant<|channel|>commentary to=functions.next"
+                        .to_string()
+                )],
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn harmony_recipientless_json_preserves_public_stop_and_visible_order() {
+        for (ending, expected) in [("<|call|>", "Done."), ("<|return|>", "{\"x\":1}\nDone.")] {
+            let input = format!(
+                "<|channel|>commentary <|constrain|>json<|message|>{{\"x\":1}}{ending}<|start|>assistant<|channel|>final<|message|>Done.<|return|>"
+            );
+            for finish in [FinishReason::Stop, FinishReason::Length] {
+                for split in input.char_indices().map(|(i, _)| i).chain([input.len()]) {
+                    let actual = harmony_reasoning_jail_events(
+                        vec![
+                            (input[..split].to_string(), vec![]),
+                            (input[split..].to_string(), vec![]),
+                        ],
+                        finish,
+                    )
+                    .await;
+                    assert_eq!(
+                        actual,
+                        vec![(String::new(), expected.to_string())],
+                        "{ending}/{finish:?}/{split}"
+                    );
+                }
+            }
+        }
     }
 
     #[tokio::test]

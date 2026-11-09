@@ -460,7 +460,9 @@
         cands.forEach(function (c, ci) {
           const expected = ch.expected || {};
           const deltas = Object.prototype.hasOwnProperty.call(expected, c.key) ? expected[c.key] : expected[implKeyOf(c.key)];
-          const output = c.parse_mode === 'batch' ? '' : renderDeltas(deltas || [], ctx);
+          const output = c.parse_mode === 'batch'
+            ? '<span class="expl">Order/chunk not applicable for batch</span>'
+            : renderDeltas(deltas || [], ctx);
           row += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
             + output + '</td>';
         });

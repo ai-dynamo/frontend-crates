@@ -3,13 +3,17 @@
 
 use std::fmt::Debug;
 
-use crate::ParserResult;
 use crate::ReasoningParser;
 use crate::tool_calling::harmony::harmony_parser::{
-    harmony_header_is_directed, harmony_initial_role, harmony_markers, harmony_tool_headers,
-    json_value_prefix_end, process_harmony_token,
+    HARMONY_KNOWN_CHANNELS, HarmonyContentCursor, harmony_body_ending,
+    harmony_commentary_is_payload, harmony_content_header_can_start, harmony_current_content_type,
+    harmony_current_recipient, harmony_header_eof_is_metadata, harmony_header_is_directed,
+    harmony_header_metadata, harmony_header_role, harmony_header_spans, harmony_initial_role,
+    harmony_json_prelude, harmony_markers, harmony_message_is_visible, harmony_tool_headers,
+    json_value_prefix_end, parse_harmony_header, process_harmony_token,
 };
 use crate::tool_calling::harmony::payload::{HarmonyPayload, HarmonyVisible};
+use crate::{NormalTextSegment, ParserResult, ReasoningOutput};
 
 use openai_harmony::StreamableParser;
 use openai_harmony::chat::{Content, Message, TextContent};
@@ -54,6 +58,8 @@ pub struct GptOssReasoningParser {
     start_token_id: u32,
     // Recovery persists across chunks until `<|start|>`.
     resynchronizing: bool,
+    content_cursor: HarmonyContentCursor,
+    pending_replacement: Option<PendingReplacement>,
     pending_text: String,
     emitted_reasoning_text: bool,
     insert_reasoning_separator: bool,
@@ -70,6 +76,16 @@ pub struct GptOssReasoningParser {
     parser_finished: bool,
     payload: HarmonyPayload,
     visible_payload: HarmonyVisible,
+    pending_commentary: String,
+    commentary_payload: Option<bool>,
+    // Per-call ranges come only from native directed-envelope producers, never
+    // from matching the returned text. Raw two-string APIs remain unchanged.
+    protocol_ranges: Vec<std::ops::Range<usize>>,
+}
+
+struct PendingReplacement {
+    text: String,
+    body_prefix_len: usize,
 }
 
 /// Implement Debug for GptOssReasoningParser separately because StreamableParser does not implement Debug
@@ -82,6 +98,34 @@ impl Debug for GptOssReasoningParser {
 }
 
 impl GptOssReasoningParser {
+    fn contextual_output(&mut self, result: ParserResult) -> ReasoningOutput {
+        let mut normal_segments = Vec::new();
+        let mut cursor = 0;
+        for range in std::mem::take(&mut self.protocol_ranges) {
+            if result.normal_text.is_empty() {
+                break;
+            }
+            if cursor < range.start {
+                normal_segments.push(NormalTextSegment::Literal(
+                    result.normal_text[cursor..range.start].to_string(),
+                ));
+            }
+            normal_segments.push(NormalTextSegment::Protocol(
+                result.normal_text[range.clone()].to_string(),
+            ));
+            cursor = range.end;
+        }
+        if cursor < result.normal_text.len() {
+            normal_segments.push(NormalTextSegment::Literal(
+                result.normal_text[cursor..].to_string(),
+            ));
+        }
+        ReasoningOutput {
+            reasoning_text: result.reasoning_text,
+            normal_segments,
+        }
+    }
+
     pub fn new() -> anyhow::Result<Self> {
         let parser = match get_harmony_encoding().as_ref() {
             Ok(enc) => match StreamableParser::new(enc.clone(), Some(Role::Assistant)) {
@@ -103,6 +147,8 @@ impl GptOssReasoningParser {
             parser,
             start_token_id,
             resynchronizing: false,
+            content_cursor: HarmonyContentCursor::default(),
+            pending_replacement: None,
             pending_text: String::new(),
             emitted_reasoning_text: false,
             insert_reasoning_separator: false,
@@ -113,6 +159,9 @@ impl GptOssReasoningParser {
             parser_finished: false,
             payload: HarmonyPayload::default(),
             visible_payload: HarmonyVisible::default(),
+            pending_commentary: String::new(),
+            commentary_payload: None,
+            protocol_ranges: Vec::new(),
         })
     }
 }
@@ -256,30 +305,44 @@ fn split_incomplete_harmony_suffix(text: &str) -> (&str, &str) {
 }
 
 fn contains_directed_harmony_function_call(text: &str) -> bool {
-    harmony_tool_headers(text).next().is_some()
+    get_harmony_encoding()
+        .as_ref()
+        .is_ok_and(|encoding| harmony_tool_headers(text, encoding).next().is_some())
         && harmony_markers(text).any(|(marker, in_json)| {
             !in_json && matches!(marker.as_str(), "<|call|>" | "<|return|>")
         })
 }
 
 fn strip_analysis_blocks_for_tool_handoff(text: &str) -> String {
-    let mut directed_headers = harmony_tool_headers(text).peekable();
+    let mut analysis_headers = harmony_analysis_block_regex().find_iter(text).peekable();
+    if analysis_headers.peek().is_none() {
+        return text.to_string();
+    }
+    let Ok(encoding) = get_harmony_encoding() else {
+        return text.to_string();
+    };
+    let tools: Vec<_> = harmony_tool_headers(text, encoding).collect();
+    let frames: Vec<_> = harmony_header_spans(text, encoding, &tools)
+        .into_iter()
+        .filter(|span| text[span.clone()].starts_with("<|start|>"))
+        .collect();
+    let mut directed_headers = tools.iter().peekable();
     let mut markers = harmony_markers(text)
         .filter_map(|(marker, in_json)| (!in_json).then_some(marker))
         .peekable();
     let mut output = String::new();
     let mut cursor = 0;
-    for header in harmony_analysis_block_regex().find_iter(text) {
+    for header in analysis_headers {
         while directed_headers
             .peek()
-            .is_some_and(|directed| directed.get(0).unwrap().end() <= header.start())
+            .is_some_and(|directed| directed.end <= header.start())
         {
             directed_headers.next();
         }
         // A recipient before the channel still makes this a directed analysis call.
         if directed_headers
             .peek()
-            .is_some_and(|directed| directed.get(0).unwrap().start() <= header.start())
+            .is_some_and(|directed| directed.start <= header.start())
         {
             continue;
         }
@@ -297,12 +360,19 @@ fn strip_analysis_blocks_for_tool_handoff(text: &str) -> String {
             continue;
         }
         output.push_str(&text[cursor..header.start()]);
-        cursor = markers
-            .find(|marker| {
-                marker.start() >= header.end()
-                    && matches!(marker.as_str(), "<|call|>" | "<|return|>" | "<|end|>")
-            })
-            .map_or(text.len(), |marker| marker.end());
+        let next = frames
+            .get(frames.partition_point(|frame| frame.start < header.end()))
+            .map_or(text.len(), |frame| frame.start);
+        cursor = next;
+        while markers.peek().is_some_and(|marker| marker.start() < next) {
+            let marker = markers.next().expect("peeked a Harmony marker");
+            if marker.start() >= header.end()
+                && matches!(marker.as_str(), "<|call|>" | "<|return|>" | "<|end|>")
+            {
+                cursor = marker.end();
+                break;
+            }
+        }
     }
     output.push_str(&text[cursor..]);
     output
@@ -326,19 +396,37 @@ fn append_text_content(target: &mut String, content: &[Content]) {
     }
 }
 
-fn append_message_by_channel(reasoning_text: &mut String, normal_text: &mut String, msg: &Message) {
+fn append_message_by_channel(
+    reasoning_text: &mut String,
+    normal_text: &mut String,
+    msg: &Message,
+    has_call_stop: bool,
+) {
+    if msg.author.role != Role::Assistant {
+        return;
+    }
+    let (recipient, content_type) =
+        harmony_header_metadata(msg.recipient.as_deref(), msg.content_type.as_deref());
+    if has_call_stop
+        && msg.channel.as_deref() == Some("commentary")
+        && recipient.is_none()
+        && msg.content.iter().any(|content| match content {
+            Content::Text(text) => harmony_commentary_is_payload(content_type, &text.text),
+            _ => false,
+        })
+    {
+        return;
+    }
     match msg.channel.as_deref() {
         // Analysis WITHOUT a recipient is chain-of-thought reasoning.
         // Analysis WITH a functions recipient is a (malformed) tool call whose
         // payload is handed off via strip_analysis_blocks_for_tool_handoff —
         // do not also surface it as reasoning_content.
-        Some("analysis") if msg.recipient.is_none() => {
+        Some("analysis") if recipient.is_none() => {
             append_text_content(reasoning_text, &msg.content)
         }
         Some("final") => append_text_content(normal_text, &msg.content),
-        Some("commentary") if msg.recipient.is_none() => {
-            append_text_content(normal_text, &msg.content)
-        }
+        Some("commentary") if recipient.is_none() => append_text_content(normal_text, &msg.content),
         // A directed analysis/commentary payload is handed to the tool parser
         // elsewhere and must not also become content.
         Some("analysis") | Some("commentary") | None => {}
@@ -347,7 +435,7 @@ fn append_message_by_channel(reasoning_text: &mut String, normal_text: &mut Stri
         // streaming path emits in place. A directed message
         // (`to=...`) is a tool envelope, not prose: drop it, as the
         // stranded-header path refuses `to=` headers.
-        Some(_) if msg.recipient.is_none() => append_text_content(normal_text, &msg.content),
+        Some(_) if recipient.is_none() => append_text_content(normal_text, &msg.content),
         Some(_) => {}
     }
 }
@@ -355,10 +443,14 @@ fn append_message_by_channel(reasoning_text: &mut String, normal_text: &mut Stri
 fn append_current_by_channel(
     reasoning_text: &mut String,
     normal_text: &mut String,
+    role: Option<Role>,
     channel: Option<String>,
     recipient: Option<&str>,
     current: String,
 ) {
+    if role != Some(Role::Assistant) {
+        return;
+    }
     match channel.as_deref() {
         Some("analysis") if recipient.is_none() => append_separated(reasoning_text, &current),
         Some("final") => append_separated(normal_text, &current),
@@ -376,19 +468,6 @@ fn is_visible_normal_channel(channel: Option<&str>, recipient: Option<&str>) -> 
         || (channel.is_some_and(|channel| channel != "analysis") && recipient.is_none())
 }
 
-fn parse_harmony_header(
-    encoding: &HarmonyEncoding,
-    tokens: &[u32],
-    start_token: u32,
-) -> Option<StreamableParser> {
-    let mut header =
-        StreamableParser::new(encoding.clone(), harmony_initial_role(tokens, start_token)).ok()?;
-    for token in tokens {
-        header.process(*token).ok()?;
-    }
-    Some(header)
-}
-
 fn project_harmony_header(
     header: &StreamableParser,
     channel_header: &StreamableParser,
@@ -398,7 +477,7 @@ fn project_harmony_header(
         return None;
     }
     let channel = header.current_channel()?;
-    let recipient = header.current_recipient();
+    let recipient = harmony_current_recipient(header);
     let directed = matches!(channel.as_str(), "analysis" | "commentary")
         && recipient
             .as_deref()
@@ -406,7 +485,7 @@ fn project_harmony_header(
     if !directed && !is_visible_normal_channel(Some(&channel), recipient.as_deref()) {
         return None;
     }
-    if channel_header.current_recipient() == recipient {
+    if harmony_current_recipient(channel_header) == recipient {
         return Some(envelope);
     }
     let channel_prefix = format!("<|channel|>{channel}");
@@ -419,7 +498,7 @@ fn project_harmony_header(
     if !suffix.is_empty() {
         projected.push(' ');
         projected.push_str(suffix);
-    } else if let Some(content_type) = header.current_content_type() {
+    } else if let Some(content_type) = harmony_current_content_type(header) {
         projected.push_str(&format!(" {content_type}"));
     }
     projected.push_str("<|message|>");
@@ -443,6 +522,7 @@ fn reconstruct_directed_envelope(
     parser: &StreamableParser,
     channel: Option<&str>,
     recipient: Option<&str>,
+    body_start: Option<usize>,
 ) -> Option<String> {
     let ch = channel?;
     let is_tool_ch = ch == "commentary"
@@ -459,7 +539,17 @@ fn reconstruct_directed_envelope(
         .encode_with_special_tokens("<|channel|>")
         .into_iter()
         .next()?;
-    let last_channel_idx = tokens.iter().rposition(|t| *t == channel_token_id)?;
+    let message_token = *enc
+        .tokenizer()
+        .encode_with_special_tokens("<|message|>")
+        .first()?;
+    let message_index = body_start?.checked_sub(1)?;
+    if tokens.get(message_index) != Some(&message_token) {
+        return None;
+    }
+    let last_channel_idx = tokens[..message_index]
+        .iter()
+        .rposition(|t| *t == channel_token_id)?;
     let previous_marker = tokens[..last_channel_idx].iter().rposition(|token| {
         enc.tokenizer().is_special_token(*token)
             && enc
@@ -469,14 +559,6 @@ fn reconstruct_directed_envelope(
     });
     let begin = previous_marker.unwrap_or(0);
     let start_token = harmony_start_token_id().ok()?;
-    let message_token = *enc
-        .tokenizer()
-        .encode_with_special_tokens("<|message|>")
-        .first()?;
-    let message_index = last_channel_idx
-        + tokens[last_channel_idx..]
-            .iter()
-            .position(|token| *token == message_token)?;
     let envelope = enc
         .tokenizer()
         .decode_utf8(&tokens[last_channel_idx..])
@@ -501,8 +583,7 @@ fn reconstruct_directed_envelope(
     } else {
         // Channel-first routing is complete here even when a prior malformed body
         // precedes it. A recipient before the channel still needs boundary recovery.
-        if channel_header
-            .current_recipient()
+        if harmony_current_recipient(&channel_header)
             .as_deref()
             .is_some_and(|recipient| recipient.starts_with("functions."))
         {
@@ -510,7 +591,7 @@ fn reconstruct_directed_envelope(
         }
     }
     let decoded = enc.tokenizer().decode_utf8(&tokens[begin..]).ok()?;
-    let header = match harmony_tool_headers(&decoded).last() {
+    let header = match harmony_tool_headers(&decoded, enc).last() {
         Some(header) => header,
         None => {
             // An interrupted directed message can leave native recipient metadata
@@ -547,23 +628,15 @@ fn reconstruct_directed_envelope(
             return None;
         }
     };
-    let start = header.get(0)?.start();
+    let start = header.start;
     let channel_start = start + decoded[start..].find("<|channel|>")?;
     let mut envelope = decoded[channel_start..].to_string();
-    if let Some(name) = header.name("recipient_first") {
-        let channel_end = "<|channel|>".len()
-            + if envelope.starts_with("<|channel|>analysis") {
-                "analysis".len()
-            } else {
-                "commentary".len()
-            };
-        envelope.insert_str(channel_end, &format!(" to=functions.{}", name.as_str()));
+    if header.recipient_first {
+        let channel_end = "<|channel|>".len() + header.channel.len();
+        envelope.insert_str(channel_end, &format!(" to=functions.{}", header.name));
     }
     Some(envelope)
 }
-
-/// Harmony channel names this parser knows how to attribute.
-const HARMONY_KNOWN_CHANNELS: &[&str] = &["analysis", "commentary", "final"];
 
 /// Role names harmony may leave at the head of an unterminated header.
 const HARMONY_ROLE_NAMES: &[&str] = &["assistant", "system", "developer", "user", "tool"];
@@ -571,12 +644,16 @@ const HARMONY_ROLE_NAMES: &[&str] = &["assistant", "system", "developer", "user"
 /// Strip harmony control markup so recovered text cannot leak raw protocol
 /// tokens into assistant `content`.
 fn strip_harmony_special_tokens(text: &str) -> String {
-    let mut cleaned = text.to_string();
-    for token in HARMONY_SPECIAL_TOKENS {
-        if cleaned.contains(token) {
-            cleaned = cleaned.replace(token, "");
+    let mut cleaned = String::new();
+    let mut cursor = 0;
+    for (marker, quoted) in harmony_markers(text) {
+        if quoted {
+            continue;
         }
+        cleaned.push_str(&text[cursor..marker.start()]);
+        cursor = marker.end();
     }
+    cleaned.push_str(&text[cursor..]);
     cleaned
 }
 
@@ -593,6 +670,19 @@ fn header_opened_by_start(parser: &StreamableParser, header_len: usize) -> bool 
         .checked_sub(header_len + 1)
         .and_then(|idx| tokens.get(idx))
         .is_some_and(|t| *t == start_token_id)
+}
+
+fn stranded_header_is_bare(parser: &StreamableParser) -> bool {
+    let Ok(encoding) = get_harmony_encoding() else {
+        return false;
+    };
+    !parser.tokens().iter().any(|token| {
+        encoding.tokenizer().is_special_token(*token)
+            && encoding
+                .tokenizer()
+                .decode_bytes([*token])
+                .is_ok_and(|bytes| matches!(bytes.as_slice(), b"<|start|>" | b"<|channel|>"))
+    })
 }
 
 /// Recover the message a malformed harmony header stranded in `StreamState::Header`.
@@ -622,7 +712,13 @@ fn header_opened_by_start(parser: &StreamableParser, header_len: usize) -> bool 
 /// read, when nothing but markup remains, or when the stranded header is a
 /// directed tool call (`to=...`): its payload is a tool envelope, not prose,
 /// and surfacing it as `content` would leak the recipient and raw arguments.
-fn recover_stranded_header_text(parser: &StreamableParser) -> Option<ParserResult> {
+pub(crate) fn recover_stranded_header_text(parser: &StreamableParser) -> Option<ParserResult> {
+    if parser
+        .current_role()
+        .is_some_and(|role| role != Role::Assistant)
+    {
+        return None;
+    }
     #[derive(serde::Deserialize)]
     #[serde(tag = "state")]
     enum HarmonyStreamState {
@@ -645,6 +741,28 @@ fn recover_stranded_header_text(parser: &StreamableParser) -> Option<ParserResul
 
     let enc = get_harmony_encoding().as_ref().ok()?;
     let decoded = enc.tokenizer().decode_utf8(&header_tokens).ok()?;
+    if !header_opened_by_start(parser, header_tokens.len())
+        && harmony_json_prelude(&decoded)
+        && harmony_markers(&decoded).all(|(_, quoted)| quoted)
+    {
+        return Some(ParserResult {
+            normal_text: decoded,
+            reasoning_text: String::new(),
+        });
+    }
+    let source_header = if header_opened_by_start(parser, header_tokens.len()) {
+        format!("<|start|>{decoded}")
+    } else {
+        decoded.clone()
+    };
+    if harmony_header_eof_is_metadata(enc, &source_header) {
+        return None;
+    }
+    if header_opened_by_start(parser, header_tokens.len())
+        && harmony_header_role(enc, &format!("<|start|>{decoded}")) != Some(Role::Assistant)
+    {
+        return None;
+    }
 
     // `<|start|>assistant<|channel|>final*)__Hello!` arrives here as
     // `assistant<|channel|>final*)__Hello!`, because `<|start|>` is what moved
@@ -702,21 +820,62 @@ fn recover_stranded_header_text(parser: &StreamableParser) -> Option<ParserResul
     })
 }
 
+fn recover_replaced_header_text(parser: &StreamableParser) -> Option<ParserResult> {
+    recover_stranded_header_text(parser).filter(|recovered| {
+        recovered.normal_text.trim() != "assistant" || !recovered.reasoning_text.is_empty()
+    })
+}
+
 impl ReasoningParser for GptOssReasoningParser {
+    fn detect_and_parse_reasoning_with_context(
+        &mut self,
+        text: &str,
+        token_ids: &[u32],
+    ) -> ReasoningOutput {
+        *self =
+            Self::new().expect("this parser's cached Harmony encoding initialized successfully");
+        let mut output = self.parse_reasoning_streaming_with_context(text, token_ids);
+        let tail = self.finish_reasoning_stream_with_context();
+        output.normal_segments.extend(tail.normal_segments);
+        output.reasoning_text.push_str(&tail.reasoning_text);
+        output
+    }
+
+    fn parse_reasoning_streaming_with_context(
+        &mut self,
+        text: &str,
+        token_ids: &[u32],
+    ) -> ReasoningOutput {
+        let result = self.parse_reasoning_streaming_incremental(text, token_ids);
+        self.contextual_output(result)
+    }
+
+    fn finish_reasoning_stream_with_context(&mut self) -> ReasoningOutput {
+        let result = self.finish_reasoning_stream();
+        self.contextual_output(result)
+    }
+
     /// Finalize the stream, recovering anything harmony is still holding.
     ///
     /// Idempotent: a second call returns an empty result. The first call
     /// consumes `process_eos()`, which cannot be repeated.
     fn finish_reasoning_stream(&mut self) -> ParserResult {
+        self.protocol_ranges.clear();
+        let incomplete_why = if self.payload.in_string() {
+            "harmony_unclosed_json_string_at_eof"
+        } else {
+            "harmony_unconfirmed_header_at_eof"
+        };
         let directed_tool_pending = self.last_directed_recipient.is_some();
         let incomplete_tool = self
-            .payload
-            .in_string()
+            .last_directed_recipient
+            .is_some()
             .then(|| {
                 reconstruct_directed_envelope(
                     &self.parser,
                     self.last_directed_channel.as_deref(),
                     self.last_directed_recipient.as_deref(),
+                    self.content_cursor.body_start(),
                 )
             })
             .flatten()
@@ -727,23 +886,69 @@ impl ReasoningParser for GptOssReasoningParser {
             return ParserResult::default();
         }
         self.parser_finished = true;
+        self.content_cursor = HarmonyContentCursor::default();
         self.payload = HarmonyPayload::default();
         self.visible_payload = HarmonyVisible::default();
 
-        // Existing behaviour, unchanged: a held partial special-token suffix
-        // belongs to whatever channel the parser is currently in.
-        let pending = std::mem::take(&mut self.pending_text);
+        // Without its message delimiter, a candidate header still belongs to
+        // the old body; EOF must not assign its bytes to the proposed channel.
+        let marker_tail = std::mem::take(&mut self.pending_text);
+        let mut pending = self
+            .pending_replacement
+            .take()
+            .map(|pending| pending.text)
+            .unwrap_or_default();
+        pending.push_str(&marker_tail);
+        if !directed_tool_pending && !pending.is_empty() {
+            let encoding = get_harmony_encoding()
+                .as_ref()
+                .expect("parser encoding was initialized");
+            let ending = harmony_body_ending(&pending, encoding);
+            let has_call = ending
+                .as_ref()
+                .is_some_and(|ending| ending.as_str() == "<|call|>");
+            let keep = ending.map_or(pending.len(), |ending| ending.start());
+            pending.truncate(keep);
+            if self.parser.current_channel().as_deref() == Some("commentary")
+                && !harmony_message_is_visible(
+                    Some("commentary"),
+                    harmony_current_recipient(&self.parser).as_deref(),
+                    has_call,
+                    harmony_commentary_is_payload(
+                        harmony_current_content_type(&self.parser).as_deref(),
+                        &self
+                            .parser
+                            .current_content()
+                            .expect("native content is decoded UTF-8"),
+                    ),
+                )
+            {
+                pending.clear();
+                self.pending_commentary.clear();
+            }
+        }
         let incomplete_tool = incomplete_tool.map(|mut envelope| {
-            envelope.push_str(&pending);
+            envelope.push_str(&marker_tail);
             envelope
         });
         let mut result = ParserResult::default();
-        if !pending.is_empty() && !directed_tool_pending {
+        if !self.pending_commentary.is_empty() {
+            self.pending_commentary.push_str(&pending);
+            if self.insert_normal_separator {
+                result.normal_text.push('\n');
+                self.insert_normal_separator = false;
+            }
+            result
+                .normal_text
+                .push_str(&std::mem::take(&mut self.pending_commentary));
+            self.emitted_normal_text = true;
+        } else if !pending.is_empty() && !directed_tool_pending {
             append_current_by_channel(
                 &mut result.reasoning_text,
                 &mut result.normal_text,
+                self.parser.current_role(),
                 self.parser.current_channel(),
-                self.parser.current_recipient().as_deref(),
+                harmony_current_recipient(&self.parser).as_deref(),
                 pending,
             );
         }
@@ -760,22 +965,37 @@ impl ReasoningParser for GptOssReasoningParser {
             tracing::warn!(
                 "Harmony parser ended in a non-terminal state; returning the recovered raw output."
             );
-            append_separated(&mut result.normal_text, &recovered.normal_text);
-            append_separated(&mut result.reasoning_text, &recovered.reasoning_text);
+            if !recovered.normal_text.is_empty() {
+                if self.emitted_normal_text || !result.normal_text.is_empty() {
+                    result.normal_text.push('\n');
+                }
+                result.normal_text.push_str(&recovered.normal_text);
+                self.emitted_normal_text = true;
+            }
+            if !recovered.reasoning_text.is_empty() {
+                if self.emitted_reasoning_text || !result.reasoning_text.is_empty() {
+                    result.reasoning_text.push('\n');
+                }
+                result.reasoning_text.push_str(&recovered.reasoning_text);
+                self.emitted_reasoning_text = true;
+            }
         }
         if let Some(envelope) = incomplete_tool {
             tracing::warn!(
-                why = "harmony_unclosed_json_string_at_eof",
+                why = incomplete_why,
                 recovered_bytes = envelope.len(),
-                "Deferring malformed tool arguments to the tool parser's EOF recovery"
+                "Deferring unresolved tool framing to the tool parser's EOF recovery"
             );
+            let start = result.normal_text.len();
             result.normal_text.push_str(&envelope);
+            self.protocol_ranges.push(start..result.normal_text.len());
         }
 
         result
     }
 
     fn detect_and_parse_reasoning(&mut self, text: &str, token_ids: &[u32]) -> ParserResult {
+        self.protocol_ranges.clear();
         let caller_supplied_token_ids = !token_ids.is_empty();
         let encoded_tokens;
         let token_ids = if token_ids.is_empty() {
@@ -800,6 +1020,8 @@ impl ReasoningParser for GptOssReasoningParser {
         }
 
         let mut retained = Vec::new();
+        let mut leading_normal_text = String::new();
+        let mut call_ended_messages = Vec::new();
         let encoding = get_harmony_encoding()
             .as_ref()
             .expect("parser encoding was initialized");
@@ -817,7 +1039,7 @@ impl ReasoningParser for GptOssReasoningParser {
                 &mut self.payload,
                 &mut self.visible_payload,
                 *token_id,
-                parser.current_recipient().is_none(),
+                harmony_current_recipient(parser).is_none(),
             ) {
                 Ok(guarded) => guarded,
                 Err(error) => {
@@ -830,10 +1052,31 @@ impl ReasoningParser for GptOssReasoningParser {
                     parser,
                     encoding,
                     &mut self.resynchronizing,
+                    &mut self.content_cursor,
                     token_id,
                     self.start_token_id,
-                    |parser| {
+                    |parser, intentional| {
                         retained.extend_from_slice(parser.messages());
+                        if intentional && let Some(recovered) = recover_replaced_header_text(parser)
+                        {
+                            let bare = stranded_header_is_bare(parser);
+                            for (channel, text) in [
+                                ("final", recovered.normal_text),
+                                ("analysis", recovered.reasoning_text),
+                            ] {
+                                if !text.is_empty() {
+                                    if bare && channel == "final" {
+                                        leading_normal_text.push_str(&text);
+                                        continue;
+                                    }
+                                    let mut message =
+                                        Message::from_role_and_content(Role::Assistant, text);
+                                    message.channel = Some(channel.to_string());
+                                    retained.push(message);
+                                }
+                            }
+                            call_ended_messages.resize(retained.len(), false);
+                        }
                         Ok(())
                     },
                 ) {
@@ -846,6 +1089,14 @@ impl ReasoningParser for GptOssReasoningParser {
                         }
                     }
                 }
+                if retained.len() + parser.messages().len() > call_ended_messages.len() {
+                    call_ended_messages.push(
+                        encoding
+                            .tokenizer()
+                            .decode_bytes([token_id])
+                            .is_ok_and(|bytes| bytes == b"<|call|>"),
+                    );
+                }
             }
         }
 
@@ -854,17 +1105,42 @@ impl ReasoningParser for GptOssReasoningParser {
 
         let mut reasoning_text = String::new();
         let mut normal_text = String::new();
-        for msg in retained.iter().chain(output_msgs) {
-            append_message_by_channel(&mut reasoning_text, &mut normal_text, msg);
+        for (index, msg) in retained.iter().chain(output_msgs).enumerate() {
+            append_message_by_channel(
+                &mut reasoning_text,
+                &mut normal_text,
+                msg,
+                call_ended_messages[index],
+            );
         }
 
         let current = parser.current_content().unwrap_or_default();
+        let ending = self
+            .content_cursor
+            .is_pending()
+            .then(|| harmony_body_ending(&current, encoding))
+            .flatten();
+        let has_call = ending
+            .as_ref()
+            .is_some_and(|ending| ending.as_str() == "<|call|>");
+        let current = current[..ending.map_or(current.len(), |ending| ending.start())].to_string();
         let current_channel = parser.current_channel();
-        let current_recipient = parser.current_recipient();
-        if current_channel.as_deref() != Some("commentary") || current_recipient.is_none() {
+        let current_recipient = harmony_current_recipient(parser);
+        if current_channel.as_deref() != Some("commentary")
+            || harmony_message_is_visible(
+                Some("commentary"),
+                current_recipient.as_deref(),
+                has_call,
+                harmony_commentary_is_payload(
+                    harmony_current_content_type(parser).as_deref(),
+                    &current,
+                ),
+            )
+        {
             append_current_by_channel(
                 &mut reasoning_text,
                 &mut normal_text,
+                parser.current_role(),
                 current_channel,
                 current_recipient.as_deref(),
                 current,
@@ -873,6 +1149,7 @@ impl ReasoningParser for GptOssReasoningParser {
 
         let raw_input_text =
             raw_input_text_for_tool_parser(text, token_ids, caller_supplied_token_ids);
+        normal_text.insert_str(0, &leading_normal_text);
         if contains_directed_harmony_function_call(&raw_input_text) {
             // The serving pipeline feeds reasoning normal_text into the Harmony
             // tool parser. Keep directed commentary envelopes intact so tool
@@ -908,6 +1185,7 @@ impl ReasoningParser for GptOssReasoningParser {
         text: &str,
         token_ids: &[u32],
     ) -> ParserResult {
+        self.protocol_ranges.clear();
         let caller_supplied_token_ids = !token_ids.is_empty();
         let text_to_process;
         let text = if caller_supplied_token_ids {
@@ -957,7 +1235,7 @@ impl ReasoningParser for GptOssReasoningParser {
                 &mut self.payload,
                 &mut self.visible_payload,
                 *original_token,
-                parser.current_recipient().is_none(),
+                harmony_current_recipient(parser).is_none(),
             ) {
                 Ok(guarded) => guarded,
                 Err(error) => {
@@ -972,17 +1250,69 @@ impl ReasoningParser for GptOssReasoningParser {
                     token_ids.len(),
                     token_id
                 );
+                let previous_role = parser.current_role();
                 let previous_channel = parser.current_channel();
-                let previous_recipient = parser.current_recipient();
+                let previous_recipient = harmony_current_recipient(parser);
+                let previous_body_start = self.content_cursor.body_start();
+                let encoding = get_harmony_encoding()
+                    .as_ref()
+                    .expect("parser encoding was initialized");
+                let starts_header = *token_id == self.start_token_id
+                    || (encoding.tokenizer().is_special_token(*token_id)
+                        && encoding
+                            .tokenizer()
+                            .decode_bytes([*token_id])
+                            .is_ok_and(|bytes| bytes == b"<|channel|>"));
+                let pending_prefix_len = if self.pending_replacement.is_none()
+                    && self.content_cursor.in_body()
+                    && starts_header
+                {
+                    match harmony_content_header_can_start(parser, *token_id == self.start_token_id)
+                        .and_then(|eligible| {
+                            if eligible {
+                                parser.current_content().map(|text| Some(text.len()))
+                            } else {
+                                Ok(None)
+                            }
+                        }) {
+                        Ok(prefix) => prefix,
+                        Err(error) => {
+                            tracing::warn!(why = "harmony_pending_header_error", %error, "Could not inspect a pending Harmony header");
+                            return ParserResult::default();
+                        }
+                    }
+                } else {
+                    None
+                };
+                let mut intentional_reset = false;
+                let mut recovered_header = None;
+                let mut bare_header = false;
+                let mut retained_prefix_len = None;
                 match process_harmony_token(
                     parser,
                     get_harmony_encoding()
                         .as_ref()
                         .expect("parser encoding was initialized"),
                     &mut self.resynchronizing,
+                    &mut self.content_cursor,
                     *token_id,
                     self.start_token_id,
-                    |_| Ok(()),
+                    |old, intentional| {
+                        intentional_reset = intentional;
+                        if intentional {
+                            recovered_header = recover_replaced_header_text(old);
+                            bare_header = stranded_header_is_bare(old);
+                            retained_prefix_len = old
+                                .messages()
+                                .last()
+                                .and_then(|message| message.content.last())
+                                .and_then(|content| match content {
+                                    Content::Text(text) => Some(text.text.len()),
+                                    _ => None,
+                                });
+                        }
+                        Ok(())
+                    },
                 ) {
                     Ok(true) => {}
                     result => {
@@ -993,11 +1323,134 @@ impl ReasoningParser for GptOssReasoningParser {
                         self.last_directed_recipient = None;
                         self.payload = HarmonyPayload::default();
                         self.visible_payload = HarmonyVisible::default();
+                        self.pending_commentary.clear();
+                        self.commentary_payload = None;
+                        self.pending_replacement = None;
                         continue;
                     }
                 }
+                if intentional_reset {
+                    self.last_directed_channel = None;
+                    self.last_directed_recipient = None;
+                }
+                if self.pending_replacement.is_none()
+                    && self.content_cursor.is_pending()
+                    && let Some(body_prefix_len) = pending_prefix_len
+                {
+                    self.pending_replacement = Some(PendingReplacement {
+                        text: String::new(),
+                        body_prefix_len,
+                    });
+                }
+                if self.pending_replacement.is_some()
+                    && (intentional_reset || !self.content_cursor.is_pending())
+                {
+                    let held = self
+                        .pending_replacement
+                        .take()
+                        .expect("checked a pending header");
+                    let retained = if intentional_reset {
+                        retained_prefix_len
+                            .unwrap_or(held.body_prefix_len)
+                            .saturating_sub(held.body_prefix_len)
+                    } else {
+                        held.text.len()
+                    };
+                    let text = held
+                        .text
+                        .get(..retained)
+                        .expect("native prefix consists of complete UTF-8 content deltas")
+                        .to_string();
+                    if previous_channel.as_deref() == Some("commentary")
+                        && previous_recipient.is_none()
+                        && self.commentary_payload != Some(false)
+                    {
+                        self.pending_commentary.push_str(&text);
+                    } else {
+                        let mut released = ParserResult::default();
+                        append_current_by_channel(
+                            &mut released.reasoning_text,
+                            &mut released.normal_text,
+                            previous_role.clone(),
+                            previous_channel.clone(),
+                            previous_recipient.as_deref(),
+                            text,
+                        );
+                        self.emitted_normal_text |= !released.normal_text.is_empty();
+                        self.emitted_reasoning_text |= !released.reasoning_text.is_empty();
+                        normal_delta.push_str(&released.normal_text);
+                        reasoning_delta.push_str(&released.reasoning_text);
+                    }
+                }
+                if let Some(recovered) = recovered_header {
+                    if !recovered.normal_text.is_empty() {
+                        if self.emitted_normal_text {
+                            normal_delta.push('\n');
+                        }
+                        normal_delta.push_str(&recovered.normal_text);
+                        self.emitted_normal_text |= !bare_header;
+                        self.insert_normal_separator = false;
+                    }
+                    if !recovered.reasoning_text.is_empty() {
+                        if self.emitted_reasoning_text {
+                            reasoning_delta.push('\n');
+                        }
+                        reasoning_delta.push_str(&recovered.reasoning_text);
+                        self.emitted_reasoning_text = true;
+                        self.insert_reasoning_separator = false;
+                    }
+                }
                 let current_channel = parser.current_channel();
-                let current_recipient = parser.current_recipient();
+                let current_recipient = harmony_current_recipient(parser);
+                let content_delta = match parser.last_content_delta() {
+                    Ok(delta) => delta,
+                    Err(error) => {
+                        tracing::warn!(why = "harmony_content_delta_error", %error, "Could not read the decoded Harmony delta");
+                        return ParserResult::default();
+                    }
+                };
+                if self.content_cursor.is_pending()
+                    && let Some(held) = &mut self.pending_replacement
+                {
+                    if encoding.tokenizer().is_special_token(*token_id) {
+                        held.text.push_str(
+                            &encoding
+                                .tokenizer()
+                                .decode_utf8([*token_id])
+                                .expect("Harmony control tokens have UTF-8 literals"),
+                        );
+                    } else if let Some(delta) = content_delta {
+                        held.text.push_str(&delta);
+                    }
+                    continue;
+                }
+                if previous_role == Some(Role::Assistant)
+                    && previous_channel.as_deref() == Some("commentary")
+                    && previous_recipient.is_none()
+                    && (current_channel.is_none() || intentional_reset)
+                {
+                    let call_stop = harmony_terminator_token_ids().contains(token_id);
+                    if !(self.pending_commentary.is_empty()
+                        || call_stop && self.commentary_payload == Some(true))
+                    {
+                        if self.insert_normal_separator {
+                            normal_delta.push('\n');
+                            self.insert_normal_separator = false;
+                        }
+                        normal_delta.push_str(&self.pending_commentary);
+                        self.emitted_normal_text = true;
+                    }
+                    self.pending_commentary.clear();
+                    self.commentary_payload = None;
+                }
+
+                if parser.current_role() != Some(Role::Assistant)
+                    && previous_role != Some(Role::Assistant)
+                {
+                    self.last_directed_channel = None;
+                    self.last_directed_recipient = None;
+                    continue;
+                }
 
                 if let (Some(ch), Some(rec)) = (&current_channel, &current_recipient)
                     && (ch.as_str() == "commentary" || ch.as_str() == "analysis")
@@ -1018,12 +1471,36 @@ impl ReasoningParser for GptOssReasoningParser {
                             parser,
                             self.last_directed_channel.as_deref(),
                             self.last_directed_recipient.as_deref(),
+                            previous_body_start,
                         )
                     {
+                        let start = normal_delta.len();
                         normal_delta.push_str(&env);
+                        self.protocol_ranges.push(start..normal_delta.len());
                     }
                     self.last_directed_channel = None;
                     self.last_directed_recipient = None;
+                }
+
+                if parser.current_role() != Some(Role::Assistant) {
+                    continue;
+                }
+
+                if intentional_reset {
+                    if self.emitted_normal_text
+                        && is_visible_normal_channel(
+                            current_channel.as_deref(),
+                            current_recipient.as_deref(),
+                        )
+                    {
+                        self.insert_normal_separator = true;
+                    }
+                    if self.emitted_reasoning_text
+                        && current_channel.as_deref() == Some("analysis")
+                        && current_recipient.is_none()
+                    {
+                        self.insert_reasoning_separator = true;
+                    }
                 }
 
                 if previous_channel.as_deref() != Some("analysis")
@@ -1044,10 +1521,7 @@ impl ReasoningParser for GptOssReasoningParser {
                     self.insert_normal_separator = true;
                 }
 
-                if let (Some(delta), Some(channel)) = (
-                    parser.last_content_delta().unwrap_or_default(),
-                    current_channel,
-                ) {
+                if let (Some(delta), Some(channel)) = (content_delta, current_channel) {
                     match channel.as_str() {
                         "final" => {
                             if self.insert_normal_separator {
@@ -1069,11 +1543,23 @@ impl ReasoningParser for GptOssReasoningParser {
                             self.emitted_reasoning_text = true;
                         }
                         "commentary" if current_recipient.is_none() => {
+                            self.pending_commentary.push_str(&delta);
+                            if self.commentary_payload.is_none() {
+                                let content_type = harmony_current_content_type(parser);
+                                if harmony_commentary_is_payload(content_type.as_deref(), &delta) {
+                                    self.commentary_payload = Some(true);
+                                } else if !delta.trim().is_empty() {
+                                    self.commentary_payload = Some(false);
+                                }
+                            }
+                            if self.commentary_payload != Some(false) {
+                                continue;
+                            }
                             if self.insert_normal_separator {
                                 normal_delta.push('\n');
                                 self.insert_normal_separator = false;
                             }
-                            normal_delta.push_str(&delta);
+                            normal_delta.push_str(&std::mem::take(&mut self.pending_commentary));
                             self.emitted_normal_text = true;
                         }
                         // `analysis`/`commentary` WITH a recipient is a directed
@@ -1114,7 +1600,948 @@ impl ReasoningParser for GptOssReasoningParser {
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn context_preserves_literal_protocol_collisions_and_real_calls() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_context;
+        let mut cases = Vec::new();
+        for channel in ["commentary", "final"] {
+            for next in ["analysis", "finalx"] {
+                let literal = format!("Before<|channel|>{next}<|message|>Done");
+                cases.push((
+                    format!("<|channel|>{channel}<|message|>{literal}<|return|>"),
+                    literal,
+                    "".to_string(),
+                    0,
+                ));
+            }
+        }
+        let literal = "Use <|channel|>commentary to=functions.lookup<|message|>{}";
+        let example = format!("<|channel|>final<|message|>{literal}<|call|>");
+        cases.push((example.clone(), literal.to_string(), String::new(), 0));
+        cases.push((format!("{example}<|start|>assistant<|channel|>commentary to=functions.real<|message|>{{\"x\":1}}<|return|><|start|>assistant<|channel|>final<|message|>Tail<|return|>"), format!("{literal}\nTail"), String::new(), 1));
+        cases.push((
+            "<|channel|>final<|message|>Before<|end|><|channel|>analysis<|message|>Done<|return|>"
+                .to_string(),
+            "Before".to_string(),
+            "Done".to_string(),
+            0,
+        ));
+        cases.push(("<|channel|>commentary to=functions.bad<|message|>{\"x\":<|start|>assistant<|channel|>final<|message|>Before<|channel|>analysis<|message|>Done<|return|>".to_string(), "Before<|channel|>analysis<|message|>Done".to_string(), String::new(), 0));
+        for (input, normal, reasoning, call_count) in cases {
+            let mut outputs = vec![
+                GptOssReasoningParser::new()
+                    .unwrap()
+                    .detect_and_parse_reasoning_with_context(&input, &[]),
+            ];
+            let mut wrapper = crate::ReasoningParserType::GptOss.get_reasoning_parser();
+            outputs.push(wrapper.detect_and_parse_reasoning_with_context(&input, &[]));
+            for split in (0..=input.len()).filter(|&split| input.is_char_boundary(split)) {
+                let mut parser = GptOssReasoningParser::new().unwrap();
+                let mut output = ReasoningOutput::default();
+                for chunk in [&input[..split], &input[split..]] {
+                    let part = parser.parse_reasoning_streaming_with_context(chunk, &[]);
+                    output.normal_segments.extend(part.normal_segments);
+                    output.reasoning_text.push_str(&part.reasoning_text);
+                }
+                let tail = parser.finish_reasoning_stream_with_context();
+                output.normal_segments.extend(tail.normal_segments);
+                output.reasoning_text.push_str(&tail.reasoning_text);
+                assert!(
+                    parser
+                        .finish_reasoning_stream_with_context()
+                        .normal_segments
+                        .is_empty()
+                );
+                outputs.push(output);
+            }
+            let tokens = encode_text_to_tokens(&input).unwrap();
+            for split in 0..=tokens.len() {
+                let mut parser = GptOssReasoningParser::new().unwrap();
+                let mut output = ReasoningOutput::default();
+                for chunk in [&tokens[..split], &tokens[split..]] {
+                    let part = parser.parse_reasoning_streaming_with_context("", chunk);
+                    output.normal_segments.extend(part.normal_segments);
+                    output.reasoning_text.push_str(&part.reasoning_text);
+                }
+                let tail = parser.finish_reasoning_stream_with_context();
+                output.normal_segments.extend(tail.normal_segments);
+                output.reasoning_text.push_str(&tail.reasoning_text);
+                outputs.push(output);
+            }
+            for output in outputs {
+                assert_eq!(output.reasoning_text, reasoning, "{input}");
+                let (calls, text) =
+                    detect_and_parse_tool_call_with_context(&output, Some("harmony"), None)
+                        .await
+                        .unwrap();
+                assert_eq!(text.as_deref(), Some(normal.as_str()), "{input}");
+                assert_eq!(calls.len(), call_count, "{input}");
+                if let Some(call) = calls.first() {
+                    assert_eq!(call.function.name, "real");
+                }
+            }
+        }
+        // The exact colliding bytes still have their native raw interpretation.
+        let (calls, text) =
+            crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete(
+                "Before<|channel|>analysis<|message|>Done",
+                &Default::default(),
+                None,
+            )
+            .await
+            .unwrap();
+        assert!(calls.is_empty());
+        assert_eq!(text.as_deref(), Some(""));
+        let mut mixed = GptOssReasoningParser::new().unwrap();
+        let protocol = "<|channel|>commentary to=functions.real<|message|>{}<|return|>";
+        assert!(
+            !mixed
+                .parse_reasoning_streaming_with_context(protocol, &[])
+                .normal_segments
+                .is_empty()
+        );
+        assert!(
+            mixed
+                .parse_reasoning_streaming_incremental("", &[])
+                .normal_text
+                .is_empty()
+        );
+        assert!(
+            mixed
+                .finish_reasoning_stream_with_context()
+                .normal_segments
+                .is_empty()
+        );
+        assert!(
+            mixed
+                .finish_reasoning_stream_with_context()
+                .normal_segments
+                .is_empty()
+        );
+        let bad = ReasoningOutput {
+            reasoning_text: String::new(),
+            normal_segments: vec![NormalTextSegment::Protocol(protocol.to_string())],
+        };
+        assert!(
+            detect_and_parse_tool_call_with_context(&bad, Some("unregistered-context-test"), None)
+                .await
+                .is_err()
+        );
+    }
     use super::*;
+
+    #[test]
+    fn header_only_eof_never_invents_channel_suffix_text() {
+        for input in [
+            "<|channel|>finalx",
+            "<|start|>assistant<|channel|>finalx",
+            "<|channel|>final",
+            "<|start|>assistant<|channel|>final",
+            "<|start|>assistant",
+        ] {
+            assert_recovery_schedules(input, "", "");
+        }
+    }
+
+    #[tokio::test]
+    async fn unfinished_analysis_handoff_stops_at_the_next_framed_message() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+        for visible in [
+            "",
+            "<|start|>assistant<|channel|>final<|message|>Visible<|return|>",
+        ] {
+            let next = format!(
+                "{visible}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{{}}<|return|>"
+            );
+            let input = format!("<|channel|>analysis<|message|>Before{next}");
+            let expected_text = if visible.is_empty() { "" } else { "Visible" };
+            let batch = GptOssReasoningParser::new()
+                .unwrap()
+                .detect_and_parse_reasoning(&input, &[]);
+            assert_eq!(batch.reasoning_text, "Before");
+            let (calls, text) =
+                detect_and_parse_tool_call_with_recovery(&batch.normal_text, Some("harmony"), None)
+                    .await
+                    .unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].function.name, "lookup");
+            assert_eq!(calls[0].function.arguments, "{}");
+            assert_eq!(text.as_deref(), Some(expected_text));
+            for split in 0..=input.len() {
+                let output = collect_stream([&input[..split], &input[split..]]);
+                assert_eq!(output.reasoning_text, "Before");
+                let (calls, text) = detect_and_parse_tool_call_with_recovery(
+                    &output.normal_text,
+                    Some("harmony"),
+                    None,
+                )
+                .await
+                .unwrap();
+                assert_eq!(calls.len(), 1, "split {split}");
+                assert_eq!(calls[0].function.name, "lookup");
+                assert_eq!(calls[0].function.arguments, "{}");
+                assert_eq!(text.as_deref(), Some(expected_text), "split {split}");
+            }
+        }
+    }
+
+    #[test]
+    fn complete_framed_headers_replace_every_content_channel() {
+        let quoted = "{\"example\":\"<|start|>user<|channel|>final<|message|>literal<|return|>\"}";
+        for channel in ["analysis", "commentary", "final", "finalx"] {
+            let mut cases = Vec::new();
+            for body in ["Before", ""] {
+                for role in ["assistant", "user", "python", "python to=browser"] {
+                    cases.push((body, role, "<|return|>"));
+                }
+            }
+            cases.extend([
+                (" \t", "assistant", "<|return|>"),
+                (quoted, "assistant", "<|return|>"),
+            ]);
+            for ending in ["<|call|>", "<|end|>"] {
+                cases.push(("Before", "assistant", ending));
+            }
+            for (body, role, ending) in cases {
+                let prefix = format!("<|channel|>{channel}<|message|>{body}");
+                let next = format!("<|start|>{role}<|channel|>final<|message|>Done{ending}");
+                let reasoning = if channel == "analysis" {
+                    body.to_string()
+                } else {
+                    String::new()
+                };
+                let mut normal = if channel == "analysis" {
+                    String::new()
+                } else {
+                    body.to_string()
+                };
+                if role == "assistant" {
+                    if !normal.is_empty() {
+                        normal.push('\n');
+                    }
+                    normal.push_str("Done");
+                }
+                let control = format!("{prefix}<|end|>{next}");
+                assert_recovery_schedules(&control, &normal, &reasoning);
+                assert_recovery_schedules(&format!("{prefix}{next}"), &normal, &reasoning);
+            }
+        }
+    }
+
+    #[test]
+    fn unconfirmed_framed_headers_remain_in_the_original_content_channel() {
+        for channel in ["analysis", "commentary", "final", "finalx"] {
+            for tail in [
+                "<",
+                "<|sta",
+                "<|start|>assistant",
+                "<|start|>assistant<|channel|>final",
+            ] {
+                let input = format!("<|channel|>{channel}<|message|>Before{tail}");
+                let expected = format!("Before{tail}");
+                let (normal, reasoning) = if channel == "analysis" {
+                    ("", expected.as_str())
+                } else {
+                    (expected.as_str(), "")
+                };
+                assert_recovery_schedules(&input, normal, reasoning);
+            }
+        }
+    }
+
+    #[test]
+    fn deferred_body_endings_keep_the_original_channel_and_payload_policy() {
+        let tail = "<|start|>assistant<|channel|>final";
+        for channel in ["analysis", "commentary", "final", "finalx"] {
+            for body in ["Before", "", " \t", "{\"literal\":\"<|return|>\"}"] {
+                for ending in ["<|call|>", "<|return|>", "<|end|>"] {
+                    let input = format!("<|channel|>{channel}<|message|>{body}{tail}{ending}");
+                    let expected =
+                        if channel == "commentary" && body.starts_with('{') && ending == "<|call|>"
+                        {
+                            String::new()
+                        } else {
+                            format!("{body}{tail}")
+                        };
+                    let (normal, reasoning) = if channel == "analysis" {
+                        ("", expected.as_str())
+                    } else {
+                        (expected.as_str(), "")
+                    };
+                    assert_recovery_schedules(&input, normal, reasoning);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn complete_replacement_keeps_body_progress_before_finish() {
+        for (channel, frame) in ["analysis", "commentary", "final", "finalx"]
+            .into_iter()
+            .flat_map(|channel| ["", "<|start|>assistant"].map(|frame| (channel, frame)))
+        {
+            let mut parser = GptOssReasoningParser::new().unwrap();
+            let before = parser.parse_reasoning_streaming_incremental(
+                &format!("<|channel|>{channel}<|message|>Before"),
+                &[],
+            );
+            assert_eq!(
+                before.reasoning_text,
+                if channel == "analysis" { "Before" } else { "" }
+            );
+            assert_eq!(
+                before.normal_text,
+                if channel == "analysis" { "" } else { "Before" }
+            );
+            let header = parser
+                .parse_reasoning_streaming_incremental(&format!("{frame}<|channel|>final"), &[]);
+            assert_eq!(header.normal_text, "");
+            assert_eq!(header.reasoning_text, "");
+            let transfer = parser.parse_reasoning_streaming_incremental("<|message|>", &[]);
+            assert_eq!(transfer.normal_text, "");
+            assert_eq!(transfer.reasoning_text, "");
+            let done = parser.parse_reasoning_streaming_incremental("Done<|return|>", &[]);
+            assert_eq!(
+                done.normal_text,
+                if channel == "analysis" {
+                    "Done"
+                } else {
+                    "\nDone"
+                }
+            );
+            assert_eq!(done.reasoning_text, "");
+            assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+            assert!(parser.finish_reasoning_stream().reasoning_text.is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn header_owned_action_stop_survives_streaming_handoff() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for header in [
+            "<|channel|>commentary to=functions.lookup ",
+            "<|channel|>analysis to=functions.lookup ",
+            " to=functions.lookup<|channel|>commentary ",
+            " to=functions.lookup<|channel|>analysis ",
+            "<|channel|>final ",
+        ] {
+            for header_stop in ["<|call|>", "<|return|>", "<|end|>"] {
+                let tool = header.contains("functions.");
+                let body = if tool {
+                    "{\"city\":\"Paris\"}"
+                } else {
+                    "Done."
+                };
+                let tail = if tool {
+                    "<|call|><|start|>assistant<|channel|>final<|message|>Done.<|return|>"
+                } else {
+                    "<|return|>"
+                };
+                let input = format!(
+                    "<|channel|>commentary to=functions.unfinished<|message|>{{}}<|start|>assistant{header}{header_stop}<|message|>{body}{tail}"
+                );
+                for split in 0..=input.len() {
+                    let mut parser = GptOssReasoningParser::new().unwrap();
+                    let mut normal = String::new();
+                    for chunk in [&input[..split], &input[split..]] {
+                        let delta = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                        assert_eq!(delta.reasoning_text, "");
+                        normal.push_str(&delta.normal_text);
+                    }
+                    let (calls, visible) =
+                        detect_and_parse_tool_call_with_recovery(&normal, Some("harmony"), None)
+                            .await
+                            .unwrap();
+                    assert_eq!(calls.len(), usize::from(tool), "split {split}: {normal}");
+                    if tool {
+                        assert_eq!(calls[0].function.name, "lookup");
+                        assert_eq!(calls[0].function.arguments, "{\"city\":\"Paris\"}");
+                    }
+                    assert_eq!(visible.as_deref(), Some("Done."), "split {split}");
+                    assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+                }
+                let whole = collect_stream([input.as_str()]);
+                let tokens = encode_text_to_tokens(&input).unwrap();
+                for split in 0..=tokens.len() {
+                    let mut parser = GptOssReasoningParser::new().unwrap();
+                    let mut output = ParserResult::default();
+                    for chunk in [&tokens[..split], &tokens[split..]] {
+                        let delta = parser.parse_reasoning_streaming_incremental("", chunk);
+                        output.normal_text.push_str(&delta.normal_text);
+                        output.reasoning_text.push_str(&delta.reasoning_text);
+                    }
+                    let tail = parser.finish_reasoning_stream();
+                    output.normal_text.push_str(&tail.normal_text);
+                    output.reasoning_text.push_str(&tail.reasoning_text);
+                    assert_eq!(
+                        output.normal_text, whole.normal_text,
+                        "token {split}: {header_stop}"
+                    );
+                    assert_eq!(output.reasoning_text, whole.reasoning_text);
+                    assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn unframed_replacement_cannot_change_nonassistant_role() {
+        let input = "<|start|>user<|channel|>commentary to=functions.old<|message|>{}<|channel|>commentary to=functions.fake <|return|><|message|>{}<|call|><|start|>assistant<|channel|>final<|message|>Done.<|return|>";
+        assert_recovery_schedules(input, "Done.", "");
+    }
+
+    #[tokio::test]
+    async fn unconfirmed_header_stop_keeps_raw_eof_call_policy() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for ending in ["<|call|>", "<|return|>"] {
+            let input = format!(
+                "<|channel|>commentary to=functions.lookup<|message|>{{\"q\":1}}<|start|>assistant<|channel|>commentary to=functions.next {ending}"
+            );
+            let direct = detect_and_parse_tool_call_with_recovery(&input, Some("harmony"), None)
+                .await
+                .unwrap();
+            assert_eq!(direct.0.len(), 1);
+            assert_eq!(direct.0[0].function.name, "lookup");
+            let mut parser = GptOssReasoningParser::new().unwrap();
+            let delta = parser.parse_reasoning_streaming_incremental(&input, &[]);
+            assert!(delta.normal_text.is_empty());
+            let tail = parser.finish_reasoning_stream();
+            let recovered =
+                detect_and_parse_tool_call_with_recovery(&tail.normal_text, Some("harmony"), None)
+                    .await
+                    .unwrap();
+            assert_eq!(recovered.0.len(), 1);
+            assert_eq!(recovered.0[0].function.name, direct.0[0].function.name);
+            assert_eq!(
+                recovered.0[0].function.arguments,
+                direct.0[0].function.arguments
+            );
+            assert_eq!(recovered.1, direct.1);
+            assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn initial_header_text_keeps_json_literals_before_replacement() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        let prefix = "{\"visible\":\"<|start|>\"}";
+        for following in [
+            "<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>",
+            "<|start|>assistant<|channel|>final<|message|>Done.<|return|>",
+        ] {
+            let input = format!("{prefix}{following}");
+            let tool = following.contains("functions.");
+            let expected_text = if tool {
+                prefix.to_string()
+            } else {
+                format!("{prefix}Done.")
+            };
+            for split in 0..=input.len() {
+                let output = collect_stream([&input[..split], &input[split..]]);
+                assert_eq!(output.reasoning_text, "");
+                let (calls, text) = detect_and_parse_tool_call_with_recovery(
+                    &output.normal_text,
+                    Some("harmony"),
+                    None,
+                )
+                .await
+                .unwrap();
+                assert_eq!(calls.len(), usize::from(tool), "split {split}");
+                assert_eq!(
+                    text.as_deref(),
+                    Some(expected_text.as_str()),
+                    "split {split}"
+                );
+                if !tool {
+                    let batch = GptOssReasoningParser::new()
+                        .unwrap()
+                        .detect_and_parse_reasoning(&input, &[]);
+                    assert_eq!(batch.normal_text, output.normal_text);
+                    assert_eq!(batch.reasoning_text, output.reasoning_text);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn unfinished_framed_headers_keep_native_role_ownership() {
+        for role in ["user", "system", "developer", "tool", "python", "browser"] {
+            for channel in ["analysis", "final"] {
+                let input = format!("<|start|>{role}<|channel|>{channel} SHOULD_HIDE");
+                assert_recovery_schedules(&input, "", "");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn native_header_domain_survives_recovery_and_handoff() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for role in [
+            "assistant",
+            "user",
+            "system",
+            "developer",
+            "tool",
+            "python",
+            "browser",
+        ] {
+            for name in ["f/x", "f:x", "f+x", "@f", "雪/☃", "f<g", "f\u{a0}x"] {
+                if role != "assistant" && name != "f<g" {
+                    continue;
+                }
+                for channel in ["analysis", "commentary"] {
+                    for recipient_first in [false, true] {
+                        for prefix in [
+                            "",
+                            "<|channel|>commentary to=functions.bad<|message|>{\"q\":",
+                        ] {
+                            for ending in ["<|call|>", "<|return|>"] {
+                                let header = if recipient_first {
+                                    format!(
+                                        "<|start|>{role} to=functions.{name}<|channel|>{channel}<|message|>"
+                                    )
+                                } else {
+                                    format!(
+                                        "<|start|>{role}<|channel|>{channel} to=functions.{name}<|message|>"
+                                    )
+                                };
+                                let input = format!("{prefix}{header}{{\"x\":1}}{ending}");
+                                let expected = usize::from(role == "assistant");
+                                let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                                    &input,
+                                    Some("harmony"),
+                                    Some(&[]),
+                                )
+                                .await
+                                .unwrap();
+                                assert_eq!(calls.len(), expected, "direct {input}: {calls:?}");
+                                if expected == 1 {
+                                    assert_eq!(calls[0].function.name, name, "direct {input}");
+                                    assert_eq!(calls[0].function.arguments, "{\"x\":1}");
+                                }
+                                assert_eq!(normal.as_deref(), Some(""), "direct {input}");
+                                let batch = GptOssReasoningParser::new()
+                                    .unwrap()
+                                    .detect_and_parse_reasoning(&input, &[]);
+                                assert_eq!(batch.reasoning_text, "", "batch {input}");
+                                let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                                    &batch.normal_text,
+                                    Some("harmony"),
+                                    Some(&[]),
+                                )
+                                .await
+                                .unwrap();
+                                assert_eq!(calls.len(), expected, "batch {input}: {batch:?}");
+                                if expected == 1 {
+                                    assert_eq!(calls[0].function.name, name, "batch {input}");
+                                }
+                                assert_eq!(normal.as_deref(), Some(""), "batch {input}");
+                                let whole = collect_stream([input.as_str()]);
+                                assert_eq!(whole.reasoning_text, "", "stream {input}");
+                                let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                                    &whole.normal_text,
+                                    Some("harmony"),
+                                    Some(&[]),
+                                )
+                                .await
+                                .unwrap();
+                                assert_eq!(calls.len(), expected, "stream {input}: {whole:?}");
+                                if expected == 1 {
+                                    assert_eq!(calls[0].function.name, name, "stream {input}");
+                                    assert_eq!(calls[0].function.arguments, "{\"x\":1}");
+                                }
+                                assert_eq!(normal.as_deref(), Some(""), "stream {input}");
+                                for split in input
+                                    .char_indices()
+                                    .map(|(index, _)| index)
+                                    .chain([input.len()])
+                                {
+                                    let split_output =
+                                        collect_stream([&input[..split], &input[split..]]);
+                                    assert_eq!(
+                                        split_output.normal_text, whole.normal_text,
+                                        "text {split}: {input}"
+                                    );
+                                    assert_eq!(
+                                        split_output.reasoning_text, whole.reasoning_text,
+                                        "text {split}: {input}"
+                                    );
+                                }
+                                let tokens = encode_text_to_tokens(&input).unwrap();
+                                for split in 0..=tokens.len() {
+                                    let mut parser = GptOssReasoningParser::new().unwrap();
+                                    let mut output = ParserResult::default();
+                                    for chunk in [&tokens[..split], &tokens[split..]] {
+                                        let delta =
+                                            parser.parse_reasoning_streaming_incremental("", chunk);
+                                        output.normal_text.push_str(&delta.normal_text);
+                                        output.reasoning_text.push_str(&delta.reasoning_text);
+                                    }
+                                    let tail = parser.finish_reasoning_stream();
+                                    output.normal_text.push_str(&tail.normal_text);
+                                    output.reasoning_text.push_str(&tail.reasoning_text);
+                                    assert_eq!(
+                                        output.normal_text, whole.normal_text,
+                                        "token {split}: {input}"
+                                    );
+                                    assert_eq!(
+                                        output.reasoning_text, whole.reasoning_text,
+                                        "token {split}: {input}"
+                                    );
+                                    let repeated = parser.finish_reasoning_stream();
+                                    assert_eq!(repeated.normal_text, "");
+                                    assert_eq!(repeated.reasoning_text, "");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn reasoning_only_projects_assistant_messages() {
+        let encoding = get_harmony_encoding().as_ref().unwrap();
+        for role in ["system", "developer", "user", "tool"] {
+            for channel in ["analysis", "final", "commentary", "unknown"] {
+                let input = format!(
+                    "<|start|>{role}<|channel|>{channel}<|message|>UNTRUSTED<|end|><|start|>assistant<|channel|>final<|message|>ANSWER<|return|>"
+                );
+                let expected = ParserResult {
+                    normal_text: "ANSWER".to_string(),
+                    reasoning_text: String::new(),
+                };
+                let actual = GptOssReasoningParser::new()
+                    .unwrap()
+                    .detect_and_parse_reasoning(&input, &[]);
+                assert_eq!(actual.normal_text, expected.normal_text, "{role}/{channel}");
+                assert_eq!(
+                    actual.reasoning_text, expected.reasoning_text,
+                    "{role}/{channel}"
+                );
+                for split in input.char_indices().map(|(i, _)| i).chain([input.len()]) {
+                    let actual = collect_stream([&input[..split], &input[split..]]);
+                    assert_eq!(
+                        actual.normal_text, expected.normal_text,
+                        "{role}/{channel}/{split}"
+                    );
+                    assert_eq!(
+                        actual.reasoning_text, expected.reasoning_text,
+                        "{role}/{channel}/{split}"
+                    );
+                }
+                let mut parser = GptOssReasoningParser::new().unwrap();
+                let mut actual = ParserResult::default();
+                for token in encoding.tokenizer().encode_with_special_tokens(&input) {
+                    let delta = parser.parse_reasoning_streaming_incremental("", &[token]);
+                    actual.normal_text.push_str(&delta.normal_text);
+                    actual.reasoning_text.push_str(&delta.reasoning_text);
+                }
+                let tail = parser.finish_reasoning_stream();
+                actual.normal_text.push_str(&tail.normal_text);
+                actual.reasoning_text.push_str(&tail.reasoning_text);
+                assert_eq!(
+                    actual.normal_text, expected.normal_text,
+                    "token {role}/{channel}"
+                );
+                assert_eq!(
+                    actual.reasoning_text, expected.reasoning_text,
+                    "token {role}/{channel}"
+                );
+                assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn recovery_stream_retains_unframed_and_replacement_headers() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for (prefix, visible) in [
+            ("<|channel|>final<|message|>before<|return|>", "before"),
+            ("<|channel|>commentary to=functions.bad", ""),
+            (
+                "<|start|>assistant<|channel|>commentary to=functions.bad",
+                "",
+            ),
+        ] {
+            for frame in ["", "<|start|>assistant "] {
+                if visible.is_empty() && frame.is_empty() {
+                    continue;
+                }
+                for ending in ["<|call|>", "<|return|>"] {
+                    let input = format!(
+                        "{prefix}{frame}to=functions.lookup<|channel|>commentary<|message|>{{\"path\":\"雪\",\"content\":\"<|return|>\"}}{ending}"
+                    );
+                    let mut outputs: Vec<_> = input
+                        .char_indices()
+                        .map(|(i, _)| i)
+                        .chain([input.len()])
+                        .map(|split| {
+                            (
+                                format!("text {split}"),
+                                collect_stream([&input[..split], &input[split..]]),
+                            )
+                        })
+                        .collect();
+                    let tokens = encode_text_to_tokens(&input).unwrap();
+                    for split in 0..=tokens.len() {
+                        let mut parser = GptOssReasoningParser::new().unwrap();
+                        let mut output = ParserResult::default();
+                        for chunk in [&tokens[..split], &tokens[split..]] {
+                            let delta = parser.parse_reasoning_streaming_incremental("", chunk);
+                            output.normal_text.push_str(&delta.normal_text);
+                            output.reasoning_text.push_str(&delta.reasoning_text);
+                        }
+                        let tail = parser.finish_reasoning_stream();
+                        output.normal_text.push_str(&tail.normal_text);
+                        output.reasoning_text.push_str(&tail.reasoning_text);
+                        assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+                        outputs.push((format!("token {split}"), output));
+                    }
+                    for (split, output) in outputs {
+                        let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                            &output.normal_text,
+                            Some("harmony"),
+                            Some(&[]),
+                        )
+                        .await
+                        .unwrap();
+                        assert_eq!(output.reasoning_text, "", "{input} split={split}");
+                        assert_eq!(calls.len(), 1, "{input} split={split}: {output:?}");
+                        assert_eq!(calls[0].function.name, "lookup", "{input} split={split}");
+                        assert_eq!(
+                            calls[0].function.arguments,
+                            "{\"path\":\"雪\",\"content\":\"<|return|>\"}"
+                        );
+                        assert_eq!(normal.as_deref(), Some(visible), "{input} split={split}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn recovery_replacement_final_header_keeps_visible_body() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for (prefix, expected) in [
+            ("", "ANSWER"),
+            ("<|start|>assistant", "ANSWER"),
+            ("<|start|>user", ""),
+            ("<|start|>system", ""),
+            ("<|start|>developer", ""),
+            ("<|start|>tool", ""),
+        ] {
+            let input = format!(
+                "{prefix}<|channel|>commentary to=functions.bad<|channel|>final<|message|>ANSWER<|return|>"
+            );
+            assert_recovery_schedules(&input, expected, "");
+            let (calls, normal) =
+                detect_and_parse_tool_call_with_recovery(&input, Some("harmony"), Some(&[]))
+                    .await
+                    .unwrap();
+            assert!(calls.is_empty(), "{input}: {calls:?}");
+            assert_eq!(normal.as_deref(), Some(expected), "{input}");
+        }
+    }
+
+    #[test]
+    fn recovery_unframed_tail_keeps_message_separation() {
+        assert_recovery_schedules(
+            "<|channel|>final<|message|>before<|return|>after",
+            "before\nafter",
+            "",
+        );
+        assert_recovery_schedules(
+            "<|channel|>final<|message|>before<|return|><|channel|>final<|message|>after<|return|>",
+            "before\nafter",
+            "",
+        );
+    }
+
+    #[tokio::test]
+    async fn unfinished_visible_or_analysis_body_transfers_to_bare_final() {
+        use crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete;
+        for channel in ["commentary", "analysis", "final", "unknown"] {
+            for body in ["Before", "", " ", r#"{"x":"<|start|>"}"#] {
+                for ending in ["<|return|>", "<|call|>", "<|end|>", ""] {
+                    let input = format!(
+                        "<|channel|>{channel}<|message|>{body}<|channel|>final<|message|>Done{ending}"
+                    );
+                    let visible = if channel == "analysis" || body.is_empty() {
+                        "Done".to_string()
+                    } else {
+                        format!("{body}\nDone")
+                    };
+                    assert_recovery_schedules(
+                        &input,
+                        &visible,
+                        if channel == "analysis" { body } else { "" },
+                    );
+                    let (calls, normal) =
+                        parse_tool_calls_harmony_complete(&input, &Default::default(), None)
+                            .await
+                            .unwrap();
+                    assert!(calls.is_empty(), "{input}");
+                    assert_eq!(
+                        normal.as_deref(),
+                        Some(
+                            if channel == "analysis" {
+                                "Done".to_string()
+                            } else {
+                                format!("{body}Done")
+                            }
+                            .as_str()
+                        ),
+                        "{input}"
+                    );
+                }
+            }
+            for next in ["analysis", "finalx"] {
+                let literal = format!("Before<|channel|>{next}<|message|>Done");
+                let input = format!("<|channel|>{channel}<|message|>{literal}<|return|>");
+                assert_recovery_schedules(
+                    &input,
+                    if channel == "analysis" { "" } else { &literal },
+                    if channel == "analysis" { &literal } else { "" },
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn json_prelude_keeps_quoted_markers_before_bare_final() {
+        use crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete;
+        for prefix in [
+            r#"{"x":"<|start|>"}"#,
+            r#"["<|channel|>",1]"#,
+            r#""<|start|>\"<|return|>""#,
+            r#""plain""#,
+            "{\"x\":1",
+            "[1,2",
+            "{",
+            "[",
+        ] {
+            for frame in ["", "<|start|>assistant"] {
+                let input = format!("{prefix}{frame}<|channel|>final<|message|>Done<|return|>");
+                assert_recovery_schedules(&input, &format!("{prefix}Done"), "");
+                let (calls, normal) =
+                    parse_tool_calls_harmony_complete(&input, &Default::default(), None)
+                        .await
+                        .unwrap();
+                assert!(calls.is_empty(), "{input}");
+                assert_eq!(
+                    normal.as_deref(),
+                    Some(format!("{prefix}Done").as_str()),
+                    "{input}"
+                );
+            }
+        }
+        for prefix in [
+            "true",
+            "false",
+            "null",
+            "42",
+            "-1.5",
+            "python",
+            "functions.lookup",
+            "to=functions.lookup",
+        ] {
+            let input = format!("{prefix}<|channel|>final<|message|>Done<|return|>");
+            assert_recovery_schedules(&input, "Done", "");
+            let (calls, normal) =
+                parse_tool_calls_harmony_complete(&input, &Default::default(), None)
+                    .await
+                    .unwrap();
+            assert!(calls.is_empty(), "{input}");
+            assert_eq!(normal.as_deref(), Some("Done"), "{input}");
+        }
+    }
+
+    #[test]
+    fn recipientless_commentary_json_obeys_its_ending() {
+        for (constraint, content, payload) in [
+            ("", "{\"x\":1}", true),
+            ("", "  [1,2]", true),
+            ("", " \n{\"x\":\"<|call|>雪\"}", true),
+            ("", "  ", false),
+            ("", "plain { prose", false),
+            (" <|constrain|>json", "42", true),
+            (" <|constrain|>json", "  ", true),
+        ] {
+            for ending in ["<|call|>", "<|return|>", "<|end|>", ""] {
+                let input =
+                    format!("<|channel|>commentary{constraint}<|message|>{content}{ending}");
+                let expected = if ending == "<|call|>" && payload {
+                    ""
+                } else {
+                    content
+                };
+                assert_recovery_schedules(&input, expected, "");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn explicit_constraint_recipient_stays_directed() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        for ending in ["<|call|>", "<|return|>", "<|end|>", ""] {
+            let input = format!(
+                "<|channel|>commentary to=<|constrain|>json<|message|>{{\"secret\":\"directed\"}}{ending}"
+            );
+            assert_recovery_schedules(&input, "", "");
+            let (calls, normal) =
+                detect_and_parse_tool_call_with_recovery(&input, Some("harmony"), Some(&[]))
+                    .await
+                    .unwrap();
+            assert!(calls.is_empty(), "{input}");
+            assert_eq!(normal.as_deref(), Some(""), "{input}");
+        }
+    }
+
+    #[tokio::test]
+    async fn recovery_interrupted_recipientless_json_keeps_message_ownership() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+
+        let content = "{\"x\":\"<|start|>雪\"}";
+        for role in ["assistant", "user", "tool"] {
+            for constraint in ["", " <|constrain|>json"] {
+                for frame in ["", "<|start|>assistant"] {
+                    let input = format!(
+                        "<|start|>{role}<|channel|>commentary{constraint}<|message|>{content}{frame}<|channel|>final<|message|>Done<|return|>"
+                    );
+                    let expected = if role == "assistant" {
+                        format!("{content}\nDone")
+                    } else if frame.is_empty() {
+                        String::new()
+                    } else {
+                        "Done".to_string()
+                    };
+                    assert_recovery_schedules(&input, &expected, "");
+                    let (calls, normal) = detect_and_parse_tool_call_with_recovery(
+                        &input,
+                        Some("harmony"),
+                        Some(&[]),
+                    )
+                    .await
+                    .unwrap();
+                    assert!(calls.is_empty(), "{input}: {calls:?}");
+                    assert_eq!(
+                        normal.as_deref(),
+                        Some(expected.replace('\n', "").as_str()),
+                        "{input}"
+                    );
+                }
+            }
+        }
+    }
 
     fn assert_recovery_schedules(input: &str, normal: &str, reasoning: &str) {
         let batch = GptOssReasoningParser::new()

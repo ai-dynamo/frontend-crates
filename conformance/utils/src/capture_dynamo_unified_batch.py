@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tomllib
@@ -20,6 +21,37 @@ from impls import BATCH_SOURCE_BLOCKERS, DYNAMO_JAIL_UNIFIED_PIPELINES, DYNAMO_U
 
 PROBE = Path(__file__).resolve().with_name("legacy_batch_probe.rs")
 JAIL_PROBE = PROBE.with_name("legacy_jail_probe.rs")
+CONTEXT_PROBE_NAME = "reasoning_context_capability"
+CONTEXT_PROBE = """#![allow(dead_code)]
+use dynamo_parsers::{NormalTextSegment, ReasoningOutput, ReasoningParser};
+use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_context;
+
+fn check_reasoning(parser: &mut dyn ReasoningParser) {
+    let output: ReasoningOutput = parser.detect_and_parse_reasoning_with_context("", &[]);
+    let _: ReasoningOutput = parser.parse_reasoning_streaming_with_context("", &[]);
+    let _: ReasoningOutput = parser.finish_reasoning_stream_with_context();
+    let _ = ReasoningOutput {
+        reasoning_text: String::new(),
+        normal_segments: vec![NormalTextSegment::Literal(String::new()), NormalTextSegment::Protocol(String::new())],
+    };
+    let _ = detect_and_parse_tool_call_with_context(&output, Some("harmony"), None);
+}
+
+#[cfg(feature = "jail")]
+fn check_jail(
+    jail: dynamo_parsers::tool_calling::jail::JailedStream,
+    with_finish: dynamo_parsers::tool_calling::jail::JailedStream,
+    contextual: dynamo_parsers::tool_calling::jail::ContextualChatResponse,
+) {
+    use dynamo_parsers::tool_calling::jail::ContextualChatResponse;
+    let ContextualChatResponse { response, literal_choices } = contextual;
+    let _ = ContextualChatResponse { response, literal_choices };
+    let _ = jail.apply_with_context(futures::stream::empty::<ContextualChatResponse>());
+    let _ = with_finish.apply_with_context_and_finish_reason(futures::stream::empty::<ContextualChatResponse>());
+}
+
+fn main() {}
+"""
 
 
 def _sha256(data: bytes) -> str:
@@ -87,14 +119,43 @@ def source_unavailable(version: str, job_path: Path, output_path: Path, jail_buf
     return provenance
 
 
-def _cargo(cargo: str, args: list[str], *, work_dir: Path, log: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
+def _cargo(cargo: str, args: list[str], *, work_dir: Path, log: Path, env: dict[str, str], allow_failure: bool = False) -> subprocess.CompletedProcess:
     result = subprocess.run(
         [cargo, *args], cwd=work_dir, env=env, capture_output=True, check=False,
     )
     log.write_bytes(result.stdout + result.stderr)
-    if result.returncode:
+    if result.returncode and not allow_failure:
         raise RuntimeError(f"cargo command failed with exit {result.returncode}; see {log}")
     return result
+
+
+def reasoning_context_flags(cargo: str, *, work_dir: Path, env: dict[str, str], jail_buffer: bool) -> list[str]:
+    """Check the resolved crate's actual public API, including conditional exports."""
+    example = work_dir / "examples" / f"{CONTEXT_PROBE_NAME}.rs"
+    example.parent.mkdir(exist_ok=True)
+    example.write_text(CONTEXT_PROBE)
+    log = work_dir / "reasoning-context-probe.log"
+    result = _cargo(cargo, ["check", "--locked", "--example", CONTEXT_PROBE_NAME,
+                           "--message-format", "json", *(["--features", "jail"] if jail_buffer else [])],
+                    work_dir=work_dir, log=log, env=env, allow_failure=True)
+    if result.returncode == 0:
+        return ["conformance_reasoning_context"]
+    try:
+        diagnostics = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"invalid compiler output from context capability probe; see {log}") from error
+    errors = [row for row in diagnostics if row.get("reason") == "compiler-message"
+              and row["message"]["level"] == "error"]
+    missing_api_codes = {"E0412", "E0422", "E0425", "E0432", "E0433", "E0599", "E0603", "E0624"}
+    own_errors = errors and all(Path(row["target"]["src_path"]).resolve() == example.resolve() for row in errors)
+    actionable = [row for row in errors if not (
+        row["message"]["code"] is None and not row["message"].get("spans")
+        and re.fullmatch(r"aborting due to \d+ previous errors?(?:; \d+ warnings? emitted)?", row["message"].get("message", ""))
+    )]
+    if own_errors and actionable and all(row["message"]["code"] is not None
+                                         and row["message"]["code"]["code"] in missing_api_codes for row in actionable):
+        return []
+    raise RuntimeError(f"context capability probe failed outside missing/private API checks; see {log}")
 
 
 def compatibility_flags(source: Path, has_protocol: bool) -> list[str]:
@@ -190,6 +251,9 @@ def capture(
     packages = json.loads(metadata.stdout)["packages"]
     source = Path(next(package["manifest_path"] for package in packages if package["name"] == "dynamo-parsers" and package["version"] == version)).parent
     flags = compatibility_flags(source, bool(protocol_version))
+    env["RUSTFLAGS"] = " ".join(f"--cfg {flag}" for flag in flags)
+    if not jail_buffer or "conformance_no_jail" not in flags:
+        flags.extend(reasoning_context_flags(cargo, work_dir=work_dir, env=env, jail_buffer=jail_buffer))
     env["RUSTFLAGS"] = " ".join(f"--cfg {flag}" for flag in flags)
     result = _cargo(
         cargo,

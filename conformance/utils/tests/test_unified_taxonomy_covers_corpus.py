@@ -2194,6 +2194,137 @@ GPT_OSS_RECOVERY_ORACLES = {
         '<|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>',
         [{"kind": "text", "text": "first\nsecond"}],
     ),
+    "gpt_oss_final_then_unframed_recipient_first_call": (
+        '<|channel|>final<|message|>before<|return|>to=functions.lookup<|channel|>commentary<|message|>{"path":"雪","content":"<|return|>"}<|call|>',
+        [{"kind": "text", "text": "before"}, {"kind": "tool_call", "name": "lookup", "arguments": {"path": "雪", "content": "<|return|>"}}],
+    ),
+    "gpt_oss_unfinished_header_then_valid_call": (
+        '<|channel|>commentary to=functions.bad<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{"path":"ok"}<|return|>',
+        [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}],
+    ),
+    "gpt_oss_unfinished_directed_header_then_final": (
+        '<|channel|>commentary to=functions.bad<|channel|>final<|message|>ANSWER<|return|>',
+        [{"kind": "text", "text": "ANSWER"}],
+    ),
+    "gpt_oss_nonassistant_analysis_then_final": (
+        '<|start|>user<|channel|>analysis<|message|>UNTRUSTED<|end|><|start|>assistant<|channel|>final<|message|>ANSWER<|return|>',
+        [{"kind": "text", "text": "ANSWER"}],
+    ),
+    "gpt_oss_recipientless_json_call_then_final": (
+        '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{"kind": "text", "text": "Done"}],
+    ),
+    "gpt_oss_recipientless_json_return_then_final": (
+        '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{"kind": "text", "text": '{"city":"NYC"}\nDone'}],
+    ),
+    "gpt_oss_final_then_unframed_visible_tail": (
+        '<|channel|>final<|message|>before<|return|>after',
+        [{"kind": "text", "text": "before\nafter"}],
+    ),
+    "gpt_oss_recipientless_json_interrupted_by_final": (
+        '<|channel|>commentary<|message|>{"x":1}<|start|>assistant<|channel|>final<|message|>Done.<|return|>',
+        [{"kind": "text", "text": '{"x":1}\nDone.'}],
+    ),
+    "gpt_oss_recipientless_constrained_whitespace_call": (
+        '<|channel|>commentary <|constrain|>json<|message|>  <|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{"kind": "text", "text": "Done"}],
+    ),
+    "gpt_oss_nonassistant_unfinished_final_header": (
+        '<|start|>user<|channel|>final SHOULD_HIDE', [],
+    ),
+    "gpt_oss_nonassistant_unfinished_analysis_header": (
+        '<|start|>user<|channel|>analysis SHOULD_HIDE', [],
+    ),
+    "gpt_oss_malformed_then_nonassistant_call": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>user<|channel|>commentary to=functions.fake<|message|>{"x":1}<|return|>', [],
+    ),
+    "gpt_oss_malformed_then_native_opaque_name": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>commentary to=functions.f/x<|message|>{"x":1}<|return|>',
+        [{"kind": "tool_call", "name": "f/x", "arguments": {"x": 1}}],
+    ),
+    "gpt_oss_native_opaque_name_handoff": (
+        '<|start|>assistant<|channel|>commentary to=functions.@f<|message|>{"x":1}<|return|>',
+        [{"kind": "tool_call", "name": "@f", "arguments": {"x": 1}}],
+    ),
+    "gpt_oss_named_tool_unfinished_final_header": (
+        '<|start|>python<|channel|>final SECRET', [],
+    ),
+    "gpt_oss_named_author_less_than_lookalike": (
+        '<|start|>assistant<g<|channel|>final SECRET', [],
+    ),
+    "gpt_oss_named_author_nbsp_lookalike": (
+        '<|start|>assistant\u00a0user<|channel|>final SECRET', [],
+    ),
+    'gpt_oss_recovered_tool_header_return': (
+        '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>commentary to=functions.lookup <|return|><|message|>{"city":"Paris"}<|call|><|start|>assistant<|channel|>final<|message|>Done.<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'city': 'Paris'}}, {'kind': 'text', 'text': 'Done.'}],
+    ),
+    'gpt_oss_recovered_final_header_return': (
+        '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>', [{'kind': 'text', 'text': 'Done.'}],
+    ),
+    'gpt_oss_initial_json_prefix_then_tool': (
+        '{"visible":"<|start|>"}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>', [{'kind': 'text', 'text': '{"visible":"<|start|>"}'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}],
+    ),
+    'gpt_oss_initial_json_prefix_then_recovered_final': (
+        '{"visible":"<|start|>"}<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>', [{'kind': 'text', 'text': '{"visible":"<|start|>"}Done.'}],
+    ),
+    'gpt_oss_tab_separated_assistant_recipient': (
+        'assistant\tto=functions.lookup<|channel|>commentary<|message|>{"q":"雪"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}],
+    ),
+    'gpt_oss_implicit_recipient_prelude': (
+        'functions.lookup<|channel|>commentary<|message|>{"q":"x"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': 'x'}}],
+    ),
+    'gpt_oss_assistant_implicit_recipient_analysis': (
+        'assistant functions.lookup<|channel|>analysis<|message|>{"q":"雪"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}],
+    ),
+    'gpt_oss_assistant_role_only_final': (
+        'assistant <|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_analysis_text_interrupted_by_final': (
+        '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_final': (
+        '<|channel|>commentary<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before\nDone'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_user': (
+        '<|channel|>commentary<|message|>Before<|start|>user<|channel|>final<|message|>UNTRUSTED<|return|>', [{'kind': 'text', 'text': 'Before'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_invalid_author': (
+        '<|channel|>commentary<|message|>Before<|start|>python<|channel|>final<|message|>UNTRUSTED<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before\nDone'}],
+    ),
+    'gpt_oss_unconfirmed_header_return_at_eof': (
+        '<|channel|>final<|message|>Before<|start|>assistant<|channel|>final<|return|>', [{'kind': 'text', 'text': 'Before<|start|>assistant<|channel|>final'}],
+    ),
+    'gpt_oss_unknown_channel_header_only_eof': (
+        '<|channel|>finalx', [],
+    ),
+    'gpt_oss_analysis_interrupted_by_final_then_tool': (
+        '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Visible<|return|><|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Visible'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_bare_final': (
+        '<|channel|>commentary<|message|>Before<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before\nDone'}],
+    ),
+    'gpt_oss_analysis_text_interrupted_by_bare_final': (
+        '<|channel|>analysis<|message|>Before<|channel|>final<|message|>Done<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_initial_json_prefix_then_bare_final': (
+        '{"x":"<|start|>"}<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': '{"x":"<|start|>"}Done'}],
+    ),
+    'gpt_oss_literal_bare_analysis_in_visible_body': (
+        '<|channel|>commentary<|message|>Before<|channel|>analysis<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before<|channel|>analysis<|message|>Done'}],
+    ),
+    'gpt_oss_literal_bare_unknown_channel_in_visible_body': (
+        '<|channel|>commentary<|message|>Before<|channel|>finalx<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before<|channel|>finalx<|message|>Done'}],
+    ),
+    'gpt_oss_literal_bare_tool_header_in_visible_body': (
+        '<|channel|>final<|message|>Use <|channel|>commentary to=functions.lookup<|message|>{}<|call|>', [{'kind': 'text', 'text': 'Use <|channel|>commentary to=functions.lookup<|message|>{}'}],
+    ),
+    'gpt_oss_visible_json_prelude_indentation': (
+        '    {"x":1}\n<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': '    {"x":1}\nDone'}],
+    ),
+    'gpt_oss_visible_quoted_json_prelude_whitespace': (
+        ' \n{"x":"<|start|>"}\n<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': ' \n{"x":"<|start|>"}\nDone'}],
+    ),
 }
 
 
