@@ -52,7 +52,8 @@
     "gpt_oss_literal_bare_unknown_channel_in_visible_body",
     "gpt_oss_literal_bare_tool_header_in_visible_body",
     "gpt_oss_visible_json_prelude_indentation",
-    "gpt_oss_visible_quoted_json_prelude_whitespace"
+    "gpt_oss_visible_quoted_json_prelude_whitespace",
+    "gpt_oss_assistant_default_channel_visible_response"
   ],
   "structuralRequestHistory": {
     "sourceRevision": "570a403c34d06ff7a0d1ead99ab05332da47376d",

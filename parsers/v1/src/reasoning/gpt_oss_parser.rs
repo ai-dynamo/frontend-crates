@@ -407,36 +407,18 @@ fn append_message_by_channel(
     }
     let (recipient, content_type) =
         harmony_header_metadata(msg.recipient.as_deref(), msg.content_type.as_deref());
-    if has_call_stop
-        && msg.channel.as_deref() == Some("commentary")
-        && recipient.is_none()
-        && msg.content.iter().any(|content| match content {
+    if msg.channel.as_deref() == Some("analysis") && recipient.is_none() {
+        append_text_content(reasoning_text, &msg.content);
+    } else if harmony_message_is_visible(
+        msg.channel.as_deref(),
+        recipient,
+        has_call_stop,
+        msg.content.iter().any(|content| match content {
             Content::Text(text) => harmony_commentary_is_payload(content_type, &text.text),
             _ => false,
-        })
-    {
-        return;
-    }
-    match msg.channel.as_deref() {
-        // Analysis WITHOUT a recipient is chain-of-thought reasoning.
-        // Analysis WITH a functions recipient is a (malformed) tool call whose
-        // payload is handed off via strip_analysis_blocks_for_tool_handoff —
-        // do not also surface it as reasoning_content.
-        Some("analysis") if recipient.is_none() => {
-            append_text_content(reasoning_text, &msg.content)
-        }
-        Some("final") => append_text_content(normal_text, &msg.content),
-        Some("commentary") if recipient.is_none() => append_text_content(normal_text, &msg.content),
-        // A directed analysis/commentary payload is handed to the tool parser
-        // elsewhere and must not also become content.
-        Some("analysis") | Some("commentary") | None => {}
-        // Unknown channel name: a malformed header harmony still parsed. Treat
-        // the content as the answer rather than dropping it, matching what the
-        // streaming path emits in place. A directed message
-        // (`to=...`) is a tool envelope, not prose: drop it, as the
-        // stranded-header path refuses `to=` headers.
-        Some(_) if recipient.is_none() => append_text_content(normal_text, &msg.content),
-        Some(_) => {}
+        }),
+    ) {
+        append_text_content(normal_text, &msg.content);
     }
 }
 
@@ -451,21 +433,15 @@ fn append_current_by_channel(
     if role != Some(Role::Assistant) {
         return;
     }
-    match channel.as_deref() {
-        Some("analysis") if recipient.is_none() => append_separated(reasoning_text, &current),
-        Some("final") => append_separated(normal_text, &current),
-        Some("commentary") if recipient.is_none() => append_separated(normal_text, &current),
-        Some("analysis") | Some("commentary") | None => {}
-        // See `append_message_by_channel`: an unrecognized channel is a
-        // malformed header, not a reason to discard the model's output.
-        Some(_) if recipient.is_none() => append_separated(normal_text, &current),
-        Some(_) => {}
+    if channel.as_deref() == Some("analysis") && recipient.is_none() {
+        append_separated(reasoning_text, &current);
+    } else if harmony_message_is_visible(channel.as_deref(), recipient, false, false) {
+        append_separated(normal_text, &current);
     }
 }
 
 fn is_visible_normal_channel(channel: Option<&str>, recipient: Option<&str>) -> bool {
-    matches!(channel, Some("final"))
-        || (channel.is_some_and(|channel| channel != "analysis") && recipient.is_none())
+    harmony_message_is_visible(channel, recipient, false, false)
 }
 
 fn project_harmony_header(
@@ -1524,17 +1500,19 @@ impl ReasoningParser for GptOssReasoningParser {
                 if is_visible_normal_channel(
                     current_channel.as_deref(),
                     current_recipient.as_deref(),
-                ) && !is_visible_normal_channel(
-                    previous_channel.as_deref(),
-                    previous_recipient.as_deref(),
-                ) && self.emitted_normal_text
+                ) && (previous_role != Some(Role::Assistant)
+                    || !is_visible_normal_channel(
+                        previous_channel.as_deref(),
+                        previous_recipient.as_deref(),
+                    ))
+                    && self.emitted_normal_text
                 {
                     self.insert_normal_separator = true;
                 }
 
-                if let (Some(delta), Some(channel)) = (content_delta, current_channel) {
-                    match channel.as_str() {
-                        "final" => {
+                if let Some(delta) = content_delta {
+                    match current_channel.as_deref() {
+                        Some("final") => {
                             if self.insert_normal_separator {
                                 normal_delta.push('\n');
                                 self.insert_normal_separator = false;
@@ -1545,7 +1523,7 @@ impl ReasoningParser for GptOssReasoningParser {
                         // Analysis WITHOUT a recipient is reasoning content.
                         // Analysis WITH a functions recipient is a (malformed)
                         // tool call; its complete envelope is handed off at the action stop.
-                        "analysis" if current_recipient.is_none() => {
+                        Some("analysis") if current_recipient.is_none() => {
                             if self.insert_reasoning_separator {
                                 reasoning_delta.push('\n');
                                 self.insert_reasoning_separator = false;
@@ -1553,7 +1531,7 @@ impl ReasoningParser for GptOssReasoningParser {
                             reasoning_delta.push_str(&delta);
                             self.emitted_reasoning_text = true;
                         }
-                        "commentary" if current_recipient.is_none() => {
+                        Some("commentary") if current_recipient.is_none() => {
                             self.pending_commentary.push_str(&delta);
                             if self.commentary_payload.is_none() {
                                 let content_type = harmony_current_content_type(parser);
@@ -1577,7 +1555,7 @@ impl ReasoningParser for GptOssReasoningParser {
                         // tool call; its payload is reconstructed as a whole
                         // envelope on the action-stop chunk, so dropping the delta
                         // here is correct.
-                        "analysis" | "commentary" => {}
+                        Some("analysis" | "commentary") => {}
                         _ if current_recipient.is_some() => {}
                         _ => {
                             if self.insert_normal_separator {
@@ -1611,6 +1589,137 @@ impl ReasoningParser for GptOssReasoningParser {
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn default_channel_visible_body_matches_explicit_final() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_context;
+        let input = "<|start|>assistant<|message|>Answer<|return|>";
+        let direct =
+            crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete(
+                input,
+                &Default::default(),
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(direct.1.as_deref(), Some("Answer"));
+        assert_recovery_schedules(input, "Answer", "");
+        let output = GptOssReasoningParser::new()
+            .unwrap()
+            .detect_and_parse_reasoning_with_context(input, &[]);
+        let composed = detect_and_parse_tool_call_with_context(&output, Some("harmony"), None)
+            .await
+            .unwrap();
+        assert_eq!(composed.1.as_deref(), Some("Answer"));
+        assert!(composed.0.is_empty());
+    }
+
+    #[tokio::test]
+    async fn default_channel_visibility_keeps_role_recipient_and_payload_ownership() {
+        use crate::tool_calling::parsers::detect_and_parse_tool_call_with_context;
+        for role in [
+            "assistant",
+            "user",
+            "system",
+            "developer",
+            "tool",
+            "unknown",
+        ] {
+            for channel in [
+                "",
+                "<|channel|>analysis",
+                "<|channel|>commentary",
+                "<|channel|>final",
+            ] {
+                for recipient in ["", " to=functions.lookup", " to=python"] {
+                    for ending in ["", "<|end|>", "<|call|>", "<|return|>"] {
+                        let input =
+                            format!("<|start|>{role}{recipient}{channel}<|message|>Answer{ending}");
+                        let assistant = role == "assistant";
+                        let expected_normal = if assistant
+                            && (channel == "<|channel|>final"
+                                || (recipient.is_empty() && channel != "<|channel|>analysis"))
+                        {
+                            Some("Answer")
+                        } else {
+                            None
+                        };
+                        let expected_reasoning = if assistant
+                            && recipient.is_empty()
+                            && channel == "<|channel|>analysis"
+                        {
+                            "Answer"
+                        } else {
+                            ""
+                        };
+                        let expected_calls = usize::from(
+                            assistant
+                                && recipient == " to=functions.lookup"
+                                && channel != "<|channel|>final"
+                                && matches!(ending, "<|call|>" | "<|return|>"),
+                        );
+                        let output = GptOssReasoningParser::new()
+                            .unwrap()
+                            .detect_and_parse_reasoning_with_context(&input, &[]);
+                        assert_eq!(output.reasoning_text, expected_reasoning, "{input}");
+                        let parsed =
+                            detect_and_parse_tool_call_with_context(&output, Some("harmony"), None)
+                                .await
+                                .unwrap();
+                        assert_eq!(parsed.1.as_deref(), expected_normal, "{input}");
+                        assert_eq!(parsed.0.len(), expected_calls, "{input}");
+                        let direct = crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete(&input, &Default::default(), None).await.unwrap();
+                        assert_eq!(
+                            direct.1.as_deref().filter(|text| !text.is_empty()),
+                            expected_normal,
+                            "{input}"
+                        );
+                        assert_eq!(direct.0.len(), expected_calls, "{input}");
+                    }
+                }
+            }
+        }
+        for prefix in ["<|start|>assistant", "assistant", ""] {
+            for (constraint, body, quoted_eof) in [
+                ("", "Answer", false),
+                (" <|constrain|>json", "42", false),
+                (" <|constrain|>json", r#"{"x":1}"#, false),
+                ("", r#"{"x":"<|start|><|call|>"}"#, false),
+                ("", r#"{"x":"unfinished <|start|>"#, true),
+            ] {
+                for ending in ["", "<|end|>", "<|call|>", "<|return|>"] {
+                    let input = format!("{prefix}{constraint}<|message|>{body}{ending}");
+                    let expected = if quoted_eof {
+                        format!("{body}{ending}")
+                    } else {
+                        body.to_string()
+                    };
+                    assert_recovery_schedules(&input, &expected, "");
+                    let direct = crate::tool_calling::harmony::harmony_parser::parse_tool_calls_harmony_complete(&input, &Default::default(), None).await.unwrap();
+                    assert_eq!(direct.1.as_deref(), Some(expected.as_str()), "{input}");
+                }
+            }
+        }
+        let input = "<|start|>assistant<|message|>Before<|end|><|start|>user to=functions.bad<|message|>SECRET<|end|><|start|>assistant<|message|>After<|return|>";
+        assert_recovery_schedules(input, "Before\nAfter", "");
+    }
+
+    #[test]
+    fn default_channel_visible_progress_does_not_wait_for_finish() {
+        let mut parser = GptOssReasoningParser::new().unwrap();
+        let before = parser
+            .parse_reasoning_streaming_incremental("<|start|>assistant<|message|>Before", &[]);
+        assert_eq!(before.normal_text, "Before");
+        assert!(before.reasoning_text.is_empty());
+        let after = parser.parse_reasoning_streaming_incremental(
+            "<|end|><|start|>user<|message|>SECRET<|end|><|start|>assistant<|message|>After",
+            &[],
+        );
+        assert_eq!(after.normal_text, "\nAfter");
+        assert!(after.reasoning_text.is_empty());
+        assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+        assert!(parser.finish_reasoning_stream().normal_text.is_empty());
+    }
+
     fn collect_context_chunks(
         chunks: impl IntoIterator<Item = (String, Vec<u32>)>,
     ) -> ReasoningOutput {

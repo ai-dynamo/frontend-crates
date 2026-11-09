@@ -919,7 +919,7 @@ pub(crate) fn harmony_message_is_visible(
     payload: bool,
 ) -> bool {
     channel == Some("final")
-        || (channel.is_some_and(|channel| !matches!(channel, "analysis" | "commentary"))
+        || (channel.is_none_or(|channel| !matches!(channel, "analysis" | "commentary"))
             && recipient.is_none())
         || (channel == Some("commentary") && recipient.is_none() && !(has_call_stop && payload))
 }
@@ -1010,8 +1010,80 @@ fn strip_harmony_protocol_from_normal_text(
             "final_envelope",
         ),
     ];
-    let native_regions =
+    let mut native_regions =
         encoding.map_or_else(Vec::new, |encoding| harmony_text_regions(text, encoding));
+    if encoding.is_none() {
+        for frame in harmony_framed_roles(text, None) {
+            if frame.role != Some(Role::Assistant) {
+                continue;
+            }
+            let header_end = frame.header_end.unwrap_or(frame.end);
+            let source_header = &text[frame.start..header_end];
+            if source_header.contains("<|channel|>")
+                && cleanups.iter().any(|(regex, _, _)| {
+                    regex
+                        .find(source_header)
+                        .is_some_and(|matched| matched.start() == 0)
+                })
+            {
+                continue;
+            }
+            // With no native encoding, only an exact known assistant role and
+            // empty metadata establish a visible default body. Routing and
+            // unfamiliar metadata remain hidden rather than guessed at.
+            let visible = frame.header_end.is_some()
+                && harmony_role_word(source_header).is_some_and(|word| {
+                    source_header[word.end..]
+                        .trim_start_matches(|ch: char| ch.is_ascii_whitespace())
+                        == "<|message|>"
+                });
+            let first_body_marker =
+                markers.partition_point(|(marker, _)| marker.start() < header_end);
+            let boundary = markers[first_body_marker..]
+                .iter()
+                .take_while(|(marker, _)| marker.start() < frame.end)
+                .find_map(|(marker, quoted)| {
+                    (!quoted
+                        && matches!(
+                            marker.as_str(),
+                            "<|channel|>" | "<|call|>" | "<|return|>" | "<|end|>"
+                        ))
+                    .then_some(marker)
+                });
+            native_regions.push(HarmonyTextRegion {
+                header: frame.start..header_end,
+                body: header_end..boundary.map_or(frame.end, |marker| marker.start()),
+                end: boundary
+                    .filter(|marker| visible && marker.as_str() == "<|channel|>")
+                    .map_or(frame.end, |marker| marker.start()),
+                visible,
+            });
+            if let Some(marker) =
+                boundary.filter(|marker| visible && marker.as_str() == "<|channel|>")
+                && !cleanups.iter().any(|(regex, _, _)| {
+                    let tail = &text[marker.start()..frame.end];
+                    let last = markers.partition_point(|(marker, _)| marker.end() <= frame.end);
+                    let body_ended = last > 0
+                        && markers.get(last - 1).is_some_and(|(marker, quoted)| {
+                            !quoted
+                                && marker.end() == frame.end
+                                && matches!(marker.as_str(), "<|call|>" | "<|return|>" | "<|end|>")
+                        });
+                    regex.find(tail).is_some_and(|matched| {
+                        matched.start() == 0
+                            && (matched.end() < tail.len() || frame.end == text.len() || body_ended)
+                    })
+                })
+            {
+                native_regions.push(HarmonyTextRegion {
+                    header: marker.start()..frame.end,
+                    body: frame.end..frame.end,
+                    end: frame.end,
+                    visible: false,
+                });
+            }
+        }
+    }
     let native_owns = |position| {
         let index = native_regions.partition_point(|region| region.header.start <= position);
         index > 0 && position < native_regions[index - 1].end
@@ -2538,6 +2610,62 @@ mod tests {
     #[test]
     fn encoding_unavailable_preserves_only_known_assistant_text() {
         for (input, expected) in [
+            (
+                "<|start|>assistant<|message|>Before <|channel|>analysis",
+                "Before",
+            ),
+            (
+                "<|start|>assistant<|message|>Before <|channel|>final",
+                "Before",
+            ),
+            (
+                "<|start|>assistant<|channel|>unknown<|message|>SHOULD_HIDE<|return|>",
+                "",
+            ),
+            (
+                r#"<|start|>assistant<|message|>{"q":"<|channel|>analysis <|channel|>final"}<|return|>"#,
+                r#"{"q":"<|channel|>analysis <|channel|>final"}"#,
+            ),
+            (
+                "<|start|>assistant<|message|>Before <|channel|>commentary to=functions.f<|message|>{\"secret\":1}<|call|><|start|>assistant<|channel|>final<|message|>After<|return|>",
+                "Before After",
+            ),
+            (
+                "<|start|>assistant<|message|>Before <|channel|>analysis<|message|>SHOULD_HIDE<|end|><|start|>assistant<|channel|>final<|message|>After<|return|>",
+                "Before After",
+            ),
+            (
+                "<|start|>assistant<|message|>Before <|channel|>final<|message|>After<|return|>",
+                "Before After",
+            ),
+            (
+                r#"<|start|>assistant<|message|>{"q":"<|channel|>commentary to=functions.f<|message|>{\"secret\":1}<|call|>"}<|return|>"#,
+                r#"{"q":"<|channel|>commentary to=functions.f<|message|>{\"secret\":1}<|call|>"}"#,
+            ),
+            ("<|start|>assistant<|message|>ANSWER<|return|>", "ANSWER"),
+            ("<|start|>assistant \t<|message|>ANSWER<|end|>", "ANSWER"),
+            ("<|start|>assistant<|message|>ANSWER<|call|>", "ANSWER"),
+            ("<|start|>assistant<|message|>ANSWER", "ANSWER"),
+            ("<|start|>user<|message|>SHOULD_HIDE<|return|>", ""),
+            ("<|start|>system<|message|>SHOULD_HIDE<|end|>", ""),
+            ("<|start|>tool<|message|>SHOULD_HIDE<|call|>", ""),
+            (
+                "<|start|>assistant to=functions.lookup<|message|>{\"secret\":1}<|call|>",
+                "",
+            ),
+            (
+                "<|start|>assistant functions.lookup<|message|>{\"secret\":1}<|return|>",
+                "",
+            ),
+            (
+                "<|start|>assistant to=python<|message|>SHOULD_HIDE<|end|>",
+                "",
+            ),
+            ("<|start|>assistant", ""),
+            (
+                "<|start|>assistant<|message|>{\"x\":\"<|start|><|call|>\"}<|return|>",
+                "{\"x\":\"<|start|><|call|>\"}",
+            ),
             (
                 "<|start|>assistant<|channel|>final<|message|>ANSWER<|return|>",
                 "ANSWER",

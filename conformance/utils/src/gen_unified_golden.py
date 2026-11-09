@@ -4440,6 +4440,9 @@ _GPT_OSS_RECOVERY_CASES = (
     ('gpt_oss_visible_quoted_json_prelude_whitespace', 'A visible JSON prelude begins with a space and newline and contains a quoted start marker before a bare final header. The quoted marker belongs to JSON data; select the first unquoted protocol boundary and preserve all leading and trailing prelude whitespace exactly.',
      ' \n{"x":"<|start|>"}\n<|channel|>final<|message|>Done<|return|>',
      [{'kind': 'text', 'text': ' \n{"x":"<|start|>"}\nDone'}]),
+    ('gpt_oss_assistant_default_channel_visible_response', 'A complete native assistant message omits both recipient and channel. The message delimiter begins an ordinary visible body; preserve Answer through the return ending without requiring an explicit final channel or inventing a tool call.',
+     '<|start|>assistant<|message|>Answer<|return|>',
+     [{'kind': 'text', 'text': 'Answer'}]),
 )
 
 

@@ -322,6 +322,7 @@ UNIFIED_TAX = {
     "gpt_oss_literal_bare_tool_header_in_visible_body": ("gpt_oss", "63"),
     "gpt_oss_visible_json_prelude_indentation": ("gpt_oss", "64"),
     "gpt_oss_visible_quoted_json_prelude_whitespace": ("gpt_oss", "65"),
+    "gpt_oss_assistant_default_channel_visible_response": ("gpt_oss", "66"),
 
 
     # Group 40 — Prefilled reasoning, happy

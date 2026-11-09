@@ -4422,6 +4422,9 @@ requests:
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|call|>'
     tools: tools_9db8284c68087826
+  d903a94de40ebbc0d355c32616d70f93ad487022d285e5e2094e47277116064b:
+    input: <|start|>assistant<|message|>Answer<|return|>
+    tools: tools_9db8284c68087826
   d9f6c3a6e43d7ed894f4a71a46c786330d154c69bd668d95bbd8ec4346660c93:
     input: '<|start|>assistant<|channel|>analysis<|message|>first<|end|><|start|>assistant<|channel|>analysis<|message|>
 
@@ -9887,13 +9890,24 @@ cases:
 
         Done'
   gpt_oss_visible_quoted_json_prelude_whitespace:
-    description: A visible JSON prelude begins with a space and newline and contains a quoted start marker before a bare final header. The quoted marker belongs to JSON data; select the first unquoted protocol boundary and preserve all leading and trailing prelude whitespace exactly.
     policy:
     - I3
     - I5
     - I7
+    description: A visible JSON prelude begins with a space and newline and contains a quoted start marker before a bare final header. The quoted marker belongs to JSON data; select the first unquoted protocol boundary and preserve all leading and trailing prelude whitespace exactly.
     display_id: UNIFIED.gpt_oss-visible_quoted_json_prelude_whitespace
     request: e160bc7da0a1e3dc15e9f38943854dedd5da1baa2679b15f44150a3e95969716
     golden:
     - kind: text
       text: " \n{\"x\":\"<|start|>\"}\nDone"
+  gpt_oss_assistant_default_channel_visible_response:
+    description: A complete native assistant message omits both recipient and channel. The message delimiter begins an ordinary visible body; preserve Answer through the return ending without requiring an explicit final channel or inventing a tool call.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-assistant_default_channel_visible_response
+    request: d903a94de40ebbc0d355c32616d70f93ad487022d285e5e2094e47277116064b
+    golden:
+    - kind: text
+      text: Answer

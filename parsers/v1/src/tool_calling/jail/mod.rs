@@ -5405,6 +5405,91 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn default_channel_visible_body_survives_context_jail_schedules() {
+        for prefix in ["<|start|>assistant", "assistant", ""] {
+            for (body, quoted_eof) in [
+                ("Answer", false),
+                (r#"{"q":"<|start|><|return|>"}"#, false),
+                (r#"{"q":"unfinished <|start|>"#, true),
+            ] {
+                for ending in ["", "<|end|>", "<|call|>", "<|return|>"] {
+                    let input = format!("{prefix}<|message|>{body}{ending}");
+                    let expected = vec![(
+                        String::new(),
+                        if quoted_eof {
+                            format!("{body}{ending}")
+                        } else {
+                            body.to_string()
+                        },
+                    )];
+                    for finish in [FinishReason::Stop, FinishReason::Length] {
+                        for split in 0..=input.len() {
+                            assert_eq!(
+                                harmony_reasoning_jail_events(
+                                    vec![
+                                        (input[..split].to_string(), Vec::new()),
+                                        (input[split..].to_string(), Vec::new())
+                                    ],
+                                    finish
+                                )
+                                .await,
+                                expected,
+                                "text{split}: {input}"
+                            );
+                        }
+                        let tokens =
+                            crate::tool_calling::harmony::harmony_parser::get_harmony_encoding()
+                                .await
+                                .as_ref()
+                                .unwrap()
+                                .tokenizer()
+                                .encode_with_special_tokens(&input);
+                        for split in 0..=tokens.len() {
+                            assert_eq!(
+                                harmony_reasoning_jail_events(
+                                    vec![
+                                        (String::new(), tokens[..split].to_vec()),
+                                        (String::new(), tokens[split..].to_vec())
+                                    ],
+                                    finish
+                                )
+                                .await,
+                                expected,
+                                "tokens{split}: {input}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn default_channel_context_jail_releases_visible_body_before_finish() {
+        use crate::{GptOssReasoningParser, ReasoningParser};
+        let output = GptOssReasoningParser::new()
+            .unwrap()
+            .parse_reasoning_streaming_with_context("<|start|>assistant<|message|>Answer", &[]);
+        let upstream = stream::iter(contextual_text_chunks(output))
+            .chain(stream::once(std::future::pending()));
+        let output = JailedStream::builder()
+            .tool_call_parser("harmony")
+            .build()
+            .apply_with_context_and_finish_reason(upstream);
+        tokio::pin!(output);
+        let response = tokio::time::timeout(std::time::Duration::from_secs(5), output.next())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            collect_text_content(std::slice::from_ref(&response)),
+            "Answer"
+        );
+        assert!(collect_tool_calls(std::slice::from_ref(&response)).is_empty());
+        assert!(response.data.unwrap().choices[0].finish_reason.is_none());
+    }
+
+    #[tokio::test]
     async fn optional_channel_calls_and_quoted_eof_survive_context_jail() {
         let quoted =
             r#"{"q":"<|call|><|start|>assistant<|channel|>final<|message|>literal<|return|>"}"#;

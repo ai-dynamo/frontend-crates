@@ -2325,6 +2325,9 @@ GPT_OSS_RECOVERY_ORACLES = {
     'gpt_oss_visible_quoted_json_prelude_whitespace': (
         ' \n{"x":"<|start|>"}\n<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': ' \n{"x":"<|start|>"}\nDone'}],
     ),
+    'gpt_oss_assistant_default_channel_visible_response': (
+        '<|start|>assistant<|message|>Answer<|return|>', [{'kind': 'text', 'text': 'Answer'}],
+    ),
 }
 
 
