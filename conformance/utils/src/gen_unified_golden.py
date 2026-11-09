@@ -799,6 +799,9 @@ CLEAN = [
     ("two_calls_same_name",
      "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv1.2.d.",
      [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Tokyo")], M, M),
+    ("tool_call_ids_unique",
+     "Two identical invocations must remain distinct calls, including when native wire indices repeat. Parser-supplied API IDs must not collide; absent IDs delegate identity generation to the serving layer.",
+     [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Paris")], M, M),
 
     # --- Group 3: no tool call ---
     ("text_only",
@@ -4799,6 +4802,10 @@ def build_cases(fam):
         _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
         cases = _apply_unified_numeric_goldens(cases, fam)
+    if fam in {"kimi_k2", "kimi_k3"}:
+        case = cases[f"UNIFIED.tool_call_ids_unique.{fam}"]
+        case["input"] = (case["input"].replace("functions.get_weather:1", "functions.get_weather:0")
+                         if fam == "kimi_k2" else case["input"].replace('index="2"', 'index="1"'))
     return {
         key: case
         for key, case in cases.items()

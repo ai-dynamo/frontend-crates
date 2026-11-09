@@ -2299,6 +2299,9 @@ requests:
   2ab328dcecdb3d23347c5c60723ba468008f277b77b42b044bdbf142502cd1f9:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": true}<|call|>'
     tools: tools_1ffd69270532e13e
+  2cd6777c1f622ddaedb72e00046749816b01e2dc8c4146cfb554298811a1d937:
+    input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|>'
+    tools: tools_9db8284c68087826
   2d5d42a8cb9a42a608f3183a678bc7a67d8d3faa3b39945a270629113ab4c5ff:
     input: '<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": " <|channel|>analysis<|message|>quoted<|end|> <|start|> <|message|> <|call|> <|return|> &amp; \"x\"\\\n "}<|call|>'
     tools: tools_9db8284c68087826
@@ -9911,3 +9914,16 @@ cases:
     golden:
     - kind: text
       text: Answer
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls, including when native wire indices repeat. Parser-supplied API IDs must not collide; absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 2cd6777c1f622ddaedb72e00046749816b01e2dc8c4146cfb554298811a1d937
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

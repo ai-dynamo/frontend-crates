@@ -4694,6 +4694,9 @@ requests:
     - 10
     - 62
     - 33
+  c99035a0fda50b930c25fdb994aa90b70e40d7c6afde077d85f33f99c49860f5:
+    input: <|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|><|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+    tools: tools_cbf47ccf5fd2ef00
   ca5ebc5aaa5277376a60f5e5cf4fafd067e29b73c9311880c952641359ddd358:
     input: <|tool_call>call:get_weather{value:9007199254740993.1}<tool_call|>
     tools: tools_be922244cdee705c
@@ -9958,3 +9961,16 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls, including when native wire indices repeat. Parser-supplied API IDs must not collide; absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: c99035a0fda50b930c25fdb994aa90b70e40d7c6afde077d85f33f99c49860f5
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
