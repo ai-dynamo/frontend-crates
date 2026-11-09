@@ -537,6 +537,12 @@ _MISTRAL_QUOTE_NOTE = (
     "Mistral markers are special tokens, so quotation cannot make one literal; "
     "`mistral-quoted_marker_is_structural` pins that."
 )
+_MISTRAL_QUOTE_WHITESPACE_NOTE = (
+    "Mistral markers are special tokens, so quotation cannot change where a thought "
+    "ends, and a thought loses its trailing whitespace when it ends; "
+    "`mistral-quoted_marker_is_structural` and "
+    "`mistral-reasoning_trailing_whitespace_stripped` pin that."
+)
 
 # Shared scenarios a family's grammar cannot express, and why. Clean scenarios are
 # excluded by `_call_is_followed` instead.
@@ -553,6 +559,19 @@ GRAMMAR_EXCLUSIONS = {
         "native_single_quote_contraction_reasoning": _MISTRAL_QUOTE_NOTE,
         "native_quoted_incomplete_header": _MISTRAL_QUOTE_NOTE,
         "native_quoted_control_then_call": _MISTRAL_QUOTE_NOTE,
+        "blank_framing_tool_only": _CLOSERLESS_NOTE,
+        "blank_framing_between_calls_single_chunk": _CLOSERLESS_NOTE,
+        "blank_framing_with_prose": _CLOSERLESS_NOTE,
+        "blank_framing_after_reasoning": _CLOSERLESS_NOTE,
+        "blank_framing_prose_after_call": _CLOSERLESS_NOTE,
+        "quoted_name_backtick_nonpossessive_some": _MISTRAL_QUOTE_NOTE,
+        "quoted_name_backtick_nonpossessive_s_name": _MISTRAL_QUOTE_NOTE,
+        "quoted_name_double_quote_nonpossessive_some": _MISTRAL_QUOTE_NOTE,
+        "quoted_name_double_quote_nonpossessive_s_name": _MISTRAL_QUOTE_NOTE,
+        "quoted_name_backtick_possessive_reasoning": _MISTRAL_QUOTE_WHITESPACE_NOTE,
+        "quoted_name_double_quote_possessive_reasoning": _MISTRAL_QUOTE_WHITESPACE_NOTE,
+        "quoted_name_backtick_possessive_then_call": _MISTRAL_QUOTE_WHITESPACE_NOTE,
+        "quoted_name_double_quote_possessive_then_call": _MISTRAL_QUOTE_WHITESPACE_NOTE,
     },
 }
 
