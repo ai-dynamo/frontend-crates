@@ -1090,9 +1090,21 @@ impl ControlMarkers {
         let mut shapes = self.is_harmony;
         let mut start = from;
         while let Some(hit) = self.matcher.find(Input::new(text).span(start..text.len())) {
-            match self.spellings.get(hit.pattern().as_usize()) {
-                Some((_, read)) if is_assistant && *read => start = hit.end(),
-                Some(_) => return Some(hit.range()),
+            // A `<|` hit can cover a declared spelling no longer than itself
+            // (`<`), which still wins over the shape.
+            let declared = self.spellings.get(hit.pattern().as_usize()).or_else(|| {
+                self.spellings
+                    .iter()
+                    .rev()
+                    .take_while(|(spelling, _)| spelling.len() <= hit.len())
+                    .filter(|(spelling, _)| text[hit.start()..].starts_with(spelling.as_str()))
+                    .last()
+            });
+            match declared {
+                Some((spelling, read)) if is_assistant && *read => {
+                    start = hit.start() + spelling.len();
+                }
+                Some((spelling, _)) => return Some(hit.start()..hit.start() + spelling.len()),
                 // `<|`, matched only for Harmony templates.
                 None => {
                     if shapes {
@@ -1455,6 +1467,29 @@ mod tests {
             assert_eq!(ordinary, expected);
             assert!(prompt.segments().unwrap()[0].allow_special);
             assert!(prompt.segments().unwrap().last().unwrap().allow_special);
+        }
+    }
+
+    #[test]
+    fn harmony_shapes_do_not_hide_a_shorter_declared_marker() {
+        // A tokenizer that declares `<` itself: where `<|` starts no shape, because
+        // the span holds a quote or never closes, that `<` is still shielded.
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": "<|start|>user<|message|>{{ messages[0].content }}<|end|>",
+            "added_tokens_decoder": {
+                "1": {"content": "<", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false}
+            }
+        }))
+        .unwrap();
+        let formatter = SysFormatter::new(ct, SysMixins::new(&[])).unwrap();
+        for content in [r#"a<|"x|>b"#, "a<|b"] {
+            let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+                "model": "gpt-oss", "messages": [{"role": "user", "content": content}]
+            }))
+            .unwrap();
+            let prompt = formatter.render_prompt(&request).unwrap();
+            assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+            assert_eq!(ordinary_segments(&prompt), ["<"]);
         }
     }
 
