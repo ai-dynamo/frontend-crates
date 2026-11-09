@@ -372,8 +372,7 @@ fn mistral_boundary() -> Box<dyn InvokeBoundary> {
 /// upstream vLLM keeps it (`raw_decode` in `_extract_args_json`). A value need
 /// not be an object. `None` when the body does not start with one.
 fn first_json_value(body: &str) -> Option<&str> {
-    let mut values =
-        serde_json::Deserializer::from_str(body).into_iter::<serde::de::IgnoredAny>();
+    let mut values = serde_json::Deserializer::from_str(body).into_iter::<serde::de::IgnoredAny>();
     values.next()?.ok()?;
     Some(&body[..values.byte_offset()])
 }
