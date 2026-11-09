@@ -1,30 +1,29 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"945212fa5589785ef02a5468ad2afb957decb432e209b0427f098ac8d8ead759","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.16.yaml","surface":"unified","version":"0.9.16"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"0ded4c06ebf88196b5184a3e4673bb27c3e019883456336426d3ae87655e6b0f","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.16.yaml","surface":"unified","version":"0.9.16"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_60a5e7b94c041a05
+  origin: origin_29d6d3ab866ec0c9
 origins:
-  origin_60a5e7b94c041a05:
+  origin_29d6d3ab866ec0c9:
     crate_version: 0.9.16
-    source_sha256: 609a4e9dcfe478be6cb07826cd1c76d037800c63a421f56286c1c60822190dd6
-    git_commit: 7db9927b214ba9aeef3df340006557444479a8e7
+    source_sha256: 7cf6ed84f03226d93436a47b3c892765d9aef46d3540eb54504dfde3de9bb1d5
+    git_commit: dde4723f96150df80d11bc1425de44905e387e38
 producers:
-  producer_dc72e0708945e79c:
+  producer_b86f17c64bebf1c0:
     captured_with:
       dynamo_v2: 0.9.16
-    capture_origin: origin_60a5e7b94c041a05
+    capture_origin: origin_29d6d3ab866ec0c9
 contexts:
-  context_01419a81194b5a21:
-    family: beam
+  context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.16.yaml
-  producer: producer_dc72e0708945e79c
-  context: context_01419a81194b5a21
+  producer: producer_b86f17c64bebf1c0
+  context: context_cdf0b3c0134ec96f
 records:
   arg_array_quoted_parameter_close:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
@@ -1856,6 +1855,21 @@ records:
           name: noop
           arguments: '{}'
           complete: true
+  enum_contradicting_declared_type:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
+          complete: true
+      - expected: []
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
     request: bd56a6ac01f9373ebece7ffa4efc72388028dbe295966da5e22c02eefbe05dec
@@ -6472,6 +6486,21 @@ records:
           arguments: '}'
           complete: true
       - expected: []
+  schema_declared_integer_boolean_number_order:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    request: c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e
+    output:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments: '{"value": 1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 1}'
+          complete: true
+      - expected: []
   schema_declared_null:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_null
     request: d93cb48758d06bcb451529c2f6428ca64a7c69cafebbe1fc4867a76a541cb112
@@ -8922,6 +8951,28 @@ records:
       - expected: []
       - expected: []
       - expected: []
+  tool_call_ids_unique:
+    case_key: UNIFIED.2-tool_call_ids_unique
+    request: 7c6b5c4b4a80be59c5cb79def8c3edc9e5fe8c93ebdae629cab276adc6d801c8
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
   tool_in_reason:
     case_key: UNIFIED.12-tool_in_reason
     request: 0f543df656ddd86b2da5edd55e2611d1580ac964e88ab9c9fd7de87e8902d03c
@@ -9576,56 +9627,3 @@ records:
           arguments: '}'
           complete: true
       - expected: []
-  schema_declared_integer_boolean_number_order:
-    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
-    request: c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": 1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": 1}'
-          complete: true
-      - expected: []
-  enum_contradicting_declared_type:
-    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
-          complete: true
-      - expected: []
-  tool_call_ids_unique:
-    case_key: UNIFIED.2-tool_call_ids_unique
-    request: 7c6b5c4b4a80be59c5cb79def8c3edc9e5fe8c93ebdae629cab276adc6d801c8
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-    suppress_inherited_from: true
