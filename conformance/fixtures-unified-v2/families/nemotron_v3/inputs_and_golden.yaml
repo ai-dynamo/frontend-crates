@@ -2019,6 +2019,33 @@ requests:
     - 1
     - 12
     finish_step: true
+  057f5829ab059411efe0f9af8ec75c238fca09e1b2f59cecb4ea2b271cbd5cef:
+    input: '</think><tool_call>
+
+      <function=get_weather>
+
+      <parameter=city>
+
+      Paris
+
+      </parameter>
+
+      </function>
+
+      </tool_call><tool_call>
+
+      <function=get_weather>
+
+      <parameter=city>
+
+      Paris
+
+      </parameter>
+
+      </function>
+
+      </tool_call>'
+    tools: tools_cbf47ccf5fd2ef00
   06d1a557ef2c4dea7eccc3cd9b442f77aa8b473094ec4bfde50c58c290609f51:
     init:
       starting_state: None
@@ -13561,3 +13588,16 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls, including when native wire indices repeat. Parser-supplied API IDs must not collide; absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 057f5829ab059411efe0f9af8ec75c238fca09e1b2f59cecb4ea2b271cbd5cef
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

@@ -1028,7 +1028,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
+    assert len(UNIFIED_TAX) == 279 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -2963,3 +2963,17 @@ def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
         case["golden"] = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
     with pytest.raises(AssertionError):
         _assert_input_carries_events(family, scenario, case)
+
+
+def test_tool_call_ids_unique_uses_identical_calls_for_every_native_family():
+    expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}] * 2
+    for family in sorted(G.UNIFIED_FAMILIES):
+        case = build_cases(family)[f"UNIFIED.tool_call_ids_unique.{family}"]
+        assert case["golden"] == expected
+        assert case["input"].count("Paris") == 2
+        if family == "kimi_k2":
+            assert case["input"].count("functions.get_weather:0") == 2
+            assert "functions.get_weather:1" not in case["input"]
+        elif family == "kimi_k3":
+            assert case["input"].count('index="1"') == 2
+            assert 'index="2"' not in case["input"]

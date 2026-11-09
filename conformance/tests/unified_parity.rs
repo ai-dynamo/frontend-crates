@@ -202,6 +202,37 @@ fn structural_response_case_checks_the_schema_before_parsing() {
     );
 }
 
+#[test]
+fn tool_call_ids_unique_table_case_enforces_identity() {
+    let mut checked = 0;
+    for file in load_native_golden() {
+        let case = &file.cases[&format!("UNIFIED.tool_call_ids_unique.{}", file.family)];
+        let chunks = capture::input_chunks(&case.input, case.input_chunks.as_deref());
+        let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+        let mut parser = create_unified_parser_for_family(&file.family, &tools).unwrap();
+        case.init.apply(&mut parser, &file.family);
+        let rows = capture::native_capture(&mut parser, &chunks).unwrap();
+        let result = capture::check_tool_call_ids(parser.as_ref(), &rows);
+        if file.family == "kimi_k2" {
+            // Preserved native K2 IDs expose this known collision in the table.
+            let capture::CaptureFailure::Error(error) = result.unwrap_err() else {
+                panic!("expected a captured identity violation")
+            };
+            assert!(error.contains("duplicate parser-supplied tool-call ID"));
+        } else {
+            result.unwrap();
+        }
+        assert_eq!(
+            assemble(&rows.into_iter().flatten().collect::<Vec<_>>()),
+            case.golden,
+            "{}",
+            file.family
+        );
+        checked += 1;
+    }
+    assert!(checked > 0);
+}
+
 fn events(
     family: &str,
     chunks: &[String],
