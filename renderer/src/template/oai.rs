@@ -1095,6 +1095,7 @@ impl ControlMarkers {
     /// could complete it, even when the template trims each string first. A
     /// space right before the tail is included, because BPE and SentencePiece
     /// tokenizers join it to the `<`: `is 3 <` keeps the tokens it has unshielded.
+    /// Leading whitespace is not, so a template's `trim` can still remove it.
     fn partial_tail(
         &self,
         text: &str,
@@ -1118,7 +1119,9 @@ impl ControlMarkers {
                     })
             })
             .map(|start| {
-                let start = if text[from..start].ends_with(' ') {
+                let start = if text[from..start].ends_with(' ')
+                    && text[..start - 1].contains(|c: char| !crate::python::is_python_space(c))
+                {
                     start - 1
                 } else {
                     start
@@ -1649,6 +1652,16 @@ mod tests {
         let prompt = formatter.render_prompt(&request).unwrap();
         assert_eq!(prompt.as_str(), "<|im_start|>user\nis 3 <<|im_end|>");
         assert_eq!(ordinary_segments(&prompt), [" <"]);
+
+        // A leading space stays outside, where the template's `trim` removes it.
+        let formatter = chatml_formatter_for("{{ messages[0].content | trim }}");
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test", "messages": [{"role": "user", "content": "   <"}]
+        }))
+        .unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+        assert_eq!(ordinary_segments(&prompt), ["<"]);
     }
 
     #[test]
