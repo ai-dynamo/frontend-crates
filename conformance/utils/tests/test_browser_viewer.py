@@ -246,12 +246,14 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
 
 @pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail", "dynamo_v2"])
 @pytest.mark.parametrize("scenario,has_origin", [("tool_only", True), ("gpt_oss_assistant_default_channel_visible_response", False)])
-def test_unified_popup_shows_actual_observation_producer(published_viewer, implementation, scenario, has_origin):
-    catalog = _published_catalog(published_viewer)
-    version = max((source["version"] for source in catalog["sources"]["candidates"]
-                   if source["implementation"] == implementation), key=capture_release_sort_key)
+def test_unified_popup_shows_actual_observation_producer(historical_published_viewer, implementation, scenario, has_origin):
+    catalog = _published_catalog(historical_published_viewer)
+    versions = {capture["version"] for capture in catalog["capture_generation"]["current"]
+                if capture["implementation"] == implementation and capture["family"] == "gpt_oss"}
+    assert len(versions) == 1
+    version = versions.pop()
     key = f"{implementation}@{version}"
-    server, _requests = _server(root=published_viewer)
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
@@ -271,6 +273,7 @@ def test_unified_popup_shows_actual_observation_producer(published_viewer, imple
             return {candidate,expectedProducer};
         """, cell, key)
         candidate = rendered["candidate"]
+        assert candidate["version"] == version
         origin = candidate["block"].get("producer_origin")
         assert bool(origin) == has_origin
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
