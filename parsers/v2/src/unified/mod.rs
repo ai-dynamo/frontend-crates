@@ -60,6 +60,7 @@ pub mod hermes;
 pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod minimax_m3;
+pub mod mistral;
 pub mod muse_glimmer;
 pub mod muse_spark;
 pub mod qwen3;
@@ -1276,6 +1277,11 @@ impl<N: NativeUnified> GuidedRouted<N> {
         let guided_reasoning = match tool_output_mode {
             UnifiedToolOutputMode::Native => None,
             UnifiedToolOutputMode::GuidedJson { .. } => match reasoning {
+                // The guided reader strips native invokes up to their terminator; an
+                // empty one matches everywhere and never advances.
+                Some(_) if self.native.guided_grammar().invoke_end.is_empty() => {
+                    anyhow::bail!("guided tool output needs a grammar with a call terminator")
+                }
                 Some(reasoning) => Some(reasoning),
                 None => anyhow::bail!("guided tool output needs a reasoning-aware parser"),
             },
@@ -6689,6 +6695,7 @@ unified_registry! {
     "beam" => beam::beam_unified,
     "kimi_k2"              => kimi_k2::kimi_k2_unified,
     "kimi_k3" | "kimi-k3"   => kimi_k3::kimi_k3_unified,
+    "mistral_4" => mistral::mistral_unified,
     "gpt_oss" | "harmony"   => harmony::gpt_oss_unified,
 }
 
