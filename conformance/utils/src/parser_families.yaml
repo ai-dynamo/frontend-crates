@@ -146,11 +146,13 @@ markers:
     pairs: [["<tool_call>", "</tool_call>"]]
     singletons: ["]<]minimax[>["]
     leak: ["<invoke", "</invoke"]
-  # v11+ `[TOOL_CALLS]NAME[ARGS]{json}` repeats per call and never closes, so its
-  # tokens are singletons. `[/TOOL_CALLS]` appears only in the legacy corpus.
   mistral:
+    pairs: [["[TOOL_CALLS]", "[/TOOL_CALLS]"]]
+  # v11+ `[TOOL_CALLS]NAME[ARGS]{json}` repeats per call and never closes, so its
+  # tokens are singletons.
+  mistral_4:
     pairs: [["[THINK]", "[/THINK]"]]
-    singletons: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]", "[/TOOL_CALLS]"]
+    singletons: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]"]
   muse_glimmer:
     pairs: [["<atem:function_calls>", "</atem:function_calls>"]]
     # Channel framing around every routed message; the reasoning stage forwards
@@ -330,6 +332,8 @@ unified:
   # Mistral 4's native UnifiedParser. The `mistral` row below is the v1 parser
   # measured against Unified requests.
   mistral_4:
+    capture_pipelines:
+      sglang_python: ["mistral", "mistral"]
     registry: mistral_4
     native: true
     # Guided tool output needs a call terminator this grammar does not have, so the
