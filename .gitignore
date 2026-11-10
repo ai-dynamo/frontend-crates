@@ -32,3 +32,6 @@ target
 # is the plain versioned YAML history under conformance/fixtures-unified-v2/.
 conformance/unified/
 conformance/CONFORMANCE_unified.html
+
+# Python bytecode of the fixture generators.
+__pycache__/

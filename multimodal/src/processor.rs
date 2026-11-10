@@ -5,7 +5,7 @@
 //! carriers it exchanges with the engine's driver.
 //!
 //! Design rule: **families produce data, the driver owns control flow.** A
-//! family never sees the request loop, thread pool, or failure protocol — it
+//! family never sees the thread pool or failure protocol — it
 //! turns decoded media into named tensors and describes its prompt geometry
 //! as a [`TokenLayout`], which the driver applies mechanically
 //! ([`crate::token_layout::apply_layout`]).
@@ -234,6 +234,19 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// equivalent (resize/tile/normalize/patchify) — into tensors plus the
     /// geometry `layout`/`positions` will need.
     fn process_item(&self, media: &DecodedMedia) -> crate::Result<ProcessedItem>;
+
+    /// Preprocess every media item of one request, in prompt order, given the
+    /// unexpanded prompt. A family whose geometry depends on the whole request
+    /// (the prompt length, the other items) overrides this and refuses
+    /// `process_item`, so a driver serves every family through this method.
+    fn process_items(
+        &self,
+        input_ids: &[i32],
+        media: &[DecodedMedia],
+    ) -> crate::Result<Vec<ProcessedItem>> {
+        let _ = input_ids;
+        media.iter().map(|item| self.process_item(item)).collect()
+    }
 
     /// Describe how the prompt expands around the processed items (in prompt
     /// order). Sees the full prompt and all items, so structured schemes
