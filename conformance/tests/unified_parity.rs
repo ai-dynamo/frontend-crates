@@ -847,6 +847,87 @@ fn unified_parser_is_chunk_invariant() {
 }
 
 #[test]
+fn gpt_oss_delivery_repetitions_share_split_and_finish_coverage() {
+    let scenarios = [
+        "guided_json_gt_in_argument_trailing_close",
+        "guided_json_gt_in_argument_wrapped",
+        "guided_json_marker_inside_argument",
+        "guided_json_native_markup_only",
+        "guided_json_orphan_tool_close_before_payload",
+        "guided_json_tool_close_after_payload",
+        "guided_json_wrapped_in_tool_markup",
+        "guided_json_schema_error_nameless_element_trailing_close",
+        "guided_json_schema_error_nameless_element_wrapped",
+        "guided_json_schema_error_not_a_call_trailing_close",
+        "guided_json_schema_error_not_a_call_wrapped",
+        "guided_json_syntax_error_trailing_close",
+        "guided_json_syntax_error_wrapped",
+        "guided_json_bare_tool_header_recovers_inside_a_thought",
+        "guided_json_orphan_reason_close_before_payload",
+        "guided_quoted_reasoning_closer_named",
+        "guided_quoted_reasoning_closer_required",
+        "prefilled_reasoning_with_guided_json",
+    ];
+    let files = load_native_golden();
+    let file = files.iter().find(|file| file.family == "gpt_oss").unwrap();
+    for scenario in scenarios {
+        let id = format!("UNIFIED.{scenario}.gpt_oss");
+        let case = &file.cases[&id];
+        let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+        let whole = events(
+            "gpt_oss",
+            std::slice::from_ref(&case.input),
+            &case.init,
+            &tools,
+        );
+        assert_eq!(
+            whole,
+            Ok(case.golden.clone()),
+            "{id}: independently authored oracle"
+        );
+        let mut parser = create_unified_parser_for_family("gpt_oss", &tools).unwrap();
+        for _ in 0..2 {
+            case.init.apply(&mut parser, "gpt_oss");
+            let mut output = parser.push(&case.input).unwrap();
+            if case
+                .golden
+                .iter()
+                .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+            {
+                assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: complete input must make call progress before finish");
+            }
+            output.extend(parser.finish().unwrap().events);
+            assert_eq!(assemble(&output), case.golden, "{id}: finish and reuse");
+            parser.reset();
+        }
+        for split in case
+            .input
+            .char_indices()
+            .map(|(at, _)| at)
+            .chain([case.input.len()])
+        {
+            let chunks = vec![
+                case.input[..split].into(),
+                String::new(),
+                case.input[split..].into(),
+            ];
+            assert_eq!(
+                events("gpt_oss", &chunks, &case.init, &tools),
+                whole,
+                "{id} split={split}"
+            );
+        }
+        let mut characters = chunk_every(&case.input, 1);
+        characters.push(String::new());
+        assert_eq!(
+            events("gpt_oss", &characters, &case.init, &tools),
+            whole,
+            "{id} characters and terminal empty push"
+        );
+    }
+}
+
+#[test]
 fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
     let reference_scenarios = [
         "glm_ref_object",

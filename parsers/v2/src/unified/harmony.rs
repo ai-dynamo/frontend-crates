@@ -161,9 +161,9 @@ fn implicit_recipient_prefix(text: &str) -> Option<&str> {
     ("to=".starts_with(trimmed)
         || trimmed.strip_prefix("to=").is_some_and(|recipient| {
             recipient
-                .trim_end()
+                .trim_end_matches(|ch: char| ch.is_ascii_whitespace())
                 .chars()
-                .all(|ch| ch.is_alphanumeric() || matches!(ch, '_' | '.' | '-'))
+                .all(|ch| !ch.is_ascii_whitespace())
         }))
     .then_some(trimmed)
 }
@@ -192,6 +192,7 @@ struct HarmonyRuntime {
     call_cursor: Option<super::GuidedJsonCursor>,
     active_call_index: usize,
     call_json: crate::tool_calling::scan::JsonValueBoundary,
+    visible_json: crate::tool_calling::scan::JsonBodyState,
     quoted_control_tail: Option<QuotedControlTail>,
     next_call_index: usize,
     text_pending: String,
@@ -225,6 +226,7 @@ impl HarmonyRuntime {
             call_cursor: self.call_cursor.clone(),
             active_call_index: self.active_call_index,
             call_json: self.call_json.clone(),
+            visible_json: self.visible_json,
             quoted_control_tail: self.quoted_control_tail.clone(),
             next_call_index: self.next_call_index,
             text_pending: self.text_pending.clone(),
@@ -257,6 +259,7 @@ impl HarmonyRuntime {
             call_cursor: None,
             active_call_index: 0,
             call_json: Default::default(),
+            visible_json: Default::default(),
             quoted_control_tail: None,
             next_call_index: 0,
             text_pending: String::new(),
@@ -270,6 +273,15 @@ impl HarmonyRuntime {
             return Route::Suppress;
         }
         if let Some(recipient) = self.parser.current_recipient() {
+            if !self.legacy_tool_compatibility && !recipient.starts_with(FORMAT) {
+                let name = recipient.strip_prefix("functions.").unwrap_or(recipient);
+                if name.is_empty() {
+                    return Route::Suppress;
+                }
+                if recipient != "all" {
+                    return Route::Tool(name.to_string());
+                }
+            }
             if let Some(name) = recipient.strip_prefix("functions.")
                 && !name.is_empty()
                 && name
@@ -288,7 +300,9 @@ impl HarmonyRuntime {
             }
             // openai-harmony 0.0.8 reports a lone content-type field as a
             // recipient. It must not suppress a response_format final message.
-            if !recipient.starts_with(FORMAT) {
+            if !recipient.starts_with(FORMAT)
+                && (self.legacy_tool_compatibility || recipient != "all")
+            {
                 return Route::Suppress;
             }
         }
@@ -402,7 +416,12 @@ impl HarmonyRuntime {
     fn flush_outside_pending(&mut self, output: &mut UnifiedParserOutput) {
         if !self.outside_pending.is_empty() {
             match self.encoding.tokenizer().decode_utf8(&self.outside_pending) {
-                Ok(text) => output.push_text(text),
+                Ok(text) => {
+                    self.visible_json.advance(&text);
+                    self.advance_call_json(&text);
+                    self.call_content.append(&text);
+                    output.push_text(text);
+                }
                 Err(_) => tracing::warn!(
                     why = "incomplete_harmony_utf8",
                     skipped_tokens = self.outside_pending.len(),
@@ -414,8 +433,18 @@ impl HarmonyRuntime {
     }
 
     fn process_token(&mut self, id: u32, output: &mut UnifiedParserOutput) -> Result<()> {
+        if self.quoted_control_tail.is_some() {
+            return self.buffer_quoted_control(id, output);
+        }
         if !self.inside_message {
             let marker = self.marker_ids.get(&id).copied();
+            if !self.legacy_tool_compatibility
+                && self.visible_json.inside_string_at("", 0)
+                && marker.is_some()
+            {
+                self.begin_quoted_control_tail();
+                return self.buffer_quoted_control(id, output);
+            }
             let implicit_header = (self.allow_implicit_channel_header
                 && matches!(marker, Some(CHANNEL | MESSAGE | FORMAT)))
             .then(|| {
@@ -439,6 +468,9 @@ impl HarmonyRuntime {
             }
             if id == self.start_id {
                 self.inside_message = true;
+                self.visible_json.reset();
+                self.call_content.clear();
+                self.call_json = Default::default();
                 self.process_parser_token(id, output)?;
             } else if self.allow_implicit_channel_header
                 && (marker == Some(CHANNEL)
@@ -473,17 +505,68 @@ impl HarmonyRuntime {
                         return Ok(());
                     }
                     self.outside_pending.clear();
+                    self.visible_json.advance(&text);
+                    self.advance_call_json(&text);
+                    self.call_content.append(&text);
                     output.push_text(text);
                 }
             }
             return Ok(());
         }
 
-        if self.quoted_control_tail.is_some() {
+        let marker_text = self.marker_ids.get(&id).copied();
+        if !self.legacy_tool_compatibility && !self.in_body {
+            if marker_text == Some(CHANNEL) {
+                let skipped_tokens = self.parser.restart_channel_header(id)?;
+                if skipped_tokens > 0 {
+                    tracing::warn!(
+                        why = "harmony_replaced_unfinished_channel",
+                        skipped_tokens,
+                        "discarded unfinished channel metadata while retaining its author"
+                    );
+                }
+            }
+        }
+        if !self.legacy_tool_compatibility
+            && self.in_body
+            && matches!(self.route, Some(Route::Tool(_)))
+            && marker_text == Some(CHANNEL)
+            && !self.call_json.inside_string()
+        {
+            let content = self.call_content.view();
+            let raw = content.slice(0..content.len());
+            let mut values = serde_json::Deserializer::from_str(&raw)
+                .into_iter::<Box<serde_json::value::RawValue>>();
+            let recipient = values.next().filter(|result| result.is_ok()).and_then(|_| {
+                let suffix = &raw[values.byte_offset()..];
+                let header = implicit_recipient_prefix(suffix)?;
+                header
+                    .strip_prefix("to=")
+                    .filter(|name| !name.is_empty())
+                    .map(|_| header.trim().to_string())
+            });
+            if let Some(recipient) = recipient {
+                tracing::warn!(
+                    why = "harmony_recipient_after_unterminated_call",
+                    skipped_bytes = content.len(),
+                    "resumed at an explicit recipient after a complete JSON body"
+                );
+                let prefix = encode_harmony(&format!("{START}assistant {recipient}"))?;
+                for token in prefix {
+                    self.process_token(token, output)?;
+                }
+                return self.process_parser_token(id, output);
+            }
+        }
+        if !self.legacy_tool_compatibility
+            && self.in_body
+            && matches!(self.route, Some(Route::Text))
+            && self.visible_json.inside_string_at("", 0)
+            && marker_text.is_some()
+        {
+            self.begin_quoted_control_tail();
             return self.buffer_quoted_control(id, output);
         }
-
-        let marker_text = self.marker_ids.get(&id).copied();
         if !self.legacy_tool_compatibility
             && self.in_body
             && matches!(self.route, Some(Route::Tool(_)))
@@ -492,12 +575,7 @@ impl HarmonyRuntime {
         {
             // A control token can be quoted data or a boundary after malformed
             // JSON. Keep only that ambiguous tail until valid JSON or EOF settles it.
-            self.quoted_control_tail = Some(QuotedControlTail {
-                tokens: SharedInput::default(),
-                content: SharedInput::default(),
-                utf8: Vec::new(),
-                boundary: self.call_json.clone(),
-            });
+            self.begin_quoted_control_tail();
             return self.buffer_quoted_control(id, output);
         }
 
@@ -525,6 +603,7 @@ impl HarmonyRuntime {
             self.inside_message = true;
             self.in_body = false;
             self.route = None;
+            self.visible_json.reset();
             self.call_content.clear();
             self.call_json = Default::default();
             self.process_parser_token(id, output)?;
@@ -550,6 +629,12 @@ impl HarmonyRuntime {
             self.route = None;
             self.call_content.clear();
             self.call_json = Default::default();
+            if id == self.message_id && !self.legacy_tool_compatibility {
+                self.parser.suppress_body();
+                self.inside_message = true;
+                self.in_body = true;
+                self.route = Some(Route::Suppress);
+            }
             return Ok(());
         }
 
@@ -581,7 +666,12 @@ impl HarmonyRuntime {
         {
             match self.route.as_ref().unwrap_or(&Route::Suppress) {
                 Route::Reasoning => output.push_reasoning(delta),
-                Route::Text => output.push_text(delta),
+                Route::Text => {
+                    self.visible_json.advance(&delta);
+                    self.advance_call_json(&delta);
+                    self.call_content.append(&delta);
+                    output.push_text(delta);
+                }
                 Route::Tool(_) => {
                     self.advance_call_json(&delta);
                     self.call_content.append(&delta);
@@ -620,6 +710,7 @@ impl HarmonyRuntime {
             self.inside_message = false;
             self.in_body = false;
             self.route = None;
+            self.visible_json.reset();
             self.call_content.clear();
             self.call_json = Default::default();
         }
@@ -630,6 +721,15 @@ impl HarmonyRuntime {
         for character in text.chars() {
             self.call_json.advance(character);
         }
+    }
+
+    fn begin_quoted_control_tail(&mut self) {
+        self.quoted_control_tail = Some(QuotedControlTail {
+            tokens: SharedInput::default(),
+            content: SharedInput::default(),
+            utf8: Vec::new(),
+            boundary: self.call_json.clone(),
+        });
     }
 
     fn buffer_quoted_control(&mut self, id: u32, output: &mut UnifiedParserOutput) -> Result<()> {
@@ -661,6 +761,15 @@ impl HarmonyRuntime {
             )
         {
             let tail = self.quoted_control_tail.take().expect("quoted tail exists");
+            if !self.inside_message {
+                let content = tail.content.view();
+                let text = content.slice(0..content.len());
+                self.visible_json.advance(&text);
+                self.advance_call_json(&text);
+                self.call_content.append(&text);
+                output.push_text(text.into_owned());
+                return Ok(());
+            }
             for token in tail.tokens.iter().copied() {
                 if let Some(marker) = self.marker_ids.get(&token) {
                     for ordinary in self.encoding.tokenizer().encode_ordinary(marker) {
@@ -678,6 +787,23 @@ impl HarmonyRuntime {
         let Some(tail) = self.quoted_control_tail.take() else {
             return Ok(());
         };
+        if !self.inside_message || matches!(self.route, Some(Route::Text)) {
+            tracing::warn!(
+                why = "malformed_harmony_visible_json",
+                recovered_tokens = tail.tokens.len(),
+                "replayed ambiguous visible JSON through message recovery"
+            );
+            self.visible_json.reset();
+            self.call_json = Default::default();
+            self.call_content.clear();
+            if !self.inside_message {
+                self.begin_prefilled_message(UnifiedParserStartingState::Response)?;
+            }
+            for id in tail.tokens.iter().copied() {
+                self.process_token(id, output)?;
+            }
+            return Ok(());
+        }
         let mut candidate = None;
         let mut start = None;
         for (at, &token) in tail.tokens.iter().enumerate() {
@@ -708,6 +834,7 @@ impl HarmonyRuntime {
         self.inside_message = false;
         self.in_body = false;
         self.route = None;
+        self.visible_json.reset();
         self.call_content.clear();
         self.call_cursor = None;
         self.call_json = Default::default();
@@ -1966,6 +2093,157 @@ mod tests {
             .windows(2)
             .map(|pair| &input[pair[0]..pair[1]])
             .collect()
+    }
+
+    #[test]
+    fn recovery_headers_retain_roles_and_complete_later_calls() {
+        for author in ["assistant", "user", "python"] {
+            for terminator in ["", TURN_END, MESSAGE_END, HANDOFF] {
+                let input = format!(
+                    "{START}{author}{CHANNEL}commentary to=functions.bad{CHANNEL}final {terminator}{MESSAGE}Done{TURN_END}"
+                );
+                let expected = if author == "assistant" {
+                    vec![UnifiedEvent::Text {
+                        text: "Done".into(),
+                    }]
+                } else {
+                    vec![]
+                };
+                assert_native_splits(&input, &expected);
+            }
+        }
+        let input = format!(
+            "{CHANNEL}commentary to=functions.bad{MESSAGE}{{\"q\":\"{CHANNEL}commentary to=functions.fake\"}}to=functions.lookup{CHANNEL}commentary{MESSAGE}{{\"path\":\"ok\"}}{TURN_END}"
+        );
+        assert_native_splits(
+            &input,
+            &[UnifiedEvent::ToolCall {
+                name: "lookup".into(),
+                arguments: serde_json::json!({"path":"ok"}),
+            }],
+        );
+    }
+
+    #[test]
+    fn broadcast_recipient_keeps_its_channel() {
+        for (channel, expected) in [
+            (
+                "analysis",
+                UnifiedEvent::Reasoning {
+                    text: "body".into(),
+                },
+            ),
+            (
+                "final",
+                UnifiedEvent::Text {
+                    text: "body".into(),
+                },
+            ),
+            (
+                "commentary",
+                UnifiedEvent::Text {
+                    text: "body".into(),
+                },
+            ),
+        ] {
+            let input = format!("{START}assistant to=all{CHANNEL}{channel}{MESSAGE}body{TURN_END}");
+            assert_native_splits(&input, &[expected]);
+        }
+    }
+
+    #[test]
+    fn native_recipients_are_not_restricted_to_identifier_functions() {
+        for recipient in ["python", "browser", "functions.f/x", "functions.@f"] {
+            let name = recipient.strip_prefix("functions.").unwrap_or(recipient);
+            let input = format!(
+                "{START}assistant to={recipient}{CHANNEL}commentary{MESSAGE}{{\"q\":\"雪\"}}{HANDOFF}"
+            );
+            assert_native_splits(
+                &input,
+                &[UnifiedEvent::ToolCall {
+                    name: name.into(),
+                    arguments: serde_json::json!({"q":"雪"}),
+                }],
+            );
+        }
+    }
+
+    #[test]
+    fn truncated_visible_json_retains_nonterminal_control_and_following_text() {
+        for marker in [CHANNEL, MESSAGE, FORMAT] {
+            let body = format!("{{\"x\":\"prefix{marker}tail");
+            let input = format!("{START}assistant{CHANNEL}final{MESSAGE}{body}");
+            assert_native_splits(&input, &[UnifiedEvent::Text { text: body }]);
+        }
+    }
+
+    #[test]
+    fn malformed_visible_json_does_not_swallow_complete_later_messages() {
+        for framed in [false, true] {
+            let prefix = if framed {
+                format!("{START}assistant{CHANNEL}final{MESSAGE}")
+            } else {
+                String::new()
+            };
+            let input = format!(
+                "{prefix}{{\"x\":\"unfinished{START}assistant to=functions.lookup{MESSAGE}{{}}{HANDOFF}"
+            );
+            assert_native_splits(
+                &input,
+                &[
+                    UnifiedEvent::Text {
+                        text: r#"{"x":"unfinished"#.into(),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "lookup".into(),
+                        arguments: serde_json::json!({}),
+                    },
+                ],
+            );
+        }
+    }
+
+    #[test]
+    fn visible_json_strings_own_quoted_control_markers() {
+        for prefix in ["", " \n", "    "] {
+            for marker in CONTROL_MARKERS {
+                let body = serde_json::json!({"value":format!("é{marker}끝")}).to_string();
+                for framed in [false, true] {
+                    let input = if framed {
+                        format!("{START}assistant{CHANNEL}final{MESSAGE}{prefix}{body}{TURN_END}")
+                    } else {
+                        format!(
+                            "{prefix}{body}{START}assistant{CHANNEL}final{MESSAGE}Done{TURN_END}"
+                        )
+                    };
+                    assert_native_splits(
+                        &input,
+                        &[UnifiedEvent::Text {
+                            text: if framed {
+                                format!("{prefix}{body}")
+                            } else {
+                                format!("{prefix}{body}Done")
+                            },
+                        }],
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rejected_header_bodies_cannot_become_assistant_text() {
+        for author in ["python", "assistant<g", "assistant\u{a0}user"] {
+            let input = format!(
+                "{START}{author}{CHANNEL}final{MESSAGE}UNTRUSTED{TURN_END}{START}assistant{CHANNEL}final{MESSAGE}Done{TURN_END}"
+            );
+            assert_native_splits(
+                &input,
+                &[UnifiedEvent::Text {
+                    text: "Done".into(),
+                }],
+            );
+        }
     }
 
     #[test]
@@ -3275,6 +3553,10 @@ mod tests {
                                     arguments: serde_json::json!({"q": "x"}),
                                 }]
                             }
+                            Some("browser") if !legacy => vec![UnifiedEvent::ToolCall {
+                                name: "browser".into(),
+                                arguments: serde_json::json!({"q": "x"}),
+                            }],
                             Some(_) => vec![],
                             None if channel == Some("analysis") => vec![UnifiedEvent::Reasoning {
                                 text: r#"{"q":"x"}"#.into(),

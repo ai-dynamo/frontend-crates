@@ -345,6 +345,9 @@ UNIFIED_TAX = {
     "gpt_oss_visible_json_prelude_indentation": ("gpt_oss", "64"),
     "gpt_oss_visible_quoted_json_prelude_whitespace": ("gpt_oss", "65"),
     "gpt_oss_assistant_default_channel_visible_response": ("gpt_oss", "66"),
+    "gpt_oss_unfinished_visible_json_then_tool": ("gpt_oss", "67"),
+    "gpt_oss_broadcast_recipient_analysis": ("gpt_oss", "68"),
+    "gpt_oss_native_builtin_recipient_json": ("gpt_oss", "69"),
 
 
     # Group 40 — Prefilled reasoning, happy
@@ -515,7 +518,31 @@ UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "6")
 UNIFIED_TAX["reason_markup_in_arg_with_text_consistent"] = (12, "7")
 
 # Historical requests remain separate executions, but share one semantic heading.
-RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace", "gpt_oss_interrupted_reasoning_then_response", "kimi_k3_elided_think_close_to_response"})
+RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace", "gpt_oss_interrupted_reasoning_then_response", "kimi_k3_elided_think_close_to_response"}) | frozenset({
+    'gpt_oss_analysis_text_interrupted_by_bare_final',
+    'gpt_oss_assistant_implicit_recipient_analysis',
+    'gpt_oss_commentary_text_interrupted_by_bare_final',
+    'gpt_oss_implicit_recipient_prelude',
+    'gpt_oss_unconfirmed_header_return_at_eof',
+    'guided_json_bare_tool_header_recovers_inside_a_thought_pr424',
+    'guided_json_gt_in_argument_trailing_close_pr424',
+    'guided_json_gt_in_argument_wrapped_pr424',
+    'guided_json_marker_inside_argument_pr424',
+    'guided_json_native_markup_only_pr424',
+    'guided_json_orphan_reason_close_before_payload_pr424',
+    'guided_json_orphan_tool_close_before_payload_pr424',
+    'guided_json_schema_error_nameless_element_trailing_close_pr424',
+    'guided_json_schema_error_nameless_element_wrapped_pr424',
+    'guided_json_schema_error_not_a_call_trailing_close_pr424',
+    'guided_json_schema_error_not_a_call_wrapped_pr424',
+    'guided_json_syntax_error_trailing_close_pr424',
+    'guided_json_syntax_error_wrapped_pr424',
+    'guided_json_tool_close_after_payload_pr424',
+    'guided_json_wrapped_in_tool_markup_pr424',
+    'guided_quoted_reasoning_closer_named_pr424',
+    'guided_quoted_reasoning_closer_required_pr424',
+    'prefilled_reasoning_with_guided_json_pr424',
+})
 
 
 class CaseVariant(NamedTuple):

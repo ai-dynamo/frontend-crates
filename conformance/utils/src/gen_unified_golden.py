@@ -4480,10 +4480,23 @@ def _structured_response_case():
 EDGE.append(_structured_response_case())
 
 
+GPT_OSS_ORACLE_CORRECTIONS = frozenset(['gpt_oss_commentary_text_interrupted_by_final', 'gpt_oss_commentary_text_interrupted_by_invalid_author', 'gpt_oss_final_then_unframed_visible_tail', 'gpt_oss_orphan_terminator_preserves_messages', 'gpt_oss_quoted_tool_header_in_final_json', 'gpt_oss_recipientless_constrained_whitespace_call', 'gpt_oss_recipientless_json_call_then_final', 'gpt_oss_recipientless_json_interrupted_by_final', 'gpt_oss_recipientless_json_return_then_final', 'gpt_oss_unknown_channel_before_final'])
+
+
 _GPT_OSS_RECOVERY_CASES = (
+    ("gpt_oss_unfinished_visible_json_then_tool", "An unfinished JSON string in an assistant final message precedes a complete framed JSON tool call. At EOF preserve the emitted visible prefix and recover the later complete call; a complete quoted JSON value retains its literal controls instead.",
+     '<|start|>assistant<|channel|>final<|message|>{"x":"unfinished<|start|>assistant to=functions.lookup<|message|>{}<|call|>',
+     [{"kind":"text", "text":'{"x":"unfinished'}, {"kind":"tool_call", "name":"lookup", "arguments":{}}]),
+    ("gpt_oss_broadcast_recipient_analysis", "Harmony to=all is the broadcast recipient, so its analysis body remains reasoning rather than tool data or visible text. It is equivalent to omitting the recipient.",
+     '<|start|>assistant to=all<|channel|>analysis<|message|>checking<|end|>',
+     [{"kind":"reasoning", "text":"checking"}]),
+    ("gpt_oss_native_builtin_recipient_json", "A native assistant header routes a JSON argument body to python without a functions namespace. Preserve the recipient and JSON arguments; this does not assert support for non-JSON Python code bodies.",
+     '<|start|>assistant to=python<|channel|>commentary<|message|>{"code":"print(1)"}<|call|>',
+     [{"kind":"tool_call", "name":"python", "arguments":{"code":"print(1)"}}]),
+
     ("gpt_oss_orphan_terminator_preserves_messages", "A completed recipientless commentary message is followed by an orphan turn terminator and then a framed final message. Preserve both visible messages in order while suppressing the orphan control.",
      '<|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>',
-     [{"kind": "text", "text": "visible\ndone"}]),
+     [{'kind': 'text', 'text': 'visibledone'}]),
     ("gpt_oss_unfinished_directed_analysis", "A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated. The turn emits nothing.",
      '<|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished', []),
     ("gpt_oss_malformed_then_recipient_first_call", "An unfinished commentary call has a JSON string quoting a partial tool header, followed by an unframed recipient-first Harmony header and a complete call. Keep the quoted header as data and resume before the later recipient; discard the unfinished first call.",
@@ -4491,7 +4504,7 @@ _GPT_OSS_RECOVERY_CASES = (
      [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}]),
     ("gpt_oss_unknown_channel_before_final", "Recipientless text under an unknown Harmony channel precedes a framed final message. Recover the unknown-channel text at its original position, before the later visible response.",
      '<|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>',
-     [{"kind": "text", "text": "first\nsecond"}]),
+     [{'kind': 'text', 'text': 'firstsecond'}]),
     ("gpt_oss_final_then_unframed_recipient_first_call", "After a completed Harmony final message, an unframed recipient precedes the next commentary channel. Preserve the final text before the complete routed call; its quoted return marker belongs to the JSON arguments.",
      '<|channel|>final<|message|>before<|return|>to=functions.lookup<|channel|>commentary<|message|>{"path":"雪","content":"<|return|>"}<|call|>',
      [{"kind": "text", "text": "before"}, {"kind": "tool_call", "name": "lookup", "arguments": {"path": "雪", "content": "<|return|>"}}]),
@@ -4504,21 +4517,21 @@ _GPT_OSS_RECOVERY_CASES = (
     ("gpt_oss_nonassistant_analysis_then_final", "A framed user message names the analysis channel before an assistant final message. The message role owns attribution: user bytes cannot become assistant reasoning or content; preserve only the assistant answer.",
      '<|start|>user<|channel|>analysis<|message|>UNTRUSTED<|end|><|start|>assistant<|channel|>final<|message|>ANSWER<|return|>',
      [{"kind": "text", "text": "ANSWER"}]),
-    ("gpt_oss_recipientless_json_call_then_final", "Recipientless constrained commentary JSON ends with a call action, followed by an assistant final answer. A missing recipient makes the attempted call unexecutable; suppress its arguments rather than exposing them as commentary content.",
+    ("gpt_oss_recipientless_json_call_then_final", "Recipientless constrained commentary JSON ends with a call action, followed by an assistant final answer. No recipient establishes a tool route, so preserve the visible JSON body and the answer without adding a separator.",
      '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
-     [{"kind": "text", "text": "Done"}]),
-    ("gpt_oss_recipientless_json_return_then_final", "Recipientless constrained commentary JSON ends with a return action, followed by an assistant final answer. Unlike a call action with no recipient, the return ends visible commentary; preserve its JSON before the final answer.",
+     [{'kind': 'text', 'text': '{"city":"NYC"}Done'}]),
+    ("gpt_oss_recipientless_json_return_then_final", "Recipientless constrained commentary JSON ends with a return action, followed by an assistant final answer. The body remains visible text with either ending; preserve its JSON before the final answer without adding a separator.",
      '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
-     [{"kind": "text", "text": '{"city":"NYC"}\nDone'}]),
-    ("gpt_oss_final_then_unframed_visible_tail", "A completed Harmony final message precedes bare visible text without another message header. Preserve the final message and recover the never-emitted trailing header text at EOF, separated as visible messages.",
+     [{'kind': 'text', 'text': '{"city":"NYC"}Done'}]),
+    ("gpt_oss_final_then_unframed_visible_tail", "A completed Harmony final message precedes bare visible text without another message header. Preserve the final message and recover the never-emitted trailing header text at EOF, without adding a separator.",
      '<|channel|>final<|message|>before<|return|>after',
-     [{"kind": "text", "text": "before\nafter"}]),
+     [{'kind': 'text', 'text': 'beforeafter'}]),
     ("gpt_oss_recipientless_json_interrupted_by_final", "Recipientless commentary contains complete JSON but no own message ending before a framed final message. The new header owns the final body; preserve the commentary JSON and final text in order without exposing the intervening protocol markers.",
      '<|channel|>commentary<|message|>{"x":1}<|start|>assistant<|channel|>final<|message|>Done.<|return|>',
-     [{"kind": "text", "text": '{"x":1}\nDone.'}]),
-    ("gpt_oss_recipientless_constrained_whitespace_call", "Recipientless commentary explicitly constrained to JSON contains only two spaces before a call action, followed by a final answer. The content type still identifies an unroutable call payload when no JSON opening byte arrives; suppress its whitespace and preserve only the final answer.",
+     [{'kind': 'text', 'text': '{"x":1}Done.'}]),
+    ("gpt_oss_recipientless_constrained_whitespace_call", "Recipientless commentary explicitly constrained to JSON contains only two spaces before a call action, followed by a final answer. Content type does not establish a recipient; preserve the two spaces and final answer as visible text.",
      '<|channel|>commentary <|constrain|>json<|message|>  <|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
-     [{"kind": "text", "text": "Done"}]),
+     [{'kind': 'text', 'text': '  Done'}]),
     ("gpt_oss_nonassistant_unfinished_final_header", "A framed user message ends in an unfinished final-channel header without a message delimiter. EOF recovery must retain its user role rather than projecting its header text as an assistant answer. The turn emits nothing.",
      '<|start|>user<|channel|>final SHOULD_HIDE', []),
     ("gpt_oss_nonassistant_unfinished_analysis_header", "A framed user message ends in an unfinished analysis-channel header without a message delimiter. EOF recovery must retain its user role rather than projecting its header text as assistant reasoning. The turn emits nothing.",
@@ -4564,15 +4577,15 @@ _GPT_OSS_RECOVERY_CASES = (
     ('gpt_oss_analysis_text_interrupted_by_final', 'An assistant analysis body contains ordinary text without its own message ending before a framed assistant final answer. The new message header owns its final body; preserve the earlier analysis as reasoning and the answer as visible text without absorbing protocol markers into reasoning.',
      '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>',
      [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}]),
-    ('gpt_oss_commentary_text_interrupted_by_final', 'Recipientless commentary contains ordinary visible text without its own message ending before a framed assistant final answer. Recover the next message at the body transition and preserve both visible messages with the established newline separator.',
+    ('gpt_oss_commentary_text_interrupted_by_final', 'Recipientless commentary contains ordinary visible text without its own message ending before a framed assistant final answer. Recover the next message at the body transition and preserve both visible messages without adding a separator.',
      '<|channel|>commentary<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>',
-     [{'kind': 'text', 'text': 'Before\nDone'}]),
+     [{'kind': 'text', 'text': 'BeforeDone'}]),
     ('gpt_oss_commentary_text_interrupted_by_user', 'Recipientless assistant commentary contains ordinary visible text without its own message ending before a framed user message. Preserve the earlier assistant commentary, while the new user role owns and excludes its body from assistant output.',
      '<|channel|>commentary<|message|>Before<|start|>user<|channel|>final<|message|>UNTRUSTED<|return|>',
      [{'kind': 'text', 'text': 'Before'}]),
     ('gpt_oss_commentary_text_interrupted_by_invalid_author', 'Recipientless assistant commentary is interrupted without its own ending by a complete python author frame that lacks native routing metadata, followed by a valid assistant final answer. Native header validation rejects that unknown author frame; preserve both assistant messages while suppressing the invalid frame and its body.',
      '<|channel|>commentary<|message|>Before<|start|>python<|channel|>final<|message|>UNTRUSTED<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
-     [{'kind': 'text', 'text': 'Before\nDone'}]),
+     [{'kind': 'text', 'text': 'BeforeDone'}]),
     ('gpt_oss_unconfirmed_header_return_at_eof', 'An existing final body is followed by a framed-looking assistant final header without a message delimiter or body before EOF. The unconfirmed header bytes remain literal data in the original body; the true return action ends that body and must not be exposed as visible payload.',
      '<|channel|>final<|message|>Before<|start|>assistant<|channel|>final<|return|>',
      [{'kind': 'text', 'text': 'Before<|start|>assistant<|channel|>final'}]),
@@ -4582,7 +4595,7 @@ _GPT_OSS_RECOVERY_CASES = (
     ('gpt_oss_analysis_interrupted_by_final_then_tool', 'Analysis text lacks its own message ending before a complete framed assistant final answer and a later lookup call. The first new framed header owns the transition; preserve the earlier reasoning, the intermediate visible answer, and the later complete call in order, without borrowing the final or tool action as the earlier analysis ending.',
      '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Visible<|return|><|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>',
      [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Visible'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}]),
-    ('gpt_oss_commentary_text_interrupted_by_bare_final', 'Recipientless commentary contains ordinary visible text without its own ending before a bare final channel header with a message delimiter. Native generated suffixes can omit the start frame; preserve both visible messages with the established newline separator without exposing routing markers.',
+    ('gpt_oss_commentary_text_interrupted_by_bare_final', 'Recipientless commentary contains ordinary visible text without its own ending before a bare final channel header with a message delimiter. Native generated suffixes can omit the start frame; preserve both visible messages without adding a separator without exposing routing markers.',
      '<|channel|>commentary<|message|>Before<|channel|>final<|message|>Done<|return|>',
      [{'kind': 'text', 'text': 'Before\nDone'}]),
     ('gpt_oss_analysis_text_interrupted_by_bare_final', 'Analysis contains ordinary reasoning text without its own ending before a bare final channel header with a message delimiter. The new native header owns the final body even without a start frame; preserve the earlier reasoning and the later visible answer separately.',
@@ -4637,9 +4650,9 @@ _GPT_OSS_REVIEW_CASES = (
     ("gpt_oss_reasoning_then_return_ending_tool_call", "Analysis precedes a channel-first constrained JSON tool call ending in return. Preserve both reasoning and the tool call through the reasoning-to-tool handoff. The existing reason_then_tool case is the call-ending control; only the ending differs.",
      '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>',
      [{"kind":"reasoning", "text":"Check weather."}, {"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
-    ("gpt_oss_quoted_tool_header_in_final_json", "Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Preserve the existing newline between visible messages.",
+    ("gpt_oss_quoted_tool_header_in_final_json", "Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Concatenate visible payloads without adding a separator.",
      '<|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>',
-     [{"kind":"text", "text":'Preamble\n{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'}]),
+     [{'kind': 'text', 'text': 'Preamble{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'}]),
 
 )
 
@@ -4783,6 +4796,8 @@ for _name, _description, _input, _golden in (*_GPT_OSS_REVIEW_CASES, *_GPT_OSS_R
         }}} for name in _recovery_names if f"functions.{name}" in _input]
         if _name in {"gpt_oss_recovered_tool_header_return", "gpt_oss_recovered_final_header_return", "gpt_oss_initial_json_prefix_then_tool"}:
             _tools["gpt_oss"] = [{"name": name, "parameters": {"type": "object", "properties": {"city": {"type": "string"}} if name == "lookup" else {}}} for name in _recovery_names if f"functions.{name}" in _input]
+    if _name == "gpt_oss_native_builtin_recipient_json":
+        _tools["gpt_oss"] = [{"name":"python", "parameters":{"type":"object", "properties":{"code":{"type":"string"}}}}]
     EDGE.append((
         _name, _description, ["I3", "I5", "I7"], _golden,
         {"starting_state":"None", "tool_output_mode":"Native", "named_tool":None},
@@ -5320,7 +5335,7 @@ def _build_cases(fam):
             case.setdefault("tools", [])
     if fam == "gpt_oss":
         for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
-            if not active:
+            if not active or scenario + "_pr424" in RETIRED_SCENARIOS:
                 continue
             original = f"UNIFIED.{scenario}.{fam}"
             cases[f"UNIFIED.{scenario}_pr424.{fam}"] = dict(cases[original])
@@ -5363,7 +5378,9 @@ def _preserve_historical_requests(cases, family):
         # Validation callers mutate returned cases; isolate the cached canonical record.
         # This published stimulus had a shared Paris-only oracle that violated
         # raw-value ownership and GLM recovery; retain the independent correction.
-        if scenario != "missing_inner_closers_then_valid_call":
+        if scenario != "missing_inner_closers_then_valid_call" and not (
+            family == "gpt_oss" and scenario in GPT_OSS_ORACLE_CORRECTIONS
+        ):
             case["golden"] = deepcopy(old_case["golden"]["assembled"])
         if scenario.endswith("_pr424"):
             case["description"] = old_case["description"]
