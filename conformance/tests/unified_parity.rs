@@ -287,6 +287,15 @@ fn tool_call_ids_follow_family_contract_across_turns() {
                             "K3 reused an ID across calls/turns"
                         );
                     }
+                    "mistral_4" => {
+                        let id = id.expect("Mistral supplies API IDs");
+                        assert_eq!(id.len(), 9);
+                        assert!(id.chars().all(|ch| ch.is_ascii_alphanumeric()));
+                        assert!(
+                            conversation_ids.insert(id),
+                            "Mistral reused an ID across calls/turns"
+                        );
+                    }
                     _ => assert_eq!(
                         id, None,
                         "{family} delegates ID generation to the output layer"
@@ -869,6 +878,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "hermes",
         "kimi_k2",
         "kimi_k3",
+        "mistral_4",
         "muse_glimmer",
         "muse_spark",
         "nemotron_v3",

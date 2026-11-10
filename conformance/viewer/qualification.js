@@ -716,7 +716,7 @@ async function checkRebaseContracts(tab, reader) {
   const toolSchemas = columns.get('tool_body_whitespace').schemas;
   assert.equal(toolSchemas.length, 1);
   assert.deepEqual(toolSchemas[0].tools, [{ name: 'get_weather', parameters: { type: 'object', properties: { city: { type: 'string' } } } }]);
-  assert.deepEqual([...toolSchemas[0].families].sort(), ['kimi_k2', 'kimi_k3']);
+  assert.deepEqual([...toolSchemas[0].families].sort(), ['kimi_k2', 'kimi_k3', 'mistral_4']);
   assert.equal(toolSchemas[0].cases, undefined, 'schema differences do not fold cases');
   assert.ok(columns.get('schema_declared_integer').schemas.length);
 

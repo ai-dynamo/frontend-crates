@@ -1244,7 +1244,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",
@@ -1291,7 +1291,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "10.2.0"
+version = "10.3.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1319,13 +1319,14 @@ dependencies = [
 
 [[package]]
 name = "dynamo-tokenizers"
-version = "4.1.2"
+version = "4.2.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
  "base64 0.22.1",
  "basetenkenizer",
  "blake3",
+ "fancy-regex 0.13.0",
  "fastokens",
  "moka",
  "rayon",

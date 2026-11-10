@@ -77,6 +77,8 @@ NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAM
                              or G._MANIFEST[family].get("shared_scenarios")))
 V1_SPLIT_SCENARIOS = frozenset(G.V1_SPLIT_SCENARIOS)
 NATIVE_UNIFIED_TAX = {scenario: entry for scenario, entry in UNIFIED_TAX.items() if scenario not in V1_SPLIT_SCENARIOS and scenario not in taxonomy.RETIRED_SCENARIOS}
+# Native families that also accept guided tool output (Mistral refuses it).
+GUIDED_NATIVE_FAMILIES = tuple(family for family in NATIVE_FAMILIES if family in G.GUIDED_FAMILIES)
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -183,7 +185,7 @@ def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
 
 
 def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
-    for family in NATIVE_FAMILIES:
+    for family in GUIDED_NATIVE_FAMILIES:
         prefix = invoke_header_prefix(family)
         if family in {"glm47", "gpt_oss", "hermes"}:
             # GLM and Hermes use their outer marker as the invoke opener;
@@ -662,7 +664,10 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 for scenario, active in taxonomy.GPT_OSS_PR424_REQUEST_VARIANTS.items()
                 if active and scenario in expected
             }
-        assert set(response_cases) == expected
+        assert set(response_cases) == {
+            scenario for scenario in expected
+            if family in G.scenario_families(scenario.removesuffix("_pr424"))
+        }
         native_scenarios = {
             "native_quoted_control_in_response",
             "native_single_quoted_word_control",
@@ -1031,7 +1036,8 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 279 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES)
+    mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
+    assert len(UNIFIED_TAX) == 279 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1425,6 +1431,7 @@ def _family_value(scenario, family):
             "hermes": "</tool_call>",
             "kimi_k2": "<|tool_call_end|>",
             "kimi_k3": "<|close|>call<|sep|>",
+            "mistral_4": "[TOOL_CALLS]",
             "muse_glimmer": "</atem:function_calls>",
             "muse_spark": "</atem:function_calls>",
             "gpt_oss": "<|call|>",
@@ -1446,6 +1453,7 @@ def _family_value(scenario, family):
             "gpt_oss": "<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>",
             "kimi_k2": "<think></think><|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>",
             "kimi_k3": "<|open|><|sep|><|close|><|end_of_msg|>",
+            "mistral_4": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]",
         }[family]
     if scenario == "gpt_oss_quoted_message_header_literal":
         return {
@@ -1453,6 +1461,7 @@ def _family_value(scenario, family):
             "muse_glimmer": "<|eom|><|start|>assistant to=user<|message|>literal<|eom|>",
             "muse_spark": "<|eom|><|start|>assistant to=user<|message|>literal<|eom|>",
             "kimi_k3": "<|close|>call<|sep|><|open|>response<|sep|>literal<|close|>response<|sep|>",
+            "mistral_4": "[TOOL_CALLS]literal[ARGS]{}",
         }[family]
     quoted = {
         "guided_json_quoted_bare_header_in_answer": "self",
@@ -1725,6 +1734,22 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                 return calls
             cursor = outer_end + len("</tool_call>")
 
+    if family == "mistral_4":
+        # A call is `[TOOL_CALLS]NAME[CALL_ID]ID[ARGS]{json}` with any run of `[CALL_ID]ID`
+        # and `[ARGS]` separators; a missing or unparseable body is `{}`.
+        header = re.compile(r"\[TOOL_CALLS\]([^\[{]*)(?:\[CALL_ID\][^\[{]*|\[ARGS\])*\s*")
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
+        calls = []
+        cursor = 0
+        while match := header.search(raw, cursor):
+            cursor = match.end()
+            try:
+                arguments, cursor = decoder.raw_decode(raw, match.end())
+            except json.JSONDecodeError:
+                arguments = {}
+            calls.append({"kind": "tool_call", "name": match[1].strip(), "arguments": arguments})
+        return calls
+
     if family == "beam":
         # Independent authoring-contract decoder for the Beam wire (not the parser):
         # only a `to=NAME` header on the `analysis` channel is a tool call; its body
@@ -1993,6 +2018,7 @@ def _assert_malformed_recovery(family, case):
         "deepseek_v4": '<｜DSML｜invoke name="echo">',
         "deepseek_v41": '<｜DSML｜ invoke name="echo">',
         "gemma4": "<|tool_call>call:echo{",
+        "mistral_4": "[TOOL_CALLS]echo[ARGS]",
         "muse_glimmer": "<|start|>assistant to=echo<|message|>",
         "muse_spark": "<|start|>assistant to=echo<|message|>",
         "gpt_oss": "<|start|>assistant<|channel|>commentary to=functions.echo",
@@ -2027,11 +2053,12 @@ def _assert_malformed_recovery(family, case):
         "beam": "</rfl:parameter><|call|>",
         "minimax_m3": "]<]minimax[>[</value>]<]minimax[>[</invoke>",
     }
-    assert closers[family] in prefix
+    # Mistral has no call closer: the next `[TOOL_CALLS]` bounds the body.
+    assert family == "mistral_4" or closers[family] in prefix
     echoes = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
     assert _native_input_calls(family, suffix) == echoes
     bad = []
-    if family == "kimi_k2":
+    if family in {"kimi_k2", "mistral_4"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
     elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3", "hermes"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
@@ -2397,6 +2424,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 or (family == "minimax_m3" and scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS)):
             candidates = _native_input_calls(family, raw, case.get("tools", []), exact_numbers=True)
             for candidate in candidates:
+                # Only object arguments have properties to type against a schema.
+                if not isinstance(candidate["arguments"], dict):
+                    continue
                 tool_schema = next(
                     (tool for tool in case.get("tools", []) if tool["name"] == candidate["name"]),
                     None,
@@ -2492,6 +2522,10 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
         if isinstance(arguments, str):
             arguments = json.loads(arguments, parse_float=Decimal)
         assert name in raw or case["init"]["named_tool"] == name, (family, scenario, "input tool name", name)
+        if scenario == "mistral_non_object_arguments":
+            # Non-object arguments pass through by design; the input spells each value.
+            assert json.dumps(arguments) in raw, (family, scenario, "input argument value", arguments)
+            continue
         assert isinstance(arguments, dict), (family, scenario, "argument object")
         for key, value in arguments.items():
             assert key in raw, (family, scenario, "input argument key", key)
@@ -2585,7 +2619,7 @@ def _assert_cross_family_contract(corpus):
                 assert malformed in case["input"]
                 assert case["input"].index(malformed) < case["input"].rindex("get_weather")
                 following = [{"kind": "tool_call", "name": "get_weather", "arguments": {} if empty else {"city": "Paris"}}]
-                assert events == ([{"kind": "tool_call", "name": "bad", "arguments": {}}] if family in {"kimi_k2", "deepseek_v4"} else []) + following
+                assert events == ([{"kind": "tool_call", "name": "bad", "arguments": {}}] if family in {"kimi_k2", "deepseek_v4", "mistral_4"} else []) + following
                 events = following
             if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
                 following = [{"kind": "text", "text": "recovered"}]
@@ -2820,7 +2854,7 @@ def test_guided_native_recovery_contract_rejects_changed_calls(scenario, mutatio
         _assert_guided_native_recovery(family, scenario, case)
 
 
-@pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family not in {"muse_glimmer", "muse_spark"}])
+@pytest.mark.parametrize("family", [family for family in GUIDED_NATIVE_FAMILIES if family not in {"muse_glimmer", "muse_spark"}])
 def test_cross_family_contract_rejects_prose_only_recipient_case(family):
     corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     _assert_cross_family_contract(corpus)
@@ -2882,6 +2916,8 @@ def test_cross_family_contract_rejects_single_family_mutations(family, mutation)
     elif mutation == "input_value":
         case["input"] = case["input"].replace("Paris", "Rome")
     elif mutation == "guided_array_value":
+        if family not in GUIDED_NATIVE_FAMILIES:
+            pytest.skip(f"{family} has no guided cases")
         case = corpus[family][f"UNIFIED.guided_json_array_argument.{family}"]
         prefix = G.default_response_prefix(family)
         calls = json.loads(case["input"].removeprefix(prefix))
@@ -3048,9 +3084,9 @@ def test_gpt_oss_variants_use_shared_parents_or_explicit_header_grammar(scenario
 
 
 @pytest.mark.parametrize(("scenario", "parent", "families"), [
-    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3"}),
+    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3", "mistral_4"}),
     ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
-    ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
+    ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3", "mistral_4"}),
 ])
 def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, parent, families):
     assert G.scenario_families(scenario) == families
@@ -3082,6 +3118,7 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
                 assert payload in case["input"]
                 assert "literal" in payload
                 assert ("assistant to=user<|message|>" if family in {"muse_glimmer", "muse_spark"}
+                        else "[TOOL_CALLS]" if family == "mistral_4"
                         else '<|open|>response<|sep|>') in payload
 
 

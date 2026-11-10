@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.2...dynamo-parsers-v2-v0.10.3) - 2026-11-10
+
+### Features
+
+- *(parsers-v2)* Add Mistral tekken tokenizer, native renderer and mistral_4 UnifiedParser
+
 ## [0.10.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.1...dynamo-parsers-v2-v0.10.2) - 2026-11-09
 
 ### Bug fixes
