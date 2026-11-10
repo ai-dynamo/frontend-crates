@@ -71,6 +71,30 @@ Capture and YAML import are separate steps. These releases were imported using t
 
 CI replays current native Dynamo v2 cases and validates the stored peer captures, history, and report; peer recapture is manual. Follow [Generate the latest or history report](#generate-the-latest-or-history-report) to inspect imported results in the browser. The [public Unified viewer](https://ai-dynamo.org/frontend-crates/?tab=tab-unified) shows published captures; use a local report or the PR's validated publication artifact for unmerged captures.
 
+### Prepare GOLDEN and refresh latest Dynamo v2 observations
+
+Run from the repository root after installing the conformance Python dependencies. Before implementation, declare the family and markers in `conformance/utils/src/parser_families.yaml`, author scenarios in `conformance/utils/src/gen_unified_golden.py`, and assign stable IDs in `conformance/utils/src/unified_taxonomy.py`. Generate independent review specs without invoking a parser:
+
+```bash
+python3 conformance/utils/src/gen_unified_golden.py
+```
+
+Review `conformance/unified/golden_spec/<golden_spec>` using the filename declared for the family in the registry. For a completely new family, author its initial schema-3 `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml` independently as well; use existing family documents and the normalized current YAML schema above as the storage contract. The registry does not create that canonical file. For additional native-profile cases in an existing family, this command appends authored cases without replacing old requests or expected outputs:
+
+```bash
+python3 conformance/utils/src/explode_unified_fixtures.py --authored-inputs
+```
+
+That append mode is not a new-family bootstrap and does not update an existing case's GOLDEN. Review both generated specs and canonical inputs/GOLDEN, resolve differences with a documented reason, and obtain human approval before implementing the parser. Do not use observed parser output to define the expected result.
+
+After implementation, use the maintained workflow to capture current Dynamo v2 output, package observations, validate the store, and run shared v2 checks:
+
+```bash
+bash conformance/utils/regenerate_unified.sh
+```
+
+This command writes generated files and may update authored inputs and current capture YAML; inspect the complete diff before staging. It executes current v2 code, not historical versions. Preserve existing observations and their provenance; historical backfills and new v1 captures are outside this workflow. A failed command remains a failed check even if an intermediate capture or report was produced. Then [generate the latest report](#generate-the-latest-or-history-report) and visually compare the affected cases against reviewed GOLDEN.
+
 ### Generate the latest or history report
 
 Build the Rust publisher and install the viewer's locked npm build dependency. Generate each report into its own output directory:
