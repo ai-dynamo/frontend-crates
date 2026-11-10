@@ -158,7 +158,7 @@ decoded media or a passthrough URL.
 | --- | --- | --- |
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
 | per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
-| per image | `MmFamilyProcessor::decode_image` | bytes + `DecodeLimits` → `DecodedMedia::Image` (8-bit only, header-checked caps, family-specific EXIF and alpha policy) |
+| per image | `MmFamilyProcessor::decode_image` | bytes + `DecodeLimits` → `DecodedMedia::Image`, or `DecodedMedia::ImageRgba` for a family that composites alpha after its resize (8-bit only, header-checked caps, family-specific EXIF and alpha policy) |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once and in prompt order, feature ranges match the produced embeddings) |
@@ -305,6 +305,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
+| `image::resize::resize_rgba` | `PIL.Image.resize` on an RGBA or LA image (BICUBIC, u8) | **bitwise** against Pillow 12.3 (Pillow resizes premultiplied `RGBa` and divides back with truncation) |
 
 For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
 accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
@@ -335,6 +336,11 @@ Three layers, all pinned to bitwise-equality:
    regenerates them from the HF processor and `get_rope_index`, cross-checks
    that the resized buffer reproduces `pixel_values`, and records the
    transformers/torch/torchvision/Pillow versions in each `case.json`.
+   The decode stage has its own table: `tests/fixtures/mm_parity/decode.json`
+   gives Pillow's output for each image of the shared corpus
+   (`tests/fixtures/mm_parity/images/`) through each decode entry point, and
+   marks each form where the crate refuses or decodes other pixels. See
+   `tests/fixtures/mm_parity/README.md`.
 3. **Consumer parity (SGLang CI)** — per-step and end-to-end pytest suites
    compare the Rust path against the live HF/Python processors field-by-field
    with `.tobytes()` equality, plus a GPU e2e test and an MMMU accuracy gate

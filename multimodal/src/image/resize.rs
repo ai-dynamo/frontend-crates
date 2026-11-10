@@ -181,46 +181,50 @@ fn clip8(v: i32, prec: u32) -> u8 {
     }
 }
 
-fn resample_horizontal(src: &[u8], h: usize, w: usize, out_w: usize, c: &Coeffs) -> Vec<u8> {
-    let mut out = vec![0u8; h * out_w * 3];
-    execution::for_chunks_mut(&mut out, out_w * 3, |y, row| {
-        let src_row = &src[y * w * 3..(y + 1) * w * 3];
+fn resample_horizontal<const C: usize>(
+    src: &[u8],
+    h: usize,
+    w: usize,
+    out_w: usize,
+    c: &Coeffs,
+) -> Vec<u8> {
+    let mut out = vec![0u8; h * out_w * C];
+    execution::for_chunks_mut(&mut out, out_w * C, |y, row| {
+        let src_row = &src[y * w * C..(y + 1) * w * C];
         for xx in 0..out_w {
             let (xmin, count) = c.bounds[xx];
             let k = &c.kk[xx * c.ksize..xx * c.ksize + count];
-            let mut s = [1i32 << (c.prec - 1); 3];
+            let mut s = [1i32 << (c.prec - 1); C];
             for (x, &coef) in k.iter().enumerate() {
-                let p = (xmin + x) * 3;
-                s[0] += src_row[p] as i32 * coef;
-                s[1] += src_row[p + 1] as i32 * coef;
-                s[2] += src_row[p + 2] as i32 * coef;
+                let p = (xmin + x) * C;
+                for ch in 0..C {
+                    s[ch] += src_row[p + ch] as i32 * coef;
+                }
             }
-            let o = xx * 3;
-            row[o] = clip8(s[0], c.prec);
-            row[o + 1] = clip8(s[1], c.prec);
-            row[o + 2] = clip8(s[2], c.prec);
+            for ch in 0..C {
+                row[xx * C + ch] = clip8(s[ch], c.prec);
+            }
         }
     });
     out
 }
 
-fn resample_vertical(src: &[u8], w: usize, out_h: usize, c: &Coeffs) -> Vec<u8> {
-    let mut out = vec![0u8; out_h * w * 3];
-    execution::for_chunks_mut(&mut out, w * 3, |yy, row| {
+fn resample_vertical<const C: usize>(src: &[u8], w: usize, out_h: usize, c: &Coeffs) -> Vec<u8> {
+    let mut out = vec![0u8; out_h * w * C];
+    execution::for_chunks_mut(&mut out, w * C, |yy, row| {
         let (ymin, count) = c.bounds[yy];
         let k = &c.kk[yy * c.ksize..yy * c.ksize + count];
         for x in 0..w {
-            let mut s = [1i32 << (c.prec - 1); 3];
+            let mut s = [1i32 << (c.prec - 1); C];
             for (y, &coef) in k.iter().enumerate() {
-                let p = ((ymin + y) * w + x) * 3;
-                s[0] += src[p] as i32 * coef;
-                s[1] += src[p + 1] as i32 * coef;
-                s[2] += src[p + 2] as i32 * coef;
+                let p = ((ymin + y) * w + x) * C;
+                for ch in 0..C {
+                    s[ch] += src[p + ch] as i32 * coef;
+                }
             }
-            let o = x * 3;
-            row[o] = clip8(s[0], c.prec);
-            row[o + 1] = clip8(s[1], c.prec);
-            row[o + 2] = clip8(s[2], c.prec);
+            for ch in 0..C {
+                row[x * C + ch] = clip8(s[ch], c.prec);
+            }
         }
     });
     out
@@ -235,10 +239,44 @@ pub fn resize_rgb(
     out_w: usize,
     resample: Resample,
 ) -> Vec<u8> {
-    execution::in_pool(move || resize_passes(src, h, w, out_h, out_w, resample))
+    execution::in_pool(move || resize_passes::<3>(src, h, w, out_h, out_w, resample))
 }
 
-fn resize_passes(
+/// PIL `Image.resize(..., BICUBIC)` of a flat HWC RGBA buffer. Pillow resizes
+/// RGBA as premultiplied `RGBa` and divides back with truncation; an unchanged
+/// size returns a plain copy.
+pub fn resize_rgba(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -> Vec<u8> {
+    if (out_h, out_w) == (h, w) {
+        return src.to_vec();
+    }
+    execution::in_pool(move || {
+        let mut premultiplied = src.to_vec();
+        execution::for_chunks_mut(&mut premultiplied, w * 4, |_, row| {
+            for px in row.chunks_exact_mut(4) {
+                let alpha = u32::from(px[3]);
+                for v in &mut px[..3] {
+                    let t = u32::from(*v) * alpha + 128;
+                    *v = (((t >> 8) + t) >> 8) as u8;
+                }
+            }
+        });
+        let bicubic = Resample::Pil(Filter::Bicubic);
+        let mut out = resize_passes::<4>(&premultiplied, h, w, out_h, out_w, bicubic);
+        execution::for_chunks_mut(&mut out, out_w * 4, |_, row| {
+            for px in row.chunks_exact_mut(4) {
+                let alpha = u32::from(px[3]);
+                if alpha != 0 && alpha != 255 {
+                    for v in &mut px[..3] {
+                        *v = (255 * u32::from(*v) / alpha).min(255) as u8;
+                    }
+                }
+            }
+        });
+        out
+    })
+}
+
+fn resize_passes<const C: usize>(
     src: &[u8],
     h: usize,
     w: usize,
@@ -249,15 +287,15 @@ fn resize_passes(
     let coeffs = |in_size, out_size| precompute_coeffs(in_size, out_size, resample);
     match (out_w != w, out_h != h) {
         (true, true) if resample.vertical_first(h, w, out_h) => {
-            let tmp = resample_vertical(src, w, out_h, &coeffs(h, out_h));
-            resample_horizontal(&tmp, out_h, w, out_w, &coeffs(w, out_w))
+            let tmp = resample_vertical::<C>(src, w, out_h, &coeffs(h, out_h));
+            resample_horizontal::<C>(&tmp, out_h, w, out_w, &coeffs(w, out_w))
         }
         (true, true) => {
-            let tmp = resample_horizontal(src, h, w, out_w, &coeffs(w, out_w));
-            resample_vertical(&tmp, out_w, out_h, &coeffs(h, out_h))
+            let tmp = resample_horizontal::<C>(src, h, w, out_w, &coeffs(w, out_w));
+            resample_vertical::<C>(&tmp, out_w, out_h, &coeffs(h, out_h))
         }
-        (true, false) => resample_horizontal(src, h, w, out_w, &coeffs(w, out_w)),
-        (false, true) => resample_vertical(src, w, out_h, &coeffs(h, out_h)),
+        (true, false) => resample_horizontal::<C>(src, h, w, out_w, &coeffs(w, out_w)),
+        (false, true) => resample_vertical::<C>(src, w, out_h, &coeffs(h, out_h)),
         (false, false) => src.to_vec(),
     }
 }
@@ -427,6 +465,39 @@ mod tests {
     #[test]
     fn identity_resize_copies_the_source() {
         assert_eq!(resize_rgb(&SRC, H, W, H, W, Resample::AtenU8), SRC);
+    }
+
+    /// A 6x8 RGBA source with fully transparent, fully opaque and partial
+    /// alpha, and `Image.resize((5, 4), Image.BICUBIC)` of it. Pillow resizes
+    /// it premultiplied: 58 of the 80 bytes differ from a per-channel resize.
+    const SRC_RGBA: [u8; 192] = [
+        150, 52, 211, 0, 15, 173, 75, 0, 136, 38, 196, 255, 1, 159, 61, 255, 122, 24, 182, 84, 243,
+        145, 47, 205, 107, 10, 168, 0, 228, 130, 33, 0, 93, 251, 154, 0, 214, 116, 18, 0, 79, 237,
+        139, 255, 200, 102, 4, 255, 65, 223, 125, 27, 185, 88, 246, 148, 50, 209, 111, 0, 171, 73,
+        232, 0, 36, 194, 96, 255, 157, 59, 217, 255, 22, 180, 82, 240, 143, 45, 203, 105, 8, 166,
+        68, 0, 128, 31, 189, 0, 249, 151, 54, 255, 114, 16, 175, 255, 235, 137, 39, 255, 100, 2,
+        160, 255, 221, 123, 25, 183, 86, 244, 146, 48, 206, 109, 11, 0, 71, 230, 132, 0, 192, 94,
+        253, 255, 57, 215, 117, 255, 178, 80, 238, 141, 43, 201, 103, 5, 164, 66, 224, 0, 29, 187,
+        89, 0, 149, 52, 210, 255, 14, 172, 75, 255, 135, 37, 196, 98, 0, 158, 60, 219, 121, 23,
+        181, 84, 242, 144, 46, 204, 107, 9, 167, 0, 227, 130, 32, 0, 92, 251, 153, 255, 213, 115,
+        18, 255, 78, 236, 138, 41, 199, 101, 3, 162,
+    ];
+    const PIL_RGBA_BICUBIC: [u8; 80] = [
+        0, 0, 0, 0, 106, 119, 142, 198, 88, 122, 69, 179, 225, 118, 123, 114, 0, 0, 0, 0, 97, 133,
+        139, 177, 91, 152, 120, 226, 166, 99, 74, 72, 255, 138, 159, 59, 174, 85, 137, 174, 170,
+        88, 121, 208, 154, 78, 92, 124, 124, 93, 202, 49, 110, 110, 168, 115, 98, 153, 154, 238,
+        194, 94, 139, 113, 255, 140, 0, 20, 109, 175, 171, 135, 129, 144, 79, 221, 108, 119, 39,
+        122,
+    ];
+
+    #[test]
+    fn rgba_resize_premultiplies_as_pillow_does() {
+        assert_eq!(resize_rgba(&SRC_RGBA, H, W, OH, OW), PIL_RGBA_BICUBIC);
+        assert_eq!(
+            resize_rgba(&SRC_RGBA, H, W, H, W),
+            SRC_RGBA,
+            "an unchanged size skips the premultiply round trip"
+        );
     }
 
     #[test]
