@@ -137,6 +137,14 @@ impl ChatTemplate {
     /// every chat template, so that only the template's own markers encode as
     /// control tokens. Off by default; a template with Harmony framing always
     /// renders this way.
+    ///
+    /// The spellings come back as ordinary segments of
+    /// [`OAIPromptFormatter::render_prompt`](crate::OAIPromptFormatter::render_prompt),
+    /// to encode with [`crate::RenderedPrompt::encode_segments`]; `render`
+    /// returns the same text without them. A model that lists its markers
+    /// only in `tokenizer.json` also needs [`ChatTemplate::with_tokenizer_json`].
+    /// In assistant history, a marker the template itself reads stays a
+    /// control token.
     pub fn with_request_control_tokens_as_text(mut self, enabled: bool) -> Self {
         self.request_control_tokens_as_text = enabled;
         self

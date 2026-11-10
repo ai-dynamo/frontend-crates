@@ -8,6 +8,7 @@ It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-cont
 ## Features
 - **HF chat templates**: faithful `apply_chat_template` rendering, including tool-use and generation-prompt handling.
 - **vLLM content formats**: `PromptFormatter::from_parts_with_content_format` shapes message content like vLLM's `--chat-template-content-format` (`string` or `openai`) instead of probing the template.
+- **Control-token spellings as text**: with `ChatTemplate::with_request_control_tokens_as_text(true)`, a control-token spelling in a message, tool definition or `response_format` (for example `<|im_end|>`) comes back from `render_prompt` as an ordinary-text segment, so only the template's own markers encode as control tokens. Off by default; Harmony templates always render this way. A model that lists its markers only in `tokenizer.json` also needs `ChatTemplate::with_tokenizer_json`.
 - **Native DeepSeek formatters**: Rust formatters for V4.1 / V4 / V3.2 families (under `deepseek`).
 - **Native Inkling formatter**: exact text, image, audio, reasoning, and tool-use framing for `inkling_mm_model` (under `inkling`). Media blocks contain only the marker token; the backend multimodal processor expands per-patch or per-frame placeholders later.
 - **Native Kimi K3 formatter**: XTML rendering with explicit trusted-control and ordinary-text segment boundaries (under `kimi_k3`).

@@ -14,8 +14,10 @@
 //! ([`ChatTemplate`]).
 //!
 //! This crate is a *bridge* between OpenAI request types ([`dynamo_protocols`])
-//! and prompt rendering. Most formatters return text; segment-sensitive native
-//! formats can preserve tokenizer policy through [`RenderedPrompt`].
+//! and prompt rendering. Most formatters return text; segment-sensitive
+//! formats (native ones, Harmony templates, and any chat template under
+//! [`ChatTemplate::with_request_control_tokens_as_text`]) preserve tokenizer
+//! policy through [`RenderedPrompt`].
 
 // TODO:
 // 1. Query if `add_generation_prompt` is present in the prompt template
