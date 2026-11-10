@@ -248,11 +248,11 @@ In order:
 
 1. Research the model's output specification, chat template, tokenizer, and special tokens. Record the source and revision. Resolve reasoning initialization, native framing, argument encoding, and finalization behavior before writing code.
 2. Inspect existing v2 grammar owners and factories in the [family mapping](#parser-families). Reuse a shared scanner and emitter where the grammar permits it. Inspect vLLM Rust, vLLM Python, and SGLang as API or behavioral references; the model specification and documented recovery policy determine expected results.
-3. Inspect all `UNIFIED.*` cases across every registered family and make a best-effort applicability mapping. Author family-native inputs and independent GOLDEN through the [fixture workflow](#fixture-files-to-add). Document grammar or request-mode exclusions and preserve published IDs. For example, GPT-OSS has Harmony message boundaries and JSON arguments rather than XML parameter tags: a missing `</parameter>` test cannot transfer literally, but native boundary and JSON truncation tests still apply. A parser failure is not a reason to exclude a case.
+3. Declare the conformance family and peer names in `conformance/utils/src/parser_families.yaml`, including `markers:` pairs, singletons, and leak tokens (explicit `{}` for markup-less grammars). This metadata must exist before the GOLDEN generator reads it. Inspect all `UNIFIED.*` cases across every registered family and make a best-effort applicability mapping. Author family-native inputs and independent GOLDEN through the [fixture workflow](#fixture-files-to-add). Document grammar or request-mode exclusions and preserve published IDs. For example, GPT-OSS has Harmony message boundaries and JSON arguments rather than XML parameter tags: a missing `</parameter>` test cannot transfer literally, but native boundary and JSON truncation tests still apply. A parser failure is not a reason to exclude a case.
 4. Review the GOLDEN test set before implementation. When working with an agent, pause for humans to approve inputs, settings, expected events, exclusions, and recovery decisions. Never change GOLDEN just to match a parser result; document and review the reason for a deliberate change.
-5. Implement or extend one shared v2 grammar owner and Unified factory. Register through `unified_registry!` in `src/unified/mod.rs`. If a caller needs tool-only compatibility, project Unified events and register through `family_registry!` in `src/tool_calling/registry.rs`; do not introduce a second state machine. Declare token-input capabilities on the API that accepts them.
-6. Add the family and peer names to `conformance/utils/src/parser_families.yaml`, including its `markers:` pairs, singletons, and leak tokens (explicit `{}` for markup-less grammars). Run focused and applicable shared v2 tests, including streaming, recovery, and performance checks below. Fixed fixtures must be sufficient; live model generation is optional.
-7. Recapture affected latest Dynamo v2 observations through the [capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md), generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), and provide its local HTTP URL. Inspect every affected case's input, initialization, chunks, GOLDEN, and actual output. Pause for human visual review before calling the work complete. Historical backfills are separate work.
+5. Implement or extend one shared v2 grammar owner and Unified factory. Add or reuse a structural-tag builder for that grammar under `src/structural_tag/builders/`, register its lookup, and test generation constraints as described below. Document any unsupported request modes and their fallback. Register through `unified_registry!` in `src/unified/mod.rs`. If a caller needs tool-only compatibility, project Unified events and register through `family_registry!` in `src/tool_calling/registry.rs`; do not introduce a second state machine. Declare token-input capabilities on the API that accepts them.
+6. Run focused and applicable shared v2 tests, including structural-tag, streaming, recovery, and performance checks below. Fixed fixtures must be sufficient; live model generation is optional.
+7. Recapture affected latest Dynamo v2 observations through the [GOLDEN and latest-capture workflow](../../conformance/README.md#prepare-golden-and-refresh-latest-dynamo-v2-observations), generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), and provide its local HTTP URL. Inspect every affected case's input, initialization, chunks, GOLDEN, and actual output. Pause for human visual review before calling the work complete. Historical backfills are separate work.
 
 ### Unified parser validation
 
@@ -264,6 +264,24 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 ```
 
 Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and observations over HTTP. Missing observations require recapturing the affected latest snapshots. Fix live mismatches or explain deliberate contract changes; never hide them with `reason:`, `unavailable:`, stale HTML, or unsupported GOLDEN edits.
+
+### Add and validate structural tags
+
+A structural-tag builder constrains model generation to the native tool-call format and supported argument schemas. It is separate from the parser that reads generated output. Reuse a builder when its grammar matches; otherwise add one under `src/structural_tag/builders/`. Register it through the `family_registry!` entry in `src/tool_calling/registry.rs`, or `unified_only_builder` in `src/structural_tag/builders/mod.rs` for a Unified-only family. Verify `structural_tag_builder_for_family` resolves the new name and aliases. Do not add a tool-only parser solely to register a grammar.
+
+Add builder unit tests in `src/structural_tag/tests.rs` and executable grammar contracts following `tests/structural_tag_xgrammar.rs`. Build the actual registered grammar, compile it with XGrammar, test accepted and rejected streams, and pass accepted streams through the matching parser. Cover supported `auto`, `required`, named, and `none` tool choices, single/parallel calls, argument types and required fields, prompt-opened reasoning, and supported structured-response combinations. Test unsupported modes explicitly; a parser-only fixture cannot establish generation constraints. Document fallback or unsupported behavior when the grammar/backend cannot represent a request safely.
+
+From the repository root, install the pinned CPU verifier into an isolated Python environment and run the builder checks:
+
+```bash
+python3 -m venv .venv-structural-tags
+.venv-structural-tags/bin/python -m pip install --no-deps -r conformance/utils/structural-tag-requirements.in
+cargo test --locked -p dynamo-parsers-v2 --lib structural_tag
+CONFORMANCE_GRAMMAR_PYTHON="$PWD/.venv-structural-tags/bin/python" \
+  cargo test --locked -p dynamo-parsers-v2 --test structural_tag_xgrammar -- --ignored --nocapture
+```
+
+Enroll applicable generation constraints in Unified fixtures with accepted inputs and `init.structural_tag.rejected` streams. See [Structural-tag request checks](../../conformance/README.md#structural-tag-request-checks) for fixture integration and verifier requirements. Record the actual XGrammar version; parser registration alone does not qualify an inference backend's grammar compiler. Separately test real serving requests with the intended model and backend: inspect the finish reason, required tool-call output, and token budget. HTTP 200 or a grammar-valid prefix does not establish a completed, usable call; an empty response stopped by a length limit is not a successful tool-call test. Keep tool-call structural-tag checks separate from `response_format` JSON-schema checks, which exercise a different request path.
 
 ### Check streaming and recovery
 
