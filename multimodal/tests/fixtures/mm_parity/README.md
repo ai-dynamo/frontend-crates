@@ -13,6 +13,7 @@ side-by-side view of every table.
 |---|---|---|---|
 | `glm-5.3-flash.json` | `Glm5NextProcessor` of `zai-org/GLM-5.3-Flash` | `sglang` | The target values of every case are byte-identical to `rust/sglang-processor/tests/fixtures/mm_parity/glm-5.3-flash.json` of SGLang PR #46563 at `916577f5`. `generate.py` reproduces them at SGLang `a2ffd21469`. |
 | `qwen2-vl.json` | `Qwen2VLProcessor` of `Qwen/Qwen2-VL-2B-Instruct`, with each case's pixel bounds and its ids mapped (`ID_MAP`) | `hf` | Each digest is the SHA-256 of the former `tests/fixtures/qwen_vl/` golden file (transformers 5.12.1). `aten_upscale` uses `rgb_40x40.png` from `aten_multi`, so its pixel values are regenerated. |
+| `mistral-large-4.json` | `PixtralProcessor` of `mistralai/Mistral-Large-4-1T-A52B`, both image backends | `hf` | Regenerated on corpus images from the former `tests/fixtures/pixtral/` cases (transformers 5.19.0). The HF adapter gives that fixture's values on its own inputs, except the EXIF image: `load_image` applies the orientation, which the former loader did not. The `vllm` column runs vLLM's HF `PixtralProcessor` path; vLLM's mistral-common mode, which gives other grids for some sizes, is not in the table. |
 
 ## The image corpus
 

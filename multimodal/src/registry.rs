@@ -11,9 +11,10 @@ use crate::models::glm5_next::{
     Glm5NextGeometrySpec, Glm5NextImageProcessor, Glm5NextImageSpec, Glm5NextProcessor,
     Glm5NextSpec,
 };
+use crate::models::pixtral::{PixtralProcessor, PixtralSpec};
 use crate::models::qwen_vl::{QwenVlSpec, Resampler};
 use crate::{MmError, Result};
-use serde_json::Value;
+use serde_json::{Value, json};
 
 /// Resolved parameters of one family processor, one variant per family.
 /// Built directly or deserialized via [`processor_from_spec`], where the
@@ -30,6 +31,8 @@ pub enum ProcessorSpec {
     Glm5Next(Glm5NextSpec),
     /// Full GLM image pipeline, selected by `glm5_next` specs with pixel knobs.
     Glm5NextImage(Glm5NextImageSpec),
+    /// HF `PixtralProcessor` image pipeline (Mistral Large 4).
+    Pixtral(PixtralSpec),
 }
 
 // serde's internally tagged enum buffer treats arbitrary-precision decimals
@@ -50,6 +53,7 @@ impl TryFrom<Value> for ProcessorSpec {
                 serde_json::from_value(value).map(Self::Glm5NextImage)
             }
             Some("glm5_next") => serde_json::from_value(value).map(Self::Glm5Next),
+            Some("pixtral") => serde_json::from_value(value).map(Self::Pixtral),
             _ => Err(serde::de::Error::custom(
                 "unknown or missing processor family",
             )),
@@ -69,6 +73,7 @@ pub fn build_processor(
         ProcessorSpec::DeepseekV41(spec) => Ok(Box::new(DeepseekV41Processor::new(spec)?)),
         ProcessorSpec::Glm5Next(spec) => Ok(Box::new(Glm5NextProcessor::new(spec)?)),
         ProcessorSpec::Glm5NextImage(spec) => Ok(Box::new(Glm5NextImageProcessor::new(spec)?)),
+        ProcessorSpec::Pixtral(spec) => Ok(Box::new(PixtralProcessor::new(spec)?)),
     }
 }
 
@@ -109,6 +114,10 @@ pub fn spec_from_hf_configs(
             resolve_deepseek_v41(&config, &pre)?,
         )),
         Some("glm5_next") => Ok(ProcessorSpec::Glm5Next(resolve_glm5_next(&config, &pre)?)),
+        Some("mistral_large4") => Err(MmError::unsupported(
+            "mistral_large4: the [IMG_BREAK] and [IMG_END] ids are only in params.json; \
+             use spec_from_model_dir on a directory that holds it",
+        )),
         Some(other) => Err(MmError::unsupported(format!(
             "no native processor for model_type {other:?}"
         ))),
@@ -310,14 +319,26 @@ fn resolve_glm5_next(config: &Value, pre: &Value) -> Result<Glm5NextSpec> {
 /// [`spec_from_hf_configs`] over a local model directory: reads `config.json`
 /// and `preprocessor_config.json`, or `processor_config.json` when the
 /// checkpoint ships only the nested transformers v5 file (GLM-5.3-Flash).
-/// Downloading from a hub stays the consumer's concern — hand this the
-/// resolved local dir.
+/// A directory without `config.json`, or with one that says `mistral_large4`,
+/// resolves from `params.json` (`vision_encoder`) and `processor_config.json`
+/// when it holds them. That spec mirrors the HF `PixtralProcessor`, not an
+/// engine that runs mistral-common (vLLM). Downloading from a hub stays the
+/// consumer's concern — hand this the resolved local dir.
 pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
     let read = |name: &str| {
         std::fs::read_to_string(dir.join(name)).map_err(|error| {
             MmError::invalid_input_with_source(format!("cannot read {name}"), error)
         })
     };
+    let config = read_optional_json(dir, "config.json")?;
+    if (config.as_ref()).is_none_or(|config| config["model_type"] == "mistral_large4")
+        && let Some(params) = read_optional_json(dir, "params.json")?
+        && params["vision_encoder"].is_object()
+    {
+        let pre = read_optional_json(dir, "processor_config.json")?
+            .ok_or_else(|| MmError::invalid_input("cannot read processor_config.json"))?;
+        return resolve_pixtral(&params, config.as_ref(), &pre).map(ProcessorSpec::Pixtral);
+    }
     let config = read("config.json")?;
     let pre = match std::fs::read_to_string(dir.join("preprocessor_config.json")) {
         Ok(json) => json,
@@ -472,6 +493,163 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
         // server; `Resampler::Pil` stays reachable through the spec JSON.
         resample: Resampler::AtenU8,
     })
+}
+
+fn read_optional_json(dir: &std::path::Path, name: &str) -> Result<Option<Value>> {
+    match std::fs::read_to_string(dir.join(name)) {
+        Ok(json) => serde_json::from_str(&json)
+            .map(Some)
+            .map_err(|error| MmError::invalid_input_with_source(format!("invalid {name}"), error)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(MmError::invalid_input_with_source(
+            format!("cannot read {name}"),
+            error,
+        )),
+    }
+}
+
+/// Nested `image_processor` knobs whose value must hold for the Rust
+/// arithmetic to match HF's. Without padding HF cannot batch images of
+/// different sizes, so `do_pad` stays on.
+const PIXTRAL_PINNED: &[(&str, Predicate)] = &[
+    ("do_resize", |v| v.as_bool() == Some(true)),
+    ("do_rescale", |v| v.as_bool() == Some(true)),
+    ("do_normalize", |v| v.as_bool() == Some(true)),
+    ("do_convert_rgb", |v| v.as_bool() == Some(true)),
+    ("do_pad", |v| v.as_bool() == Some(true)),
+    ("do_center_crop", |v| {
+        v.is_null() || v.as_bool() == Some(false)
+    }),
+    ("resample", |v| v.as_i64() == Some(3)),
+    ("rescale_factor", |v| v.as_f64() == Some(1.0 / 255.0)),
+    ("data_format", |v| v.as_str() == Some("channels_first")),
+    ("input_data_format", |v| {
+        v.is_null() || v.as_str() == Some("channels_first")
+    }),
+    ("image_processor_type", |v| {
+        matches!(
+            v.as_str(),
+            Some(
+                "PixtralImageProcessor" | "PixtralImageProcessorFast" | "PixtralImageProcessorPil"
+            )
+        )
+    }),
+];
+
+/// Nested knobs that do not reach the output. `patch_size` is one of them:
+/// `PixtralProcessor` passes its own patch on every call.
+const PIXTRAL_INERT: &[&str] = &[
+    "patch_size",
+    "crop_size",
+    "default_to_square",
+    "disable_grouping",
+    "return_tensors",
+    "processor_class",
+];
+
+/// `params.json` `vision_encoder` holds the `[IMG_BREAK]` and `[IMG_END]` ids,
+/// which `config.json` lacks. `config.json` is checked only for drift.
+fn resolve_pixtral(params: &Value, config: Option<&Value>, pre: &Value) -> Result<PixtralSpec> {
+    let top = pre
+        .as_object()
+        .ok_or_else(|| MmError::invalid_input("processor_config.json is not an object"))?;
+    let knobs = (top.get("image_processor"))
+        .and_then(Value::as_object)
+        .ok_or_else(|| {
+            MmError::invalid_input("pixtral: processor_config.json needs a nested image_processor")
+        })?;
+    let vision = &params["vision_encoder"];
+    // `resample` keeps its default: every Pixtral image processor name loads
+    // the torchvision class; `pil` is selected through the spec JSON.
+    let mut fields = json!({
+        "image_token_id": vision["image_token_id"],
+        "image_break_token_id": vision["image_break_token_id"],
+        "image_end_token_id": vision["image_end_token_id"],
+        "patch_size": vision["patch_size"],
+        "spatial_merge_size": vision["spatial_merge_size"],
+        "longest_edge": vision["image_size"],
+        "image_mean": knobs.get("image_mean"),
+        "image_std": knobs.get("image_std"),
+    });
+    // Without the nulls serde names the field that a file lacks.
+    if let Some(fields) = fields.as_object_mut() {
+        fields.retain(|_, value| !value.is_null());
+    }
+    let spec: PixtralSpec = serde_json::from_value(fields).map_err(|error| {
+        MmError::invalid_input_with_source(
+            "pixtral: params.json vision_encoder (ids, patch_size, spatial_merge_size, \
+             image_size as longest_edge) or processor_config.json image_processor \
+             (image_mean, image_std) lacks a valid field",
+            error,
+        )
+    })?;
+    if (config.and_then(|config| config.get("image_token_index")))
+        .is_some_and(|id| *id != json!(spec.image_token_id))
+    {
+        return Err(MmError::invalid_input(
+            "config.json image_token_index disagrees with params.json image_token_id",
+        ));
+    }
+
+    if top.get("processor_class") != Some(&json!("PixtralProcessor")) {
+        return Err(MmError::unsupported(
+            "pixtral: processor_config.json processor_class must be PixtralProcessor",
+        ));
+    }
+    for (key, declared) in [
+        ("patch_size", spec.patch_size),
+        ("spatial_merge_size", spec.spatial_merge_size),
+    ] {
+        if top.get(key) != Some(&json!(declared)) {
+            return Err(MmError::invalid_input(format!(
+                "pixtral: processor_config.json {key} must equal vision_encoder {key} = {declared}"
+            )));
+        }
+    }
+    for (key, value) in top {
+        let honored = match key.as_str() {
+            "processor_class" | "patch_size" | "spatial_merge_size" | "image_processor" => true,
+            "image_token" => value == "[IMG]",
+            "image_break_token" => value == "[IMG_BREAK]",
+            "image_end_token" => value == "[IMG_END]",
+            _ => value.is_null(),
+        };
+        if !honored {
+            return Err(MmError::unsupported(format!(
+                "pixtral: processor_config.json {key} = {value} cannot be honored"
+            )));
+        }
+    }
+
+    for (knob, value) in knobs {
+        let knob = knob.as_str();
+        if matches!(knob, "size" | "image_mean" | "image_std") || PIXTRAL_INERT.contains(&knob) {
+            continue;
+        }
+        match PIXTRAL_PINNED.iter().find(|(name, _)| *name == knob) {
+            Some((_, honored)) if honored(value) => {}
+            None if value.is_null() => {}
+            _ => {
+                return Err(MmError::unsupported(format!(
+                    "pixtral: image_processor knob {knob} = {value} cannot be honored"
+                )));
+            }
+        }
+    }
+    // HF cannot select an image processor class without the key.
+    if !knobs.contains_key("image_processor_type") {
+        return Err(MmError::unsupported(
+            "pixtral: image_processor needs an image_processor_type",
+        ));
+    }
+    if knobs.get("size") != Some(&json!({"longest_edge": spec.longest_edge})) {
+        return Err(MmError::unsupported(format!(
+            "pixtral: image_processor size must be longest_edge = {}, the vision_encoder \
+             image_size",
+            spec.longest_edge
+        )));
+    }
+    Ok(spec)
 }
 
 #[cfg(test)]
@@ -692,6 +870,14 @@ mod tests {
             panic!("expected Qwen spec");
         };
         assert_eq!(spec.max_pixels, 12845056);
+        // `config.json` selects the family: a stray params.json changes nothing.
+        for params in ["not json", r#"{"vision_encoder": {}}"#] {
+            std::fs::write(dir.join("params.json"), params).unwrap();
+            assert!(matches!(
+                spec_from_model_dir(&dir),
+                Ok(ProcessorSpec::QwenVl(_))
+            ));
+        }
         std::fs::remove_dir_all(&dir).unwrap();
 
         assert!(spec_from_model_dir(std::path::Path::new("/nonexistent")).is_err());
