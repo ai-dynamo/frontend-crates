@@ -14,8 +14,8 @@ use std::fmt::Write;
 use super::common::{
     NormalizeNonText, REASONING_EFFORT_HIGH, REASONING_EFFORT_MAX, RESPONSE_FORMAT_TEMPLATE,
     TOOL_CALLS_BLOCK_NAME, TOOLS_TEMPLATE, drop_thinking_messages, encode_arguments_to_dsml,
-    find_last_user_index, merge_tool_messages, normalize_message_contents, render_tools,
-    sort_tool_results_by_call_order, task_token, to_json,
+    find_last_user_index, merge_tool_messages, normalize_message_contents, reasoning_text,
+    render_tools, sort_tool_results_by_call_order, task_token, to_json,
 };
 pub use super::common::{ReasoningEffort, ThinkingMode, tokens};
 
@@ -177,10 +177,7 @@ fn render_message(
 
         "assistant" => {
             let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
-            let reasoning = msg
-                .get("reasoning_content")
-                .and_then(|c| c.as_str())
-                .unwrap_or("");
+            let reasoning = reasoning_text(msg.get("reasoning_content"));
             let wo_eos = msg.get("wo_eos").and_then(|v| v.as_bool()).unwrap_or(false);
 
             let prev_has_task = index > 0
@@ -192,7 +189,7 @@ fn render_message(
             if thinking_mode == ThinkingMode::Thinking && !prev_has_task {
                 let render_thinking = !drop_thinking || last_user_idx.is_none_or(|u| index > u);
                 if render_thinking {
-                    prompt.push_str(reasoning);
+                    prompt.push_str(&reasoning);
                     prompt.push_str(tokens::THINKING_END);
                 }
             }
