@@ -145,23 +145,26 @@ impl Encoder for BasetenTokenizer {
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
-        let pairs = segments
-            .iter()
-            .map(|segment| (segment.text, segment.allow_special));
-        let ids = self
-            .tokenizer
-            .encode_segments_tiktoken_safe(pairs, self.options.add_special_tokens)
-            .map_err(|e| Error::msg(format!("Baseten tokenizer segment encode error: {e}")))?;
-        // Post-processing applies to the whole sequence, so the ordinary
-        // segments are checked on their own, without it.
-        for segment in segments.iter().filter(|segment| !segment.allow_special) {
-            let ordinary = self
-                .tokenizer
-                .encode_segments_tiktoken_safe([(segment.text, false)], false)
-                .map_err(|e| Error::msg(format!("Baseten tokenizer segment encode error: {e}")))?;
-            crate::reject_control_ids_in_ordinary_segment(&ordinary, &self.added_ids)?;
+        // Each segment is encoded once, without post-processing, which then
+        // runs on the joined ids as it does for a single segmented encode.
+        let mut ids = Vec::new();
+        for segment in segments {
+            let start = ids.len();
+            ids.extend(
+                self.tokenizer
+                    .encode_segments_tiktoken_safe([(segment.text, segment.allow_special)], false)
+                    .map_err(|e| {
+                        Error::msg(format!("Baseten tokenizer segment encode error: {e}"))
+                    })?,
+            );
+            if !segment.allow_special {
+                crate::reject_control_ids_in_ordinary_segment(&ids[start..], &self.added_ids)?;
+            }
         }
-        Ok(Encoding::Sp(ids))
+        Ok(Encoding::Sp(
+            self.tokenizer
+                .post_process(ids, self.options.add_special_tokens),
+        ))
     }
 }
 

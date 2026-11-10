@@ -35,23 +35,22 @@ fn fast_encode_segments(
     segments: &[EncodeSegment<'_>],
     control_ids: &HashSet<u32>,
 ) -> Result<Encoding> {
-    let segments: Vec<fastokens::EncodeSegment<'_>> = segments
-        .iter()
-        .map(|segment| fastokens::EncodeSegment {
-            text: segment.text,
-            allow_special: segment.allow_special,
-        })
-        .collect();
-    let ids = encoder
-        .encode_segments(&segments)
-        .map_err(|e| Error::msg(format!("Fastokens segmented encode error: {e}")))?;
-    // Truncation, post-processing and padding apply to the whole sequence, so
-    // the ordinary segments are checked on their own, unpadded.
-    for segment in segments.iter().filter(|segment| !segment.allow_special) {
-        let ordinary: Vec<u32> = encoder
-            .encode_segments_unpadded(std::slice::from_ref(segment))
+    // Each segment is encoded once and its ids joined, which is what
+    // `fastokens` does itself: neither tokenizer here keeps the truncation or
+    // padding that would apply to the joined ids.
+    let mut ids = Vec::new();
+    for segment in segments {
+        let start = ids.len();
+        let segment_ids: Vec<u32> = encoder
+            .encode_segments_unpadded(&[fastokens::EncodeSegment {
+                text: segment.text,
+                allow_special: segment.allow_special,
+            }])
             .map_err(|e| Error::msg(format!("Fastokens segmented encode error: {e}")))?;
-        crate::reject_control_ids_in_ordinary_segment(&ordinary, control_ids)?;
+        ids.extend(segment_ids);
+        if !segment.allow_special {
+            crate::reject_control_ids_in_ordinary_segment(&ids[start..], control_ids)?;
+        }
     }
     Ok(Encoding::Sp(ids))
 }
