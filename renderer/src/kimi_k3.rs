@@ -41,8 +41,7 @@ const END_OF_MSG_TOKEN: &str = "<|end_of_msg|>";
 /// `image_prompts` is the model author's hook for exactly this choice, and
 /// `<|kimi_image_placeholder|>` is only its `None` fallback.
 const MEDIA_PAD: &str = "<|media_pad|>";
-const K3_THINKING_EFFORTS: &[&str] = &["low", "high", "max"];
-const K31_THINKING_EFFORTS: &[&str] = &["low", "medium", "high", "max"];
+const VALID_THINKING_EFFORTS: &[&str] = &["low", "high", "max"];
 
 #[derive(Debug, Clone, Copy)]
 enum KimiVersion {
@@ -64,7 +63,7 @@ impl KimiK3Formatter {
         }
     }
 
-    /// K3.1 shares the K3 encoding and additionally accepts medium thinking effort.
+    /// K3.1 shares the K3 encoding and thinking-effort values.
     pub fn new_k31(exclude_tools_when_tool_choice_none: bool) -> Self {
         Self {
             version: KimiVersion::K31,
@@ -112,14 +111,14 @@ impl KimiK3Formatter {
         // clients to know K3-specific chat-template arguments.
         let thinking = named_tool.is_none() && thinking_bool_from_args(args).unwrap_or(true);
         let thinking_effort = resolve_thinking_effort(args);
-        let (model_name, valid_efforts) = match self.version {
-            KimiVersion::K3 => ("Kimi K3", K3_THINKING_EFFORTS),
-            KimiVersion::K31 => ("Kimi K3.1", K31_THINKING_EFFORTS),
+        let model_name = match self.version {
+            KimiVersion::K3 => "Kimi K3",
+            KimiVersion::K31 => "Kimi K3.1",
         };
-        if thinking && !valid_efforts.contains(&thinking_effort.as_str()) {
+        if thinking && !VALID_THINKING_EFFORTS.contains(&thinking_effort.as_str()) {
             return Err(PromptRenderError::invalid_request(format!(
                 "Unsupported {model_name} thinking_effort={thinking_effort:?}; supported values are {}",
-                valid_efforts.join(", ")
+                VALID_THINKING_EFFORTS.join(", ")
             ))
             .into());
         }
@@ -1400,47 +1399,45 @@ mod tests {
     }
 
     #[test]
-    fn k31_medium_effort_matches_checkpoint_encoding() {
+    fn k31_rejects_medium_effort_like_current_checkpoint() {
         let crate::PromptFormatter::OAI(formatter) = crate::template::kimi_k3_formatter_for(
             &Some("kimi_k31".to_string()),
             "served-name",
             true,
         )
         .unwrap();
-        // Rendered with the original K31 encoding_k3.py, build_chat_segments.
-        let expected = concat!(
-            "<|open|>message role=\"system\" type=\"thinking-effort\"<|sep|>",
-            "`thinking_effort` guides on how much to think in your thinking channel ",
-            "(not including the response channel), supported values include `low`, ",
-            "`medium`, `high`, and `max`.\nNow the system is invoked with ",
-            "`thinking_effort=medium`.<|close|>message<|sep|><|end_of_msg|>",
-            "<|open|>message role=\"user\"<|sep|>Hello<|close|>message<|sep|><|end_of_msg|>",
-            "<|open|>message role=\"assistant\"<|sep|><|open|>think<|sep|>"
-        );
+        // Reference: encoding_k3.py at checkpoint revision d9e99b07.
         for key in ["thinking_effort", "reasoning_effort"] {
             let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
             request.args.insert(key.to_string(), json!("medium"));
-            assert_eq!(formatter.render(&request).unwrap(), expected, "{key}");
-            assert_eq!(
-                formatter.render_prompt(&request).unwrap().as_str(),
-                expected
+            let error = formatter.render(&request).unwrap_err();
+            let message = invalid_request_message(&error);
+            assert!(
+                message.contains("thinking_effort=\"medium\""),
+                "{key}: {message}"
             );
+            assert!(
+                message.contains("supported values are low, high, max"),
+                "{message}"
+            );
+            let prompt_error = formatter.render_prompt(&request).err().unwrap();
+            assert_eq!(invalid_request_message(&prompt_error), message, "{key}");
         }
     }
 
     #[test]
-    fn factory_selects_model_specific_thinking_efforts() {
-        for (model_type, name, accepts_medium) in [
-            (Some("kimi_k31"), "served-name", true),
-            (Some("kimi_k31"), "moonshot/kimi-k3", true),
-            (Some("kimi_k3"), "moonshot/kimi-k3.1", false),
-            (None, "moonshot/kimi-k3", false),
-            (None, "moonshot/kimi-k3.1", true),
-            (None, "kimi_k3.1-instruct", true),
-            (None, "kimik3.1", true),
-            (None, "kimi-k31", true),
-            (None, "kimi_k31", true),
-            (None, "kimik31", true),
+    fn factory_selects_model_specific_error_name() {
+        for (model_type, name, model_name) in [
+            (Some("kimi_k31"), "served-name", "Kimi K3.1"),
+            (Some("kimi_k31"), "moonshot/kimi-k3", "Kimi K3.1"),
+            (Some("kimi_k3"), "moonshot/kimi-k3.1", "Kimi K3"),
+            (None, "moonshot/kimi-k3", "Kimi K3"),
+            (None, "moonshot/kimi-k3.1", "Kimi K3.1"),
+            (None, "kimi_k3.1-instruct", "Kimi K3.1"),
+            (None, "kimik3.1", "Kimi K3.1"),
+            (None, "kimi-k31", "Kimi K3.1"),
+            (None, "kimi_k31", "Kimi K3.1"),
+            (None, "kimik31", "Kimi K3.1"),
         ] {
             let crate::PromptFormatter::OAI(formatter) =
                 crate::template::kimi_k3_formatter_for(&model_type.map(str::to_owned), name, true)
@@ -1449,9 +1446,10 @@ mod tests {
             request
                 .args
                 .insert("thinking_effort".to_string(), json!("medium"));
-            assert_eq!(
-                formatter.render(&request).is_ok(),
-                accepts_medium,
+            let error = formatter.render(&request).unwrap_err();
+            let message = invalid_request_message(&error);
+            assert!(
+                message.starts_with(&format!("Unsupported {model_name} thinking_effort=")),
                 "model_type={model_type:?}, name={name}"
             );
         }
@@ -1480,7 +1478,10 @@ mod tests {
             let message = invalid_request_message(&error);
             assert!(message.contains("Kimi K3.1"), "{message}");
             assert!(message.contains("invalid"), "{message}");
-            assert!(message.contains("medium"), "{message}");
+            assert!(
+                message.contains("supported values are low, high, max"),
+                "{message}"
+            );
         }
     }
 
