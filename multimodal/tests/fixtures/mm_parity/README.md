@@ -12,6 +12,7 @@ side-by-side view of every table.
 | Table | Baseline | Target | Provenance |
 |---|---|---|---|
 | `glm-5.3-flash.json` | `Glm5NextProcessor` of `zai-org/GLM-5.3-Flash` | `sglang` | The target values of every case are byte-identical to `rust/sglang-processor/tests/fixtures/mm_parity/glm-5.3-flash.json` of SGLang PR #46563 at `916577f5`. `generate.py` reproduces them at SGLang `a2ffd21469`. |
+| `kimi-k3.json` | `KimiK3Processor` (remote code) of `moonshotai/Kimi-K3`, with each case's `media_proc_cfg` overrides | `sglang` | Each value is byte-identical to the former `tests/fixtures/kimi_k3/cases.json`, but for the cases of `transparent_56x56.gif`, `rgba_bitfields_56x56.bmp` and `truncated_96x80.png`, which are other files than the former ones. Kimi-K3.1-Pro gives the same cases; `../kimi_k3/generate.py` checks it. |
 | `qwen2-vl.json` | `Qwen2VLProcessor` of `Qwen/Qwen2-VL-2B-Instruct`, with each case's pixel bounds and its ids mapped (`ID_MAP`) | `hf` | Each digest is the SHA-256 of the former `tests/fixtures/qwen_vl/` golden file (transformers 5.12.1). `aten_upscale` uses `rgb_40x40.png` from `aten_multi`, so its pixel values are regenerated. |
 
 ## The image corpus

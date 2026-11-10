@@ -11,6 +11,7 @@ use crate::models::glm5_next::{
     Glm5NextGeometrySpec, Glm5NextImageProcessor, Glm5NextImageSpec, Glm5NextProcessor,
     Glm5NextSpec,
 };
+use crate::models::kimi_k3::{KimiK3Processor, KimiK3Spec};
 use crate::models::qwen_vl::{QwenVlSpec, Resampler};
 use crate::{MmError, Result};
 use serde_json::Value;
@@ -30,6 +31,9 @@ pub enum ProcessorSpec {
     Glm5Next(Glm5NextSpec),
     /// Full GLM image pipeline, selected by `glm5_next` specs with pixel knobs.
     Glm5NextImage(Glm5NextImageSpec),
+    /// Kimi-K3 and K3.1 images. The prompt expansion and its length need
+    /// `size_tokens`, which the consumer fills from the model's tokenizer.
+    KimiK3(KimiK3Spec),
 }
 
 // serde's internally tagged enum buffer treats arbitrary-precision decimals
@@ -50,6 +54,7 @@ impl TryFrom<Value> for ProcessorSpec {
                 serde_json::from_value(value).map(Self::Glm5NextImage)
             }
             Some("glm5_next") => serde_json::from_value(value).map(Self::Glm5Next),
+            Some("kimi_k3") => serde_json::from_value(value).map(Self::KimiK3),
             _ => Err(serde::de::Error::custom(
                 "unknown or missing processor family",
             )),
@@ -69,6 +74,7 @@ pub fn build_processor(
         ProcessorSpec::DeepseekV41(spec) => Ok(Box::new(DeepseekV41Processor::new(spec)?)),
         ProcessorSpec::Glm5Next(spec) => Ok(Box::new(Glm5NextProcessor::new(spec)?)),
         ProcessorSpec::Glm5NextImage(spec) => Ok(Box::new(Glm5NextImageProcessor::new(spec)?)),
+        ProcessorSpec::KimiK3(spec) => Ok(Box::new(KimiK3Processor::new(spec)?)),
     }
 }
 
@@ -109,6 +115,7 @@ pub fn spec_from_hf_configs(
             resolve_deepseek_v41(&config, &pre)?,
         )),
         Some("glm5_next") => Ok(ProcessorSpec::Glm5Next(resolve_glm5_next(&config, &pre)?)),
+        Some("kimi_k3" | "kimi_k31") => Ok(ProcessorSpec::KimiK3(resolve_kimi_k3(&config, &pre)?)),
         Some(other) => Err(MmError::unsupported(format!(
             "no native processor for model_type {other:?}"
         ))),
@@ -305,6 +312,132 @@ fn resolve_glm5_next(config: &Value, pre: &Value) -> Result<Glm5NextSpec> {
         video_token_id: token_id("video_token_id")?,
         geometry,
     })
+}
+
+/// `media_proc_cfg` knobs [`KimiK3Spec`] reads. The spec refuses the values
+/// the pipeline does not mirror.
+const KIMI_K3_CONSUMED: &[&str] = &[
+    "patch_size",
+    "merge_kernel_size",
+    "in_patch_limit",
+    "patch_limit_on_one_side",
+    "image_mean",
+    "image_std",
+    "transparent_bg_config",
+    "transparent_bg_fill_stage",
+    "fixed_output_tokens",
+];
+
+/// Knobs whose other values the checkpoint runs and the pipeline does not
+/// mirror: a fixed token count, the composite before the resize (also when
+/// the stage is absent), a plain background or none, a chessboard field left
+/// to the checkpoint's default, another config class.
+const KIMI_K3_PINNED: &[(&str, Predicate)] = &[
+    ("fixed_output_tokens", Value::is_null),
+    ("transparent_bg_fill_stage", |v| {
+        v.as_str() == Some("after_resize")
+    }),
+    ("transparent_bg_config", |v| {
+        v["pattern"].as_str() == Some("chessboard")
+            && [
+                "square_size",
+                "square_on_top_left",
+                "white_value",
+                "gray_value",
+            ]
+            .iter()
+            .all(|field| !v[format!("chessboard_{field}")].is_null())
+    }),
+    ("config_type", |v| {
+        v.is_null()
+            || v.as_str() == Some("media_proc.processors.moonvit.MoonViTMediaProcessorConfig")
+    }),
+];
+
+/// Video knobs the image processor never reads.
+const KIMI_K3_VIDEO: &[&str] = &[
+    "in_patch_limit_each_frame",
+    "in_patch_limit_video",
+    "sample_fps",
+    "max_num_frames_each_video",
+    "temporal_merge_kernel_size",
+    "timestamp_mode",
+];
+
+fn resolve_kimi_k3(config: &Value, pre: &Value) -> Result<KimiK3Spec> {
+    let not_object = || MmError::invalid_input("kimi_k3 processor config is not an object");
+    // Beside `body`, only the keys `save_pretrained` writes, with this
+    // checkpoint's values.
+    let only = |keys: &serde_json::Map<String, Value>, body: &str| {
+        let other = keys.iter().find(|(name, value)| {
+            !value.is_null()
+                && match name.as_str() {
+                    "auto_map" => false,
+                    "image_processor_type" => *value != "KimiK3VisionProcessor",
+                    "processor_class" => *value != "KimiK3Processor",
+                    name => name != body,
+                }
+        });
+        other.map_or(Ok(()), |(name, _)| {
+            Err(MmError::unsupported(format!(
+                "kimi_k3 processor config key {name} cannot be honored"
+            )))
+        })
+    };
+    let mut top = pre.as_object().ok_or_else(not_object)?;
+    // Transformers v5 writes `processor_config.json`, which nests the image
+    // processor's file.
+    if let Some(nested) = top.get("image_processor") {
+        only(top, "image_processor")?;
+        top = nested.as_object().ok_or_else(not_object)?;
+    }
+    only(top, "media_proc_cfg")?;
+    let image_processor = &top.get("auto_map").unwrap_or(&Value::Null)["AutoImageProcessor"];
+    if !image_processor.is_null()
+        && image_processor.as_str() != Some("kimi_k3_vision_processing.KimiK3VisionProcessor")
+    {
+        return Err(MmError::unsupported(format!(
+            "kimi_k3 image processor {image_processor} cannot be honored"
+        )));
+    }
+    let knobs = top
+        .get("media_proc_cfg")
+        .and_then(Value::as_object)
+        .ok_or_else(|| MmError::invalid_input("kimi_k3 media_proc_cfg must be an object"))?;
+    for (name, honored) in KIMI_K3_PINNED {
+        let value = knobs.get(*name).unwrap_or(&Value::Null);
+        if !honored(value) {
+            return Err(MmError::unsupported(format!(
+                "kimi_k3 preprocessor knob {name} = {value} cannot be honored"
+            )));
+        }
+    }
+    // The checkpoint reads this key with no default.
+    if !knobs.contains_key("fixed_output_tokens") {
+        return Err(MmError::invalid_input(
+            "kimi_k3 media_proc_cfg is missing fixed_output_tokens",
+        ));
+    }
+    let mut spec = serde_json::Map::new();
+    for (name, value) in knobs {
+        let name = name.as_str();
+        if KIMI_K3_CONSUMED.contains(&name) {
+            spec.insert(name.to_string(), value.clone());
+        } else if !(KIMI_K3_VIDEO.contains(&name) || value.is_null() || name == "config_type") {
+            return Err(MmError::unsupported(format!(
+                "unrecognized kimi_k3 preprocessor knob {name}"
+            )));
+        }
+    }
+    spec.insert(
+        "image_token_id".to_string(),
+        config["media_placeholder_token_id"].clone(),
+    );
+    let spec: KimiK3Spec = serde_json::from_value(Value::Object(spec)).map_err(|error| {
+        MmError::invalid_input_with_source("invalid kimi_k3 media_proc_cfg", error)
+    })?;
+    spec.validate()?;
+    Ok(spec)
 }
 
 /// [`spec_from_hf_configs`] over a local model directory: reads `config.json`
@@ -695,5 +828,130 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
 
         assert!(spec_from_model_dir(std::path::Path::new("/nonexistent")).is_err());
+    }
+
+    // Trimmed from moonshotai/Kimi-K3; the preprocessor config is complete.
+    const KIMI_K3_CONFIG: &str = r#"{
+        "architectures": ["KimiK3ForConditionalGeneration"],
+        "model_type": "kimi_k3", "media_placeholder_token_id": 163605,
+        "vision_config": {"patch_size": 14, "merge_kernel_size": [2, 2]}
+    }"#;
+    const KIMI_K3_PREPROCESSOR: &str = r#"{
+        "media_proc_cfg": {
+            "in_patch_limit": 65536, "patch_size": 14,
+            "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5],
+            "merge_kernel_size": 2, "fixed_output_tokens": null,
+            "patch_limit_on_one_side": 512, "in_patch_limit_each_frame": 16384,
+            "in_patch_limit_video": 655360, "sample_fps": 8.0,
+            "max_num_frames_each_video": null, "temporal_merge_kernel_size": 4,
+            "timestamp_mode": "hh:mm:ss.fff",
+            "transparent_bg_config": {
+                "pattern": "chessboard", "chessboard_square_size": 8,
+                "chessboard_square_on_top_left": true,
+                "chessboard_white_value": 255, "chessboard_gray_value": 180
+            },
+            "transparent_bg_fill_stage": "after_resize",
+            "config_type": "media_proc.processors.moonvit.MoonViTMediaProcessorConfig"
+        },
+        "auto_map": {
+            "AutoProcessor": "kimi_k3_processor.KimiK3Processor",
+            "AutoImageProcessor": "kimi_k3_vision_processing.KimiK3VisionProcessor"
+        }
+    }"#;
+
+    fn kimi_spec(config: &str, pre: &str) -> Result<crate::models::kimi_k3::KimiK3Spec> {
+        spec_from_hf_configs(config, pre).map(|spec| match spec {
+            ProcessorSpec::KimiK3(spec) => spec,
+            _ => panic!("expected Kimi-K3 spec"),
+        })
+    }
+
+    /// The shipped value of each knob is the only one the pipeline mirrors.
+    #[test]
+    fn kimi_k3_resolves_the_shipped_config_and_refuses_other_values() {
+        let spec = kimi_spec(KIMI_K3_CONFIG, KIMI_K3_PREPROCESSOR).unwrap();
+        assert!(spec.size_tokens.is_none());
+        assert!(build_processor(ProcessorSpec::KimiK3(spec.clone())).is_ok());
+
+        let changed = |from: &str, to: &str| {
+            let pre = KIMI_K3_PREPROCESSOR.replace(from, to);
+            assert_ne!(pre, KIMI_K3_PREPROCESSOR, "{from}");
+            pre
+        };
+        // The keys `save_pretrained` adds, and the nested file of transformers v5.
+        let resaved = changed(
+            r#""auto_map""#,
+            r#""image_processor_type": "KimiK3VisionProcessor",
+               "processor_class": "KimiK3Processor", "auto_map""#,
+        );
+        let nested = |outer: &str| format!(r#"{{"image_processor": {resaved}, {outer}}}"#);
+        for pre in [&resaved, &nested(r#""processor_class": "KimiK3Processor""#)] {
+            let resolved = kimi_spec(KIMI_K3_CONFIG, pre).unwrap();
+            assert_eq!(format!("{resolved:?}"), format!("{spec:?}"));
+        }
+        for outer in [r#""processor_class": "X""#, r#""media_proc_cfg": {}"#] {
+            assert!(
+                matches!(
+                    kimi_spec(KIMI_K3_CONFIG, &nested(outer)),
+                    Err(MmError::Unsupported { .. })
+                ),
+                "{outer} should refuse resolution"
+            );
+        }
+
+        let refused =
+            |from: &str, to: &str| kimi_spec(KIMI_K3_CONFIG, &changed(from, to)).err().unwrap();
+        // Values the checkpoint runs and the pipeline does not mirror, and
+        // knobs the resolver does not know.
+        for (from, to) in [
+            (
+                r#""fixed_output_tokens": null"#,
+                r#""fixed_output_tokens": 64"#,
+            ),
+            ("after_resize", "before_resize"),
+            (r#""transparent_bg_fill_stage": "after_resize","#, ""),
+            (r#""pattern": "chessboard""#, r#""pattern": "white""#),
+            (r#""pattern": "chessboard","#, ""),
+            (r#""chessboard_square_size": 8,"#, ""),
+            ("moonvit.MoonViT", "other.Other"),
+            ("vision_processing.KimiK3", "vision_processing.KimiK25"),
+            (r#""in_patch_limit""#, r#""in_patch_limit_x""#),
+            (
+                r#""auto_map""#,
+                r#""image_processor_type": "X", "auto_map""#,
+            ),
+            (r#""auto_map""#, r#""processor_class": "X", "auto_map""#),
+        ] {
+            assert!(
+                matches!(refused(from, to), MmError::Unsupported { .. }),
+                "{to:?} should refuse resolution"
+            );
+        }
+        // Without a background config the checkpoint drops alpha.
+        let mut pre: Value = serde_json::from_str(KIMI_K3_PREPROCESSOR).unwrap();
+        pre["media_proc_cfg"]["transparent_bg_config"] = Value::Null;
+        assert!(matches!(
+            kimi_spec(KIMI_K3_CONFIG, &pre.to_string()),
+            Err(MmError::Unsupported { .. })
+        ));
+        // A config the checkpoint cannot run either.
+        for (from, to) in [
+            (
+                r#""pattern": "chessboard","#,
+                r#""pattern": "chessboard", "square": 8,"#,
+            ),
+            (r#""patch_size": 14,"#, ""),
+            (r#""fixed_output_tokens": null,"#, ""),
+        ] {
+            assert!(
+                matches!(refused(from, to), MmError::InvalidInput { .. }),
+                "{to:?} should refuse resolution"
+            );
+        }
+        let config = KIMI_K3_CONFIG.replace("163605", "null");
+        assert!(matches!(
+            kimi_spec(&config, KIMI_K3_PREPROCESSOR),
+            Err(MmError::InvalidInput { .. })
+        ));
     }
 }
