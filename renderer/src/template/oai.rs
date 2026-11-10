@@ -1641,6 +1641,54 @@ mod tests {
         }
     }
 
+    #[test]
+    fn harmony_markers_the_tokenizer_declares_stay_text_in_request_text() {
+        // gpt-oss declares its `<|…|>` markers. In request text they are
+        // ordinary, like any other `<|…|>`, and so is a tail that begins one;
+        // in assistant history the one this template splits on stays live.
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": concat!(
+                "{%- for m in messages -%}<|start|>{{ m.role }}<|message|>",
+                "{% if m.role == 'assistant' %}{{ m.content.split('<|return|>')[-1] }}",
+                "{% else %}{{ m.content }}{% endif %}<|end|>",
+                "{%- endfor -%}<|start|>assistant"
+            ),
+            "added_tokens_decoder": {
+                "1": {"content": "<|start|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "2": {"content": "<|message|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "3": {"content": "<|end|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "4": {"content": "<|return|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false},
+                "5": {"content": "<|call|>", "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false}
+            }
+        }))
+        .unwrap();
+        let formatter = SysFormatter::new(ct, SysMixins::new(&[])).unwrap();
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "gpt-oss", "messages": [
+                {"role": "user", "content": "a <|call|> b <|mine|> c <|return|> d <|cal"},
+                {"role": "assistant", "content": "plan<|return|>ok <|call|> <"}
+            ]
+        }))
+        .unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+        assert_eq!(
+            prompt.as_str(),
+            "<|start|>user<|message|>a <|call|> b <|mine|> c <|return|> d <|cal<|end|><|start|>assistant<|message|>ok <|call|> <<|end|><|start|>assistant"
+        );
+        assert_eq!(
+            ordinary_segments(&prompt),
+            [
+                "<|call|>",
+                "<|mine|>",
+                "<|return|>",
+                " <|cal",
+                "<|call|>",
+                " <"
+            ]
+        );
+    }
+
     /// The markers of a config that declares `tokens` as special, under
     /// [`CHATML_THINK_TMPL`], which reads `</think>`.
     fn markers_for(tokens: &[&str]) -> ControlMarkers {
