@@ -302,7 +302,7 @@ impl MmFamilyProcessor for QwenVlProcessor {
                     end,
                     grid: *grid,
                 }),
-                None => Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
+                _ => Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
             })
             .collect::<Result<Vec<_>>>()?;
         let (positions, delta) = mrope_image_only(input_len, &mrope_items, self.spec.merge_size)?;

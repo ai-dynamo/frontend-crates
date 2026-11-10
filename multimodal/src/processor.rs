@@ -94,6 +94,9 @@ pub enum MediaMetadata {
 pub enum Geometry {
     /// `[t, h, w]` patch grid (`t` = 1 for still images).
     Grid([u32; 3]),
+    /// The source `width` and `height` before any resize, for expansions
+    /// that print the source size.
+    SourceSize { width: u32, height: u32 },
 }
 
 /// One processed media item and the metadata needed for prompt preparation.
@@ -211,7 +214,9 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// Tokens one media item will occupy in the expanded prompt, from
     /// lightweight metadata alone — no pixel or feature-extraction work (HF's
     /// `_get_num_multimodal_tokens`). Lets routers account prompt length after
-    /// probing only the modality-specific header.
+    /// probing only the modality-specific header. Literal ids of the
+    /// expansion count; the positions that take embeddings are the `Feature`
+    /// parts of the layout and [`ProcessedItem::feature_token_count`].
     fn num_media_tokens(&self, media: &MediaMetadata) -> crate::Result<usize>;
 
     /// Describe a prompt expansion from metadata alone, without constructing
