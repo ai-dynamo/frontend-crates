@@ -559,8 +559,7 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
         currentTool = null;
         const text = getField(delta, 'text') || '';
         if (typeof text !== 'string') throw new Error('Unified text delta must contain text');
-        if (events.at(-1)?.kind === kind) events.at(-1).text += text;
-        else events.push({ kind, text });
+        events.push({ kind, text });
       } else if (kind === 'tool_call') {
         if (name != null) { // a name delta opens a new call, an empty name included
           events.push({ kind: 'tool_call', name, arguments: args || '', complete });
@@ -574,7 +573,12 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
       }
     }
   }
-  const completed = events.filter((event) => event.kind !== 'tool_call' || event.complete);
+  const completed = [];
+  for (const event of events) {
+    if (event.kind === 'tool_call' && !event.complete) continue;
+    if ((event.kind === 'text' || event.kind === 'reasoning') && completed.at(-1)?.kind === event.kind) completed.at(-1).text += event.text;
+    else completed.push(event);
+  }
   const malformed = new Set();
   const projections = new Map();
   for (const event of completed) {
