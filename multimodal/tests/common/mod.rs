@@ -38,7 +38,7 @@ pub fn sha256(bytes: &[u8]) -> String {
 }
 
 /// SHA-256 of little-endian words, as the fixtures hash `f32` features, `i32`
-/// ids and `i64` positions.
+/// ids, `i64` positions and bfloat16 bits (`u16`).
 pub fn sha256_le<const N: usize>(words: impl IntoIterator<Item = [u8; N]>) -> String {
     sha256(&words.into_iter().flatten().collect::<Vec<u8>>())
 }
