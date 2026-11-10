@@ -242,18 +242,17 @@ Historical archives use several schemas. Preserve their implementation keys, req
 
 ## Adding A Day-0 Tool-Calling Parser
 
+New parser work targets v2 Unified APIs. V1 is being deprecated; creating a v1 parser, capturing v1 results, and enforcing v1 parity are outside this workflow. The [tool-parser-generator skill](../../.agents/skills/tool-parser-generator/SKILL.md) provides the agent's human-review checkpoints.
+
 In order:
 
-1. Read the model's tool-call output spec and its tokenizer / special-token behavior — token boundaries decide whether the parser is text- or token-native.
-2. Inspect the vLLM **Rust** parser first: `Tool`, `ToolCallDelta`, `ToolParseResult`, and `ToolParser` are the API target (Rust vs. Rust). Do not shape the parser like vLLM Python wire deltas.
-3. Inspect vLLM **Python** and **SGLang** for behavior and coverage — they are the peer references the matrix compares against.
-4. Decide the parser family id and peer parser names; add a row to `conformance/utils/src/parser_families.yaml` (`vllm_python` / `vllm_rust` / `sglang_python` / `dynamo_v2` / `preferred_input`), AND declare the family's grammar tokens in the `markers:` section of the same file (`pairs` / `singletons` / `leak`; explicit `{}` for markup-less grammars). The `↯` leak detector and the popup token coloring are derived from that declaration — skipping it makes leaks render as clean cells and every token render as a red orphan, so review the declared markers alongside the latest qualification results.
-5. Implement or extend one shared grammar owner and Unified factory using [UNIFIED_PORTING.md](UNIFIED_PORTING.md). Keep required tool-only compatibility as an event projection; do not introduce a second parser state machine.
-6. Register the Unified factory through `unified_registry!` in `src/unified/mod.rs`. If existing callers require tool-only compatibility, register its projection through `family_registry!` in `src/tool_calling/registry.rs`. Declare token-input capabilities on the API that actually accepts them.
-7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
-8. Author applicable Unified inputs and independent GOLDEN (see "Which Fixture Do I Edit?"). Inspect every registered family for shared scenarios and explain grammar or request-mode exclusions. Preserve published IDs.
-9. Run the latest parser tests against the authored requests and independent GOLDEN, and fix parser mismatches.
-10. Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), inspect the affected family over HTTP, and explain any deliberate authored contract change. Recapture affected latest snapshots; historical backfills are separate reviewed changes.
+1. Research the model's output specification, chat template, tokenizer, and special tokens. Record the source and revision. Resolve reasoning initialization, native framing, argument encoding, and finalization behavior before writing code.
+2. Inspect existing v2 grammar owners and factories in the [family mapping](#parser-families). Reuse a shared scanner and emitter where the grammar permits it. Inspect vLLM Rust, vLLM Python, and SGLang as API or behavioral references; the model specification and documented recovery policy determine expected results.
+3. Inspect all `UNIFIED.*` cases across every registered family and make a best-effort applicability mapping. Author family-native inputs and independent GOLDEN through the [fixture workflow](#fixture-files-to-add). Document grammar or request-mode exclusions and preserve published IDs. For example, GPT-OSS has Harmony message boundaries and JSON arguments rather than XML parameter tags: a missing `</parameter>` test cannot transfer literally, but native boundary and JSON truncation tests still apply. A parser failure is not a reason to exclude a case.
+4. Review the GOLDEN test set before implementation. When working with an agent, pause for humans to approve inputs, settings, expected events, exclusions, and recovery decisions. Never change GOLDEN just to match a parser result; document and review the reason for a deliberate change.
+5. Implement or extend one shared v2 grammar owner and Unified factory. Register through `unified_registry!` in `src/unified/mod.rs`. If a caller needs tool-only compatibility, project Unified events and register through `family_registry!` in `src/tool_calling/registry.rs`; do not introduce a second state machine. Declare token-input capabilities on the API that accepts them.
+6. Add the family and peer names to `conformance/utils/src/parser_families.yaml`, including its `markers:` pairs, singletons, and leak tokens (explicit `{}` for markup-less grammars). Run focused and applicable shared v2 tests, including streaming, recovery, and performance checks below. Fixed fixtures must be sufficient; live model generation is optional.
+7. Recapture affected latest Dynamo v2 observations through the [capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md), generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), and provide its local HTTP URL. Inspect every affected case's input, initialization, chunks, GOLDEN, and actual output. Pause for human visual review before calling the work complete. Historical backfills are separate work.
 
 ### Unified parser validation
 
@@ -265,6 +264,18 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 ```
 
 Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and observations over HTTP. Missing observations require recapturing the affected latest snapshots. Fix live mismatches or explain deliberate contract changes; never hide them with `reason:`, `unavailable:`, stale HTML, or unsupported GOLDEN edits.
+
+### Check streaming and recovery
+
+For short fixtures, test every two-chunk split point, one-character chunks, empty chunks, and mixed chunk sizes. Exercise boundaries inside markers, escaped quotes, and argument values. For token-native parsers, split valid token sequences; do not invent text-input support or invalid UTF-8 slices. Compare assembled events with whole-input parsing while preserving event order and exact raw argument text. Delta granularity may differ; emitted fragments must neither duplicate nor disappear.
+
+Inspect emissions after each advance. Decided text and tool updates should arrive incrementally; a parser that buffers the entire response can pass assembled-output comparisons and still break streaming latency. Stop midway through a marker or argument and check the documented recovery policy. Use `finish()` for truncation, cancellation, or transport EOF; reserve `finish_at_eos()` for a backend-confirmed grammar-ending EOS. Check request reuse and shared-family regressions as well.
+
+### Measure performance
+
+Passing GOLDEN does not establish that AI-generated code is efficient. Run release-build microbenchmarks on plain text, complete calls, long arguments, and malformed input, with large, tiny, and mixed chunks. Measure throughput, time to the first committed event, and allocations or peak memory where tooling permits. Record the source revision, commands, input sizes, chunk schedules, build profile, hardware, and repeated measurements. Compare before and after a shared-parser change under the same setup; for a new grammar, record a baseline without claiming equivalence to a different format.
+
+Double input lengths and inspect scaling. Repeatedly rescanning or copying a growing buffer can produce disproportionate runtime or allocation growth. Investigate that behavior rather than relying on one small successful timing. Do not invent benchmark commands or add a dependency just to satisfy this checklist; use an existing harness where available, otherwise report the minimal dependency-free probe and its limitations. Include results and any unmeasured performance risks in the handoff.
 
 ## Which Fixture Do I Edit?
 
@@ -289,7 +300,7 @@ A divergent peer block with no `reason:` renders `?` (research needed) — never
 
 For a new parser family, done means:
 
-- Rust parser unit tests and latest Dynamo fixture tests pass.
+- Focused parser and applicable shared v2 tests pass; streaming emissions and recovery are checked, and performance measurements or explicit unmeasured risks are reported.
 - Applicable Unified scenarios have family-native authored inputs and independent GOLDEN. Grammar exclusions have explicit explanations, and the family's `markers:` are declared in `parser_families.yaml`.
 - The latest report is regenerated locally and affected cases are inspected for tool-call markup leaks, undeclared tokens, and mismatches against GOLDEN. Missing recorded observations are recaptured in the same PR.
 - Case descriptions exist for every new scenario, and its stable ID is declared in the Unified taxonomy.
