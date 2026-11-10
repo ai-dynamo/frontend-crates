@@ -1,20 +1,20 @@
-capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.9.16.yaml","version":"0.9.16"}],"mode":"unified","payload_sha256":"0e3fc0923a06763ed46739a2960b96a863805668559a70a8ff15d4e8f3ad2031","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.9.16.yaml","surface":"unified","version":"0.9.16"}
+capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.3.yaml","version":"0.10.3"}],"mode":"unified","payload_sha256":"411a12062858b9f246e11e362670caed34c4a0ac147c278f5f7b63d74ea6b7d1","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.3.yaml","surface":"unified","version":"0.10.3"}
 document:
   mode: unified
 schema_version: 3
 provenance:
-  origin: origin_fbabe856049ad0c8
+  origin: origin_232ac81a7e7c92db
   status: captured
 origins:
-  origin_fbabe856049ad0c8:
-    crate_version: 0.9.16
-    git_commit: 4424f0e1f6a4a114ac644d831b668c16940faa18
-    source_sha256: 0c78da0d26e2caa46b84d2d90b955ea7d42150ba01816643b9b07e1ed1eac7b2
+  origin_232ac81a7e7c92db:
+    crate_version: 0.10.3
+    git_commit: e62e96a6477311705df4f122881242d80f9a3dcb
+    source_sha256: 80de42c86398e606a8bc331b0d0f0d7d7463efa99094e4f0b006100dac0c63e0
 producers:
-  producer_4d47035773b8e34b:
-    capture_origin: origin_fbabe856049ad0c8
+  producer_dd9718a2e84ff114:
+    capture_origin: origin_232ac81a7e7c92db
     captured_with:
-      dynamo_v2: 0.9.16+source.0c78da0d26e2caa46b84d2d90b955ea7d42150ba01816643b9b07e1ed1eac7b2
+      dynamo_v2: 0.10.3+source.80de42c86398e606a8bc331b0d0f0d7d7463efa99094e4f0b006100dac0c63e0
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -41,8 +41,8 @@ contexts:
         tool_output_mode: Native
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.9.16.yaml
-  producer: producer_4d47035773b8e34b
+  member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.3.yaml
+  producer: producer_dd9718a2e84ff114
   context: context_63bbcc8b0776f125
 records:
   adjacent_calls_partial_header:
@@ -1410,7 +1410,7 @@ records:
       - arguments: '[1, 2]'
         kind: tool_call
         name: f
-      - arguments: "42"
+      - arguments: '42'
         kind: tool_call
         name: g
       - arguments: '"done"'
@@ -1422,7 +1422,7 @@ records:
           complete: true
           kind: tool_call
           name: f
-        - arguments: "42"
+        - arguments: '42'
           complete: true
           kind: tool_call
           name: g
@@ -3816,6 +3816,28 @@ records:
         name: get_weather
       chunks:
       - expected:
+        - arguments: '{"city": "Paris"}'
+          complete: true
+          kind: tool_call
+          name: get_weather
+      - expected: []
+  tool_call_ids_unique:
+    case_key: UNIFIED.2-tool_call_ids_unique
+    request: 543ab4d2f2639c8565ae97b4f89fc386b5afbeae34f819d8807f49a6e7a14ec5
+    output:
+      assembled:
+      - arguments: '{"city": "Paris"}'
+        kind: tool_call
+        name: get_weather
+      - arguments: '{"city": "Paris"}'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - arguments: '{"city": "Paris"}'
+          complete: true
+          kind: tool_call
+          name: get_weather
         - arguments: '{"city": "Paris"}'
           complete: true
           kind: tool_call
