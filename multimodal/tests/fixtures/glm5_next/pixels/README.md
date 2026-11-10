@@ -16,6 +16,8 @@ python tests/scripts/generate_mm_parity.py zai-org/GLM-5.3-Flash --revision 46a0
 ```
 
 Copy the resulting GLM JSON to `cases.json` and the referenced image files to
-`images/`, then run `cargo test -p dynamo-multimodal --test glm5_next_pixels`.
+`../../mm_parity/images/`. Add each new image to `CORPUS` in
+`../../mm_parity/corpus.py` and run that script. Then run
+`cargo test -p dynamo-multimodal --test glm5_next_pixels`.
 The original generator and image-pipeline authors are Kan Wu and Zhihan Guo;
 SGLang is licensed under Apache-2.0.
