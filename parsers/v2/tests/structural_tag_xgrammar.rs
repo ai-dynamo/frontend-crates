@@ -945,6 +945,81 @@ fn harmony_trigger_exclusions_xgrammar() {
     eprintln!("{} Harmony grammar cases passed", expected.len());
 }
 
+#[test]
+#[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
+fn harmony_structured_output_bounds_whitespace_xgrammar() {
+    let schema = json!({"type":"object", "additionalProperties":false,
+        "required":["giftWrap", "shipping"], "properties":{
+        "giftWrap":{"type":"boolean"},
+        "shipping":{"type":"string", "enum":["standard", "express", "overnight"]}}});
+    let header = "<|channel|>final<|message|>";
+    let samples = [
+        (
+            "compact",
+            r#"{"giftWrap":true,"shipping":"express"}"#.to_string(),
+            true,
+        ),
+        (
+            "pretty",
+            "{\n  \"giftWrap\": true,\n  \"shipping\": \"express\"\n}".into(),
+            true,
+        ),
+        (
+            "runaway",
+            format!(
+                "{{{}\"giftWrap\":true,\"shipping\":\"express\"}}",
+                " \n\t".repeat(200)
+            ),
+            false,
+        ),
+    ];
+    let tools = tools();
+    let mut requests = Vec::new();
+    let mut expected = Vec::new();
+    for family in ["harmony", "harmony_text", "gpt_oss"] {
+        let builder = structural_tag_builder_for_family(family).unwrap();
+        for (choice, mode) in [
+            (StructuralTagToolChoice::None, "none"),
+            (StructuralTagToolChoice::Auto, "auto"),
+        ] {
+            let grammar = builder
+                .build_with_options(
+                    &StructuralTagContext {
+                        tool_choice: choice,
+                        tools: &tools,
+                        parallel_tool_calls: None,
+                        schema_mode: StructuralTagSchemaMode::Auto,
+                        structured_output_schema: Some(&schema),
+                        starts_in_reasoning: false,
+                    },
+                    &StructuralTagOptions {
+                        reasoning_boundary: ReasoningBoundary::External,
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+                .unwrap();
+            for (sample, body, accepted) in &samples {
+                let id = format!("{family}/{mode}/{sample}");
+                requests
+                    .push(json!({"id":id, "grammar":grammar, "input":format!("{header}{body}")}));
+                expected.push((id, *accepted));
+            }
+        }
+    }
+    let results = run_xgrammar(requests);
+    let failures: Vec<_> = expected
+        .iter()
+        .zip(&results)
+        .filter_map(|((id, accepted), result)| {
+            assert_eq!(result["id"], *id);
+            (result["complete"] != *accepted)
+                .then(|| format!("{id}: expected {accepted}; {result}"))
+        })
+        .collect();
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
 fn assert_no_trigger_exclusion_conflict(node: &Value, family: &str) {
     match node {
         Value::Object(fields) => {
