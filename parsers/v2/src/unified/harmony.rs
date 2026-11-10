@@ -192,7 +192,6 @@ struct HarmonyRuntime {
     call_cursor: Option<super::GuidedJsonCursor>,
     active_call_index: usize,
     call_json: crate::tool_calling::scan::JsonValueBoundary,
-    visible_json: crate::tool_calling::scan::JsonBodyState,
     quoted_control_tail: Option<QuotedControlTail>,
     next_call_index: usize,
     text_pending: String,
@@ -226,7 +225,6 @@ impl HarmonyRuntime {
             call_cursor: self.call_cursor.clone(),
             active_call_index: self.active_call_index,
             call_json: self.call_json.clone(),
-            visible_json: self.visible_json,
             quoted_control_tail: self.quoted_control_tail.clone(),
             next_call_index: self.next_call_index,
             text_pending: self.text_pending.clone(),
@@ -259,7 +257,6 @@ impl HarmonyRuntime {
             call_cursor: None,
             active_call_index: 0,
             call_json: Default::default(),
-            visible_json: Default::default(),
             quoted_control_tail: None,
             next_call_index: 0,
             text_pending: String::new(),
@@ -417,7 +414,6 @@ impl HarmonyRuntime {
         if !self.outside_pending.is_empty() {
             match self.encoding.tokenizer().decode_utf8(&self.outside_pending) {
                 Ok(text) => {
-                    self.visible_json.advance(&text);
                     self.advance_call_json(&text);
                     self.call_content.append(&text);
                     output.push_text(text);
@@ -439,7 +435,7 @@ impl HarmonyRuntime {
         if !self.inside_message {
             let marker = self.marker_ids.get(&id).copied();
             if !self.legacy_tool_compatibility
-                && self.visible_json.inside_string_at("", 0)
+                && self.call_json.inside_json_string()
                 && marker.is_some()
             {
                 self.begin_quoted_control_tail();
@@ -468,7 +464,6 @@ impl HarmonyRuntime {
             }
             if id == self.start_id {
                 self.inside_message = true;
-                self.visible_json.reset();
                 self.call_content.clear();
                 self.call_json = Default::default();
                 self.process_parser_token(id, output)?;
@@ -505,7 +500,6 @@ impl HarmonyRuntime {
                         return Ok(());
                     }
                     self.outside_pending.clear();
-                    self.visible_json.advance(&text);
                     self.advance_call_json(&text);
                     self.call_content.append(&text);
                     output.push_text(text);
@@ -561,7 +555,7 @@ impl HarmonyRuntime {
         if !self.legacy_tool_compatibility
             && self.in_body
             && matches!(self.route, Some(Route::Text))
-            && self.visible_json.inside_string_at("", 0)
+            && self.call_json.inside_json_string()
             && marker_text.is_some()
         {
             self.begin_quoted_control_tail();
@@ -603,7 +597,6 @@ impl HarmonyRuntime {
             self.inside_message = true;
             self.in_body = false;
             self.route = None;
-            self.visible_json.reset();
             self.call_content.clear();
             self.call_json = Default::default();
             self.process_parser_token(id, output)?;
@@ -667,7 +660,6 @@ impl HarmonyRuntime {
             match self.route.as_ref().unwrap_or(&Route::Suppress) {
                 Route::Reasoning => output.push_reasoning(delta),
                 Route::Text => {
-                    self.visible_json.advance(&delta);
                     self.advance_call_json(&delta);
                     self.call_content.append(&delta);
                     output.push_text(delta);
@@ -710,7 +702,6 @@ impl HarmonyRuntime {
             self.inside_message = false;
             self.in_body = false;
             self.route = None;
-            self.visible_json.reset();
             self.call_content.clear();
             self.call_json = Default::default();
         }
@@ -764,7 +755,6 @@ impl HarmonyRuntime {
             if !self.inside_message {
                 let content = tail.content.view();
                 let text = content.slice(0..content.len());
-                self.visible_json.advance(&text);
                 self.advance_call_json(&text);
                 self.call_content.append(&text);
                 output.push_text(text.into_owned());
@@ -793,7 +783,6 @@ impl HarmonyRuntime {
                 recovered_tokens = tail.tokens.len(),
                 "replayed ambiguous visible JSON through message recovery"
             );
-            self.visible_json.reset();
             self.call_json = Default::default();
             self.call_content.clear();
             if !self.inside_message {
@@ -834,7 +823,6 @@ impl HarmonyRuntime {
         self.inside_message = false;
         self.in_body = false;
         self.route = None;
-        self.visible_json.reset();
         self.call_content.clear();
         self.call_cursor = None;
         self.call_json = Default::default();
@@ -2207,27 +2195,70 @@ mod tests {
     fn visible_json_strings_own_quoted_control_markers() {
         for prefix in ["", " \n", "    "] {
             for marker in CONTROL_MARKERS {
-                let body = serde_json::json!({"value":format!("é{marker}끝")}).to_string();
-                for framed in [false, true] {
-                    let input = if framed {
-                        format!("{START}assistant{CHANNEL}final{MESSAGE}{prefix}{body}{TURN_END}")
-                    } else {
-                        format!(
-                            "{prefix}{body}{START}assistant{CHANNEL}final{MESSAGE}Done{TURN_END}"
-                        )
-                    };
-                    assert_native_splits(
-                        &input,
-                        &[UnifiedEvent::Text {
-                            text: if framed {
-                                format!("{prefix}{body}")
-                            } else {
-                                format!("{prefix}{body}Done")
-                            },
-                        }],
-                    );
+                for body in [
+                    serde_json::json!({"value":format!("é{marker}끝")}).to_string(),
+                    serde_json::json!(format!("é{marker}끝")).to_string(),
+                ] {
+                    for framed in [false, true] {
+                        let input = if framed {
+                            format!(
+                                "{START}assistant{CHANNEL}final{MESSAGE}{prefix}{body}{TURN_END}"
+                            )
+                        } else {
+                            format!(
+                                "{prefix}{body}{START}assistant{CHANNEL}final{MESSAGE}Done{TURN_END}"
+                            )
+                        };
+                        assert_native_splits(
+                            &input,
+                            &[UnifiedEvent::Text {
+                                text: if framed {
+                                    format!("{prefix}{body}")
+                                } else {
+                                    format!("{prefix}{body}Done")
+                                },
+                            }],
+                        );
+                    }
                 }
             }
+        }
+    }
+
+    #[test]
+    fn visible_json_ownership_ends_before_later_prose() {
+        // The assembled corpus cannot assert that a later message arrives before finish.
+        for body in [
+            r#"Example: "unfinished"#,
+            r#""valid" trailing "unfinished"#,
+            r#"{} trailing "unfinished"#,
+            r#"[] trailing "unfinished"#,
+        ] {
+            let input = format!(
+                "{START}assistant{CHANNEL}final{MESSAGE}{body}{START}assistant{CHANNEL}final{MESSAGE}Done{TURN_END}"
+            );
+            let expected = [UnifiedEvent::Text {
+                text: format!("{body}Done"),
+            }];
+            let mut parser = gpt_oss_unified(&[]);
+            for tokens in [false, true] {
+                parser.reset();
+                parser.initialize(&[]).unwrap();
+                let mut events = Vec::new();
+                if tokens {
+                    for id in encode_harmony(&input).unwrap() {
+                        events.extend(parser.push_tokens(&[id]).unwrap());
+                    }
+                } else {
+                    for character in input.chars() {
+                        events.extend(parser.push(&character.to_string()).unwrap());
+                    }
+                }
+                assert_eq!(crate::unified::assemble(&events), expected);
+                assert!(parser.finish().unwrap().events.is_empty());
+                assert!(parser.finish().is_err());
+            }
+            assert_native_splits(&input, &expected);
         }
     }
 

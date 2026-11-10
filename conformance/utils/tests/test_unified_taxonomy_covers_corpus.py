@@ -2233,6 +2233,14 @@ def test_coalesced_prose_preserves_json_literals_without_inventing_words():
 
 
 GPT_OSS_RECOVERY_ORACLES = {
+    'gpt_oss_visible_scalar_string_quoted_controls': (
+        '<|start|>assistant<|channel|>final<|message|>"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>',
+        [{'kind': 'text', 'text': '"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'}],
+    ),
+    'gpt_oss_native_builtin_python_raw': (
+        '<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>',
+        [{'kind': 'tool_call', 'name': 'python', 'arguments': '"print(1)"'}],
+    ),
     'gpt_oss_quoted_tool_header_in_final_json': ('<|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>', [{'kind': 'text', 'text': 'Preamble{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'}]),
 
     'gpt_oss_unfinished_visible_json_then_tool': ('<|start|>assistant<|channel|>final<|message|>{"x":"unfinished<|start|>assistant to=functions.lookup<|message|>{}<|call|>', [{'kind': 'text', 'text': '{"x":"unfinished'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}]),

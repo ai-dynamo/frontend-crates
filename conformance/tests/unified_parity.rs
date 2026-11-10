@@ -658,6 +658,7 @@ fn unified_parser_matches_the_golden_oracle() {
     );
 
     let mut failures = Vec::new();
+    let mut gpt_oss_disagreements = Vec::new();
     let mut checked = 0usize;
     for file in &files {
         for (id, case) in &file.cases {
@@ -699,6 +700,9 @@ fn unified_parser_matches_the_golden_oracle() {
                 .as_ref()
                 .is_ok_and(|events| common::json_values_equal(events, &case.golden))
             {
+                if file.family == "gpt_oss" {
+                    gpt_oss_disagreements.push(id.as_str());
+                }
                 failures.push(format!(
                     "{id}\n     input: {:?}\n    golden: {}\n   unified: {}",
                     case.input,
@@ -709,6 +713,10 @@ fn unified_parser_matches_the_golden_oracle() {
         }
     }
 
+    assert_eq!(
+        gpt_oss_disagreements,
+        ["UNIFIED.gpt_oss_native_builtin_python_raw.gpt_oss"]
+    );
     capture::report_comparison("unified-golden", checked, &failures, false);
     assert!(checked >= 30, "expected the qwen3 corpus, got {checked}");
 }

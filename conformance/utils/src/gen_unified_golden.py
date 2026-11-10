@@ -4650,6 +4650,12 @@ _GPT_OSS_REVIEW_CASES = (
     ("gpt_oss_reasoning_then_return_ending_tool_call", "Analysis precedes a channel-first constrained JSON tool call ending in return. Preserve both reasoning and the tool call through the reasoning-to-tool handoff. The existing reason_then_tool case is the call-ending control; only the ending differs.",
      '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>',
      [{"kind":"reasoning", "text":"Check weather."}, {"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
+    ("gpt_oss_visible_scalar_string_quoted_controls", "A framed assistant final body is a top-level JSON string containing Unicode, escaped quotes and a complete quoted tool header. Preserve the string bytes as visible text; controls inside its quotes cannot route or terminate messages.",
+     '<|start|>assistant<|channel|>final<|message|>"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>',
+     [{"kind":"text", "text":'"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'}]),
+    ("gpt_oss_native_builtin_python_raw", "A framed assistant commentary call to the built-in python recipient carries raw print(1) and ends with tool handoff. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.",
+     '<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>',
+     [{"kind":"tool_call", "name":"python", "arguments":'"print(1)"'}]),
     ("gpt_oss_quoted_tool_header_in_final_json", "Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Concatenate visible payloads without adding a separator.",
      '<|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>',
      [{'kind': 'text', 'text': 'Preamble{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'}]),
@@ -4796,6 +4802,8 @@ for _name, _description, _input, _golden in (*_GPT_OSS_REVIEW_CASES, *_GPT_OSS_R
         }}} for name in _recovery_names if f"functions.{name}" in _input]
         if _name in {"gpt_oss_recovered_tool_header_return", "gpt_oss_recovered_final_header_return", "gpt_oss_initial_json_prefix_then_tool"}:
             _tools["gpt_oss"] = [{"name": name, "parameters": {"type": "object", "properties": {"city": {"type": "string"}} if name == "lookup" else {}}} for name in _recovery_names if f"functions.{name}" in _input]
+    if _name == "gpt_oss_native_builtin_python_raw":
+        _tools["gpt_oss"] = [{"name":"python", "parameters":{"type":"string"}}]
     if _name == "gpt_oss_native_builtin_recipient_json":
         _tools["gpt_oss"] = [{"name":"python", "parameters":{"type":"object", "properties":{"code":{"type":"string"}}}}]
     EDGE.append((

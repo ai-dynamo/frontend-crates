@@ -348,6 +348,8 @@ UNIFIED_TAX = {
     "gpt_oss_unfinished_visible_json_then_tool": ("gpt_oss", "67"),
     "gpt_oss_broadcast_recipient_analysis": ("gpt_oss", "68"),
     "gpt_oss_native_builtin_recipient_json": ("gpt_oss", "69"),
+    "gpt_oss_visible_scalar_string_quoted_controls": ("gpt_oss", "70"),
+    "gpt_oss_native_builtin_python_raw": ("gpt_oss", "71"),
 
 
     # Group 40 — Prefilled reasoning, happy

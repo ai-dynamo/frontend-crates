@@ -1706,6 +1706,10 @@ tools:
           oneOf:
           - type: string
           - type: integer
+  tools_4878f82e06d1ba60:
+  - name: python
+    parameters:
+      type: string
   tools_1c0b6cc6a42cfbde:
   - name: schema_probe
     parameters:
@@ -4113,6 +4117,9 @@ requests:
     chunk_sizes:
     - 83
     finish_step: true
+  bc247c617879720e3c488ba8575504b5cfec7be851d2b3851f8af90f93b33a60:
+    input: <|start|>assistant<|channel|>final<|message|>"é\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>
+    tools: tools_9db8284c68087826
   bc2e12ac5f5f0358e79166dd8a040ab6bb6292d1026cc886194c2e1c396923bc:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_9d7e29c38b45febb
@@ -4415,6 +4422,9 @@ requests:
     - 7
     - 57
     finish_step: true
+  d436b933d3a4b2d91af899afc5fb8baed1178934ae51478130fd6bef445c804e:
+    input: <|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>
+    tools: tools_4878f82e06d1ba60
   d459b8e6d6942b72df37649fec24d7c2b478c458c392186412be71361fa3bf95:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "[1,2]"}<|call|>'
     tools: tools_1c0b6cc6a42cfbde
@@ -10101,3 +10111,26 @@ cases:
     - kind: tool_call
       name: lookup
       arguments: {}
+  gpt_oss_visible_scalar_string_quoted_controls:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A framed assistant final body is a top-level JSON string containing Unicode, escaped quotes and a complete quoted tool header. Preserve the string bytes as visible text; controls inside its quotes cannot route or terminate messages.
+    display_id: UNIFIED.gpt_oss-visible_scalar_string_quoted_controls
+    request: bc247c617879720e3c488ba8575504b5cfec7be851d2b3851f8af90f93b33a60
+    golden:
+    - kind: text
+      text: '"é\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'
+  gpt_oss_native_builtin_python_raw:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: 'A framed assistant commentary call to the built-in python recipient carries raw print(1) and ends with tool handoff. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.'
+    display_id: UNIFIED.gpt_oss-native_builtin_python_raw
+    request: d436b933d3a4b2d91af899afc5fb8baed1178934ae51478130fd6bef445c804e
+    golden:
+    - kind: tool_call
+      name: python
+      arguments: '"print(1)"'
