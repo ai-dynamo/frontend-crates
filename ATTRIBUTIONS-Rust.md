@@ -38,6 +38,23 @@ Apache License, Version 2.0, reproduced in this repository's `LICENSE`.
 
 ---
 
+## `dynamo-multimodal` — Kimi-K3 image processing adapted from SGLang
+
+The composite, normalize and patchify code in
+`multimodal/src/models/kimi_k3.rs` is adapted from
+[SGLang PR #34188](https://github.com/sgl-project/sglang/pull/34188) at commit
+`bd09a3d36c2f306773e459bfe6d74c02045ac3a6`, authored by Kan Wu. The Kimi-K3
+adapters of `multimodal/tests/fixtures/mm_parity/families/kimi_k3.py` (the
+`KimiK3ImageProcessor` CPU path and the shared `size_tokens` in
+`spec_shared`) are adapted from SGLang's
+`rust/sglang-processor/tests/scripts/generate_mm_parity.py` at commit
+`a2ffd214696ea7144d3c237133a15df3315d900b`. The image path mirrors the
+Kimi-K3 checkpoint's `kimi_k3_vision_processing.py` and `media_utils.py`.
+SGLang is distributed under Apache License, Version 2.0, reproduced in this
+repository's `LICENSE`.
+
+---
+
 ## `dynamo-multimodal` — DSV4.1 geometry adapted from SGLang
 
 The geometry math in `multimodal/src/models/deepseek_v41.rs` is adapted from
