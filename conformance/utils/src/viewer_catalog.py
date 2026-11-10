@@ -34,6 +34,7 @@ import normalized_yaml
 import unified_archives
 import generation_workers
 import unified_taxonomy
+from viewer_codec import encode_typed
 from capture_stimulus import _UNAVAILABLE_CATEGORIES, select_peer_observation
 import gen_unified_golden
 from unified_tools import unified_tools
@@ -690,6 +691,33 @@ def _history_dataset_sources(root: Path, unified: list[dict], metadata: dict, so
         store_root = dataset_root / capture_sources.STORE
         inventory, documents, indexed = _native_catalog_document_index(store_root, generation=generation,
             conversion_context={"dataset": identity, "metadata": source_metadata})
+        reader_cache = None
+        for (family, implementation), rows in indexed["snapshots"].items():
+            for row in rows:
+                if "fragment" in row and "capture" in row:
+                    continue
+                if reader_cache is None:
+                    cache_identity = json.loads((root / "conformance/history-reader-cache.json").read_bytes())
+                    reader_cache = Path(cache_identity["directory"])
+                    reader_cache.mkdir(parents=True, exist_ok=True)
+                capture_path = store_root / "families" / family / f"{implementation}-{row['runtime_version']}.yaml"
+                capture = yaml.safe_load(capture_path.read_bytes())
+                payload = encode_typed({case: {"value": wrapped["value"]}
+                                        for case, wrapped in capture["records"].items()})
+                encoded_payload = json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                                             separators=(",", ":")).encode() + b"\n"
+                fragment = hashlib.sha256(encoded_payload).hexdigest()
+                fragment_path = reader_cache / f"{fragment}.json"
+                fragment_entry = {"identity": fragment, "sha256": fragment, "payload": payload}
+                fragment_bytes = json.dumps(fragment_entry, ensure_ascii=False,
+                                            separators=(",", ":")).encode() + b"\n"
+                if fragment_path.is_file() and fragment_path.read_bytes() != fragment_bytes:
+                    raise ValueError(f"history fragment identity collision: {fragment}")
+                if not fragment_path.is_file():
+                    fragment_path.write_bytes(fragment_bytes)
+                row["fragment"] = fragment
+                row["capture"] = encode_typed({key: capture[key] for key in
+                    ("provenance", "document", "execution_proof", "historical_evidence") if key in capture})
         for family, inputs in indexed["families"].items():
             metadata["families"].setdefault(family, inputs)
         resources = _unified_records(dataset_root, store_root, inventory=inventory, document_index=documents)
