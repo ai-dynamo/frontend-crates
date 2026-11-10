@@ -2681,6 +2681,15 @@ changes:
       unavailable:
         code: unsupported_family
         detail: No registered reasoning + batch tool parser for this family
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 27e5c7c1d5bbd90f9ee21a126b9bc4a88e455ae8622c2564559b71b247c07070
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -6966,6 +6975,21 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: c002c69028d3907ea678f82aeb3abc8c4f22e5e278ad973dc38df509d4a0b6dd
       binary_sha256: bf1d44900cef75c00844fa42cebe66b7897e62334a73414224f4b80580c0fc6e
+  tool_call_ids_unique:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.6
+      source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: c5a817ff0fcc1b4813019b8ce92ea416101fb2e8878a7e551e58a3a3a7898613
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 37d1be0611d75e6132637ca324c95923c094a86c6b56d5b78fbdaa04fefe9588
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: d97b2170f3ac90a7fd1bb64e85c7d24c0785274cebc43bd535676dfef73667db
+      binary_sha256: e5fd63c1b611b8be3d87885d439d0d8eaf3609b7e3eeea26a79ea335b65a0430
   tool_in_reason:
     dynamo_v1_jail_capture_provenance:
       implementation: dynamo_v1_jail
@@ -7162,4 +7186,14 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: c002c69028d3907ea678f82aeb3abc8c4f22e5e278ad973dc38df509d4a0b6dd
       binary_sha256: bf1d44900cef75c00844fa42cebe66b7897e62334a73414224f4b80580c0fc6e
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: c5a817ff0fcc1b4813019b8ce92ea416101fb2e8878a7e551e58a3a3a7898613
+      inherited_from: null

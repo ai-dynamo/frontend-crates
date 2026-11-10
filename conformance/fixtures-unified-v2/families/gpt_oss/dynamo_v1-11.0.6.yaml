@@ -573,6 +573,60 @@ changes:
     observation:
       value:
         assembled: []
+  gpt_oss_analysis_interrupted_by_final_then_tool:
+    case_key: gpt_oss_analysis_interrupted_by_final_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 88896768094624e4cfaf5c4d37443501987da03255f8b2fc55a27563e1cef8d3
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Before<|start|>assistant<|channel|>final<|message|>Visible
+  gpt_oss_analysis_text_interrupted_by_bare_final:
+    case_key: gpt_oss_analysis_text_interrupted_by_bare_final
+    stimulus:
+      ref: current
+      semantic_sha256: 7a41fb6d8defb59b53d9ae9f18873478a1f1947fbee2da2c129fe6d935499e66
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Before<|channel|>final<|message|>Done
+  gpt_oss_analysis_text_interrupted_by_final:
+    case_key: gpt_oss_analysis_text_interrupted_by_final
+    stimulus:
+      ref: current
+      semantic_sha256: 89b5bdeed8fe3dca07ceca8481d82df995277354cf989465fb6c398f2799dd8f
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Before<|start|>assistant<|channel|>final<|message|>Done
+  gpt_oss_assistant_default_channel_visible_response:
+    case_key: gpt_oss_assistant_default_channel_visible_response
+    stimulus:
+      ref: current
+      semantic_sha256: d903a94de40ebbc0d355c32616d70f93ad487022d285e5e2094e47277116064b
+    observation:
+      value:
+        assembled: []
+  gpt_oss_assistant_implicit_recipient_analysis:
+    case_key: gpt_oss_assistant_implicit_recipient_analysis
+    stimulus:
+      ref: current
+      semantic_sha256: c12207dae6892715a742309efa60a5edd7145260ff75c8fe23e3b2a2b9115f46
+    observation:
+      value:
+        assembled: []
+  gpt_oss_assistant_role_only_final:
+    case_key: gpt_oss_assistant_role_only_final
+    stimulus:
+      ref: current
+      semantic_sha256: d2b48083a6b82df241eb127849989fb638a6f65a134a237a606aa32d54e53a24
+    observation:
+      value:
+        assembled: []
   gpt_oss_channel_first_tool_header:
     case_key: gpt_oss_channel_first_tool_header
     stimulus:
@@ -597,6 +651,48 @@ changes:
     observation:
       value:
         assembled: []
+  gpt_oss_commentary_text_interrupted_by_bare_final:
+    case_key: gpt_oss_commentary_text_interrupted_by_bare_final
+    stimulus:
+      ref: current
+      semantic_sha256: 73a7aa56bc403846b08c98edcad520d97da01778ea54d54ff20ace4c6d6521a4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Done
+  gpt_oss_commentary_text_interrupted_by_final:
+    case_key: gpt_oss_commentary_text_interrupted_by_final
+    stimulus:
+      ref: current
+      semantic_sha256: 5c419331ab856b85ca5157e8a8c3ef34e44cf74d73e976f8dd6ed90facc6d031
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Done
+  gpt_oss_commentary_text_interrupted_by_invalid_author:
+    case_key: gpt_oss_commentary_text_interrupted_by_invalid_author
+    stimulus:
+      ref: current
+      semantic_sha256: 7878a13ae16d7b8f1288967d63171e7e9a90baa3cdd8f65926bfca1f1cb4470d
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'UNTRUSTED
+
+            Done'
+  gpt_oss_commentary_text_interrupted_by_user:
+    case_key: gpt_oss_commentary_text_interrupted_by_user
+    stimulus:
+      ref: current
+      semantic_sha256: 868c652c6e1e576dd9b06afefd7ab9ef98357e51188b87be625d9a83349114e5
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: UNTRUSTED
   gpt_oss_complete_alternate_message_ends:
     case_key: gpt_oss_complete_alternate_message_ends
     stimulus:
@@ -621,11 +717,59 @@ changes:
     observation:
       value:
         assembled: []
+  gpt_oss_final_then_unframed_recipient_first_call:
+    case_key: gpt_oss_final_then_unframed_recipient_first_call
+    stimulus:
+      ref: current
+      semantic_sha256: ffbd00b3dd9c9dfa3486837f6029f197a04cc0b7cd63f1c7acefdf4995b143d8
+    observation:
+      value:
+        assembled: []
+  gpt_oss_final_then_unframed_visible_tail:
+    case_key: gpt_oss_final_then_unframed_visible_tail
+    stimulus:
+      ref: current
+      semantic_sha256: 2d8b42261cb4fae3ca55d2e0918adfb81ceb49fb2441c13e07573ee97c39545a
+    observation:
+      value:
+        assembled: []
   gpt_oss_implicit_recipient_first_header:
     case_key: gpt_oss_implicit_recipient_first_header
     stimulus:
       ref: current
       semantic_sha256: 56992d89d8ef42935ac7f97927093565b9f450542558165d49eb501fbb65c7d5
+    observation:
+      value:
+        assembled: []
+  gpt_oss_implicit_recipient_prelude:
+    case_key: gpt_oss_implicit_recipient_prelude
+    stimulus:
+      ref: current
+      semantic_sha256: 137286254d65f0906dc3c59be68f5de01a9db36760306a4b910a6bb89ea80187
+    observation:
+      value:
+        assembled: []
+  gpt_oss_initial_json_prefix_then_bare_final:
+    case_key: gpt_oss_initial_json_prefix_then_bare_final
+    stimulus:
+      ref: current
+      semantic_sha256: 24b4be1bcdd047828c64cb750da7b978d64253946344567b3c8769828b0b3948
+    observation:
+      value:
+        assembled: []
+  gpt_oss_initial_json_prefix_then_recovered_final:
+    case_key: gpt_oss_initial_json_prefix_then_recovered_final
+    stimulus:
+      ref: current
+      semantic_sha256: e5e77281f1c821bba106dfd14267b964e7a968b3922b609320b6181c6b710917
+    observation:
+      value:
+        assembled: []
+  gpt_oss_initial_json_prefix_then_tool:
+    case_key: gpt_oss_initial_json_prefix_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 10b12312e84e258ec4774528d3e0e9a4fd44f2d5eb86f9a5ea603de403bb6921
     observation:
       value:
         assembled: []
@@ -667,11 +811,127 @@ changes:
     observation:
       value:
         assembled: []
+  gpt_oss_literal_bare_analysis_in_visible_body:
+    case_key: gpt_oss_literal_bare_analysis_in_visible_body
+    stimulus:
+      ref: current
+      semantic_sha256: ffb1bfbaa90d0d13f4f58ff6beed313743f6c95da7badf107186025eff9521ee
+    observation:
+      value:
+        assembled: []
+  gpt_oss_literal_bare_tool_header_in_visible_body:
+    case_key: gpt_oss_literal_bare_tool_header_in_visible_body
+    stimulus:
+      ref: current
+      semantic_sha256: e43af50580df1cb90a56a08bd34be9e54e70e95fb4e2c9d28fd2aaef61270e79
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Use <|channel|>commentary to=functions.lookup<|message|>{}
+  gpt_oss_literal_bare_unknown_channel_in_visible_body:
+    case_key: gpt_oss_literal_bare_unknown_channel_in_visible_body
+    stimulus:
+      ref: current
+      semantic_sha256: 944077d3682a923af691a938a82446301354124a7ff836c462973bef2213176b
+    observation:
+      value:
+        assembled: []
+  gpt_oss_malformed_then_native_opaque_name:
+    case_key: gpt_oss_malformed_then_native_opaque_name
+    stimulus:
+      ref: current
+      semantic_sha256: c33ade402eb5935e79eb3d9db3b2f43d73d280e49fffb854722fa702fb3f3f37
+    observation:
+      value:
+        assembled: []
+  gpt_oss_malformed_then_nonassistant_call:
+    case_key: gpt_oss_malformed_then_nonassistant_call
+    stimulus:
+      ref: current
+      semantic_sha256: 9dbbbb16c91ec7d9184023d4d89336d40a6ec643313d78a742cd35711b8e29b5
+    observation:
+      value:
+        assembled: []
+  gpt_oss_malformed_then_recipient_first_call:
+    case_key: gpt_oss_malformed_then_recipient_first_call
+    stimulus:
+      ref: current
+      semantic_sha256: 3491fd00a60e4ff6ccd35c911036baf0824aa6ad68977f0534bbfade9c9ce631
+    observation:
+      value:
+        assembled: []
   gpt_oss_multiple_unknown_and_empty_tools:
     case_key: gpt_oss_multiple_unknown_and_empty_tools
     stimulus:
       ref: current
       semantic_sha256: 429ed7448696c0c4ea3852ee03e3daf2c7e856d08af992ad6307e190e04978df
+    observation:
+      value:
+        assembled: []
+  gpt_oss_named_author_less_than_lookalike:
+    case_key: gpt_oss_named_author_less_than_lookalike
+    stimulus:
+      ref: current
+      semantic_sha256: e40419b6c67ae6b9b711e0bc5105da081c464739c4c76293ac739f30c78a9068
+    observation:
+      value:
+        assembled: []
+  gpt_oss_named_author_nbsp_lookalike:
+    case_key: gpt_oss_named_author_nbsp_lookalike
+    stimulus:
+      ref: current
+      semantic_sha256: 11245492e574092c4d46be774fcdc05e2217bb923b2cbc7557dedb514ae1d6b6
+    observation:
+      value:
+        assembled: []
+  gpt_oss_named_tool_unfinished_final_header:
+    case_key: gpt_oss_named_tool_unfinished_final_header
+    stimulus:
+      ref: current
+      semantic_sha256: 42fc7b7148b05c5dcc0233d74db5feaf1afad4a278e5e95b6af24c369f850c78
+    observation:
+      value:
+        assembled: []
+  gpt_oss_native_opaque_name_handoff:
+    case_key: gpt_oss_native_opaque_name_handoff
+    stimulus:
+      ref: current
+      semantic_sha256: ee0d4b94c45d99566ecf4b48e1058e4d51ae1f2ede875115275562d500b643ef
+    observation:
+      value:
+        assembled: []
+  gpt_oss_nonassistant_analysis_then_final:
+    case_key: gpt_oss_nonassistant_analysis_then_final
+    stimulus:
+      ref: current
+      semantic_sha256: 41114125df0365135dacba01ffcbb7d80fae97cabf61bb02c4977b4435e4df07
+    observation:
+      value:
+        assembled: []
+  gpt_oss_nonassistant_unfinished_analysis_header:
+    case_key: gpt_oss_nonassistant_unfinished_analysis_header
+    stimulus:
+      ref: current
+      semantic_sha256: 9969e55f46169642336b4dbdb72b9113ff03133661bb4affbce0d845df0fa966
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ' SHOULD_HIDE'
+  gpt_oss_nonassistant_unfinished_final_header:
+    case_key: gpt_oss_nonassistant_unfinished_final_header
+    stimulus:
+      ref: current
+      semantic_sha256: d7672ad57c481855ae9a7ba6a6c7cd6de989c5f77f80414363ec19db8d20ca4a
+    observation:
+      value:
+        assembled: []
+  gpt_oss_orphan_terminator_preserves_messages:
+    case_key: gpt_oss_orphan_terminator_preserves_messages
+    stimulus:
+      ref: current
+      semantic_sha256: f7ec73139e1a04a11aa6973b81122686d7deceb8ee6a4cfb5fd7dbd1cc27a3bc
     observation:
       value:
         assembled: []
@@ -683,6 +943,14 @@ changes:
     observation:
       value:
         assembled: []
+  gpt_oss_quoted_tool_header_in_final_json:
+    case_key: gpt_oss_quoted_tool_header_in_final_json
+    stimulus:
+      ref: current
+      semantic_sha256: fdafb5416fde09f02e1aaa477c82b1775fe063caff59a91e2397909138802da0
+    observation:
+      value:
+        assembled: []
   gpt_oss_quoted_truncated_tool_then_final:
     case_key: gpt_oss_quoted_truncated_tool_then_final
     stimulus:
@@ -691,11 +959,155 @@ changes:
     observation:
       value:
         assembled: []
+  gpt_oss_reasoning_then_return_ending_tool_call:
+    case_key: gpt_oss_reasoning_then_return_ending_tool_call
+    stimulus:
+      ref: current
+      semantic_sha256: 8e4c47b9aa58bb34693dc77f9d354918722969514f0494f427729ee0c6ad3372
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+  gpt_oss_recipientless_constrained_whitespace_call:
+    case_key: gpt_oss_recipientless_constrained_whitespace_call
+    stimulus:
+      ref: current
+      semantic_sha256: 1b1ac7e2794eb3e1b815fc7a3ef16b91b3982f24e90809d4b265b59b56c7d551
+    observation:
+      value:
+        assembled: []
+  gpt_oss_recipientless_json_call_then_final:
+    case_key: gpt_oss_recipientless_json_call_then_final
+    stimulus:
+      ref: current
+      semantic_sha256: 02ad9e72a7470248879f8f792e31783a52aa043b42c2b4021df4e9f52b276246
+    observation:
+      value:
+        assembled: []
+  gpt_oss_recipientless_json_interrupted_by_final:
+    case_key: gpt_oss_recipientless_json_interrupted_by_final
+    stimulus:
+      ref: current
+      semantic_sha256: d02327944df2f2c94cc6c4896748f1a883e9447dbbf9ffa3ac70323c51dc80bb
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Done.
+  gpt_oss_recipientless_json_return_then_final:
+    case_key: gpt_oss_recipientless_json_return_then_final
+    stimulus:
+      ref: current
+      semantic_sha256: d510abc734a08662cce3521108e4d394a846c33fcefa2847e4eeaf99ab0f3d65
+    observation:
+      value:
+        assembled: []
+  gpt_oss_recovered_final_header_return:
+    case_key: gpt_oss_recovered_final_header_return
+    stimulus:
+      ref: current
+      semantic_sha256: ba440b467ef6b977987efde446de78ab0ed517c41f5120a39c8c89f50286d7e9
+    observation:
+      value:
+        assembled: []
+  gpt_oss_recovered_tool_header_return:
+    case_key: gpt_oss_recovered_tool_header_return
+    stimulus:
+      ref: current
+      semantic_sha256: 4278e4078f439cb737dca1b0b9cea0577a451372c87653d0e0d775e5efd6b099
+    observation:
+      value:
+        assembled: []
+  gpt_oss_single_return_ending_tool_call:
+    case_key: gpt_oss_single_return_ending_tool_call
+    stimulus:
+      ref: current
+      semantic_sha256: 10862a2710e5fff0e5bbd28a71f0ea61748b932b209e247d1c779f098415aa2f
+    observation:
+      value:
+        assembled: []
+  gpt_oss_tab_separated_assistant_recipient:
+    case_key: gpt_oss_tab_separated_assistant_recipient
+    stimulus:
+      ref: current
+      semantic_sha256: 4587beae99b999a6513b6fdabd12a93a64039f38216ed284b4e791b291aef29d
+    observation:
+      value:
+        assembled: []
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
     case_key: gpt_oss_truncated_tool_resynchronizes_at_next_message
     stimulus:
       ref: current
       semantic_sha256: b880a4fafaeb35837443eaa8fc7f8c4c14c8618f51171f0c8942aa93405f111f
+    observation:
+      value:
+        assembled: []
+  gpt_oss_unconfirmed_header_return_at_eof:
+    case_key: gpt_oss_unconfirmed_header_return_at_eof
+    stimulus:
+      ref: current
+      semantic_sha256: 63b18eee115dd48e250c27e0a9eb1138ec2957c39b3230c6183b34a94a20f24a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Beforeassistantfinal
+  gpt_oss_unfinished_directed_analysis:
+    case_key: gpt_oss_unfinished_directed_analysis
+    stimulus:
+      ref: current
+      semantic_sha256: bbe45b5e973572795594c7f4b68cb20a3117fa8456df48b989981e4be77bc1fe
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '{"path":"x","content":"unfinished'
+  gpt_oss_unfinished_directed_header_then_final:
+    case_key: gpt_oss_unfinished_directed_header_then_final
+    stimulus:
+      ref: current
+      semantic_sha256: be31a3e30ff2b6fe1081abe5e0d7ee134f84e8d047595e9d9d0eefc55d7be781
+    observation:
+      value:
+        assembled: []
+  gpt_oss_unfinished_header_then_valid_call:
+    case_key: gpt_oss_unfinished_header_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: c9da1f2c90cbb51c01a248a3dedd6004312844d850b082ddb2bfe259fb8eb53b
+    observation:
+      value:
+        assembled: []
+  gpt_oss_unknown_channel_before_final:
+    case_key: gpt_oss_unknown_channel_before_final
+    stimulus:
+      ref: current
+      semantic_sha256: d19438fd794e75d10dd2decb1bc6b3c9d9941185c3abf2584aad3dd77eede186
+    observation:
+      value:
+        assembled: []
+  gpt_oss_unknown_channel_header_only_eof:
+    case_key: gpt_oss_unknown_channel_header_only_eof
+    stimulus:
+      ref: current
+      semantic_sha256: ed97fe02b65e4ca692f803b01734c5ad745ff2fa19613de996243eb18d97a039
+    observation:
+      value:
+        assembled: []
+  gpt_oss_visible_json_prelude_indentation:
+    case_key: gpt_oss_visible_json_prelude_indentation
+    stimulus:
+      ref: current
+      semantic_sha256: 07a6d31733409018702a5b8084cfd5eff14083769d14efeeffb1e0eb5c5fdeef
+    observation:
+      value:
+        assembled: []
+  gpt_oss_visible_quoted_json_prelude_whitespace:
+    case_key: gpt_oss_visible_quoted_json_prelude_whitespace
+    stimulus:
+      ref: current
+      semantic_sha256: e160bc7da0a1e3dc15e9f38943854dedd5da1baa2679b15f44150a3e95969716
     observation:
       value:
         assembled: []
@@ -2680,6 +3092,14 @@ changes:
     observation:
       value:
         assembled: []
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 2cd6777c1f622ddaedb72e00046749816b01e2dc8c4146cfb554298811a1d937
+    observation:
+      value:
+        assembled: []
   tool_markup_only_emits_nothing:
     case_key: tool_markup_only_emits_nothing
     stimulus:
@@ -3994,6 +4414,120 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_analysis_interrupted_by_final_then_tool:
+    batch_final:
+      reasoning_text: Before<|start|>assistant<|channel|>final<|message|>Visible
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_analysis_text_interrupted_by_bare_final:
+    batch_final:
+      reasoning_text: Before<|channel|>final<|message|>Done
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_analysis_text_interrupted_by_final:
+    batch_final:
+      reasoning_text: Before<|start|>assistant<|channel|>final<|message|>Done
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_assistant_default_channel_visible_response:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_assistant_implicit_recipient_analysis:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_assistant_role_only_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_channel_first_tool_header:
     batch_final:
       reasoning_text: ''
@@ -4051,6 +4585,84 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_commentary_text_interrupted_by_bare_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Done
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_commentary_text_interrupted_by_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Done
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_commentary_text_interrupted_by_invalid_author:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'UNTRUSTED
+
+        Done'
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_commentary_text_interrupted_by_user:
+    batch_final:
+      reasoning_text: ''
+      normal_text: UNTRUSTED
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_complete_alternate_message_ends:
     batch_final:
       reasoning_text: ''
@@ -4108,6 +4720,44 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_final_then_unframed_recipient_first_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_final_then_unframed_visible_tail:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_implicit_recipient_first_header:
     batch_final:
       reasoning_text: ''
@@ -4127,6 +4777,82 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_implicit_recipient_prelude:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_initial_json_prefix_then_bare_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_initial_json_prefix_then_recovered_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_initial_json_prefix_then_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_interrupted_reasoning_then_tool:
     batch_final:
       reasoning_text: ' now answer'
@@ -4203,6 +4929,120 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_literal_bare_analysis_in_visible_body:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_literal_bare_tool_header_in_visible_body:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Use <|channel|>commentary to=functions.lookup<|message|>{}
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_literal_bare_unknown_channel_in_visible_body:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_malformed_then_native_opaque_name:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_malformed_then_nonassistant_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_malformed_then_recipient_first_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_multiple_unknown_and_empty_tools:
     batch_final:
       reasoning_text: ''
@@ -4222,6 +5062,158 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_named_author_less_than_lookalike:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_named_author_nbsp_lookalike:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_named_tool_unfinished_final_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_native_opaque_name_handoff:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_nonassistant_analysis_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_nonassistant_unfinished_analysis_header:
+    batch_final:
+      reasoning_text: ' SHOULD_HIDE'
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_nonassistant_unfinished_final_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_orphan_terminator_preserves_messages:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_quoted_message_header_literal:
     batch_final:
       reasoning_text: ''
@@ -4241,6 +5233,25 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_quoted_tool_header_in_final_json:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_quoted_truncated_tool_then_final:
     batch_final:
       reasoning_text: ''
@@ -4260,6 +5271,177 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_reasoning_then_return_ending_tool_call:
+    batch_final:
+      reasoning_text: Check weather.
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_constrained_whitespace_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_json_call_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_json_interrupted_by_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Done.
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_json_return_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recovered_final_header_return:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recovered_tool_header_return:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_single_return_ending_tool_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_tab_separated_assistant_recipient:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
     batch_final:
       reasoning_text: ''
@@ -4279,6 +5461,158 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  gpt_oss_unconfirmed_header_return_at_eof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Beforeassistantfinal
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unfinished_directed_analysis:
+    batch_final:
+      reasoning_text: '{"path":"x","content":"unfinished'
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unfinished_directed_header_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unfinished_header_then_valid_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unknown_channel_before_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unknown_channel_header_only_eof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_visible_json_prelude_indentation:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_visible_quoted_json_prelude_whitespace:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: bb9deef9aac7208d999779bc99843da85c1e5788667aa2f3f6ff996a7166b0a1
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 27f459ca2298c8361e223268ca31e2ec0667f006bc4533d049238044d5c731f6
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   guided_json_after_reasoning:
     dynamo_v1_capture_provenance:
       implementation: dynamo_v1
@@ -8410,6 +9744,26 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: 36d2a8ee82cb1d5b3fbf6fcb2c77d4efdf43c0ddfc2f94a0af77e9daf6de1bbf
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: b017229a61ac2672d63d2edda553417a8216b5dc90f65b81fc57d8515518ecf0
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: 70620e560ff034bddb91601a5a1ad121d638aee14c3b04662c62135bf92d8e18
+      binary_sha256: c476e65fa9ee5383f1ff4b31a1f8bb8f38586866ebc02abd62bccedb0de6eb1b
   tool_markup_only_emits_nothing:
     batch_final:
       reasoning_text: ''
@@ -8640,4 +9994,14 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 36d2a8ee82cb1d5b3fbf6fcb2c77d4efdf43c0ddfc2f94a0af77e9daf6de1bbf
+      inherited_from: null

@@ -1977,6 +1977,9 @@ requests:
   ab4d41b6947517e8846a2e58d4c1298a395978d3ab349c4a0751893f0b83836f:
     input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":"café"}<|call|>
     tools: tools_3632e66e77144cef
+  ac99cd133bd595c9783dd39af8c0f5f70efb24ca45017b9ba495742b377f3a10:
+    input: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|><|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}<|call|>
+    tools: tools_cbf47ccf5fd2ef00
   afcb90bb5c3cec34b5d432bfe363b58432215d44059d15448004ee8b70ca74f2:
     input: <|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value":{"x":1}}<|call|>
     tools: tools_3e9459ef2d935104
@@ -4355,3 +4358,16 @@ cases:
     golden:
     - kind: text
       text: '{"name": "get_weather", "arguments": {"city": "Par'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: ac99cd133bd595c9783dd39af8c0f5f70efb24ca45017b9ba495742b377f3a10
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

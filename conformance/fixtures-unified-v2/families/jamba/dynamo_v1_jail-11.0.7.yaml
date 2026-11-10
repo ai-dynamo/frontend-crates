@@ -3290,6 +3290,29 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: f547d310430734498ebb8d39760bb43f59155a985a73a7c214cc59866d42c81f
       binary_sha256: 8fcb488f798c6662df4269ae1f6abc7ac1a0b8578b6e6a0fb4165e2288c505ac
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.7
+      source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: abc291a466608c4d96123ab05bf8aa42ec9d1ae5add84991f5b70ceecfc3770d
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 9aa63391a684e6ee84f4b673081275d08e31338dbe009fc3101aa7438970d751
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: f817808a4f068f1664fc5f0f7c78070608c77cc493433bd3f7fcc560dc022601
+      binary_sha256: 83d2b7e5ab5d3489eeb6022ebfdd2cfdd55351a338065d30a4027a800567dc93
   tool_only:
     batch_final:
       reasoning_text: ''
@@ -4994,6 +5017,16 @@ document_overrides:
         source_sha256: 1a7aa07b387ed5f0b46390b4e67eb4a71e2e8577e196686baede67f32e2def1c
         adapter_sha256: edc1c10eebbab4adb6cd7c865573264eb228ca4dbf74fb22e17a15edc2e8537f
         job_sha256: 03d6a76f4be7770d047088cf602a6af124b62623e8b7966f2f410dde9224f234
+      inherited_from: null
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: abc291a466608c4d96123ab05bf8aa42ec9d1ae5add84991f5b70ceecfc3770d
       inherited_from: null
   tool_only:
     capture_provenance:

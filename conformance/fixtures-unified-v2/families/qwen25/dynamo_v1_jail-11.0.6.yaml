@@ -2237,6 +2237,20 @@ changes:
           name: get_weather
           arguments:
             city: Paris
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 5f73ec0f070ed981d001be485cc101478c8e5456c7bcab4bb0144ca28bc10584
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -6085,6 +6099,29 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: 5e8b3b7c15065a288c2b5724fa32e0a5572e76c2b19cba22c05e1535716c362f
       binary_sha256: d8d0b9550d182bbbaf8c6d4bc9b11e8add5329759f96ef2270f7f51d267e3657
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.6
+      source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: 2ade35f8f3093720f5820686aab4afc5fc5c13874997d39ba4e340a64b57249e
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 37d1be0611d75e6132637ca324c95923c094a86c6b56d5b78fbdaa04fefe9588
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: 692249857de133da9a6618755fbeef1a12aab6462269aaea466895a774292683
+      binary_sha256: 89d3506e3919f8efbd9c7afe1086d87658f97e8a329ae410a7be527e4de8c8f7
   tool_in_reason:
     batch_final:
       reasoning_text: <tool_call>{"name":"get_weather","arguments":{"city":"Paris"}}</tool_call>
@@ -6288,4 +6325,14 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: 5e8b3b7c15065a288c2b5724fa32e0a5572e76c2b19cba22c05e1535716c362f
       binary_sha256: d8d0b9550d182bbbaf8c6d4bc9b11e8add5329759f96ef2270f7f51d267e3657
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: 2ade35f8f3093720f5820686aab4afc5fc5c13874997d39ba4e340a64b57249e
+      inherited_from: null

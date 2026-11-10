@@ -1921,6 +1921,20 @@ changes:
           name: get_weather
           arguments:
             city: Paris
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: bda097ca83f610f60c2a6c1a038ce9a9edbda03574a5043cc6cd1b619743ed4c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
   tool_only:
     case_key: tool_only
     stimulus:
@@ -5438,6 +5452,30 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 318eefb249c0d652639f6732671219e1bcc8bbc9baf28894c396e8ab62655c7d
       binary_sha256: 8b09d68f57a51dbd0835e132b2697ac4967cb95520520f0a7d6fff92d4317008
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: 1a7e7a602aac9a1e5f315540bf5d2b9330fe5d204639865c9916dbd8dcaaaec8
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: b017229a61ac2672d63d2edda553417a8216b5dc90f65b81fc57d8515518ecf0
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: 2d81326d036de919a28451920e9ca55d5740f2936e517b888305691d24d9dd7e
+      binary_sha256: 11f297545c3eafe6d3efe2408b79c1b5059344b254acd3e09619d3fa9b6641d6
   tool_only:
     batch_final:
       reasoning_text: ''
@@ -5575,4 +5613,14 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 318eefb249c0d652639f6732671219e1bcc8bbc9baf28894c396e8ab62655c7d
       binary_sha256: 8b09d68f57a51dbd0835e132b2697ac4967cb95520520f0a7d6fff92d4317008
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 1a7e7a602aac9a1e5f315540bf5d2b9330fe5d204639865c9916dbd8dcaaaec8
+      inherited_from: null

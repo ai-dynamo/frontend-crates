@@ -3571,6 +3571,20 @@ metadata_changes:
       - conformance_async_tool_api
       - conformance_tool_api_schemas
       results_sha256: de37c893fc63517bfb4b28bd458432c45703477faccfeb71532da27273f71b81
+  tool_call_ids_unique:
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.7
+      source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: 1e2f2d74b99647518d84ca3afa3dbac0b7b7d76251af5518f7bc5164c71b6d92
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 9aa63391a684e6ee84f4b673081275d08e31338dbe009fc3101aa7438970d751
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: 2953b8817d21ea321f637585f005b8d7f080127665202d36f6b4200594749cd4
   tool_in_reason:
     dynamo_v1_jail_capture_provenance:
       implementation: dynamo_v1_jail
@@ -6493,6 +6507,16 @@ document_overrides:
         source_sha256: 1a7aa07b387ed5f0b46390b4e67eb4a71e2e8577e196686baede67f32e2def1c
         adapter_sha256: edc1c10eebbab4adb6cd7c865573264eb228ca4dbf74fb22e17a15edc2e8537f
         job_sha256: 1954e94634131dd6aa37f098c446829a778357139a5843d89431e02012e7964d
+      inherited_from: null
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: 1e2f2d74b99647518d84ca3afa3dbac0b7b7d76251af5518f7bc5164c71b6d92
       inherited_from: null
   tool_in_reason:
     capture_provenance:

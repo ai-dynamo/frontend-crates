@@ -5314,6 +5314,26 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 24546c67979bc34f02b40fd081507620f01eb9581b14dc42cf28a4042737270f
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: 2cbd616421576d83027d25cc4389f7975a96c96eaa236508529066e9b856af63
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: a601fd1ee79b4705a143b8105c36f1a0336222597867ec1d8951022d59396ef4
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: b17185b49cbe37181300cb06e79ffcf29a67df2d1c3973004b010c45851611c4
+      binary_sha256: af605a2ca050535999a0c82c8e04f00e3b7b9cecf9566ff6a8c6374c92ff5fe7
   tool_in_reason:
     batch_final:
       reasoning_text: I should check. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> now answer
@@ -8452,6 +8472,16 @@ document_overrides:
         source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: bea560259219c53727e7ff68e8359fa1727e5870261092459e3b52da988c03b2
+      inherited_from: null
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 2cbd616421576d83027d25cc4389f7975a96c96eaa236508529066e9b856af63
       inherited_from: null
   tool_in_reason:
     capture_provenance:

@@ -2132,8 +2132,8 @@ def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *
         if not families:
             raise ValueError(f"no selected captures: {implementation}-{version}")
         chosen.extend(families.values())
-    # Historical-only authored families must not enter the current replay corpus.
-    # Keep all cases within selected families so missing capture records still fail.
+    # selected_materialization_store scopes parser replay to chosen capture families;
+    # keep each family's full inputs so validate_current_capture still rejects gaps.
     selected_families = {resource["family"] for resource in chosen}
     chosen.extend(resource for resource in resources
                   if resource["kind"] == "inputs-and-golden" and resource["family"] in selected_families)

@@ -3769,6 +3769,28 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: e05fded0da8434688e962bddca294b9d09d138176f95b81ac300b36a255f9e2c
       binary_sha256: 8fcb488f798c6662df4269ae1f6abc7ac1a0b8578b6e6a0fb4165e2288c505ac
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.7
+      source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: fb9b83ad50dc4744b08cca8e8526c5eaa6b210717a735a84d1320ae1c6b711eb
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 9aa63391a684e6ee84f4b673081275d08e31338dbe009fc3101aa7438970d751
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: 201c41303228d4ffbc0d34f3ec18052feab4cd0fdd9ffa73246f02acb87b7596
   tool_in_reason:
     batch_final:
       reasoning_text: '<tool_call>
@@ -5806,6 +5828,16 @@ document_overrides:
         source_sha256: 1a7aa07b387ed5f0b46390b4e67eb4a71e2e8577e196686baede67f32e2def1c
         adapter_sha256: edc1c10eebbab4adb6cd7c865573264eb228ca4dbf74fb22e17a15edc2e8537f
         job_sha256: 739da900e3f537441769c69532e10c42789c5acc0c60d62256fbcf2e22306d6f
+      inherited_from: null
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: fb9b83ad50dc4744b08cca8e8526c5eaa6b210717a735a84d1320ae1c6b711eb
       inherited_from: null
   tool_in_reason:
     capture_provenance:

@@ -1867,6 +1867,16 @@ changes:
         assembled:
         - kind: reasoning
           text: Before. <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls> After.
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 06a472a10f4698342765a4d66e6f7e3c925faff4fa74b1c12ec502e72cd4d0b0
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls><｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -5364,6 +5374,26 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 8c118110d124c50868db8dfa1e55d3f896150793c829f890649684855e34c717
       binary_sha256: 8b09d68f57a51dbd0835e132b2697ac4967cb95520520f0a7d6fff92d4317008
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls><｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: 7026d8bdb009b994dd587f933f988258a721e94a584ab454416f7eba8c743425
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: b017229a61ac2672d63d2edda553417a8216b5dc90f65b81fc57d8515518ecf0
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: 036d2e94ba7b96103e269eb2a8d1cfe24a208abfaa82110f9da973f4c3baf662
+      binary_sha256: 11f297545c3eafe6d3efe2408b79c1b5059344b254acd3e09619d3fa9b6641d6
   tool_in_reason:
     batch_final:
       reasoning_text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
@@ -5554,4 +5584,14 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 8c118110d124c50868db8dfa1e55d3f896150793c829f890649684855e34c717
       binary_sha256: 8b09d68f57a51dbd0835e132b2697ac4967cb95520520f0a7d6fff92d4317008
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 7026d8bdb009b994dd587f933f988258a721e94a584ab454416f7eba8c743425
+      inherited_from: null

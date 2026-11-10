@@ -2994,6 +2994,16 @@ changes:
         assembled:
         - kind: text
           text: <｜DSML｜ calls>still thinking about it
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 6bde27929aba1d45b053c0fc413c24050cf57aedaf50c93961c44d6589743206
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -8191,6 +8201,25 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: 60b8447d26483aee67bb72919a07776954dbae523c87105318c80ceee7404bb8
       binary_sha256: bf1d44900cef75c00844fa42cebe66b7897e62334a73414224f4b80580c0fc6e
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.6
+      source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: 2cbd616421576d83027d25cc4389f7975a96c96eaa236508529066e9b856af63
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 37d1be0611d75e6132637ca324c95923c094a86c6b56d5b78fbdaa04fefe9588
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: d06b5c83ee62788a9b0d3fed759d629b98217211544603f0a0a561ba0394940d
+      binary_sha256: e5fd63c1b611b8be3d87885d439d0d8eaf3609b7e3eeea26a79ea335b65a0430
   tool_in_reason:
     batch_final:
       reasoning_text: I should check. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> now answer
@@ -8445,4 +8474,14 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: 60b8447d26483aee67bb72919a07776954dbae523c87105318c80ceee7404bb8
       binary_sha256: bf1d44900cef75c00844fa42cebe66b7897e62334a73414224f4b80580c0fc6e
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: 2cbd616421576d83027d25cc4389f7975a96c96eaa236508529066e9b856af63
+      inherited_from: null

@@ -3450,6 +3450,20 @@ changes:
         assembled:
         - kind: text
           text: <tool_call>still thinking about it
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 28d95edb6ebf1b2fde1aecb7d6034a194dfd5c4505e46f59a34430b67aedce5a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -9646,6 +9660,30 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 40b02dd9e2ae244ea292e0258a458dda98db8e15a170d895272182b2c1323ec2
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: cae32dadb5fcae813128ebb80379ab79d93cd14f3006a07c988a3df6a6d4c731
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: b017229a61ac2672d63d2edda553417a8216b5dc90f65b81fc57d8515518ecf0
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: 48837062f03b2d96a620d1e710d716370ecdfd973775cbb415ca85377ce51462
+      binary_sha256: c476e65fa9ee5383f1ff4b31a1f8bb8f38586866ebc02abd62bccedb0de6eb1b
   tool_in_reason:
     batch_final:
       reasoning_text: 'I should check. <tool_call>
@@ -10016,4 +10054,14 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 40b02dd9e2ae244ea292e0258a458dda98db8e15a170d895272182b2c1323ec2
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: cae32dadb5fcae813128ebb80379ab79d93cd14f3006a07c988a3df6a6d4c731
+      inherited_from: null

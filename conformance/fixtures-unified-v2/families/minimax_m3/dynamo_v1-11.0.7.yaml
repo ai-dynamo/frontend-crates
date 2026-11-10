@@ -5725,6 +5725,28 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: f652316c36fff74c92c925313a675fbcb82d7f68ec7062ec88c0d18ebebb2c1e
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: 76562ce5a55e827cda40875a581a591246ae3ffd3905899b01327f25ace54b67
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: a601fd1ee79b4705a143b8105c36f1a0336222597867ec1d8951022d59396ef4
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: b1cd54ae0242301eb797c1a3cc9c36d7645c925c0a4ea17370d004a3f9c3208e
+      binary_sha256: af605a2ca050535999a0c82c8e04f00e3b7b9cecf9566ff6a8c6374c92ff5fe7
   tool_in_reason:
     batch_final:
       reasoning_text: 'I should check. '
@@ -8815,6 +8837,16 @@ document_overrides:
         source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: 70f6f7f833c921c85a381f2cdd977e17400b345bc7998d63c5ad0bba002c15a5
+      inherited_from: null
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 76562ce5a55e827cda40875a581a591246ae3ffd3905899b01327f25ace54b67
       inherited_from: null
   tool_in_reason:
     capture_provenance:

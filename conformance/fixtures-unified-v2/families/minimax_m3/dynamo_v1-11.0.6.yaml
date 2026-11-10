@@ -3261,6 +3261,17 @@ changes:
     observation:
       value:
         assembled: []
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 4603c151e5f4eb028289eb43b39ba53c49ed73afc688b317a4f85260e9861283
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -9150,6 +9161,28 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: f652316c36fff74c92c925313a675fbcb82d7f68ec7062ec88c0d18ebebb2c1e
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: 76562ce5a55e827cda40875a581a591246ae3ffd3905899b01327f25ace54b67
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: b017229a61ac2672d63d2edda553417a8216b5dc90f65b81fc57d8515518ecf0
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: b1cd54ae0242301eb797c1a3cc9c36d7645c925c0a4ea17370d004a3f9c3208e
+      binary_sha256: c476e65fa9ee5383f1ff4b31a1f8bb8f38586866ebc02abd62bccedb0de6eb1b
   tool_in_reason:
     batch_final:
       reasoning_text: 'I should check. '
@@ -9450,4 +9483,14 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: f652316c36fff74c92c925313a675fbcb82d7f68ec7062ec88c0d18ebebb2c1e
       binary_sha256: c219dcf3df38ad1f31f062e502d090a9c56ce6a6a9b20ebbfd6041716af69ad5
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 76562ce5a55e827cda40875a581a591246ae3ffd3905899b01327f25ace54b67
+      inherited_from: null

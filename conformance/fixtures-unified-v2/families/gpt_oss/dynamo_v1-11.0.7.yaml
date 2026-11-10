@@ -1222,6 +1222,120 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_analysis_interrupted_by_final_then_tool:
+    batch_final:
+      reasoning_text: Before<|start|>assistant<|channel|>final<|message|>Visible
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_analysis_text_interrupted_by_bare_final:
+    batch_final:
+      reasoning_text: Before<|channel|>final<|message|>Done
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_analysis_text_interrupted_by_final:
+    batch_final:
+      reasoning_text: Before<|start|>assistant<|channel|>final<|message|>Done
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_assistant_default_channel_visible_response:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_assistant_implicit_recipient_analysis:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_assistant_role_only_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_channel_first_tool_header:
     batch_final:
       reasoning_text: ''
@@ -1279,6 +1393,84 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_commentary_text_interrupted_by_bare_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Done
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_commentary_text_interrupted_by_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Done
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_commentary_text_interrupted_by_invalid_author:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'UNTRUSTED
+
+        Done'
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_commentary_text_interrupted_by_user:
+    batch_final:
+      reasoning_text: ''
+      normal_text: UNTRUSTED
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_complete_alternate_message_ends:
     batch_final:
       reasoning_text: ''
@@ -1336,6 +1528,44 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_final_then_unframed_recipient_first_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_final_then_unframed_visible_tail:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_implicit_recipient_first_header:
     batch_final:
       reasoning_text: ''
@@ -1355,6 +1585,82 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_implicit_recipient_prelude:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_initial_json_prefix_then_bare_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_initial_json_prefix_then_recovered_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_initial_json_prefix_then_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_interrupted_reasoning_then_tool:
     batch_final:
       reasoning_text: ' now answer'
@@ -1431,6 +1737,120 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_literal_bare_analysis_in_visible_body:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_literal_bare_tool_header_in_visible_body:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Use <|channel|>commentary to=functions.lookup<|message|>{}
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_literal_bare_unknown_channel_in_visible_body:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_malformed_then_native_opaque_name:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_malformed_then_nonassistant_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_malformed_then_recipient_first_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_multiple_unknown_and_empty_tools:
     batch_final:
       reasoning_text: ''
@@ -1450,6 +1870,158 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_named_author_less_than_lookalike:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_named_author_nbsp_lookalike:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_named_tool_unfinished_final_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_native_opaque_name_handoff:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_nonassistant_analysis_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_nonassistant_unfinished_analysis_header:
+    batch_final:
+      reasoning_text: ' SHOULD_HIDE'
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_nonassistant_unfinished_final_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_orphan_terminator_preserves_messages:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_quoted_message_header_literal:
     batch_final:
       reasoning_text: ''
@@ -1469,6 +2041,25 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_quoted_tool_header_in_final_json:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_quoted_truncated_tool_then_final:
     batch_final:
       reasoning_text: ''
@@ -1488,6 +2079,177 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_reasoning_then_return_ending_tool_call:
+    batch_final:
+      reasoning_text: Check weather.
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_constrained_whitespace_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_json_call_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_json_interrupted_by_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Done.
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recipientless_json_return_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recovered_final_header_return:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_recovered_tool_header_return:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_single_return_ending_tool_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_tab_separated_assistant_recipient:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
     batch_final:
       reasoning_text: ''
@@ -1507,6 +2269,158 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  gpt_oss_unconfirmed_header_return_at_eof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: Beforeassistantfinal
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unfinished_directed_analysis:
+    batch_final:
+      reasoning_text: '{"path":"x","content":"unfinished'
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unfinished_directed_header_then_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unfinished_header_then_valid_call:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unknown_channel_before_final:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_unknown_channel_header_only_eof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_visible_json_prelude_indentation:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
+  gpt_oss_visible_quoted_json_prelude_whitespace:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: ee77f293a2aebb0791fa9d60d55557818dede5965cfe66a55c66666c9852f293
+      adapter_sha256: 941750bf88bf38de0b8e8afca07605c9a7530132fe53cda4bb78371709ee1479
+      job_sha256: 82c597230bf43e0e3e67697c47840bd46158ed689e1eb80b5f5f90f9829262d6
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 0513caaf1b06921c7761005b301b4423032c9bf3f24417a05de474bf38c26892
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: a74214aab316feb959bef9288fef9bf082e2b73bee6b23c04aab4ffe1394f1c0
   guided_json_after_reasoning:
     dynamo_v1_capture_provenance:
       implementation: dynamo_v1
@@ -5638,6 +6552,26 @@ metadata_changes:
       - conformance_no_jail
       results_sha256: 2774e61fdb088f87d708d96cb3223f0ae5a8c759292b3e6084d4ee8e96722564
       binary_sha256: f93b3efc633381edd8df596512fa234d311fc36c970a8856168a95c560e1959c
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.7
+      source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: 36d2a8ee82cb1d5b3fbf6fcb2c77d4efdf43c0ddfc2f94a0af77e9daf6de1bbf
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: a601fd1ee79b4705a143b8105c36f1a0336222597867ec1d8951022d59396ef4
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: 70620e560ff034bddb91601a5a1ad121d638aee14c3b04662c62135bf92d8e18
+      binary_sha256: af605a2ca050535999a0c82c8e04f00e3b7b9cecf9566ff6a8c6374c92ff5fe7
   tool_markup_only_emits_nothing:
     batch_final:
       reasoning_text: ''
@@ -6479,6 +7413,66 @@ document_overrides:
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
       inherited_from: null
+  gpt_oss_analysis_interrupted_by_final_then_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_analysis_text_interrupted_by_bare_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_analysis_text_interrupted_by_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_assistant_default_channel_visible_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_assistant_implicit_recipient_analysis:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_assistant_role_only_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
   gpt_oss_channel_first_tool_header:
     capture_provenance:
       captured_with:
@@ -6500,6 +7494,46 @@ document_overrides:
         job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
       inherited_from: null
   gpt_oss_chat_template_tool_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_commentary_text_interrupted_by_bare_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_commentary_text_interrupted_by_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_commentary_text_interrupted_by_invalid_author:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_commentary_text_interrupted_by_user:
     capture_provenance:
       captured_with:
         dynamo_v1: 11.0.7
@@ -6539,7 +7573,67 @@ document_overrides:
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
       inherited_from: null
+  gpt_oss_final_then_unframed_recipient_first_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_final_then_unframed_visible_tail:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
   gpt_oss_implicit_recipient_first_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_implicit_recipient_prelude:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_initial_json_prefix_then_bare_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_initial_json_prefix_then_recovered_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_initial_json_prefix_then_tool:
     capture_provenance:
       captured_with:
         dynamo_v1: 11.0.7
@@ -6589,7 +7683,147 @@ document_overrides:
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
       inherited_from: null
+  gpt_oss_literal_bare_analysis_in_visible_body:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_literal_bare_tool_header_in_visible_body:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_literal_bare_unknown_channel_in_visible_body:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_malformed_then_native_opaque_name:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_malformed_then_nonassistant_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_malformed_then_recipient_first_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
   gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_named_author_less_than_lookalike:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_named_author_nbsp_lookalike:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_named_tool_unfinished_final_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_native_opaque_name_handoff:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_nonassistant_analysis_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_nonassistant_unfinished_analysis_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_nonassistant_unfinished_final_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_orphan_terminator_preserves_messages:
     capture_provenance:
       captured_with:
         dynamo_v1: 11.0.7
@@ -6609,6 +7843,16 @@ document_overrides:
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
       inherited_from: null
+  gpt_oss_quoted_tool_header_in_final_json:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
   gpt_oss_quoted_truncated_tool_then_final:
     capture_provenance:
       captured_with:
@@ -6619,7 +7863,177 @@ document_overrides:
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
       inherited_from: null
+  gpt_oss_reasoning_then_return_ending_tool_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_recipientless_constrained_whitespace_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_recipientless_json_call_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_recipientless_json_interrupted_by_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_recipientless_json_return_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_recovered_final_header_return:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_recovered_tool_header_return:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_single_return_ending_tool_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_tab_separated_assistant_recipient:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_unconfirmed_header_return_at_eof:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_unfinished_directed_analysis:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_unfinished_directed_header_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_unfinished_header_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_unknown_channel_before_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_unknown_channel_header_only_eof:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_visible_json_prelude_indentation:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
+        adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
+        job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  gpt_oss_visible_quoted_json_prelude_whitespace:
     capture_provenance:
       captured_with:
         dynamo_v1: 11.0.7
@@ -8978,6 +10392,16 @@ document_overrides:
         source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
         adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
         job_sha256: ee68b08ee5f27e942b875a1645ba5dbed00f8ae35fc3eec9fb0839c8c86b1e59
+      inherited_from: null
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 36d2a8ee82cb1d5b3fbf6fcb2c77d4efdf43c0ddfc2f94a0af77e9daf6de1bbf
       inherited_from: null
   tool_markup_only_emits_nothing:
     capture_provenance:

@@ -1858,6 +1858,16 @@ changes:
         assembled:
         - kind: reasoning
           text: Before. [TOOL_CALLS][{"name":"get_weather","arguments":{"city":"Paris"}}][/TOOL_CALLS] After.
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: cdf22dd838501f70f34488a99b3484414373174cab1ce9e201f96303272babf1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '[TOOL_CALLS][{"name":"get_weather","arguments":{"city":"Paris"}}][/TOOL_CALLS][TOOL_CALLS][{"name":"get_weather","arguments":{"city":"Paris"}}][/TOOL_CALLS]'
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -5172,6 +5182,25 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: b0140679229203ea761b4a4588e827c16361f17cc92e939afb3183d020227d8a
       binary_sha256: d8d0b9550d182bbbaf8c6d4bc9b11e8add5329759f96ef2270f7f51d267e3657
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: '[TOOL_CALLS][{"name":"get_weather","arguments":{"city":"Paris"}}][/TOOL_CALLS][TOOL_CALLS][{"name":"get_weather","arguments":{"city":"Paris"}}][/TOOL_CALLS]'
+      normal_text: ''
+      calls: []
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.6
+      source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: 3b4c9e0793477313a19740484453cdd1d864fa18df374a86e4e9c61a58e4f354
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 37d1be0611d75e6132637ca324c95923c094a86c6b56d5b78fbdaa04fefe9588
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: 4f1b07fa4080def698efab04a3c3719900365a309fbba2b287ebecce5148c5e6
+      binary_sha256: 89d3506e3919f8efbd9c7afe1086d87658f97e8a329ae410a7be527e4de8c8f7
   tool_in_reason:
     batch_final:
       reasoning_text: '[TOOL_CALLS][{"name":"get_weather","arguments":{"city":"Paris"}}][/TOOL_CALLS]'
@@ -5352,4 +5381,14 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: b0140679229203ea761b4a4588e827c16361f17cc92e939afb3183d020227d8a
       binary_sha256: d8d0b9550d182bbbaf8c6d4bc9b11e8add5329759f96ef2270f7f51d267e3657
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: 3b4c9e0793477313a19740484453cdd1d864fa18df374a86e4e9c61a58e4f354
+      inherited_from: null

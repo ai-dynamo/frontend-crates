@@ -20,6 +20,49 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_cbf47ccf5fd2ef00:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+  - name: f
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+  - name: g
+    parameters:
+      type: object
+      properties:
+        y:
+          type: string
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+  - name: log
+    parameters:
+      type: object
+      properties:
+        note:
+          type: string
+  - name: sum_values
+    parameters:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            type: number
+  - name: functions.
+    parameters:
+      type: object
+      properties: {}
   tools_acabb07d9722c054:
   - name: schema_probe
     parameters:
@@ -74,49 +117,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_cbf47ccf5fd2ef00:
-  - name: get_weather
-    parameters:
-      type: object
-      properties:
-        city:
-          type: string
-  - name: f
-    parameters:
-      type: object
-      properties:
-        x:
-          type: string
-  - name: g
-    parameters:
-      type: object
-      properties:
-        y:
-          type: string
-  - name: run
-    parameters:
-      type: object
-      properties:
-        cmd:
-          type: string
-  - name: log
-    parameters:
-      type: object
-      properties:
-        note:
-          type: string
-  - name: sum_values
-    parameters:
-      type: object
-      properties:
-        values:
-          type: array
-          items:
-            type: number
-  - name: functions.
-    parameters:
-      type: object
-      properties: {}
   tools_7c3821d79a8dd3d3:
   - name: schema_probe
     parameters:
@@ -1572,6 +1572,9 @@ requests:
   01a2f3ca4bfa42ac924bc4d5fd0fbdabdf333a49fb631e9550f62b43fa10bba1:
     input: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
     tools: tools_49d1d4dc29b4d728
+  06a472a10f4698342765a4d66e6f7e3c925faff4fa74b1c12ec502e72cd4d0b0:
+    input: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls><｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+    tools: tools_cbf47ccf5fd2ef00
   06f99bf35aa502317336875904b3a757f1698a9a585d04c3446e187068f35a2c:
     input: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
     tools: tools_acabb07d9722c054
@@ -4353,3 +4356,16 @@ cases:
     golden:
     - kind: text
       text: '{"name": "get_weather", "arguments": {"city": "Par'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 06a472a10f4698342765a4d66e6f7e3c925faff4fa74b1c12ec502e72cd4d0b0
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

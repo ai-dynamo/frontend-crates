@@ -3513,6 +3513,20 @@ changes:
         assembled:
         - kind: text
           text: <tool_call>still thinking about it
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 057f5829ab059411efe0f9af8ec75c238fca09e1b2f59cecb4ea2b271cbd5cef
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -9476,6 +9490,29 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: 967cb66c0895b2c76bf87b1bcc8a5b5030267d70eb89ca9ee33561eb2c0909b6
       binary_sha256: bf1d44900cef75c00844fa42cebe66b7897e62334a73414224f4b80580c0fc6e
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+      - name: get_weather
+        arguments: '{"city":"Paris"}'
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.6
+      source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: 61d7b4d3b6cff920253ef484e7ddda5151af4a8b630cebebe462c481e620774b
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: 37d1be0611d75e6132637ca324c95923c094a86c6b56d5b78fbdaa04fefe9588
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: 283a5083eef491c0fe8f61b1d3f7cc37689fc6f40cfbf2c5e576a513ca549a5c
+      binary_sha256: e5fd63c1b611b8be3d87885d439d0d8eaf3609b7e3eeea26a79ea335b65a0430
   tool_in_reason:
     batch_final:
       reasoning_text: 'I should check. <tool_call>
@@ -9830,4 +9867,14 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: 967cb66c0895b2c76bf87b1bcc8a5b5030267d70eb89ca9ee33561eb2c0909b6
       binary_sha256: bf1d44900cef75c00844fa42cebe66b7897e62334a73414224f4b80580c0fc6e
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 4965df28306702a6db920f4a247858865825a6aeb790c5a3ae259618c1170b10
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: 61d7b4d3b6cff920253ef484e7ddda5151af4a8b630cebebe462c481e620774b
+      inherited_from: null

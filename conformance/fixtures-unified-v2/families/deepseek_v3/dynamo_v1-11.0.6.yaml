@@ -2789,6 +2789,28 @@ changes:
             {"city":"Paris"}
 
             ```<｜tool▁call▁end｜><｜tool▁calls▁end｜> After.'
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    stimulus:
+      ref: current
+      semantic_sha256: 9e92ce44e29b264c30db23fac703050ac6c9550c85dd345f2a21638119876a6e
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+            ```json
+
+            {"city":"Paris"}
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+            ```json
+
+            {"city":"Paris"}
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
   tool_in_reason:
     case_key: tool_in_reason
     stimulus:
@@ -7096,6 +7118,37 @@ metadata_changes:
       - conformance_tool_api_schemas
       - conformance_no_jail
       results_sha256: 011c6aee9fab8d1ec6bc793d9f2c914653fe4d4c8f7ae811c4248bc407a176e8
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+        ```json
+
+        {"city":"Paris"}
+
+        ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+        ```json
+
+        {"city":"Paris"}
+
+        ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+      normal_text: ''
+      calls: []
+    dynamo_v1_capture_provenance:
+      implementation: dynamo_v1
+      version: 11.0.6
+      source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+      adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+      job_sha256: b0a93dfc46cda5cd0a433748714f03e90106125ad0bed4845a0d22febdfe78ec
+      crate_checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+      cargo_lock_sha256: b017229a61ac2672d63d2edda553417a8216b5dc90f65b81fc57d8515518ecf0
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      - conformance_no_jail
+      results_sha256: f0f2ee384ddbd137c2079ea21dd7b09845fdd7f57a3cf8976cc19fa433699d8d
   tool_in_reason:
     batch_final:
       reasoning_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
@@ -7334,4 +7387,14 @@ metadata_changes:
       - conformance_tool_api_schemas
       - conformance_no_jail
       results_sha256: 011c6aee9fab8d1ec6bc793d9f2c914653fe4d4c8f7ae811c4248bc407a176e8
-document_overrides: {}
+document_overrides:
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 11.0.6
+      capture_origin:
+        crate_version: 11.0.6
+        source_sha256: 5bb7037cfca689bd31a2bfc393512ae2ce61c9889a0e7e80be0625b5c9717138
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: b0a93dfc46cda5cd0a433748714f03e90106125ad0bed4845a0d22febdfe78ec
+      inherited_from: null

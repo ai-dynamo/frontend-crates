@@ -3232,6 +3232,25 @@ metadata_changes:
       - conformance_tool_api_schemas
       results_sha256: e130f491f3dd7424a4138bbce403263858918233d44d8ed92129a6a80a166d25
       binary_sha256: 8fcb488f798c6662df4269ae1f6abc7ac1a0b8578b6e6a0fb4165e2288c505ac
+  tool_call_ids_unique:
+    batch_final:
+      reasoning_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"city":"Paris"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"city":"Paris"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+      normal_text: ''
+      calls: []
+    dynamo_v1_jail_capture_provenance:
+      implementation: dynamo_v1_jail
+      version: 11.0.7
+      source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+      adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+      job_sha256: 723dfb46e0e809a6d99f078b5642dec1e6dfae0f107d21b32f780d9511404054
+      crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+      cargo_lock_sha256: 9aa63391a684e6ee84f4b673081275d08e31338dbe009fc3101aa7438970d751
+      compatibility_flags:
+      - conformance_async_tool_api
+      - conformance_tool_api_schemas
+      - conformance_gpt_oss_no_reasoning_init
+      results_sha256: fb6c8c69ff047443f5825127ae9ab1f0682708352320a11804c681ce1934026e
+      binary_sha256: 83d2b7e5ab5d3489eeb6022ebfdd2cfdd55351a338065d30a4027a800567dc93
   tool_in_reason:
     batch_final:
       reasoning_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"city":"Paris"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
@@ -5202,6 +5221,16 @@ document_overrides:
         source_sha256: 1a7aa07b387ed5f0b46390b4e67eb4a71e2e8577e196686baede67f32e2def1c
         adapter_sha256: edc1c10eebbab4adb6cd7c865573264eb228ca4dbf74fb22e17a15edc2e8537f
         job_sha256: 50cbacc810275ed9fb599a7d43abd5839bb55c712b5104eaedeb0f2c37f1e100
+      inherited_from: null
+  tool_call_ids_unique:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 11.0.7
+      capture_origin:
+        crate_version: 11.0.7
+        source_sha256: a92988e27e7087c795d36a10b4012fe94eddacb9739172c2ee0968910c7da1ec
+        adapter_sha256: 4d373be6ea206898cf758010dc9e742320f2630696c110a9a82fdd3edec7871e
+        job_sha256: 723dfb46e0e809a6d99f078b5642dec1e6dfae0f107d21b32f780d9511404054
       inherited_from: null
   tool_in_reason:
     capture_provenance:

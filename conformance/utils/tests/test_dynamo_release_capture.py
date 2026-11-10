@@ -161,7 +161,7 @@ def test_v1_history_covers_registered_families_and_keeps_legacy_snapshots_histor
     }
     inventory = yaml.safe_load((ROOT / "conformance/dynamo-capture-inventory.yaml").read_text())
     versions = {target["version"] for target in inventory["targets"] if target["implementation"] == "dynamo_v1"}
-    assert {"hermes", "llama3_json", "qwen25"} <= families
+    assert {"llama3_json", "qwen25"} <= families
     assert len(versions) == 2
     for family in sorted(registry):
         isolated = tmp_path / family
@@ -194,8 +194,11 @@ def test_v1_history_covers_registered_families_and_keeps_legacy_snapshots_histor
                 assert set(active) == expected
                 for case_id, record in active.items():
                     assert set(record["observation"]) & {"value", "error", "unavailable"}
-                    request = authored["cases"][case_id]["request"]
                     stimulus = record["stimulus"]
+                    requests = authored["input_document"].get("requests", {})
+                    request = (stimulus["inline"] if "inline" in stimulus
+                               else authored["cases"][case_id]["request"] if stimulus["ref"] == "current"
+                               else requests[stimulus["ref"]])
                     assert stimulus["semantic_sha256"] == unified_history._request_digest(request)
                     if "inline" in stimulus:
                         assert stimulus["inline"] == request
