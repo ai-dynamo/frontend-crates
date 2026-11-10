@@ -2310,7 +2310,7 @@ mod tests {
         })
         .unwrap();
 
-        assert_eq!(token_json["logprob"], serde_json::Value::Null);
+        assert_eq!(token_json.get("logprob"), Some(&serde_json::Value::Null));
     }
 
     #[test]
