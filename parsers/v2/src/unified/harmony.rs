@@ -509,16 +509,14 @@ impl HarmonyRuntime {
         }
 
         let marker_text = self.marker_ids.get(&id).copied();
-        if !self.legacy_tool_compatibility && !self.in_body {
-            if marker_text == Some(CHANNEL) {
-                let skipped_tokens = self.parser.restart_channel_header(id)?;
-                if skipped_tokens > 0 {
-                    tracing::warn!(
-                        why = "harmony_replaced_unfinished_channel",
-                        skipped_tokens,
-                        "discarded unfinished channel metadata while retaining its author"
-                    );
-                }
+        if !self.legacy_tool_compatibility && !self.in_body && marker_text == Some(CHANNEL) {
+            let skipped_tokens = self.parser.restart_channel_header(id)?;
+            if skipped_tokens > 0 {
+                tracing::warn!(
+                    why = "harmony_replaced_unfinished_channel",
+                    skipped_tokens,
+                    "discarded unfinished channel metadata while retaining its author"
+                );
             }
         }
         if !self.legacy_tool_compatibility
