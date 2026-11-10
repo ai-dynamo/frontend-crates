@@ -5190,21 +5190,21 @@ EDGE += [
     # an EOF boundary from a marker inside a JSON string.
     _mistral_case(
         "mistral_closed_string_marker_before_truncation",
-        "EOF inside a later string drops the incomplete call; a call-shaped marker in an earlier, closed string stays data (`I7`, P2).",
+        "EOF inside a later string drops the incomplete call and the turn emits nothing; a call-shaped marker in an earlier, closed string stays data (`I7`, P2).",
         [],
         '[TOOL_CALLS]f[ARGS]{"x":"[TOOL_CALLS]g[ARGS]{}","tail":"unfinished',
         D("UNSUPPORTED", f"stock vLLM's text path splits at a call marker without JSON-string ownership; {_UNCAPTURED}"),
         ["I7", "P2"]),
     _mistral_case(
         "mistral_unclosed_string_marker_at_eof",
-        "EOF inside a file-content string drops the incomplete call; a literal call with quote-free arguments inside that same string is not a recovery boundary (`I7`, P2).",
+        "EOF inside a file-content string drops the incomplete call and the turn emits nothing; a literal call with quote-free arguments inside that same string is not a recovery boundary (`I7`, P2).",
         [],
         '[TOOL_CALLS]write_file[ARGS]{"path":"t.md","content":"Example: [TOOL_CALLS]delete_all[ARGS]{} and then more text that was cut',
         D("UNSUPPORTED", f"stock vLLM's text path splits at a call marker without JSON-string ownership; {_UNCAPTURED}"),
         ["I7", "P2"]),
     _mistral_case(
         "mistral_escaped_call_in_unclosed_string",
-        "EOF inside a string containing JSON-escaped call arguments drops the incomplete call instead of emitting either the outer prefix or the embedded call (`I7`, P2).",
+        "EOF inside a string containing JSON-escaped call arguments drops the incomplete call and the turn emits nothing; neither the outer prefix nor the embedded call is emitted (`I7`, P2).",
         [],
         r'[TOOL_CALLS]write_file[ARGS]{"path":"t.md","content":"Example: [TOOL_CALLS]delete_all[ARGS]{\"force\": true} and then more text that was cut',
         D("UNSUPPORTED", f"stock vLLM's text path splits at a call marker without JSON-string ownership; {_UNCAPTURED}"),

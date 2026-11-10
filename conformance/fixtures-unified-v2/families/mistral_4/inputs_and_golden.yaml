@@ -2064,6 +2064,9 @@ requests:
   535939f0d692e56572fcce519b0a82b299207015f381c869e1d9da145b38d5e6:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "[1,2]"}'
     tools: tools_8284eae54735c3ce
+  543ab4d2f2639c8565ae97b4f89fc386b5afbeae34f819d8807f49a6e7a14ec5:
+    input: '[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}'
+    tools: tools_cbf47ccf5fd2ef00
   555fee87a1e0c719598512aacf0010c6ceebd81e0bc3f922f84356f3576ee255:
     input: '[TOOL_CALLS]get_weather[ARGS]{"value":-4.2E+1}'
     tools: tools_3b9cefdb4fbe7e81
@@ -5768,10 +5771,10 @@ cases:
       arguments:
         cmd: ls
   mistral_closed_string_marker_before_recovery:
-    description: A marker in a closed string stays data; a later missing quote with a syntactically invalid close recovers only the genuine following call, retaining the malformed outer call as empty arguments (P3).
     policy:
     - I7
     - P3
+    description: A marker in a closed string stays data; a later missing quote with a syntactically invalid close recovers only the genuine following call, retaining the malformed outer call as empty arguments (P3).
     display_id: UNIFIED.mistral-closed_string_marker_before_recovery
     request: 1a50d59e309449cd5c789b1820b509e4ca85cdef7d58bedbb59f75a1858339e5
     golden:
@@ -5783,26 +5786,39 @@ cases:
       arguments:
         cmd: ls
   mistral_closed_string_marker_before_truncation:
-    description: EOF inside a later string drops the incomplete call; a call-shaped marker in an earlier, closed string stays data (`I7`, P2).
     policy:
     - I7
     - P2
+    description: EOF inside a later string drops the incomplete call and the turn emits nothing; a call-shaped marker in an earlier, closed string stays data (`I7`, P2).
     display_id: UNIFIED.mistral-closed_string_marker_before_truncation
     request: 21880a2903be2b14901b178f19a15bb427c232c499087c8106fc9805d3e37d99
     golden: []
   mistral_escaped_call_in_unclosed_string:
-    description: EOF inside a string containing JSON-escaped call arguments drops the incomplete call instead of emitting either the outer prefix or the embedded call (`I7`, P2).
     policy:
     - I7
     - P2
+    description: EOF inside a string containing JSON-escaped call arguments drops the incomplete call and the turn emits nothing; neither the outer prefix nor the embedded call is emitted (`I7`, P2).
     display_id: UNIFIED.mistral-escaped_call_in_unclosed_string
     request: 8ae9fdddb4d304efebeb1e5b19b5817362043091da700f83dc8bc5d66cbf9800
     golden: []
   mistral_unclosed_string_marker_at_eof:
-    description: EOF inside a file-content string drops the incomplete call; a literal call with quote-free arguments inside that same string is not a recovery boundary (`I7`, P2).
     policy:
     - I7
     - P2
+    description: EOF inside a file-content string drops the incomplete call and the turn emits nothing; a literal call with quote-free arguments inside that same string is not a recovery boundary (`I7`, P2).
     display_id: UNIFIED.mistral-unclosed_string_marker_at_eof
     request: 2eb1a571fa92695b537b8f6feefac44ed52775b2325f11f1503986dca2d931d6
     golden: []
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 543ab4d2f2639c8565ae97b4f89fc386b5afbeae34f819d8807f49a6e7a14ec5
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
