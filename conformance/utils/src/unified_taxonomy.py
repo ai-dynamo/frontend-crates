@@ -20,20 +20,41 @@ parser cannot see that value — `finish()` takes no argument).
 """
 
 import re
+from typing import NamedTuple
 
-import yaml
-
-import markers
+from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
-from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_group
+from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group, schema_case_label
+from numeric_cases import NUMERIC_VARIANTS, OVERFLOW_SIBLING_VARIANTS
 
 UNIFIED_TAX = {
+    "default_reasoning_without_opener": (10, "6"),
+    "default_reasoning_tool_without_closer": (12, "5"),
+    "structured_response_after_reasoning": (36, "1"),
+    'harmony_guided_json_gt_in_argument_bare_opener': ("gpt_oss", "1"),
+    'harmony_guided_json_gt_in_argument_named_bare_opener': ("gpt_oss", "2"),
+    'harmony_guided_json_narrated_prefix_inside_reasoning': ("gpt_oss", "3"),
+    'harmony_guided_json_schema_error_nameless_element_bare_opener': ("gpt_oss", "4"),
+    'harmony_guided_json_schema_error_not_a_call_bare_opener': ("gpt_oss", "5"),
+    'harmony_guided_json_stray_prefix_before_reasoning': ("gpt_oss", "6"),
+    'harmony_guided_json_syntax_error_bare_opener': ("gpt_oss", "7"),
+    'harmony_guided_json_tool_open_before_payload': ("gpt_oss", "8"),
+
     # Group 1 — Single call
     "tool_only": (1, "1"),
+    "tool_body_whitespace": (1, "7"),
+    "dotted_name_minimal": (1, "3"),
+    "dotted_name_mixed_punctuation": (1, "4"),
+    "dotted_name_multiple_segments": (1, "5"),
+    "v1_split_parallel_tool_calls": ("v1_split", "parallel_tool_calls"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases). Completed below; the family-scoped alias retains its historical ID.
     "kimi_k2_optional_prefix_name_overlap": ("kimi_k2", "1"),
     # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
+    "adjacent_calls_partial_header": (2, "3"),
+    "three_calls_partial_header": (2, "4"),
+    "dotted_name_shared_prefix": (2, "5"),
+    "tool_call_ids_unique": (2, "6"),
     # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.
@@ -44,12 +65,25 @@ UNIFIED_TAX = {
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
     "orphan_close_after_prose": (5, "3"),
     "malformed_json_then_two_valid_calls": (5, "4"),
+    "dsml_unterminated_parameter_then_empty_call": (5, "dsml_empty"),
+    "dsml_unterminated_parameter_then_call": (5, "dsml_call"),
+    "missing_inner_closers_then_valid_call": (5, "6"),
     # Group 6 — Empty body (streamv1.6)
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
+    "arg_object_quoted_parameter_close": (7, "27"),
+    # ai-dynamo/dynamo#17662: argument types declared without a direct `type` key.
+    "not_keyword_type_complement": (7, "29"),
+    "conditional_schema_number_types": (7, "30"),
+    "reference_object_recursive_and_composed_types": (7, "31"),
+    "arg_array_quoted_parameter_close": (7, "28"),
+    "enum_contradicting_declared_type": (7, "32"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
-    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
+    **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
+    "arg_numeric_nested_exact": (7, "20.nested_exact"),
+    **{f"arg_numeric_overflow_siblings_{variant}": (7, f"29.{variant}")
+       for variant, _ in OVERFLOW_SIBLING_VARIANTS},
     "arg_json_null_ref": (7, "4.ref"),
     "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),
@@ -60,6 +94,7 @@ UNIFIED_TAX = {
     "unused_reference_graph_parameter_types": (7, "14"),
     "nullable_reference_alias_literals": (7, "15"),
     "local_schema_id_preserves_type": (7, "16"),
+    **{case["name"]: (7, f"26.{index}") for index, case in enumerate(XML_COMPATIBILITY_CASES, 1)},
     "deepseek_v41_json_invocation_body": ("deepseek", "1"),
     "glm47_reference_type_intersection": ("glm5", "2"),
     **{f"schema_{case['name']}": (7, f"{SCHEMA_GROUPS[schema_group(case['name'])][1]}.{case['name']}")
@@ -68,6 +103,11 @@ UNIFIED_TAX = {
     "text_before_tool": (8, "1"), "trailing_text_after_tool": (8, "2"),
     "text_sandwich": (8, "3"), "text_between_calls": (8, "4"),
     "narrated_calls": (8, "5"),
+    "commentary_then_tool": ("muse_spark", "1"),
+    "spark_phase_tool_final": ("muse_spark", "2"),
+    "spark_phase_repeated": ("muse_spark", "3"),
+    "spark_phase_empty": ("muse_spark", "4"),
+    "spark_phase_eof": ("muse_spark", "5"),
     "native_quoted_control_in_response": (8, "6"),
     "native_single_quoted_word_control": (8, "7"),
     "native_quoted_control_then_call": (8, "8"),
@@ -76,11 +116,28 @@ UNIFIED_TAX = {
     "native_quoted_incomplete_header": (8, "10"),
     "native_single_quote_contraction_response": (8, "11"),
     "native_single_quote_contraction_reasoning": (40, "6"),
+    "quoted_name_backtick_possessive_then_call": (40, "14"),
+    "quoted_name_double_quote_possessive_then_call": (40, "15"),
+    "quoted_name_backtick_possessive_reasoning": (40, "8"),
+    "quoted_name_double_quote_possessive_reasoning": (40, "9"),
+    "quoted_name_backtick_nonpossessive_some": (40, "10"),
+    "quoted_name_backtick_nonpossessive_s_name": (40, "11"),
+    "quoted_name_double_quote_nonpossessive_some": (40, "12"),
+    "quoted_name_double_quote_nonpossessive_s_name": (40, "13"),
+    "quoted_name_backtick_possessive_guided": (34, "23"),
+    "quoted_name_double_quote_possessive_guided": (34, "24"),
     "guided_quoted_reasoning_closer_named": (34, "8"),
     "guided_quoted_reasoning_closer_required": (34, "9"),
     "guided_response_quoted_control_braces_named": (35, "3"),
     "guided_response_quoted_control_braces_required": (35, "4"),
     "guided_response_rejected_header_quote_ownership": (35, "5"),
+    "muse_unterminated_reasoning_native": ("muse", "unterminated_reasoning_native"),
+    "muse_unterminated_reasoning_guided": ("muse", "unterminated_reasoning_guided"),
+    "muse_opaque_undeclared_invoke": ("muse", "opaque_undeclared_invoke"),
+    "muse_opaque_declared_invoke": ("muse", "opaque_declared_invoke"),
+    "muse_recovery_second_parameter": ("muse", "recovery_second_parameter"),
+    # Beam-specific: only Beam's grammar admits a bare tool header at EOS as a call.
+    "empty_args_no_close": ("beam", "1"), "optional_args_no_close": ("beam", "2"),
     "muse_quoted_reserved_eom_argument": ("muse", "2"),
     "muse_quoted_reserved_eot_argument": ("muse", "3"),
     "muse_quoted_reserved_start_argument": ("muse", "4"),
@@ -105,6 +162,46 @@ UNIFIED_TAX = {
     "kimi_k3_malformed_call_then_valid": ("kimi", "6"),
     "kimi_k3_raw_json_eof": ("kimi", "7"),
     "kimi_k3_guided_native_wrapper": ("kimi", "8"),
+    "kimi_native_k2_count_content_chunk7": ("kimi", "9"),
+    "kimi_native_k2_count_content_chunk1024": ("kimi", "10"),
+    "kimi_native_k3_typed_count_content_chunk7": ("kimi", "11"),
+    "kimi_native_k3_typed_count_content_chunk1024": ("kimi", "12"),
+    "kimi_native_k3_json_count_content_chunk7": ("kimi", "13"),
+    "kimi_native_k3_json_count_content_chunk1024": ("kimi", "14"),
+    "kimi_native_trailing_syntax_whitespace": ("kimi", "15"),
+    "kimi_native_valid_object_trailing_garbage": ("kimi", "16"),
+    "kimi_native_incompatible_string_recovery": ("kimi", "17"),
+    "kimi_native_incremental_interfield_whitespace": ("kimi", "18"),
+    "kimi_native_rejected_next_header_progress": ("kimi", "19"),
+    "kimi_k3_typed_json_marker_payload": ("kimi", "20"),
+    "kimi_k3_typed_response_marker_payload": ("kimi", "21"),
+    "kimi_k3_json_missing_close_literal_response": ("kimi", "22"),
+    "kimi_k3_json_marker_then_long_field": ("kimi", "23"),
+    "kimi_k3_typed_response_then_call": ("kimi", "24"),
+    "kimi_k3_typed_response_argument_literal": ("kimi", "25"),
+    "kimi_k3_direct_typed_response_recovery": ("kimi", "26"),
+    "kimi_k3_direct_json_response_recovery": ("kimi", "27"),
+    **{scenario: ("mistral", str(index)) for index, scenario in enumerate([
+        "mistral_text_after_call_dropped", "mistral_reasoning_after_call_dropped",
+        "mistral_call_inside_reasoning_ends_thought", "mistral_brace_fallback_calls",
+        "mistral_call_id_stripped", "mistral_name_before_marker",
+        "mistral_name_without_arguments", "mistral_reasoning_trailing_whitespace_stripped",
+        "mistral_duplicate_think_opener_stripped", "mistral_quoted_marker_is_structural",
+        "mistral_malformed_body_ends_at_next_call", "mistral_text_between_calls_dropped",
+        "mistral_reasoning_between_calls_dropped", "mistral_quoted_tool_marker_in_answer",
+        "mistral_quoted_tool_marker_then_call", "mistral_call_id_variants",
+        "mistral_stray_separator_after_args", "mistral_json_escapes_and_lookalikes",
+        "mistral_marker_lookalikes_stay_text", "mistral_whitespace_between_markers",
+        "mistral_markers_split_across_chunks", "mistral_many_mixed_form_calls",
+        "mistral_truncated_second_call_dropped", "mistral_truncated_inside_args_marker",
+        "mistral_non_object_arguments", "mistral_pre_v11_array_not_a_call",
+        "mistral_empty_thoughts_emit_nothing", "mistral_json_reply_after_reasoning",
+        "mistral_whitespace_only_arguments",
+        "mistral_closed_string_marker_before_truncation",
+        "mistral_unclosed_string_marker_at_eof",
+        "mistral_escaped_call_in_unclosed_string",
+        "mistral_closed_string_marker_before_recovery",
+    ], 1)},
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),
@@ -121,6 +218,8 @@ UNIFIED_TAX = {
     "guided_json_wrapped_in_tool_markup": (32, "3"),
     "guided_json_orphan_tool_close_before_payload": (32, "4"),
     "guided_json_native_markup_only": (32, "5"),
+    "guided_native_after_prefilled_reasoning_required": ("minimax_m3", "1"),
+    "guided_native_after_prefilled_reasoning_named": ("minimax_m3", "2"),
     # Generated crossings (`_guided_product` in gen_unified_golden.py): payload
     # shape x surrounding grammar. The 31-12 through 31-20 rows are the quadrant that had ZERO
     # cases — markup present AND no call recoverable — where both the P2 recovery
@@ -157,6 +256,8 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_header_in_answer": (35, "1"),
     "guided_json_quoted_bare_header_after_payload": (35, "2"),
     "guided_json_quoted_bare_tool_header_in_answer": ("muse", "1"),
+    "muse_unterminated_parameter_then_empty_call": ("muse", "7"),
+    "muse_unterminated_parameter_then_call": ("muse", "8"),
     # 31-29 and 31-30 remain reserved for the historical Gemma-only cases.
     # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases). Completed below; FAMILY_LEGACY_CASE_LABELS preserves family-specific IDs.
     "qwen3_guided_non_ascii_header_in_truncated_reasoning": ("qwen3", "1"),
@@ -165,6 +266,8 @@ UNIFIED_TAX = {
     "guided_json_native_parameter_object_before_payload": (35, "6"),
     "guided_json_native_parameter_array_before_payload": (35, "7"),
     "qwen3_guided_reasoning_opener_inside_native_header": ("qwen3", "3"),
+    "narrated_bare_invoke_in_unterminated_thought": ("qwen3", "4"),
+    "narrated_bare_invoke_then_wrapped_call": ("qwen3", "5"),
     "muse_glimmer_guided_message_end_inside_native_header": ("muse", "5"),
     "deepseek_v4_guided_reasoning_opener_inside_native_body": ("deepseek_v4", "1"),
     "gemma4_guided_reasoning_opener_after_call_prefix": ("gemma", "3"),
@@ -172,6 +275,77 @@ UNIFIED_TAX = {
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
     "glm47_parameterless_call_shape_inside_argument": ("glm5", "1"),
+
+    'guided_json_noncall_before_native_array_before_payload': (35, "8"),
+    'guided_json_native_parameter_string_before_payload': (35, "9"),
+    'gemma4_guided_response_extra_body_opener': ("gemma", "4"),
+    'gpt_oss_channel_header_variants': ("gpt_oss", "1"),
+    'gpt_oss_channel_first_tool_header': ("gpt_oss", "6"),
+    'gpt_oss_chat_template_tool_header': ("gpt_oss", "7"),
+    'gpt_oss_multiple_unknown_and_empty_tools': ("gpt_oss", "2"),
+    'gpt_oss_control_marker_inside_argument_string': ("gpt_oss", "3"),
+    'gpt_oss_truncated_tool_resynchronizes_at_next_message': ("gpt_oss", "4"),
+    'gpt_oss_truncated_tool_at_eof_is_dropped': ("gpt_oss", "5"),
+    'gpt_oss_interrupted_reasoning_then_tool': ("gpt_oss", "8"),
+    'gpt_oss_interrupted_reasoning_then_tool_with_text': ("gpt_oss", "9"),
+    'gpt_oss_invalid_tool_body_then_empty_call': ("gpt_oss", "10"),
+    'gpt_oss_invalid_tool_body_then_valid_call': ("gpt_oss", "11"),
+    'gpt_oss_interrupted_reasoning_then_response': ("gpt_oss", "12"),
+    "gpt_oss_tool_body_whitespace": ("gpt_oss", "13"),
+    "gpt_oss_constrained_final_header": ("gpt_oss", "14"),
+    "gpt_oss_implicit_recipient_first_header": ("gpt_oss", "15"),
+    "gpt_oss_quoted_truncated_tool_then_final": ("gpt_oss", "16"),
+    "gpt_oss_quoted_message_header_literal": ("gpt_oss", "17"),
+    "gpt_oss_complete_alternate_message_ends": ("gpt_oss", "18"),
+    "gpt_oss_single_return_ending_tool_call": ("gpt_oss", "19"),
+    "gpt_oss_reasoning_then_return_ending_tool_call": ("gpt_oss", "20"),
+    "gpt_oss_quoted_tool_header_in_final_json": ("gpt_oss", "21"),
+    "gpt_oss_orphan_terminator_preserves_messages": ("gpt_oss", "22"),
+    "gpt_oss_unfinished_directed_analysis": ("gpt_oss", "23"),
+    "gpt_oss_malformed_then_recipient_first_call": ("gpt_oss", "24"),
+    "gpt_oss_unknown_channel_before_final": ("gpt_oss", "25"),
+    "gpt_oss_final_then_unframed_recipient_first_call": ("gpt_oss", "26"),
+    "gpt_oss_unfinished_header_then_valid_call": ("gpt_oss", "27"),
+    "gpt_oss_unfinished_directed_header_then_final": ("gpt_oss", "28"),
+    "gpt_oss_nonassistant_analysis_then_final": ("gpt_oss", "29"),
+    "gpt_oss_recipientless_json_call_then_final": ("gpt_oss", "30"),
+    "gpt_oss_recipientless_json_return_then_final": ("gpt_oss", "31"),
+    "gpt_oss_final_then_unframed_visible_tail": ("gpt_oss", "32"),
+    "gpt_oss_recipientless_json_interrupted_by_final": ("gpt_oss", "33"),
+    "gpt_oss_recipientless_constrained_whitespace_call": ("gpt_oss", "34"),
+    "gpt_oss_nonassistant_unfinished_final_header": ("gpt_oss", "35"),
+    "gpt_oss_nonassistant_unfinished_analysis_header": ("gpt_oss", "36"),
+    "gpt_oss_malformed_then_nonassistant_call": ("gpt_oss", "37"),
+    "gpt_oss_malformed_then_native_opaque_name": ("gpt_oss", "38"),
+    "gpt_oss_native_opaque_name_handoff": ("gpt_oss", "39"),
+    "gpt_oss_named_tool_unfinished_final_header": ("gpt_oss", "40"),
+    "gpt_oss_named_author_less_than_lookalike": ("gpt_oss", "41"),
+    "gpt_oss_named_author_nbsp_lookalike": ("gpt_oss", "42"),
+    "gpt_oss_recovered_tool_header_return": ("gpt_oss", "43"),
+    "gpt_oss_recovered_final_header_return": ("gpt_oss", "44"),
+    "gpt_oss_initial_json_prefix_then_tool": ("gpt_oss", "45"),
+    "gpt_oss_initial_json_prefix_then_recovered_final": ("gpt_oss", "46"),
+    "gpt_oss_tab_separated_assistant_recipient": ("gpt_oss", "47"),
+    "gpt_oss_implicit_recipient_prelude": ("gpt_oss", "48"),
+    "gpt_oss_assistant_implicit_recipient_analysis": ("gpt_oss", "49"),
+    "gpt_oss_assistant_role_only_final": ("gpt_oss", "50"),
+    "gpt_oss_analysis_text_interrupted_by_final": ("gpt_oss", "51"),
+    "gpt_oss_commentary_text_interrupted_by_final": ("gpt_oss", "52"),
+    "gpt_oss_commentary_text_interrupted_by_user": ("gpt_oss", "53"),
+    "gpt_oss_commentary_text_interrupted_by_invalid_author": ("gpt_oss", "54"),
+    "gpt_oss_unconfirmed_header_return_at_eof": ("gpt_oss", "55"),
+    "gpt_oss_unknown_channel_header_only_eof": ("gpt_oss", "56"),
+    "gpt_oss_analysis_interrupted_by_final_then_tool": ("gpt_oss", "57"),
+    "gpt_oss_commentary_text_interrupted_by_bare_final": ("gpt_oss", "58"),
+    "gpt_oss_analysis_text_interrupted_by_bare_final": ("gpt_oss", "59"),
+    "gpt_oss_initial_json_prefix_then_bare_final": ("gpt_oss", "60"),
+    "gpt_oss_literal_bare_analysis_in_visible_body": ("gpt_oss", "61"),
+    "gpt_oss_literal_bare_unknown_channel_in_visible_body": ("gpt_oss", "62"),
+    "gpt_oss_literal_bare_tool_header_in_visible_body": ("gpt_oss", "63"),
+    "gpt_oss_visible_json_prelude_indentation": ("gpt_oss", "64"),
+    "gpt_oss_visible_quoted_json_prelude_whitespace": ("gpt_oss", "65"),
+    "gpt_oss_assistant_default_channel_visible_response": ("gpt_oss", "66"),
+
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
@@ -182,34 +356,26 @@ UNIFIED_TAX = {
     # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases). Completed below with family-scoped aliases.
     "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
     "prefilled_response_guided_closer_inside_invoke_quote": ("muse", "6"),
+    # Issue #406 — whitespace-only text in a tool-only turn is call framing.
+    "blank_framing_tool_only": (8, "12"),
+    "blank_framing_between_calls_single_chunk": (8, "13"),
+    "blank_framing_with_prose": (8, "14"),
+    "blank_output_without_call": (3, "2"),
+    "blank_framing_after_reasoning": (11, "11"),
+    "blank_framing_prose_after_call": (8, "15"),
+    "blank_framing_incomplete_call": (5, "5"),
+    # DeepSeek V4 and V4.1 — DSML tool-call separator framing.
+    **{scenario: ("dsml", str(index)) for index, scenario in enumerate([
+        "dsml_separator_two_lf", "dsml_separator_four_lf", "dsml_no_separator",
+        "dsml_empty_content_separator", "dsml_bare_invoke_two_lf", "dsml_bare_invoke_four_lf",
+        "dsml_whitespace_content_separator", "dsml_reasoning_then_separator",
+    ], 1)},
 }
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
 # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
-UNIFIED_GROUP_LABEL = {
-    1: "TC Single call", 2: "TC Multiple calls", 3: "TC No call",
-    4: "TC Malformed envelope", 5: "TC Truncation / recovery", 6: "TC Empty body",
-    7: "TC Argument fidelity", 8: "TC Content position",
-    10: "Reasoning span",
-    11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
-    30: "Guided Decoding — baseline and argument fidelity",
-    31: "Guided Decoding — invalid JSON or call structure",
-    32: "Guided Decoding — tool markup around the payload",
-    33: "Guided Decoding — invalid payload plus tool markup",
-    34: "Guided Decoding — reasoning boundaries",
-    35: "Guided Decoding — markers in visible answers",
-    40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
-    50: "Prefilled Response", 51: "Prefilled Response — malformed",
-    "deepseek_v4": "Single Family Test: DeepSeek V4-specific tests",
-    "gemma": "Single Family Test: Gemma 4 guided call-prefix boundaries",
-    "glm5": "Single Family Test: GLM argument handling",
-    "deepseek": "Single Family Test: DeepSeek V4.1 DSML invocation bodies",
-    "deepseek_v41": "Single Family Test: DeepSeek V4.1-specific tests",
-    "kimi_k2": "Single Family Test: Kimi K2-specific tests",
-    "qwen3": "Single Family Test: Qwen3-specific tests",
-    "kimi": "Single Family Test: Kimi K3 XTML",
-    "muse": "Single Family Test: Muse-specific",
-}
+UNIFIED_GROUP_LABEL = UNIFIED_DISPLAY["group_labels"]
+V1_SPLIT_SCENARIOS = tuple(scenario for scenario, taxonomy in UNIFIED_TAX.items() if taxonomy[0] == "v1_split")
 
 
 def tax(scenario):
@@ -224,44 +390,52 @@ def tax(scenario):
 
 
 # Display placement may change without renumbering published capture IDs.
-_DISPLAY_GROUP = {"guided_response_rejected_header_quote_ownership": "deepseek_v4"}
+_DISPLAY_GROUP = UNIFIED_DISPLAY["group_overrides"]
 
 
-def display_tax(scenario):
+def display_tax(scenario, families=None):
     group, sub = tax(scenario)
+    if families is not None and len(families) == 1:
+        return next(iter(families)), sub
+    parent = case_fold(scenario)
+    if parent and parent[0] != scenario:
+        return display_tax(parent[0])[0], sub
     return _DISPLAY_GROUP.get(scenario, group), sub
 
 
-def display_section(scenario):
-    group, _ = display_tax(scenario)
+def display_section(scenario, families=None):
+    group, _ = display_tax(scenario, families)
+    if families is not None and len(families) == 1:
+        label_key = UNIFIED_DISPLAY["family_label_aliases"].get(group, group)
+        label = UNIFIED_GROUP_LABEL.get(label_key) or f"Family-specific tests: {group}"
+        return f"unified_g{group}", label
     if group == 7:
-        section = argument_section(scenario)
+        section = argument_section((case_fold(scenario) or (scenario, ""))[0])
         return f"unified_g7_{section}", ARGUMENT_SECTIONS[section]
     return f"unified_g{group}", UNIFIED_GROUP_LABEL.get(group, "Other")
 
 
-def display_sort_key(scenario):
-    group, _ = display_tax(scenario)
+def display_sort_key(scenario, families=None):
+    group, _ = display_tax(scenario, families)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))
-    section_rank = list(ARGUMENT_SECTIONS).index(argument_section(scenario)) if group == 7 else 0
+    section_rank = list(ARGUMENT_SECTIONS).index(argument_section((case_fold(scenario) or (scenario, ""))[0])) if group == 7 else 0
     return group_key, section_rank, case_description(scenario), scenario
 
 
-DISPLAY_PREFIXES = {"deepseek": ("deepseek_v41", "ds41"),
-                    "deepseek_v4": ("deepseek_v4", "ds4"),
-                    "deepseek_v41": ("deepseek_v41", "ds41")}
+DISPLAY_PREFIXES = {group: tuple(prefixes) for group, prefixes in UNIFIED_DISPLAY["prefixes"].items()}
 
 
-def display_case_labels(scenarios):
+def display_case_labels(scenarios, scenario_families=None):
     """Display ranks belong to the visible corpus, never to capture identities."""
     labels = {}
     counts = {}
-    for scenario in sorted(set(scenarios), key=display_sort_key):
-        group, _ = display_tax(scenario)
+    families = scenario_families or {}
+    for scenario in sorted(set(scenarios), key=lambda name: display_sort_key(name, families.get(name))):
+        group, _ = display_tax(scenario, families.get(scenario))
         full_prefix, compact_prefix = DISPLAY_PREFIXES.get(group, (str(group), str(group)))
         counts[compact_prefix] = counts.get(compact_prefix, 0) + 1
         labels[scenario] = {
-            "label": f"{full_prefix}-{case_description(scenario)}",
+            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{case_description(scenario)}",
             "compact_prefix": compact_prefix,
             "display_number": counts[compact_prefix],
         }
@@ -277,6 +451,117 @@ def taxonomy_sort_key(scenario):
     return group_key, 10_000, sub
 
 
+GPT_OSS_PR424_REQUEST_VARIANTS = {
+    'arg_marker_in_string': True,
+    'deepseek_v41_mixed_control_text_in_string': True,
+    'guided_json_after_reasoning': True,
+    'guided_json_array_argument': False,
+    'guided_json_bare_tool_header_recovers_inside_a_thought': True,
+    'guided_json_escaped_string_args': False,
+    'guided_json_gt_in_argument_trailing_close': True,
+    'guided_json_gt_in_argument_wrapped': True,
+    'guided_json_invalid_call': False,
+    'guided_json_list_with_broken_element': False,
+    'guided_json_malformed_json': False,
+    'guided_json_marker_inside_argument': True,
+    'guided_json_named_tool': False,
+    'guided_json_narrated_invoke_in_reasoning': True,
+    'guided_json_narrated_prefix_inside_reasoning': True,
+    'guided_json_native_markup_only': True,
+    'guided_json_native_parameter_body_inside_reasoning': True,
+    'guided_json_orphan_reason_close_before_payload': True,
+    'guided_json_orphan_tool_close_before_payload': True,
+    'guided_json_partial_calls': False,
+    'guided_json_prose_before_reasoning': True,
+    'guided_json_quoted_bare_header_after_payload': True,
+    'guided_json_quoted_bare_header_in_answer': True,
+    'guided_json_reasoning_markers_inside_native_parameter': True,
+    'guided_json_required_tool': False,
+    'guided_json_schema_error_nameless_element_bare_opener': False,
+    'guided_json_schema_error_nameless_element_trailing_close': True,
+    'guided_json_schema_error_nameless_element_wrapped': True,
+    'guided_json_schema_error_not_a_call_trailing_close': True,
+    'guided_json_schema_error_not_a_call_wrapped': True,
+    'guided_json_stray_prefix_before_reasoning': True,
+    'guided_json_syntax_error_bare_opener': False,
+    'guided_json_syntax_error_trailing_close': True,
+    'guided_json_syntax_error_wrapped': True,
+    'guided_json_tool_close_after_payload': True,
+    'guided_json_two_calls': False,
+    'guided_json_unterminated_reasoning_then_wrapped_payload': True,
+    'guided_json_wrapped_in_tool_markup': True,
+    'guided_quoted_reasoning_closer_named': True,
+    'guided_quoted_reasoning_closer_required': True,
+    'prefilled_reasoning_with_guided_json': True,
+}
+
+for _scenario, _active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
+    if not _active:
+        continue
+    _group, _sub = UNIFIED_TAX[_scenario]
+    _next_sub = max(
+        int(sub) for group, sub in UNIFIED_TAX.values()
+        if group == _group and sub.isdecimal()
+    ) + 1
+    UNIFIED_TAX[_scenario + "_pr424"] = (_group, str(_next_sub))
+
+
+
+# Assign new numeric IDs after historical variants so their published ranks do not move.
+UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12")
+
+UNIFIED_TAX["interrupted_reasoning_then_response"] = (10, "7")
+UNIFIED_TAX["reason_markup_in_arg_consistent"] = (12, "6")
+UNIFIED_TAX["reason_markup_in_arg_with_text_consistent"] = (12, "7")
+
+# Historical requests remain separate executions, but share one semantic heading.
+RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace", "gpt_oss_interrupted_reasoning_then_response", "kimi_k3_elided_think_close_to_response"})
+
+
+class CaseVariant(NamedTuple):
+    parent: str
+    label: str
+    # Visual folding alone cannot qualify a new semantic axis for other families.
+    coverage_parent: str | None = None
+    name_suffix: str | None = None
+
+
+SHARED_CASE_VARIANTS = {
+    "interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Interrupted", name_suffix="interrupted"),
+    "reason_markup_in_arg_consistent": CaseVariant("reason_markup_in_arg", "Consistent example prose", "reason_markup_in_arg"),
+    "reason_markup_in_arg_with_text_consistent": CaseVariant("reason_markup_in_arg_with_text", "Consistent example prose", "reason_markup_in_arg_with_text"),
+    **{scenario + "_pr424": CaseVariant(scenario, "Retained #424 delivery / input", scenario)
+       for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items() if active},
+    **{scenario: CaseVariant(scenario.removeprefix("harmony_"), "Harmony partial header", scenario.removeprefix("harmony_"), "harmony_partial_header")
+       for scenario in UNIFIED_TAX if scenario.startswith("harmony_")},
+    "gpt_oss_multiple_unknown_and_empty_tools": CaseVariant("two_calls", "Empty body and unoffered names", name_suffix="empty_body_and_unoffered_names"),
+    "gpt_oss_control_marker_inside_argument_string": CaseVariant("arg_marker_in_string", "Native controls in arguments", name_suffix="native_controls_in_arguments"),
+    "gpt_oss_truncated_tool_resynchronizes_at_next_message": CaseVariant("tool_no_close", "Next message recovery", name_suffix="next_message_recovery"),
+    "gpt_oss_interrupted_reasoning_then_tool": CaseVariant("tool_in_reason", "Interrupted Harmony reasoning", "tool_in_reason", "interrupted_harmony_reasoning"),
+    "gpt_oss_interrupted_reasoning_then_tool_with_text": CaseVariant("tool_in_reason_with_text", "Interrupted Harmony reasoning", "tool_in_reason_with_text", "interrupted_harmony_reasoning"),
+    "gpt_oss_interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Elided reasoning close"),
+    "kimi_k3_elided_think_close_to_response": CaseVariant("reason_then_content", "Elided Kimi K3 reasoning close", "gpt_oss_interrupted_reasoning_then_response"),
+    "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call", name_suffix="invalid_text_then_empty_call"),
+    "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call", name_suffix="truncated_json_then_valid_call"),
+    "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
+    "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
+    "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response", name_suffix="malformed_argument_then_visible_response"),
+    "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header", name_suffix="quoted_closer_and_response_header"),
+}
+_SHARED_VARIANT_PARENTS = {variant.parent for variant in SHARED_CASE_VARIANTS.values()}
+
+
+def case_fold(scenario):
+    """One grouping owner for schema, native grammar, and delivery variants."""
+    return (schema_fold(scenario) or (SHARED_CASE_VARIANTS[scenario][:2] if scenario in SHARED_CASE_VARIANTS else None)
+            or ((scenario, "Standard") if scenario in _SHARED_VARIANT_PARENTS else None))
+
+
+def coverage_case(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    return (variant.coverage_parent if variant else None) or scenario
+
+
 def legacy_case_label(scenario):
     """Published numeric identity, retained for ordering and compatibility."""
     group, sub = tax(scenario)
@@ -284,15 +569,19 @@ def legacy_case_label(scenario):
 
 
 GROUP_DESCRIPTION_PREFIXES = {
+    "v1_split": ("v1_split_",),
     "kimi": ("kimi_k3_",),
     "gemma": ("gemma4_",),
     "glm5": ("glm47_",),
+    "mistral": ("mistral_",),
     "deepseek": ("deepseek_v41_",),
     "muse": ("muse_",),
+    "dsml": ("dsml_",),
+    "gpt_oss": ("gpt_oss_",),
 }
 
 
-def case_description(scenario):
+def original_case_description(scenario):
     """The tested behavior, independent of its ordering and display placement."""
     if scenario.startswith("schema_"):
         return scenario.removeprefix("schema_")
@@ -302,8 +591,27 @@ def case_description(scenario):
     return scenario
 
 
+def case_description(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    if variant and variant.name_suffix and scenario not in RETIRED_SCENARIOS:
+        return f"{case_description(variant.parent)}_{variant.name_suffix}"
+    return original_case_description(scenario)
+
+
+def previous_case_label(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    group = tax(scenario)[0]
+    if variant and scenario not in RETIRED_SCENARIOS:
+        group = previous_case_label(variant.parent).split("-", 1)[0]
+    return f"{group}-{case_description(scenario)}"
+
+
 def case_label(scenario):
-    return f"{tax(scenario)[0]}-{case_description(scenario)}"
+    previous = previous_case_label(scenario)
+    if previous.startswith("7-"):
+        related = (case_fold(scenario) or (scenario, ""))[0]
+        return f"{ARGUMENT_SECTIONS[argument_section(related)]}-{previous[2:]}"
+    return previous
 
 
 def numbered_id(scenario):
@@ -380,6 +688,24 @@ LEGACY_CASE_LABELS = {
 }
 
 
+LEGACY_CASE_LABELS.update({
+    "6-empty_args_no_close": "empty_args_no_close",
+    "6-optional_args_no_close": "optional_args_no_close",
+    "32-guided_native_after_prefilled_reasoning_named": "guided_native_after_prefilled_reasoning_named",
+    "32-guided_native_after_prefilled_reasoning_required": "guided_native_after_prefilled_reasoning_required",
+    "8-commentary_then_tool": "commentary_then_tool",
+})
+LEGACY_CASE_LABELS.update({previous_case_label(scenario): scenario for scenario in UNIFIED_TAX})
+
+
+# Historical YAML and shared links keep their original descriptive identities.
+LEGACY_CASE_LABELS.update({
+    f"{tax(scenario)[0]}-{original_case_description(scenario)}": scenario
+    for scenario in UNIFIED_TAX
+    if case_label(scenario) != f"{tax(scenario)[0]}-{original_case_description(scenario)}"
+})
+
+
 def _label_owners(scenario_labels, historical_labels):
     owners = {}
     for scenario, labels in scenario_labels.items():
@@ -411,6 +737,9 @@ FAMILY_LEGACY_CASE_LABELS = {
 }
 
 
+HISTORICAL_FAMILY_LABEL_ALIASES = {"gemma4": {"31-29": "g4-1", "31-30": "g4-2"}}
+
+
 def scenario_for_label(label, family=None, scenario=None):
     """Resolve aliases without changing the meaning of older published labels."""
     label = label.removeprefix("UNIFIED.")
@@ -423,8 +752,7 @@ def scenario_for_label(label, family=None, scenario=None):
         return family_scenario
     if label in UNIFIED_TAX:
         return label
-    if family == "gemma4":
-        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
+    label = HISTORICAL_FAMILY_LABEL_ALIASES.get(family, {}).get(label, label)
     dotted_group_31 = re.fullmatch(r"31\.([a-x])", label)
     if dotted_group_31:
         label = f"31-{ord(dotted_group_31[1]) - ord('a') + 1}"
@@ -434,11 +762,6 @@ def scenario_for_label(label, family=None, scenario=None):
     if len(owners) > 1:
         raise ValueError(f"conflicting Unified alias ownership: {label}: {sorted(owners)}")
     owner = next(iter(owners), None)
-    if owner is not None and family:
-        family_names = sorted({name for name, _label in FAMILY_LEGACY_CASE_LABELS}, key=len, reverse=True)
-        owner_family = next((name for name in family_names if owner.startswith(f"{name}_")), None)
-        if owner_family is not None and owner_family != family:
-            return None
     return owner
 
 
@@ -459,13 +782,7 @@ def historical_case_label(label, family=None, scenario=None):
 # argument-value regions (`opaque:`) are not applied.
 # Derived from the ONE declaration in parser_families.yaml (`unified:` -> `registry`),
 # so a family whose corpus name differs from its registry name says so in one place.
-MARKER_FAMILY = {
-    f: r["registry"]
-    for f, r in yaml.safe_load(
-        markers.parser_families_path().read_text()
-    )["unified"].items()
-    if r.get("registry") and r["registry"] != f
-}
+MARKER_FAMILY = UNIFIED_MARKER_FAMILIES
 
 
 def marker_family(family):

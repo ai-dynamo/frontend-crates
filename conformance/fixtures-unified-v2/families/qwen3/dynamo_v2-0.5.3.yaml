@@ -7,6 +7,52 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
   arg_marker_in_string:
     observation:
       value:
@@ -47,6 +93,41 @@ changes:
             name: null
             arguments: '}'
             complete: true
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":null}'
+            complete: true
+        - expected: []
         - expected: []
         - expected: []
   arg_unicode:
@@ -125,6 +206,152 @@ changes:
             complete: true
         - expected: []
         - expected: []
+  dotted_name_minimal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  dotted_name_mixed_punctuation:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  dotted_name_multiple_segments:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  dotted_name_shared_prefix:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
   empty_args:
     observation:
       value:
@@ -142,6 +369,45 @@ changes:
             name: get_weather
             arguments: '{}'
             complete: true
+        - expected: []
+        - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":"2"}'
+            complete: true
+        - expected: []
         - expected: []
         - expected: []
   guided_json_after_reasoning:
@@ -341,6 +607,85 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal</think><function=f><parameter=x>"[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"</parameter></function>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <function=f><parameter=x>"[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"
+        - expected:
+          - kind: text
+            text: </parameter>
+        - expected:
+          - kind: text
+            text: </function>
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}<think>literal</think><parameter=x>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Rome
+        - kind: text
+          text: '</parameter>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}'
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <parameter=x>
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Rome"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: </parameter>
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
   guided_json_orphan_reason_close_before_payload:
     observation:
       value:
@@ -629,6 +974,66 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<function=f>
+
+            <parameter=x>
+
+            {"city": "Rome"}
+
+            </parameter>
+
+            </function>
+
+            ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<function=f>
+
+              <parameter=x>
+
+              {"city": "Rome"}
+
+              '
+        - expected:
+          - kind: text
+            text: </parameter>
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected:
+          - kind: text
+            text: </function>
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_response_quoted_control_braces_named:
     observation:
       value:
@@ -1840,6 +2245,11 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+  structured_response_after_reasoning:
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'structural tag: no structural-tag builder for qwen3'
   text_before_tool:
     observation:
       value:
@@ -2066,6 +2476,40 @@ changes:
         - expected:
           - kind: text
             text: ' After.'
+  three_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
   tool_in_reason:
     observation:
       value:

@@ -3,11 +3,15 @@
 
 use std::sync::Arc;
 
+use super::minimax_m2::{adapt_minimax_m2_thinking_template_source, is_minimax_m2_template_source};
 use super::tokcfg::{
     ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
     raise_exception, strftime_now, tojson,
 };
-use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
+use super::{
+    ChatTemplateContentFormat, ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment,
+    SystemNormalization,
+};
 use either::Either;
 use minijinja::{Environment, Value, context};
 use serde_json::json;
@@ -526,14 +530,74 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
         .replace(OLD_TOOL_LOOP_END, NEW_TOOL_LOOP_END)
 }
 
-fn normalize_chat_template_source(source: &str) -> String {
+pub(super) fn normalize_chat_template_source(source: &str) -> String {
     let source = normalize_jinja_syntax(source);
 
     if is_gemma4_reasoning_field_template_source(&source) {
         adapt_gemma4_reasoning_template_source(&source)
+    } else if is_minimax_m2_template_source(&source) {
+        adapt_minimax_m2_thinking_template_source(&source)
     } else {
         source
     }
+}
+
+/// Find a capability marker in executable Jinja, excluding prose, comments,
+/// quoted strings and raw blocks. MiniJinja's undeclared-variable analysis
+/// treats `set x = x | default(...)` as already assigned and misses this
+/// template's self-defaulting `deferred_render_mode` declaration.
+pub(super) fn template_references_variable(source: &str, variable: &str) -> bool {
+    let mut offset = 0;
+    while offset < source.len() {
+        let rest = &source[offset..];
+        if rest.starts_with("{#") {
+            let Some(end) = rest.find("#}") else {
+                return false;
+            };
+            offset += end + 2;
+        } else if rest.starts_with("{{") || rest.starts_with("{%") {
+            let block = rest.starts_with("{%");
+            let Some(end) = find_tag_end(source, offset + 2, if block { "%}" } else { "}}" })
+            else {
+                return false;
+            };
+            let code = &source[offset + 2..end - 2];
+            if block && is_jinja_block_name(code, "raw") {
+                let Some(raw_end) = find_raw_block_end(source, end) else {
+                    return false;
+                };
+                offset = raw_end;
+                continue;
+            }
+            let mut chars = code.chars().peekable();
+            while let Some(ch) = chars.next() {
+                if ch == '\'' || ch == '"' {
+                    while let Some(next) = chars.next() {
+                        if next == '\\' {
+                            chars.next();
+                        } else if next == ch {
+                            break;
+                        }
+                    }
+                } else if ch.is_ascii_alphabetic() || ch == '_' {
+                    let mut identifier = String::from(ch);
+                    while chars
+                        .peek()
+                        .is_some_and(|next| next.is_ascii_alphanumeric() || *next == '_')
+                    {
+                        identifier.push(chars.next().unwrap());
+                    }
+                    if identifier == variable {
+                        return true;
+                    }
+                }
+            }
+            offset = end;
+        } else {
+            offset += rest.chars().next().unwrap().len_utf8();
+        }
+    }
+    false
 }
 
 impl JinjaEnvironment {
@@ -724,13 +788,25 @@ impl HfTokenizerConfigJsonFormatter {
                 tool_use_template_handles_tool_calls_arguments_string,
             );
 
+        // Detect each variant once so rendering can safely fall back to flat tools.
+        let handles_native_tools = |name| {
+            env.get_template(name).ok().is_some_and(|template| {
+                template_references_variable(template.source(), "deferred_render_mode")
+            })
+        };
+        let default_template_handles_native_tools = handles_native_tools("default");
+        let tool_use_template_handles_native_tools = handles_native_tools("tool_use");
+
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
             mixins: Arc::new(mixins),
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
+            content_format: ChatTemplateContentFormat::Auto,
             requires_content_arrays,
             exclude_tools_when_tool_choice_none,
+            default_template_handles_native_tools,
+            tool_use_template_handles_native_tools,
             default_template_handles_reasoning,
             tool_use_template_handles_reasoning,
             default_template_requires_reasoning_string,
@@ -765,6 +841,32 @@ mod tests {
         let mut env = JinjaEnvironment::default().env();
         env.add_template_owned("default", src.to_string()).unwrap();
         env
+    }
+
+    #[test]
+    fn test_generation_tags_with_and_without_left_trim() {
+        for (source, expected) in [
+            ("A {% generation %} B {% endgeneration %} C", "A  B  C"),
+            (
+                "A \n{%- generation %}\n B \n{%- endgeneration %}\n C",
+                "A B C",
+            ),
+            ("A {%- generation %} B {% endgeneration %} C", "A B  C"),
+            ("A {% generation %} B {%- endgeneration %} C", "A  B C"),
+        ] {
+            let formatter = HfTokenizerConfigJsonFormatter::new(
+                serde_json::from_value(json!({"chat_template": source})).unwrap(),
+                ContextMixins::new(&[]),
+            )
+            .unwrap();
+            let rendered = formatter
+                .env
+                .get_template("default")
+                .unwrap()
+                .render(context! {})
+                .unwrap();
+            assert_eq!(rendered, expected, "source: {source:?}");
+        }
     }
 
     /// NVIDIA-Nemotron-Parse ships a pure pass-through chat template

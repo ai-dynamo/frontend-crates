@@ -98,6 +98,21 @@ impl QwenVlProcessor {
                 "qwen_vl spec: sizes must be positive",
             ));
         }
+        // These products are used by header-only accounting and patchification.
+        // Reject malformed runtime specs here rather than panicking (or wrapping
+        // in release builds) when their first image is processed.
+        if spec.patch_size.checked_mul(spec.merge_size).is_none()
+            || spec.merge_size.checked_mul(spec.merge_size).is_none()
+            || 3usize
+                .checked_mul(spec.temporal_patch_size)
+                .and_then(|n| n.checked_mul(spec.patch_size))
+                .and_then(|n| n.checked_mul(spec.patch_size))
+                .is_none()
+        {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: resize factor, merge area and patch feature dimension must fit in usize",
+            ));
+        }
         if spec.min_pixels == 0 || spec.min_pixels > spec.max_pixels {
             return Err(MmError::invalid_input(
                 "qwen_vl spec: min_pixels must be positive and no greater than max_pixels",
@@ -707,6 +722,25 @@ mod tests {
             image_mean: [0.0; 3],
             image_std: [1.0; 3],
             resample: Resampler::default(),
+        }
+    }
+
+    #[test]
+    fn rejects_overflowing_spec_dimensions() {
+        for (patch_size, merge_size, temporal_patch_size) in [
+            (usize::MAX, 2, 1),         // Resize factor overflows.
+            (1, usize::MAX, 1),         // Merge area overflows.
+            (1, 1, usize::MAX / 3 + 1), // Flattened patch dimension overflows.
+        ] {
+            let mut spec = valid_spec();
+            spec.patch_size = patch_size;
+            spec.merge_size = merge_size;
+            spec.temporal_patch_size = temporal_patch_size;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
         }
     }
 

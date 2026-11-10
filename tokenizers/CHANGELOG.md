@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [4.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v4.1.2...dynamo-tokenizers-v4.2.0) - 2026-11-10
+
+### Features
+
+- *(parsers-v2)* Add Mistral tekken tokenizer, native renderer and mistral_4 UnifiedParser
+
+## [4.1.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v4.1.1...dynamo-tokenizers-v4.1.2) - 2026-11-09
+
+### Bug fixes
+
+- *(tokenizers)* Strip tokenizer.json truncation and padding from fastokens ([#571](https://github.com/ai-dynamo/frontend-crates/pull/571))
+
+## [4.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v4.1.0...dynamo-tokenizers-v4.1.1) - 2026-10-30
+
+### Bug fixes
+
+- *(tokenizers)* Split long runs in tiktoken segment encodes like the Kimi reference ([#500](https://github.com/ai-dynamo/frontend-crates/pull/500))
+
+## [4.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v4.0.0...dynamo-tokenizers-v4.1.0) - 2026-10-30
+
+### Features
+
+- *(tokenizers)* Cache segmented encodes per segment ([#499](https://github.com/ai-dynamo/frontend-crates/pull/499))
+
+## [3.1.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v3.1.2...dynamo-tokenizers-v3.1.3) - 2026-10-25
+
+### Bug fixes
+
+- *(tokenizers)* Keep "special": false added tokens when skipping special tokens ([#475](https://github.com/ai-dynamo/frontend-crates/pull/475))
+
+## [3.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v3.1.0...dynamo-tokenizers-v3.1.1) - 2026-10-15
+
+### Bug fixes
+
+- *(tokenizers)* Require fastokens 0.3.4 ([#382](https://github.com/ai-dynamo/frontend-crates/pull/382))
+
 ## [3.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v3.0.0...dynamo-tokenizers-v3.1.0) - 2026-10-06
 
 ### Features

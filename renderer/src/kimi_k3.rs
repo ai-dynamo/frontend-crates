@@ -145,7 +145,7 @@ impl ChatSegments {
 }
 
 fn json_value(value: minijinja::value::Value) -> Result<Value> {
-    serde_json::to_value(&value).context("Failed to convert template value to JSON")
+    crate::python::template_json(&value).context("Failed to convert template value to JSON")
 }
 
 fn resolve_tool_choice(tool_choice: Option<&Value>) -> Result<(Option<&str>, Option<&str>)> {

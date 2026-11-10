@@ -179,7 +179,10 @@ fn find_section_end(
         // section-end guard) instead of trusting `json_value_end` alone;
         // mirrors the identical hoist in streaming's `kimi_invoke_end`.
         let valid_json_end = json_value_end(&region[arg_pos..]).filter(|&json_end| {
-            serde_json::from_str::<serde_json::Value>(&region[arg_pos..arg_pos + json_end]).is_ok()
+            serde_json::value::RawValue::from_string(
+                region[arg_pos..arg_pos + json_end].to_string(),
+            )
+            .is_ok()
         });
         cursor = match valid_json_end {
             Some(json_end) => arg_pos + json_end,
@@ -483,7 +486,10 @@ fn parse_section_block(
                 let args_start = m.start();
                 let argument_region = &block[args_start..];
                 if let Some(json_len) = json_value_end(argument_region).filter(|&json_len| {
-                    serde_json::from_str::<serde_json::Value>(&argument_region[..json_len]).is_ok()
+                    serde_json::value::RawValue::from_string(
+                        argument_region[..json_len].to_string(),
+                    )
+                    .is_ok()
                 }) {
                     let after_json = &argument_region[json_len..];
                     let call_end = after_json.find(config.call_end.as_str())?;
@@ -533,18 +539,16 @@ fn parse_section_block(
             tracing::warn!("Tool '{}' is not defined in the tools list.", function_name);
         }
 
-        // Validate JSON arguments
-        let arguments_json = match serde_json::from_str::<serde_json::Value>(arguments_raw) {
-            Ok(val) => serde_json::to_string(&val)?,
-            Err(e) => {
+        let arguments_json = crate::tool_calling::arguments::parsed_json_literal(arguments_raw)
+            .map(|value| value.json_text())
+            .transpose()?
+            .unwrap_or_else(|| {
                 tracing::warn!(
-                    "Failed to parse JSON arguments for tool '{}': {}. Using raw string.",
-                    function_name,
-                    e,
+                    why = "invalid_kimi_tool_arguments",
+                    "using raw malformed legacy arguments"
                 );
                 arguments_raw.to_string()
-            }
-        };
+            });
 
         // NOTE: Unlike other parsers (XML, DSML) which generate `call-{UUID}` IDs,
         // we preserve the model's native function_id (e.g., "functions.bash:0") here.

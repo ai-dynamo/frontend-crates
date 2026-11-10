@@ -189,6 +189,18 @@ pub trait MmFamilyProcessor: Send + Sync {
         Capabilities::default()
     }
 
+    /// Decode encoded image bytes using the family's loading policy. The
+    /// default matches PIL's `convert("RGB")`; a family may apply EXIF and
+    /// alpha compositing. Limits are checked before pixel decoding.
+    fn decode_image(
+        &self,
+        data: &[u8],
+        limits: &crate::image::decode::DecodeLimits,
+    ) -> crate::Result<DecodedMedia> {
+        let (rgb, height, width) = crate::image::decode::decode_rgb(data, limits)?;
+        Ok(DecodedMedia::Image { rgb, height, width })
+    }
+
     /// Tokens one media item will occupy in the expanded prompt, from
     /// lightweight metadata alone — no pixel or feature-extraction work (HF's
     /// `_get_num_multimodal_tokens`). Lets routers account prompt length after

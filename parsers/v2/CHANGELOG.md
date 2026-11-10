@@ -4,6 +4,186 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.10.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.2...dynamo-parsers-v2-v0.10.3) - 2026-11-10
+
+### Features
+
+- *(parsers-v2)* Add Mistral tekken tokenizer, native renderer and mistral_4 UnifiedParser
+
+## [0.10.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.1...dynamo-parsers-v2-v0.10.2) - 2026-11-09
+
+### Bug fixes
+
+- *(kimi-k3)* Generate unique V2 tool-call IDs ([#579](https://github.com/ai-dynamo/frontend-crates/pull/579))
+
+## [0.10.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.0...dynamo-parsers-v2-v0.10.1) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Add schema-safe native empty Qwen XML calls ([#570](https://github.com/ai-dynamo/frontend-crates/pull/570))
+
+## [0.9.15](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.14...dynamo-parsers-v2-v0.9.15) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Retain GPT-OSS return calls through v1 reasoning ([#574](https://github.com/ai-dynamo/frontend-crates/pull/574))
+
+## [0.9.14](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.13...dynamo-parsers-v2-v0.9.14) - 2026-11-07
+
+### Bug fixes
+
+- *(parsers-v2)* Fill omitted required-nullable MiniMax-M3 arguments with null ([#566](https://github.com/ai-dynamo/frontend-crates/pull/566))
+
+## [0.9.12]
+
+### Bug fixes
+
+- Infer conditional and negated argument types while preserving Beam declaration order among compatible types and GLM enum literals.
+- Beam scalar arguments with non-overlapping sibling `anyOf`/`oneOf` types now remain strings. For example, `{"type":"integer","anyOf":[{"type":"string"}]}` with input `123` produces `"123"` instead of the previous integer `123`. The frozen Beam reference unions these sibling types and still emits integer `123`.
+
+## [0.9.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.10...dynamo-parsers-v2-v0.9.11) - 2026-11-05
+
+### Features
+
+- *(parsers-v2)* Add an env var that turns off quote-aware parsing ([#548](https://github.com/ai-dynamo/frontend-crates/pull/548))
+
+## [0.9.10](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.9...dynamo-parsers-v2-v0.9.10) - 2026-11-04
+
+### Bug fixes
+
+- *(parsers-v2)* Let a declared type win over contradicting MiniMax-M3 literals ([#526](https://github.com/ai-dynamo/frontend-crates/pull/526))
+
+## [0.9.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.8...dynamo-parsers-v2-v0.9.9) - 2026-11-04
+
+### Bug fixes
+
+- *(structural-tag)* Canonicalize escaped local $ref targets before grammar compilation ([#516](https://github.com/ai-dynamo/frontend-crates/pull/516))
+
+## [0.9.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.6...dynamo-parsers-v2-v0.9.7) - 2026-11-03
+
+### Bug fixes
+
+- *(parsers)* [P1] coordinate Harmony vocabulary cache loading ([#513](https://github.com/ai-dynamo/frontend-crates/pull/513))
+
+## [0.9.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.3...dynamo-parsers-v2-v0.9.4) - 2026-10-31
+
+### Bug fixes
+
+- Preserve sibling arguments for out-of-range numbers ([#515](https://github.com/ai-dynamo/frontend-crates/pull/515))
+
+## [0.9.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.2...dynamo-parsers-v2-v0.9.3) - 2026-10-31
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only content from tool-only jail turns ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only text from Nemotron V3 Unified tool-only turns, so the call framing newlines are no longer content. Other families are unchanged ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+## [0.9.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.0...dynamo-parsers-v2-v0.9.1) - 2026-10-30
+
+### Features
+
+- *(parsers)* [P2] share GPT-OSS v2 continuation state ([#506](https://github.com/ai-dynamo/frontend-crates/pull/506))
+
+## [0.8.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.8...dynamo-parsers-v2-v0.8.9) - 2026-10-29
+
+### Bug fixes
+
+- *(parsers)* Stream native Kimi arguments before call closure ([#384](https://github.com/ai-dynamo/frontend-crates/pull/384))
+
+## [0.8.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.7...dynamo-parsers-v2-v0.8.8) - 2026-10-29
+
+### Bug fixes
+
+- *(parsers)* DeepSeek V4.1 grammar and recovery ([#493](https://github.com/ai-dynamo/frontend-crates/pull/493))
+
+### Documentation
+
+- *(parsers)* Refresh library usage and contributor guides ([#492](https://github.com/ai-dynamo/frontend-crates/pull/492))
+
+## [0.8.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.6...dynamo-parsers-v2-v0.8.7) - 2026-10-28
+
+### Bug fixes
+
+- *(parsers)* Execute structural tags with pinned XGrammar ([#350](https://github.com/ai-dynamo/frontend-crates/pull/350))
+
+## [0.8.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.5...dynamo-parsers-v2-v0.8.6) - 2026-10-28
+
+### Performance
+
+- *(parsers-v2)* Stop rescanning an open invoke for the block end ([#490](https://github.com/ai-dynamo/frontend-crates/pull/490))
+
+## [0.8.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.4...dynamo-parsers-v2-v0.8.5) - 2026-10-28
+
+### Performance
+
+- *(parsers-v2)* Build the Harmony special-token set once ([#489](https://github.com/ai-dynamo/frontend-crates/pull/489))
+
+## [0.8.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.8.3...dynamo-parsers-v2-v0.8.4) - 2026-10-28
+
+### Refactoring
+
+- Optimize conformance reports for speed and space ([#470](https://github.com/ai-dynamo/frontend-crates/pull/470))
+
+## [0.7.35](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.34...dynamo-parsers-v2-v0.7.35) - 2026-10-23
+
+### Bug fixes
+
+- *(parsers-v2)* Preserve GPT-OSS reasoning and recover Harmony final output ([#468](https://github.com/ai-dynamo/frontend-crates/pull/468))
+
+## [0.7.34](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.33...dynamo-parsers-v2-v0.7.34) - 2026-10-23
+
+### Bug fixes
+
+- *(beam)* Preserve inline closers in newline-framed values ([#461](https://github.com/ai-dynamo/frontend-crates/pull/461))
+
+## [0.7.32](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.31...dynamo-parsers-v2-v0.7.32) - 2026-10-22
+
+### Features
+
+- *(parsers)* Share Kimi grammars and add v2 structural tags ([#349](https://github.com/ai-dynamo/frontend-crates/pull/349))
+
+## [0.7.31](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.30...dynamo-parsers-v2-v0.7.31) - 2026-10-22
+
+### Bug fixes
+
+- *(beam)* Align template tool names and grammar exclusions ([#463](https://github.com/ai-dynamo/frontend-crates/pull/463))
+
+## [0.7.30](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.29...dynamo-parsers-v2-v0.7.30) - 2026-10-22
+
+### Bug fixes
+
+- *(beam)* Recognize call closers in guided answers ([#464](https://github.com/ai-dynamo/frontend-crates/pull/464))
+- *(beam)* Parse integral decimal arguments without rounding ([#465](https://github.com/ai-dynamo/frontend-crates/pull/465))
+
+## [0.7.29] - 2026-10-20
+
+### Added
+
+- *(parsers-v2)* Beam unified parser family (`beam`): channel-framed reasoning, tool calls
+  (`<rfl:parameter>` bodies on the Harmony-shaped wire) and final answers; streamed
+  raw-text arguments; schema-typed arguments under `ArgumentFraming::SchemaConstrained`.
+- *(parsers-v2)* Beam structural-tag builder: the per-turn grammar the model builder's
+  serving layer derives from the Beam response template, asserted byte-for-byte against
+  the serving layer's own fixtures; `StructuralTagBuilder::build_turn` /
+  `constrains_every_turn` and `PromptChannel` for grammars that frame the whole turn.
+- *(parsers-v2)* Beam reads every call its serving grammar admits: a parameter may end
+  where the next one opens, tool names follow one builder/parser contract
+  (`[A-Za-z0-9_.-]+`), a delimited call completes at EOS, and a bare header completes as
+  `{}` when the declared schema requires nothing.
+- Beam: the final answer closes at `<|call|>` as the serving grammar admits; `reset` clears the JSON-body string state; a parameter value arriving in many pushes is walked once (`ValueCursor`); a text choice holding the bare `</rfl:parameter>` is not held as a constant.
+
+## [0.7.23](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.22...dynamo-parsers-v2-v0.7.23) - 2026-10-15
+
+### Bug fixes
+
+- *(parsers)* Resolve Unified aliases in grammar lookup ([#348](https://github.com/ai-dynamo/frontend-crates/pull/348))
+
 ## [0.7.22](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.21...dynamo-parsers-v2-v0.7.22) - Unreleased
 
 ### Bug fixes

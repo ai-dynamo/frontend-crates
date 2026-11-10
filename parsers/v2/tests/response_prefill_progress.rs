@@ -20,6 +20,47 @@ fn tools() -> Vec<Tool> {
     }]
 }
 
+/// Families whose unified parser refuses guided tool output.
+/// `native_only_families_refuse_guided_output` checks each one, so the
+/// exclusion cannot hide a family that stopped honouring guided output.
+const NATIVE_ONLY_FAMILIES: &[&str] = &["mistral_4"];
+
+fn guided_families() -> impl Iterator<Item = &'static str> {
+    dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES
+        .iter()
+        .copied()
+        .filter(|family| !NATIVE_ONLY_FAMILIES.contains(family))
+}
+
+/// `mistral` stays the v1 parser's name: a bare alias would move every caller that
+/// configures `mistral` onto the native v11+ parser with a routine version bump.
+#[test]
+fn mistral_4_registers_without_a_bare_mistral_alias() {
+    assert_eq!(
+        dynamo_parsers_v2::canonical_unified_family("mistral_4"),
+        Some("mistral_4")
+    );
+    assert_eq!(dynamo_parsers_v2::canonical_unified_family("mistral"), None);
+}
+
+#[test]
+fn native_only_families_refuse_guided_output() {
+    for family in NATIVE_ONLY_FAMILIES {
+        for named in [false, true] {
+            let mut parser = create_unified_parser_for_family(family, &tools()).unwrap();
+            let refused = parser.initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: mode(named),
+                ..Default::default()
+            });
+            assert!(
+                refused.is_err(),
+                "{family} named={named} accepted guided output"
+            );
+        }
+    }
+}
+
 fn mode(named: bool) -> UnifiedToolOutputMode {
     UnifiedToolOutputMode::GuidedJson {
         named_tool: named.then(|| "write_file".into()),
@@ -38,10 +79,334 @@ fn parts(named: bool) -> (&'static str, &'static str) {
 }
 
 #[test]
+fn response_prefill_native_body_cannot_become_the_guided_payload() {
+    for (family, header, trailer, literal_prefix) in [
+        (
+            "gpt_oss",
+            "<|start|>assistant<|channel|>commentary to=functions.ignored <|constrain|>json<|message|>",
+            "<|call|>",
+            "I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>",
+        ),
+        (
+            "gpt_oss",
+            "<|start|>assistant to=functions.ignored<|channel|>commentary<|message|>",
+            "<|call|>",
+            "I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>",
+        ),
+        (
+            "kimi_k3",
+            "<|open|>tools<|sep|><|open|>call tool=\"ignored\" index=\"1\"<|sep|>",
+            "<|close|>call<|sep|><|close|>tools<|sep|>",
+            "I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>",
+        ),
+    ] {
+        for array in [false, true] {
+            let value = if array {
+                serde_json::json!([{"name":"get_weather","arguments":{"city":"Rome"}}])
+            } else {
+                serde_json::json!({"city":"Rome"})
+            };
+            let body = if family == "gpt_oss" {
+                serde_json::json!({"x":value}).to_string()
+            } else {
+                format!(
+                    "<|open|>argument key=\"x\" type=\"{}\"<|sep|>{value}<|close|>argument<|sep|>",
+                    if array { "array" } else { "object" }
+                )
+            };
+            let quoted_prefix = format!("\"{literal_prefix}\" then prose ");
+            let non_call_prefix = format!("{{}}{literal_prefix}");
+            for prefix in ["", literal_prefix, &quoted_prefix, &non_call_prefix] {
+                for named in [false, true] {
+                    if named && prefix == non_call_prefix {
+                        continue;
+                    }
+                    let payload = if named {
+                        r#"{"city":"Paris"}"#
+                    } else {
+                        r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#
+                    };
+                    let input = format!("{prefix}{header}{body}{trailer}{payload}");
+                    let mut expected = Vec::new();
+                    if !prefix.is_empty() {
+                        expected.push(UnifiedEvent::Text {
+                            text: prefix.into(),
+                        });
+                    }
+                    expected.push(UnifiedEvent::ToolCall {
+                        name: "get_weather".into(),
+                        arguments: serde_json::json!({"city":"Paris"}),
+                    });
+                    for policy in [
+                        InvalidGuidedPayloadPolicy::Reject,
+                        InvalidGuidedPayloadPolicy::RecoverAsText,
+                        InvalidGuidedPayloadPolicy::StreamBestEffort,
+                    ] {
+                        let mut parser = create_unified_parser_for_family(family, &[]).unwrap();
+                        let init = UnifiedParserInit {
+                            starting_state: UnifiedParserStartingState::Response,
+                            tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                                named_tool: named.then(|| "get_weather".into()),
+                            },
+                            invalid_guided_payload: policy,
+                            ..Default::default()
+                        };
+                        if policy == InvalidGuidedPayloadPolicy::Reject {
+                            let incomplete = format!("{prefix}{header}{body}{trailer}");
+                            for split in incomplete
+                                .char_indices()
+                                .map(|(at, _)| at)
+                                .chain([incomplete.len()])
+                            {
+                                parser.reset();
+                                parser.initialize_request(init.clone()).unwrap();
+                                assert!(parser.push(&incomplete[..split]).unwrap().is_empty());
+                                assert!(parser.push(&incomplete[split..]).unwrap().is_empty());
+                                assert!(parser.finish().is_err());
+                            }
+                        }
+                        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                            parser.reset();
+                            parser.initialize_request(init.clone()).unwrap();
+                            let mut events = parser.push(&input[..split]).unwrap();
+                            events.extend(parser.push(&input[split..]).unwrap());
+                            events.extend(parser.finish().unwrap().events);
+                            assert_eq!(
+                                assemble(&events),
+                                expected,
+                                "{family} {policy:?} named={named} array={array} prefix={} split={split}",
+                                !prefix.is_empty()
+                            );
+                        }
+                        parser.reset();
+                        parser.initialize_request(init.clone()).unwrap();
+                        let mut events = Vec::new();
+                        for character in input.chars() {
+                            events.extend(parser.push(&character.to_string()).unwrap());
+                        }
+                        events.extend(parser.finish().unwrap().events);
+                        assert_eq!(
+                            assemble(&events),
+                            expected,
+                            "{family} {policy:?} named={named} array={array} character chunks"
+                        );
+                        if family == "gpt_oss" {
+                            let ids =
+                                dynamo_parsers_v2::tool_calling::harmony::encode_harmony(&input)
+                                    .unwrap();
+                            for split in 0..=ids.len() {
+                                parser.reset();
+                                parser.initialize_request(init.clone()).unwrap();
+                                let mut events = parser.push_tokens(&ids[..split]).unwrap();
+                                events.extend(parser.push_tokens(&ids[split..]).unwrap());
+                                events.extend(parser.finish().unwrap().events);
+                                assert_eq!(
+                                    assemble(&events),
+                                    expected,
+                                    "{family} {policy:?} named={named} array={array} token split={split}"
+                                );
+                            }
+                            parser.reset();
+                            parser.initialize_request(init).unwrap();
+                            let mut events = Vec::new();
+                            for id in ids.chunks(1) {
+                                events.extend(parser.push_tokens(id).unwrap());
+                            }
+                            events.extend(parser.finish().unwrap().events);
+                            assert_eq!(
+                                assemble(&events),
+                                expected,
+                                "{family} {policy:?} named={named} array={array} single tokens"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn response_prefill_boundary_owned_native_body_stays_outside_guided_payload() {
+    // Corpus initialization cannot choose all three public invalid-payload policies.
+    for (family, input) in [
+        (
+            "deepseek_v4",
+            "I mean <think>self literal</think><｜DSML｜tool_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"x\" string=\"false\">{\"city\": \"Rome\"}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+        ),
+        (
+            "deepseek_v4",
+            "I mean <think>self literal</think><｜DSML｜tool_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"x\" string=\"false\">[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Rome\"}}]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+        ),
+        (
+            "deepseek_v41",
+            "I mean <think>self literal</think><｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"false\">{\"city\": \"Rome\"}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+        ),
+        (
+            "deepseek_v41",
+            "I mean <think>self literal</think><｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"false\">[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Rome\"}}]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+        ),
+        (
+            "glm47",
+            "I mean <think>self literal</think><tool_call>f<arg_key>x</arg_key><arg_value>{\"city\": \"Rome\"}</arg_value></tool_call>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+        ),
+        (
+            "glm47",
+            "I mean <think>self literal</think><tool_call>f<arg_key>x</arg_key><arg_value>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Rome\"}}]</arg_value></tool_call>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+        ),
+    ] {
+        for non_call in ["", "{}"] {
+            let input = format!("{non_call}{input}");
+            let expected = vec![
+                UnifiedEvent::Text {
+                    text: format!("{non_call}I mean <think>self literal</think>"),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                },
+            ];
+            for policy in [
+                InvalidGuidedPayloadPolicy::Reject,
+                InvalidGuidedPayloadPolicy::RecoverAsText,
+                InvalidGuidedPayloadPolicy::StreamBestEffort,
+            ] {
+                let mut parser = create_unified_parser_for_family(family, &[]).unwrap();
+                let init = UnifiedParserInit {
+                    starting_state: UnifiedParserStartingState::Response,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: policy,
+                    ..Default::default()
+                };
+                for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                    parser.reset();
+                    parser.initialize_request(init.clone()).unwrap();
+                    let mut events = parser.push(&input[..split]).unwrap();
+                    events.extend(parser.push(&input[split..]).unwrap());
+                    events.extend(parser.finish().unwrap().events);
+                    assert_eq!(
+                        assemble(&events),
+                        expected,
+                        "{family} {policy:?} split={split}"
+                    );
+                }
+                parser.reset();
+                parser.initialize_request(init).unwrap();
+                let mut events = Vec::new();
+                for character in input.chars() {
+                    events.extend(parser.push(&character.to_string()).unwrap());
+                }
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(
+                    assemble(&events),
+                    expected,
+                    "{family} {policy:?} character chunks"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn response_prefill_native_string_json_is_not_a_guided_call() {
+    // Corpus initialization cannot choose all three public invalid-payload policies.
+    let native = r#"<|tool_call>call:f{x:<|"|>[{"name":"get_weather","arguments":{"city":"Rome"}}]<|"|>}<tool_call|>"#;
+    let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+    for prefix in ["", "{}"] {
+        let input = format!("{prefix}{native}{payload}");
+        let mut expected = Vec::new();
+        if !prefix.is_empty() {
+            expected.push(UnifiedEvent::Text {
+                text: prefix.into(),
+            });
+        }
+        expected.push(UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city":"Paris"}),
+        });
+        for policy in [
+            InvalidGuidedPayloadPolicy::Reject,
+            InvalidGuidedPayloadPolicy::RecoverAsText,
+            InvalidGuidedPayloadPolicy::StreamBestEffort,
+        ] {
+            let mut parser = create_unified_parser_for_family("gemma4", &[]).unwrap();
+            let init = UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: policy,
+                ..Default::default()
+            };
+            for split in 0..=input.len() {
+                parser.reset();
+                parser.initialize_request(init.clone()).unwrap();
+                let mut events = parser.push(&input[..split]).unwrap();
+                events.extend(parser.push(&input[split..]).unwrap());
+                assert_eq!(
+                    assemble(&events),
+                    expected,
+                    "{policy:?} split={split} before finish"
+                );
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(assemble(&events), expected, "{policy:?} split={split}");
+            }
+        }
+    }
+}
+
+#[test]
+fn response_prefill_pending_native_array_keeps_its_tail_owned() {
+    // Corpus initialization cannot choose all three public invalid-payload policies.
+    for prefix in ["", "{}"] {
+        let input = format!(
+            "{prefix}{}",
+            "I mean <|channel>thought\nself literal<channel|><|tool_call>call:f{x:[{name:<|\"|>get_weather<|\"|>,arguments:{city:<|\"|>Rome<|\"|>}}]}<tool_call|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+        );
+        let expected = vec![
+            UnifiedEvent::Text {
+                text: format!(
+                    "{prefix}{}",
+                    "I mean <|channel>thought\nself literal<channel|>"
+                ),
+            },
+            UnifiedEvent::ToolCall {
+                name: "get_weather".into(),
+                arguments: serde_json::json!({"city":"Paris"}),
+            },
+        ];
+        for policy in [
+            InvalidGuidedPayloadPolicy::Reject,
+            InvalidGuidedPayloadPolicy::RecoverAsText,
+            InvalidGuidedPayloadPolicy::StreamBestEffort,
+        ] {
+            let mut parser = create_unified_parser_for_family("gemma4", &[]).unwrap();
+            let init = UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: policy,
+                ..Default::default()
+            };
+            for split in 0..=input.len() {
+                parser.reset();
+                parser.initialize_request(init.clone()).unwrap();
+                let mut events = parser.push(&input[..split]).unwrap();
+                events.extend(parser.push(&input[split..]).unwrap());
+                assert_eq!(
+                    assemble(&events),
+                    expected,
+                    "{policy:?} split={split} before finish"
+                );
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(assemble(&events), expected, "{policy:?} split={split}");
+            }
+        }
+    }
+}
+
+#[test]
 fn response_prefill_streams_long_argument_after_literal_marker() {
     // Corpus Init cannot select StreamBestEffort or assert pre-close deltas, so
     // the live request policy and its progress deadline need a Rust regression.
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             let (head, tail) = parts(named);
             for split in 0..=head.len() {
@@ -83,7 +448,7 @@ fn response_prefill_streams_long_argument_after_literal_marker() {
 
 #[test]
 fn response_prefill_buffering_contracts_keep_arguments_transactional() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             for policy in [
                 InvalidGuidedPayloadPolicy::RecoverAsText,
@@ -118,7 +483,7 @@ fn response_prefill_buffering_contracts_keep_arguments_transactional() {
 
 #[test]
 fn response_prefill_rejects_or_recovers_malformed_payload_without_dispatch() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             let raw = if named {
                 r#"{"path":"x","content":"unterminated"#
@@ -160,7 +525,7 @@ fn response_prefill_rejects_or_recovers_malformed_payload_without_dispatch() {
 
 #[test]
 fn response_prefill_skips_non_call_json_and_preserves_no_tool_prose() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for offered_tools in [tools(), Vec::new()] {
             for prose in [
                 r#"{"message":"ordinary JSON prose"}"#,
@@ -228,11 +593,14 @@ fn response_prefill_skips_non_call_json_and_preserves_no_tool_prose() {
 
 #[test]
 fn all_starting_channels_keep_long_field_progress_and_argument_order() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         let closer = match dynamo_parsers_v2::canonical_unified_family(family).unwrap() {
+            "minimax_m3" => "</mm:think>",
+            "beam" => "<|end|>",
             "gemma4" => "<channel|>",
+            "gpt_oss" => "<|end|>",
             "kimi_k3" => "<|close|>think<|sep|>",
-            "muse_glimmer" => "<|eom|>",
+            "muse_glimmer" | "muse_spark" => "<|eom|>",
             _ => "</think>",
         };
         for named in [false, true] {
@@ -241,6 +609,10 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
                 UnifiedParserStartingState::Response,
                 UnifiedParserStartingState::Reasoning,
             ] {
+                let starts_in_reasoning = state == UnifiedParserStartingState::Reasoning
+                    || (state == UnifiedParserStartingState::None
+                        && dynamo_parsers_v2::canonical_unified_family(family)
+                            == Some("nemotron_v3"));
                 for (args_head, args_tail) in ["", " ", "x"].into_iter().flat_map(|preceding| {
                     let path = serde_json::to_string(preceding).unwrap();
                     [
@@ -267,7 +639,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
                             ..Default::default()
                         })
                         .unwrap();
-                    let mut head = if state == UnifiedParserStartingState::Reasoning {
+                    let mut head = if starts_in_reasoning {
                         format!("plan{closer}")
                     } else {
                         String::new()
@@ -290,7 +662,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
                     events.extend(parser.push(&tail).unwrap());
                     events.extend(parser.finish().unwrap().events);
                     let mut expected = Vec::new();
-                    if state == UnifiedParserStartingState::Reasoning {
+                    if starts_in_reasoning {
                         expected.push(UnifiedEvent::Reasoning {
                             text: "plan".into(),
                         });
@@ -365,7 +737,7 @@ fn visible_prose_preserves_quoted_native_markers_without_changing_routing() {
 
 #[test]
 fn reject_quoted_response_prefix_waits_for_payload_validation() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             for quote in ['"', '\'', '`'] {
                 let prefix = format!("The literal {quote}<tool_call>{quote} marker. ");

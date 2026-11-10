@@ -1,0 +1,16 @@
+reference-goldens.jsonl
+=======================
+
+288 serving-level golden cases for the `beam` template, extracted unchanged (fields reduced to
+id / source / prefix / chunks / tools / serving / serving_batch) from the model builder's frozen
+differential corpus `lib/response-template/tests/data/{generated,tags}.jsonl` on their Dynamo
+reference branch (commit cb95d1dfd5e05f2217f1ca9c956fbca766006f22). Only cases whose
+`template` is absent or byte-identical to the built-in Beam `response_template` were kept.
+
+The expectations were recorded from the builder's Python reference implementation, not from any
+Dynamo parser. They are an ORACLE for argument typing and split-invariance; where this crate's
+parser goals intentionally differ (for example, never leaking tool markup into content), the
+divergence is listed with a reason in `reference-known-divergences.yaml`.
+
+Upstream data copyright (c) 2026 the model builder, Apache-2.0; see the SPDX header of the
+source crate. Keep this notice with the file.

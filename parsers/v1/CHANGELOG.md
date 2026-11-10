@@ -5,6 +5,118 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [11.0.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.10...dynamo-parsers-v11.0.11) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Add schema-safe native empty Qwen XML calls ([#570](https://github.com/ai-dynamo/frontend-crates/pull/570))
+
+## [11.0.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.8...dynamo-parsers-v11.0.9) - 2026-11-07
+
+### Bug fixes
+
+- *(parsers)* Preserve GPT-OSS return-ending tool calls ([#556](https://github.com/ai-dynamo/frontend-crates/pull/556))
+
+## [11.0.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.7...dynamo-parsers-v11.0.8) - 2026-11-06
+
+### Bug fixes
+
+- *(parsers)* Preserve ordinary JSON arrays without tool calls ([#559](https://github.com/ai-dynamo/frontend-crates/pull/559))
+
+## [11.0.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.6...dynamo-parsers-v11.0.7) - 2026-11-04
+
+### Bug fixes
+
+- *(parsers-v2)* Let a declared type win over contradicting MiniMax-M3 literals ([#526](https://github.com/ai-dynamo/frontend-crates/pull/526))
+
+## [11.0.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.5...dynamo-parsers-v11.0.6) - 2026-11-04
+
+### Bug fixes
+
+- *(structural-tag)* Canonicalize escaped local $ref targets before grammar compilation ([#516](https://github.com/ai-dynamo/frontend-crates/pull/516))
+
+## [11.0.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.4...dynamo-parsers-v11.0.5) - 2026-11-03
+
+### Bug fixes
+
+- *(gpt-oss)* Recover the final message a malformed harmony header strands ([#236](https://github.com/ai-dynamo/frontend-crates/pull/236))
+
+## [11.0.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.1...dynamo-parsers-v11.0.2) - 2026-11-03
+
+### Bug fixes
+
+- *(parsers)* [P1] coordinate Harmony vocabulary cache loading ([#513](https://github.com/ai-dynamo/frontend-crates/pull/513))
+
+## [11.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.0...dynamo-parsers-v11.0.1) - 2026-11-02
+
+### Bug fixes
+
+- *(parsers)* Resolve XML tool argument types through $ref, allOf, type arrays, not and if/then/else ([#517](https://github.com/ai-dynamo/frontend-crates/pull/517))
+
+## [10.2.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.3...dynamo-parsers-v10.2.4) - 2026-10-31
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only content from tool-only jail turns ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+### Bug fixes
+
+- *(parsers)* Drop whitespace-only content from Nemotron V3 tool-only turns in the tool-calling jail, for callers that name the reasoning parser (`JailedStreamBuilder::reasoning_parser`, `apply_tool_calling_jail_with_reasoning_parser`). Every other parser pair and the existing entry points are unchanged ([#449](https://github.com/ai-dynamo/frontend-crates/pull/449))
+
+## [10.2.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.2...dynamo-parsers-v10.2.3) - 2026-10-29
+
+### Bug fixes
+
+- *(parsers)* Hold back a partial force-reasoning start tag after a prefix ([#481](https://github.com/ai-dynamo/frontend-crates/pull/481))
+
+### Documentation
+
+- *(parsers)* Refresh library usage and contributor guides ([#492](https://github.com/ai-dynamo/frontend-crates/pull/492))
+
+## [10.2.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.1...dynamo-parsers-v10.2.2) - 2026-10-26
+
+### Bug fixes
+
+- *(parsers)* Strip a force-reasoning <think> that follows text in one chunk ([#477](https://github.com/ai-dynamo/frontend-crates/pull/477))
+
+## [10.2.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.0...dynamo-parsers-v10.2.1) - 2026-10-24
+
+### Bug fixes
+
+- *(parsers)* Accept whitespace between glm47 arg_key and arg_value ([#472](https://github.com/ai-dynamo/frontend-crates/pull/472))
+
+## [10.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.1.0...dynamo-parsers-v10.2.0) - 2026-10-23
+
+### Features
+
+- Add Muse Spark Open parsers and Chat/Responses tool support ([#450](https://github.com/ai-dynamo/frontend-crates/pull/450))
+
+## [10.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.7...dynamo-parsers-v10.1.0) - 2026-10-22
+
+### Features
+
+- *(parsers)* Share Kimi grammars and add v2 structural tags ([#349](https://github.com/ai-dynamo/frontend-crates/pull/349))
+
+## [10.0.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.6...dynamo-parsers-v10.0.7) - 2026-10-16
+
+### Bug fixes
+
+- *(parsers)* Consume DSML separators in v1/v2 and preserve streamed metadata ([#405](https://github.com/ai-dynamo/frontend-crates/pull/405))
+
+## [10.0.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.5...dynamo-parsers-v10.0.6) - 2026-10-16
+
+### Bug fixes
+
+- *(parsers)* Keep dotted tool names whole in the harmony parser ([#416](https://github.com/ai-dynamo/frontend-crates/pull/416))
+
+## [10.0.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.4...dynamo-parsers-v10.0.5) - 2026-10-15
+
+### Bug fixes
+
+- *(parsers)* Re-jail a complete start marker in trailing content ([#408](https://github.com/ai-dynamo/frontend-crates/pull/408))
+
 ## [10.0.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.3...dynamo-parsers-v10.0.4) - 2026-10-15
 
 ### Bug fixes

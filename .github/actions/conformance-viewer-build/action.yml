@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+name: Install locked conformance viewer bundler
+description: Keep publication and isolated browser generation on the same locked JavaScript build.
+runs:
+  using: composite
+  steps:
+    - name: Install locked production JavaScript bundler
+      shell: bash
+      run: |
+        installation="$RUNNER_TEMP/conformance-viewer-build"
+        mkdir -p "$installation"
+        \cp -f conformance/viewer/package.json conformance/viewer/package-lock.json "$installation/"
+        npm ci --prefix "$installation" --ignore-scripts
+        printf 'CONFORMANCE_ESBUILD_ROOT=%s\n' "$installation" >> "$GITHUB_ENV"

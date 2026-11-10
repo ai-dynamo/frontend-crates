@@ -1,0 +1,35 @@
+[
+  {
+    "name": "core",
+    "processes": 4,
+    "bundler": true
+  },
+  {
+    "name": "qualification",
+    "count": 8,
+    "processes": 3,
+    "partition": "resources"
+  },
+  {
+    "name": "native-browser",
+    "bundler": true
+  },
+  {
+    "name": "browser",
+    "count": 2,
+    "partition": "tests"
+  },
+  {
+    "name": "viewer",
+    "count": 3,
+    "bundler": true,
+    "partition": "tests"
+  },
+  {
+    "name": "first-matrix"
+  },
+  {
+    "name": "fixtures",
+    "processes": 4
+  }
+]

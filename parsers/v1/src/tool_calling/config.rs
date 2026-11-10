@@ -105,6 +105,9 @@ impl Default for JsonParserConfig {
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct XmlParserConfig {
+    /// Treat Markdown code examples as text, not executable tool markup.
+    #[serde(default)]
+    pub protect_code_examples: bool,
     /// Start token for individual tool calls (e.g., "<tool_call>")
     pub tool_call_start_token: String,
     /// End token for individual tool calls (e.g., `</tool_call>`)
@@ -154,6 +157,7 @@ pub struct XmlParserConfig {
 impl Default for XmlParserConfig {
     fn default() -> Self {
         Self {
+            protect_code_examples: false,
             tool_call_start_token: "<tool_call>".to_string(),
             tool_call_end_token: "</tool_call>".to_string(),
             function_start_token: "<function=".to_string(),
@@ -169,6 +173,13 @@ impl Default for XmlParserConfig {
 }
 
 impl XmlParserConfig {
+    pub(crate) fn find_marker(&self, text: &str, marker: &str) -> Option<usize> {
+        if self.protect_code_examples {
+            super::code_spans::find_unquoted(text, marker)
+        } else {
+            text.find(marker)
+        }
+    }
     /// Returns true when the chunk lacks the outer `<tool_call>` wrapper but
     /// contains `<function=...>`, and the family opts into back-off parsing
     /// (qwen3_coder, nemotron_nano). In this mode the function-level tokens
@@ -177,10 +188,21 @@ impl XmlParserConfig {
     /// agree on what counts as a tool call.
     pub fn is_bare_function_mode(&self, chunk: &str) -> bool {
         self.backoff_when_no_wrapper
-            && !chunk.contains(self.tool_call_start_token.as_str())
-            && chunk.contains(self.function_start_token.as_str())
+            && self
+                .find_marker(chunk, &self.tool_call_start_token)
+                .is_none()
+            && self
+                .find_marker(chunk, &self.function_start_token)
+                .is_some()
     }
 }
+
+/// Separator the DeepSeek V3.2/V4 encoders insert between assistant content and
+/// the DSML tool-call block. It is template framing, not content: the reference
+/// parser consumes it with the block, and re-rendering a message whose content
+/// still ends with it doubles it, so the re-rendered history no longer matches
+/// the generated tokens.
+pub(crate) const DSML_BLOCK_SEPARATOR: &str = "\n\n";
 
 /// Configuration for DSML-style tool call parser (DeepSeek V3.2+)
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -217,6 +239,16 @@ impl Default for DsmlParserConfig {
             parameter_end: "</｜DSML｜parameter>".to_string(),
             allow_eof_recovery: false,
         }
+    }
+}
+
+impl DsmlParserConfig {
+    pub(crate) fn tool_separator(&self) -> Option<&'static str> {
+        (matches!(
+            self.block_start.as_str(),
+            "<｜DSML｜function_calls>" | "<｜DSML｜tool_calls>"
+        ) && self.invoke_start_prefix == "<｜DSML｜invoke name=")
+            .then_some(DSML_BLOCK_SEPARATOR)
     }
 }
 
@@ -456,10 +488,16 @@ impl ParserConfig {
             ParserConfig::Pythonic => vec![],
             ParserConfig::Typescript => vec![],
             ParserConfig::Dsml(config) => {
-                vec![
+                let mut tokens = vec![
                     config.block_start.clone(),
                     config.invoke_start_prefix.clone(),
-                ]
+                ];
+                if let Some(separator) = config.tool_separator() {
+                    // Hold the encoder's separator with either wrapped or recovered calls.
+                    tokens.insert(0, format!("{separator}{}", config.invoke_start_prefix));
+                    tokens.insert(0, format!("{separator}{}", config.block_start));
+                }
+                tokens
             }
             ParserConfig::Glm47(config) => vec![config.tool_call_start.clone()],
             ParserConfig::KimiK2(config) => {
@@ -669,7 +707,7 @@ impl ToolCallConfig {
                     "<|start|>assistant<|channel|>commentary".to_string(),
                     "<|channel|>commentary".to_string(),
                 ],
-                tool_call_end_tokens: vec!["<|call|>".to_string()],
+                tool_call_end_tokens: vec!["<|call|>".to_string(), "<|return|>".to_string()],
                 ..Default::default()
             }),
             structural_tag_builder: None,
@@ -726,6 +764,7 @@ impl ToolCallConfig {
         //              parse the entire input as a tool block
         Self {
             parser_config: ParserConfig::Xml(XmlParserConfig {
+                protect_code_examples: true,
                 passthrough_when_no_function: true,
                 backoff_when_no_wrapper: true,
                 ..XmlParserConfig::default()
@@ -827,6 +866,7 @@ impl ToolCallConfig {
         Self {
             parser_config: ParserConfig::Xml(XmlParserConfig {
                 tool_call_start_token: "<minimax:tool_call>".to_string(),
+                protect_code_examples: false,
                 tool_call_end_token: "</minimax:tool_call>".to_string(),
                 function_start_token: "<invoke name=".to_string(),
                 function_end_token: "</invoke>".to_string(),

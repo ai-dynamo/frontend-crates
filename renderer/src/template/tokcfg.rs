@@ -233,6 +233,9 @@ pub fn python_trim(value: StringInput<'_>, chars: Option<Cow<'_, str>>) -> Value
 /// (`'`, `<`, `>`, `&` stay literal). serde_json leaves non-ASCII unescaped by
 /// default, matching `ensure_ascii=False`.
 pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
+    let value = crate::python::template_json(value).map_err(|err| {
+        Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
+    })?;
     let mut buf = Vec::new();
     let result = if let Ok(indent) = kwargs.get("indent") {
         // Python `json.dumps(indent=n)` separators are `(",", ": ")` with the
@@ -272,7 +275,7 @@ pub fn fromjson(value: Value) -> Result<Value, Error> {
     let parsed: serde_json::Value = serde_json::from_str(text).map_err(|err| {
         Error::new(ErrorKind::InvalidOperation, "cannot parse JSON").with_source(err)
     })?;
-    Ok(Value::from_serialize(&parsed))
+    Ok(crate::python::template_value(&parsed))
 }
 
 pub fn strftime_now(format_str: &str) -> Result<Value, Error> {
@@ -305,7 +308,7 @@ mod fromjson_tests {
     #[test]
     fn passes_through_non_string() {
         // Already-decoded values must survive a defensive `| fromjson`.
-        let already = Value::from_serialize(serde_json::json!({"a": 1}));
+        let already = crate::python::template_value(&serde_json::json!({"a": 1}));
         let out = fromjson(already).unwrap();
         assert_eq!(out.get_attr("a").unwrap().to_string(), "1");
     }

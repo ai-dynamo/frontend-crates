@@ -1,0 +1,814 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+import json
+from dataclasses import replace
+import os
+import platform
+import re
+import subprocess
+import sys
+import tarfile
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+import yaml
+
+import ci_coverage
+import ci_plan
+import ci_publication_cache
+import unified_history
+import verify_ci_selection
+import viewer_catalog
+
+
+@pytest.mark.parametrize("path", [
+    "conformance/fixtures-unified-v2/versions/dynamo-0.7.18.tar.gz",
+    "conformance/viewer/model.js", "conformance/viewer/values.js", "conformance/viewer/app.js",
+    "conformance/viewer/data.js", "conformance/viewer/yaml_data.js",
+    "conformance/publisher/src/yaml.rs", "conformance/utils/src/viewer_catalog.py",
+    "conformance/utils/src/ci_coverage.py", "conformance/parser_families.yaml",
+    "conformance/fixtures-manifest.json", ".gitattributes", "Cargo.lock", "unknown-file",
+])
+def test_evidence_readers_and_unclassified_changes_require_exhaustive(path):
+    assert ci_coverage.classify(["index.html", path]) == "exhaustive"
+    assert ci_coverage.classify([]) == "exhaustive"
+    assert ci_coverage.classify(["index.html"]) == "latest-two"
+
+
+@pytest.mark.parametrize("status", ["A", "D", "T", "U", "R100", "C100"])
+def test_structural_changes_cannot_select_the_smaller_profile(status):
+    assert ci_coverage.classify_changes(f"{status}\0index.html\0") == "exhaustive"
+    assert ci_coverage.classify_changes("R100\0conformance/viewer/model.js\0index.html\0") == "exhaustive"
+    assert ci_coverage.classify_changes("M\0index.html\0") == "latest-two"
+
+
+@pytest.mark.parametrize("profile", ["exhaustive", "latest-two"])
+@pytest.mark.parametrize("shard_count", [4, sum(item["lane"] == "qualification" for item in ci_plan.plan())])
+def test_capture_shards_have_exact_disjoint_union_and_newest_versions(profile, shard_count):
+    rows = [{"path": f"{implementation}/{mode}/{family}/{version}", "implementation": implementation,
+             "mode": mode, "family": family, "version": version}
+            for implementation in ("dynamo_v2", "sglang") for mode in ("unified", "batch")
+            for family in ("a", "muse_spark") for version in ("0.7.9", "0.7.10", "0.7.18")]
+    whole = ci_coverage.select_resources(rows, profile=profile, shard=0, shards=1)
+    shards = [ci_coverage.select_resources(rows, profile=profile, shard=index, shards=shard_count) for index in range(shard_count)]
+    paths = [row["path"] for shard in shards for row in shard]
+    assert len(paths) == len(set(paths))
+    assert sorted(paths) == sorted(row["path"] for row in whole)
+    assert len(whole) == (24 if profile == "exhaustive" else 16)
+    if profile == "latest-two":
+        assert {row["version"] for row in whole} == {"0.7.10", "0.7.18"}
+
+
+def test_authored_reader_does_not_open_historical_archives(tmp_path, monkeypatch):
+    family_path = tmp_path / "families/sample/inputs_and_golden.yaml"
+    family_path.parent.mkdir(parents=True)
+    family_path.write_text(yaml.safe_dump({"input_document": {"family": "sample"},
+                                         "golden_document": {"family": "sample"}, "cases": {}}))
+    monkeypatch.setattr(unified_history, "_load_store_unlocked", lambda *_: pytest.fail("full store loaded"))
+    versions = tmp_path / "versions"
+    versions.mkdir()
+    (versions / "dynamo-0.7.18.tar.gz").write_bytes(b"must never be opened")
+    store = unified_history.load_authored_store(tmp_path)
+    assert set(store.families) == {"sample"}
+    assert not store.histories
+
+
+@pytest.mark.parametrize("linked", ["families", "family", "document"])
+def test_authored_reader_rejects_links_in_selected_inputs(tmp_path, linked):
+    root = tmp_path / "store"
+    family = root / "families/sample"
+    family.mkdir(parents=True)
+    source = family / "inputs_and_golden.yaml"
+    source.write_text("input_document: {family: sample}\ngolden_document: {family: sample}\ncases: {}\n")
+    target = {"families": root / "families", "family": family, "document": source}[linked]
+    outside = tmp_path / "outside"
+    target.rename(outside)
+    target.symlink_to(outside, target_is_directory=linked != "document")
+    with pytest.raises(ValueError):
+        unified_history.load_authored_store(root)
+
+
+def test_cache_miss_hit_corruption_and_identity_invalidation(tmp_path):
+    assert not ci_publication_cache.valid(tmp_path, "source-reader-policy")
+    for name in ci_publication_cache.FILES:
+        (tmp_path / name).write_bytes(name.encode())
+    ci_publication_cache.seal(tmp_path, "source-reader-policy")
+    assert ci_publication_cache.valid(tmp_path, "source-reader-policy")
+    for identity in ("changed-source", "changed-reader", "changed-authored", "changed-policy"):
+        assert not ci_publication_cache.valid(tmp_path, identity)
+    (tmp_path / ci_publication_cache.FILES[0]).write_bytes(b"corrupt")
+    assert not ci_publication_cache.valid(tmp_path, "source-reader-policy")
+
+
+def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_path, monkeypatch):
+    monkeypatch.delenv("CONFORMANCE_PUBLICATION_CONTEXT", raising=False)
+    paths = [
+        "conformance/fixtures-unified-v2/families/sample/dynamo_v2.yaml",
+        "conformance/viewer/app.js",
+        "conformance/utils/src/viewer_catalog.py",
+        "conformance/utils/publication-requirements.in",
+        ".gitattributes",
+        "conformance/README.md",
+        "conformance/utils/src/unified_history.py",
+        "conformance/utils/src/ci_plan.py",
+        "conformance/utils/ci-requirements.in",
+        "conformance/utils/ci-lanes.json",
+        ".github/workflows/ci.yml",
+        "README.md",
+        "conformance/utils/tests/test_ci_coverage.py",
+        "conformance/viewer-catalog.json",
+        "conformance/CONFORMANCE_v2.html",
+        "conformance/fixtures-unified-v2/families/sample/dynamo_v2-0.8.0.yaml",
+        "conformance/fixtures/toolcalling/fixtures-stream-v1/dynamo_v2-0.7.18.tar.gz",
+    ]
+    untracked = ["conformance/fixtures-unified-v2/families/other/dynamo_v2.yaml"]
+    for path in paths:
+        source = tmp_path / path
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(b"original")
+    for path in untracked:
+        source = tmp_path / path
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(b"original")
+
+    tag_refs = ["refs/tags/dynamo-parsers-v2-v0.7.18 release-tag"]
+
+    def run(arguments, **kwargs):
+        if arguments[:2] == ["git", "ls-files"]:
+            selected = untracked if "--others" in arguments else paths
+            output = "\0".join(selected).encode() + b"\0"
+        elif arguments[:2] == ["git", "for-each-ref"]:
+            pattern = arguments[-1]
+            output = "\n".join(
+                ref for ref in tag_refs if ci_publication_cache.fnmatch.fnmatchcase(ref.split(maxsplit=1)[0], pattern)
+            ).encode()
+        elif arguments == ["node", "--version"]:
+            output = b"node identity"
+        else:
+            assert arguments == ["rustc", "--version"]
+            output = b"rustc identity"
+        return SimpleNamespace(stdout=output, returncode=0)
+
+    monkeypatch.setattr(ci_publication_cache.subprocess, "run", run)
+    original = ci_publication_cache.cache_key(tmp_path, "native-full-v1")
+    assert ci_publication_cache.cache_key(tmp_path, "native-full-v2") != original
+    tag_refs.append("refs/tags/dynamo-engine-v1 unrelated-tag")
+    assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") == original
+    tag_refs[0] = "refs/tags/dynamo-parsers-v2-v0.7.18 changed-release-tag"
+    assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
+    tag_refs[0] = "refs/tags/dynamo-parsers-v2-v0.7.18 release-tag"
+    node_version = ci_publication_cache.subprocess.run
+    monkeypatch.setattr(ci_publication_cache.subprocess, "run", lambda arguments, **kwargs: (
+        SimpleNamespace(stdout=b"other node identity", returncode=0)
+        if arguments == ["node", "--version"] else node_version(arguments, **kwargs)
+    ))
+    assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
+    monkeypatch.setattr(ci_publication_cache.subprocess, "run", node_version)
+    python_version = platform.python_version
+    monkeypatch.setattr(ci_publication_cache.platform, "python_version", lambda: "test-runtime")
+    assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
+    monkeypatch.setattr(ci_publication_cache.platform, "python_version", python_version)
+    for path in paths[:9]:
+        source = tmp_path / path
+        source.write_bytes(b"changed")
+        assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
+        source.write_bytes(b"original")
+        assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") == original
+    source = tmp_path / untracked[0]
+    source.write_bytes(b"changed")
+    assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") != original
+    source.write_bytes(b"original")
+    for path in paths[9:]:
+        source = tmp_path / path
+        source.write_bytes(b"changed")
+        assert ci_publication_cache.cache_key(tmp_path, "native-full-v1") == original
+
+
+@pytest.fixture
+def publication_root(tmp_path):
+    (tmp_path / "conformance").mkdir()
+    return tmp_path
+
+
+def test_cache_stamp_updates_source_revision_without_rewriting_generation_provenance(publication_root):
+    old_revision = "a" * 40
+    revision = "b" * 40
+    publication = {
+        "schema": 1,
+        "revision": old_revision,
+        "generated_revision": old_revision,
+        "catalog_revision": "catalog-revision",
+        "generated_on": "old time",
+        "command": f"conformance-publish --root /old/workspace --output /old/pages --revision {old_revision}",
+        "output": "/old/pages",
+    }
+    encoded = json.dumps(publication, separators=(",", ":"))
+    (publication_root / "conformance/viewer-publication.json").write_text(encoded)
+    (publication_root / "index.html").write_text(
+        f'<head><script type="application/json" id="conformance-publication">{encoded}</script></head>'
+    )
+    report_path = publication_root / "conformance/CONFORMANCE_v2.html"
+    report_path.write_bytes((publication_root / "index.html").read_bytes())
+    payload_path = publication_root / "payload.bin"
+    payload_path.write_bytes(b"\x00untouched published bytes\xff")
+
+    ci_publication_cache.stamp(publication_root, revision)
+    first_stamp = (publication_root / "conformance/viewer-publication.json").read_bytes()
+    first_index = (publication_root / "index.html").read_bytes()
+    ci_publication_cache.stamp(publication_root, revision)
+    assert (publication_root / "conformance/viewer-publication.json").read_bytes() == first_stamp
+    assert (publication_root / "index.html").read_bytes() == first_index
+    ci_publication_cache.stamp(publication_root, "c" * 40)
+    revision = "c" * 40
+
+    expected = json.loads((publication_root / "conformance/viewer-publication.json").read_bytes())
+    assert expected == {**publication, "revision": revision, "source_commit_sha": revision}
+    assert report_path.read_bytes() == (publication_root / "index.html").read_bytes()
+    assert payload_path.read_bytes() == b"\x00untouched published bytes\xff"
+    assert expected["revision"] == revision
+    assert expected["generated_revision"] == old_revision
+    assert expected["generated_on"] == "old time"
+    assert expected["output"] == "/old/pages"
+    assert expected["command"] == publication["command"]
+    index = (publication_root / "index.html").read_text()
+    embedded = index.split('id="conformance-publication">', 1)[1].split("</script>", 1)[0]
+    assert json.loads(embedded) == expected
+
+
+@pytest.mark.parametrize("history", [False, True])
+@pytest.mark.parametrize("origin", ["a", "e"])
+@pytest.mark.parametrize("standalone", [False, True])
+def test_cache_stamp_keeps_bootstrap_independent_of_sidecar_policy(publication_root, history, origin, standalone):
+    identity = {"schema": 1, "revision": "a" * 40,
+                "catalog_revision": "b" * 64, "resolved_catalog_revision": "b" * 64}
+    identity["revision"] = origin * 40
+    publication = {**identity, "generated_revision": origin * 40, "command": f"conformance-publish --revision {origin * 40}",
+                   "generation_mode": "history" if history else "latest", "output": "site"}
+    if history:
+        publication["resolved_catalog_revision"] = "c" * 64
+    metadata = publication_root / "conformance/viewer-publication.json"
+    if not standalone:
+        metadata.write_text(json.dumps(publication))
+    page = publication_root / "index.html"
+    page.write_text('<script type="application/json" id="conformance-publication">' + json.dumps(identity) + '</script>')
+    ci_publication_cache.stamp(publication_root, "d" * 40)
+    expected = {**identity, "revision": "d" * 40, "source_commit_sha": "d" * 40}
+    actual = page.read_text().split('id="conformance-publication">', 1)[1].split('</script>', 1)[0]
+    assert json.loads(actual) == expected
+    if standalone:
+        assert [path.relative_to(publication_root).as_posix() for path in publication_root.rglob("*") if path.is_file()] == ["index.html"]
+    else:
+        assert json.loads(metadata.read_bytes())["resolved_catalog_revision"] == publication["resolved_catalog_revision"]
+    ci_publication_cache.stamp(publication_root, "d" * 40)
+    assert json.loads(page.read_text().split('id="conformance-publication">', 1)[1].split('</script>', 1)[0]) == expected
+
+
+def test_cache_stamp_preserves_legacy_metadata_without_generated_revision(publication_root):
+    revision = "a" * 40
+    publication = {
+        "schema": 1,
+        "revision": revision,
+        "command": f"conformance-publish --revision {revision}",
+    }
+    encoded = json.dumps(publication)
+    publication_path = publication_root / "conformance/viewer-publication.json"
+    index_path = publication_root / "index.html"
+    publication_path.write_text(encoded)
+    index_path.write_text(
+        f'<head><script type="application/json" id="conformance-publication">{encoded}</script></head>'
+    )
+
+    ci_publication_cache.stamp(publication_root, "b" * 40)
+
+    updated = json.loads(publication_path.read_bytes())
+    assert updated["revision"] == "b" * 40
+    assert updated["generated_revision"] == revision
+    embedded = index_path.read_text().split('id="conformance-publication">', 1)[1].split("</script>", 1)[0]
+    assert json.loads(embedded) == updated
+    ci_publication_cache.stamp(publication_root, "b" * 40)
+    assert json.loads(publication_path.read_bytes()) == updated
+
+
+@pytest.mark.parametrize("has_generated_revision", [False, True])
+def test_cache_stamp_rejects_command_revision_mismatch(publication_root, has_generated_revision):
+    revision = "a" * 40
+    publication = {
+        "schema": 1,
+        "revision": revision,
+        "generated_on": "old time",
+        "command": f"conformance-publish --revision {'b' * 40}",
+    }
+    if has_generated_revision:
+        publication["revision"] = "b" * 40
+        publication["generated_revision"] = revision
+    encoded = json.dumps(publication)
+    (publication_root / "conformance/viewer-publication.json").write_text(encoded)
+    (publication_root / "index.html").write_text(
+        f'<head><script type="application/json" id="conformance-publication">{encoded}</script></head>'
+    )
+
+    with pytest.raises(ValueError, match="does not match its source revision"):
+        ci_publication_cache.stamp(publication_root, "c" * 40)
+
+
+@pytest.mark.parametrize("generated_revision", [None, 42, "not-a-commit", "A" * 40, "a" * 39])
+def test_cache_stamp_rejects_malformed_generated_revision_before_writing(publication_root, generated_revision):
+    revision = "a" * 40
+    publication = {
+        "schema": 1,
+        "revision": revision,
+        "generated_revision": generated_revision,
+        "generated_on": "old time",
+        "command": f"conformance-publish --revision {revision}",
+    }
+    encoded = json.dumps(publication)
+    publication_path = publication_root / "conformance/viewer-publication.json"
+    index_path = publication_root / "index.html"
+    publication_path.write_text(encoded)
+    index_path.write_text(
+        f'<head><script type="application/json" id="conformance-publication">{encoded}</script></head>'
+    )
+
+    with pytest.raises(ValueError, match="generated revision"):
+        ci_publication_cache.stamp(publication_root, "b" * 40)
+
+    assert publication_path.read_text() == encoded
+    assert f'>{encoded}</script>' in index_path.read_text()
+
+
+@pytest.mark.parametrize("schema", [True, 1.0])
+def test_cache_stamp_rejects_malformed_schema_before_writing(publication_root, schema):
+    revision = "a" * 40
+    publication = {"schema": schema, "revision": revision,
+                   "command": f"conformance-publish --revision {revision}"}
+    encoded = json.dumps(publication)
+    publication_path = publication_root / "conformance/viewer-publication.json"
+    index_path = publication_root / "index.html"
+    publication_path.write_text(encoded)
+    index = f'<script type="application/json" id="conformance-publication">{encoded}</script>'
+    index_path.write_text(index)
+
+    with pytest.raises(ValueError, match="unsupported publication metadata"):
+        ci_publication_cache.stamp(publication_root, "b" * 40)
+
+    assert publication_path.read_text() == encoded
+    assert index_path.read_text() == index
+
+
+@pytest.mark.parametrize("attached_revision", ["a" * 40, "b" * 40])
+def test_cache_stamp_rejects_duplicate_attached_revision_before_writing(publication_root, attached_revision):
+    revision = "a" * 40
+    publication = {"schema": 1, "revision": revision, "generated_revision": revision,
+                   "command": f"conformance-publish --revision {revision} --revision={attached_revision}"}
+    encoded = json.dumps(publication)
+    publication_path = publication_root / "conformance/viewer-publication.json"
+    index_path = publication_root / "index.html"
+    publication_path.write_text(encoded)
+    index = f'<script type="application/json" id="conformance-publication">{encoded}</script>'
+    index_path.write_text(index)
+
+    with pytest.raises(ValueError, match="does not match its source revision"):
+        ci_publication_cache.stamp(publication_root, "c" * 40)
+
+    assert publication_path.read_text() == encoded
+    assert index_path.read_text() == index
+
+
+def test_cache_stamp_cli_uses_native_publication_layout(publication_root):
+    revision = "a" * 40
+    metadata = {"schema": 1, "revision": revision, "generated_revision": revision,
+                "command": f"conformance-publish --root /source --output /pages --revision {revision}"}
+    publication_path = publication_root / "conformance/viewer-publication.json"
+    publication_path.write_text(json.dumps(metadata))
+    index_path = publication_root / "index.html"
+    index_path.write_text(f'<head><script type="application/json" id="conformance-publication">{json.dumps(metadata)}</script></head>')
+    payload_path = publication_root / "conformance/payload.bin"
+    payload_path.write_bytes(b"unchanged generated payload")
+    script = Path(ci_publication_cache.__file__)
+
+    for target in ["b" * 40, "b" * 40, "c" * 40]:
+        subprocess.run([sys.executable, str(script), "stamp", "--directory", str(publication_root),
+                        "--revision", target], check=True, capture_output=True, text=True)
+        expected = {**metadata, "revision": target, "source_commit_sha": target}
+        assert json.loads(publication_path.read_bytes()) == expected
+        embedded = index_path.read_text().split('id="conformance-publication">', 1)[1].split("</script>", 1)[0]
+        assert json.loads(embedded) == expected
+        assert payload_path.read_bytes() == b"unchanged generated payload"
+        assert not (publication_root / "viewer-publication.json").exists()
+
+
+def test_cache_identity_does_not_follow_tracked_directory_links(tmp_path):
+    outside = tmp_path / "external"
+    outside.mkdir()
+    link = tmp_path / "skills"
+    link.symlink_to(outside, target_is_directory=True)
+    before = ci_publication_cache.input_identity(link)
+    (outside / "unrelated.yaml").write_bytes(b"not a publication input")
+    assert ci_publication_cache.input_identity(link) == before
+    link.unlink()
+    link.symlink_to(tmp_path / "different", target_is_directory=True)
+    assert ci_publication_cache.input_identity(link) != before
+
+
+def test_qualification_matrix_installs_the_bundler_before_execution():
+    root = Path(__file__).resolve().parents[3]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    steps = workflow["jobs"]["conformance-check"]["steps"]
+    installation = next(index for index, step in enumerate(steps)
+                        if step.get("uses") == "./.github/actions/conformance-viewer-build")
+    execution = next(index for index, step in enumerate(steps)
+                     if "--run" in step.get("run", ""))
+    assert installation < execution
+    assert "matrix.bundler" in steps[installation]["if"]
+
+
+@pytest.mark.parametrize("include_history", [False, True])
+@pytest.mark.parametrize("scope", ["fixtures", "publication"])
+def test_browser_collection_declares_latest_and_history_dependencies(tmp_path, include_history, scope):
+    root = Path(__file__).resolve().parents[3]
+    command = [sys.executable, "-m", "pytest", "conformance/utils/tests/test_browser_viewer.py",
+               "--collect-only", "-q", "--conformance-scope", scope]
+    if include_history:
+        command.append("--include-history")
+    result = subprocess.run(command, cwd=root, capture_output=True, text=True,
+                            env={"PATH": os.environ["PATH"], "CONFORMANCE_INCLUDE_HISTORY": "false",
+                                 "CONFORMANCE_SELECTION_DIR": str(tmp_path)})
+    assert result.returncode in (0, 5), result.stdout + result.stderr
+    receipts = list(tmp_path.glob("*.json"))
+    assert len(receipts) == 1
+    receipt = json.loads(receipts[0].read_bytes())
+    assert receipt["include_history"] is include_history
+    assert receipt["coverage"] == "exhaustive"
+    selected = {node.split("::")[-1] for node in receipt["selected"]}
+    latest = {"test_original_yaml_view_and_blob_download_preserve_source_bytes",
+              "test_muse_spark_popup_preserves_message_phases"}
+    history = {"test_original_archive_view_and_blob_download_preserve_source_bytes",
+               "test_historical_muse_spark_popup_preserves_message_phases"}
+    assert selected.intersection(latest) == (latest if scope == "publication" else set())
+    assert selected.intersection(history) == (history if scope == "publication" and include_history else set())
+
+
+def test_workflow_publishes_before_qualification_and_requires_every_lane():
+    root = Path(__file__).resolve().parents[3]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    jobs = workflow["jobs"]
+    assert jobs["conformance-table"]["if"] == "${{ always() }}"
+    for name, job in jobs.items():
+        if name not in {"conformance-table", "deploy-pages", "finalize-publication"}:
+            assert "if" not in job, name
+    assert workflow["env"] == {"CONFORMANCE_INCLUDE_HISTORY": "true", "CONFORMANCE_COVERAGE": "exhaustive"}
+    assert jobs["conformance-fixtures"]["needs"] == "prepare"
+    assert jobs["rust"].get("needs") is None
+    matrix = jobs["conformance-check"]
+    assert set(matrix["needs"]) == {"prepare", "pages-build"}
+    assert matrix["strategy"]["fail-fast"] is False
+    assert matrix["strategy"]["matrix"] == {"include": "${{ fromJSON(needs.prepare.outputs.validation_matrix) }}"}
+    assert matrix["runs-on"] == "ubuntu-24.04"
+    assert matrix["permissions"] == {"contents": "read", "actions": "read"}
+    assert "conformance-check" in jobs["conformance-table"]["needs"]
+    assert all("strategy.job-total" not in step.get("run", "") for step in matrix["steps"])
+    execute = next(step for step in matrix["steps"] if "--run" in step.get("run", ""))
+    assert execute["env"] == {f"PLAN_{name.upper()}": "${{ matrix." + name + " }}" for name in ("lane", "index", "count")}
+    assert all(f'"$PLAN_{name.upper()}"' in execute["run"] for name in ("lane", "index", "count"))
+    prepare = jobs["prepare"]
+    assert any("ci_plan.py --matrix" in step.get("run", "") for step in prepare["steps"])
+    publication = json.dumps(jobs["pages-build"])
+    assert "snapshot_parity" not in publication
+    # Source-owned phases can evolve; GitHub continues to own cache transfer order.
+    steps = jobs["pages-build"]["steps"]
+    phase = lambda name: next(index for index, step in enumerate(steps)
+                             if f"ci_publication.py {name}" in step.get("run", ""))
+    assert phase("configure") < phase("identify") < phase("restore") < phase("stamp") < phase("package") < phase("seal")
+    conversion = next(index for index, step in enumerate(steps)
+                      if step.get("name") == "Restore compatible family conversion fragments")
+    assert conversion < phase("catalog") < phase("publish") < phase("verify")
+
+
+@pytest.mark.parametrize("arguments", [[], ["--baseline", "."], ["--shard-matrix", "--selections", "."]])
+def test_ci_accounting_cli_rejects_incomplete_or_mixed_modes(arguments):
+    result = subprocess.run([sys.executable, verify_ci_selection.__file__, *arguments],
+                            capture_output=True, text=True)
+    assert result.returncode == 2
+    assert not result.stdout
+
+
+@pytest.mark.parametrize("fault", [None, "missing", "duplicate", "missing-shard", "extra"])
+def test_ci_accounting_rejects_lost_tests_and_incomplete_qualification(fault):
+    qualification = sorted(ci_plan.qualification_nodes())
+    baseline = [{"selected": ["fixture", "browser", *qualification]}]
+    assignments = [{"selected": ["fixture"]}, {"selected": ["browser"]}]
+    assignments.extend({"selected": qualification} for _ in range(sum(item["lane"] == "qualification" for item in ci_plan.plan())))
+    if fault == "missing":
+        assignments.pop(0)
+    elif fault == "duplicate":
+        assignments.append({"selected": ["browser"]})
+    elif fault == "missing-shard":
+        assignments.pop()
+    elif fault == "extra":
+        assignments.append({"selected": ["uncollected"]})
+    if fault:
+        with pytest.raises(ValueError, match="CI selection mismatch"):
+            verify_ci_selection.verify(baseline, assignments)
+    else:
+        assert verify_ci_selection.verify(baseline, assignments)["unique_tests"] == 2 + len(qualification)
+
+
+def test_publication_gate_rejects_missing_skipped_failed_or_unrequired_jobs():
+    root = Path(__file__).resolve().parents[3]
+    jobs = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())["jobs"]
+    results = {name: {"result": "success"} for name in jobs["conformance-table"]["needs"]}
+    assert set(verify_ci_selection.verify_jobs(results, jobs)["validation_jobs"]) == set(results)
+    for name in results:
+        for status in ("skipped", "failure", "cancelled", None):
+            with pytest.raises(ValueError, match="did not succeed"):
+                verify_ci_selection.verify_jobs({**results, name: {"result": status}}, jobs)
+        with pytest.raises(ValueError, match="every validation job"):
+            verify_ci_selection.verify_jobs({key: value for key, value in results.items() if key != name}, jobs)
+        altered = json.loads(json.dumps(jobs))
+        altered["conformance-table"]["needs"].remove(name)
+        with pytest.raises(ValueError, match="every validation job"):
+            verify_ci_selection.verify_jobs(results, altered)
+
+
+def _plan_receipts():
+    # Synthetic test IDs exercise accounting without depending on live model or
+    # release counts. Resource tests retain their real IDs to test that contract.
+    revision = "a" * 40
+    entries = [ci_plan.entry("fixtures", 0, 1), *ci_plan.plan()]
+    inventory = {item["lane"]: ([*ci_plan.qualification_nodes()] if item["lane"] == "qualification"
+                                 else [f"{item['lane']}::test_{index}" for index in range(5)])
+                 for item in entries}
+    mode = {"include_history": True, "coverage": "exhaustive", "revision": revision}
+    whole = sorted({node for nodes in inventory.values() for node in nodes})
+    baseline = [{**mode, "scope": None, "group": None, "eligible": whole, "selected": whole}]
+    assignments = []
+    for item in entries:
+        eligible = inventory[item["lane"]]
+        group = ci_plan.test_group(item)
+        selected = [node for index, node in enumerate(sorted(eligible))
+                    if not group or index % item["count"] == item["index"]]
+        assignments.append({**mode, "eligible": eligible, "selected": selected, "group": group,
+                            "resource_shard": ci_plan.resource_shard(item),
+                            "plan": {"id": ci_plan.plan_digest(), "entry": item["id"], "lane": item["lane"],
+                                     "index": item["index"], "count": item["count"]}})
+    return revision, baseline, assignments
+
+
+@pytest.mark.parametrize("partition", ["tests", "resources"])
+def test_source_owned_group_counts_change_execution_and_accounting_without_workflow_edits(monkeypatch, partition):
+    workflow = Path(__file__).resolve().parents[3] / ".github/workflows/ci.yml"
+    before_workflow = workflow.read_bytes()
+    before_plan = ci_plan.plan()
+    before_digest = ci_plan.plan_digest()
+    lane = next(lane for lane in ci_plan.LANES if lane.partition == partition)
+    monkeypatch.setattr(ci_plan, "LANES", tuple(replace(item, count=item.count + 1) if item == lane else item
+                                              for item in ci_plan.LANES))
+    assert len(ci_plan.plan()) == len(before_plan) + 1
+    assert ci_plan.plan_digest() != before_digest
+    revision, baseline, assignments = _plan_receipts()
+    result = verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)
+    assert result["unique_tests"] == len(baseline[0]["selected"])
+    assert workflow.read_bytes() == before_workflow
+
+
+@pytest.mark.parametrize("fault", [None, "latest", "missing-mode", "reduced", "filtered-baseline", "scoped-baseline", "grouped-baseline"])
+def test_publication_accounting_requires_complete_exhaustive_history(fault):
+    revision, baseline, assignments = _plan_receipts()
+    if fault == "latest":
+        assignments[0]["include_history"] = False
+    elif fault == "missing-mode":
+        del baseline[0]["include_history"]
+    elif fault == "reduced":
+        assignments[0]["coverage"] = "latest-two"
+    elif fault == "filtered-baseline":
+        baseline[0]["eligible"] = [*baseline[0]["eligible"], "omitted"]
+    elif fault == "scoped-baseline":
+        baseline[0]["scope"] = "publication"
+    elif fault == "grouped-baseline":
+        baseline[0]["group"] = "0/2"
+    if fault:
+        with pytest.raises(ValueError, match="publication"):
+            verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)
+    else:
+        assert verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)["unique_tests"] == len(baseline[0]["selected"])
+
+
+@pytest.mark.parametrize("fault", ["missing-entry", "duplicate-entry", "unknown-entry", "stale-plan", "wrong-revision",
+                                  "repeat-resource-shard", "wrong-resource-count", "wrong-test-group", "incomplete-group",
+                                  "omitted-test", "missing-qualification", "boolean-coordinate"])
+def test_publication_plan_rejects_incomplete_or_misidentified_execution(fault):
+    revision, baseline, assignments = _plan_receipts()
+    qualification = [item for item in assignments if item["plan"]["lane"] == "qualification"]
+    grouped = next(item for item in assignments if item["group"])
+    if fault == "missing-entry":
+        assignments.pop()
+    elif fault == "duplicate-entry":
+        assignments.append(assignments[0])
+    elif fault == "unknown-entry":
+        assignments[0]["plan"]["entry"] = "unknown"
+    elif fault == "stale-plan":
+        assignments[0]["plan"]["id"] = "stale"
+    elif fault == "wrong-revision":
+        assignments[0]["revision"] = "b" * 40
+    elif fault == "repeat-resource-shard":
+        # The old counter admitted shard zero repeated once per planned worker.
+        for item in qualification:
+            item["resource_shard"] = {"index": 0, "count": len(qualification)}
+    elif fault == "wrong-resource-count":
+        qualification[0]["resource_shard"]["count"] += 1
+    elif fault == "wrong-test-group":
+        grouped["group"] = "0/999"
+    elif fault == "incomplete-group":
+        grouped["selected"].pop()
+    elif fault == "omitted-test":
+        baseline[0]["eligible"] = [*baseline[0]["eligible"], "newly_collected::test_unassigned"]
+        baseline[0]["selected"] = baseline[0]["eligible"]
+    elif fault == "boolean-coordinate":
+        qualification[1]["resource_shard"]["index"] = True
+    elif fault == "missing-qualification":
+        qualification[0]["eligible"].pop()
+        qualification[0]["selected"].pop()
+    with pytest.raises(ValueError, match="publication|CI selection mismatch"):
+        verify_ci_selection.verify(baseline, assignments, require_history=True, revision=revision)
+
+
+@pytest.mark.parametrize("fault", [None, "wrong-commit", "latest", "missing-mode", "short-revision"])
+def test_publication_gate_binds_history_artifact_to_current_commit(monkeypatch, fault):
+    revision = "a" * 40
+    metadata = {"revision": revision, "generated_revision": "b" * 40}
+    catalog = {"capture_generation": {"mode": "history"}}
+    if fault == "wrong-commit":
+        metadata["revision"] = "c" * 40
+    elif fault == "latest":
+        catalog["capture_generation"]["mode"] = "latest"
+    elif fault == "missing-mode":
+        catalog.clear()
+    elif fault == "short-revision":
+        revision = "main"
+    monkeypatch.setattr(verify_ci_selection, "publication_metadata", lambda _site: metadata)
+    monkeypatch.setattr(verify_ci_selection, "runtime_catalog", lambda _site: catalog)
+    if fault:
+        with pytest.raises(ValueError, match="publication"):
+            verify_ci_selection.verify_publication(Path("unused"), revision)
+    else:
+        assert verify_ci_selection.verify_publication(Path("unused"), revision)["source_revision"] == revision
+
+
+def _context_repo(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    cargo = root / "parsers/v2/Cargo.toml"
+    cargo.parent.mkdir(parents=True)
+    cargo.write_text('[package]\nname="parser"\nversion="1.2.3"\n')
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(["git", "-C", str(root), "add", "parsers"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.com",
+                    "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"], check=True)
+    return root
+
+
+@pytest.mark.parametrize("include_history", [False, True])
+def test_publication_context_survives_tag_creation_and_rejects_tampering(tmp_path, monkeypatch, include_history):
+    root = _context_repo(tmp_path)
+    context = ci_publication_cache.freeze_context(root, include_history=include_history)
+    assert context["producer"]["kind"] == "unpublished"
+    path = root / ci_publication_cache.CONTEXT
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(context))
+    monkeypatch.setenv("CONFORMANCE_PUBLICATION_CONTEXT", str(path))
+    # The history inventory has its own existing admission proofs; isolate tag transport here.
+    original_output = subprocess.check_output
+    monkeypatch.setattr(subprocess, "check_output", lambda command, **kwargs:
+        '{}' if "--verify-history" in command else original_output(command, **kwargs))
+    before = ci_publication_cache.cache_key(root, "policy", include_history=include_history)
+    payload = tmp_path / "payload"
+    payload.mkdir()
+    catalog = root / "conformance/viewer-catalog.json"
+    catalog.write_text(json.dumps({"metadata": {"dynamo_v2_producer": {key: context["producer"][key] for key in ("kind", "crate_version")}}}))
+    with tarfile.open(payload / "source-catalogs.tar", "w") as archive:
+        for name in (ci_publication_cache.CONTEXT, "conformance/viewer-catalog.json"):
+            archive.add(root / name, arcname=name)
+    (payload / "native-pages.tar").write_bytes(b"standalone HTML")
+    (payload / "conformance-publish").write_bytes(b"matching publisher")
+    ci_publication_cache.seal(payload, before)
+    assert ci_publication_cache.valid(payload, before)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    assert ci_publication_cache.dynamo_version.dynamo_v2_provenance(root)["kind"] == "release"
+    assert ci_publication_cache.read_context(root) == context
+    assert viewer_catalog._dynamo_v2_display_producer(root) == {"crate_version": "1.2.3", "kind": "unpublished"}
+    assert ci_publication_cache.dynamo_version.dynamo_v2_provenance(root, release_refs=context["tags"])["kind"] == "unpublished"
+    assert ci_publication_cache.cache_key(root, "policy", include_history=include_history) == before
+    restored = tmp_path / "restored"
+    subprocess.run(["git", "clone", "-q", "--no-hardlinks", str(root), str(restored)], check=True)
+    with tarfile.open(payload / "source-catalogs.tar") as archive:
+        archive.extractall(restored, filter="data")
+    restored_context = restored / ci_publication_cache.CONTEXT
+    assert ci_publication_cache.read_context(restored, path=restored_context) == context
+    monkeypatch.setenv("CONFORMANCE_PUBLICATION_CONTEXT", str(restored_context))
+    assert ci_publication_cache.cache_key(restored, "policy", include_history=include_history) == before
+    original_archive = (payload / "source-catalogs.tar").read_bytes()
+    for name in (ci_publication_cache.CONTEXT, "conformance/viewer-catalog.json"):
+        target = restored / name
+        original_bytes = target.read_bytes()
+        target.write_bytes(original_bytes + b"tampered")
+        with tarfile.open(payload / "source-catalogs.tar", "w") as archive:
+            for member in (ci_publication_cache.CONTEXT, "conformance/viewer-catalog.json"):
+                archive.add(restored / member, arcname=member)
+        assert not ci_publication_cache.valid(payload, before)
+        target.write_bytes(original_bytes)
+    (payload / "source-catalogs.tar").write_bytes(original_archive)
+    assert ci_publication_cache.valid(payload, before)
+    monkeypatch.setenv("CONFORMANCE_PUBLICATION_CONTEXT", str(path))
+    with pytest.raises(ValueError, match="generation mode differs"):
+        ci_publication_cache.cache_key(root, "policy", include_history=not include_history)
+    context["producer"]["kind"] = "release"
+    path.write_text(json.dumps(context))
+    with pytest.raises(ValueError, match="context identity is invalid"):
+        ci_publication_cache.read_context(root)
+    context["producer"]["kind"] = "unpublished"
+    path.write_text(json.dumps(context))
+    cargo = root / "parsers/v2/Cargo.toml"
+    cargo.write_text(cargo.read_text() + "# altered source\n")
+    with pytest.raises(ValueError, match="context (parser source|sources) changed"):
+        ci_publication_cache.read_context(root)
+
+
+@pytest.mark.parametrize("include_history", [False, True])
+def test_local_ci_wrapper_delegates_to_the_shared_runner(tmp_path, include_history):
+    root = Path(__file__).resolve().parents[3]
+    binary = tmp_path / "python3"
+    binary.write_text('#!/bin/sh\nprintf "%s\\n" "$@" >> "$PROBE"\nexit 23\n')
+    binary.chmod(0o700)
+    environment = {**os.environ, "PATH": str(tmp_path) + ":" + os.environ["PATH"],
+                   "PROBE": str(tmp_path / "arguments.json"), "CONFORMANCE_CI_SHARD": "core",
+                   "CONFORMANCE_INCLUDE_HISTORY": str(include_history).lower()}
+    result = subprocess.run(["bash", str(root / "conformance/utils/check.sh"), "ci"], env=environment)
+    assert result.returncode == 23
+    arguments = (tmp_path / "arguments.json").read_text().splitlines()
+    assert arguments == [str(root / "conformance/utils/src/ci_plan.py"), "--run", "core"]
+
+
+def test_only_history_can_replace_public_main_site():
+    root = Path(__file__).resolve().parents[3]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    assert workflow["env"]["CONFORMANCE_INCLUDE_HISTORY"] == "true"
+    assert workflow["env"]["CONFORMANCE_COVERAGE"] == "exhaustive"
+    jobs = workflow["jobs"]
+    deployment_guard = "${{ github.ref == 'refs/heads/main' }}"
+    assert jobs["deploy-pages"]["if"] == deployment_guard
+    for step in jobs["conformance-table"]["steps"]:
+        if "Pages" in step.get("name", ""):
+            assert step["if"] == deployment_guard
+    gate_steps = jobs["conformance-table"]["steps"]
+    restore = next(i for i, step in enumerate(gate_steps) if step.get("uses") == "./.github/actions/conformance-publication")
+    accounting = next(i for i, step in enumerate(gate_steps) if "--baseline" in step.get("run", ""))
+    upload = next(i for i, step in enumerate(gate_steps) if "Upload GitHub Pages artifact" == step.get("name"))
+    assert restore < accounting < upload
+    assert all(flag in gate_steps[accounting]["run"] for flag in ("--require-history", "--publication", "--revision"))
+    deploy_steps = jobs["deploy-pages"]["steps"]
+    deployment = next(i for i, step in enumerate(deploy_steps) if step.get("id") == "deployment")
+    smoke = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py delivery" in step.get("run", ""))
+    admission = next(i for i, step in enumerate(deploy_steps) if "ci_publication.py current" in step.get("run", ""))
+    assert admission < deployment < smoke
+    for index in (deployment, smoke):
+        assert deploy_steps[index]["if"] == "${{ steps.current.outputs.current == 'true' }}"
+    evidence = deploy_steps[-1]
+    assert evidence["if"] == "${{ always() }}"
+    assert evidence["with"]["if-no-files-found"] == "error"
+    assert deploy_steps[smoke]["env"]["PUBLICATION_URL"] == "${{ steps.deployment.outputs.page_url }}"
+    assert deploy_steps[smoke]["env"]["CONFORMANCE_DELIVERY_REPORT"] == "${{ runner.temp }}/conformance-delivery.json"
+    assert jobs["deploy-pages"]["concurrency"]["cancel-in-progress"] is False
+    for job_name, target in (("pages-build", "ci_publication.py identify"), ("conformance-table", "--job-results")):
+        steps = jobs[job_name]["steps"]
+        install = next(i for i, step in enumerate(steps) if "ci_plan.py --setup" in step.get("run", ""))
+        invocation = next(i for i, step in enumerate(steps) if target in step.get("run", ""))
+        assert install < invocation
+
+
+@pytest.mark.parametrize("script,phase", [("ci_publication_cache.py", "identify"), ("ci_publication_finalize.py", "collect")])
+def test_publication_tools_bootstrap_without_site_packages(script, phase):
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run([sys.executable, "-S", f"conformance/utils/src/{script}", "--help"],
+                            cwd=root, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert phase in result.stdout
+
+
+def test_sealed_release_context_qualifies_a_shallow_checkout(tmp_path):
+    root = _context_repo(tmp_path)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    context = ci_publication_cache.freeze_context(root)
+    assert context["producer"]["kind"] == "release"
+    (root / "unrelated.json").write_bytes(b"{}\n")
+    subprocess.run(["git", "-C", str(root), "add", "unrelated.json"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.com",
+                    "-c", "commit.gpgsign=false", "commit", "-qm", "documentation"], check=True)
+    restored = tmp_path / "shallow"
+    subprocess.run(["git", "clone", "-q", "--depth=1", root.as_uri(), str(restored)], check=True)
+    missing = subprocess.run(["git", "-C", str(restored), "cat-file", "-e", context["producer"]["release_commit"]], capture_output=True)
+    assert missing.returncode != 0
+    path = restored / ci_publication_cache.CONTEXT
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(context))
+    assert ci_publication_cache.read_context(restored, path=path) == context
