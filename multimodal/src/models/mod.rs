@@ -9,4 +9,5 @@
 
 pub mod deepseek_v41;
 pub mod glm5_next;
+pub mod nemotron_vl;
 pub mod qwen_vl;
