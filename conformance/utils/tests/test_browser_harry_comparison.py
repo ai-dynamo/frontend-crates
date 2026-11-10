@@ -332,6 +332,13 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
                   cellTrack:parseFloat(getComputedStyle(table).getPropertyValue('--matrix-cell-width')),
                   tracks:[...table.querySelectorAll('.matrix-result-column')].map(col=>col.getBoundingClientRect().width),
                   cells:[...table.querySelectorAll('.matrix-cell')].map(c=>c.getBoundingClientRect().width),
+                  width:table.getBoundingClientRect().width,
+                  resultColumns:parseInt(table.style.getPropertyValue('--matrix-result-columns')),
+                  categoryButtons:[...table.querySelectorAll('.matrix-category-heading')].map(cell=>{
+                    const box=cell.getBoundingClientRect(), button=cell.querySelector('button').getBoundingClientRect();
+                    return {left:button.left-box.left,top:button.top-box.top,
+                      right:box.right-button.right,bottom:box.bottom-button.bottom};
+                  }),
                   header:table.tHead.getBoundingClientRect().height};
             """)
             label_width = geometry['labelTrack'] if vertical else (220 if width > 700 else 150)
@@ -344,6 +351,10 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
                 assert all(abs(w - geometry['cellTrack']) <= 1 for w in geometry['cells']), geometry
                 assert abs(geometry['cellTrack'] - (42 if vertical else 30)) <= 1, geometry
             if not vertical:
+                assert abs(geometry['width'] - label_width - geometry['cellTrack'] * geometry['resultColumns']) <= 1, geometry
+                assert geometry['categoryButtons'], geometry
+                assert all(all(abs(offset) <= 1 for offset in button.values())
+                           for button in geometry['categoryButtons']), geometry
                 assert geometry["header"] <= 100, geometry
             assert not driver.find_elements("css selector", ".matrix-summary")
             assert "Conformance counts" not in driver.find_element("css selector", ".comparison-matrix").text

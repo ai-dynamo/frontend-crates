@@ -4,10 +4,12 @@
 use dynamo_parsers::reasoning::{
     get_available_reasoning_parsers, ReasoningParser, ReasoningParserType,
 };
-#[cfg(all(not(feature = "jail"), conformance_old_tool_api))]
+#[cfg(all(not(feature = "jail"), conformance_old_tool_api, not(conformance_reasoning_context)))]
 use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call;
-#[cfg(all(not(feature = "jail"), not(conformance_old_tool_api)))]
+#[cfg(all(not(feature = "jail"), not(conformance_old_tool_api), not(conformance_reasoning_context)))]
 use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+#[cfg(all(not(feature = "jail"), conformance_reasoning_context))]
+use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_context;
 use dynamo_parsers::tool_calling::parsers::get_available_tool_parsers;
 #[cfg(not(conformance_no_tool_definitions))]
 use dynamo_parsers::tool_calling::ToolDefinition;
@@ -47,6 +49,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }) || !matches!(request["finish_reason"].as_str(), Some("stop" | "length"))
             || unsupported_schedule
             || cfg!(conformance_no_reasoning_init)
+                && request["init"]["starting_state"] == "Reasoning"
+            || cfg!(conformance_gpt_oss_no_reasoning_init)
+                && reasoning_name == "gpt_oss"
                 && request["init"]["starting_state"] == "Reasoning"
         {
             unavailable(
@@ -97,19 +102,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 return Err::<Value, String>("JailedStream is unavailable".to_owned());
                 #[cfg(not(feature = "jail"))]
                 {
+                #[cfg(conformance_reasoning_context)]
+                let reasoning = parser.detect_and_parse_reasoning_with_context(&raw_text, &[]);
+                #[cfg(not(conformance_reasoning_context))]
                 let reasoning = parser.detect_and_parse_reasoning(&raw_text, &[]);
-                #[cfg(not(conformance_old_tool_api))]
+                #[cfg(conformance_reasoning_context)]
+                let parsed = detect_and_parse_tool_call_with_context(&reasoning, Some(&tool_name), Some(&tools)).await;
+                #[cfg(all(not(conformance_reasoning_context), not(conformance_old_tool_api)))]
                 let parsed = detect_and_parse_tool_call_with_recovery(&reasoning.normal_text, Some(&tool_name), Some(&tools)).await;
-                #[cfg(all(conformance_old_tool_api, not(conformance_async_tool_api)))]
+                #[cfg(all(not(conformance_reasoning_context), conformance_old_tool_api, not(conformance_async_tool_api)))]
                 let parsed = detect_and_parse_tool_call(&reasoning.normal_text, Some(&tool_name));
-                #[cfg(all(conformance_old_tool_api, conformance_async_tool_api, not(conformance_tool_api_schemas)))]
+                #[cfg(all(not(conformance_reasoning_context), conformance_old_tool_api, conformance_async_tool_api, not(conformance_tool_api_schemas)))]
                 let parsed = detect_and_parse_tool_call(&reasoning.normal_text, Some(&tool_name)).await;
-                #[cfg(all(conformance_old_tool_api, conformance_async_tool_api, conformance_tool_api_schemas))]
+                #[cfg(all(not(conformance_reasoning_context), conformance_old_tool_api, conformance_async_tool_api, conformance_tool_api_schemas))]
                 let parsed = detect_and_parse_tool_call(&reasoning.normal_text, Some(&tool_name), Some(&tools)).await;
                 parsed.map(|(calls, content)| json!({
                     "reasoning_text": reasoning.reasoning_text,
                     "normal_text": content.unwrap_or_default(),
-                    "calls": calls.into_iter().map(|call| json!({"name":call.function.name, "arguments":serde_json::from_str::<Value>(&call.function.arguments).unwrap_or(Value::String(call.function.arguments))})).collect::<Vec<_>>()
+                    "calls": calls.into_iter().map(|call| json!({"name":call.function.name, "arguments":call.function.arguments})).collect::<Vec<_>>()
                 })).map_err(|error| error.to_string())
                 }
             }).await {

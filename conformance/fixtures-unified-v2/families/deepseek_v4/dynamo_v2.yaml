@@ -1,54 +1,29 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.13.yaml","version":"0.9.13"}],"mode":"unified","payload_sha256":"6dc070b456c42227df767c1e04c6d490a4a6d121feb95f5f3cb478f81efcab10","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.13.yaml","surface":"unified","version":"0.9.13"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"0eb5d19db82766b1fb80802fbc91e35d4fb2e56795ff59a13963b920efca7f61","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.1.yaml","surface":"unified","version":"0.10.1"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_5bfc2a11ac5602b7
+  origin: origin_7d8b245929660a70
 origins:
-  origin_5bfc2a11ac5602b7:
-    crate_version: 0.9.13
-    source_sha256: 26cc4ec5a84e5bfbd46816e296dc57ca298f996807aaa1725d3eff0ec35d0fef
-    git_commit: 4863b35ab925f072f276392d061e4ac01e5efc04
-  origin_8d49f6f1ab8b2b8b:
-    crate_version: 0.9.12
-    source_sha256: 1075176cfa7db0de6e0730ff9f09db7dc10b850d461e179a1ece7d013bf1f51b
-    git_commit: aa59e9bfc90a119d2ff0f08b0c917d5a0f40b76f
+  origin_7d8b245929660a70:
+    crate_version: 0.10.1
+    source_sha256: fd11348a91035fe3700916b5183e3bb3523beb91b8858dfbb623568dc88c311b
+    git_commit: 3d068ca39629455490fa68b03a1734bdd704c7c7
 producers:
-  producer_ee44b7b594ba2c8f:
+  producer_7a3ff64dd6b80342:
     captured_with:
-      dynamo_v2: 0.9.12
-    capture_origin: origin_8d49f6f1ab8b2b8b
-  producer_3b7017fbebc7f5e4:
-    captured_with:
-      dynamo_v2: 0.9.13+source.26cc4ec5a84e5bfbd46816e296dc57ca298f996807aaa1725d3eff0ec35d0fef
-    capture_origin: origin_5bfc2a11ac5602b7
+      dynamo_v2: 0.10.1
+    capture_origin: origin_7d8b245929660a70
 contexts:
-  context_29ab037219e24df6:
-    family: deepseek_v4
+  context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
-      parser_path: unified
-  context_6eabd38672be4393:
-    mode: unified
-    record_metadata:
-      init:
-        starting_state: Reasoning
-        tool_output_mode: Native
-        named_tool: null
-      parser_path: unified
-  context_3cb7a1bc83b6801d:
-    mode: unified
-    record_metadata:
-      init:
-        starting_state: Reasoning
-        tool_output_mode: GuidedJson
-        named_tool: null
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.9.13.yaml
-  producer: producer_ee44b7b594ba2c8f
-  context: context_29ab037219e24df6
+  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.1.yaml
+  producer: producer_7a3ff64dd6b80342
+  context: context_cdf0b3c0134ec96f
 records:
   adjacent_calls_partial_header:
     case_key: UNIFIED.2-adjacent_calls_partial_header
@@ -3456,6 +3431,372 @@ records:
           arguments: '{"city":"Paris"}'
           complete: true
       - expected: []
+      - expected: []
+  quoted_name_backtick_nonpossessive_s_name:
+    case_key: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
+    request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''s_name </think> marker'' stays quoted.'
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`load_config`'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s_name'
+      - expected:
+        - kind: reasoning
+          text: ' '
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: </think> marker' stays quoted.
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
+      - expected: []
+  quoted_name_backtick_nonpossessive_some:
+    case_key: UNIFIED.40-quoted_name_backtick_nonpossessive_some
+    request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''some </think> marker'' stays quoted.'
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`load_config`'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''some'
+      - expected:
+        - kind: reasoning
+          text: ' '
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: </think> marker' stays quoted.
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
+      - expected: []
+  quoted_name_backtick_possessive_guided:
+    case_key: UNIFIED.34-quoted_name_backtick_possessive_guided
+    request: 39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "`Paris`"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`load_config`'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s'
+      - expected:
+        - kind: reasoning
+          text: ' check is fine, but `open(''/tmp/x'')` is not.
+
+            '
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "`Paris`"}'
+          complete: true
+      - expected: []
+  quoted_name_backtick_possessive_reasoning:
+    case_key: UNIFIED.40-quoted_name_backtick_possessive_reasoning
+    request: 031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+          '
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`load_config`'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s'
+      - expected:
+        - kind: reasoning
+          text: ' check is fine, but `open(''/tmp/x'')` is not.
+
+            '
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
+      - expected: []
+  quoted_name_backtick_possessive_then_call:
+    case_key: UNIFIED.40-quoted_name_backtick_possessive_then_call
+    request: a89875cd2bfe7b28be6caeba3aff07d4699c911176012f636c63139e252386d3
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`load_config`'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s'
+      - expected:
+        - kind: reasoning
+          text: ' check is fine, but `open(''/tmp/x'')` is not.
+
+            '
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"city":"Paris"}'
+          complete: true
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
+      - expected: []
+  quoted_name_double_quote_nonpossessive_s_name:
+    case_key: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
+    request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''s_name </think> marker'' stays quoted.'
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"load_config"'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s_name'
+      - expected:
+        - kind: reasoning
+          text: ' '
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: </think> marker' stays quoted.
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
+      - expected: []
+  quoted_name_double_quote_nonpossessive_some:
+    case_key: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
+    request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''some </think> marker'' stays quoted.'
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"load_config"'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''some'
+      - expected:
+        - kind: reasoning
+          text: ' '
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: </think> marker' stays quoted.
+      - expected: []
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
+      - expected: []
+  quoted_name_double_quote_possessive_guided:
+    case_key: UNIFIED.34-quoted_name_double_quote_possessive_guided
+    request: dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "`Paris`"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"load_config"'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s'
+      - expected:
+        - kind: reasoning
+          text: ' check is fine, but `open(''/tmp/x'')` is not.
+
+            '
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "`Paris`"}'
+          complete: true
+      - expected: []
+  quoted_name_double_quote_possessive_reasoning:
+    case_key: UNIFIED.40-quoted_name_double_quote_possessive_reasoning
+    request: ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+          '
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"load_config"'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s'
+      - expected:
+        - kind: reasoning
+          text: ' check is fine, but `open(''/tmp/x'')` is not.
+
+            '
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
+      - expected: []
+  quoted_name_double_quote_possessive_then_call:
+    case_key: UNIFIED.40-quoted_name_double_quote_possessive_then_call
+    request: 407318f9b2f9a8c231b8f9559bb4c825263dcc45f73238a8e625f6b6af2ec826
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      - kind: text
+        text: '
+
+
+          I''ve found the bug in `app.py`.'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"load_config"'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s'
+      - expected:
+        - kind: reasoning
+          text: ' check is fine, but `open(''/tmp/x'')` is not.
+
+            '
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"city":"Paris"}'
+          complete: true
+      - expected:
+        - kind: text
+          text: '
+
+
+            I''ve found the bug in `app.py`.'
       - expected: []
   qwen_string_null:
     case_key: UNIFIED.7-tool-argument-nullability-arg_json_null
@@ -6968,13 +7309,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: Check London météo🙂 before answering; this is prose, not JSON.
+        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: Check London météo🙂 before answering; this is prose, not JSON.
+          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
       - expected: []
       - expected:
         - kind: text
@@ -7224,6 +7565,36 @@ records:
       chunks:
       - expected: []
       - expected: []
+      - expected: []
+  tool_call_ids_unique:
+    case_key: UNIFIED.2-tool_call_ids_unique
+    request: 0ff55e32231c9988cfc4fc8f06bfac3795a28692f579d5769a6452098b17788b
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"city":"Paris"}'
+          complete: true
+        - kind: tool_call
+          name: get_weather
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"city":"Paris"}'
+          complete: true
       - expected: []
   tool_in_reason:
     case_key: UNIFIED.12-tool_in_reason
@@ -7627,390 +7998,4 @@ records:
           arguments: '{"value":"{''a'':1}"}'
           complete: true
       - expected: []
-      - expected: []
-  quoted_name_backtick_nonpossessive_s_name:
-    case_key: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''s_name </think> marker'' stays quoted.'
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '`load_config`'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s_name'
-      - expected:
-        - kind: reasoning
-          text: ' '
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: </think> marker' stays quoted.
-      - expected: []
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
-      - expected: []
-  quoted_name_backtick_nonpossessive_some:
-    case_key: UNIFIED.40-quoted_name_backtick_nonpossessive_some
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''some </think> marker'' stays quoted.'
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '`load_config`'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''some'
-      - expected:
-        - kind: reasoning
-          text: ' '
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: </think> marker' stays quoted.
-      - expected: []
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
-      - expected: []
-  quoted_name_backtick_possessive_guided:
-    case_key: UNIFIED.34-quoted_name_backtick_possessive_guided
-    producer: producer_3b7017fbebc7f5e4
-    context: context_3cb7a1bc83b6801d
-    request: 39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
-
-          '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "`Paris`"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '`load_config`'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s'
-      - expected:
-        - kind: reasoning
-          text: ' check is fine, but `open(''/tmp/x'')` is not.
-
-            '
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "`Paris`"}'
-          complete: true
-      - expected: []
-  quoted_name_backtick_possessive_reasoning:
-    case_key: UNIFIED.40-quoted_name_backtick_possessive_reasoning
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: 031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
-
-          '
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '`load_config`'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s'
-      - expected:
-        - kind: reasoning
-          text: ' check is fine, but `open(''/tmp/x'')` is not.
-
-            '
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
-      - expected: []
-  quoted_name_backtick_possessive_then_call:
-    case_key: UNIFIED.40-quoted_name_backtick_possessive_then_call
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: a89875cd2bfe7b28be6caeba3aff07d4699c911176012f636c63139e252386d3
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
-
-          '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city":"Paris"}'
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '`load_config`'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s'
-      - expected:
-        - kind: reasoning
-          text: ' check is fine, but `open(''/tmp/x'')` is not.
-
-            '
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: ''
-          complete: false
-        - kind: tool_call
-          name: null
-          arguments: '{"city":"Paris"}'
-          complete: true
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
-      - expected: []
-  quoted_name_double_quote_nonpossessive_s_name:
-    case_key: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''s_name </think> marker'' stays quoted.'
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '"load_config"'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s_name'
-      - expected:
-        - kind: reasoning
-          text: ' '
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: </think> marker' stays quoted.
-      - expected: []
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
-      - expected: []
-  quoted_name_double_quote_nonpossessive_some:
-    case_key: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''some </think> marker'' stays quoted.'
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '"load_config"'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''some'
-      - expected:
-        - kind: reasoning
-          text: ' '
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: </think> marker' stays quoted.
-      - expected: []
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
-      - expected: []
-  quoted_name_double_quote_possessive_guided:
-    case_key: UNIFIED.34-quoted_name_double_quote_possessive_guided
-    producer: producer_3b7017fbebc7f5e4
-    context: context_3cb7a1bc83b6801d
-    request: dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
-
-          '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "`Paris`"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '"load_config"'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s'
-      - expected:
-        - kind: reasoning
-          text: ' check is fine, but `open(''/tmp/x'')` is not.
-
-            '
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "`Paris`"}'
-          complete: true
-      - expected: []
-  quoted_name_double_quote_possessive_reasoning:
-    case_key: UNIFIED.40-quoted_name_double_quote_possessive_reasoning
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
-
-          '
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '"load_config"'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s'
-      - expected:
-        - kind: reasoning
-          text: ' check is fine, but `open(''/tmp/x'')` is not.
-
-            '
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
-      - expected: []
-  quoted_name_double_quote_possessive_then_call:
-    case_key: UNIFIED.40-quoted_name_double_quote_possessive_then_call
-    producer: producer_3b7017fbebc7f5e4
-    context: context_6eabd38672be4393
-    request: 407318f9b2f9a8c231b8f9559bb4c825263dcc45f73238a8e625f6b6af2ec826
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
-
-          '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city":"Paris"}'
-      - kind: text
-        text: '
-
-
-          I''ve found the bug in `app.py`.'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '"load_config"'
-      - expected: []
-      - expected:
-        - kind: reasoning
-          text: '''s'
-      - expected:
-        - kind: reasoning
-          text: ' check is fine, but `open(''/tmp/x'')` is not.
-
-            '
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: ''
-          complete: false
-        - kind: tool_call
-          name: null
-          arguments: '{"city":"Paris"}'
-          complete: true
-      - expected:
-        - kind: text
-          text: '
-
-
-            I''ve found the bug in `app.py`.'
       - expected: []

@@ -14,6 +14,7 @@ mod minimax_append_think_parser;
 pub(crate) use crate::tool_calling::config::MINIMAX_M3_TOOL_NAMESPACE;
 pub use base_parser::BasicReasoningParser;
 pub use gemma4_parser::Gemma4ReasoningParser;
+pub(crate) use gpt_oss_parser::recover_stranded_header_text;
 pub use gpt_oss_parser::{GptOssReasoningParser, harmony_terminator_token_ids};
 pub use granite_parser::GraniteReasoningParser;
 pub use inkling_parser::InklingReasoningParser;
@@ -110,6 +111,36 @@ pub struct ParserResult {
     pub reasoning_text: String,
 }
 
+/// Ownership established by a reasoning parser, retained until tool parsing.
+/// Native marker-based tool parsing must not reparse literal content. Request-level
+/// required/named JSON formats retain their authoritative interpretation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NormalTextSegment {
+    /// Visible content whose ownership was established upstream.
+    Literal(String),
+    /// Bytes that still require the selected tool parser's interpretation.
+    Protocol(String),
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ReasoningOutput {
+    pub reasoning_text: String,
+    pub normal_segments: Vec<NormalTextSegment>,
+}
+
+impl From<ParserResult> for ReasoningOutput {
+    fn from(result: ParserResult) -> Self {
+        Self {
+            reasoning_text: result.reasoning_text,
+            normal_segments: if result.normal_text.is_empty() {
+                Vec::new()
+            } else {
+                vec![NormalTextSegment::Protocol(result.normal_text)]
+            },
+        }
+    }
+}
+
 impl ParserResult {
     pub fn get_some_reasoning(&self) -> Option<String> {
         if self.reasoning_text.is_empty() {
@@ -129,14 +160,39 @@ impl ParserResult {
 }
 
 pub trait ReasoningParser: Send + std::fmt::Debug {
+    /// Context-preserving standalone handoff to a downstream tool parser.
+    /// The default preserves the legacy protocol interpretation.
+    fn detect_and_parse_reasoning_with_context(
+        &mut self,
+        text: &str,
+        token_ids: &[u32],
+    ) -> ReasoningOutput {
+        self.detect_and_parse_reasoning(text, token_ids).into()
+    }
+
+    fn parse_reasoning_streaming_with_context(
+        &mut self,
+        text: &str,
+        token_ids: &[u32],
+    ) -> ReasoningOutput {
+        self.parse_reasoning_streaming_incremental(text, token_ids)
+            .into()
+    }
+
+    fn finish_reasoning_stream_with_context(&mut self) -> ReasoningOutput {
+        self.finish_reasoning_stream().into()
+    }
+
     /// Parses a standalone, non-streaming input chunk. Implementations may reset or ignore
     /// internal streaming state and should return the split of normal vs reasoning text for
-    /// this complete input. Marker tokens must not be included in either output.
+    /// this complete input. This legacy projection does not retain literal vs
+    /// protocol ownership; use the context method when composing with tools.
     fn detect_and_parse_reasoning(&mut self, text: &str, token_ids: &[u32]) -> ParserResult;
 
     /// Parses a streaming chunk and updates internal state. The return value should be the
     /// delta: only the newly discovered normal and reasoning text attributable to this chunk
-    /// (not the cumulative totals). Marker tokens must not be included in either output.
+    /// (not the cumulative totals). This legacy projection does not retain literal
+    /// vs protocol ownership; use the context method when composing with tools.
     fn parse_reasoning_streaming_incremental(
         &mut self,
         text: &str,
@@ -210,6 +266,28 @@ pub struct ReasoningParserWrapper {
 }
 
 impl ReasoningParser for ReasoningParserWrapper {
+    fn detect_and_parse_reasoning_with_context(
+        &mut self,
+        text: &str,
+        token_ids: &[u32],
+    ) -> ReasoningOutput {
+        self.parser
+            .detect_and_parse_reasoning_with_context(text, token_ids)
+    }
+
+    fn parse_reasoning_streaming_with_context(
+        &mut self,
+        text: &str,
+        token_ids: &[u32],
+    ) -> ReasoningOutput {
+        self.parser
+            .parse_reasoning_streaming_with_context(text, token_ids)
+    }
+
+    fn finish_reasoning_stream_with_context(&mut self) -> ReasoningOutput {
+        self.parser.finish_reasoning_stream_with_context()
+    }
+
     fn detect_and_parse_reasoning(&mut self, text: &str, token_ids: &[u32]) -> ParserResult {
         self.parser.detect_and_parse_reasoning(text, token_ids)
     }

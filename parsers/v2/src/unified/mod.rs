@@ -56,9 +56,11 @@ pub mod gemma4;
 pub mod glm47;
 mod guided_cursor;
 pub mod harmony;
+pub mod hermes;
 pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod minimax_m3;
+pub mod mistral;
 pub mod muse_glimmer;
 pub mod muse_spark;
 pub mod qwen3;
@@ -479,10 +481,15 @@ pub trait UnifiedParser: Send {
         false
     }
 
-    /// The model-emitted id for a tool call, when the grammar carries one.
+    /// The parser-supplied API ID for a tool call, when available.
     ///
-    /// Qwen3's XML grammar does not, so the default is correct for it; families
-    /// whose envelope names the call (kimi's `functions.NAME:INDEX`) override.
+    /// Qwen3's XML grammar carries no ID, so the default is correct for it.
+    /// Kimi K2 preserves its model-emitted `functions.NAME:INDEX`, while Kimi K3
+    /// generates a unique ID because its wire index restarts every response.
+    /// `None` delegates ID generation to the serving layer. An available ID must
+    /// remain stable across deltas for the same call.
+    /// K2 IDs belong to the model protocol and may repeat in another response;
+    /// they must retain their association with the originating assistant message.
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }
@@ -1093,7 +1100,7 @@ pub(crate) trait NativeUnified {
         Ok(())
     }
 
-    /// The model-emitted id for a tool call, when the native grammar carries one.
+    /// The parser-supplied API ID for a native tool call, when available.
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }
@@ -1270,6 +1277,11 @@ impl<N: NativeUnified> GuidedRouted<N> {
         let guided_reasoning = match tool_output_mode {
             UnifiedToolOutputMode::Native => None,
             UnifiedToolOutputMode::GuidedJson { .. } => match reasoning {
+                // The guided reader strips native invokes up to their terminator; an
+                // empty one matches everywhere and never advances.
+                Some(_) if self.native.guided_grammar().invoke_end.is_empty() => {
+                    anyhow::bail!("guided tool output needs a grammar with a call terminator")
+                }
                 Some(reasoning) => Some(reasoning),
                 None => anyhow::bail!("guided tool output needs a reasoning-aware parser"),
             },
@@ -1594,7 +1606,7 @@ impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
         recovered
     }
 
-    /// The model-emitted id for a call, delegated to the scanner's emitter.
+    /// The parser-supplied API ID, delegated to the native emitter.
     /// See [`InvokeEmitter::tool_call_id`] — the trait default (`None`) is
     /// correct for every family whose grammar does not name the call; Kimi
     /// is the one family that overrides it.
@@ -6674,6 +6686,7 @@ unified_registry! {
     "deepseek_v41" => deepseek_v41::deepseek_v41_unified,
     "gemma4" => gemma4::gemma4_unified,
     "glm47" => glm47::glm47_unified,
+    "hermes" => hermes::hermes_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "nemotron_v3" | "nemotron3" => qwen3::nemotron_v3_unified,
     "minimax_m3" | "minimax-m3" => minimax_m3::minimax_m3_unified,
@@ -6682,6 +6695,7 @@ unified_registry! {
     "beam" => beam::beam_unified,
     "kimi_k2"              => kimi_k2::kimi_k2_unified,
     "kimi_k3" | "kimi-k3"   => kimi_k3::kimi_k3_unified,
+    "mistral_4" => mistral::mistral_unified,
     "gpt_oss" | "harmony"   => harmony::gpt_oss_unified,
 }
 

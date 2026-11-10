@@ -4,11 +4,15 @@
 use std::collections::BTreeMap;
 
 use dynamo_parsers::reasoning::ReasoningParser;
-use dynamo_parsers::tool_calling::jail::{Annotated, JailedStream};
+#[cfg(conformance_reasoning_context)]
+use dynamo_parsers::reasoning::{NormalTextSegment, ReasoningOutput};
 use dynamo_parsers::tool_calling::ToolDefinition;
+#[cfg(conformance_reasoning_context)]
+use dynamo_parsers::tool_calling::jail::ContextualChatResponse;
+use dynamo_parsers::tool_calling::jail::{Annotated, JailedStream};
 use dynamo_protocols::types::CreateChatCompletionStreamResponse;
 use futures::StreamExt;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn chunk(
     content: &str,
@@ -22,6 +26,29 @@ fn chunk(
         })).expect("valid capture chunk")),
         id: None, event: None, comment: None, error: None,
     }
+}
+
+#[cfg(conformance_reasoning_context)]
+fn contextual_chunks(output: ReasoningOutput) -> Vec<ContextualChatResponse> {
+    let mut reasoning = output.reasoning_text;
+    let mut inputs = Vec::new();
+    for segment in output.normal_segments {
+        let (text, literal) = match segment {
+            NormalTextSegment::Literal(text) => (text, true),
+            NormalTextSegment::Protocol(text) => (text, false),
+        };
+        inputs.push(ContextualChatResponse {
+            response: chunk(&text, &std::mem::take(&mut reasoning), None),
+            literal_choices: if literal { vec![0] } else { Vec::new() },
+        });
+    }
+    if inputs.is_empty() {
+        inputs.push(ContextualChatResponse {
+            response: chunk("", &reasoning, None),
+            literal_choices: vec![0],
+        });
+    }
+    inputs
 }
 
 pub fn text_chunks(request: &Value) -> Result<Vec<&str>, String> {
@@ -60,16 +87,43 @@ pub async fn capture(
     let texts = text_chunks(&request)?;
     let mut inputs = Vec::new();
     for text in texts {
-        let delta = parser.parse_reasoning_streaming_incremental(text, &[]);
-        inputs.push(chunk(&delta.normal_text, &delta.reasoning_text, None));
+        #[cfg(conformance_reasoning_context)]
+        inputs.extend(contextual_chunks(
+            parser.parse_reasoning_streaming_with_context(text, &[]),
+        ));
+        #[cfg(not(conformance_reasoning_context))]
+        {
+            let delta = parser.parse_reasoning_streaming_incremental(text, &[]);
+            inputs.push(chunk(&delta.normal_text, &delta.reasoning_text, None));
+        }
     }
-    let tail = parser.finish_reasoning_stream();
-    inputs.push(chunk(&tail.normal_text, &tail.reasoning_text, None));
-    inputs.push(chunk("", "", request["finish_reason"].as_str()));
+    #[cfg(conformance_reasoning_context)]
+    {
+        inputs.extend(contextual_chunks(
+            parser.finish_reasoning_stream_with_context(),
+        ));
+        inputs.push(ContextualChatResponse::from(chunk(
+            "",
+            "",
+            request["finish_reason"].as_str(),
+        )));
+    }
+    #[cfg(not(conformance_reasoning_context))]
+    {
+        let tail = parser.finish_reasoning_stream();
+        inputs.push(chunk(&tail.normal_text, &tail.reasoning_text, None));
+        inputs.push(chunk("", "", request["finish_reason"].as_str()));
+    }
     let jail = JailedStream::builder()
         .tool_call_parser(tool_name)
         .tool_definitions(tools)
         .build();
+    #[cfg(conformance_reasoning_context)]
+    let output: Vec<_> = jail
+        .apply_with_context(futures::stream::iter(inputs))
+        .collect()
+        .await;
+    #[cfg(not(conformance_reasoning_context))]
     let output: Vec<_> = jail.apply(futures::stream::iter(inputs)).collect().await;
     let mut normal_text = String::new();
     let mut reasoning_text = String::new();
@@ -102,7 +156,7 @@ pub async fn capture(
     }
     Ok(
         json!({"reasoning_text":reasoning_text,"normal_text":normal_text,
-        "calls":calls.into_values().map(|(name, arguments)| json!({"name":name,"arguments":serde_json::from_str::<Value>(&arguments).unwrap_or(Value::String(arguments))})).collect::<Vec<_>>()}),
+        "calls":calls.into_values().map(|(name, arguments)| json!({"name":name,"arguments":arguments})).collect::<Vec<_>>()}),
     )
 }
 
@@ -122,6 +176,18 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn capture_preserves_raw_numeric_arguments() {
+        let arguments = r#"{"value":9007199254740993.1}"#;
+        let text = format!(
+            "<think></think><tool_call>{{\"name\":\"f\",\"arguments\":{arguments}}}</tool_call>"
+        );
+        let request = json!({"input":text,"chunks":[{"delta_text":text}],"finish_reason":"stop"});
+        let parser = ReasoningParserType::get_reasoning_parser_from_name("qwen3");
+        let result = capture(parser, "hermes", vec![], request).await.unwrap();
+        assert_eq!(result["calls"][0]["arguments"].as_str(), Some(arguments));
+    }
+
+    #[tokio::test]
     async fn jail_preserves_final_call_order() {
         let text = "<think>work</think><tool_call>{\"name\":\"first\",\"arguments\":{}}</tool_call><tool_call>{\"name\":\"second\",\"arguments\":{}}</tool_call>";
         let request = json!({"input":text,"chunks":[{"delta_text":text}],"finish_reason":"stop"});
@@ -130,6 +196,32 @@ mod tests {
         assert_eq!(result["reasoning_text"], "work");
         assert_eq!(result["calls"][0]["name"], "first");
         assert_eq!(result["calls"][1]["name"], "second");
+    }
+
+    #[tokio::test]
+    async fn capture_preserves_literal_ownership_between_real_calls() {
+        let channel = "<|channel|>";
+        let message = "<|message|>";
+        let start = "<|start|>assistant";
+        let ending = "<|return|>";
+        let call = "<|call|>";
+        let literal = format!("Before{channel}analysis{message}Done");
+        let text = format!(
+            "{channel}commentary{message}{literal}{ending}{start}{channel}commentary to=functions.lookup{message}{{\"x\":1}}{call}{start}{channel}final{message}After{ending}"
+        );
+        let request = json!({"input":text,"chunks":[{"delta_text":text}],"finish_reason":"stop"});
+        let parser = tokio::task::spawn_blocking(|| {
+            ReasoningParserType::get_reasoning_parser_from_name("gpt_oss")
+        })
+        .await
+        .unwrap();
+        let result = capture(parser, "harmony", vec![], request).await.unwrap();
+        assert_eq!(result["normal_text"], format!("{literal}\nAfter"));
+        assert_eq!(result["reasoning_text"], "");
+        assert_eq!(
+            result["calls"],
+            json!([{"name":"lookup","arguments":"{\"x\":1}"}])
+        );
     }
 
     #[tokio::test]

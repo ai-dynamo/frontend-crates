@@ -3593,6 +3593,9 @@ requests:
     - 16
     - 15
     finish_step: true
+  6bde27929aba1d45b053c0fc413c24050cf57aedaf50c93961c44d6589743206:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_cbf47ccf5fd2ef00
   6dd3e851df2fe812f8fe29a9480694a79f9989020a030aca428c421b0abf4896:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> then I'll run <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> and <｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_cbf47ccf5fd2ef00
@@ -10293,3 +10296,16 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 6bde27929aba1d45b053c0fc413c24050cf57aedaf50c93961c44d6589743206
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

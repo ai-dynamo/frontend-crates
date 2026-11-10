@@ -56,9 +56,15 @@ pub struct FastTokenizer {
 }
 
 impl FastTokenizer {
+    /// Load `tokenizer.json`, ignoring its `truncation` and `padding` blocks as Python
+    /// `transformers` does unless a call asks for them. `fastokens` would apply both on
+    /// every encode, and [`CachedTokenizer`](crate::CachedTokenizer) would then apply
+    /// them to each separately encoded piece instead of the whole input.
     pub fn from_file(path: &str) -> Result<Self> {
-        let fast_encoder = fastokens::Tokenizer::from_file(Path::new(path))
+        let mut fast_encoder = fastokens::Tokenizer::from_file(Path::new(path))
             .map_err(|e| Error::msg(format!("Error loading fastokens tokenizer: {e}")))?;
+        fast_encoder.set_truncation(None);
+        fast_encoder.set_padding(None);
         let hf_decoder = HuggingFaceTokenizer::from_file(path)?;
         Ok(Self {
             fast_encoder,
@@ -376,6 +382,41 @@ mod tests {
                 .unwrap()
                 .token_ids()
                 .is_empty()
+        );
+    }
+
+    #[test]
+    fn tokenizer_json_truncation_and_padding_are_ignored() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(SEGMENTED_TOKENIZER_PATH).unwrap())
+                .unwrap();
+        // Both reference encodings are longer than 12 ids, so each block alone changes them.
+        json["truncation"] = serde_json::json!({
+            "direction": "Right", "max_length": 12, "strategy": "LongestFirst", "stride": 0
+        });
+        json["padding"] = serde_json::json!({
+            "strategy": {"Fixed": 512}, "direction": "Right", "pad_to_multiple_of": null,
+            "pad_id": 0, "pad_type_id": 0, "pad_token": "<unk>"
+        });
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let reference = FastTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap();
+        let tokenizer = FastTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        let user = "hello world ".repeat(16);
+        let segments = [
+            EncodeSegment::control("<s>"),
+            EncodeSegment::ordinary(&user),
+            EncodeSegment::control("</s>"),
+        ];
+        assert_eq!(
+            tokenizer.encode(&user).unwrap().token_ids(),
+            reference.encode(&user).unwrap().token_ids()
+        );
+        assert_eq!(
+            tokenizer.encode_segments(&segments).unwrap().token_ids(),
+            reference.encode_segments(&segments).unwrap().token_ids()
         );
     }
 

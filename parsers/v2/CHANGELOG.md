@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.2...dynamo-parsers-v2-v0.10.3) - 2026-11-10
+
+### Features
+
+- *(parsers-v2)* Add Mistral tekken tokenizer, native renderer and mistral_4 UnifiedParser
+
+## [0.10.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.1...dynamo-parsers-v2-v0.10.2) - 2026-11-09
+
+### Bug fixes
+
+- *(kimi-k3)* Generate unique V2 tool-call IDs ([#579](https://github.com/ai-dynamo/frontend-crates/pull/579))
+
+## [0.10.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.0...dynamo-parsers-v2-v0.10.1) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Add schema-safe native empty Qwen XML calls ([#570](https://github.com/ai-dynamo/frontend-crates/pull/570))
+
+## [0.9.15](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.14...dynamo-parsers-v2-v0.9.15) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Retain GPT-OSS return calls through v1 reasoning ([#574](https://github.com/ai-dynamo/frontend-crates/pull/574))
+
 ## [0.9.14](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.13...dynamo-parsers-v2-v0.9.14) - 2026-11-07
 
 ### Bug fixes

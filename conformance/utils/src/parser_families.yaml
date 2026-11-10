@@ -20,7 +20,7 @@ families:
   deepseek_v4:    {vllm_python: deepseek_v4,    vllm_rust: deepseek_v4,  sglang_python: deepseekv4,  dynamo_v2: deepseek_v4, preferred_input: text}
   gemma4:         {vllm_python: gemma4,         vllm_rust: gemma4,       sglang_python: gemma4,      dynamo_v2: gemma4,      preferred_input: text}
   glm47:          {vllm_python: glm47,          vllm_rust: glm47,        sglang_python: glm47,       dynamo_v2: glm47,       preferred_input: text}
-  hermes:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: hermes,      dynamo_v2: null,        preferred_input: text}
+  hermes:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: hermes,      dynamo_v2: hermes,      preferred_input: text}
   # inkling uses vLLM's unified parser (vllm/parser/inkling.py), not the legacy ToolParserManager
   # the capture harness drives, so a `check.sh vllm` refresh needs unified-parser support.
   inkling:        {vllm_python: inkling,        vllm_rust: null,         sglang_python: inkling,     dynamo_v2: null,        preferred_input: text}
@@ -148,6 +148,11 @@ markers:
     leak: ["<invoke", "</invoke"]
   mistral:
     pairs: [["[TOOL_CALLS]", "[/TOOL_CALLS]"]]
+  # v11+ `[TOOL_CALLS]NAME[ARGS]{json}` repeats per call and never closes, so its
+  # tokens are singletons.
+  mistral_4:
+    pairs: [["[THINK]", "[/THINK]"]]
+    singletons: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]"]
   muse_glimmer:
     pairs: [["<atem:function_calls>", "</atem:function_calls>"]]
     # Channel framing around every routed message; the reasoning stage forwards
@@ -324,6 +329,20 @@ unified:
     tool_parser: minimax_m3
     golden_spec: minimax_m3.yaml
     leak_markers: ["]<]minimax[>["]
+  # Mistral 4's native UnifiedParser. The `mistral` row below is the v1 parser
+  # measured against Unified requests.
+  mistral_4:
+    capture_pipelines:
+      sglang_python: ["mistral", "mistral"]
+    registry: mistral_4
+    native: true
+    # Guided tool output needs a call terminator this grammar does not have, so the
+    # unified parser refuses that request mode.
+    guided_tool_output: false
+    reasoning_parser: mistral
+    tool_parser: mistral
+    golden_spec: mistral_4.yaml
+    leak_markers: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]", "[THINK]", "[/THINK]"]
   muse_glimmer:
     capture_pipelines:
       sglang_python: ["muse", "muse"]
@@ -448,8 +467,15 @@ unified:
     reasoning_grammar: think
   hermes:
     registry: hermes
-    native: false
+    native: true
     scenario_profile: native
+    shared_scenarios: true
+    scenario_exclusions:
+      guided_json_native_markup_only: Hermes native JSON is a valid guided call payload; wrapped guided JSON already covers it.
+      guided_json_native_parameter_body_inside_reasoning: Hermes has no native parameter markup; unwrapped call JSON inside reasoning is literal thought text.
+      guided_json_reasoning_markers_inside_native_parameter: Hermes has no native parameter markup to suppress inside reasoning.
+      guided_response_native_wrapper_whitespace_before_prose: Hermes native JSON envelopes are valid guided call payloads, not foreign parameter syntax to suppress.
+    spec: https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B/blob/main/tokenizer_config.json
     reasoning_parser: basic
     tool_parser: hermes
     golden_spec: hermes.yaml
@@ -699,6 +725,7 @@ unified_display:
     nemotron_v3: 'Single Family Test: Nemotron v3 default reasoning'
     kimi: 'Single Family Test: Kimi K3 XTML'
     minimax_m3: 'Single Family Test: MiniMax M3 native recovery'
+    mistral: 'Single Family Test: Mistral calls without an end marker'
     muse: 'Single Family Test: Muse-specific'
     muse_spark: 'Single Family Test: Muse Spark message phases'
     gpt_oss: 'Single Family Test: GPT-OSS Harmony'

@@ -3302,6 +3302,9 @@ requests:
     - 1
     - 12
     finish_step: true
+  4603c151e5f4eb028289eb43b39ba53c49ed73afc688b317a4f85260e9861283:
+    input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    tools: tools_cbf47ccf5fd2ef00
   4620345822b3502e17de09314a493376195d40a2d2cfda8606901e7169cb8b83:
     init:
       starting_state: None
@@ -12430,3 +12433,16 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 4603c151e5f4eb028289eb43b39ba53c49ed73afc688b317a4f85260e9861283
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

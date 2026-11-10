@@ -6,6 +6,7 @@
 pub mod format;
 pub mod kimi_k2;
 pub mod kimi_k3;
+pub mod qwen_xml;
 pub mod schema;
 
 /// A selected tool with its resolved argument constraint (`true` means relaxed).

@@ -127,7 +127,7 @@ Reasoning families:
 | **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
 | **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair; Muse Spark additionally reserves `commentary` as visible text | No v1 implementation; v2 `unified/muse_glimmer.rs`, `unified/muse_spark.rs` | Muse Glimmer, Muse Spark |
 
-The built-in Unified registry in `src/unified/mod.rs` contains `deepseek_v4`, `deepseek_v41`, `gemma4`, `glm47`, `qwen3` / `qwen3_coder`, `nemotron_v3` / `nemotron3`, `muse_glimmer`, `muse_spark` / `muse_spark_open`, `beam`, `kimi_k2`, `kimi_k3` / `kimi-k3`, and `gpt_oss` / `harmony`. `builtin_unified_families()` includes aliases; `canonical_unified_family()` resolves them. The separate tool-only registry is `src/tool_calling/registry.rs` and also includes MiniMax M2/M3; their presence there does not imply Unified support.
+The built-in Unified registry in `src/unified/mod.rs` contains `deepseek_v4`, `deepseek_v41`, `gemma4`, `glm47`, `qwen3` / `qwen3_coder`, `nemotron_v3` / `nemotron3`, `muse_glimmer`, `muse_spark` / `muse_spark_open`, `beam`, `kimi_k2`, `kimi_k3` / `kimi-k3`, `mistral_4`, and `gpt_oss` / `harmony`. `builtin_unified_families()` includes aliases; `canonical_unified_family()` resolves them. The separate tool-only registry is `src/tool_calling/registry.rs` and also includes MiniMax M2/M3; their presence there does not imply Unified support.
 
 DeepSeek V4.1 uses Unified family `deepseek_v41` for its distinct reasoning and JSON-body behavior. The legacy tool-only `deepseek_v4` selector also accepts spaced V4.1 DSML tags; that compatibility is not a replacement for the Unified V4.1 factory.
 
@@ -148,6 +148,8 @@ vLLM Rust 0.22.0 source was checked at tag `v0.22.0`, commit `0b3ba88f165976e77c
 The vLLM Rust parser API is streaming-first. `push()` consumes decoded text deltas, `finish()` flushes buffered state, and `parse_complete()` is a helper over the same streaming path. There is no separate `V_rb` implementation in the conformance matrix; batch-shaped text through vLLM Rust is still `V_rs`.
 
 Dynamo duplicates the small Rust data model instead of depending on vLLM crates directly. The names and fields are aligned so an adapter stays trivial now, and so vLLM can later import Dynamo-owned parser types if it switches to frontend-crates.
+
+Hermes is available through `create_unified_parser_for_family("hermes", tools)`. Its [model template](https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B/blob/main/tokenizer_config.json) emits one JSON call object per `<tool_call>...</tool_call>` envelope. The shared scanner preserves surrounding text, optional `<think>` reasoning, literal markers in arguments, and raw JSON numbers; complete JSON bodies can recover a missing outer close. Unwrapped JSON answers remain visible text in native mode. Guided named and required choices use the shared JSON router; native arrays of call envelopes are outside this model template. Tool availability and schema authorization remain serving-layer responsibilities.
 
 ## What's In The Crate
 

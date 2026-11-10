@@ -151,6 +151,31 @@ pub async fn try_tool_call_parse(
     }
 }
 
+/// Parse only protocol-owned segments, preserving literal bytes exactly.
+/// Use a standalone context result; streaming fragments belong in the jail.
+pub async fn detect_and_parse_tool_call_with_context(
+    output: &crate::ReasoningOutput,
+    parser_str: Option<&str>,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let mut calls = Vec::new();
+    let mut normal = String::new();
+    for segment in &output.normal_segments {
+        match segment {
+            crate::NormalTextSegment::Literal(text) => normal.push_str(text),
+            crate::NormalTextSegment::Protocol(text) => {
+                let (parsed, text) =
+                    detect_and_parse_tool_call_with_recovery(text, parser_str, tools).await?;
+                calls.extend(parsed);
+                if let Some(text) = text {
+                    normal.push_str(&text);
+                }
+            }
+        }
+    }
+    Ok((calls, (!normal.is_empty()).then_some(normal)))
+}
+
 /// Same as [`detect_and_parse_tool_call`] but flips `allow_eof_recovery=true`
 /// on the JSON / XML / DSML configs so finalize / non-streaming aggregate
 /// paths recover from missing-end-token / truncated-JSON instead of silently
