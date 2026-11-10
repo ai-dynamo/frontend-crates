@@ -462,7 +462,9 @@ pub struct TopLogprobs {
 #[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionTokenLogprob))]
 pub struct ChatCompletionTokenLogprob {
     pub token: String,
-    pub logprob: f32,
+    /// `None` serializes as JSON null when the engine omitted this token's logprob.
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
+    pub logprob: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token_id: Option<u32>,
     #[cfg_attr(feature = "protocol-schema", schema(required))]
@@ -2233,7 +2235,7 @@ mod tests {
     fn chat_logprob_serializes_token_id_when_present() {
         let logprob = ChatCompletionTokenLogprob {
             token: " hello".into(),
-            logprob: -0.12,
+            logprob: Some(-0.12),
             token_id: Some(123),
             bytes: Some(vec![32, 104, 101, 108, 108, 111]),
             top_logprobs: vec![],
@@ -2263,6 +2265,10 @@ mod tests {
         }))
         .unwrap();
 
+        assert_eq!(
+            choice_logprobs.content.as_ref().unwrap()[0].logprob,
+            Some(-0.12)
+        );
         assert_eq!(choice_logprobs.content.as_ref().unwrap()[0].token_id, None);
         assert!(choice_logprobs.refusal.is_none());
         assert_eq!(token_logprob.token_id, Some(123));
@@ -2277,7 +2283,7 @@ mod tests {
         };
         let token_logprob = ChatCompletionTokenLogprob {
             token: " hello".into(),
-            logprob: -0.12,
+            logprob: Some(-0.12),
             token_id: None,
             bytes: None,
             top_logprobs: vec![],
@@ -2290,6 +2296,21 @@ mod tests {
         assert_eq!(choice_json["refusal"], serde_json::Value::Null);
         assert!(token_json.get("token_id").is_none());
         assert_eq!(token_json["bytes"], serde_json::Value::Null);
+        assert!(token_json["logprob"].is_number());
+    }
+
+    #[test]
+    fn chat_logprob_serializes_missing_logprob_as_null() {
+        let token_json = serde_json::to_value(ChatCompletionTokenLogprob {
+            token: " hello".into(),
+            logprob: None,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        })
+        .unwrap();
+
+        assert_eq!(token_json["logprob"], serde_json::Value::Null);
     }
 
     #[test]
