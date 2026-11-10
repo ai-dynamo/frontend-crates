@@ -135,7 +135,9 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 
 `spec_from_model_dir` reads `preprocessor_config.json`, or the nested
 transformers v5 `processor_config.json` when a checkpoint ships only that
-file (GLM-5.3-Flash).
+file (GLM-5.3-Flash). A Mistral Large 4 directory resolves from
+`params.json` and `processor_config.json` to the HF `PixtralProcessor`
+pipeline; a mistral-common engine such as vLLM counts differently (§7).
 
 ### 2.1 A router (e.g. dynamo) — accounting and routing, no pixel work
 
@@ -310,6 +312,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 | `image::resize::resize_rgba` | `PIL.Image.resize` on an RGBA or LA image (BICUBIC, u8) | **bitwise** against Pillow 12.3 (Pillow resizes premultiplied `RGBa` and divides back with truncation) |
+| `models::pixtral::PixtralProcessor::process_item` | HF `PixtralProcessor` with `PixtralImageProcessor` / `PixtralImageProcessorPil` (transformers v5.19.0), on the CPU → `pixel_values`, `image_sizes` | **bitwise**, one item per image at its own size |
+| `models::pixtral::PixtralProcessor::grid` / `layout` | HF `get_resize_output_image_size` and `replace_image_token`; SGLang's one offset run per grid row | exact sizes, ids, and per-row feature ranges |
 
 For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
 accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
@@ -489,11 +493,72 @@ cross-checks the planned grid against the installed HF processor's
 `image_grid_thw`. Fixture settings beyond the first group are mathematical
 test inputs, not model defaults.
 
-## 7. Roadmap
+## 7. Mistral Large 4 (Pixtral) images
+
+`models::pixtral::PixtralProcessor` (`ProcessorSpec::Pixtral`, JSON
+`"family": "pixtral"`) mirrors transformers' `PixtralProcessor` and
+`PixtralImageProcessor` (v5.19.0) on the CPU. An engine runs this pipeline
+when it serves the checkpoint with the HF tokenizer (`tokenizer.json` and
+`chat_template.jinja`), which is SGLang's default mode.
+
+- **Size.** `ratio = max(height, width) / longest_edge`. Above 1, both sides
+  are divided by the ratio and floored. Each side then rounds up to a
+  multiple of `patch_size * spatial_merge_size` (28 pixels), so a small image
+  stretches. `grid(width, height)` returns `(rows, cols)`. An image whose
+  short side floors to 0 pixels (3080x1) is `InvalidInput`: HF raises there.
+- **Pixels.** `decode_image` is the trait default (PIL `convert("RGB")`).
+  `process_item` resizes with the spec's resampler (`aten_u8`, the default,
+  or `pil`), normalizes with the rounding of that backend, and returns planar
+  `[1, 3, H, W]` f32 plus the model kwarg `image_sizes` (`[1, 2]` i64). Each
+  item keeps its own size, which equals its crop of HF's padded batch.
+- **Prompt.** The chat template writes one `[IMG]` per image. The layout
+  replaces it with `rows` rows of `cols` `[IMG]`; `[IMG_BREAK]` closes each
+  row and `[IMG_END]` the last. Only the `[IMG]` positions take embeddings:
+  `feature_ranges` holds one range per row and `offsets` the whole span.
+- **Counts.** `num_media_tokens` is the prompt span, `rows * (cols + 1)`
+  (HF's `_get_num_multimodal_tokens`, which misreads an image 1 or 3 pixels
+  high; this crate follows the processor call). `apply_layout` takes the
+  number of embeddings, `rows * cols`, not the span: in an engine
+  `ProcessedItem::feature_token_count`, in a router the sum of the item's
+  `Feature` parts from `layout_from_metadata` (doctest on `PixtralProcessor`).
+
+`spec_from_model_dir` takes this path for a directory without `config.json`
+(the NVFP4 repo) or with one that says `mistral_large4`. The token ids and
+the geometry come from `params.json` (`vision_encoder`); mean, std and the
+knobs come from the nested `processor_config.json`. A pinned knob with
+another value, or an unknown knob, is refused. The resolved resampler is
+`aten_u8`; select `pil` in the spec JSON. `spec_from_hf_configs` refuses
+`mistral_large4`: its two files lack the `[IMG_BREAK]` and `[IMG_END]` ids.
+
+Not implemented:
+
+- mistral-common's grid rule (round, not floor) and its pixel pipeline. vLLM
+  counts and preprocesses with mistral-common; SGLang counts with its grid
+  rule under `--tokenizer-mode mistral`. The two rules give different grids
+  for some oversized images (1600x408: 14 rows here, 15 there), so a router
+  in front of such an engine must not use this family.
+- GPU resize. An engine that resizes on the GPU gets the same sizes and ids
+  as the CPU path that this crate mirrors, but not the same pixel values.
+- Samples deeper than 8 bits (PIL clips them) and a prompt with fewer `[IMG]`
+  than images: both are `InvalidInput`.
+- EXIF orientation. transformers' `load_image` applies it; this decode does
+  not, as SGLang's Pixtral path does not.
+
+The `mm_parity` test replays the 41 cases of
+`tests/fixtures/mm_parity/mistral-large-4.json` (decode forms, sizes that
+upscale or fit into the longest edge on both backends, multi-image prompts
+and refusals); its README has the regeneration commands.
+`tests/pixtral_planning.rs` checks the resolver, the 140-size sizing sweep
+and the refusals against `tests/fixtures/pixtral/geometry.json`, which
+`tests/fixtures/mm_parity/generate.py --family pixtral` writes beside the
+table from the HF processor.
+
+## 8. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
-for `models::qwen_vl`. For video it decodes to frames and has the request
-arithmetic; no family turns the frames into tensors yet:
+for `models::qwen_vl`, `models::glm5_next` and `models::pixtral`. For video
+it decodes to frames and has the request arithmetic; no family turns the
+frames into tensors yet:
 
 - `video_decode` (feature `video-decode`, §2.4): MP4 / WebM / Matroska
   demuxing; H.264, HEVC, VP9 and AV1 through NVDEC, VP8 and VP9 on the CPU
@@ -517,8 +582,8 @@ What remains:
 2. **Video families** — temporal patchify, timestamp layouts and video
    M-RoPE on decoded frames (`models::qwen_vl` first).
 3. **Family coverage** — GLM-5.3-Flash has image preprocessing and metadata-only planning
-   (§6); its video expansion, then Kimi, are next after
-   `models::qwen_vl`.
+   (§6) and Mistral Large 4 has image preprocessing (§7); GLM's video
+   expansion, then Kimi, are next after `models::qwen_vl`.
 
 ### Video and audio: planned layout
 
