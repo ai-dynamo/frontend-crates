@@ -274,10 +274,10 @@ Add builder unit tests in `src/structural_tag/tests.rs` and executable grammar c
 From the repository root, install the pinned CPU verifier into an isolated Python environment and run the builder checks:
 
 ```bash
-python3 -m venv .venv-structural-tags
-.venv-structural-tags/bin/python -m pip install --no-deps -r conformance/utils/structural-tag-requirements.in
+python3 -m venv /tmp/structural-tag-venv
+/tmp/structural-tag-venv/bin/python -m pip install --no-deps -r conformance/utils/structural-tag-requirements.in
 cargo test --locked -p dynamo-parsers-v2 --lib structural_tag
-CONFORMANCE_GRAMMAR_PYTHON="$PWD/.venv-structural-tags/bin/python" \
+CONFORMANCE_GRAMMAR_PYTHON=/tmp/structural-tag-venv/bin/python \
   cargo test --locked -p dynamo-parsers-v2 --test structural_tag_xgrammar -- --ignored --nocapture
 ```
 
