@@ -1100,8 +1100,8 @@ fn capture_with_proof_requests(
                 if let Some(provenance) = metadata.get("capture_provenance") {
                     fields(
                         provenance,
-                        &["captured_with", "capture_origin", "inherited_from"],
-                        &[],
+                        &["captured_with", "capture_origin"],
+                        &["inherited_from"],
                     )?;
                     ensure!(
                         !provenance.field("captured_with")?.mapping()?.is_empty(),
@@ -1114,8 +1114,10 @@ fn capture_with_proof_requests(
                     if provenance.field("capture_origin")? != &Node::Null {
                         origin(provenance.field("capture_origin")?, None)?;
                     }
-                    if provenance.field("inherited_from")? != &Node::Null {
-                        provenance.field("inherited_from")?.string()?;
+                    if let Some(inherited) = provenance.get("inherited_from")
+                        && inherited != &Node::Null
+                    {
+                        inherited.string()?;
                     }
                 }
             }
@@ -1684,6 +1686,81 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn capture_provenance_inheritance_is_optional_but_typed() -> Result<()> {
+        let authored = yaml::load_str("cases: {one: {}}")?;
+        let base = serde_json::json!({
+            "provenance":{"status":"legacy","captured_with":{"dynamo_v1":"11.0.6"}},
+            "document":{"mode":"unified"},"changes":{},"metadata_changes":{},
+            "document_overrides":{"one":{"capture_provenance":{
+                "captured_with":{"dynamo_v1":"11.0.6"},"capture_origin":null
+            }}}
+        });
+        for inherited in [
+            None,
+            Some(serde_json::Value::Null),
+            Some(serde_json::json!("11.0.5")),
+        ] {
+            let mut value = base.clone();
+            if let Some(inherited) = inherited {
+                value["document_overrides"]["one"]["capture_provenance"]["inherited_from"] =
+                    inherited;
+            }
+            capture(
+                &yaml::load_str(&value.to_string())?,
+                &authored,
+                "dynamo_v1",
+                "11.0.6",
+            )?;
+        }
+        for corruption in [
+            "captured_with",
+            "capture_origin",
+            "unknown",
+            "number",
+            "bool",
+            "array",
+            "object",
+        ] {
+            let mut value = base.clone();
+            let provenance = value["document_overrides"]["one"]["capture_provenance"]
+                .as_object_mut()
+                .unwrap();
+            match corruption {
+                "captured_with" | "capture_origin" => {
+                    provenance.remove(corruption);
+                }
+                "unknown" => {
+                    provenance.insert("unknown".into(), serde_json::Value::Null);
+                }
+                "number" => {
+                    provenance.insert("inherited_from".into(), serde_json::json!(1));
+                }
+                "bool" => {
+                    provenance.insert("inherited_from".into(), serde_json::json!(false));
+                }
+                "array" => {
+                    provenance.insert("inherited_from".into(), serde_json::json!([]));
+                }
+                "object" => {
+                    provenance.insert("inherited_from".into(), serde_json::json!({}));
+                }
+                _ => unreachable!(),
+            }
+            assert!(
+                capture(
+                    &yaml::load_str(&value.to_string())?,
+                    &authored,
+                    "dynamo_v1",
+                    "11.0.6"
+                )
+                .is_err(),
+                "{corruption}"
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn sparse_proof_membership_follows_bound_history_after_corpus_growth() -> Result<()> {

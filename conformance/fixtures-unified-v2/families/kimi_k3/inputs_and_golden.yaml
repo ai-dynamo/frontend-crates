@@ -10221,6 +10221,9 @@ requests:
     - 5
     - 7
     finish_step: true
+  ce5d5b2cf5ea6ee738183d0124a42939817bf97dec931427a2bb124245f5ce11:
+    input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+    tools: tools_cbf47ccf5fd2ef00
   cf077f816724b3db276adade8bd2b1dc24a4d99392767764071a1036e76f480c:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="integer"<|sep|>42<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_6943558dd8046b7b
@@ -16955,3 +16958,16 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: ce5d5b2cf5ea6ee738183d0124a42939817bf97dec931427a2bb124245f5ce11
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

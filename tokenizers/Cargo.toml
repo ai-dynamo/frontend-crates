@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-tokenizers"
 readme = "README.md"
-version = "4.1.1"
+version = "4.2.0"
 edition.workspace = true
 description = "Standalone HuggingFace, tiktoken, fastokens, and Baseten tokenizer implementations for LLM inference serving."
 authors.workspace = true
@@ -21,6 +21,7 @@ basetenkenizer.workspace = true
 blake3.workspace = true
 moka = { workspace = true, features = ["sync"] }
 fastokens.workspace = true
+fancy-regex = "0.13"
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
 strum = { workspace = true, features = ["derive"] }

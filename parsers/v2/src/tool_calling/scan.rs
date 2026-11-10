@@ -1040,6 +1040,11 @@ pub(crate) struct JsonStringState {
 }
 
 impl JsonStringState {
+    /// Whether the next character starts inside a quoted string.
+    pub(crate) fn is_inside(&self) -> bool {
+        self.inside
+    }
+
     /// True when this character belongs to a quoted string, including its quotes.
     pub(crate) fn advance(&mut self, character: char) -> bool {
         if self.inside {
@@ -1311,6 +1316,13 @@ pub(crate) trait InvokeBoundary: Send {
 
     /// Whether the outer block is also the invoke consumed by the emitter.
     fn block_is_invoke(&self) -> bool {
+        false
+    }
+
+    /// Whether text left in the block at EOF ends the block rather than a
+    /// truncated invoke. For a grammar with no block closer, where only EOF can
+    /// end the block.
+    fn block_ends_at_eof(&self) -> bool {
         false
     }
 
@@ -2086,6 +2098,42 @@ impl EventSink for Vec<UnifiedParserEvent> {
     }
 }
 
+/// Holds a reasoning run's trailing whitespace until the next event shows
+/// whether the thought continues: more reasoning gets it back, and anything else
+/// drops it.
+struct TrimmedReasoningTail<'a, S: EventSink + ?Sized> {
+    out: &'a mut S,
+    held: &'a mut String,
+}
+
+impl<S: EventSink + ?Sized> EventSink for TrimmedReasoningTail<'_, S> {
+    fn push_text(&mut self, text: &str) {
+        if !text.is_empty() {
+            self.held.clear();
+            self.out.push_text(text);
+        }
+    }
+
+    fn push_reasoning(&mut self, text: &str) {
+        let kept = text.trim_end();
+        if kept.is_empty() {
+            self.held.push_str(text);
+            return;
+        }
+        if !self.held.is_empty() {
+            self.out.push_reasoning(self.held.as_str());
+            self.held.clear();
+        }
+        self.out.push_reasoning(kept);
+        self.held.push_str(&text[kept.len()..]);
+    }
+
+    fn push_call(&mut self, call: ToolCallDelta) {
+        self.held.clear();
+        self.out.push_call(call);
+    }
+}
+
 pub(crate) fn push_run<S: EventSink + ?Sized>(out: &mut S, kind: Kind, text: &str) {
     match kind {
         Kind::Text => out.push_text(text),
@@ -2117,6 +2165,10 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     buffer: String,
     buffer_previous: Option<char>,
     prose: ProseControlState,
+    /// Every marker outside a block is structural, even inside prose quotation.
+    special_token_markers: bool,
+    /// Trailing reasoning whitespace not yet emitted; `None` keeps it verbatim.
+    reasoning_tail: Option<String>,
     tool_separator: Option<ToolSeparator>,
     /// Raw block bytes consumed before any call delta commits them.
     uncommitted_block: String,
@@ -2188,6 +2240,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             buffer: String::new(),
             buffer_previous: None,
             prose: ProseControlState::default(),
+            special_token_markers: false,
+            reasoning_tail: None,
             tool_separator: None,
             uncommitted_block: String::new(),
             in_block: false,
@@ -2288,6 +2342,25 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             separator,
             prefixed_openers,
         });
+        self
+    }
+
+    /// Treat every marker outside a block as structural, even inside prose
+    /// quotation.
+    ///
+    /// For grammars whose markers are tokenizer special tokens with no closer to
+    /// bound a quoted span. The model emits such a marker as one control token,
+    /// so a quote in the surrounding prose or reasoning cannot make it literal,
+    /// and an odd quote must not hold the marker until EOF or a later quote.
+    pub(crate) fn with_special_token_markers(mut self) -> Self {
+        self.special_token_markers = true;
+        self
+    }
+
+    /// Drop the trailing whitespace of each reasoning run. Whitespace is held
+    /// until the next event, so a thought that continues keeps it.
+    pub(crate) fn with_trimmed_reasoning_tail(mut self) -> Self {
+        self.reasoning_tail = Some(String::new());
         self
     }
 
@@ -2424,14 +2497,19 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         out: &mut S,
     ) -> anyhow::Result<()> {
         self.buffer.push_str(chunk);
-        self.drain(false, out)
+        self.drain_into(false, out)
     }
 
     pub(crate) fn finish_ordered_into<S: EventSink + ?Sized>(
         &mut self,
         out: &mut S,
     ) -> anyhow::Result<()> {
-        self.drain(true, out)?;
+        let drained = self.drain_into(true, out);
+        // EOF ends any open thought, so its held tail is never emitted.
+        if let Some(held) = self.reasoning_tail.as_mut() {
+            held.clear();
+        }
+        drained?;
         if let Some(deferred) = self.pending_parse_error.take() {
             return Err(deferred.error);
         }
@@ -2456,6 +2534,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.next_index = 0;
         self.pending_parse_error = None;
         self.provisional_invoke = false;
+        // Held reasoning whitespace already left the buffer, so it is dropped, not returned.
+        if let Some(held) = self.reasoning_tail.as_mut() {
+            held.clear();
+        }
         self.emitter.reset();
         self.reset_invoke_boundary();
         self.env_mode = self.env_initial;
@@ -2466,6 +2548,26 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         // read as string data (or a quoted marker read as the terminator).
         self.env_json.reset();
         pending
+    }
+
+    /// Drain into `out`, through the reasoning-tail trim when it is enabled.
+    fn drain_into<S: EventSink + ?Sized>(
+        &mut self,
+        flush: bool,
+        out: &mut S,
+    ) -> anyhow::Result<()> {
+        let Some(mut held) = self.reasoning_tail.take() else {
+            return self.drain(flush, out);
+        };
+        let drained = self.drain(
+            flush,
+            &mut TrimmedReasoningTail {
+                out,
+                held: &mut held,
+            },
+        );
+        self.reasoning_tail = Some(held);
+        drained
     }
 
     fn consume_buffer_prefix(&mut self, bytes: usize) {
@@ -2851,8 +2953,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 )
             })
             .unwrap_or_default();
+        let punctuation = if self.special_token_markers {
+            0
+        } else {
+            self.prose.punctuation_holdback(&self.buffer)
+        };
         regular
-            .max(self.prose.punctuation_holdback(&self.buffer))
+            .max(punctuation)
             .max(reasoning)
             .max(self.pending_label_len())
             .max(invoke)
@@ -3619,7 +3726,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             return self.drain_envelope(env, flush, out);
         }
         loop {
-            if !self.in_block && !self.anchored_invoke {
+            if !self.in_block && !self.anchored_invoke && !self.special_token_markers {
                 let control = self.prose.classify(
                     &self.buffer,
                     self.spec
@@ -3799,10 +3906,22 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
                             continue;
                         }
-                        tracing::warn!(
-                            why = %format!("{}_incomplete_invoke", self.spec.family),
-                            "stream dropped incomplete invoke at EOF"
-                        );
+                        if self
+                            .invoke_boundary
+                            .as_ref()
+                            .is_some_and(|boundary| boundary.block_ends_at_eof())
+                        {
+                            tracing::debug!(
+                                why = %format!("{}_block_ends_at_eof", self.spec.family),
+                                dropped_bytes = self.buffer.len(),
+                                "stream closed an unterminated block at EOF"
+                            );
+                        } else {
+                            tracing::warn!(
+                                why = %format!("{}_incomplete_invoke", self.spec.family),
+                                "stream dropped incomplete invoke at EOF"
+                            );
+                        }
                         self.consume_buffer_prefix(self.buffer.len());
                         self.abandon_invoke();
                         self.clear_uncommitted_block();

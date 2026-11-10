@@ -202,6 +202,152 @@ fn structural_response_case_checks_the_schema_before_parsing() {
     );
 }
 
+#[test]
+fn tool_call_ids_unique_table_case_enforces_identity() {
+    let mut checked = 0;
+    for file in load_native_golden() {
+        let case = &file.cases[&format!("UNIFIED.tool_call_ids_unique.{}", file.family)];
+        let chunks = capture::input_chunks(&case.input, case.input_chunks.as_deref());
+        let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+        let mut parser = create_unified_parser_for_family(&file.family, &tools).unwrap();
+        case.init.apply(&mut parser, &file.family);
+        let rows = capture::native_capture(&mut parser, &chunks).unwrap();
+        capture::check_tool_call_ids(parser.as_ref(), &rows).unwrap();
+        assert_eq!(
+            assemble(&rows.into_iter().flatten().collect::<Vec<_>>()),
+            case.golden,
+            "{}",
+            file.family
+        );
+        checked += 1;
+    }
+    assert!(checked > 0);
+}
+
+#[test]
+fn tool_call_ids_follow_family_contract_across_turns() {
+    use dynamo_parsers_v2::{UnifiedParserEvent, canonical_unified_family};
+    use std::collections::BTreeSet;
+
+    let mut checked = BTreeSet::new();
+    for file in load_native_golden() {
+        let family = canonical_unified_family(&file.family).unwrap();
+        checked.insert(family);
+        let case = &file.cases[&format!("UNIFIED.tool_call_ids_unique.{}", file.family)];
+        let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+        let mut parser = create_unified_parser_for_family(&file.family, &tools).unwrap();
+        let mut conversation_ids = BTreeSet::new();
+        for turn in 0..3 {
+            // Exercise both reset/reuse and a new request-local parser instance.
+            if turn == 2 {
+                parser = create_unified_parser_for_family(&file.family, &tools).unwrap();
+            }
+            case.init.apply(&mut parser, &file.family);
+            let mut ids = BTreeMap::new();
+            let mut rows = Vec::new();
+            let chunks: Vec<_> = case.input.chars().map(|ch| ch.to_string()).collect();
+            for chunk in chunks.iter().map(Some).chain([None]) {
+                let events = match chunk {
+                    Some(chunk) => parser.push(chunk).unwrap(),
+                    None => parser.finish().unwrap().events,
+                };
+                for event in &events {
+                    if let UnifiedParserEvent::ToolCall(call) = event {
+                        let id = parser.tool_call_id(call.tool_index).map(str::to_owned);
+                        let previous = ids.entry(call.tool_index).or_insert_with(|| id.clone());
+                        assert_eq!(
+                            previous, &id,
+                            "{family}, turn={turn}: ID changed between deltas"
+                        );
+                    }
+                }
+                for (&index, id) in &ids {
+                    assert_eq!(
+                        parser.tool_call_id(index),
+                        id.as_deref(),
+                        "{family}, turn={turn}: ID changed after another push/finish"
+                    );
+                }
+                rows.push(events);
+            }
+            assert_eq!(ids.len(), 2, "{family}, turn={turn}");
+            capture::check_tool_call_ids(parser.as_ref(), &rows).unwrap();
+            assert_eq!(
+                assemble(&rows.into_iter().flatten().collect::<Vec<_>>()),
+                case.golden
+            );
+            for (index, id) in ids {
+                match family {
+                    "kimi_k2" => assert_eq!(id, Some(format!("functions.get_weather:{index}"))),
+                    "kimi_k3" => {
+                        let id = id.expect("K3 supplies API IDs");
+                        assert!(id.starts_with("call-"));
+                        assert!(
+                            conversation_ids.insert(id),
+                            "K3 reused an ID across calls/turns"
+                        );
+                    }
+                    "mistral_4" => {
+                        let id = id.expect("Mistral supplies API IDs");
+                        assert_eq!(id.len(), 9);
+                        assert!(id.chars().all(|ch| ch.is_ascii_alphanumeric()));
+                        assert!(
+                            conversation_ids.insert(id),
+                            "Mistral reused an ID across calls/turns"
+                        );
+                    }
+                    _ => assert_eq!(
+                        id, None,
+                        "{family} delegates ID generation to the output layer"
+                    ),
+                }
+            }
+            parser.reset();
+            assert_eq!(
+                parser.tool_call_id(0),
+                None,
+                "{family}: reset retained an ID"
+            );
+            assert_eq!(
+                parser.tool_call_id(1),
+                None,
+                "{family}: reset retained an ID"
+            );
+        }
+    }
+    let registered = REGISTERED_UNIFIED_FAMILIES
+        .iter()
+        .map(|family| canonical_unified_family(family).unwrap())
+        .collect();
+    assert_eq!(
+        checked, registered,
+        "every registered native family needs lifecycle coverage"
+    );
+}
+
+#[test]
+fn id_validator_rejects_duplicate_k2_wire_ids_within_one_response() {
+    let file = load_native_golden()
+        .into_iter()
+        .find(|file| file.family == "kimi_k2")
+        .unwrap();
+    let case = &file.cases["UNIFIED.tool_call_ids_unique.kimi_k2"];
+    let input = case
+        .input
+        .replace("functions.get_weather:1", "functions.get_weather:0");
+    assert_ne!(input, case.input);
+    let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+    let mut parser = create_unified_parser_for_family("kimi_k2", &tools).unwrap();
+    case.init.apply(&mut parser, "kimi_k2");
+    let rows = capture::native_capture(&mut parser, &capture::input_chunks(&input, None)).unwrap();
+    let capture::CaptureFailure::Error(error) =
+        capture::check_tool_call_ids(parser.as_ref(), &rows).unwrap_err()
+    else {
+        panic!("duplicate IDs must fail validation");
+    };
+    assert!(error.contains("duplicate parser-supplied tool-call ID"));
+}
+
 fn events(
     family: &str,
     chunks: &[String],
@@ -729,8 +875,10 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "gemma4",
         "glm47",
         "gpt_oss",
+        "hermes",
         "kimi_k2",
         "kimi_k3",
+        "mistral_4",
         "muse_glimmer",
         "muse_spark",
         "nemotron_v3",
@@ -783,7 +931,10 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         .count();
     let template_families = common::unified_families()
         .values()
-        .filter(|family| family.native && family.scenario_profile.as_deref() != Some("native"))
+        .filter(|family| {
+            family.native
+                && (family.scenario_profile.as_deref() != Some("native") || family.shared_scenarios)
+        })
         .count();
     assert_eq!(
         checked,

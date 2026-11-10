@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [10.3.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.2.0...dynamo-renderer-v10.3.0) - 2026-11-10
+
+### Features
+
+- *(parsers-v2)* Add Mistral tekken tokenizer, native renderer and mistral_4 UnifiedParser
+
+## [10.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.1.0...dynamo-renderer-v10.2.0) - 2026-11-06
+
+### Features
+
+- *(renderer)* Add vLLM chat-template content formats ([#491](https://github.com/ai-dynamo/frontend-crates/pull/491))
+
 ## [10.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.0.1...dynamo-renderer-v10.1.0) - 2026-11-03
 
 ### Features

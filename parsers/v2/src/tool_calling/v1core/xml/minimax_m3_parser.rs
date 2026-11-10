@@ -67,6 +67,57 @@ pub(crate) fn parse_minimax_m3_invoke(
     Ok(Some((name, arguments)))
 }
 
+/// Appends `null` for omitted keys that are required and provably nullable (M3 omits null args).
+pub(crate) fn append_required_nulls(
+    name: &str,
+    arguments: String,
+    tools: &[ToolDefinition],
+) -> anyhow::Result<String> {
+    let Some(root) = get_arguments_config(name, Some(tools)) else {
+        return Ok(arguments);
+    };
+    let Some(required) = root.get("required").and_then(Value::as_array) else {
+        return Ok(arguments);
+    };
+    // Raw values: arguments may carry integers beyond 64 bits that `Value` rejects.
+    let Ok(present) =
+        serde_json::from_str::<HashMap<String, Box<serde_json::value::RawValue>>>(&arguments)
+    else {
+        return Ok(arguments);
+    };
+    let mut missing = Vec::new();
+    for key in required.iter().filter_map(Value::as_str) {
+        if present.contains_key(key) || missing.contains(&key) {
+            continue;
+        }
+        let Some(schema) = parameter_schema(root, key) else {
+            continue;
+        };
+        let schema: &Value = &schema;
+        let mut walker = SchemaFacts::new(root);
+        if walker.permits_null(schema) == Some(true) && !walker.exhausted {
+            missing.push(key);
+        }
+    }
+    if missing.is_empty() {
+        return Ok(arguments);
+    }
+    let mut arguments = arguments;
+    let close = arguments
+        .pop()
+        .filter(|close| *close == '}')
+        .ok_or_else(|| anyhow::anyhow!("arguments are not a JSON object"))?;
+    for key in missing {
+        if arguments.len() > 1 {
+            arguments.push(',');
+        }
+        arguments.push_str(&serde_json::to_string(key)?);
+        arguments.push_str(":null");
+    }
+    arguments.push(close);
+    Ok(arguments)
+}
+
 // Reads the `name` attribute from `<invoke ...>` using vLLM-compatible quoting variants.
 pub(crate) fn parse_invoke_name(tag_attrs: &str) -> Option<String> {
     let attrs = tag_attrs.trim_start();

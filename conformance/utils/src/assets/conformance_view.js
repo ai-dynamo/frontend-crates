@@ -307,14 +307,14 @@
       if (expl.length) {
         uout += '\n\n' + expl.map(function (x) { return '<span class="expl">' + x + '</span>'; }).join('\n');
       }
-      return uout;
+      return uout + producerNote;
     }
     // Unified tab: vLLM column is a documented expectation (no live events yet).
     if (b.expected != null) {
       var xout = '<span class="fldl">expected: </span>' + escapeHtml(b.expected)
         + ' <span class="parser-base">(live capture pending — U1)</span>';
       if (b.note) { xout += '\n<span class="expl">' + escapeHtml(String(b.note)) + '</span>'; }
-      return xout;
+      return xout + producerNote;
     }
     var out;
     if (b.reasoning_text != null) {
@@ -335,7 +335,7 @@
       // JSON, so a long note read as a continuation of the data rather than a note.
       out += '\n\n<span class="expl">explanation: ' + escapeHtml(String(b.explanation)) + '</span>';
     }
-    return out;
+    return out + producerNote;
   }
 
   // --- Candidate chart (the popup grid) --------------------------------------
@@ -460,7 +460,9 @@
         cands.forEach(function (c, ci) {
           const expected = ch.expected || {};
           const deltas = Object.prototype.hasOwnProperty.call(expected, c.key) ? expected[c.key] : expected[implKeyOf(c.key)];
-          const output = c.parse_mode === 'batch' ? '' : renderDeltas(deltas || [], ctx);
+          const output = c.parse_mode === 'batch'
+            ? '<span class="expl">Order/chunk not applicable for batch</span>'
+            : renderDeltas(deltas || [], ctx);
           row += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
             + output + '</td>';
         });

@@ -8,7 +8,10 @@ use super::tokcfg::{
     ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
     raise_exception, strftime_now, tojson,
 };
-use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
+use super::{
+    ChatTemplateContentFormat, ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment,
+    SystemNormalization,
+};
 use either::Either;
 use minijinja::{Environment, Value, context};
 use serde_json::json;
@@ -799,6 +802,7 @@ impl HfTokenizerConfigJsonFormatter {
             config,
             mixins: Arc::new(mixins),
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
+            content_format: ChatTemplateContentFormat::Auto,
             requires_content_arrays,
             exclude_tools_when_tool_choice_none,
             default_template_handles_native_tools,

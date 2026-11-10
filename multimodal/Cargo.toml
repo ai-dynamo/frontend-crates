@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-multimodal"
 readme = "README.md"
-version = "0.2.4"
+version = "0.2.6"
 edition.workspace = true
 description = "Shared multimodal input processing, prompt geometry, token accounting, and content identity for LLM inference serving."
 authors.workspace = true
@@ -49,4 +49,5 @@ url = { workspace = true, optional = true }
 xxhash-rust.workspace = true
 
 [dev-dependencies]
+sha2 = "0.10"
 tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "time"] }

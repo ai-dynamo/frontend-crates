@@ -682,6 +682,179 @@ fn run_xgrammar(requests: Vec<Value>) -> Vec<Value> {
     results
 }
 
+// These schemas deliberately distinguish the literal target from a second
+// JSON Pointer decode. Expected schemas are authored independently of builders.
+fn escaped_empty_argument_schemas() -> Vec<(&'static str, Value, bool)> {
+    let empty = json!({"type":"object", "properties":{}, "additionalProperties":false});
+    let required = json!({"type":"object", "properties":{"x":{"type":"string"}},
+                          "required":["x"], "additionalProperties":false});
+    vec![
+        (
+            "tilde-required",
+            json!({"type":"object", "$ref":"#/properties/a~00b",
+            "properties":{"a~b":empty, "a~0b":required}}),
+            false,
+        ),
+        (
+            "tilde-empty",
+            json!({"type":"object", "$ref":"#/properties/a~0b",
+            "properties":{"a~b":empty, "a~0b":required}}),
+            true,
+        ),
+        (
+            "tilde-reversed-empty",
+            json!({"type":"object", "$ref":"#/properties/a~00b",
+            "properties":{"a~b":required, "a~0b":empty}}),
+            true,
+        ),
+        (
+            "tilde-reversed-required",
+            json!({"type":"object", "$ref":"#/properties/a~0b",
+            "properties":{"a~b":required, "a~0b":empty}}),
+            false,
+        ),
+        (
+            "slash-required",
+            json!({"type":"object", "$ref":"#/properties/a~01b",
+            "properties":{"a/b":empty, "a~1b":required}}),
+            false,
+        ),
+    ]
+}
+
+#[test]
+fn qwen_empty_branch_resolves_escaped_local_refs_once() {
+    let builder = structural_tag_builder_for_family("qwen3_coder").unwrap();
+    for (label, schema, schema_accepts_empty) in escaped_empty_argument_schemas() {
+        for (policy, strict, schema_mode, unconstrained) in [
+            ("strict", Some(true), StructuralTagSchemaMode::Auto, false),
+            ("relaxed", Some(false), StructuralTagSchemaMode::Auto, true),
+            (
+                "strict-override",
+                Some(false),
+                StructuralTagSchemaMode::Strict,
+                false,
+            ),
+        ] {
+            let tools = [Tool {
+                name: "f".into(),
+                description: None,
+                parameters: schema.clone(),
+                strict,
+            }];
+            for choice in [
+                StructuralTagToolChoice::Auto,
+                StructuralTagToolChoice::Required,
+                StructuralTagToolChoice::Named("f"),
+            ] {
+                let grammar = builder
+                    .build(&StructuralTagContext {
+                        tool_choice: choice,
+                        tools: &tools,
+                        parallel_tool_calls: Some(false),
+                        schema_mode,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    })
+                    .unwrap()
+                    .unwrap();
+                // Named requests use a direct Tag; auto/required use tags.
+                let call = if grammar["format"]["type"] == "tag" {
+                    &grammar["format"]
+                } else {
+                    &grammar["format"]["tags"][0]
+                };
+                assert_eq!(call["type"], "tag");
+                assert_eq!(
+                    call["end"] == "",
+                    unconstrained || schema_accepts_empty,
+                    "{label}/{policy}/{choice:?}: native empty branch must follow the declared target"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
+fn escaped_local_ref_xml_xgrammar() {
+    let builder = structural_tag_builder_for_family("qwen3_coder").unwrap();
+    let mut requests = Vec::new();
+    let mut expected = Vec::new();
+    for (label, schema, schema_accepts_empty) in escaped_empty_argument_schemas() {
+        for (policy, strict, schema_mode, unconstrained) in [
+            ("strict", Some(true), StructuralTagSchemaMode::Auto, false),
+            ("relaxed", Some(false), StructuralTagSchemaMode::Auto, true),
+            (
+                "strict-override",
+                Some(false),
+                StructuralTagSchemaMode::Strict,
+                false,
+            ),
+        ] {
+            let tools = [Tool {
+                name: "f".into(),
+                description: None,
+                parameters: schema.clone(),
+                strict,
+            }];
+            for choice in [
+                StructuralTagToolChoice::Auto,
+                StructuralTagToolChoice::Required,
+                StructuralTagToolChoice::Named("f"),
+            ] {
+                let grammar = builder
+                    .build(&StructuralTagContext {
+                        tool_choice: choice,
+                        tools: &tools,
+                        parallel_tool_calls: Some(false),
+                        schema_mode,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    })
+                    .unwrap()
+                    .unwrap();
+                for (body, input, accepted) in [
+                    (
+                        "native-empty",
+                        "<tool_call>\n<function=f>\n</function>\n</tool_call>",
+                        unconstrained || schema_accepts_empty,
+                    ),
+                    (
+                        "legacy-empty",
+                        "<tool_call>\n<function=f>\n\n</function>\n</tool_call>",
+                        unconstrained || schema_accepts_empty,
+                    ),
+                    (
+                        "required-x",
+                        "<tool_call>\n<function=f>\n<parameter=x>\nok\n</parameter>\n</function>\n</tool_call>",
+                        unconstrained || !schema_accepts_empty,
+                    ),
+                ] {
+                    let id = format!("qwen3_coder/{label}/{policy}/{choice:?}/{body}");
+                    requests.push(json!({"id":id, "grammar":grammar, "input":input}));
+                    expected.push((id, accepted));
+                }
+            }
+        }
+    }
+    let results = run_xgrammar(requests);
+    let failures: Vec<_> = expected
+        .iter()
+        .zip(&results)
+        .filter_map(|((id, accepted), result)| {
+            assert_eq!(result["id"], *id);
+            (result["accepted"] != *accepted || result["complete"] != *accepted)
+                .then(|| format!("{id}: expected {accepted}; {result}"))
+        })
+        .collect();
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    eprintln!(
+        "{} escaped-reference v2 XML grammar cases passed",
+        results.len()
+    );
+}
+
 #[test]
 #[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
 fn harmony_trigger_exclusions_xgrammar() {
