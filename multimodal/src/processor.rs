@@ -20,6 +20,8 @@
 pub enum TensorData {
     F32(Vec<f32>),
     I64(Vec<i64>),
+    /// bfloat16 bit patterns.
+    Bf16(Vec<u16>),
 }
 
 pub struct Tensor {
@@ -241,7 +243,9 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// `_get_num_multimodal_tokens`). Lets routers account prompt length after
     /// probing only the modality-specific header. Literal ids of the
     /// expansion count; the positions that take embeddings are the `Feature`
-    /// parts of the layout and [`ProcessedItem::feature_token_count`].
+    /// parts of the layout and [`ProcessedItem::feature_token_count`]. A family
+    /// that sizes media against the whole request returns `Unsupported`; there
+    /// [`Self::layout_from_metadata`] is the exact call.
     fn num_media_tokens(&self, media: &MediaMetadata) -> crate::Result<usize>;
 
     /// Describe a prompt expansion from metadata alone, without constructing

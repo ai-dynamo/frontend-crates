@@ -205,22 +205,43 @@ fn replay(fixture: &Value, case: &Value) -> dynamo_multimodal::Result<Value> {
     let layout = family.layout(&input_ids, &items)?;
     let features: Vec<usize> = items.iter().map(|item| item.feature_token_count).collect();
     let expanded = token_layout::apply_layout(&input_ids, &layout, &features, usize::MAX)?;
-    for (media, (features, literals)) in media.iter().zip(common::layout_counts(&layout)) {
-        let (DecodedMedia::Image { height, width, .. }
-        | DecodedMedia::ImageRgba { height, width, .. }) = media
-        else {
-            unreachable!("the tables hold images")
-        };
-        let metadata = MediaMetadata::Image {
-            width: *width as u32,
-            height: *height as u32,
-        };
-        // A router counts an item's whole span from its metadata alone.
-        let tokens = family.num_media_tokens(&metadata)?;
-        if tokens != features + literals {
-            return Err(MmError::internal(format!(
-                "num_media_tokens {tokens} != the item's {features} features + {literals} literals"
-            )));
+    let metadata: Vec<MediaMetadata> = (media.iter())
+        .map(|media| {
+            let (DecodedMedia::Image { height, width, .. }
+            | DecodedMedia::ImageRgba { height, width, .. }) = media
+            else {
+                unreachable!("the tables hold images")
+            };
+            MediaMetadata::Image {
+                width: *width as u32,
+                height: *height as u32,
+            }
+        })
+        .collect();
+    // A router counts an item's whole span from its metadata alone. A family that
+    // sizes media against the whole request refuses that and plans the request.
+    let mut whole_request = false;
+    for (item, (features, literals)) in metadata.iter().zip(common::layout_counts(&layout)) {
+        match family.num_media_tokens(item) {
+            Ok(tokens) if tokens == features + literals => {}
+            Ok(tokens) => {
+                return Err(MmError::internal(format!(
+                    "num_media_tokens {tokens} != the item's {features} features + {literals} literals"
+                )));
+            }
+            Err(MmError::Unsupported { .. }) => whole_request = true,
+            Err(error) => return Err(error),
+        }
+    }
+    if whole_request {
+        let planned = family.layout_from_metadata(&input_ids, &metadata)?;
+        let planned = token_layout::apply_layout(&input_ids, &planned, &features, usize::MAX)?;
+        if planned.input_ids != expanded.input_ids
+            || planned.feature_ranges != expanded.feature_ranges
+        {
+            return Err(MmError::internal(
+                "layout_from_metadata differs from the processed layout".to_string(),
+            ));
         }
     }
     let positions = family.positions(expanded.input_ids.len(), &expanded.offsets, &items)?;
@@ -252,6 +273,10 @@ fn summary(
             TensorData::F32(values) => (
                 "float32",
                 common::sha256_le(values.iter().map(|v| v.to_le_bytes())),
+            ),
+            TensorData::Bf16(bits) => (
+                "bfloat16",
+                common::sha256_le(bits.iter().map(|b| b.to_le_bytes())),
             ),
             _ => panic!("a feature dtype the tables do not record"),
         })
