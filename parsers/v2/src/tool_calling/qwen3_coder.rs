@@ -577,6 +577,49 @@ mod tests {
     }
 
     #[test]
+    fn native_empty_and_parameter_calls_round_trip_in_streams() {
+        let mut tools = weather_tools();
+        tools.push(Tool {
+            name: "get_today".to_string(),
+            description: None,
+            parameters: serde_json::json!({"type": "object", "properties": {}}),
+            strict: Some(false),
+        });
+        let empty = "<tool_call>\n<function=get_today>\n</function>\n</tool_call>";
+        let weather = "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>";
+        for text in [
+            empty.to_string(),
+            weather.to_string(),
+            format!("{empty}\n{weather}"),
+        ] {
+            let expected_calls = if text.contains("</tool_call>\n<tool_call>") {
+                2
+            } else {
+                1
+            };
+            for width in [1, 7, text.len()] {
+                let chunks: Vec<_> = text
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                    .collect();
+                let out = parse_chunks(&tools, &chunks).coalesce_calls();
+                assert_eq!(out.calls.len(), expected_calls);
+                for call in out.calls {
+                    assert!(call.complete);
+                    let arguments: serde_json::Value =
+                        serde_json::from_str(&call.arguments).unwrap();
+                    if call.name.as_deref() == Some("get_today") {
+                        assert_eq!(arguments, serde_json::json!({}));
+                    } else {
+                        assert_eq!(arguments, serde_json::json!({"location": "Paris"}));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn literal_function_closer_scanning_is_linear() {
         let tools = weather_tools();
         let mut emitter = Qwen3Emitter {

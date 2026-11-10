@@ -2053,6 +2053,9 @@ requests:
   0f4ae6a37f80f5eca6aea411bf9bca9ee88d1044370ab5d409e3fdd0c8e9f030:
     input: <｜DSML｜tool_calls><｜DSML｜invoke name="echo"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter><｜DSML｜parameter name="value" string="false">1e400</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
     tools: tools_81ef407beab6fe3e
+  0ff55e32231c9988cfc4fc8f06bfac3795a28692f579d5769a6452098b17788b:
+    input: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+    tools: tools_cbf47ccf5fd2ef00
   0ff9cb5bcd0c1e7deea90f163c457b3a800a6489cdc9072ba34c327233ef1c35:
     input: <｜DSML｜tool_calls><｜DSML｜invoke name="record"><｜DSML｜parameter name="value" string="false">["é \\\" </atem:parameter>"]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
     tools: tools_c2d1dcfbaa42ae9d
@@ -10331,3 +10334,16 @@ cases:
 
 
         I''ve found the bug in `app.py`.'
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 0ff55e32231c9988cfc4fc8f06bfac3795a28692f579d5769a6452098b17788b
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris

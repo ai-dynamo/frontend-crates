@@ -558,7 +558,7 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
         if (events.at(-1)?.kind === kind) events.at(-1).text += text;
         else events.push({ kind, text });
       } else if (kind === 'tool_call') {
-        if (name) {
+        if (name != null) { // a name delta opens a new call, an empty name included
           events.push({ kind: 'tool_call', name, arguments: args || '', complete });
           currentTool = events.length - 1;
         } else if (currentTool !== null && args) {

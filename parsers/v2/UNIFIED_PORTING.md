@@ -74,7 +74,7 @@ Then add the family's inputs to `gen_unified_golden.py` and run the pipeline (se
 
 For wrapped-block families, first reuse `WrappedBlockScanner`, its invoke boundary/emitter hooks, and the guided router. Qwen, DeepSeek V4/V4.1, GLM, Gemma, and Kimi already have Unified factories; their original porting work is not a pending task. MiniMax M2/M3 have tool-only parsers and need a full conversion under the contract above. Channel grammars need their existing channel owner rather than a delimiter-pair approximation; Harmony now has a Unified implementation accepting text or token IDs, so inspect `input_capabilities()` before feeding input.
 
-Families without a Unified registry entry, including Granite, Inkling, Mistral, Step, and legacy append-think, require new grammar/initialization work. A reasoning parser name in v1 alone does not make that family available through Unified.
+Families without a Unified registry entry, including Granite, Inkling, Step, and legacy append-think, require new grammar/initialization work. A reasoning parser name in v1 alone does not make that family available through Unified.
 
 ## The reasoning half is the easy half
 

@@ -42,8 +42,8 @@ def test_dotted_names_share_exact_oracle_and_tools(family, scenario, calls, grou
 
 def test_dotted_name_scope_covers_native_tool_families():
     expected = frozenset({
-        "beam", "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
-        "kimi_k2", "kimi_k3", "muse_glimmer", "muse_spark", "nemotron_v3", "qwen3",
+        "beam", "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss", "hermes",
+        "kimi_k2", "kimi_k3", "mistral_4", "muse_glimmer", "muse_spark", "nemotron_v3", "qwen3",
     })
     assert generator.DOTTED_NAME_FAMILIES == expected
     assert generator.scenario_families("dotted_name_minimal") == expected
