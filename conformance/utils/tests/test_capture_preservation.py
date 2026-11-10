@@ -135,14 +135,20 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
                     if "verified_recapture" in metadata:
                         record, _document = unified_history.materialized_record(family.cases[case], value)
                         record.update(metadata)
+                        producer_version = metadata["verified_recapture"]["provenance"]["version"]
+                        assert version_key(producer_version) <= version_key(row["version"])
+                        if family.cases[case]["lifecycle"] == "active":
+                            assert producer_version == row["version"]
                         effective = capture_stimulus.select_peer_observation(
                             record, family.cases[case]["request"],
-                            implementation=row["implementation"], version=row["version"],
+                            implementation=row["implementation"], version=producer_version,
                         )
                         assert typed_equal(effective["capture_input"], family.cases[case]["request"])
                         continue
                     stimulus = value["stimulus"]
-                    assert "ref" not in stimulus
+                    if "ref" in stimulus:
+                        assert stimulus.get("semantic_sha256") is not None
+                    unified_history._validate_stimulus(stimulus, family.cases[case], f"{row['path']}:{case}")
                     if "inline" in stimulus:
                         assert typed_equal(stimulus["inline"], family.cases[case]["request"])
                 # Refreshed releases can lack an older checkpoint; retained V1
