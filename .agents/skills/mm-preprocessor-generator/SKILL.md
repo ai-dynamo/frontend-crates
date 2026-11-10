@@ -81,8 +81,8 @@ The spec resolver reads the same checkpoint files as the baseline. Reuse the
 crate's decode, resize and layout stages; add a stage only for a behavior that
 the baseline shows. The replay calls `process_items` for the whole request; a
 family that sizes images against the request overrides it and refuses
-`process_item`. Features are `TensorData::F32`. Check values that
-`ProcessedItem` does not carry in `tests/<family>_*.rs`, with the helpers in
+`process_item`. Features are `TensorData::F32` or `Bf16` (hashed as `<u2`
+bits). Check values that `ProcessedItem` does not carry in `tests/<family>_*.rs`, with the helpers in
 `tests/common/`.
 
 ## 4. Capture, gate and report
