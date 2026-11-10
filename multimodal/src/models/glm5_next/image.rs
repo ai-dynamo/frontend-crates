@@ -132,7 +132,9 @@ impl MmFamilyProcessor for Glm5NextImageProcessor {
     }
 
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, MmError> {
-        let DecodedMedia::Image { rgb, height, width } = media;
+        let DecodedMedia::Image { rgb, height, width } = media else {
+            return Err(MmError::unsupported("glm5_next: expects an RGB image"));
+        };
         let (h, w) = (*height, *width);
         let geometry = &self.spec.planner.geometry;
         let pixels = h.checked_mul(w).and_then(|n| n.checked_mul(3));

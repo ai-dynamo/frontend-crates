@@ -17,6 +17,10 @@ fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/glm5_next/pixels")
 }
 
+fn images() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mm_parity/images")
+}
+
 #[test]
 fn fixtures_match_sglang() {
     let fixture =
@@ -47,7 +51,7 @@ fn check(fixture: &Value) -> Vec<String> {
 fn check_case(case: &Value) -> Result<(), String> {
     let family = processor_from_spec(&case["spec"].to_string()).map_err(|e| e.to_string())?;
     let images: Vec<Vec<u8>> = (case["images"].as_array().unwrap().iter())
-        .map(|name| std::fs::read(fixtures().join("images").join(name.as_str().unwrap())).unwrap())
+        .map(|name| std::fs::read(images().join(name.as_str().unwrap())).unwrap())
         .collect();
     let images: Vec<&[u8]> = images.iter().map(Vec::as_slice).collect();
     let input_ids: Vec<i32> = (case["input_ids"].as_array().unwrap().iter())
@@ -266,7 +270,7 @@ fn smart_decode_checks_transposed_limits_before_decoding() {
         ("exif_orientation6_64x48.jpg", 64),
         ("rgba_raw_exif6_56x48.png", 56),
     ] {
-        let bytes = std::fs::read(fixtures().join("images").join(name)).unwrap();
+        let bytes = std::fs::read(images().join(name)).unwrap();
         let limits = DecodeLimits {
             max_width: Some(48),
             max_height: Some(oriented_height),

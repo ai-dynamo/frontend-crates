@@ -50,12 +50,19 @@ pub enum DecodedMedia {
         height: usize,
         width: usize,
     },
+    /// HWC u8 RGBA, straight alpha, for families that composite transparency
+    /// themselves.
+    ImageRgba {
+        rgba: Vec<u8>,
+        height: usize,
+        width: usize,
+    },
 }
 
 impl DecodedMedia {
     pub fn modality(&self) -> Modality {
         match self {
-            Self::Image { .. } => Modality::Image,
+            Self::Image { .. } | Self::ImageRgba { .. } => Modality::Image,
         }
     }
 }
