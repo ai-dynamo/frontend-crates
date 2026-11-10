@@ -53,6 +53,29 @@ dimensions, typed geometry results, and Python-derived parity fixtures.
 
 ---
 
+## `dynamo-multimodal` — Nemotron 3.5 Super VL size math adapted from SGLang and the model's processor
+
+The tile size math in `multimodal/src/models/nemotron_vl.rs` is adapted from
+SGLang's `python/sglang/srt/multimodal/internvl_utils.py` at commit
+`a2ffd214696ea7144d3c237133a15df3315d900b` (`sizing = sglang`), and from
+`image_processing_nemotron_h_omni.py` of
+`nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16` at revision
+`fb0ee0bc6b3f70342afd8d84cb80dbadbaa8a1fe` (`sizing = hf`).
+
+- **Project**: [SGLang](https://github.com/sgl-project/sglang)
+- **Source**: [Pinned size helpers](https://github.com/sgl-project/sglang/blob/a2ffd214696ea7144d3c237133a15df3315d900b/python/sglang/srt/multimodal/internvl_utils.py)
+- **License**: [Apache License, Version 2.0](https://github.com/sgl-project/sglang/blob/a2ffd214696ea7144d3c237133a15df3315d900b/LICENSE), also reproduced in this repository's `LICENSE`.
+
+- **Project**: [NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16)
+- **Source**: [Pinned image processor](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16/blob/fb0ee0bc6b3f70342afd8d84cb80dbadbaa8a1fe/image_processing_nemotron_h_omni.py)
+- **License**: Apache License, Version 2.0, as the header of that file states; also reproduced in this repository's `LICENSE`.
+
+The Rust adaptation adds spec validation, checked output dimensions, a
+fail-closed limit where Python's integer division is not an `f64` division,
+and Python-derived parity fixtures.
+
+---
+
 ## `dynamo-protocols` — based on `async-openai`
 
 The `dynamo-protocols` crate is a derivative work of [`async-openai`](https://github.com/64bit/async-openai) by Himanshu Neema. The OpenAI request/response type hierarchy in this crate originated from that project and has been extended and modified for inference-serving use cases.
