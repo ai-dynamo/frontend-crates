@@ -1022,9 +1022,13 @@ fn push_segment(segments: &mut Vec<crate::RenderedSegment>, text: &str, allow_sp
 pub(crate) struct ControlMarkers {
     /// Longest first; the flag is whether the template reads the spelling.
     spellings: Vec<(String, bool)>,
+    /// The indices of `spellings`, in the order of the spellings as strings.
+    in_order: Vec<usize>,
     /// The spellings, then `<|` for Harmony templates; longest match first.
     matcher: AhoCorasick,
     first_bytes: [bool; 256],
+    /// The second byte of every spelling that has one.
+    second_bytes: [bool; 256],
     /// The bytes the matcher's patterns begin with; empty when they begin with
     /// more than three, the most one search covers.
     starts: Vec<u8>,
@@ -1063,12 +1067,18 @@ impl ControlMarkers {
             })
             .collect();
         spellings.sort_by(|a, b| b.0.len().cmp(&a.0.len()).then_with(|| a.0.cmp(&b.0)));
+        let mut in_order: Vec<usize> = (0..spellings.len()).collect();
+        in_order.sort_by(|&a, &b| spellings[a].0.cmp(&spellings[b].0));
         let is_harmony = sources
             .iter()
             .any(|source| source.contains("<|start|>") && source.contains("<|message|>"));
         let mut first_bytes = [false; 256];
+        let mut second_bytes = [false; 256];
         for (spelling, _) in &spellings {
             first_bytes[spelling.as_bytes()[0] as usize] = true;
+            if let Some(&second) = spelling.as_bytes().get(1) {
+                second_bytes[usize::from(second)] = true;
+            }
         }
         let mut patterns: Vec<&str> = spellings
             .iter()
@@ -1107,8 +1117,10 @@ impl ControlMarkers {
             .expect("control-token spellings form a valid Aho-Corasick automaton");
         Self {
             spellings,
+            in_order,
             matcher,
             first_bytes,
+            second_bytes,
             starts,
             prefixes,
             is_harmony,
@@ -1186,11 +1198,8 @@ impl ControlMarkers {
             .find(|&start| {
                 self.first_bytes[usize::from(bytes[start])]
                     && text.is_char_boundary(start)
-                    && self.spellings.iter().any(|(spelling, read)| {
-                        !(is_assistant && *read)
-                            && spelling.len() > end - start
-                            && spelling.starts_with(&text[start..end])
-                    })
+                    && (start + 1 == end || self.second_bytes[usize::from(bytes[start + 1])])
+                    && self.begins_spelling(&text[start..end], is_assistant)
             })
             .map(|start| {
                 let start = if text[from..start].ends_with(' ')
@@ -1202,6 +1211,20 @@ impl ControlMarkers {
                 };
                 start..end
             })
+    }
+
+    /// Whether `tail` begins a longer declared spelling, under the same
+    /// `is_assistant` policy as [`Self::find`].
+    fn begins_spelling(&self, tail: &str, is_assistant: bool) -> bool {
+        // In order, the spellings that `tail` begins follow one another.
+        let first = self
+            .in_order
+            .partition_point(|&at| self.spellings[at].0.as_str() < tail);
+        self.in_order[first..]
+            .iter()
+            .map(|&at| &self.spellings[at])
+            .take_while(|(spelling, _)| spelling.starts_with(tail))
+            .any(|(spelling, read)| !(is_assistant && *read) && spelling.len() > tail.len())
     }
 
     /// Whether `text` spells a marker or ends with the start of one.
@@ -1549,6 +1572,25 @@ mod tests {
         }
     }
 
+    /// The markers of a config that declares `tokens` as special, under
+    /// [`CHATML_THINK_TMPL`], which reads `</think>`.
+    fn markers_for(tokens: &[&str]) -> ControlMarkers {
+        let decoder: serde_json::Map<String, serde_json::Value> = tokens
+            .iter()
+            .enumerate()
+            .map(|(id, token)| {
+                let token = json!({"content": token, "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false});
+                (id.to_string(), token)
+            })
+            .collect();
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": CHATML_THINK_TMPL,
+            "added_tokens_decoder": decoder
+        }))
+        .unwrap();
+        ControlMarkers::from_config(&ct)
+    }
+
     #[test]
     fn first_byte_search_agrees_with_the_matcher() {
         // Patterns that begin with one, two and four bytes (four is more than
@@ -1562,20 +1604,7 @@ mod tests {
             vec!["<s>", "[INST]", "{sep}", "｜x｜"],
             reserved.iter().map(String::as_str).collect(),
         ] {
-            let decoder: serde_json::Map<String, serde_json::Value> = tokens
-                .iter()
-                .enumerate()
-                .map(|(id, token)| {
-                    let token = json!({"content": token, "special": true, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false});
-                    (id.to_string(), token)
-                })
-                .collect();
-            let ct: SysChatTemplate = serde_json::from_value(json!({
-                "chat_template": CHATML_THINK_TMPL,
-                "added_tokens_decoder": decoder
-            }))
-            .unwrap();
-            let markers = ControlMarkers::from_config(&ct);
+            let markers = markers_for(&tokens);
             for text in [
                 "",
                 "plain text",
@@ -1602,6 +1631,48 @@ mod tests {
                     assert_eq!(
                         markers.is_spelled_in(text, is_assistant),
                         matcher,
+                        "{} {text:?}",
+                        tokens[0]
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn partial_tail_agrees_with_comparing_every_spelling() {
+        // Spellings that begin one another, one the template reads, and a long list.
+        let reserved: Vec<String> = (0..70)
+            .map(|n| format!("<|reserved_special_token_{n}|>"))
+            .collect();
+        for tokens in [
+            vec!["<|im_end|>", "<think>", "</think>", "<a>", "<a>b", "<ab>"],
+            reserved.iter().map(String::as_str).collect(),
+        ] {
+            let markers = markers_for(&tokens);
+            // Text that ends with every start of every spelling, with each
+            // followed by a byte no spelling holds there, and with each spelling.
+            let mut texts = vec!["a".to_string(), "x <x".to_string()];
+            for (spelling, _) in &markers.spellings {
+                for (end, _) in spelling.char_indices().skip(1) {
+                    texts.push(format!("x{}", &spelling[..end]));
+                    texts.push(format!("x{}!", &spelling[..end]));
+                }
+                texts.push(format!("x{spelling}"));
+            }
+            for text in &texts {
+                for is_assistant in [false, true] {
+                    // Some end of the text begins a longer spelling the policy shields.
+                    let compared = text.char_indices().any(|(start, _)| {
+                        markers.spellings.iter().any(|(spelling, read)| {
+                            !(is_assistant && *read)
+                                && spelling.len() > text.len() - start
+                                && spelling.starts_with(&text[start..])
+                        })
+                    });
+                    assert_eq!(
+                        markers.partial_tail(text, 0, is_assistant).is_some(),
+                        compared,
                         "{} {text:?}",
                         tokens[0]
                     );
