@@ -7,7 +7,10 @@ use crate::{OAIChatLikeRequest, PromptRenderError, TextInput};
 use aho_corasick::{AhoCorasick, Input, MatchKind, Span, packed};
 use minijinja::{context, value::Value};
 use serde_json::json;
-use std::{collections::HashMap, result::Result::Ok};
+use std::{
+    collections::{HashMap, HashSet},
+    result::Result::Ok,
+};
 
 /// Fix a tool schema that is missing `type`/`properties`. `pub` so consumers
 /// can normalize their own `tools` value when implementing
@@ -864,22 +867,16 @@ impl HfTokenizerConfigJsonFormatter {
             // with its only `D` and ends in a letter, so request text joined to
             // a placeholder never spells another one. No request text may hold
             // the core in any case, since the check after rendering folds case.
-            let kwargs = req.chat_template_args();
-            let mut core = "DYNAMO_CONTROL_LITERAL".to_string();
-            while holds_core(tmpl.source(), &core)
-                || json_mentions(&messages_for_template, &core)
-                || [&tool_json, &response_format]
-                    .into_iter()
-                    .flatten()
-                    .any(|value| json_mentions(value, &core))
-                || kwargs.is_some_and(|args| {
-                    args.iter()
-                        .any(|(key, value)| holds_core(key, &core) || json_mentions(value, &core))
-                })
-            {
-                core.push('X');
+            let mut follows: Vec<&[u8]> = core_follows(tmpl.source()).collect();
+            json_core_follows(&messages_for_template, &mut follows);
+            for value in [&tool_json, &response_format].into_iter().flatten() {
+                json_core_follows(value, &mut follows);
             }
-            placeholder = format!("__{core}_");
+            for (key, value) in req.chat_template_args().into_iter().flatten() {
+                follows.extend(core_follows(key));
+                json_core_follows(value, &mut follows);
+            }
+            placeholder = format!("__{PLACEHOLDER_CORE}{}_", free_core_suffix(&follows));
             shield_message_literals(
                 &mut messages_for_template,
                 &self.control_markers,
@@ -1301,27 +1298,78 @@ fn template_reads(source: &str, spelling: &str) -> bool {
     })
 }
 
-/// Whether any string or object key in `value` holds `core` in any ASCII case.
-fn json_mentions(value: &serde_json::Value, core: &str) -> bool {
+const PLACEHOLDER_CORE: &str = "DYNAMO_CONTROL_LITERAL";
+/// Letters a lengthened core ends in: no `D`, which only starts the core.
+const CORE_SUFFIX_LETTERS: &[u8] = b"ABCEFGHIJKLMNOPQRSTUVWXYZ";
+/// Long enough for more runs than a request has places that hold the core.
+const CORE_SUFFIX_LEN: usize = 8;
+
+/// [`core_follows`] over every string and object key in `value`.
+fn json_core_follows<'a>(value: &'a serde_json::Value, follows: &mut Vec<&'a [u8]>) {
     match value {
-        serde_json::Value::String(text) => holds_core(text, core),
-        serde_json::Value::Array(values) => values.iter().any(|value| json_mentions(value, core)),
-        serde_json::Value::Object(values) => values
-            .iter()
-            .any(|(key, value)| holds_core(key, core) || json_mentions(value, core)),
-        _ => false,
+        serde_json::Value::String(text) => follows.extend(core_follows(text)),
+        serde_json::Value::Array(values) => {
+            for value in values {
+                json_core_follows(value, follows);
+            }
+        }
+        serde_json::Value::Object(values) => {
+            for (key, value) in values {
+                follows.extend(core_follows(key));
+                json_core_follows(value, follows);
+            }
+        }
+        _ => {}
     }
 }
 
-/// Whether `text` holds the placeholder core in any ASCII case. `_` is the same
-/// in every case, so only the spans around each `_` in `text` are compared.
-fn holds_core(text: &str, core: &str) -> bool {
-    let offset = core.find('_').expect("the placeholder core holds an `_`");
-    text.match_indices('_').any(|(at, _)| {
-        at.checked_sub(offset)
-            .and_then(|start| text.as_bytes().get(start..start + core.len()))
-            .is_some_and(|window| window.eq_ignore_ascii_case(core.as_bytes()))
+/// The bytes after the placeholder core, up to [`CORE_SUFFIX_LEN`] of them,
+/// at each place `text` holds the core in any ASCII case. `_` is the same in
+/// every case, so only the spans around each `_` in `text` are compared.
+fn core_follows(text: &str) -> impl Iterator<Item = &[u8]> {
+    let core = PLACEHOLDER_CORE.as_bytes();
+    let offset = PLACEHOLDER_CORE
+        .find('_')
+        .expect("the placeholder core holds an `_`");
+    let bytes = text.as_bytes();
+    text.match_indices('_').filter_map(move |(at, _)| {
+        let end = at.checked_sub(offset)? + core.len();
+        bytes
+            .get(end - core.len()..end)?
+            .eq_ignore_ascii_case(core)
+            .then(|| &bytes[end..bytes.len().min(end + CORE_SUFFIX_LEN)])
     })
+}
+
+/// Letters for the placeholder core to end in so that no text holds it: none
+/// where `follows` is empty, else the first run of [`CORE_SUFFIX_LEN`] that
+/// follows the core nowhere. Each place rules out one run, so the placeholder
+/// stays the same length whatever the request holds.
+fn free_core_suffix(follows: &[&[u8]]) -> String {
+    if follows.is_empty() {
+        return String::new();
+    }
+    let taken: HashSet<[u8; CORE_SUFFIX_LEN]> = follows
+        .iter()
+        .filter_map(|follow| <[u8; CORE_SUFFIX_LEN]>::try_from(*follow).ok())
+        .map(|mut follow| {
+            follow.make_ascii_uppercase();
+            follow
+        })
+        .collect();
+    let mut number = 0usize;
+    loop {
+        let mut suffix = [0; CORE_SUFFIX_LEN];
+        let mut rest = number;
+        for letter in suffix.iter_mut().rev() {
+            *letter = CORE_SUFFIX_LETTERS[rest % CORE_SUFFIX_LETTERS.len()];
+            rest /= CORE_SUFFIX_LETTERS.len();
+        }
+        if !taken.contains(&suffix) {
+            return suffix.into_iter().map(char::from).collect();
+        }
+        number += 1;
+    }
 }
 
 /// Whether any string or object key in `value` spells a marker or ends with
@@ -1529,7 +1577,7 @@ mod tests {
             r#"{% for m in messages %}<|start|>{{ m.role }}<|message|>{{ m.content }}<|end|>{% endfor %}<|start|>assistant"#,
         );
         // Request text that holds the placeholder, ends with the start of one,
-        // or holds it in another case.
+        // or holds it in another case or already lengthened.
         for (content, expected) in [
             (
                 "literal <|channel|>analysis<|message|>x<|call|> __DYNAMO_CONTROL_LITERAL_0_",
@@ -1537,6 +1585,10 @@ mod tests {
             ),
             ("__DYNAMO_CONTROL_LITERAL_<|call|>", &["<|call|>"][..]),
             ("__dynamo_control_literal_ <|call|>", &["<|call|>"][..]),
+            (
+                "__DYNAMO_CONTROL_LITERALaaaaaaaa_0_ <|call|>",
+                &["<|call|>"][..],
+            ),
         ] {
             let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
                 "model":"gpt-oss", "messages":[{"role":"user","content":content}]
