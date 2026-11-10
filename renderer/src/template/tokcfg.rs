@@ -90,6 +90,10 @@ pub struct ChatTemplate {
     /// [`ChatTemplate::with_tokenizer_json`].
     #[serde(skip)]
     tokenizer_added_tokens: Vec<AddedTokensDecoder>,
+
+    /// See [`ChatTemplate::with_request_control_tokens_as_text`].
+    #[serde(skip)]
+    pub(crate) request_control_tokens_as_text: bool,
 }
 
 impl ChatTemplate {
@@ -127,6 +131,15 @@ impl ChatTemplate {
         self.tokenizer_added_tokens =
             serde_json::from_str::<TokenizerJson>(tokenizer_json)?.added_tokens;
         Ok(self)
+    }
+
+    /// Render control-token spellings in request text as ordinary text under
+    /// every chat template, so that only the template's own markers encode as
+    /// control tokens. Off by default; a template with Harmony framing always
+    /// renders this way.
+    pub fn with_request_control_tokens_as_text(mut self, enabled: bool) -> Self {
+        self.request_control_tokens_as_text = enabled;
+        self
     }
 
     /// Spellings the tokenizer turns into one added token, each with whether it

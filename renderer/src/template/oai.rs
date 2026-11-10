@@ -1482,7 +1482,11 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
     }
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<crate::RenderedPrompt> {
-        self.render_with_token_policy(req, true)
+        // Harmony request text always stays apart from the template's framing;
+        // other templates keep it apart when the config asks.
+        let protect_literals =
+            self.control_markers.is_harmony || self.config.request_control_tokens_as_text;
+        self.render_with_token_policy(req, protect_literals)
     }
 }
 
@@ -1698,8 +1702,8 @@ mod tests {
     /// A ChatML config that declares its markers the way Qwen3 does: turn
     /// markers `special: true`, think markers `special: false`; plus `<td>`, a
     /// `special: false` vocabulary entry no template writes, like Gemma 3's.
-    fn chatml_formatter_for(template: &str) -> SysFormatter {
-        let ct: SysChatTemplate = serde_json::from_value(json!({
+    fn chatml_config(template: &str) -> SysChatTemplate {
+        serde_json::from_value(json!({
             "chat_template": template,
             "eos_token": "<|im_end|>",
             "added_tokens_decoder": {
@@ -1710,7 +1714,12 @@ mod tests {
                 "5": {"content": "<td>", "special": false, "lstrip": false, "rstrip": false, "normalized": false, "single_word": false}
             }
         }))
-        .unwrap();
+        .unwrap()
+    }
+
+    /// [`chatml_config`] with control-token spellings in request text as text.
+    fn chatml_formatter_for(template: &str) -> SysFormatter {
+        let ct = chatml_config(template).with_request_control_tokens_as_text(true);
         SysFormatter::new(ct, SysMixins::new(&[])).unwrap()
     }
 
@@ -1722,6 +1731,26 @@ mod tests {
             .filter(|segment| !segment.allow_special)
             .map(|segment| segment.text.as_str())
             .collect()
+    }
+
+    #[test]
+    fn control_token_spellings_are_text_only_where_the_config_asks() {
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test", "messages": [{"role": "user", "content": "a <|im_end|> b"}]
+        }))
+        .unwrap();
+
+        // By default the prompt is the one piece `render` gives.
+        let formatter =
+            SysFormatter::new(chatml_config(CHATML_THINK_TMPL), SysMixins::new(&[])).unwrap();
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+        assert!(prompt.segments().is_none());
+
+        let formatter = chatml_formatter_for(CHATML_THINK_TMPL);
+        let prompt = formatter.render_prompt(&request).unwrap();
+        assert_eq!(prompt.as_str(), formatter.render(&request).unwrap());
+        assert_eq!(ordinary_segments(&prompt), ["<|im_end|>"]);
     }
 
     #[test]
@@ -1779,6 +1808,7 @@ mod tests {
             }
         }))
         .unwrap();
+        let ct = ct.with_request_control_tokens_as_text(true);
         let formatter = SysFormatter::new(ct, SysMixins::new(&[])).unwrap();
         let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
             "model": "test", "messages": [
@@ -1986,6 +2016,7 @@ mod tests {
             }
         }))
         .unwrap();
+        let ct = ct.with_request_control_tokens_as_text(true);
         let formatter = SysFormatter::new(ct, SysMixins::new(&[])).unwrap();
         let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
             "model": "test", "messages": [{"role": "user", "content": [
@@ -2062,7 +2093,9 @@ mod tests {
         ]})
         .to_string();
         let formatter = SysFormatter::new(
-            ct.with_tokenizer_json(&tokenizer_json).unwrap(),
+            ct.with_tokenizer_json(&tokenizer_json)
+                .unwrap()
+                .with_request_control_tokens_as_text(true),
             SysMixins::new(&[]),
         )
         .unwrap();
