@@ -38,11 +38,11 @@ image sources, caps ───────────────►│  fetch::
       ├─ supplied mm_hashes ───────►│  use unchanged
       ├─ bytes, no supplied hash ──►│  content_hash_bytes
       └─ bytes ────────────────────►│  family.decode_image
-        └─ decoded media ──────────►│  family.process_item      (per item; the engine drives
-                                    │                            the loop, optionally fanning
-                                    │                            out on `execution`)
-                                    │     │ ProcessedItem
-tokenize (if text) ─ ids, items ───►│  family.layout ─► token_layout::apply_layout
+tokenize (if text) ─ ids            │
+        └─ ids, decoded media ─────►│  family.process_items     (per request; its default maps
+                                    │                            family.process_item per item)
+                                    │     │ ProcessedItems
+        └─ ids, items ─────────────►│  family.layout ─► token_layout::apply_layout
                                     │     │ expanded input_ids + per-item offsets
                                     │     │ + feature ranges (scatter targets)
         └─ offsets, items ─────────►│  family.positions          (optional, e.g. M-RoPE)
@@ -98,6 +98,8 @@ pub trait MmFamilyProcessor: Send + Sync {
     fn capabilities(&self) -> Capabilities; // query with supports(Modality)
     fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize>;
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem>;
+    fn process_items(&self, input_ids: &[i32], media: &[DecodedMedia])
+        -> Result<Vec<ProcessedItem>>;                            // maps process_item by default
     fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> Result<TokenLayout>;
     fn positions(&self, input_len: usize, offsets: &[(u32, u32)], items: &[ProcessedItem])
         -> Result<PositionOutput>;                                // Rope1D default
@@ -160,6 +162,7 @@ decoded media or a passthrough URL.
 | per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
 | per image | `MmFamilyProcessor::decode_image` | bytes + `DecodeLimits` → `DecodedMedia::Image`, or `DecodedMedia::ImageRgba` for a family that composites alpha after its resize (8-bit only, header-checked caps, family-specific EXIF and alpha policy) |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
+| per request, in place of the per-image call | `MmFamilyProcessor::process_items` | unexpanded input_ids + every `DecodedMedia` of the request → `ProcessedItem`s. The same result for most families; a family that sizes media by the whole request needs it and refuses `process_item` |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once and in prompt order, feature ranges match the produced embeddings) |
 | per request, if needed | `MmFamilyProcessor::positions` | expanded length + offsets + processed items → `PositionOutput` (e.g. M-RoPE) |
@@ -179,7 +182,8 @@ crate:
 
 ```rust
 // sketch
-let mut items: Vec<ProcessedItem> = Vec::with_capacity(images.len());
+let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };
+let mut media: Vec<DecodedMedia> = Vec::with_capacity(images.len());
 let mut hashes: Vec<u64> = Vec::with_capacity(images.len());
 for (bytes, supplied_hash) in images {                  // fetched + capped by the engine
     let hash = match supplied_hash {
@@ -187,10 +191,10 @@ for (bytes, supplied_hash) in images {                  // fetched + capped by t
         None => content_hash_bytes(&bytes),
     };
     hashes.push(hash);
-    let media = family.decode_image(&bytes, &limits)?;
-    items.push(family.process_item(&media)?);
+    media.push(family.decode_image(&bytes, &limits)?);
 }
-let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };
+// The default maps `process_item`; a family that sizes media by the whole request overrides it.
+let items: Vec<ProcessedItem> = family.process_items(&input_ids, &media)?;
 let layout: TokenLayout = family.layout(&input_ids, &items)?;
 let feature_token_counts: Vec<usize> =
     items.iter().map(|item| item.feature_token_count).collect();
@@ -327,15 +331,19 @@ Three layers, all pinned to bitwise-equality:
    thread-count guard proving the crate owns no threads while the pool is
    unarmed (the default).
 2. **Crate-local golden replay** — this repo's CI has no Python/HF, so
-   committed fixtures drive the §2.2 composition (`build_processor` →
-   `decode_image` → `process_item` → `layout` → `apply_layout` → `positions`)
-   and compare **every output field bitwise**, plus the resampler stage on
-   its own (`resized_<i>.u8`) so a failure names the stage: both resamplers,
-   both smart_resize branches, multi-image, and a tall image that crosses
-   Pillow's pass-order rule. `tests/fixtures/qwen_vl/generate.py`
-   regenerates them from the HF processor and `get_rope_index`, cross-checks
-   that the resized buffer reproduces `pixel_values`, and records the
-   transformers/torch/torchvision/Pillow versions in each `case.json`.
+   committed tables drive the §2.2 composition (`build_processor` →
+   `decode_image` → `process_items` → `layout` → `apply_layout` → `positions`)
+   and compare **every output field bitwise**: `tests/mm_parity.rs` replays
+   one table per model from `tests/fixtures/mm_parity/`. For Qwen-VL, the
+   table covers both resamplers, both smart_resize branches, multi-image, and
+   a tall image that crosses Pillow's pass-order rule, and
+   `tests/qwen_vl_golden.rs` checks the resampler stage on its own so a
+   failure names the stage. `tests/fixtures/mm_parity/generate.py`
+   regenerates each table: the checkpoint's own HF processor writes
+   `expected`, SGLang, vLLM and llm-multimodal each get a cell against it,
+   and the crate must equal the table's target column.
+   `tests/fixtures/mm_parity/PARITY.md` shows every column side by side. To
+   add a family, follow `.agents/skills/mm-preprocessor-generator/SKILL.md`.
    The decode stage has its own table: `tests/fixtures/mm_parity/decode.json`
    gives Pillow's output for each image of the shared corpus
    (`tests/fixtures/mm_parity/images/`) through each decode entry point, and
@@ -422,10 +430,10 @@ The metadata-only `Glm5NextSpec` API and `spec_from_hf_configs` keep their
 planning contract. Python-free consumers can combine that planning spec
 with explicitly resolved normalization and resampling in `Glm5NextImageSpec`.
 
-The `glm5_next_pixels` test replays the 26 Python CPU cases captured in
+The `mm_parity` test replays the 26 Python CPU cases captured in
 [SGLang PR #46563](https://github.com/sgl-project/sglang/pull/46563), including
 both resamplers, multiple images, token overrides, EXIF, and alpha formats.
-See `tests/fixtures/glm5_next/pixels/README.md` for provenance and regeneration.
+See `tests/fixtures/mm_parity/README.md` for provenance and regeneration.
 
 
 `models::glm5_next::plan_image_grid(width, height, &spec)` returns the padded
