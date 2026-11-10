@@ -1429,6 +1429,10 @@ fn shield_text(
     prefix: &str,
     literals: &mut ControlLiterals,
 ) {
+    // Most strings spell no marker; skip them before the slower search.
+    if !markers.is_spelled_in(text, is_assistant) {
+        return;
+    }
     let mut protected = String::new();
     let mut cursor = 0;
     while let Some(range) = markers.find(text, cursor, is_assistant) {

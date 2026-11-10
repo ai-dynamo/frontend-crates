@@ -112,6 +112,12 @@ impl Tokenizer for FastTokenizer {
         Ok(())
     }
 
+    // `fastokens` runs one pipeline for `encode` and for a segment that allows
+    // special tokens.
+    fn validate_segment_prefix_cache(&self) -> Result<()> {
+        Ok(())
+    }
+
     // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
     // so the HF side's vocabulary introspection applies to both.
     fn vocab_size(&self) -> Option<usize> {

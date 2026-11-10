@@ -308,6 +308,12 @@ impl Tokenizer for HuggingFaceTokenizer {
         Ok(())
     }
 
+    /// Without added special tokens, truncation or padding, a segment that allows
+    /// special tokens goes through the pipeline `encode` runs.
+    fn validate_segment_prefix_cache(&self) -> Result<()> {
+        self.validate_prefix_cache()
+    }
+
     /// HF honors [`TokenizerOptions::add_special_tokens`] (BOS/EOS per the
     /// tokenizer's post-processor template).
     fn with_options(mut self, options: TokenizerOptions) -> Self {

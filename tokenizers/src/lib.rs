@@ -225,6 +225,18 @@ pub mod traits {
             Err(Error::msg("tokenizer does not support prefix caching"))
         }
 
+        /// Validate that a segment which allows special tokens encodes to the ids
+        /// [`Encoder::encode`] gives its text, so the prefix cache can serve it.
+        ///
+        /// Implementations opt in by returning `Ok(())`, as with
+        /// [`Self::validate_prefix_cache`]. A backend whose segmented encoding cuts
+        /// the text by position, like the tiktoken reference pieces, must not.
+        fn validate_segment_prefix_cache(&self) -> Result<()> {
+            Err(Error::msg(
+                "tokenizer does not support prefix caching within a segment",
+            ))
+        }
+
         /// Apply construction-time [`TokenizerOptions`].
         ///
         /// The default implementation ignores the options — correct for
