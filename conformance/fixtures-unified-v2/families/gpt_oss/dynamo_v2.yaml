@@ -1,22 +1,20 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"58a10e268267663b8db11982a4c87d25dcf0f88d94cd376de05690106c4c5d73","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"4b1fba60fb8b495b06ca41efd9bfebe326583cea38519bd3b1c7f456653572cf","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_fa16cb8c9eb885c2
+  origin: origin_8482ce413bc09511
 origins:
-  origin_fa16cb8c9eb885c2:
+  origin_8482ce413bc09511:
     crate_version: 0.10.4
-    source_sha256: 6ab9e8ccb889f25af25464e1b0848595869d709144b1144abbcac90fd0f79f8b
-    git_commit: 36250c538d22dfc63e3296b061b15912233cc5db
-    adapter_sha256: 45d89ec3fc20e51c7ecc90a978df46da67c404d4adf5ee51bfa9bf953f92ce23
-    job_sha256: 0f85f7408135ac1dc375a45a5014a8c4bd7b0335fa2d654154b4ec39de860879
+    source_sha256: ac5c68b987193c72502db95f0a25060caf3e146d3eb44e0002cf5488e6aa6756
+    git_commit: 396aa9f6b457450151e3ebd33bc5210bc79f0e47
 producers:
-  producer_552cf26fe120e6b6:
+  producer_a7c6dc1d5e8c826a:
     captured_with:
       dynamo_v2: 0.10.4
-    capture_origin: origin_fa16cb8c9eb885c2
+    capture_origin: origin_8482ce413bc09511
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -133,7 +131,7 @@ contexts:
         tool_output_mode: Native
 record_defaults:
   member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml
-  producer: producer_552cf26fe120e6b6
+  producer: producer_a7c6dc1d5e8c826a
   context: context_63bbcc8b0776f125
 records:
   tool_only:
@@ -11592,4 +11590,68 @@ records:
       assembled: []
       chunks:
       - expected: []
+      - expected: []
+  gpt_oss_invalid_json_quote_prefix_then_final:
+    case_key: gpt_oss_invalid_json_quote_prefix_then_final
+    request: fd5c7dcfca55ca2cf28e665f8b101a5277ed2cc0bc0fdcb29b5512ca06dcbb00
+    output:
+      assembled:
+      - kind: text
+        text: '"Looking
+
+          He said "yes".'
+      chunks:
+      - expected:
+        - kind: text
+          text: '"Looking
+
+            He said "yes".'
+      - expected: []
+  gpt_oss_quoted_commentary_rejects_nonassistant_body:
+    case_key: gpt_oss_quoted_commentary_rejects_nonassistant_body
+    request: 4f1facdd5a2039e0015a09fa01c3ebf0eac730eb8c0554f85137ae1d43696d46
+    output:
+      assembled:
+      - kind: text
+        text: '"LookingDone'
+      chunks:
+      - expected:
+        - kind: text
+          text: '"LookingDone'
+      - expected: []
+  gpt_oss_unclosed_commentary_then_empty_quoted_final:
+    case_key: gpt_oss_unclosed_commentary_then_empty_quoted_final
+    request: 1d0753dd9470a381e9d795ce7c2b615390c76618d576432a13a9760754fdf5ee
+    output:
+      assembled:
+      - kind: text
+        text: '"Looking ""'
+      chunks:
+      - expected:
+        - kind: text
+          text: '"Looking ""'
+      - expected: []
+  gpt_oss_unclosed_commentary_then_quoted_final:
+    case_key: gpt_oss_unclosed_commentary_then_quoted_final
+    request: 0dbd67584d590c41a76359947c25247f60e5f6cbae348d4e17b555827e9909ba
+    output:
+      assembled:
+      - kind: text
+        text: '"LookingHe said "yes".'
+      chunks:
+      - expected:
+        - kind: text
+          text: '"LookingHe said "yes".'
+      - expected: []
+  gpt_oss_quoted_call_header_then_visible_prose:
+    case_key: gpt_oss_quoted_call_header_then_visible_prose
+    request: 489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95
+    output:
+      assembled:
+      - kind: text
+        text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'
+      chunks:
+      - expected:
+        - kind: text
+          text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'
       - expected: []
