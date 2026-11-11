@@ -795,10 +795,16 @@ impl HarmonyRuntime {
             let contains_header = scalar
                 && tail.tokens.iter().copied().any(|token| {
                     started |= ended && token == self.start_id;
-                    ended = self
-                        .marker_ids
-                        .get(&token)
-                        .is_some_and(|marker| matches!(*marker, MESSAGE_END | TURN_END | HANDOFF));
+                    ended =
+                        match self.marker_ids.get(&token) {
+                            Some(marker) => matches!(*marker, MESSAGE_END | TURN_END | HANDOFF),
+                            None => {
+                                ended
+                                    && self.encoding.tokenizer().decode_bytes([token]).is_ok_and(
+                                        |bytes| bytes.iter().all(u8::is_ascii_whitespace),
+                                    )
+                            }
+                        };
                     started && token == self.message_id
                 });
             let bytes = if visible && !contains_header {
@@ -2337,17 +2343,19 @@ mod tests {
     #[test]
     fn quoted_commentary_cannot_claim_quotes_in_later_messages() {
         for ending in [MESSAGE_END, TURN_END, HANDOFF] {
-            for prefix in ["\"Looking", " \t\"Looking", "\"é\\\"Looking", "\"Looking\n"] {
-                for answer in ["He said \"yes\".", "\"\"", "\"quoted\"", "prefix\n\"yes\""] {
-                    let input = format!(
-                        "{START}assistant{CHANNEL}commentary{MESSAGE}{prefix}{ending}{START}assistant{CHANNEL}final{MESSAGE}{answer}{TURN_END}"
-                    );
-                    assert_native_splits(
-                        &input,
-                        &[UnifiedEvent::Text {
-                            text: format!("{prefix}{answer}"),
-                        }],
-                    );
+            for gap in ["", " ", " \t", "\r\n"] {
+                for prefix in ["\"Looking", " \t\"Looking", "\"é\\\"Looking", "\"Looking\n"] {
+                    for answer in ["He said \"yes\".", "\"\"", "\"quoted\"", "prefix\n\"yes\""] {
+                        let input = format!(
+                            "{START}assistant{CHANNEL}commentary{MESSAGE}{prefix}{ending}{gap}{START}assistant{CHANNEL}final{MESSAGE}{answer}{TURN_END}"
+                        );
+                        assert_native_splits(
+                            &input,
+                            &[UnifiedEvent::Text {
+                                text: format!("{prefix}{gap}{answer}"),
+                            }],
+                        );
+                    }
                 }
             }
         }

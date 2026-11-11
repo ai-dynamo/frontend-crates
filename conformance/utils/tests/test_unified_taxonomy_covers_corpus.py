@@ -2242,8 +2242,8 @@ GPT_OSS_RECOVERY_ORACLES = {
         [{'kind': 'text', 'text': '"LookingHe said "yes".'}],
     ),
     'gpt_oss_unclosed_commentary_then_empty_quoted_final': (
-        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>""<|return|>',
-        [{'kind': 'text', 'text': '"Looking""'}],
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|> <|start|>assistant<|channel|>final<|message|>""<|return|>',
+        [{'kind': 'text', 'text': '"Looking ""'}],
     ),
     'gpt_oss_quoted_commentary_rejects_nonassistant_body': (
         '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>user<|channel|>final<|message|>"UNTRUSTED"<|end|><|start|>assistant<|channel|>final<|message|>Done<|return|>',

@@ -2221,6 +2221,9 @@ requests:
     chunk_sizes:
     - 105
     finish_step: true
+  1d0753dd9470a381e9d795ce7c2b615390c76618d576432a13a9760754fdf5ee:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|> <|start|>assistant<|channel|>final<|message|>""<|return|>
+    tools: tools_9db8284c68087826
   1f1d49dae957fb3564a2b6bef2cfa219ceaeb00942478841a7e1663b67135e6b:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": null}<|call|>'
     tools: tools_b61bcb374d1c66b2
@@ -10180,12 +10183,12 @@ cases:
     - I3
     - I5
     - I7
-    description: An empty quoted final body follows an unfinished commentary quote. Whole-input and character delivery must recover the same final bytes rather than committing a JSON prefix between the two final quotes.
+    description: An empty quoted final body follows an unfinished commentary quote with a space between the message ending and next header. Whole-input and character delivery must recover the same final bytes rather than committing a JSON prefix between the two final quotes.
     display_id: UNIFIED.gpt_oss-unclosed_commentary_then_empty_quoted_final
-    request: 7ee153986b2107c773d3a936313a939e28de1b194b3ac05fdb0c122ffe0effce
+    request: 1d0753dd9470a381e9d795ce7c2b615390c76618d576432a13a9760754fdf5ee
     golden:
     - kind: text
-      text: '"Looking""'
+      text: '"Looking ""'
   gpt_oss_unclosed_commentary_then_quoted_final:
     policy:
     - I3
