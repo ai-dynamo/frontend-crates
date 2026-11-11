@@ -1,5 +1,10 @@
 {
   "gptOssStandaloneHeaderScenarios": [
+    "gpt_oss_quoted_call_header_then_visible_prose",
+    "gpt_oss_unclosed_commentary_then_quoted_final",
+    "gpt_oss_unclosed_commentary_then_empty_quoted_final",
+    "gpt_oss_quoted_commentary_rejects_nonassistant_body",
+    "gpt_oss_invalid_json_quote_prefix_then_final",
     "gpt_oss_visible_scalar_string_quoted_controls",
     "gpt_oss_native_builtin_python_raw",
     "gpt_oss_unfinished_visible_json_then_tool",

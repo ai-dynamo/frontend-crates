@@ -4480,17 +4480,33 @@ def _structured_response_case():
 EDGE.append(_structured_response_case())
 
 
+# Eight oracle changes already match 0.10.1; two also require parser recovery fixes.
 GPT_OSS_ORACLE_CORRECTIONS = frozenset(['gpt_oss_commentary_text_interrupted_by_final', 'gpt_oss_commentary_text_interrupted_by_invalid_author', 'gpt_oss_final_then_unframed_visible_tail', 'gpt_oss_orphan_terminator_preserves_messages', 'gpt_oss_quoted_tool_header_in_final_json', 'gpt_oss_recipientless_constrained_whitespace_call', 'gpt_oss_recipientless_json_call_then_final', 'gpt_oss_recipientless_json_interrupted_by_final', 'gpt_oss_recipientless_json_return_then_final', 'gpt_oss_unknown_channel_before_final'])
 
 
 _GPT_OSS_RECOVERY_CASES = (
+    ("gpt_oss_quoted_call_header_then_visible_prose", "A balanced visible JSON string quotes a complete assistant tool header and handoff before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.",
+     '<|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>',
+     [{"kind":"text", "text":'"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'}]),
+    ("gpt_oss_unclosed_commentary_then_quoted_final", "An unfinished commentary quote precedes a complete assistant final message containing its own quotes. The later quote cannot validate the earlier JSON-looking prefix; retain both visible bodies and remove the real message controls.",
+     '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>',
+     [{"kind":"text", "text":'"LookingHe said "yes".'}]),
+    ("gpt_oss_unclosed_commentary_then_empty_quoted_final", "An empty quoted final body follows an unfinished commentary quote. Whole-input and character delivery must recover the same final bytes rather than committing a JSON prefix between the two final quotes.",
+     '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>""<|return|>',
+     [{"kind":"text", "text":'"Looking""'}]),
+    ("gpt_oss_quoted_commentary_rejects_nonassistant_body", "A user message with quoted content follows an unfinished assistant commentary quote. Preserve the commentary prefix and the later assistant final; quoted user content must never enter assistant text.",
+     '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>user<|channel|>final<|message|>"UNTRUSTED"<|end|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+     [{"kind":"text", "text":'"LookingDone'}]),
+    ("gpt_oss_invalid_json_quote_prefix_then_final", "A raw newline makes a leading commentary quote an invalid JSON prefix before the ending arrives. Its quote state cannot claim subsequent message controls; retain the original newline and final text.",
+     '<|start|>assistant<|channel|>commentary<|message|>"Looking\n<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>',
+     [{"kind":"text", "text":'"Looking\nHe said "yes".'}]),
     ("gpt_oss_unfinished_visible_json_then_tool", "An unfinished JSON string in an assistant final message precedes a complete framed JSON tool call. At EOF preserve the emitted visible prefix and recover the later complete call; a complete quoted JSON value retains its literal controls instead.",
      '<|start|>assistant<|channel|>final<|message|>{"x":"unfinished<|start|>assistant to=functions.lookup<|message|>{}<|call|>',
      [{"kind":"text", "text":'{"x":"unfinished'}, {"kind":"tool_call", "name":"lookup", "arguments":{}}]),
-    ("gpt_oss_broadcast_recipient_analysis", "Harmony to=all is the broadcast recipient, so its analysis body remains reasoning rather than tool data or visible text. It is equivalent to omitting the recipient.",
+    ("gpt_oss_broadcast_recipient_analysis", "Dynamo normalizes to=all like an omitted recipient, following openai-harmony 0.0.8 renderer behavior. This compatibility policy keeps the analysis body as reasoning; it is not a claim that format.md defines all.",
      '<|start|>assistant to=all<|channel|>analysis<|message|>checking<|end|>',
      [{"kind":"reasoning", "text":"checking"}]),
-    ("gpt_oss_native_builtin_recipient_json", "A native assistant header routes a JSON argument body to python without a functions namespace. Preserve the recipient and JSON arguments; this does not assert support for non-JSON Python code bodies.",
+    ("gpt_oss_native_builtin_recipient_json", "Dynamo Native Unified projects a JSON argument body addressed to python as a generic tool call. This syntax-only policy differs from vLLM builtin filtering and does not claim OpenAI builtin API parity or support raw Python bodies.",
      '<|start|>assistant to=python<|channel|>commentary<|message|>{"code":"print(1)"}<|call|>',
      [{"kind":"tool_call", "name":"python", "arguments":{"code":"print(1)"}}]),
 

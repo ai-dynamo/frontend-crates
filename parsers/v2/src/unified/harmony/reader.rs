@@ -122,9 +122,20 @@ impl DeltaReader {
         let Some(at) = tokens.iter().position(|id| *id == channel) else {
             return Ok(0);
         };
-        let prefix = self.encoding.tokenizer().decode_utf8(&tokens[..at])?;
-        let author = prefix.split_ascii_whitespace().next().unwrap_or("");
         let skipped = tokens.len();
+        let prefix = match self.encoding.tokenizer().decode_utf8(&tokens[..at]) {
+            Ok(prefix) => prefix,
+            Err(_) => {
+                tracing::warn!(
+                    why = "harmony_invalid_channel_author",
+                    skipped_tokens = skipped,
+                    "discarded an undecodable header without inferring its author"
+                );
+                tokens.clear();
+                return Ok(skipped);
+            }
+        };
+        let author = prefix.split_ascii_whitespace().next().unwrap_or("");
         *tokens = self.encoding.tokenizer().encode_ordinary(author);
         Ok(skipped)
     }

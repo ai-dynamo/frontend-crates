@@ -1076,6 +1076,10 @@ pub(crate) struct JsonValueBoundary {
 }
 
 impl JsonValueBoundary {
+    pub(crate) fn invalidate(&mut self) {
+        self.invalid = true;
+    }
+
     pub(crate) fn inside_json_string(&self) -> bool {
         !self.invalid && !self.complete && self.inside_string()
     }

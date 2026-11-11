@@ -2069,6 +2069,9 @@ requests:
   0da9e8f8c97739f9dc03ca27f4ea01342aca72f0d0bb3e21dc999c4865ae4224:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 42}<|call|>'
     tools: tools_b216df93b649987b
+  0dbd67584d590c41a76359947c25247f60e5f6cbae348d4e17b555827e9909ba:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>
+    tools: tools_9db8284c68087826
   0ddb7576faadb33bc6440d8618eb5deaa5b58101239778d30b704a63fdbc304e:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}<|call|>'
     tools: tools_5d30b2f70e9f541a
@@ -2754,6 +2757,9 @@ requests:
   46e9af26161cfc52d281804c1e0742a955517fe9ae26b971e6eba551c290f259:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "true"}<|call|>'
     tools: tools_7592cfa2edef2954
+  489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95:
+    input: <|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>
+    tools: tools_eadda4709f8bddfd
   495a251b9e90a129b08db8981cf84ef40d9b2e3fe5fe290268fed9c8b4e6261e:
     init:
       starting_state: None
@@ -2776,6 +2782,9 @@ requests:
       tool_output_mode: GuidedJson
       named_tool: null
     input: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+    tools: tools_9db8284c68087826
+  4f1facdd5a2039e0015a09fa01c3ebf0eac730eb8c0554f85137ae1d43696d46:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>user<|channel|>final<|message|>"UNTRUSTED"<|end|><|start|>assistant<|channel|>final<|message|>Done<|return|>
     tools: tools_9db8284c68087826
   50cbdcd340af07be9dbeb60d27629e6dc9e08f4a6faf4a9e7a79b424644e768b:
     input: '<|start|>assistant<|channel|>analysis<|message|>check<|end|><|start|>assistant to=functions.lookup<|channel|>commentary json<|message|>{"q": "weather"}<|call|><|start|>assistant<|channel|>final<|message|>found<|return|>'
@@ -3317,6 +3326,9 @@ requests:
   7e788a689da87ddf131fa3ff24ed6e4de9fa459ca1bd4377192f1112d50b1084:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_592bf92c162ae226
+  7ee153986b2107c773d3a936313a939e28de1b194b3ac05fdb0c122ffe0effce:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>""<|return|>
+    tools: tools_9db8284c68087826
   7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9:
     input: '<|start|>assistant<|channel|>commentary to=functions.set_labels <|constrain|>json<|message|>{"label": null, "note": null, "literal": "null"}<|call|>'
     tools: tools_357b7150e2dd7639
@@ -4872,6 +4884,11 @@ requests:
     chunk_sizes:
     - 133
     finish_step: true
+  fd5c7dcfca55ca2cf28e665f8b101a5277ed2cc0bc0fdcb29b5512ca06dcbb00:
+    input: '<|start|>assistant<|channel|>commentary<|message|>"Looking
+
+      <|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>'
+    tools: tools_9db8284c68087826
   fd5f1a342b9e8d4df5e4ed0eca1762709cd63dd259a884e0d03fd3f5c8d1d839:
     input: <|start|>assistant<|channel|>final <|constrain|>json<|message|>{"a":1}<|return|>
     tools: tools_9db8284c68087826
@@ -10078,7 +10095,7 @@ cases:
     - I3
     - I5
     - I7
-    description: Harmony to=all is the broadcast recipient, so its analysis body remains reasoning rather than tool data or visible text. It is equivalent to omitting the recipient.
+    description: Dynamo normalizes to=all like an omitted recipient, following openai-harmony 0.0.8 renderer behavior. This compatibility policy keeps the analysis body as reasoning; it is not a claim that format.md defines all.
     display_id: UNIFIED.gpt_oss-broadcast_recipient_analysis
     request: c92f8067190de68778212e506bc6750f4f8aee5a28119d24d249b90080db71e2
     golden:
@@ -10089,7 +10106,7 @@ cases:
     - I3
     - I5
     - I7
-    description: A native assistant header routes a JSON argument body to python without a functions namespace. Preserve the recipient and JSON arguments; this does not assert support for non-JSON Python code bodies.
+    description: Dynamo Native Unified projects a JSON argument body addressed to python as a generic tool call. This syntax-only policy differs from vLLM builtin filtering and does not claim OpenAI builtin API parity or support raw Python bodies.
     display_id: UNIFIED.gpt_oss-native_builtin_recipient_json
     request: 885a3fc00d909b57252bbfb6224eb178d66eb89dd09d7b1fd220008474dca031
     golden:
@@ -10134,3 +10151,60 @@ cases:
     - kind: tool_call
       name: python
       arguments: '"print(1)"'
+  gpt_oss_invalid_json_quote_prefix_then_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A raw newline makes a leading commentary quote an invalid JSON prefix before the ending arrives. Its quote state cannot claim subsequent message controls; retain the original newline and final text.
+    display_id: UNIFIED.gpt_oss-invalid_json_quote_prefix_then_final
+    request: fd5c7dcfca55ca2cf28e665f8b101a5277ed2cc0bc0fdcb29b5512ca06dcbb00
+    golden:
+    - kind: text
+      text: '"Looking
+
+        He said "yes".'
+  gpt_oss_quoted_commentary_rejects_nonassistant_body:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A user message with quoted content follows an unfinished assistant commentary quote. Preserve the commentary prefix and the later assistant final; quoted user content must never enter assistant text.
+    display_id: UNIFIED.gpt_oss-quoted_commentary_rejects_nonassistant_body
+    request: 4f1facdd5a2039e0015a09fa01c3ebf0eac730eb8c0554f85137ae1d43696d46
+    golden:
+    - kind: text
+      text: '"LookingDone'
+  gpt_oss_unclosed_commentary_then_empty_quoted_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An empty quoted final body follows an unfinished commentary quote. Whole-input and character delivery must recover the same final bytes rather than committing a JSON prefix between the two final quotes.
+    display_id: UNIFIED.gpt_oss-unclosed_commentary_then_empty_quoted_final
+    request: 7ee153986b2107c773d3a936313a939e28de1b194b3ac05fdb0c122ffe0effce
+    golden:
+    - kind: text
+      text: '"Looking""'
+  gpt_oss_unclosed_commentary_then_quoted_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unfinished commentary quote precedes a complete assistant final message containing its own quotes. The later quote cannot validate the earlier JSON-looking prefix; retain both visible bodies and remove the real message controls.
+    display_id: UNIFIED.gpt_oss-unclosed_commentary_then_quoted_final
+    request: 0dbd67584d590c41a76359947c25247f60e5f6cbae348d4e17b555827e9909ba
+    golden:
+    - kind: text
+      text: '"LookingHe said "yes".'
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A balanced visible JSON string quotes a complete assistant tool header and handoff before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    request: 489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95
+    golden:
+    - kind: text
+      text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'

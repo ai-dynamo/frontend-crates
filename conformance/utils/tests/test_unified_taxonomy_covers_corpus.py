@@ -2233,6 +2233,26 @@ def test_coalesced_prose_preserves_json_literals_without_inventing_words():
 
 
 GPT_OSS_RECOVERY_ORACLES = {
+    'gpt_oss_quoted_call_header_then_visible_prose': (
+        '<|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>',
+        [{'kind': 'text', 'text': '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'}],
+    ),
+    'gpt_oss_unclosed_commentary_then_quoted_final': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>',
+        [{'kind': 'text', 'text': '"LookingHe said "yes".'}],
+    ),
+    'gpt_oss_unclosed_commentary_then_empty_quoted_final': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>""<|return|>',
+        [{'kind': 'text', 'text': '"Looking""'}],
+    ),
+    'gpt_oss_quoted_commentary_rejects_nonassistant_body': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>user<|channel|>final<|message|>"UNTRUSTED"<|end|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{'kind': 'text', 'text': '"LookingDone'}],
+    ),
+    'gpt_oss_invalid_json_quote_prefix_then_final': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking\n<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>',
+        [{'kind': 'text', 'text': '"Looking\nHe said "yes".'}],
+    ),
     'gpt_oss_visible_scalar_string_quoted_controls': (
         '<|start|>assistant<|channel|>final<|message|>"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>',
         [{'kind': 'text', 'text': '"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'}],
