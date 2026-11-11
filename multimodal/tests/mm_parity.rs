@@ -215,9 +215,12 @@ fn replay(fixture: &Value, case: &Value) -> dynamo_multimodal::Result<Value> {
             width: *width as u32,
             height: *height as u32,
         };
-        // A router counts an item's whole span from its metadata alone.
+        // A router counts an item's whole span from its metadata alone. A family
+        // that sizes media against the whole request refuses `process_item` and
+        // counts the item alone, which the request budget can only shrink.
         let tokens = family.num_media_tokens(&metadata)?;
-        if tokens != features + literals {
+        let alone = || matches!(family.process_item(media), Err(MmError::Unsupported { .. }));
+        if tokens != features + literals && !(tokens > features + literals && alone()) {
             return Err(MmError::internal(format!(
                 "num_media_tokens {tokens} != the item's {features} features + {literals} literals"
             )));
@@ -252,6 +255,10 @@ fn summary(
             TensorData::F32(values) => (
                 "float32",
                 common::sha256_le(values.iter().map(|v| v.to_le_bytes())),
+            ),
+            TensorData::Bf16(bits) => (
+                "bfloat16",
+                common::sha256_le(bits.iter().map(|b| b.to_le_bytes())),
             ),
             _ => panic!("a feature dtype the tables do not record"),
         })

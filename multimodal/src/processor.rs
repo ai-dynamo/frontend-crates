@@ -20,6 +20,8 @@
 pub enum TensorData {
     F32(Vec<f32>),
     I64(Vec<i64>),
+    /// bfloat16 bit patterns.
+    Bf16(Vec<u16>),
 }
 
 pub struct Tensor {
@@ -211,7 +213,10 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// Tokens one media item will occupy in the expanded prompt, from
     /// lightweight metadata alone — no pixel or feature-extraction work (HF's
     /// `_get_num_multimodal_tokens`). Lets routers account prompt length after
-    /// probing only the modality-specific header.
+    /// probing only the modality-specific header. A family that sizes media
+    /// against the whole request returns the span of the item alone, which is
+    /// neither exact nor a bound once the request budget binds; there
+    /// [`Self::layout_from_metadata`] is the exact call.
     fn num_media_tokens(&self, media: &MediaMetadata) -> crate::Result<usize>;
 
     /// Describe a prompt expansion from metadata alone, without constructing
