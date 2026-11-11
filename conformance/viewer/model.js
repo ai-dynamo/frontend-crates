@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 import { canonicalArguments, sameValue, isMapping, mappingEntries, getField, hasField, setField, deleteField, mergeMappings, compareText, parseJson } from './values.js';
+import { rendererCandidates } from './renderer.js';
 
 export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Different than GOLDEN',
   error: 'Parser errors', leak: 'Markup leaks', missing: 'Missing captures', unsupported: 'Unsupported cases',
@@ -206,6 +207,7 @@ export function sortCandidates(items) {
 // The source descriptor carries implementation + data mode independently of
 // display parse_mode (the v1 jail uses stream data but displays batch parsing).
 export function tabCandidates(catalog, tab, { golden = false } = {}) {
+  if (tab.suite === 'renderer' || tab.mode === 'renderer') return rendererCandidates(catalog);
   const metadata = catalog.metadata;
   const mode = tab.mode;
   if (mode !== 'unified') throw new Error(`unsupported conformance mode: ${mode}`);
@@ -380,6 +382,7 @@ export function selectedCaptureOutcome(cell, key, reference = 'golden') {
     return ['error', 'leak', 'diverge', 'expected', 'missing', 'blocked', 'unsupported', 'uncompared', 'documented', 'pass']
       .find(outcome => outcomes.includes(outcome)) || 'unsupported';
   }
+  if (cell?.capture_outcomes && Object.hasOwn(cell.capture_outcomes, key)) return cell.capture_outcomes[key];
   const issue = captureIssue(cell, key);
   if (issue) return issue;
   const entry = cell.cmp[key];

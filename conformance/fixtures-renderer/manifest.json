@@ -1,0 +1,216 @@
+{
+  "schema": 1,
+  "models": [
+    {
+      "id": "deepseek_v41",
+      "label": "DeepSeek V4.1 Flash",
+      "repository": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "revision": "314113f8a7dadb388215396ba5fbee2c610a04d6",
+      "formatter": "deepseek_v41",
+      "model_type": "deepseek_v41",
+      "display_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "context_mixins": [],
+      "assets": [
+        {
+          "role": "config",
+          "path": "assets/deepseek_v41/config.json",
+          "sha256": "8be45ce0476004a3f529fd896115a4a2e800a129ad2d3ec05b16050f52e21879",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/314113f8a7dadb388215396ba5fbee2c610a04d6/config.json"
+        },
+        {
+          "role": "tokenizer_config",
+          "path": "assets/deepseek_v41/tokenizer_config.json",
+          "sha256": "6ac8c8dc065ed118161d02dd532749ae3f52c243deac27872134fae2f50d8547",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/314113f8a7dadb388215396ba5fbee2c610a04d6/tokenizer_config.json"
+        },
+        {
+          "role": "license",
+          "path": "assets/deepseek_v41/LICENSE",
+          "sha256": "f2c6c602815669d292889e5be8c802f2ed950653b77999b1584e8e6aed25d040",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/314113f8a7dadb388215396ba5fbee2c610a04d6/LICENSE"
+        },
+        {
+          "role": "chat_template",
+          "path": "assets/deepseek_v41/chat_template.jinja",
+          "sha256": "d959d804d5101b79a49b6ff1bf3c54cd5affa9a5a78c503d925f3090040b31c3",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/314113f8a7dadb388215396ba5fbee2c610a04d6/chat_template.jinja"
+        },
+        {
+          "role": "encoder",
+          "path": "assets/deepseek_v41/encoding/encoding.py",
+          "sha256": "13231c592e958fb39e2af6001dae69d90e7a36b265702b9b390236fb387599e2",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/314113f8a7dadb388215396ba5fbee2c610a04d6/encoding/encoding.py"
+        }
+      ],
+      "reference": {
+        "kind": "official_encoder",
+        "transformers": "5.12.1",
+        "jinja2": "3.1.6"
+      }
+    },
+    {
+      "id": "glm53",
+      "label": "GLM 5.3",
+      "repository": "zai-org/GLM-5.3",
+      "revision": "ba32f8c19c8738e2c57c71798c601d477a7bf844",
+      "formatter": "hf",
+      "model_type": "glm_moe_dsa",
+      "display_name": "zai-org/GLM-5.3",
+      "context_mixins": [],
+      "assets": [
+        {
+          "role": "config",
+          "path": "assets/glm53/config.json",
+          "sha256": "3ac72612095574542f7fff847ada8e59d9199dd8af44bdf625d7e02615572e69",
+          "url": "https://huggingface.co/zai-org/GLM-5.3/resolve/ba32f8c19c8738e2c57c71798c601d477a7bf844/config.json"
+        },
+        {
+          "role": "tokenizer_config",
+          "path": "assets/glm53/tokenizer_config.json",
+          "sha256": "98b1271574f41abf89427ae2dda030d94dc9478f0edc5a8bd240db213c6fd5fc",
+          "url": "https://huggingface.co/zai-org/GLM-5.3/resolve/ba32f8c19c8738e2c57c71798c601d477a7bf844/tokenizer_config.json"
+        },
+        {
+          "role": "license",
+          "path": "assets/glm53/LICENSE",
+          "sha256": "96e1622099fc9d6b70c9760f007d99e66d7497eec636b63c60fe208401e9170c",
+          "url": "https://huggingface.co/zai-org/GLM-5.3/resolve/ba32f8c19c8738e2c57c71798c601d477a7bf844/LICENSE"
+        },
+        {
+          "role": "chat_template",
+          "path": "assets/glm53/chat_template.jinja",
+          "sha256": "0e2b6268ac54f04d2bc1157e8cfb896cb66f25c0b5e319ea12e56014c3914f24",
+          "url": "https://huggingface.co/zai-org/GLM-5.3/resolve/ba32f8c19c8738e2c57c71798c601d477a7bf844/chat_template.jinja"
+        }
+      ],
+      "reference": {
+        "kind": "transformers",
+        "transformers": "5.12.1",
+        "jinja2": "3.1.6"
+      }
+    },
+    {
+      "id": "kimi_k3",
+      "label": "Kimi K3",
+      "repository": "moonshotai/Kimi-K3",
+      "revision": "f831ab66814297da540d832a5235f8e904f29d06",
+      "formatter": "kimi_k3",
+      "model_type": "kimi_k3",
+      "display_name": "moonshotai/Kimi-K3",
+      "context_mixins": [],
+      "assets": [
+        {
+          "role": "config",
+          "path": "assets/kimi_k3/config.json",
+          "sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/f831ab66814297da540d832a5235f8e904f29d06/config.json"
+        },
+        {
+          "role": "tokenizer_config",
+          "path": "assets/kimi_k3/tokenizer_config.json",
+          "sha256": "5d0803c94db9cd78763499e0956c95fd5a225c14a727e5a6cf5db3f96f010a6e",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/f831ab66814297da540d832a5235f8e904f29d06/tokenizer_config.json"
+        },
+        {
+          "role": "license",
+          "path": "assets/kimi_k3/LICENSE",
+          "sha256": "20c797ce19af0c17de52c6afb144644768a591c521655f5ebf5712c9850f2887",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/f831ab66814297da540d832a5235f8e904f29d06/LICENSE"
+        },
+        {
+          "role": "encoder",
+          "path": "assets/kimi_k3/encoding_k3.py",
+          "sha256": "49ff03305fdc4be26867972788d36150b67f8a9e852e62bb7959d87482223676",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/f831ab66814297da540d832a5235f8e904f29d06/encoding_k3.py"
+        }
+      ],
+      "reference": {
+        "kind": "official_encoder",
+        "transformers": "5.12.1",
+        "jinja2": "3.1.6"
+      }
+    },
+    {
+      "id": "qwen38",
+      "label": "Qwen 3.8 27B",
+      "repository": "Qwen/Qwen3.8-27B",
+      "revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0",
+      "formatter": "hf",
+      "model_type": "qwen3_5",
+      "display_name": "Qwen/Qwen3.8-27B",
+      "context_mixins": [],
+      "assets": [
+        {
+          "role": "config",
+          "path": "assets/qwen38/config.json",
+          "sha256": "191e0af232104ed8b65258cf3fb2b842e288008baca7633c11b82a1ac7203aab",
+          "url": "https://huggingface.co/Qwen/Qwen3.8-27B/resolve/37561816e66b5b9153b1b64c10968c18c1e6f4a0/config.json"
+        },
+        {
+          "role": "tokenizer_config",
+          "path": "assets/qwen38/tokenizer_config.json",
+          "sha256": "207c03c41a06a9c3b0cc527d8a56115159c1eac6b59a4ffae85b646e773d074e",
+          "url": "https://huggingface.co/Qwen/Qwen3.8-27B/resolve/37561816e66b5b9153b1b64c10968c18c1e6f4a0/tokenizer_config.json"
+        },
+        {
+          "role": "license",
+          "path": "assets/qwen38/LICENSE",
+          "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+          "url": "https://huggingface.co/Qwen/Qwen3.8-27B/resolve/37561816e66b5b9153b1b64c10968c18c1e6f4a0/LICENSE"
+        },
+        {
+          "role": "chat_template",
+          "path": "assets/qwen38/chat_template.jinja",
+          "sha256": "af16f654968d47d09a6c604e00370b12dbc21f76456f59c9e98b82e84d9f6375",
+          "url": "https://huggingface.co/Qwen/Qwen3.8-27B/resolve/37561816e66b5b9153b1b64c10968c18c1e6f4a0/chat_template.jinja"
+        }
+      ],
+      "reference": {
+        "kind": "transformers",
+        "transformers": "5.12.1",
+        "jinja2": "3.1.6"
+      }
+    },
+    {
+      "id": "minimax_m31",
+      "label": "MiniMax M3.1 Flash",
+      "repository": "MiniMaxAI/MiniMax-M3.1-Flash",
+      "revision": "ce7f4df87d2e05262f5775f373dac4772f134041",
+      "formatter": "hf",
+      "model_type": "minimax_m3_vl",
+      "display_name": "MiniMaxAI/MiniMax-M3.1-Flash",
+      "context_mixins": [],
+      "assets": [
+        {
+          "role": "config",
+          "path": "assets/minimax_m31/config.json",
+          "sha256": "df6a3668e2de5b8dc0e883e3767495ad17af7e4d69fabe9683088be015fda9ab",
+          "url": "https://huggingface.co/MiniMaxAI/MiniMax-M3.1-Flash/resolve/ce7f4df87d2e05262f5775f373dac4772f134041/config.json"
+        },
+        {
+          "role": "tokenizer_config",
+          "path": "assets/minimax_m31/tokenizer_config.json",
+          "sha256": "15caca9f74fbce9b86dc014e9324cbefa56703d81ccd6d56020faa1c41d2eae5",
+          "url": "https://huggingface.co/MiniMaxAI/MiniMax-M3.1-Flash/resolve/ce7f4df87d2e05262f5775f373dac4772f134041/tokenizer_config.json"
+        },
+        {
+          "role": "license",
+          "path": "assets/minimax_m31/LICENSE",
+          "sha256": "8c4978e3e0fe0349ff929cc8450463cba3039c4c9fc144d8bd5382ab00df247a",
+          "url": "https://huggingface.co/MiniMaxAI/MiniMax-M3.1-Flash/resolve/ce7f4df87d2e05262f5775f373dac4772f134041/LICENSE"
+        },
+        {
+          "role": "chat_template",
+          "path": "assets/minimax_m31/chat_template.jinja",
+          "sha256": "961e3f96b2c08d26555efdfeb3b384d5e81181bf0cfc04edbadc31c6e507b431",
+          "url": "https://huggingface.co/MiniMaxAI/MiniMax-M3.1-Flash/resolve/ce7f4df87d2e05262f5775f373dac4772f134041/chat_template.jinja"
+        }
+      ],
+      "reference": {
+        "kind": "transformers",
+        "transformers": "5.12.1",
+        "jinja2": "3.1.6"
+      }
+    }
+  ]
+}

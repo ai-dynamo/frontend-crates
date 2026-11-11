@@ -13,6 +13,22 @@ import yaml
 import report_capture_verification
 
 
+@pytest.mark.parametrize("missing", ["renderer-reference", "renderer-recorded"])
+def test_renderer_receipts_are_required_without_replacing_parser_receipts(
+    tmp_path: Path, missing: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("CONFORMANCE_CANDIDATE_TREE", raising=False)
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+    for suite, blocking in report_capture_verification.SUITES.items():
+        if suite != missing:
+            (tmp_path / f"{suite}.json").write_text(json.dumps({
+                "schema": 1, "suite": suite, "checked": 1, "blocking": blocking, "differences": []
+            }))
+    assert report_capture_verification.report(tmp_path, None) == 1
+    assert all((tmp_path / f"{suite}.json").is_file() for suite in (
+        "unified-golden", "render-golden", "recorded-capture"))
+
+
 @pytest.mark.parametrize("fault", [None, "golden", "recorded", "missing", "empty", "wrong_severity", "stale"])
 def test_executed_receipts_warn_for_golden_and_fail_for_unverified_yaml(tmp_path, fault, monkeypatch):
     monkeypatch.delenv("CONFORMANCE_CANDIDATE_TREE", raising=False)

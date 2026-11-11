@@ -1,0 +1,303 @@
+{
+  "schema": 1,
+  "model": "glm53",
+  "inputs_sha256": "a6ffc051a79aa63e0d5075aecfdc23d0fb23f6c63f3f1a861ce6c4d61518d245",
+  "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
+  "producer": {
+    "implementation": "dynamo",
+    "version": "10.3.2",
+    "source_sha256": "1e6b631a4b39f19f4e1c037a69a360fdb4530d1d232293c8cc6deffb02b5b7b8",
+    "adapter_source_sha256": "d985f5ff75a5c478abe6df54d24ee7f2f30b5cfc2320d069654b3fed0705fc2a",
+    "scope": "public dynamo-renderer API; downstream normalization is not exercised"
+  },
+  "results": {
+    "RENDERER.conversation-single": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.conversation-system": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>Answer briefly.<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.conversation-multiturn": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think></think>Hi<|user|>What is 2 + 2?<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.conversation-text-blocks": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>First line.Second line.<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.conversation-unicode": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>東京 中文 🦀 <b>&\"</b><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.conversation-python-whitespace": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Explain<|assistant|><think></think>answer<|user|>Continue<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.reasoning-missing": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think></think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.reasoning-empty": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think></think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.reasoning-whitespace": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think> \t\n</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.reasoning-string": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>First reason.\nSecond reason.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.reasoning-segments": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>First reason.\nSecond reason.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.reasoning-tool-continuation": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.reasoning-new-user-turn": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|user|>What about tomorrow?<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-absent": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-empty": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-declared": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-single-call": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-empty-arguments": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather</tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-numeric-escaped": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>amount</arg_key><arg_value>1e-07</arg_value><arg_key>note</arg_key><arg_value>A\n\"quoted\" & <literal> \\ path</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-parallel": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>東京</arg_value></tool_call><|observation|><tool_response>Paris: sunny</tool_response><tool_response>東京: cloudy</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.tools-reversed-results": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>東京</arg_value></tool_call><|observation|><tool_response>Paris: sunny</tool_response><tool_response>東京: cloudy</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-generation-enabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-generation-disabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-thinking-enabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-thinking-disabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-effort-low": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Low<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-effort-high": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: High<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-effort-max": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.images-single": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.images-mixed": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Before <reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder> after<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.images-multiple": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder>Compare<reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.images-reversed-tool-results": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>東京</arg_value></tool_call><|observation|><tool_response><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder></tool_response><tool_response><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder></tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    }
+  }
+}

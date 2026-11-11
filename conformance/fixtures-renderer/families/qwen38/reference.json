@@ -1,0 +1,1519 @@
+{
+  "schema": 1,
+  "model": "qwen38",
+  "inputs_sha256": "9a88becf6f6ffdae8f3a10b154933c89bf6e3fe0427888b7a69ce33b658eaf0f",
+  "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
+  "producer": {
+    "implementation": "reference",
+    "version": "Qwen/Qwen3.8-27B@37561816e66b5b9153b1b64c10968c18c1e6f4a0",
+    "source_sha256": "af16f654968d47d09a6c604e00370b12dbc21f76456f59c9e98b82e84d9f6375",
+    "adapter_sha256": "9089ffc306a660e67a4ef839b949d26e59108c99ca1a7ac99b8461a259b92ed7",
+    "python": "3.12.13",
+    "transformers": "5.12.1",
+    "jinja2": "3.1.6"
+  },
+  "results": {
+    "RENDERER.conversation-single": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-system": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\nAnswer briefly.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "system",
+            "content": "Answer briefly."
+          },
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-multiturn": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\nHi<|im_end|>\n<|im_start|>user\nWhat is 2 + 2?<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          },
+          {
+            "role": "assistant",
+            "content": "Hi"
+          },
+          {
+            "role": "user",
+            "content": "What is 2 + 2?"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-text-blocks": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nFirst line.Second line.<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "First line."
+              },
+              {
+                "type": "text",
+                "text": "Second line."
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-unicode": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\n東京 中文 🦀 <b>&\"</b><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "東京 中文 🦀 <b>&\"</b>"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-python-whitespace": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nExplain<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\nanswer<|im_end|>\n<|im_start|>user\nContinue<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Explain"
+          },
+          {
+            "role": "assistant",
+            "content": "\u001c answer \u001f"
+          },
+          {
+            "role": "user",
+            "content": "Continue"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-missing": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-empty": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-whitespace": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": " \t\n",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-string": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nFirst reason.\nSecond reason.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "First reason.\nSecond reason.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-segments": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nFirst reason.\nSecond reason.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "First reason.\nSecond reason.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        },
+        {
+          "name": "join_reasoning_segments_with_newlines",
+          "authority": "independently-authored renderer API contract; the model reference accepts a string"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-tool-continuation": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-new-user-turn": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>user\nWhat about tomorrow?<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          },
+          {
+            "role": "user",
+            "content": "What about tomorrow?"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-absent": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-empty": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": [],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-declared": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-single-call": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-empty-arguments": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {}
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-numeric-escaped": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=amount>\n1e-07\n</parameter>\n<parameter=note>\nA\n\"quoted\" & <literal> \\ path\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nSunny, 20°C\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "amount": 1e-07,
+                    "note": "A\n\"quoted\" & <literal> \\ path"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-parallel": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=city>\n東京\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\nParis: sunny\n</tool_response>\n<tool_response>\n東京: cloudy\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "東京"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Paris: sunny"
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": "東京: cloudy"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-reversed-results": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=city>\n東京\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\n東京: cloudy\n</tool_response>\n<tool_response>\nParis: sunny\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "東京"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": "東京: cloudy"
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Paris: sunny"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-generation-enabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-generation-disabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": false
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-thinking-enabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "enable_thinking": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-thinking-disabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "enable_thinking": false
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-low": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to low. Keep your thinking brief and focused, moving directly to the conclusion without unnecessary elaboration.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "low"
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-medium": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "medium"
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-xhigh": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "xhigh"
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-single": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image"
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-mixed": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\nBefore <|vision_start|><|image_pad|><|vision_end|> after<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Before "
+              },
+              {
+                "type": "image"
+              },
+              {
+                "type": "text",
+                "text": " after"
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-multiple": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.<|im_end|>\n<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Compare<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image"
+              },
+              {
+                "type": "text",
+                "text": "Compare"
+              },
+              {
+                "type": "image"
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-reversed-tool-results": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.\n\n# Tools\n\nYou have access to the following functions:\n\n<tools>\n{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}}\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call>\n\n<IMPORTANT>\nReminder:\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\n- Required parameters MUST be specified\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\n</IMPORTANT><|im_end|>\n<|im_start|>user\nWhat is the weather?<|im_end|>\n<|im_start|>assistant\n<think>\nI should check the weather.\n</think>\n\n<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=get_weather>\n<parameter=city>\n東京\n</parameter>\n</function>\n</tool_call><|im_end|>\n<|im_start|>user\n<tool_response>\n<|vision_start|><|image_pad|><|vision_end|>\n</tool_response>\n<tool_response>\n<|vision_start|><|image_pad|><|vision_end|>\n</tool_response><|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "東京"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": [
+              {
+                "type": "image"
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": [
+              {
+                "type": "image"
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        },
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    }
+  }
+}

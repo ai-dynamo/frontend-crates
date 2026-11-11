@@ -320,14 +320,15 @@ def _historical_dynamo_key(driver):
 
 
 def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
+    has_renderer = any(tab["id"] == "tab-renderer" for tab in _published_catalog(published_viewer)["metadata"]["tabs"])
     server, requests = _server(root=published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
         driver.get(f"{base}/index.html?tab=tab-unified&view=details&transpose=0&keep=1")
         _ready(driver, "tab-unified")
-        assert driver.title == 'Dynamo Parser Conformance Table'
-        assert driver.find_element('css selector', '#viewer > h1').text.startswith('Parser Conformance')
+        assert driver.title == ('Dynamo Conformance Tables' if has_renderer else 'Dynamo Parser Conformance Table')
+        assert driver.find_element('css selector', '#viewer > h1').text.startswith('Dynamo Conformance' if has_renderer else 'Parser Conformance')
         assert len(driver.find_element('css selector', '.source-commit').text) == 12
         assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified table[data-comparison-table] .matrix-cell")
         family_labels = {item.text for item in driver.find_elements("css selector", "#tab-unified .comparison-matrix tbody tr > th:first-child")}
@@ -342,7 +343,7 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': None, 'selected': ['dynamo']}
         slot_engines = [slot.get_attribute('data-engine') for slot in driver.find_elements('css selector', '#tab-unified .capture-slot')]
         assert slot_engines == ['dynamo', 'none', 'none']
-        assert driver.find_elements('css selector', '#viewer > .tabs .tab-button') == []
+        assert [button.get_attribute('data-tab-target') for button in driver.find_elements('css selector', '#viewer > .tabs .tab-button')] == (['tab-unified', 'tab-renderer'] if has_renderer else [])
         loaded = [path for path in requests if "/viewer-data/" in path]
         assert loaded == [], 'default capture data must come entirely from HTML'
         assert not any('viewer-resolved-catalog' in path for path in requests)

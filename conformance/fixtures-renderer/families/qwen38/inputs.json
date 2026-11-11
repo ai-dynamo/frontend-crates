@@ -1,0 +1,1526 @@
+{
+  "schema": 1,
+  "model": "qwen38",
+  "cases": [
+    {
+      "id": "RENDERER.conversation-single",
+      "group": "conversations",
+      "description": "Single user turn.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.conversation-system",
+      "group": "conversations",
+      "description": "Leading system instruction.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "system",
+            "content": "Answer briefly."
+          },
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.conversation-multiturn",
+      "group": "conversations",
+      "description": "Two user turns with one historical assistant response.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          },
+          {
+            "role": "assistant",
+            "content": "Hi"
+          },
+          {
+            "role": "user",
+            "content": "What is 2 + 2?"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.conversation-text-blocks",
+      "group": "conversations",
+      "description": "A user message with two text blocks.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "First line."
+              },
+              {
+                "type": "text",
+                "text": "Second line."
+              }
+            ]
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.conversation-unicode",
+      "group": "conversations",
+      "description": "UTF-8 Unicode, emoji and literal HTML-shaped text.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "東京 中文 🦀 <b>&\"</b>"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.conversation-python-whitespace",
+      "group": "conversations",
+      "description": "Historical assistant text carries Python-only whitespace U+001C and U+001F.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Explain"
+          },
+          {
+            "role": "assistant",
+            "content": "\u001c answer \u001f"
+          },
+          {
+            "role": "user",
+            "content": "Continue"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.reasoning-missing",
+      "group": "reasoning",
+      "description": "Historical reasoning represented as missing with a pending tool interaction.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.reasoning-empty",
+      "group": "reasoning",
+      "description": "Historical reasoning represented as empty with a pending tool interaction.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.reasoning-whitespace",
+      "group": "reasoning",
+      "description": "Historical reasoning represented as whitespace with a pending tool interaction.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": " \t\n",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.reasoning-string",
+      "group": "reasoning",
+      "description": "Historical reasoning represented as string with a pending tool interaction.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "First reason.\nSecond reason.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.reasoning-segments",
+      "group": "reasoning",
+      "description": "Historical reasoning represented as segments with a pending tool interaction.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": [
+              "First reason.",
+              "",
+              "Second reason.",
+              ""
+            ],
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.reasoning-tool-continuation",
+      "group": "reasoning",
+      "description": "A tool result continues the current user turn; reasoning is retained according to the model contract.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.reasoning-new-user-turn",
+      "group": "reasoning",
+      "description": "A genuine new user turn follows a complete tool interaction.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          },
+          {
+            "role": "user",
+            "content": "What about tomorrow?"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-absent",
+      "group": "tools",
+      "description": "No top-level tool declarations.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-empty",
+      "group": "tools",
+      "description": "An explicitly empty top-level tool list.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": []
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-declared",
+      "group": "tools",
+      "description": "One complete tool schema on a first-turn request.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-single-call",
+      "group": "tools",
+      "description": "A historical tool call and result.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-empty-arguments",
+      "group": "tools",
+      "description": "A historical call with an empty argument object.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-numeric-escaped",
+      "group": "tools",
+      "description": "Numeric arguments and escaped Unicode/JSON text.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"amount\": 1e-07, \"note\": \"A\\n\\\"quoted\\\" & <literal> \\\\ path\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-parallel",
+      "group": "tools",
+      "description": "Two parallel calls with results in call order.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"東京\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Paris: sunny"
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": "東京: cloudy"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.tools-reversed-results",
+      "group": "tools",
+      "description": "Parallel tool results arrive in reverse order.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"東京\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": "東京: cloudy"
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Paris: sunny"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.controls-generation-enabled",
+      "group": "controls",
+      "description": "Explicitly request an assistant generation prefix.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.controls-generation-disabled",
+      "group": "controls",
+      "description": "Render history without an assistant generation prefix.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": false,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.controls-thinking-enabled",
+      "group": "controls",
+      "description": "Supply the model-native thinking-mode setting; the pinned reference decides whether it is consumed.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {
+          "enable_thinking": true
+        },
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.controls-thinking-disabled",
+      "group": "controls",
+      "description": "Supply the model-native thinking-mode setting; the pinned reference decides whether it is consumed.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {
+          "enable_thinking": false
+        },
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.controls-effort-low",
+      "group": "controls",
+      "description": "Explicit low effort through the model-native template argument.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {
+          "reasoning_effort": "low"
+        },
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.controls-effort-medium",
+      "group": "controls",
+      "description": "Explicit medium effort through the model-native template argument.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {
+          "reasoning_effort": "medium"
+        },
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.controls-effort-xhigh",
+      "group": "qwen38",
+      "description": "Explicit xhigh effort through the model-native template argument.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {
+          "reasoning_effort": "xhigh"
+        },
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.images-single",
+      "group": "images",
+      "description": "One synthetic image content block; no bytes are fetched.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "https://example.invalid/image-1.png"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.images-mixed",
+      "group": "images",
+      "description": "Text before and after a synthetic image.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Before "
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "https://example.invalid/image-1.png"
+                }
+              },
+              {
+                "type": "text",
+                "text": " after"
+              }
+            ]
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.images-multiple",
+      "group": "images",
+      "description": "Two images separated by text.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "https://example.invalid/image-1.png"
+                }
+              },
+              {
+                "type": "text",
+                "text": "Compare"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "https://example.invalid/image-2.png"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
+      "id": "RENDERER.images-reversed-tool-results",
+      "group": "images",
+      "description": "Parallel tool-result images arrive in reverse order; metadata must agree with rendered image order.",
+      "request": {
+        "model": "Qwen/Qwen3.8-27B",
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"東京\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "https://example.invalid/image-2.png"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "https://example.invalid/image-1.png"
+                }
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ]
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {},
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    }
+  ]
+}

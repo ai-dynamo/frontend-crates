@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # conformance
 
-Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Unified viewer for frontend-crates. The checkout root `index.html` reads the compact Unified catalog and selected versioned YAML over HTTP. Publication generates gzip-compressed typed JSON inputs and resolved captures in the site output; YAML remains authoritative, and raw-source links retain original YAML bytes. The full catalog remains available to Node model checks and legacy raw archive links.
+Parser and renderer conformance fixtures, fixture-based Rust tests, and a shared browser viewer for frontend-crates. The Unified parser tab remains the default; the Renderer tab compares prompt formatting against independent model references. Publication generates compressed JSON resources in one standalone HTML report. Original parser YAML and renderer JSON remain authoritative and downloadable.
 
 ## Active corpus and capture policy
 
@@ -26,6 +26,16 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render comm
 This test runs current inputs through every registered native Dynamo v2 parser family and compares live output with recorded latest YAML, including assembled events, per-chunk deltas, errors, and missing captures. The `rust` CI job invokes it through the workspace test suite. GOLDEN differences warn; differences from recorded latest output fail. CI can verify only the pushed head, so a green result on the previous head does not validate local Rust/YAML changes. Peer, v1, and historical captures retain their own producer evidence and are not executed by this native v2 replay.
 
 Keep GOLDEN independently authored and justified; do not copy an incorrect parser result into it. Preserve historical and peer observations when updating latest captures. If a Rust edit does not change observable conformance behavior, establish that with replay rather than changing YAML merely to create a diff.
+
+## Renderer conformance
+
+The Renderer tab (`?tab=tab-renderer`) measures the public `dynamo-renderer` API against pinned model-author encoders and Transformers templates. It includes DeepSeek V4.1 Flash, GLM 5.3, Kimi K3, Qwen 3.8 27B and MiniMax M3.1 Flash. It does not exercise downstream HTTP normalization, tokenization or model inference. Synthetic image blocks test prompt placeholders and media ordering without fetching images.
+
+[`fixtures-renderer/README.md`](fixtures-renderer/README.md) documents model revisions, asset attribution, adapter authority and capture commands. Authored inputs, independent reference results and measured Dynamo results are separate UTF-8 JSON files. Observations bind to the exact input and manifest bytes, including field order. The shared Rust loader validates assets and bindings before tests and publication. Segment boundaries, special-token permissions, pending-generation segments and media order remain visible alongside exact prompt text. A null media order means arrival order and compares equal to an explicit identity permutation; recorded Dynamo metadata remains byte-for-byte structural evidence.
+
+Run `cargo test --locked -p dynamo-conformance-fixtures-v2 --test renderer_conformance` for offline live replay. CI retains separate `renderer-reference` warning and `renderer-recorded` blocking receipts. Reference differences do not authorize changing independent expectations; reviewed Dynamo captures must match fresh execution. Missing records or invalid bindings fail. Source fingerprints identify the producing code without blocking an output-equivalent change solely because its source identity changed. K3 Partial Mode is explicitly unavailable in its pinned official reference rather than treated as a passing comparison.
+
+Both latest and history publications include the current renderer suite. Parser-only older catalogs remain readable. The published standalone HTML supports both tabs offline; the source development catalog remains parser-only until the native publisher assembles the renderer resource. Use the normal report generation commands below, then inspect both tabs over HTTP. Historical renderer regression experiments stay outside this latest-only store.
 
 ## Latest captures and retained history
 
@@ -150,7 +160,7 @@ Before adding a conformance case, inspect every registered family. Always evalua
 
 ## Ownership
 
-New conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. The default report displays only Unified; legacy conformance suites and renderers are retired. Existing v1 captures remain available as historical comparisons in Unified.
+New parser conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. Unified remains the default tab; the separate Renderer suite owns prompt-formatting cases. Legacy parser conformance suites are retired, with existing v1 captures retained as historical comparisons in Unified.
 
 Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, browser resources, and test commands.
 
@@ -161,7 +171,7 @@ Parser v1/v2 terminology, migration steps, and fixture ownership are documented 
 - **Why the names changed:** the incremental parser was originally called `stream-v2` because it was intended to replace batch+jail. Unified later became a second v2 convention. Renaming the older corpus to streaming v1 removes that collision; it does not rename parser crates or implementation keys.
 - **Runtime behavior today:** parser identities are configured on the deployed model. `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; it does not choose one by itself. Routing checks Unified first: the exact `tool_call_parser=qwen3_coder` plus `reasoning_parser=qwen3` pair uses Qwen3 Unified when the flag is on. If no Unified pair matches, eligible `qwen3_coder` or `deepseek_v4` requests use the older non-Unified incremental parser. All remaining tool-parsing requests use batch+jail. DeepSeek V4.1 and Muse have separate Unified routes that do not depend on this flag. There is no general fallback chain after a selected parser fails.
 - **Per-chunk cells show WHEN output reaches the consumer.** Streaming parsers emit whenever something is parseable, so their cells carry deltas at real chunk positions. The v1 jail bursts at end-of-call — its captures record emission order, not per-chunk timing — so its per-chunk cells stay `—` with a "(bursts at end of call; per-chunk timing not recorded)" header note, and its output appears only in the `assembled` row.
-- The public report shows only Unified. Its three selected captures are compared against authored GOLDEN. Legacy stream, batch-on-stream, batch, and reasoning corpora remain available to capture tools and regression tests.
+- The parser report uses Unified, with selected captures compared against authored GOLDEN. The Renderer tab has independent model reference and Dynamo renderer entries. Legacy parser corpora remain available to capture tools and regression tests.
 
 ## Layout
 
@@ -205,7 +215,7 @@ The independent YAML reader is vendored as one ESM bundle from the exact `yaml@2
 
 Capture changes update the selectors and URL immediately. The displayed table, legend, and open popup keep showing the previous captures until the replacement is ready. Loading and failure messages leave those results usable; capture-card totals stay hidden until the requested selection succeeds. Retry repeats the requested selection. A transport failure checks for a newer deployed catalog and reloads once when its transport revision changed, preserving the complete URL. If a stale HTML response or blocked session storage prevents safe automatic recovery, the notice offers Reload report. Failures against the same transport revision retain the integrity error and Retry. A successful replacement preserves filters, Vertical/Detailed state, scrolling, and an open popup when its case still exists.
 
-The report contains one Unified comparison matrix without a tab strip. Three engine cards retain the current capture defaults: latest Dynamo v2 Rust Unified in slot 1, with slots 2 and 3 empty. Select Dynamo, SGLang, or vLLM in any slot; slots 2 and 3 also offer None. Different versions or modes of one engine may occupy separate slots, and a capture cannot occupy two slots. Explicit capture links retain their requested versions, including older patch releases. GOLDEN remains the fixed oracle.
+The report contains Unified and Renderer tabs sharing the matrix, layouts, search, themes and dialogs. Unified retains three engine cards: latest Dynamo v2 Rust Unified in slot 1, with slots 2 and 3 empty. Select Dynamo, SGLang, or vLLM in any parser slot; slots 2 and 3 also offer None. Different versions or modes of one engine may occupy separate slots. Explicit capture links retain their requested versions, including older patch releases. GOLDEN remains the parser oracle. Renderer has two entries, Model reference and Dynamo renderer, with independent tab state.
 
 Each selected card shows a segmented status bar and labeled nonzero outcome counts. The report has no parser percentage, aggregate score, ranking, or better-parser label. Matches GOLDEN, documented differences, disagreements, parser errors, markup leaks, missing captures, unsupported cases, blocked sources, expected errors, and unavailable GOLDEN remain separate outcomes. Each applicable underlying case is counted once per family and capture, as an individual case. Orientation does not change totals.
 

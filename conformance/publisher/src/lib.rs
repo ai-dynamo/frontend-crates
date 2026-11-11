@@ -8,6 +8,7 @@ pub mod history;
 pub mod normalization;
 pub mod pipeline;
 pub mod publication;
+pub mod renderer;
 pub mod resources;
 pub mod source;
 pub mod transaction;

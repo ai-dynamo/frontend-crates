@@ -82,6 +82,7 @@ fn validate_destination(
             "conformance/inputs",
             "conformance/fixtures",
             "conformance/fixtures-unified-v2",
+            "conformance/fixtures-renderer",
             "index.html",
             "conformance/CONFORMANCE_v2.html",
             "conformance/viewer-catalog.json",
@@ -725,7 +726,7 @@ fn publication_time() -> Result<String> {
         !unsafe { libc::localtime_r(&now, local.as_mut_ptr()) }.is_null(),
         "cannot format publication time"
     );
-    let mut buffer = [0i8; 64];
+    let mut buffer = [0 as libc::c_char; 64];
     let format = c"%Y-%m-%d %H:%M %Z";
     let length = unsafe {
         libc::strftime(
@@ -830,6 +831,7 @@ pub fn validate(root: &Path, workers: &str) -> Result<Value> {
     );
     validate_catalog(&catalog)?;
     manifest_identity(&root, &catalog)?;
+    let renderer = crate::renderer::Suite::load(&root)?;
     let inventory = pool.install(|| capture_inventory(&root, &catalog, &budget))?;
     let stage = tempfile::tempdir()?;
     pool.install(|| {
@@ -849,6 +851,9 @@ pub fn validate(root: &Path, workers: &str) -> Result<Value> {
         let size = resource["size"].as_u64().context("missing resource size")?;
         let _reservation = budget.reserve(size.max(1024 * 1024))?;
         source::verified(&root, resource)?;
+    }
+    if let Some(renderer) = renderer {
+        renderer.verify_unchanged(&root)?;
     }
     Ok(
         json!({"validated":true,"source_revision":catalog["revision"],"resources":catalog["sources"]["unified"].as_array().unwrap().len()}),
@@ -1068,6 +1073,7 @@ fn publish_prepared(
     } else {
         None
     };
+    let renderer = crate::renderer::Suite::load(&root)?;
     let metadata = metadata_sources(&root, &catalog)?;
     let inventory = pool.install(|| capture_inventory(&root, &catalog, &budget))?;
     let assets = asset_graph(&root)?;
@@ -1104,20 +1110,17 @@ fn publish_prepared(
     let stage = transaction::unique(&transaction_parent, ".native-publication-stage-")?;
     let result = (|| -> Result<()> {
         let phase = PhaseClock::now()?;
-        let resolved = pool.install(|| {
-            pipeline::snapshots_cached(
-                &root,
-                &stage,
-                &catalog,
-                &budget,
-                if options.data_only {
-                    pipeline::SnapshotEncoding::CheckoutGzip
-                } else {
-                    pipeline::SnapshotEncoding::CanonicalSpool
-                },
-                Some(cache),
-            )
+        let encoding = if options.data_only {
+            pipeline::SnapshotEncoding::CheckoutGzip
+        } else {
+            pipeline::SnapshotEncoding::CanonicalSpool
+        };
+        let mut resolved = pool.install(|| {
+            pipeline::snapshots_cached(&root, &stage, &catalog, &budget, encoding, Some(cache))
         })?;
+        if let Some(renderer) = &renderer {
+            renderer.append(&stage, &mut resolved, encoding)?;
+        }
         statistics(
             phase,
             "resolve-encode",
@@ -1379,6 +1382,9 @@ fn publish_prepared(
                         source::verified(&root, r).map(|_| ())
                     })
             })?;
+            if let Some(renderer) = &renderer {
+                renderer.verify_unchanged(&root)?;
+            }
             for (path, digest) in metadata {
                 ensure!(
                     sha256(&source::read(&root, &path)?) == digest,
@@ -1459,6 +1465,7 @@ mod tests {
             directory.path().to_path_buf(),
             root.join("parsers/new"),
             root.join("conformance/fixtures-unified-v2/new"),
+            root.join("conformance/fixtures-renderer/new"),
             root.join(".git/new"),
         ] {
             let mut rejected = options.clone();

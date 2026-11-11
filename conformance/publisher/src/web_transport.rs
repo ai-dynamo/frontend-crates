@@ -82,6 +82,7 @@ fn recent_captures(catalog: &Value) -> Result<BTreeSet<(String, String)>> {
 
 fn is_recent(resource: &Value, recent: &BTreeSet<(String, String)>) -> bool {
     resource["kind"] == "inputs-and-golden"
+        || resource["kind"] == "renderer-suite"
         || recent.contains(&(
             resource["implementation"].as_str().unwrap_or("").into(),
             resource["version"].as_str().unwrap_or("").into(),
@@ -123,6 +124,12 @@ pub fn embedded<'a>(
         .as_array()
         .context("missing resources")?
         .iter()
+        .chain(
+            catalog["sources"]["renderer"]
+                .as_array()
+                .into_iter()
+                .flatten(),
+        )
         .filter(|r| is_recent(r, &recent))
     {
         let descriptor = &resource["recipe_index"];
@@ -261,6 +268,13 @@ pub fn assemble(
         .as_array()
         .context("missing resolved resources")?
         .clone();
+    resources.extend(
+        catalog["sources"]["renderer"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .cloned(),
+    );
     let priority = |r: &Value| {
         if (r["kind"] == "inputs-and-golden"
             && default_families.contains(r["family"].as_str().unwrap_or("")))
@@ -299,7 +313,14 @@ pub fn assemble(
     writer.flush_phase()?;
     let mut raw = BTreeMap::<String, Value>::new();
     let mut original_tokens = Vec::new();
-    let originals = source::original_sources(original)?;
+    let mut originals = source::original_sources(original)?;
+    originals.extend(
+        resolved["sources"]["original_renderer"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .cloned(),
+    );
     // Admission releases in each task before returning. Only descriptors are
     // collected, so bounded readers never retain a whole history in memory.
     originals
@@ -402,7 +423,24 @@ pub fn assemble(
         candidate.as_object_mut().unwrap().remove("sources");
         candidate.as_object_mut().unwrap().remove("source");
     }
-    catalog["sources"]["unified"] = json!(resources);
+    let renderer = resources
+        .iter()
+        .filter(|resource| resource["kind"] == "renderer-suite")
+        .cloned()
+        .collect::<Vec<_>>();
+    catalog["sources"]["unified"] = json!(
+        resources
+            .into_iter()
+            .filter(|resource| resource["kind"] != "renderer-suite")
+            .collect::<Vec<_>>()
+    );
+    if !renderer.is_empty() {
+        catalog["sources"]["renderer"] = json!(renderer);
+    }
+    catalog["sources"]
+        .as_object_mut()
+        .unwrap()
+        .remove("original_renderer");
     catalog["transport"] = json!({"schema":2,"raw_buckets":lookup});
     // Reject unreferenced chunks and damaged pack offsets before installation.
     let _validation_memory = budget.reserve(

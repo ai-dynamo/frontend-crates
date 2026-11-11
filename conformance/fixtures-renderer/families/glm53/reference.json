@@ -1,0 +1,1519 @@
+{
+  "schema": 1,
+  "model": "glm53",
+  "inputs_sha256": "a6ffc051a79aa63e0d5075aecfdc23d0fb23f6c63f3f1a861ce6c4d61518d245",
+  "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
+  "producer": {
+    "implementation": "reference",
+    "version": "zai-org/GLM-5.3@ba32f8c19c8738e2c57c71798c601d477a7bf844",
+    "source_sha256": "0e2b6268ac54f04d2bc1157e8cfb896cb66f25c0b5e319ea12e56014c3914f24",
+    "adapter_sha256": "9089ffc306a660e67a4ef839b949d26e59108c99ca1a7ac99b8461a259b92ed7",
+    "python": "3.12.13",
+    "transformers": "5.12.1",
+    "jinja2": "3.1.6"
+  },
+  "results": {
+    "RENDERER.conversation-single": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-system": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>Answer briefly.<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "system",
+            "content": "Answer briefly."
+          },
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-multiturn": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think></think>Hi<|user|>What is 2 + 2?<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          },
+          {
+            "role": "assistant",
+            "content": "Hi"
+          },
+          {
+            "role": "user",
+            "content": "What is 2 + 2?"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-text-blocks": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>First line.Second line.<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "First line."
+              },
+              {
+                "type": "text",
+                "text": "Second line."
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-unicode": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>東京 中文 🦀 <b>&\"</b><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "東京 中文 🦀 <b>&\"</b>"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.conversation-python-whitespace": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Explain<|assistant|><think></think>answer<|user|>Continue<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Explain"
+          },
+          {
+            "role": "assistant",
+            "content": "\u001c answer \u001f"
+          },
+          {
+            "role": "user",
+            "content": "Continue"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-missing": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think></think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-empty": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think></think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-whitespace": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think> \t\n</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": " \t\n",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-string": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>First reason.\nSecond reason.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "First reason.\nSecond reason.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-segments": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>First reason.\nSecond reason.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "First reason.\nSecond reason.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        },
+        {
+          "name": "join_reasoning_segments_with_newlines",
+          "authority": "independently-authored renderer API contract; the model reference accepts a string"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-tool-continuation": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.reasoning-new-user-turn": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|user|>What about tomorrow?<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          },
+          {
+            "role": "user",
+            "content": "What about tomorrow?"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-absent": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-empty": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": [],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-declared": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-single-call": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-empty-arguments": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather</tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {}
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-numeric-escaped": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>amount</arg_key><arg_value>1e-07</arg_value><arg_key>note</arg_key><arg_value>A\n\"quoted\" & <literal> \\ path</arg_value></tool_call><|observation|><tool_response>Sunny, 20°C</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "amount": 1e-07,
+                    "note": "A\n\"quoted\" & <literal> \\ path"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Sunny, 20°C"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-parallel": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>東京</arg_value></tool_call><|observation|><tool_response>Paris: sunny</tool_response><tool_response>東京: cloudy</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "東京"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Paris: sunny"
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": "東京: cloudy"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.tools-reversed-results": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>東京</arg_value></tool_call><|observation|><tool_response>Paris: sunny</tool_response><tool_response>東京: cloudy</tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "東京"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": "東京: cloudy"
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "Paris: sunny"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-generation-enabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-generation-disabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": false
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-thinking-enabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "enable_thinking": true
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-thinking-disabled": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "enable_thinking": false
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-low": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Low<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "low"
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-high": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: High<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "high"
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-max": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "max"
+        }
+      },
+      "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-single": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image"
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-mixed": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Before <reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder> after<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Before "
+              },
+              {
+                "type": "image"
+              },
+              {
+                "type": "text",
+                "text": " after"
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-multiple": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder>Compare<reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image"
+              },
+              {
+                "type": "text",
+                "text": "Compare"
+              },
+              {
+                "type": "image"
+              }
+            ]
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.images-reversed-tool-results": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{\"name\": \"get_weather\", \"description\": \"Look up the weather.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"amount\": {\"type\": \"number\"}, \"note\": {\"type\": \"string\"}}, \"required\": []}}\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key><arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key><arg_value>{arg-value-2}</arg_value>...</tool_call><|user|>What is the weather?<|assistant|><think>I should check the weather.</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>東京</arg_value></tool_call><|observation|><tool_response><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder></tool_response><tool_response><reminder>You are unable to process this image because you don't have multi-modal input ability. Try different methods.</reminder></tool_response><|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What is the weather?"
+          },
+          {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "I should check the weather.",
+            "tool_calls": [
+              {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "Paris"
+                  }
+                }
+              },
+              {
+                "id": "call_2",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": {
+                    "city": "東京"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_2",
+            "content": [
+              {
+                "type": "image"
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": [
+              {
+                "type": "image"
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "description": "Look up the weather.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        ],
+        "kwargs": {
+          "add_generation_prompt": true
+        }
+      },
+      "transformations": [
+        {
+          "name": "decode_historical_tool_arguments",
+          "authority": "Hugging Face apply_chat_template tool-history input contract"
+        },
+        {
+          "name": "project_image_url_to_image_marker",
+          "authority": "independently-authored renderer media-input contract; no image bytes fetched"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    }
+  }
+}

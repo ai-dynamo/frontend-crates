@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 const lower = value => String(value ?? '').toLowerCase();
 const compact = value => lower(value).replace(/[^\p{L}\p{N}]/gu, '');
-const numberedAlias = /^(?:UNIFIED\.)?\w+-\d+$/i;
-const unprefix = value => value.replace(/^UNIFIED\./i, '');
+const numberedAlias = /^(?:(?:UNIFIED|RENDERER)\.)?\w+-\d+$/i;
+const unprefix = value => value.replace(/^(?:UNIFIED|RENDERER)\./i, '');
 const caseIdentity = value => lower(unprefix(String(value))).replace(/^\d+-/, '');
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const wordMatch = (value, fields, quoted = false) => {
@@ -88,7 +88,7 @@ export function compileSearch(query = '', context = {families: [], aliases: new 
       } else notices.push(`Case ${value} is not numbered in this report.`);
       stable = true;
     }
-    const prefix = /^(?:UNIFIED\.)?(\w+)-[a-z_]/i.exec(value)?.[1];
+    const prefix = /^(?:(?:UNIFIED|RENDERER)\.)?(\w+)-[a-z_]/i.exec(value)?.[1];
     if (scope === 'col' && prefix && (/^\d+$/.test(prefix) || casePrefixes.has(lower(prefix)))) stable = true;
     return {type: 'term', scope, value, quoted, stable, numberedDescription};
   }

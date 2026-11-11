@@ -123,8 +123,8 @@ function fitVerticalCaseLabels(table) {
   fittedCaseLabelColumns.set(table, {signature, width: high});
 }
 
-function countMarkup(counts) {
-  const present = Object.entries(statusLabels).filter(([s]) => counts[s] > 0);
+function countMarkup(counts, labels = statusLabels) {
+  const present = Object.entries(labels).filter(([s]) => counts[s] > 0);
   return '<div class="engine-status-bar" role="img" aria-label="' + html(present.map(([s,l]) => `${l}: ${counts[s]}`).join(', ')) + '">'
     + present.map(([s]) => '<i class="status-' + s + '" style="flex-grow:' + counts[s] + '"></i>').join('') + '</div>'
     + '<div class="engine-counts">' + present.map(([s,l]) => '<span data-count="' + s + '"><i class="legend-swatch status-' + s + '"></i>' + counts[s] + ' ' + html(l) + '</span>').join('') + '</div>';
@@ -178,6 +178,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
   };
   function draw() {
     if (!tab) return;
+    const labels = tab.status_labels || statusLabels;
     if (search !== state.search) {
       search = state.search;
       const error = toolbar.querySelector('.comparison-search-error');
@@ -224,7 +225,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
       if (!summary) { summary = document.createElement('div'); summary.className = 'capture-summary'; card.appendChild(summary); }
       const selected = keys.includes(key);
       summary.dataset.capture = selected ? key : '';
-      summary.innerHTML = selected ? '<div class="summary-capture-label">Results: ' + html(tab.candidates.find(c => c.key === key)?.label || key) + '</div>' + countMarkup(captureCounts(baseView,key)) : '<p>' + (key ? 'Selected capture loading' : 'No comparison selected') + '</p>';
+      summary.innerHTML = selected ? '<div class="summary-capture-label">Results: ' + html(tab.candidates.find(c => c.key === key)?.label || key) + '</div>' + countMarkup(captureCounts(baseView,key), labels) : '<p>' + (key ? 'Selected capture loading' : 'No comparison selected') + '</p>';
     });
     const table = document.createElement('table'); table.className = 'comparison-matrix'; table.dataset.comparisonTable = '';
     if (vertical) table.dataset.transposeTable = '';
@@ -264,9 +265,9 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const result = (tr,row,column,shown=keys) => {
       const entry = entryFor(row,column), td = tr.insertCell(); td.className = 'matrix-cell';
       if (!entry) { td.classList.add('filtered-cell'); td.textContent = '—'; td.setAttribute('aria-label', isApplicableCell(row.cells[column.sub]) ? 'Excluded by filters' : 'Not applicable to this family'); return td; }
-      td.innerHTML = '<span class="matrix-segments">' + shown.map(k => captureSegmentHtml(outcomes(entry,k),k)).join('') + '</span><div class="ttip comparison-output"></div>';
+      td.innerHTML = '<span class="matrix-segments">' + shown.map(k => captureSegmentHtml(outcomes(entry,k),k,labels)).join('') + '</span><div class="ttip comparison-output"></div>';
       td.setAttribute('role','button');
-      td.setAttribute('aria-label',[row.model_label || row.family,column.label,...shown.map(k => (candidate(k)?.label || k) + ': ' + statusLabels[outcomes(entry,k)])].join('; '));
+      td.setAttribute('aria-label',[row.model_label || row.family,column.label,...shown.map(k => (candidate(k)?.label || k) + ': ' + labels[outcomes(entry,k)])].join('; '));
       if (entry?.cell.tooltip) {
         const cell = entry.cell;
         window.__registerConformanceTooltip(td,cell.tooltip,cell.fixture_href,JSON.stringify(['cell',tab.id,cell.case_id || column.sub,cell.family || '']),cell);
@@ -346,7 +347,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const visibleStatuses = new Set();
     for (const entry of view.entries) for (const key of (stacked ? rowKeys(entry.row) : keys)) visibleStatuses.add(outcomes(entry,key));
     const legend = ui.querySelector('.comparison-legend');
-    legend.replaceChildren(...Object.entries(statusLabels).filter(([status]) => visibleStatuses.has(status)).map(([status,label]) => {
+    legend.replaceChildren(...Object.entries(labels).filter(([status]) => visibleStatuses.has(status)).map(([status,label]) => {
       const item = document.createElement('span'); item.dataset.status = status;
       const swatch = document.createElement('i'); swatch.className = 'legend-swatch status-' + status;
       item.append(swatch,label); return item;
