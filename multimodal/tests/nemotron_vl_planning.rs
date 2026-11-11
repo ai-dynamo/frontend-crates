@@ -337,6 +337,7 @@ fn hf_requests_match_the_remote_code() {
                     let image = MediaMetadata::Image { width, height };
                     let span = plans[0].num_image_tokens as usize + 2;
                     assert_eq!(planner.num_media_tokens(&image).unwrap(), span);
+                    assert_eq!(planner.num_feature_tokens(&image).unwrap(), span - 2);
                 }
             }
             (Err(MmError::InvalidInput { .. }), Some(_)) => {}
@@ -481,10 +482,14 @@ fn from_sizes(spec: &Value, input_ids: &[i32], sizes: &[(u32, u32)]) -> Result<V
     let counts: Vec<usize> = (common::layout_counts(&layout).iter())
         .map(|&(features, _)| features)
         .collect();
-    // The request decides each image's span, so the per-item count is refused.
+    // The request decides each image's span, so the per-item counts are refused.
     for image in &metadata {
         assert!(matches!(
             family.num_media_tokens(image),
+            Err(MmError::Unsupported { .. })
+        ));
+        assert!(matches!(
+            family.num_feature_tokens(image),
             Err(MmError::Unsupported { .. })
         ));
     }
@@ -512,6 +517,30 @@ fn from_sizes(spec: &Value, input_ids: &[i32], sizes: &[(u32, u32)]) -> Result<V
             .map(|plan| json!([1, 3, plan.resized_height, plan.resized_width]))
             .collect::<Vec<_>>(),
     }))
+}
+
+/// 1280x720 alone, with no text: 880 feature tokens in SGLang's tile and 920
+/// in HF's. `<img>` and `</img>` are the literal ids of the span. Only `hf`
+/// sizing counts an image alone; with `sglang` sizing the request decides.
+#[test]
+fn num_feature_tokens_is_the_span_without_the_markers() {
+    let fixture = sizes_fixture();
+    let image = MediaMetadata::Image {
+        width: 1280,
+        height: 720,
+    };
+    for (spec, features) in [("sglang_spec", 880), ("hf_spec", 920)] {
+        let family = processor_from_spec(&fixture[spec].to_string()).unwrap();
+        if spec == "hf_spec" {
+            assert_eq!(family.num_feature_tokens(&image).unwrap(), features);
+            assert_eq!(family.num_media_tokens(&image).unwrap(), features + 2);
+        } else {
+            assert!(family.num_feature_tokens(&image).is_err());
+            assert!(family.num_media_tokens(&image).is_err());
+        }
+        let layout = family.layout_from_metadata(&[IMAGE], &[image]).unwrap();
+        assert_eq!(common::layout_counts(&layout), [(features, 2)], "{spec}");
+    }
 }
 
 fn item(feature_token_count: usize) -> ProcessedItem {

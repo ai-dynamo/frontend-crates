@@ -48,7 +48,7 @@ pub struct PixtralSpec {
 ///
 /// ```
 /// use dynamo_multimodal::{Result, registry, token_layout};
-/// use dynamo_multimodal::processor::{ExpansionPart, MediaMetadata, Segment};
+/// use dynamo_multimodal::processor::MediaMetadata;
 /// # fn main() -> Result<()> {
 /// // mistralai/Mistral-Large-4-1T-A52B: params.json ids, processor_config.json knobs.
 /// let family = registry::processor_from_spec(r#"{
@@ -63,17 +63,8 @@ pub struct PixtralSpec {
 /// // 84x112 pixels, 3 rows of 4 [IMG]; each row adds one closing id.
 /// assert_eq!(family.num_media_tokens(&media[0])?, 15);
 /// let layout = family.layout_from_metadata(&ids, &media)?;
-/// // `apply_layout` takes the positions that get embeddings, not that span:
-/// // without pixels, the sum of each item's `Feature` parts.
-/// let counts: Vec<usize> = (layout.segments.iter())
-///     .filter_map(|segment| match segment {
-///         Segment::Media { expansion, .. } => Some(expansion.iter().map(|part| match part {
-///             ExpansionPart::Feature { n, .. } => *n,
-///             _ => 0,
-///         }).sum()),
-///         Segment::Text(_) => None,
-///     })
-///     .collect();
+/// // `apply_layout` takes the positions that get embeddings, not that span.
+/// let counts = [family.num_feature_tokens(&media[0])?];
 /// assert_eq!(counts, [12]);
 /// let expanded = token_layout::apply_layout(&ids, &layout, &counts, 64)?;
 /// assert_eq!(
@@ -200,6 +191,17 @@ impl MmFamilyProcessor for PixtralProcessor {
             MediaMetadata::Image { width, height } => {
                 let (rows, cols) = self.grid(*width, *height)?;
                 usize::try_from(u64::from(rows) * (u64::from(cols) + 1))
+                    .map_err(|_| MmError::limit_exceeded("pixtral: token count exceeds usize"))
+            }
+            _ => Err(MmError::unsupported("pixtral supports only images")),
+        }
+    }
+
+    fn num_feature_tokens(&self, media: &MediaMetadata) -> Result<usize> {
+        match media {
+            MediaMetadata::Image { width, height } => {
+                let (rows, cols) = self.grid(*width, *height)?;
+                usize::try_from(u64::from(rows) * u64::from(cols))
                     .map_err(|_| MmError::limit_exceeded("pixtral: token count exceeds usize"))
             }
             _ => Err(MmError::unsupported("pixtral supports only images")),

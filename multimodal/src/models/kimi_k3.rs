@@ -388,6 +388,11 @@ impl MmFamilyProcessor for KimiK3Processor {
             .ok_or_else(|| MmError::limit_exceeded("kimi_k3: prompt span exceeds usize"))
     }
 
+    /// The pad run, which needs no `size_tokens`.
+    fn num_feature_tokens(&self, media: &MediaMetadata) -> Result<usize> {
+        Ok(self.image(media)?.0)
+    }
+
     fn layout_from_metadata(
         &self,
         input_ids: &[i32],
@@ -558,6 +563,7 @@ mod tests {
         let family = KimiK3Processor::new(with_table).unwrap();
         assert_eq!(family.plan(300, 200).unwrap().num_tokens, 88);
         assert_eq!(family.num_media_tokens(&image).unwrap(), 96);
+        assert_eq!(family.num_feature_tokens(&image).unwrap(), 88);
         for media in [
             MediaMetadata::Video {
                 width: 28,
@@ -571,6 +577,10 @@ mod tests {
         ] {
             assert!(matches!(
                 family.num_media_tokens(&media),
+                Err(MmError::Unsupported { .. })
+            ));
+            assert!(matches!(
+                family.num_feature_tokens(&media),
                 Err(MmError::Unsupported { .. })
             ));
         }
